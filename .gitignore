@@ -1,0 +1,10 @@
+# IDE and generated project files
+.vs/
+.vscode/
+.idea/
+
+# Local secrets
+.env
+
+# Personal Claude Code settings
+.claude/settings.local.json
