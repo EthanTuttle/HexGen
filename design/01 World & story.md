@@ -275,6 +275,8 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 | Mel and Grant Augustus | Grant: "What rhymes with 'Mel'?" Mel: "'Paid in full.' Which you aren't. That's two drinks you owe me." |
 | Kris Huntington and Timothy | Kris: "Tomorrow we hunt something bigger." Timothy: "C-can tomorrow's thing be smaller? Like a rabbit?" |
 | Dolmund and Lilian | Lilian: "Dance with me, Dolmund." Dolmund: "Dwarves don't dance. We stomp. Rhythmically." |
+| Frim and Grimhold | Frim: "Ten silver says you smile before midnight." Grimhold: "I haven't smiled since I left the cult. Make it twenty." |
+| Leo Conley and Reginald | Reginald: "Young man, your wolf is eating off my plate." Leo: "He's family. Family shares." |
 - **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
 
 ## Quests
@@ -409,7 +411,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 | Generated quests | Rare items, XP and gold |
 
 ## Open questions
-- [ ] **New:** inn banter: the other path pairs' exchanges (Frim and Grimhold, Leo and Reginald), cross-path pairs, each companion's fallback bar line, and the toast reactions
+- [ ] **New:** inn banter: cross-path pairs (the six path pairs are written), each companion's fallback bar line, and the toast reactions
 
 - [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: see Companion chime-in lines). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines); the old kings were left vague (see The Lady of the Lake)
