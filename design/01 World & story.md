@@ -163,6 +163,25 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 | Folk Hero | Rescues the cat → cultists kill the innkeeper → goes to Gronogon to learn why a banned religion is on the rise |
 | Noble | Investigates corrupted hexes disrupting merchant lines → traveling merchant Story card → instructed to go to Gronogon to alert the nobility to a rise in curses, and is roped into the main plot there |
 
+**Companion proficiencies** (decided Oct 28, 2026: 2 each, hand-picked to fit who they are; rule: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies)
+
+| Companion | Proficiencies |
+| --- | --- |
+| Fluffy | Persuade, Lore |
+| Chelmsford | Persuade, Athletics |
+| Mel | Deceive, Thievery |
+| Grant Augustus | Lore, Perception |
+| Kris Huntington | Survival, Animal |
+| Timothy | Persuade, Stealth |
+| Dolmund | Athletics, Intimidate |
+| Lilian | Deceive, Perception |
+| Frim | Perception, Nature |
+| Grimhold | Lore, Intimidate |
+| Leo Conley | Animal, Intimidate |
+| Reginald | Lore, Persuade |
+
+Every proficiency is covered at least once. Persuade and Lore are the most common (4 each); Stealth, Survival, Nature and Thievery have one companion each (Timothy, Kris, Frim, Mel).
+
 ## NPC homes and stories
 
 Heroes from other paths find each path NPC at one home location, grown by a region (see [Map & exploration](02 Map & exploration.md) → Region variants and locations).
@@ -342,7 +361,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 
 ## Open questions
 
-- [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); waits on which proficiencies each companion has ([Classes & combat](03 Classes & combat.md) → Open questions)
+- [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); proficiencies now set (Companion proficiencies, under Background paths), so the lines can be written
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Still open: special companion chime-ins with her (after companion proficiencies), and who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)

@@ -571,7 +571,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
 - [ ] **New (Oct 28, 2026):** companion chime-in: which companion steps in when several are proficient, and how it combines with the Silver Tongue feat's reflip ([Cards & progression](05 Cards & progression.md) → General feats): chime-in first, reflip after, or the player's pick?
-- [ ] **New (in progress Oct 28, 2026):** each story companion's 2 proficiencies (count settled: see Skills → Starting proficiencies); the mockups' guesses (Chelmsford: Persuade and Athletics, Fluffy: Lore, Mel: Deceive) stand until then. Still open too: the coins and heads needed per dialogue check
+- [x] ~~Each story companion's 2 proficiencies~~ (settled Oct 28, 2026: [World & story](01 World & story.md) → Companion proficiencies). Still open: the coins and heads needed per dialogue check
 - [ ] **New (Oct 28, 2026):** each background's short list of proficiencies to pick from at creation; and the College's skill list, since a Bard hero needs one to pick their class proficiency (05 Cards & progression → Class locations only says "learn flourishes (skills)")
 - [ ] **New:** can a failed social check be retried in the same conversation? (Social encounter v1 uses each option once)
 - [ ] Class and subclass cards at level 15 and later (level 15 in progress, Oct 22, 2026)
