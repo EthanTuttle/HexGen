@@ -126,6 +126,33 @@
    "title": "Town v3c · v3b plus life: townsfolk wander the square (tap one for a [Townsfolk line] or [Rumour]) and smoke rises from the chimneys",
    "is_interactive": true,
    "radius": 28
+  },
+  "Town-v4-Camera.dc.html": {
+   "x": 0,
+   "y": 3040,
+   "w": 844,
+   "h": 390,
+   "title": "Town v4 · v3a (chosen) with the camera: drag to pan, pinch to zoom, twist to rotate, wheel and right-drag on PC, the nav button beside equipment. A quick tap moves the bar banter on. Entering or leaving the inn, or opening the shop counter, eases the camera back to frame it",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b-ForV4.dc.html": {
+   "x": 924,
+   "y": 3040,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Town v4 opens v4, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV4.dc.html": {
+   "x": 1848,
+   "y": 3040,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -141,7 +168,10 @@
   "Town-v3b-TapBuildings.dc.html",
   "Town-v3c-Townsfolk.dc.html",
   "Ref-Explore-v8b.dc.html",
-  "Ref-Gear-v8d.dc.html"
+  "Ref-Gear-v8d.dc.html",
+  "Town-v4-Camera.dc.html",
+  "Ref-Explore-v8b-ForV4.dc.html",
+  "Ref-Gear-v8d-ForV4.dc.html"
  ],
  "notes": {
   "v1": {
@@ -169,6 +199,13 @@
    "x": 0,
    "y": 2030,
    "text": "v3 · the whole town on a town-square board: shop v2a, inn v2e with v1's results, quest board v1",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v4": {
+   "x": 0,
+   "y": 2790,
+   "text": "v4 · the town square with the camera, as in scenes",
    "kind": "title1",
    "maxW": 2692
   }

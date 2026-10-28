@@ -270,6 +270,33 @@
    "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Social-v9-Camera.dc.html": {
+   "x": 0,
+   "y": 6840,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v9 · v8 with the camera back: drag to pan, pinch to zoom, twist to rotate (snaps to 60°), wheel zooms and right-drag rotates on PC, and the nav button returns beside equipment. A quick tap still moves a line on; drags and long holds don't. A fight starting eases the camera back to frame it. Tap and hold thresholds are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b-ForV9.dc.html": {
+   "x": 924,
+   "y": 6840,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Meet the Lady (v9) opens v9, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV9.dc.html": {
+   "x": 1848,
+   "y": 6840,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -301,7 +328,10 @@
   "Ref-Gear-v8d-ForV7.dc.html",
   "Social-v8-ChimeLines.dc.html",
   "Ref-Explore-v8b-ForV8.dc.html",
-  "Ref-Gear-v8d-ForV8.dc.html"
+  "Ref-Gear-v8d-ForV8.dc.html",
+  "Social-v9-Camera.dc.html",
+  "Ref-Explore-v8b-ForV9.dc.html",
+  "Ref-Gear-v8d-ForV9.dc.html"
  ],
  "notes": {
   "v1": {
@@ -364,6 +394,13 @@
    "x": 0,
    "y": 5830,
    "text": "v8 · the companions' own chime-in lines",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v9": {
+   "x": 0,
+   "y": 6590,
+   "text": "v9 · the camera in scenes: tap to continue, drag to look around",
    "kind": "title1",
    "maxW": 2692
   }

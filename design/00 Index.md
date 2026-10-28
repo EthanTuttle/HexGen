@@ -198,7 +198,10 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: approach tag colours and icons for social options
 - [x] ~~Town screen: which way in~~ (settled Oct 28: v1a, a scene with a card per service)
 - [x] ~~Town shop and inn layouts~~ (settled Oct 28: v2a counter; v2e night at the bar with v1's rest results)
-- [ ] New: town square (v3a–v3c); one square layout per town or per town type?
+- [x] ~~Town square~~ (settled Oct 28: v3a; every town type gets its own scene)
+- [ ] New: each town type's scene content (places, services, stock, NPCs), in the docs
+- [ ] New: feedback on the camera in scenes (social v9, town v4)
+- [ ] New: wheel zoom and right-drag rotate on the map and in combat too?
 - [ ] New: town NPCs (named shopkeepers, innkeepers, townsfolk? rumours?) and inn services besides resting
 - [ ] New: inn banter lines (v2e)
 - [ ] New: towns: names and greetings, shop stock, quest board quests
