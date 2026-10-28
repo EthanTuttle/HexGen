@@ -216,6 +216,33 @@
    "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Social-v7-Proficiencies.dc.html": {
+   "x": 0,
+   "y": 5320,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v7 · v6 with the companions' real proficiencies (Fluffy gains Persuade, Mel gains Thievery), the highest-score companion stepping in, and Silver Tongue's automatic reflip first (Debug → Hero has Silver Tongue)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b-ForV7.dc.html": {
+   "x": 924,
+   "y": 5320,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Meet the Lady (v7) opens v7, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV7.dc.html": {
+   "x": 1848,
+   "y": 5320,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -241,7 +268,10 @@
   "Ref-Gear-v8d-ForV5.dc.html",
   "Social-v6-Excalibur.dc.html",
   "Ref-Explore-v8b-ForV6.dc.html",
-  "Ref-Gear-v8d-ForV6.dc.html"
+  "Ref-Gear-v8d-ForV6.dc.html",
+  "Social-v7-Proficiencies.dc.html",
+  "Ref-Explore-v8b-ForV7.dc.html",
+  "Ref-Gear-v8d-ForV7.dc.html"
  ],
  "notes": {
   "v1": {
@@ -290,6 +320,13 @@
    "x": 0,
    "y": 4310,
    "text": "v6 · the sword pull scene, written",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v7": {
+   "x": 0,
+   "y": 5070,
+   "text": "v7 · who steps in, and Silver Tongue first",
    "kind": "title1",
    "maxW": 2692
   }
