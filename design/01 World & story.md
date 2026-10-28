@@ -206,6 +206,7 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 - **NPC lines have no set length.** Write what the moment needs; long speeches page with a tap.
 - **A tagged option names the angle.** The text says what the hero leans on ("Appeal to her honour", "Claim a knight's right", "Threaten the lake"), and the tag names the approach (Persuade, Deceive, Intimidate).
 - **Replies show the consequence.** After a check, pass or fail, the NPC reacts in character and says what changes in the world ("Then the sword stays hidden from you"), so the cost of failing is clear in the story. Rewards also show as chips on screen.
+- **Scenes with no speaker use narration** (decided Oct 28, 2026): short, neutral and in the second person ("The stone stands alone beneath an open sky"). It describes what the party sees and what happens, never what the hero thinks or says.
 - **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not, and any kind of check can be an option ([Classes & combat](03 Classes & combat.md) → Checks outside combat).
 - **Failure costs fit the approach.** A gentle approach failing can cost little (the NPC says no); a harsh one can cost a lot, even a fight. Whether an NPC fights back is set per scene.
 - **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
@@ -249,8 +250,19 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 **The sword pull scene** (decided Oct 28, 2026)
 
 - **Options:** "Pull the sword" (STR + Athletics, so a proficient companion can chime in), "Read the runes on the stone" (a Lore check: a pass adds 1 coin to the pull; a fail loses nothing), and Leave to come back later.
-- **Coin amounts** (decided Oct 28, 2026): the Lady's blessing adds 2 coins to the pull and her curse takes 2 away; the runes add 1. Balance risk, accepted: with a typical 4-coin puller and a 2-heads pull (placeholder), a plain pull passes 69%, blessed 89% (94% with the runes) and cursed 25%. A failed pull loses the sword for good, so threatening her nearly costs the sword.
+- **The sword is Excalibur** (decided Oct 28, 2026), and the pull needs 2 heads.
+- **Coin amounts** (decided Oct 28, 2026): the Lady's blessing adds 2 coins to the pull and her curse takes 2 away; the runes add 1. Balance risk, accepted: with a typical 4-coin puller and the 2-heads pull, a plain pull passes 69%, blessed 89% (94% with the runes) and cursed 25%. A failed pull loses the sword for good, so threatening her nearly costs the sword.
 - **The pull's name shows its bonuses,** like upgraded cards: each bonus adds a "+" and the curse takes one away. Pull++ with the blessing and the runes; Pull+ with one of them; Pull with neither, or with the curse and one bonus; Pull− when cursed with no bonus.
+- **Its text** (written Oct 28, 2026, picked by Ethan from drafts; narration, since nobody speaks here: see Dialogue writing):
+
+| Moment | Narration |
+| --- | --- |
+| Arriving | "The stone stands alone beneath an open sky, the blade sunk in it to the hilt. Runes circle its base, worn almost smooth." |
+| Runes read | "The runes name the old kings, one after another, each hand the stone let go." |
+| Runes not read | "The runes are too worn to read. Whatever they once said, they keep to themselves." |
+| The pull passes | "Steel sings against stone, and the blade comes free. Excalibur is yours." |
+| The pull fails | "You pull until your arms shake, and the stone does not give. The sword is lost to you." |
+
 - **Anyone in the party can pull** (who flips: [Classes & combat](03 Classes & combat.md) → Checks outside combat), and the blessing and the runes help whoever pulls.
 
 **The Lady of the Lake** (decided Oct 28, 2026)
@@ -334,7 +346,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Still open: special companion chime-ins with her (after companion proficiencies), and who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
-- [x] ~~The sword pull scene's options~~ (settled Oct 28, 2026: Pull and the Lore runes; see The sword pull scene). Still open: the heads the pull needs, and the scene's own text (no NPC speaks there)
+- [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
 - [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)

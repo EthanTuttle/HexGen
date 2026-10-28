@@ -280,7 +280,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Coins and heads needed per option (3 coins / 2 heads, 2 / 1, 1 / 1); Chelmsford proficient in Persuade, Mel in Deceive | Social encounter v1 | Companion proficiencies and check sizes ([Classes & combat](03 Classes & combat.md) → Open questions) |
 | Approach tag colours and icons | Social encounter v1 | Icons (Open questions below) |
 | Party scores and proficiencies (e.g. Fluffy INT 3 with Lore, Chelmsford with Athletics and Persuade); heads needed (Persuade 2, Intimidate 2, runes 1, pull 2); the blessing and curse shown as 1 coin each (set Oct 28, 2026 at +2 and −2, not yet in a mockup) | Social encounter v2–v5 | Companion proficiencies and check sizes ([Classes & combat](03 Classes & combat.md) → Open questions) |
-| The sword pull scene's text, [Sword name] | Social encounter v2 | The pull scene's text ([World & story](01 World & story.md) → Open questions) |
+| The sword pull scene's "[Scene text: …]" lines and [Sword name] (both set Oct 28, 2026: World & story → The sword pull scene; not yet in a mockup) | Social encounter v2–v5 | Settled; next social version uses them |
 | Three numbered generic enemy tokens beside the Lady when her fight starts; the blessing and curse pop-ups' "+[coins]" / "−[coins]" (now +2 / −2) | Social encounter v3–v5 | Enemy roster ([World & story](01 World & story.md) → Open questions) |
 | [Opening quest], [Quest step]; the debug list's [Side quest 1–4], [Curse] and [Passive name] | Exploration v7–v8, social v4–v5 | The opening quest's name and steps ([World & story](01 World & story.md) → Main story outline); the debug entries only fill the lists |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
