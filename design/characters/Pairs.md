@@ -6,7 +6,7 @@ Inn banter between two companions: one row per pair, written once here. Rules: [
 
 | Pair | Exchange |
 | --- | --- |
-| Fluffy and Chelmsford | Fluffy: "This cream has been watered." Chelmsford: "It's milk, Your Majesty. You ordered milk." (Fluffy's half trimmed in his review, Oct 28, 2026; Chelmsford's half waits for his voice sheet) |
+| Fluffy and Chelmsford | Fluffy: "This cream has been watered." Chelmsford: "It's milk, Your Majesty. I believe that's what you ordered." (both halves reviewed against their voice sheets, Oct 28, 2026; Chelmsford's wording is Ethan's) |
 | Mel and Grant Augustus | Grant: "What rhymes with 'Mel'?" Mel: "'Paid in full.' Which you aren't. That's two drinks you owe me." |
 | Kris Huntington and Timothy | Kris: "Tomorrow we hunt something bigger." Timothy: "C-can tomorrow's thing be smaller? Like a rabbit?" |
 | Dolmund and Lilian | Lilian: "Dance with me, Dolmund." Dolmund: "Dwarves don't dance. We stomp. Rhythmically." |

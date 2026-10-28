@@ -21,15 +21,15 @@ Approved by Ethan, Oct 28, 2026. From the bio: a British chap; a blue (lightning
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list.
+Reviewed against the voice sheet and the tells list with Ethan, Oct 28, 2026: Persuade and the bar line rewritten; Athletics kept.
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 
 | Proficiency | Line |
 | --- | --- |
-| Persuade | "If I may, there's no finer soul in all the realm. I'd stake my life on it. Rather already have, actually." |
+| Persuade | "Sorry, only, I'd trust them with my life. I suppose I already have, really." (was: "If I may, there's no finer soul in all the realm. I'd stake my life on it. Rather already have, actually.") |
 | Athletics | "Right then, mind your fingers!" (as he heaves alongside) |
 
 **Inn: fallback bar line** (said to the table when the companion beside them has no exchange with them; pair exchanges: [Pairs](Pairs.md))
 
-"Good company, a warm fire. A fine day's work, everyone. Truly."
+"Mum would love this place. She'd have the innkeeper's whole life story by now." (was: "Good company, a warm fire. A fine day's work, everyone. Truly.")
