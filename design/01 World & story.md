@@ -182,6 +182,13 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 Every proficiency is covered at least once. Persuade and Lore are the most common (4 each); Stealth, Survival, Nature and Thievery have one companion each (Timothy, Kris, Frim, Mel).
 
+**Companion chime-in lines** (in progress Oct 28, 2026; one generic line per proficiency, said in any scene when the companion steps in: pattern in Dialogue writing; rule: [Classes & combat](03 Classes & combat.md) → Checks outside combat)
+
+| Companion | Proficiency | Line |
+| --- | --- | --- |
+| Chelmsford | Persuade | "If I may, there's no finer soul in all the realm. I'd stake my life on it. Rather already have, actually." |
+| Chelmsford | Athletics | "Right then, mind your fingers!" (as he heaves alongside) |
+
 ## NPC homes and stories
 
 Heroes from other paths find each path NPC at one home location, grown by a region (see [Map & exploration](02 Map & exploration.md) → Region variants and locations).
