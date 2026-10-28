@@ -36,7 +36,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **World & story**
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
-- [ ] New (Oct 28): each companion's chime-in lines for social checks
+- [ ] New (Oct 28): each companion's chime-in lines (one generic line per approach, plus special lines for big NPCs; patterns in World & story → Dialogue writing)
 - [ ] New (placeholder): the Lady of the Lake's dialogue lines
 - [ ] Background unique starter item for each background (parked)
 - [ ] Pantheon follow-ups: further detail per god

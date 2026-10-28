@@ -190,12 +190,24 @@ Heroes from other paths find each path NPC at one home location, grown by a regi
 - All six paths converge on Gronogon. On arrival, every hero meets (or is met by) the king, King Grel, who asks or charges them to investigate the cultist plot. From there the main story plays out mostly the same for every background, with slight variances in how the hero responds to certain situations depending on their background.
 - (The old Dungeon card reward on reaching Gronogon was dropped on Oct 24, 2026, since dungeons are now region landmarks.)
 - King Grel is a trustworthy ally.
-- Background variances appear as different dialogue lines, extra dialogue options, and different NPC reactions.
+- Background variances appear as different dialogue lines, extra dialogue options, and different NPC reactions (how dialogue is written: see Dialogue writing).
 - First lead: climb the highest peak in the region (a Story card) to study the rift. The climb includes a cultist ambush, a hermit/NPC, and a low-level eldritch horror. On the mountain they learn the prison is a certain dungeon: the hermit, an elf who remembers the god, tells the hero where it is, and the prison dungeon is placed on the board as a fixed location.
 - NPCs from the other paths are found at region locations (see NPC homes and stories).
 - The elf hermit is a quest NPC only, not recruitable.
 - The prison dungeon is a Story card, placed at a fixed location in unexplored territory; the player has to place cards to reach it.
 - Inside, the party finds the god's empty cell.
+
+## Dialogue writing
+
+Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Classes & combat](03 Classes & combat.md) → Checks outside combat. How it shows: [Presentation](07 Presentation.md) → Social encounter screen.
+
+- **The hero speaks as intent only.** A hero option names what the hero wants or does ("Ask about the sword"); the hero's own words are never written out. Every other character, NPCs and companions alike, speaks in written lines.
+- **The hero's voice is neutral.** Options fit any hero. Backgrounds add flavour where it matters: an extra option for that background, or an NPC reacting to who the hero is (see Background variances under Shared main story).
+- **NPC lines have no set length.** Write what the moment needs; long speeches page with a tap.
+- **A tagged option names the angle.** The text says what the hero leans on ("Appeal to her honour", "Claim a knight's right", "Threaten the lake"), and the tag names the approach (Persuade, Deceive, Intimidate).
+- **Replies show the consequence.** After a check, pass or fail, the NPC reacts in character and says what changes in the world ("Then the sword stays hidden from you"), so the cost of failing is clear in the story. Rewards also show as chips on screen.
+- **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not.
+- **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
 
 ## Quests
 
@@ -286,7 +298,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 
 ## Open questions
 
-- [ ] **New (Oct 28, 2026):** each companion's chime-in lines for social checks (rule: [Classes & combat](03 Classes & combat.md) → Checks outside combat), e.g. a set per approach; to work through with Ethan
+- [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); waits on which proficiencies each companion has ([Classes & combat](03 Classes & combat.md) → Open questions)
 - [ ] **New (mockup placeholders, social encounter v1):** the Lady of the Lake's dialogue: greeting, her answer about the sword, and her replies to the Persuade, Deceive and Intimidate options
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
