@@ -21,15 +21,15 @@ Approved by Ethan, Oct 28, 2026. From the bio: a human bard (Narrator), enraptur
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list.
+Reviewed against the voice sheet and the tells list with Ethan, Oct 28, 2026: all rewritten.
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 
 | Proficiency | Line |
 | --- | --- |
-| Lore | "Ah! This is from the old tales. I know how this one goes!" |
-| Perception | "Wait! Did you see that? That's going in the song." |
+| Lore | "And here, friends, carved by a hand long dead, is the answer, and as it happens, I know it!" (was: "Ah! This is from the old tales. I know how this one goes!") |
+| Perception | "And there it is, half in the shadows, the very detail a lesser bard would have missed!" (was: "Wait! Did you see that? That's going in the song.") |
 
 **Inn: fallback bar line** (said to the table when the companion beside them has no exchange with them; pair exchanges: [Pairs](Pairs.md))
 
-"Hold on, I've nearly got a rhyme for 'tavern'."
+"Barkeep! A round for the heroes, on the tab, for the song will pay for it, eventually, I'm nearly sure." (was: "Hold on, I've nearly got a rhyme for 'tavern'.", which contradicted his sheet: he can rhyme)
