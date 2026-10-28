@@ -72,7 +72,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **Classes & combat**
 
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
-- [ ] New (Oct 28): companion chime-in: which companion steps in when several are proficient; order with Silver Tongue's reflip
+- [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
 - [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
 - [ ] New: each background's proficiency list; the College's skill list for Bard heroes
 - [ ] New: can a failed social check be retried in the same conversation?

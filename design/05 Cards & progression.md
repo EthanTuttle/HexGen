@@ -77,7 +77,7 @@ Decided Oct 27, 2026. Feats are perks any class can pick at set levels.
 | Forager | Resting can yield a healing consumable | — |
 | Surveyor | Peek at the top card of your map deck | INT 2+ |
 | Skilled | Learn any one proficiency, or raise one a rank | — |
-| Silver Tongue | Once per dialogue, reflip a failed social check | CHA 2+ |
+| Silver Tongue | Once per dialogue, reflip a failed social check (automatic, before any companion chime-in: [Classes & combat](03 Classes & combat.md) → Checks outside combat) | CHA 2+ |
 | Rallying Presence | Allies start each fight with a little temporary HP | CHA 2+ |
 
 **Level-4 feats: race**
