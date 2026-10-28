@@ -196,6 +196,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: a downed ally's HP after a won fight
 - [x] ~~Social encounter layout~~ (settled Oct 28: v1d, options as cards over the zoomed hex)
 - [ ] New: approach tag colours and icons for social options
+- [ ] New: town screen: layout of the service panels (shop buy and sell, inn rest, quest board)
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)
 - [x] ~~Where the passives sit~~ (settled for now Oct 28: v8b, a sleeve on the party panel)
