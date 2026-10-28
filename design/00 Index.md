@@ -37,7 +37,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
 - [ ] New (Oct 28): each companion's chime-in lines (one generic line per approach, plus special lines for big NPCs; patterns in World & story → Dialogue writing)
-- [ ] New (placeholder): the Lady of the Lake's dialogue lines
+- [ ] New (in progress): the Lady of the Lake's lines; her deed's knight and lair; blessing and curse coin amounts; the sword pull scene's options
 - [ ] Background unique starter item for each background (parked)
 - [ ] Pantheon follow-ups: further detail per god
 - [ ] Enemy roster and bosses
@@ -71,6 +71,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Classes & combat**
 
+- [ ] New (Oct 28): who flips a non-social check in an encounter scene (player picks, always the hero, or auto-pick highest score); v2 compares them
 - [ ] New (Oct 28): companion chime-in: which companion steps in when several are proficient; order with Silver Tongue's reflip
 - [ ] New (placeholder): story companions' social proficiencies and the size of dialogue checks
 - [ ] New: can a failed social check be retried in the same conversation?

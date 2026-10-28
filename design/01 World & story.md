@@ -206,7 +206,8 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 - **NPC lines have no set length.** Write what the moment needs; long speeches page with a tap.
 - **A tagged option names the angle.** The text says what the hero leans on ("Appeal to her honour", "Claim a knight's right", "Threaten the lake"), and the tag names the approach (Persuade, Deceive, Intimidate).
 - **Replies show the consequence.** After a check, pass or fail, the NPC reacts in character and says what changes in the world ("Then the sword stays hidden from you"), so the cost of failing is clear in the story. Rewards also show as chips on screen.
-- **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not.
+- **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not, and any kind of check can be an option ([Classes & combat](03 Classes & combat.md) → Checks outside combat).
+- **Failure costs fit the approach.** A gentle approach failing can cost little (the NPC says no); a harsh one can cost a lot, even a fight. Whether an NPC fights back is set per scene.
 - **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
 
 ## Quests
@@ -242,8 +243,17 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 
 1. A river/lake region becomes an enchanted lake (tier 3), whose location is Lady of the Lake. Meeting her starts the quest.
 2. A social encounter with the water maiden: she tells the player where the sword is, and the quest places Sword in the Stone on the map.
-3. Optionally, the player can persuade the Lady to give her blessing. Pulling the sword out is a STR coin check; the blessing adds coins to it. Without the blessing, the player can still try with brute force.
-4. Reaching Sword in the Stone and pulling the sword out completes the quest. A failed pull locks the sword out for good, adding stakes and repercussions to the choice of whether to seek the blessing first.
+3. Optionally, the player can win the Lady's blessing (ways to win it: The Lady of the Lake, below). Pulling the sword out is a STR coin check; the blessing adds coins to it. Without the blessing, the player can still try with brute force.
+4. Reaching Sword in the Stone and pulling the sword out completes the quest. A failed pull locks the sword out for good, adding stakes and repercussions to the choice of whether to seek the blessing first. The pull plays out in the same zoomed-hex scene as the talk with the Lady, with check options such as "Pull the sword" or "[STR] Force the sword out" (Oct 28, 2026; the exact options are open).
+
+**The Lady of the Lake** (decided Oct 28, 2026)
+
+- **Voice:** ancient and formal, like an Arthurian legend.
+- **What she judges:** worthiness, meaning honour and truth.
+- **Ways to win her blessing:**
+  - **Persuade:** a light cost on a fail: she refuses her blessing.
+  - **Intimidate:** a heavy cost on a fail: she fights back, which starts a fight. If the party wins, she yields and tells them where the sword is, but curses it: the pull flips fewer coins.
+  - **Offer a deed** (no check): she asks the hero to return a lost blade, a fallen knight's sword in a nearby lair or ruin, to rest in her lake. Bringing it back wins the blessing.
 
 ### Other Legendary quests
 
@@ -299,7 +309,10 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 ## Open questions
 
 - [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); waits on which proficiencies each companion has ([Classes & combat](03 Classes & combat.md) → Open questions)
-- [ ] **New (mockup placeholders, social encounter v1):** the Lady of the Lake's dialogue: greeting, her answer about the sword, and her replies to the Persuade, Deceive and Intimidate options
+- [ ] **New (in progress Oct 28, 2026):** the Lady of the Lake's lines: greeting, her answer about the sword, the deed, and her replies to Persuade and Intimidate
+- [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
+- [ ] **New:** how many coins the blessing adds to the pull, and how many the curse takes away
+- [ ] **New:** the Sword in the Stone scene's options (e.g. "Pull the sword" vs "[STR] Force the sword out": does the first need the blessing?)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
 - [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)
