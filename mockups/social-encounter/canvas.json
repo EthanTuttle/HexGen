@@ -54,6 +54,42 @@
    "title": "Linked · Exploration v6a (copied; Debug → Meet the Lady opens v1a–v1d, and Leave comes back here. Portraits and Fight don't link from this canvas)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Social-v2a-PlayerPicks.dc.html": {
+   "x": 0,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v2a · v1d layout with the Lady's real lines (tap to page). Non-social checks: the player picks who flips in the pop-up. Party scores, proficiencies, heads needed and bonus sizes are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v2b-AlwaysHero.dc.html": {
+   "x": 924,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v2b · the same, but the hero always flips",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v2c-AutoPick.dc.html": {
+   "x": 1848,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v2c · the same, but auto-pick: highest score for the check flips, the hero on ties",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v6a-ForV2.dc.html": {
+   "x": 2772,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v6a (copied; Debug → Meet the Lady opens v2a–v2c, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -61,7 +97,11 @@
   "Social-v1b-DimmedCard.dc.html",
   "Social-v1c-FaceToFace.dc.html",
   "Social-v1d-OptionCards.dc.html",
-  "Ref-Explore-v6a.dc.html"
+  "Ref-Explore-v6a.dc.html",
+  "Social-v2a-PlayerPicks.dc.html",
+  "Social-v2b-AlwaysHero.dc.html",
+  "Social-v2c-AutoPick.dc.html",
+  "Ref-Explore-v6a-ForV2.dc.html"
  ],
  "notes": {
   "v1": {
@@ -77,6 +117,13 @@
    "text": "Linked screens · exploration (way in and out)",
    "kind": "title1",
    "maxW": 1768
+  },
+  "v2": {
+   "x": 0,
+   "y": 1270,
+   "text": "v2 · who flips? Try Draw your weapon for the fight, Debug → Go to the sword for Pull and the runes",
+   "kind": "title1",
+   "maxW": 3616
   }
  },
  "designSystems": []
