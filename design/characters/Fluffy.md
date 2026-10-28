@@ -11,7 +11,11 @@ Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice 
 - **What they want and what worries them:**
 - **Sounds like:**
 - **When they're not joking:**
-- **Sample lines:**
+- **Sample lines** (Ethan's, Oct 28, 2026):
+  - "Why I'll be! Never have I heard such preposterousness in my life!"
+  - "Do hurry up now, I have a nap to get to."
+  - "I. Am. Royalty! I refuse to sleep on the ground. I will take your lap instead."
+  - "I'm quite bored. I think I'll go blow something up."
 
 ## Lines
 
