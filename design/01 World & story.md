@@ -188,6 +188,14 @@ Every proficiency is covered at least once. Persuade and Lore are the most commo
 | --- | --- | --- |
 | Chelmsford | Persuade | "If I may, there's no finer soul in all the realm. I'd stake my life on it. Rather already have, actually." |
 | Chelmsford | Athletics | "Right then, mind your fingers!" (as he heaves alongside) |
+| Fluffy | Persuade | "Oh, just say yes. I have a nap at noon and you are ruining it." |
+| Fluffy | Lore | "Obviously it's the other way round. Honestly, must I do everything?" |
+
+Special lines (said instead of the generic one with a big story NPC):
+
+| Companion | With | Check | Line |
+| --- | --- | --- | --- |
+| Fluffy | The Lady of the Lake | Persuade ("Swear you are true") | "I am King Alexander the All Conquering Legend and He Who Rules, and I vouch for them. That should settle it." |
 
 ## NPC homes and stories
 
@@ -313,7 +321,7 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 | The deed is set (no check) | Ask how to prove it | "A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died. Bring it home to me, and I will know your worth." |
 | The blade comes back | — | "Rest now, old friend." (to the blade, as it sinks) "And you: you have my blessing, and my thanks." |
 
-  Her Intimidate pass line mentions "the old kings" who pulled the sword before; who they were isn't set. Companion chime-ins with her stay placeholders until companion proficiencies are set.
+  Her Intimidate pass line mentions "the old kings" who pulled the sword before; who they were isn't set. Companion chime-ins with her: see Companion chime-in lines (Fluffy has a special one).
 
 ### Other Legendary quests
 
@@ -369,7 +377,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 ## Open questions
 
 - [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); proficiencies now set (Companion proficiencies, under Background paths), so the lines can be written
-- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Still open: special companion chime-ins with her (after companion proficiencies), and who "the old kings" in her lines were
+- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines). Still open: who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
 - [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)

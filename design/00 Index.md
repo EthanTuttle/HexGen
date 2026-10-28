@@ -36,8 +36,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **World & story**
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
-- [ ] New (in progress Oct 28): each companion's chime-in lines, one per proficiency (Chelmsford done), plus special lines for big NPCs
-- [ ] New: the Lady of the Lake (lines written Oct 28): her deed's knight and lair; who "the old kings" were; companion chime-ins with her
+- [ ] New (in progress Oct 28): each companion's chime-in lines, one per proficiency (Chelmsford and Fluffy done), plus special lines for big NPCs
+- [ ] New: the Lady of the Lake (lines written Oct 28): her deed's knight and lair; who "the old kings" were
 - [ ] Background unique starter item for each background (parked)
 - [ ] Pantheon follow-ups: further detail per god
 - [ ] Enemy roster and bosses
