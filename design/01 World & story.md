@@ -244,7 +244,13 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 1. A river/lake region becomes an enchanted lake (tier 3), whose location is Lady of the Lake. Meeting her starts the quest.
 2. A social encounter with the water maiden: she tells the player where the sword is, and the quest places Sword in the Stone on the map.
 3. Optionally, the player can win the Lady's blessing (ways to win it: The Lady of the Lake, below). Pulling the sword out is a STR coin check; the blessing adds coins to it. Without the blessing, the player can still try with brute force.
-4. Reaching Sword in the Stone and pulling the sword out completes the quest. A failed pull locks the sword out for good, adding stakes and repercussions to the choice of whether to seek the blessing first. The pull plays out in the same zoomed-hex scene as the talk with the Lady, with check options such as "Pull the sword" or "[STR] Force the sword out" (Oct 28, 2026; the exact options are open).
+4. Reaching Sword in the Stone and pulling the sword out completes the quest. A failed pull locks the sword out for good, adding stakes and repercussions to the choice of whether to seek the blessing first. The pull plays out in the same zoomed-hex scene as the talk with the Lady.
+
+**The sword pull scene** (decided Oct 28, 2026)
+
+- **Options:** "Pull the sword" (STR + Athletics, so a proficient companion can chime in), "Read the runes on the stone" (a Lore check: a pass adds 1 coin to the pull; a fail loses nothing), and Leave to come back later.
+- **The pull's name shows its bonuses,** like upgraded cards: each bonus adds a "+" and the curse takes one away. Pull++ with the blessing and the runes; Pull+ with one of them; Pull with neither, or with the curse and one bonus; Pull− when cursed with no bonus.
+- **Anyone in the party can pull** (who flips: [Classes & combat](03 Classes & combat.md) → Checks outside combat), and the blessing and the runes help whoever pulls.
 
 **The Lady of the Lake** (decided Oct 28, 2026)
 
@@ -327,7 +333,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Still open: special companion chime-ins with her (after companion proficiencies), and who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
 - [ ] **New:** how many coins the blessing adds to the pull, and how many the curse takes away
-- [ ] **New:** the Sword in the Stone scene's options (e.g. "Pull the sword" vs "[STR] Force the sword out": does the first need the blessing?)
+- [x] ~~The sword pull scene's options~~ (settled Oct 28, 2026: Pull and the Lore runes; see The sword pull scene). Still open: the heads the pull needs, and the scene's own text (no NPC speaks there)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
 - [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)
