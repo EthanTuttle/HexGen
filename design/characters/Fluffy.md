@@ -4,13 +4,13 @@ Folk Hero path companion. Bio, home and personal quest: [World & story](../01%20
 
 ## Voice sheet
 
-Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice sheet template). From the bio: a fey creature who chose to be a cat; his royal title comes from the fey court. In the Folk Hero path he lives at the innkeeper's inn as the innkeeper's 'pet', which ties him to the innkeeper's death. Home: Fey Court (fey wood). Personal quest: a rival at the Fey Court disputes his title, and he must win it back by fey trickery.
+Approved by Ethan, Oct 28, 2026. From the bio: snooty; a fey creature who chose to be a cat, with a royal title from the fey court that a rival there disputes (his personal quest); a Blaster wizard. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
 
-- **How they talk:**
-- **Words they use / never use:**
-- **What they want and what worries them:**
-- **Sounds like:**
-- **When they're not joking:**
+- **How he talks (by mood):** clipped and lazy when he's comfortable: short orders, and complaints about naps. Theatrical when his dignity is touched: old-fashioned exclamations, flipped word order ("Never have I heard…"), words a size too big ("preposterousness"). Casually destructive when bored ("I think I'll go blow something up").
+- **Words he uses:** "quite", "do … now", "why, I'll be", grand nouns he stretches. **Never:** apologises, says please (royalty states what will happen), admits he's a cat (laps and naps are his royal due, not cat things), or uses modern slang ("okay", "cool", "guys").
+- **What he wants and what worries him:** wants respect (his title used) and comfort (a warm lap, an unbroken nap). Worries that the rival's claim to his title is true, though he would never say so.
+- **Sounds like:** Lady Bracknell (Wilde's grande dame: outraged, quotable, sure of her rank).
+- **When he's not joking:** cold fury. Quiet and dangerous, the fey showing through the cat; the Blaster stops being a joke.
 - **Sample lines** (Ethan's, Oct 28, 2026):
   - "Why I'll be! Never have I heard such preposterousness in my life!"
   - "Do hurry up now, I have a nap to get to."
@@ -19,7 +19,7 @@ Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice 
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list.
+Written Oct 28, 2026, before the voice sheet: to review against it and the tells list (none of them breaks a "never" above).
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 

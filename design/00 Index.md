@@ -206,7 +206,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Wheel zoom and right-drag rotate on the map and in combat too?~~ (settled Oct 28: one set of camera controls for every hex screen)
 - [x] ~~Opened camera buttons covering the cards~~ (settled Oct 28: v6c, nav between Quests and equipment with the fan; standard everywhere)
 - [ ] New: town NPCs (named shopkeepers, innkeepers, townsfolk? rumours?) and inn services besides resting
-- [ ] New: companion voice sheets (Fluffy first), then review the lines written so far against them and the tells list; remaining inn banter: characters → Writing guide
+- [ ] New: companion voice sheets (Fluffy's done; 11 to go), then review the lines written so far against them and the tells list; remaining inn banter: characters → Writing guide
 - [ ] New: towns: names and greetings, shop stock, quest board quests
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)
