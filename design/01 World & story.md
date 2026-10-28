@@ -190,6 +190,8 @@ Every proficiency is covered at least once. Persuade and Lore are the most commo
 | Chelmsford | Athletics | "Right then, mind your fingers!" (as he heaves alongside) |
 | Fluffy | Persuade | "Oh, just say yes. I have a nap at noon and you are ruining it." |
 | Fluffy | Lore | "Obviously it's the other way round. Honestly, must I do everything?" |
+| Mel | Deceive | "It's true! I was there. I saw the whole thing." (She wasn't.) |
+| Mel | Thievery | "Small hands, see? Let me." |
 
 Special lines (said instead of the generic one with a big story NPC):
 
