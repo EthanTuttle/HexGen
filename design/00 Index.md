@@ -192,4 +192,5 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: weapon mastery: should the base cards show their upgraded name, as the passives do (Backstab → Backstab+)?
 - [x] ~~Companions' default subclass: fixed or changeable?~~ (settled: changeable at level 5, as World & story says)
 - [ ] New: a downed ally's HP after a won fight
-- [ ] New: social encounter layout (v1a zoom to the hex, v1b dimmed card, v1c face to face, v1d option cards); approach tag colours and icons
+- [x] ~~Social encounter layout~~ (settled Oct 28: v1d, options as cards over the zoomed hex)
+- [ ] New: approach tag colours and icons for social options
