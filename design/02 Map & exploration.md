@@ -191,3 +191,4 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [ ] **New (balance flag):** since multi-hex cards ignore pairing, multi-hex terrain cards become a way to bridge banned pairings (e.g. desert next to forest). Fine as a feature, or limit how many multi-hex terrain cards exist?
 - [x] ~~Teleportation rune vs "no fast travel"~~ (settled Oct 23, 2026: the "no fast travel, the party walks" rule is dropped)
 - [x] ~~Night building in multiplayer~~ (settled Oct 23, 2026: each player builds within their own controllable party's sight range)
+- [ ] **New:** towns: their names and greeting lines, what their shops stock, and which quests their quest boards offer and how many (the town mockup shows placeholders)

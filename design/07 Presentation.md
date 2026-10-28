@@ -182,10 +182,12 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Not picked (v1, Oct 28, 2026): **v1a, zoom to the hex:** the camera zooms onto the NPC's hex, the NPC and party tokens stand side by side, and the dialogue panel runs along the bottom (lines on the left, options on the right). **v1b, card over the dimmed world:** a cream card like the after-combat screen's, with a big NPC portrait hex on the left. **v1c, face to face:** NPC and hero portrait hexes on either side, speech bubbles between them, options as pills along the bottom.
 - **Debug tools (mockup only):** a near-miss switch (the hero's coins land 1 heads short, to show the chime-in) and Restart talk. The linked exploration copy's Debug tab opens each layout.
 
-**Town screen** (not started; choices made Oct 28, 2026; rules for towns and services: [Map & exploration](02 Map & exploration.md) → Camps and rest, [Cards & progression](05 Cards & progression.md) → Class locations, [Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold)
+**Town screen** (in progress, v1a–v1c being compared; choices made Oct 28, 2026; rules for towns and services: [Map & exploration](02 Map & exploration.md) → Camps and rest, [Cards & progression](05 Cards & progression.md) → Class locations, [Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold)
 
-- **A scene, then menus** (chosen Oct 28, 2026): walking into a town (a Village region such as a market town, an inn, or a Great city) opens a scene on the social encounter screen: the camera holds on the hex, the party's tokens stand on the board, and the services show as option cards. Each card (Shop, Inn, Quest board…) opens its own panel, and closing it returns to the scene. Class locations such as the Training Grounds keep their own screens.
+- **A scene, then menus** (picked Oct 28, 2026, then reopened the same day so all three ways in could be compared as v1a–v1c): walking into a town (a Village region such as a market town, an inn, or a Great city) opens a scene on the social encounter screen: the camera holds on the hex, the party's tokens stand on the board, and the services show as option cards. Each card (Shop, Inn, Quest board…) opens its own panel, and closing it returns to the scene. Class locations such as the Training Grounds keep their own screens.
 - **First mockup covers** (chosen Oct 28, 2026): buying at a shop (gear and camp kits), selling spare loot from the shared inventory, resting at the inn for gold, and taking quests from the quest board.
+- **v1, three ways in** (Oct 28, 2026, to compare): **v1a, scene, then panels** (above). **v1b, town hub:** a menu screen on the menu backdrop, with the gear screen's top bar (back to map, town name, gold) and one big hex per service. **v1c, straight to services:** walking onto the town opens a pop-up over the dimmed map, in the encounter pop-up's style, with one button per service; Carry on closes it and tapping the town opens it again. All three keep the party tray and the Quests and equipment homes, and open the same panels.
+- **Service panels in v1** (the same in all three; layout not yet reviewed): a cream panel with the service's icon hex, its name, the town name, gold, and a close button that goes back to the way in. **Shop:** Buy and Sell tabs; items as icon hexes with rarity rims on a wood tray (as on the gear screen), each with its price; the picked item's details on the right (tag, name, description, the cards it adds) with Buy or Sell. A bought item pops and flies to the equipment button; selling pops "+[gold]" by the gold. **Inn:** the party's portraits with HP and injuries, chips for what a rest does (heal, injuries, +8 hours, reshuffle deck, hand to 7), and Rest; after resting the bars fill and the chips get ticks. **Quest board:** quest notes pinned on a wooden board, each with Take; a taken quest flies to the Quests button and shows in the quest log.
 
 **After-combat screen** (final: v7, locked Oct 26, 2026, in the Final screens canvas; choices made Oct 26, 2026)
 
@@ -290,6 +292,10 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | The sword pull scene's "[Scene text: …]" lines and [Sword name] (v2–v5 only: social v6 uses the written narration and Excalibur) | Social encounter v2–v5 | Settled (World & story → The sword pull scene) |
 | Three numbered generic enemy tokens beside the Lady when her fight starts (they're water spirits: World & story → The Lady of the Lake); the blessing and curse pop-ups' "+[coins]" / "−[coins]" in v3–v5 (v6 shows +2 / −2) | Social encounter v3–v6 | Enemy roster ([World & story](01 World & story.md) → Open questions) |
 | [Opening quest], [Quest step]; the debug list's [Side quest 1–4], [Curse] and [Passive name] | Exploration v7–v8, social v4–v5 | The opening quest's name and steps ([World & story](01 World & story.md) → Main story outline); the debug entries only fill the lists |
+| [Town name], [Town greeting]; the town shown as a Market town | Town v1 | Town names and lines ([Map & exploration](02 Map & exploration.md) → Open questions) |
+| [gold], [price], +[gold] | Town v1 | Gold prices ([Weapons & gear](04 Weapons & gear.md) → Open questions) |
+| The shop's stock (gear and consumables copied from the gear screen) | Town v1 | What shops stock ([Map & exploration](02 Map & exploration.md) → Open questions) |
+| [Quest giver], [Quest name], [Quest goal], [Reward]; three quests on the board | Town v1 | Quest board quests ([Map & exploration](02 Map & exploration.md) → Open questions) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -306,7 +312,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Weapon mastery | Final (v5c: the weapon hex is the root of the tree) | v5c | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Weapon mastery (working)](https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum) |
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v8, the companions' written chime-in lines, with stage notes in italics) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
-| Town | Not started (a scene on the social screen, with a panel per service: shop buy and sell, inn rest, quest board) | — | — | — |
+| Town | In progress (v1a scene, v1b hub, v1c map pop-up, each with the same panels for shop buy and sell, inn rest and quest board) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
 
 ## Camera and controls
 
@@ -377,4 +383,4 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** feedback on exploration v7 and social v4 (Quests, equipment and passives on screen; camera behind the nav button; no nav button in scenes)
 - [x] ~~Where the passives sit~~ (settled for now Oct 28, 2026: v8b, a sleeve on the party panel; carried into social v5)
 - [ ] **New:** approach tag colours and icons for social options (v1's are placeholders)
-- [ ] **New:** town screen: layout of the service panels (shop buy and sell, inn rest, quest board)
+- [ ] **New:** town screen: which way in (v1a scene, v1b hub, v1c map pop-up), and the layout of the service panels (shop buy and sell, inn rest, quest board)

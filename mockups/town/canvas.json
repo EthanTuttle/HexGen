@@ -1,0 +1,82 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-28T18:00:00Z"
+ },
+ "title": "HexGen · Town (working)",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Town v1a · scene, then panels: the camera holds on the town hex, services are option cards, each opens its own panel. Town name, greeting, gold, prices and quests are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v1b-Hub.dc.html": {
+   "x": 924,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Town v1b · town hub: a menu screen with a button per service, the same panels",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v1c-MapPopup.dc.html": {
+   "x": 1848,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Town v1c · straight to services: walking onto the town opens a pop-up over the map listing its services, each opens its panel",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b.dc.html": {
+   "x": 0,
+   "y": 760,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Town v1a / v1b / v1c opens each variant, and Leave or Back comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d.dc.html": {
+   "x": 924,
+   "y": 760,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
+   "is_interactive": true,
+   "radius": 28
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Town-v1b-Hub.dc.html",
+  "Town-v1c-MapPopup.dc.html",
+  "Ref-Explore-v8b.dc.html",
+  "Ref-Gear-v8d.dc.html"
+ ],
+ "notes": {
+  "v1": {
+   "x": 0,
+   "y": -250,
+   "text": "v1 · three ways into a town. Try the Shop (Buy and Sell), the Inn and the Quest board",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "refs": {
+   "x": 0,
+   "y": 510,
+   "text": "Linked screens · exploration (way in and out) and gear",
+   "kind": "title1",
+   "maxW": 1768
+  }
+ }
+}
