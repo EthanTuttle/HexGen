@@ -36,3 +36,4 @@ This repo holds the design docs for HexGen, Ethan's card-driven, D&D-style hex-c
 - The rules for every screen live in `design/07 Presentation.md`. Mockups only illustrate them.
 - Mockup versions are never changed or overwritten: always make a copy and bump the version (v2, v3a…). Rejected versions stay for reference.
 - The live mockups are Design canvases on claude.ai (links in `design/07 Presentation.md` → Mockup index). `mockups/` holds a copy of each canvas's source (see `mockups/README.md`). The `.dc.html` files need the canvas runtime to render, so they don't open on their own in a browser.
+- Keep `mockups/` in sync: whenever you change a canvas, copy every changed file (artboards and `canvas.json`) into its folder in `mockups/` and commit it in the same turn. A new canvas gets a new folder and a row in `mockups/README.md`.

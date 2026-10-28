@@ -1,11 +1,13 @@
 # Mockups
 
-Source copies of the HexGen Design canvases, taken from claude.ai on Oct 27, 2026. Each folder is one canvas:
+Source copies of the HexGen Design canvases, first taken from claude.ai on Oct 27, 2026 (checked against the live canvases on Oct 28: all match). Each folder is one canvas:
 
 - `canvas.json` is the canvas index: artboard positions, titles, row headings and order.
 - each `.dc.html` file is one artboard's source.
 
 The files need the Design canvas runtime to render, so they won't open on their own in a browser. The live canvases are still where the mockups are viewed and played.
+
+**Keeping them in sync** (agreed Oct 28, 2026): whenever a canvas changes, every changed file (artboards and `canvas.json`) is copied into its folder here and committed in the same turn. A new canvas gets a new folder and a row in the table below.
 
 | Folder | Canvas | Live link |
 | --- | --- | --- |

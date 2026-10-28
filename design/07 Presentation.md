@@ -228,7 +228,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 3. **Study before building:** read the latest artboards of related canvases and reuse their parts: top bar, panels, trays, hex tokens, card anatomy.
 4. **Artboard spec:** 844×390 phone landscape, corner radius 28, interactive. Match the fonts, colours and parts of the latest artboards (the palette and fonts are still placeholders; see Open questions).
 5. **Iterating:** every change is a new numbered artboard (v2, v3a…), titled "<Screen> vN · what changed", with a row heading per version. Old artboards are never edited.
-6. **Same turn:** update the screen's rules in the UI section and the mockup index below.
+6. **Same turn:** update the screen's rules in the UI section and the mockup index below, and copy the changed canvas files into `mockups/` (see [mockups/README.md](../mockups/README.md)).
 7. **Finals:** approved versions are copied into the Final screens canvas, never edited there.
 8. **Placeholders** (agreed Oct 26, 2026): anything undecided shows on the artboard as a bracketed value (e.g. "+[gold]", "[Hero name]"), with no explaining sentence beside it. Notes about what isn't set go in the artboard's canvas title, not on the artboard. Every placeholder gets an open question in the doc that owns the rule, and a row in Mockup placeholders below.
 
