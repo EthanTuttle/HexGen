@@ -1,0 +1,171 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "ActionCards-v1b-FromCombat.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Action cards v1b · from combat (world backdrop, dimmed)",
+      "w": 844,
+      "x": 924,
+      "y": 740
+    },
+    "Main.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Action cards v1a · from the gear screen (menu backdrop)",
+      "w": 844,
+      "x": 0,
+      "y": 740
+    },
+    "Ref-Combat-v11.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Reference · Combat v11 (copied, unchanged)",
+      "w": 844,
+      "x": 924,
+      "y": 0
+    },
+    "Ref-Gear-v8d.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Reference · Character & gear v8d (copied, unchanged)",
+      "w": 844,
+      "x": 0,
+      "y": 0
+    },
+    "v2-Combat.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "v2 · Combat v11, All actions pop-up gains Edit hotbar (opens v2b)",
+      "w": 844,
+      "x": 1848,
+      "y": 1480
+    },
+    "v2-Gear.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "v2 · Gear v8d, Action cards button opens v2a",
+      "w": 844,
+      "x": 0,
+      "y": 1480
+    },
+    "v2a-ActionCards-FromGear.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Action cards v2a · from gear, back returns to gear",
+      "w": 844,
+      "x": 924,
+      "y": 1480
+    },
+    "v2b-ActionCards-FromCombat.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Action cards v2b · from combat, back returns to the fight",
+      "w": 844,
+      "x": 2772,
+      "y": 1480
+    },
+    "v3-Gear.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "v3 · Gear v8d, Action cards button opens v3a",
+      "w": 844,
+      "x": 0,
+      "y": 2220
+    },
+    "v3a-ActionCards-FromGear.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Action cards v3a · trimmed copy, Attack Flip / Save lines, gear-style subtitle",
+      "w": 844,
+      "x": 924,
+      "y": 2220
+    },
+    "v3-Combat.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "v3 · Combat v11 + Edit hotbar (opens v3b)",
+      "w": 844,
+      "x": 1848,
+      "y": 2220
+    },
+    "v3b-ActionCards-FromCombat.dc.html": {
+      "h": 390,
+      "is_interactive": true,
+      "radius": 28,
+      "title": "Action cards v3b · v3a opened from combat",
+      "w": 844,
+      "x": 2772,
+      "y": 2220
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-21T23:04:22Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "refs": {
+      "kind": "title1",
+      "maxW": 1768,
+      "text": "Starting points · gear and combat",
+      "w": 240,
+      "x": 0,
+      "y": -270
+    },
+    "v1": {
+      "kind": "title1",
+      "maxW": 1768,
+      "text": "v1 · action cards, one hotbar per weapon set",
+      "w": 240,
+      "x": 60,
+      "y": 474
+    },
+    "v2": {
+      "kind": "title1",
+      "maxW": 3616,
+      "text": "v2 · linked flow: gear → action cards, combat pop-up → Edit hotbar",
+      "w": 240,
+      "x": 0,
+      "y": 1210
+    },
+    "v3": {
+      "kind": "title1",
+      "maxW": 3616,
+      "text": "v3 · detail and copy fixes",
+      "x": 0,
+      "y": 1950
+    }
+  },
+  "order": [
+    "Ref-Gear-v8d.dc.html",
+    "Ref-Combat-v11.dc.html",
+    "Main.dc.html",
+    "ActionCards-v1b-FromCombat.dc.html",
+    "v2-Gear.dc.html",
+    "v2a-ActionCards-FromGear.dc.html",
+    "v2-Combat.dc.html",
+    "v2b-ActionCards-FromCombat.dc.html",
+    "v3-Gear.dc.html",
+    "v3a-ActionCards-FromGear.dc.html",
+    "v3-Combat.dc.html",
+    "v3b-ActionCards-FromCombat.dc.html"
+  ],
+  "pages": [],
+  "title": "HexGen · Action Cards (working)"
+}

@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Action cards v1b: from combat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+</style>
+</helmet>
+<div onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerLeave="{{dragCancel}}" style="width: 844px; height: 390px; position: relative; overflow: hidden; background: {{bg}}; color: #24302C; font-family: Nunito, sans-serif">
+
+  <sc-if value="{{isMenu}}" hint-placeholder-val="{{ true }}">
+    <svg width="844" height="390" style="position: absolute; left: 0; top: 0; opacity: 0.14" aria-hidden="true">
+      <defs>
+        <pattern id="achex" width="26" height="45" patternUnits="userSpaceOnUse">
+          <path d="M13 0L26 7.5V22.5L13 30L0 22.5V7.5Z M13 30V45" fill="none" stroke="#2F5D52" stroke-width="1"></path>
+        </pattern>
+      </defs>
+      <rect width="844" height="390" fill="url(#achex)"></rect>
+    </svg>
+  </sc-if>
+
+  <sc-if value="{{isCombat}}" hint-placeholder-val="{{ false }}">
+    <svg width="844" height="390" style="position: absolute; left: 0; top: 0" aria-hidden="true">
+      <polygon points="300,40 520,40 600,190 520,340 300,340 220,190" fill="#8DBB7A"></polygon>
+      <polygon points="330,90 400,90 430,150 400,210 330,210 300,150" fill="#5E8F5A" opacity="0.6"></polygon>
+      <polygon points="450,200 500,200 525,250 500,300 450,300 425,250" fill="#A9A39A" opacity="0.6"></polygon>
+    </svg>
+    <span style="position: absolute; inset: 0; background: rgba(36,48,44,0.42)"></span>
+  </sc-if>
+
+  <div style="position: absolute; left: 18px; top: 12px; width: 808px; height: 54px; display: flex; align-items: center; justify-content: space-between">
+    <div style="display: flex; align-items: center; gap: 10px; width: 280px">
+      <button type="button" aria-label="{{backLabel}}" style="width: 44px; height: 51px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 4px 0 #A48A62)">
+        <span style="position: relative; display: block; width: 44px; height: 51px">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+          </span>
+        </span>
+      </button>
+      <div style="display: flex; flex-direction: column">
+        <div style="font-family: 'Lilita One', sans-serif; font-size: 22px; line-height: 1.1; color: {{titleInk}}">{{c.name}}</div>
+        <div style="font-size: 12px; font-weight: 700; color: {{subInk}}">Action cards · {{c.sub}}</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 6px">
+      <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+        <button type="button" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="width: 46px; height: 53px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 4px 0 #A48A62)">
+          <span style="position: relative; display: block; width: 46px; height: 53px">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+            <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: {{p.ink}}; font-family: 'Lilita One', sans-serif; font-size: 19px">{{p.initial}}</span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="width: 280px; display: flex; justify-content: flex-end; align-items: center; gap: 4px">
+      <sc-for list="{{setTabs}}" as="t" hint-placeholder-count="2">
+        <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="height: 40px; padding: 0 16px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{t.bg}}; color: {{t.ink}}; font-family: Nunito, sans-serif; font-weight: 900; font-size: 12px; line-height: 1.1; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center">
+          <span>{{t.label}}</span>
+          <span style="font-size: 11px; font-weight: 700; opacity: 0.85">{{t.gear}}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 18px; top: 76px; width: 610px; height: 192px; box-sizing: border-box; padding: 10px 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; flex-shrink: 0">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 15px">All actions</span>
+      <span style="font-size: 11px; font-weight: 800; color: #43524D">Tap for details · drag onto the hotbar</span>
+    </div>
+    <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px">
+      <sc-for list="{{sections}}" as="sec" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 5px">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <span style="width: 16px; height: 6px; border-radius: 3px; background: {{sec.band}}"></span>
+            <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{sec.ink}}">{{sec.label}}</span>
+            <span style="font-size: 11px; font-weight: 700; color: #43524D">{{sec.note}}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px">
+            <sc-for list="{{sec.tiles}}" as="k" hint-placeholder-count="4">
+              <button type="button" aria-label="{{k.aria}}" onPointerDown="{{k.down}}" style="height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 6px; border: 2px solid {{k.border}}; border-radius: 10px; background: #FCF7EE; cursor: grab; text-align: left; touch-action: none; user-select: none; color: #24302C; font-family: Nunito, sans-serif">
+                <span style="width: 20px; height: 23px; flex-shrink: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{k.apTxt}}</span>
+                <span style="color: {{k.iconInk}}; display: flex; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.icon}}"></path></svg></span>
+                <span style="display: flex; flex-direction: column; min-width: 0">
+                  <span style="font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{k.n}}</span>
+                  <span style="font-size: 11px; font-weight: 700; color: {{k.hotInk}}; white-space: nowrap">{{k.hot}}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 18px; top: 282px; width: 610px; height: 94px; box-sizing: border-box; padding: 0 12px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458; display: flex; align-items: center; gap: 12px">
+    <div style="width: 116px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; color: #24302C">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 17px">Hotbar</span>
+      <span style="font-size: 12px; font-weight: 900">{{setName}}</span>
+      <span style="font-size: 11px; font-weight: 700; color: #3A322A; line-height: 1.25">Each weapon set keeps its own 6</span>
+    </div>
+    <div style="display: flex; gap: 6px">
+      <sc-for list="{{slots}}" as="s" hint-placeholder-count="6">
+        <div data-slot="{{s.idx}}" style="position: relative; width: 66px; height: 76px; box-sizing: border-box; border-radius: 10px; background: #9E8264; box-shadow: inset 0 3px 0 rgba(36,48,44,0.22); outline: {{s.outline}}; outline-offset: 2px">
+          <span style="position: absolute; left: -5px; top: -7px; width: 18px; height: 20px; z-index: 2; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; color: #24302C; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{s.num}}</span>
+          <sc-if value="{{s.filled}}" hint-placeholder-val="{{ true }}">
+            <button type="button" aria-label="{{s.aria}}" onPointerDown="{{s.down}}" style="position: absolute; inset: 0; box-sizing: border-box; padding: 0; border: 2.5px solid {{s.border}}; border-radius: 10px; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62; cursor: grab; overflow: hidden; display: flex; flex-direction: column; align-items: center; touch-action: none; user-select: none; color: #24302C; font-family: Nunito, sans-serif">
+              <span style="display: block; width: 100%; height: 6px; background: {{s.band}}; flex-shrink: 0"></span>
+              <span style="position: absolute; left: 4px; top: 9px; width: 18px; height: 21px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{s.apTxt}}</span>
+              <sc-if value="{{s.repeat}}" hint-placeholder-val="{{ false }}">
+                <span role="img" aria-label="Repeatable" style="position: absolute; right: 4px; top: 10px; color: #2E6B3A; display: flex">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4 M3 11V9a3 3 0 0 1 3-3h15 M7 22l-4-4 4-4 M21 13v2a3 3 0 0 1-3 3H3"></path></svg>
+                </span>
+              </sc-if>
+              <sc-if value="{{s.once}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; right: 4px; top: 10px; font-size: 10px; font-weight: 900; color: #3E5A70">1×</span>
+              </sc-if>
+              <span style="margin-top: 10px; color: {{s.iconInk}}">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+              </span>
+              <span style="margin-top: 2px; padding: 0 3px; font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center">{{s.n}}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #F1E6D2">Empty</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 640px; top: 76px; width: 186px; height: 300px; box-sizing: border-box; padding: 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; flex-direction: column">
+      <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{card.bandInk}}">{{card.srcLabel}} · {{card.apLabel}}</span>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1.1">{{card.n}}</span>
+      <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.3">{{card.desc}}</span>
+    </div>
+    <span style="display: block; height: 2px; background: #A48A62; opacity: 0.5; border-radius: 1px; flex-shrink: 0"></span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px; font-size: 12px">
+      <span style="font-weight: 700; color: #43524D">Use</span>
+      <span style="font-weight: 900">{{card.use}}</span>
+      <span style="font-weight: 700; color: #43524D">Resolved by</span>
+      <span style="font-weight: 900">{{card.by}}</span>
+    </div>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 800; line-height: 1.35; color: {{card.hotInk}}">{{card.hotLine}}</span>
+      <span style="font-size: 11px; font-weight: 700; color: #5A5040; line-height: 1.3">Drag a card onto a slot to place it. Drag between slots to swap, or off the tray to clear.</span>
+    </div>
+  </div>
+
+  <sc-if value="{{hasGhost}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position: absolute; left: {{ghost.left}}; top: {{ghost.top}}; width: 66px; height: 76px; box-sizing: border-box; pointer-events: none; z-index: 30; transform: rotate(-5deg); border: 2.5px solid #B5532F; border-radius: 10px; background: #FCF7EE; box-shadow: 0 6px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.3); overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #24302C">
+      <span style="display: block; width: 100%; height: 6px; background: {{ghost.band}}; flex-shrink: 0"></span>
+      <span style="margin-top: 12px; color: {{ghost.iconInk}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ghost.icon}}"></path></svg></span>
+      <span style="margin-top: 2px; padding: 0 3px; font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center">{{ghost.n}}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"context":{"editor":"enum","options":["gear","combat"],"default":"combat"},"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ctx = this.props.context ?? 'combat';
+    const combat = ctx === 'combat';
+    const st = this.state || {};
+    const ci = st.ci ?? 0;
+    const setIdx = st.set ?? 0;
+
+    const ICON = {
+      move: 'M5 12h11 M12 7l5 5-5 5 M3 5v14',
+      sword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4',
+      defend: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M9 12l2 2 4-4',
+      potion: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10',
+      parry: 'M4 20L16 8 M20 20L8 8 M14 4h6v6 M10 4H4v6',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+      bash: 'M11 4l6 2.5v5c0 4-2.8 6.5-6 7.5-3.2-1-6-3.5-6-7.5v-5z M19 4l2-2 M20 9h3 M19 14l2 2',
+      heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z M12 9v5 M9.5 11.5h5',
+      bolt: 'M13 2L5 14h6l-1 8 8-12h-6z',
+      staff: 'M6 21L15 8 M15 8a3.5 3.5 0 1 1 3-5',
+      wand: 'M5 19L15 9 M17 3v3 M15.5 4.5h3 M20 8v2 M19 9h2',
+      trip: 'M4 20h16 M6 16l6-10 M12 6l6 10',
+      ward: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 8v8 M8 12h8',
+      fire: 'M12 21c-4 0-6-3-6-6 0-4 4-6 4-10 2 2 3 4 3 6 1-1 2-2 2-4 2 2 3 5 3 8 0 3-2 6-6 6z',
+      snow: 'M12 3v18 M4 7.5l16 9 M20 7.5l-16 9',
+      burst: 'M12 2v5 M12 17v5 M2 12h5 M17 12h5 M5 5l3.5 3.5 M15.5 15.5L19 19 M19 5l-3.5 3.5 M8.5 15.5L5 19',
+      chain: 'M4 6l5 4-3 3 6 5 M14 4l3 5-2 2 5 5',
+      mace: 'M5 19l8-8 M13 11a4 4 0 1 0 5-5a4 4 0 0 0-5 5z',
+      hammer: 'M5 19l9-9 M12 4l8 8 M14 2l8 8-3 3-8-8z',
+      cleave: 'M4 20L15 9 M13 4c4 0 7 3 7 7 M9 6c5-2 9 2 9 7',
+      command: 'M4 10v4h3l5 4V6L7 10z M16 8a5 5 0 0 1 0 8 M18 5a9 9 0 0 1 0 14',
+      flame: 'M12 3v4 M12 21a5 5 0 0 0 5-5c0-3-2-5-5-8-3 3-5 5-5 8a5 5 0 0 0 5 5z',
+      star: 'M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.5-4 6-.6z',
+      heal: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M19 5l-2 2 M7 17l-2 2'
+    };
+    const SRC = {
+      basic: { band: '#BFAE8E', ink: '#5A5040', label: 'Basic', iconInk: '#33403B' },
+      weapon: { band: '#5F7F99', ink: '#3E5A70', label: 'Weapon', iconInk: '#3E5A70' },
+      klass: { band: '#B5532F', ink: '#9A4A12', label: 'Class', iconInk: '#9A4A12' }
+    };
+    const basics = (weapon, wIcon) => [
+      { id: 'move', n: 'Move', src: 'basic', ap: 1, repeat: true, icon: 'move', by: 'No check', desc: 'Move a set number of hexes.' },
+      { id: 'attack', n: 'Attack', src: 'basic', ap: 1, repeat: true, icon: wIcon, by: 'Attack flip', desc: 'Basic attack with your ' + weapon + '.' },
+      { id: 'defend', n: 'Defend', src: 'basic', ap: 1, icon: 'defend', by: 'No check', desc: 'Defend or brace.' },
+      { id: 'item', n: 'Use item', src: 'basic', ap: 1, icon: 'potion', by: 'No check', desc: 'Use an equipped consumable.' }
+    ];
+    const W = (id, n, icon, desc, by) => ({ id: id, n: n, src: 'weapon', ap: null, once: true, icon: icon, desc: desc, by: by || 'Attack flip' });
+    const K = (id, n, ap, icon, desc, by) => ({ id: id, n: n, src: 'klass', ap: ap, icon: icon, desc: desc, by: by });
+
+    const CH = [
+      {
+        name: '[Hero name]', sub: 'Human Tactician', initial: 'H', color: '#E9C46A',
+        sets: [
+          { label: 'Set 1', gear: 'Longsword + Shield', weapon: 'longsword', wIcon: 'sword', cards: [W('parry', 'Parry', 'parry', 'Longsword: block the next melee hit.', 'No check'), W('block', 'Block', 'shield', 'Shield: reduce damage this turn.', 'No check'), W('bash', 'Shield Bash', 'bash', 'Shield: push or stun.')] },
+          { label: 'Set 2', gear: 'Greatsword', weapon: 'greatsword', wIcon: 'sword', cards: [W('cleave', 'Cleave', 'cleave', 'Greatsword: hit all adjacent enemies.')] }
+        ],
+        klass: [K('second', 'Second Wind', null, 'heart', 'Fighter: heal yourself.', 'No check'), K('surge', 'Action Surge', null, 'bolt', 'Fighter: gain extra AP this turn.', 'No check'), K('command', 'Command', null, 'command', 'Tactician: give an ally a free action.', 'No check')],
+        hot: [['move', 'attack', 'parry', 'bash', 'second', 'surge'], ['move', 'attack', 'cleave', 'second', 'surge', 'command']]
+      },
+      {
+        name: 'Fluffy', sub: 'Cat Wizard · Companion', initial: 'F', color: '#C9B3E6',
+        sets: [
+          { label: 'Set 1', gear: 'Staff', weapon: 'staff', wIcon: 'staff', cards: [W('trip', 'Trip', 'trip', 'Staff: knock an enemy prone.'), W('ward', 'Ward', 'ward', 'Staff: a small magic shield.', 'No check')] },
+          { label: 'Set 2', gear: 'Wand', weapon: 'wand', wIcon: 'wand', cards: [W('mbolt', 'Magic Bolt', 'wand', 'Wand: basic ranged spell.')] }
+        ],
+        klass: [K('firebolt', 'Firebolt', 1, 'fire', 'Blaster: one heavy-hitting shot.', 'Attack flip'), K('frost', 'Frost Ray', 1, 'snow', 'Blaster: damage plus slow.', 'Attack flip'), K('flameburst', 'Flame Burst', 2, 'burst', 'Blaster: a small explosion hitting a few hexes around the target.', 'Attack flip'), K('spark', 'Chain Spark', 2, 'chain', 'Blaster: lightning that jumps to a second target.', 'Attack flip')],
+        hot: [['move', 'attack', 'firebolt', 'frost', 'trip', 'ward'], ['move', 'attack', 'firebolt', 'frost', 'mbolt', 'flameburst']]
+      },
+      {
+        name: 'Chelmsford', sub: 'Dragonborn Cleric · Companion', initial: 'C', color: '#8EC3F2',
+        sets: [
+          { label: 'Set 1', gear: 'Mace + Shield', weapon: 'mace', wIcon: 'mace', cards: [W('bone', 'Bonebreaker', 'mace', 'Mace: lower enemy movement.'), W('block', 'Block', 'shield', 'Shield: reduce damage this turn.', 'No check'), W('bash', 'Shield Bash', 'bash', 'Shield: push or stun.')] },
+          { label: 'Set 2', gear: 'Warhammer', weapon: 'warhammer', wIcon: 'hammer', cards: [W('shatter', 'Shatter', 'hammer', 'Warhammer: break enemy shields or cover.')] }
+        ],
+        klass: [K('sacred', 'Sacred Flame', 1, 'flame', 'Order of Light: radiant damage.', "Target's DEX save"), K('bless', 'Bless', 1, 'star', 'Order of Good: an ally flips an extra coin on its next check.', 'No save'), K('healing', 'Healing Word', 1, 'heal', 'Order of Good: heal an ally at range.', 'No save'), K('sof', 'Shield of Faith', 1, 'shield', 'Order of Good: an ally is harder to hit.', 'No save'), K('sunspot', 'Sunspot', 1, 'sun', "Aurora's god spell: a patch of light; enemies in it are easier to hit. Concentration.", 'No save')],
+        hot: [['move', 'attack', 'sacred', 'bless', 'bone', 'block'], ['move', 'attack', 'sacred', 'bless', 'shatter', 'healing']]
+      }
+    ];
+
+    const c = CH[ci];
+    const set = c.sets[setIdx];
+    const bars = st.bars ?? CH.map((x) => x.hot.map((b) => b.slice()));
+    const bar = bars[ci][setIdx];
+    const all = basics(set.weapon, set.wIcon).concat(set.cards, c.klass);
+    const byId = {};
+    all.forEach((k) => { byId[k.id] = k; });
+    const sel = byId[st.sel] ? st.sel : 'attack';
+    const card = byId[sel];
+    const apTxt = (k) => (k.ap == null ? '?' : String(k.ap));
+
+    const setBar = (next) => {
+      const nb = bars.map((perChar) => perChar.map((b) => b.slice()));
+      nb[ci][setIdx] = next;
+      return nb;
+    };
+    const slotUnder = (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const s = el && el.closest ? el.closest('[data-slot]') : null;
+      return s ? Number(s.getAttribute('data-slot')) : null;
+    };
+    const startDrag = (id, from) => (e) => {
+      this._drag = { id: id, from: from, x: e.clientX, y: e.clientY, moved: false };
+    };
+
+    const sections = [
+      { key: 'basic', label: 'Basic', note: '· always available', list: basics(set.weapon, set.wIcon) },
+      { key: 'weapon', label: 'Weapon', note: '· ' + set.label + ': ' + set.gear, list: set.cards },
+      { key: 'klass', label: 'Class & spells', note: '· ' + c.sub.split(' · ')[0], list: c.klass }
+    ].map((s) => ({
+      label: s.label, note: s.note, band: SRC[s.key].band, ink: SRC[s.key].ink,
+      tiles: s.list.map((k) => {
+        const at = bar.indexOf(k.id);
+        return {
+          n: k.n, apTxt: apTxt(k), icon: ICON[k.icon], iconInk: SRC[k.src].iconInk,
+          border: k.id === sel ? '#B5532F' : '#E2D5BC',
+          hot: at >= 0 ? 'Slot ' + (at + 1) : SRC[k.src].label, hotInk: at >= 0 ? '#2E6B3A' : '#43524D',
+          aria: k.n + ', ' + apTxt(k) + ' AP' + (at >= 0 ? ', on hotbar slot ' + (at + 1) : ''),
+          down: startDrag(k.id, null)
+        };
+      })
+    }));
+
+    const over = st.over ?? null;
+    const slots = bar.map((id, i) => {
+      const k = id ? byId[id] : null;
+      return {
+        idx: String(i), num: String(i + 1), filled: !!k, empty: !k,
+        outline: over === i ? '3px solid #B5532F' : 'none',
+        n: k ? k.n : '', apTxt: k ? apTxt(k) : '', icon: k ? ICON[k.icon] : '', band: k ? SRC[k.src].band : '#BFAE8E',
+        iconInk: k ? SRC[k.src].iconInk : '#33403B', repeat: !!(k && k.repeat), once: !!(k && k.once),
+        border: k && k.id === sel ? '#B5532F' : '#FCF7EE',
+        aria: k ? 'Hotbar slot ' + (i + 1) + ': ' + k.n : 'Hotbar slot ' + (i + 1) + ': empty',
+        down: k ? startDrag(k.id, i) : () => {}
+      };
+    });
+
+    const drag = st.drag ?? null;
+    const gk = drag ? byId[drag.id] : null;
+    const at = bar.indexOf(sel);
+
+    return {
+      bg: combat ? '#EBD8DE' : '#BFD9D2', isMenu: !combat, isCombat: combat,
+      titleInk: combat ? '#FFF8EE' : '#24302C', subInk: combat ? '#F1E6D2' : '#43524D',
+      backLabel: combat ? 'Back to fight' : 'Back to gear',
+      c: { name: c.name, sub: c.sub },
+      party: CH.map((p, i) => ({
+        initial: p.initial, face: p.color, ink: '#22262E', rim: i === ci ? '#B5532F' : '#BFAE8E', inset: i === ci ? '4px' : '3px',
+        aria: p.name + (i === ci ? ', selected' : ''),
+        pick: () => this.setState({ ci: i, set: 0, sel: 'attack' })
+      })).concat([{ initial: '+', face: '#EDE4D2', ink: '#8A7D66', rim: '#CFC2A8', inset: '3px', aria: 'Empty companion slot', pick: () => {} }]),
+      setTabs: c.sets.map((s, i) => ({
+        label: s.label, gear: s.gear, pressed: i === setIdx ? 'true' : 'false',
+        bg: i === setIdx ? '#24302C' : '#E6DCC8', ink: i === setIdx ? '#F6EEDF' : '#4A4034',
+        pick: () => this.setState({ set: i, sel: 'attack' })
+      })),
+      sections: sections, slots: slots, setName: set.label + ' · ' + set.gear,
+      card: {
+        n: card.n, desc: card.desc, by: card.by, srcLabel: SRC[card.src].label, bandInk: SRC[card.src].ink,
+        apLabel: card.ap == null ? 'AP not set' : card.ap + ' AP',
+        use: card.repeat ? 'Repeatable' : (card.once ? 'Once per turn' : 'Not decided yet'),
+        hotLine: at >= 0 ? 'On the ' + set.label + ' hotbar, slot ' + (at + 1) + '.' : 'Not on the ' + set.label + ' hotbar.',
+        hotInk: at >= 0 ? '#2E6B3A' : '#24302C'
+      },
+      hasGhost: !!(drag && gk),
+      ghost: drag && gk ? { left: (drag.x - 33).toFixed(0) + 'px', top: (drag.y - 50).toFixed(0) + 'px', n: gk.n, icon: ICON[gk.icon], band: SRC[gk.src].band, iconInk: SRC[gk.src].iconInk } : { left: '0px', top: '0px', n: '', icon: '', band: '#BFAE8E', iconInk: '#33403B' },
+      dragMove: (e) => {
+        const d = this._drag; if (!d) return;
+        if (!d.moved && Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true;
+        if (!d.moved) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        const sc = r.width / 844 || 1;
+        this.setState({ drag: { id: d.id, x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc }, over: slotUnder(e) });
+      },
+      dragEnd: (e) => {
+        const d = this._drag; this._drag = null;
+        if (!d) return;
+        if (!d.moved) { this.setState({ sel: d.id }); return; }
+        const to = slotUnder(e);
+        const next = bar.slice();
+        if (to !== null) {
+          if (d.from !== null) { const t = next[to]; next[to] = next[d.from]; next[d.from] = t; }
+          else { const was = next.indexOf(d.id); if (was >= 0) next[was] = next[to]; next[to] = d.id; }
+        } else if (d.from !== null) { next[d.from] = null; }
+        this.setState({ bars: setBar(next), drag: null, over: null, sel: d.id });
+      },
+      dragCancel: () => { if (this._drag) { this._drag = null; this.setState({ drag: null, over: null }); } }
+    };
+  }
+}
+</script>
+</body>
+</html>

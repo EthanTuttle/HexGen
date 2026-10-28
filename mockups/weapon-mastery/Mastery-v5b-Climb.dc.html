@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes avail{0%,100%{filter:drop-shadow(0 3px 0 #A48A62) drop-shadow(0 0 0 rgba(228,181,76,0))}50%{filter:drop-shadow(0 3px 0 #A48A62) drop-shadow(0 0 7px rgba(228,181,76,0.95))}}
+@keyframes learnpop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: {{bg}}; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- Top bar: back, character, party switcher, trainings left (Training Grounds only) -->
+  <header style="position: absolute; left: 12px; top: 10px; right: 12px; height: 56px; display: flex; align-items: center; gap: 10px">
+    <a href="{{backHref}}" aria-label="{{backAria}}" style="display: block; flex-shrink: 0; width: 44px; height: 51px; filter: drop-shadow(0 4px 0 #A48A62)">
+      <span style="position: relative; display: block; width: 44px; height: 51px">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+        </span>
+      </span>
+    </a>
+    <div style="display: flex; flex-direction: column; width: 200px">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 21px; line-height: 1.05">{{c.name}}</span>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D">{{c.sub}}</span>
+    </div>
+    <div style="display: flex; gap: 6px; align-items: center">
+      <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+        <button type="button" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; opacity: {{p.op}}; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: relative; display: block; width: 40px; height: 46px">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+            <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 16px; color: #22262E">{{p.initial}}</span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{atTG}}" hint-placeholder-val="{{ true }}">
+      <span role="img" aria-label="{{tgAria}}" style="margin-left: auto; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 6px; border-radius: 20px; background: #24302C; color: #F6EEDF">
+        <span style="width: 28px; height: 32px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #E4B54C; color: #24302C; display: flex; align-items: center; justify-content: center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4 M6 4h11l-3 4 3 4H6"></path></svg>
+        </span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Training ×{{tLeft}}</span>
+      </span>
+    </sc-if>
+  </header>
+
+  <!-- Weapon tabs: the character's equipped weapon categories (both sets) -->
+  <nav aria-label="Weapons" style="position: absolute; left: 12px; top: 74px; height: 34px; display: flex; gap: 6px">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+      <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="height: 34px; padding: 0 16px 0 10px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{t.bg}}; color: {{t.ink}}; font-family: Nunito, sans-serif; font-size: 12.5px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 6px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"></path></svg>{{t.n}}<span style="opacity: 0.7; font-weight: 800">{{t.count}}</span>
+      </button>
+    </sc-for>
+  </nav>
+
+  <!-- The tree (layout variant: climb) -->
+  <section aria-label="{{treeAria}}" style="position: absolute; left: 12px; top: 116px; width: 594px; height: 262px; box-sizing: border-box; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; overflow: hidden">
+    <sc-for list="{{links}}" as="ln" hint-placeholder-count="9">
+      <span aria-hidden="true" style="position: absolute; left: {{ln.x}}; top: {{ln.y}}; width: {{ln.w}}; height: {{ln.h}}; border-radius: 2px; background: {{ln.bg}}; transform: rotate({{ln.rot}}); transform-origin: 0 50%"></span>
+    </sc-for>
+    <sc-for list="{{slots}}" as="sl" hint-placeholder-count="0">
+      <span aria-hidden="true" style="position: absolute; left: {{sl.x}}; top: {{sl.y}}; width: {{sl.w}}; height: {{sl.h}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: rgba(205,191,166,0.32)"></span>
+    </sc-for>
+    <sc-if value="{{tray.show}}" hint-placeholder-val="{{ false }}">
+      <span aria-hidden="true" style="position: absolute; left: {{tray.x}}; top: {{tray.y}}; width: {{tray.w}}; height: {{tray.h}}; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458"></span>
+    </sc-if>
+    <sc-if value="{{wpn.show}}" hint-placeholder-val="{{ false }}">
+      <span role="img" aria-label="{{wpn.n}}" style="position: absolute; left: {{wpn.x}}; top: {{wpn.y}}; width: {{wpn.w}}; height: {{wpn.h}}; filter: drop-shadow(0 4px 0 {{wpn.edge}})">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{wpn.rim}}"></span>
+        <span style="position: absolute; inset: {{wpn.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{wpn.face}}; color: {{wpn.ink}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+          <svg width="{{wpn.is}}" height="{{wpn.is}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{wpn.icon}}"></path></svg>
+          <span style="font-family: 'Lilita One', sans-serif; font-size: {{wpn.fs}}; line-height: 1">{{wpn.n}}</span>
+        </span>
+      </span>
+    </sc-if>
+    <!-- the weapon's own cards and passives -->
+    <sc-for list="{{bitems}}" as="b" hint-placeholder-count="2">
+      <button type="button" aria-label="{{b.aria}}" onClick="{{b.open}}" style="position: absolute; left: {{b.x}}; top: {{b.y}}; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: {{b.dir}}; align-items: center; gap: {{b.gap}}; font-family: Nunito, sans-serif; color: #24302C">
+        <sc-if value="{{b.asCard}}" hint-placeholder-val="{{ true }}">
+          <span style="position: relative; width: 66px; height: 76px; box-sizing: border-box; border: {{b.borderW}} solid {{b.border}}; border-radius: 10px; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62; overflow: hidden; display: flex; flex-direction: column; align-items: center">
+            <span style="display: block; width: 100%; height: 6px; background: #5F7F99; flex-shrink: 0"></span>
+            <span style="position: absolute; left: 3px; top: 8px; width: 18px; height: 21px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{b.ap}}</span>
+            <span style="margin-top: 10px; color: #3E5A70"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></span>
+            <span style="margin-top: 2px; padding: 0 3px; font-size: 10.5px; font-weight: 900; line-height: 1.1; text-align: center">{{b.n}}</span>
+          </span>
+        </sc-if>
+        <sc-if value="{{b.asTile}}" hint-placeholder-val="{{ false }}">
+          <span style="position: relative; height: 36px; padding: 0 12px 0 5px; box-sizing: border-box; border: {{b.borderW}} solid {{b.border}}; border-radius: 10px; background: {{b.tileBg}}; box-shadow: 0 3px 0 #8F7458; display: flex; align-items: center; gap: 6px">
+            <sc-if value="{{b.hasAp}}" hint-placeholder-val="{{ true }}">
+              <span style="width: 20px; height: 23px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10.5px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{b.ap}}</span>
+            </sc-if>
+            <span style="color: #3E5A70; display: flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></span>
+            <span style="font-size: 11.5px; font-weight: 900; white-space: nowrap">{{b.n}}</span>
+            <sc-if value="{{b.up}}" hint-placeholder-val="{{ false }}">
+              <span style="width: 15px; height: 15px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5 M6 11l6-6 6 6"></path></svg></span>
+            </sc-if>
+          </span>
+        </sc-if>
+        <sc-if value="{{b.asHex}}" hint-placeholder-val="{{ false }}">
+          <span style="position: relative; display: block; flex-shrink: 0; width: {{b.hw}}; height: {{b.hh}}; filter: drop-shadow(0 3px 0 #A48A62)">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{b.rim}}"></span>
+            <span style="position: absolute; inset: {{b.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{b.face}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: #3E5A70">
+              <svg width="{{b.is}}" height="{{b.is}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg>
+              <sc-if value="{{b.nameIn}}" hint-placeholder-val="{{ false }}">
+                <span style="max-width: 88%; font-size: 9px; font-weight: 900; line-height: 1.05; text-align: center; color: #24302C">{{b.n}}</span>
+              </sc-if>
+            </span>
+            <sc-if value="{{b.hasAp}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; left: -2px; top: 4px; width: 16px; height: 18px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{b.ap}}</span>
+            </sc-if>
+            <sc-if value="{{b.up}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; right: -4px; bottom: 0; width: 16px; height: 16px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5 M6 11l6-6 6 6"></path></svg></span>
+            </sc-if>
+          </span>
+        </sc-if>
+        <sc-if value="{{b.nameOut}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 10.5px; font-weight: 900; line-height: 1.1; text-align: {{b.ta}}; color: {{b.labInk}}">{{b.n}}</span>
+        </sc-if>
+      </button>
+    </sc-for>
+    <!-- branch names -->
+    <sc-for list="{{rlabels}}" as="r" hint-placeholder-count="3">
+      <div style="position: absolute; left: {{r.x}}; top: {{r.y}}; display: flex; flex-direction: {{r.dir}}; align-items: flex-start; gap: 4px; opacity: {{r.op}}">
+        <span style="display: flex; align-items: center; gap: 5px; padding: 1px 6px 1px 4px; background: {{r.back}}; font-family: 'Lilita One', sans-serif; font-size: 15px; line-height: 1.1; white-space: nowrap">
+          <sc-if value="{{r.locked}}" hint-placeholder-val="{{ false }}">
+            <svg role="img" aria-label="Locked" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5A5040" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg>
+          </sc-if>{{r.n}}
+        </span>
+        <sc-if value="{{r.twoHanded}}" hint-placeholder-val="{{ false }}">
+          <span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #E6DCC8; font-size: 10px; font-weight: 900; line-height: 18px; white-space: nowrap">Two-handed</span>
+        </sc-if>
+      </div>
+    </sc-for>
+    <!-- nodes -->
+    <sc-for list="{{nodes}}" as="nd" hint-placeholder-count="9">
+      <button type="button" aria-label="{{nd.aria}}" aria-pressed="{{nd.pressed}}" onClick="{{nd.open}}" style="position: absolute; left: {{nd.x}}; top: {{nd.y}}; width: {{nd.w}}; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: {{nd.dir}}; align-items: center; gap: {{nd.gap}}; font-family: Nunito, sans-serif; color: #24302C; opacity: {{nd.op}}">
+        <span style="position: relative; display: block; flex-shrink: 0; width: {{nd.hw}}; height: {{nd.hh}}; filter: drop-shadow(0 3px 0 #A48A62); animation: {{nd.anim}}">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{nd.rim}}"></span>
+          <span style="position: absolute; inset: {{nd.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{nd.face}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: {{nd.ink}}">
+            <svg width="{{nd.is}}" height="{{nd.is}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{nd.icon}}"></path></svg>
+            <sc-if value="{{nd.nameIn}}" hint-placeholder-val="{{ false }}">
+              <span style="max-width: 88%; font-size: 9px; font-weight: 900; line-height: 1.05; text-align: center; color: #24302C">{{nd.n}}</span>
+            </sc-if>
+          </span>
+          <sc-if value="{{nd.done}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; right: -3px; bottom: 0; width: 17px; height: 17px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center; animation: {{nd.pop}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+          </sc-if>
+        </span>
+        <sc-if value="{{nd.nameOut}}" hint-placeholder-val="{{ true }}">
+          <span style="font-size: 10.5px; font-weight: 900; line-height: 1.1; text-align: {{nd.ta}}; max-width: {{nd.nw}}">{{nd.n}}</span>
+        </sc-if>
+      </button>
+    </sc-for>
+  </section>
+
+  <!-- Details: the selected node as the card it gives (or the passive), plus Train at the Training Grounds -->
+  <aside aria-label="Node details" style="position: absolute; left: 618px; top: 76px; width: 214px; height: 302px; box-sizing: border-box; padding: 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 7px">
+    <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{d.tagInk}}">{{d.tag}}</span>
+    <div style="display: flex; gap: 10px; align-items: flex-start">
+      <sc-if value="{{d.isCard}}" hint-placeholder-val="{{ true }}">
+        <span role="img" aria-label="{{d.name}} card" style="position: relative; flex-shrink: 0; width: 66px; height: 76px; box-sizing: border-box; border: 2.5px solid {{d.band}}; border-radius: 10px; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62; overflow: hidden; display: flex; flex-direction: column; align-items: center">
+          <span style="display: block; width: 100%; height: 6px; background: {{d.band}}"></span>
+          <span style="position: absolute; left: 3px; top: 8px; width: 18px; height: 21px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{d.ap}}</span>
+          <span style="margin-top: 10px; color: #3E5A70"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{d.icon}}"></path></svg></span>
+          <span style="margin-top: 2px; padding: 0 3px; font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center">{{d.name}}</span>
+        </span>
+      </sc-if>
+      <sc-if value="{{d.isPassive}}" hint-placeholder-val="{{ false }}">
+        <span role="img" aria-label="Passive" style="position: relative; flex-shrink: 0; display: block; width: 58px; height: 67px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #5F7F99"></span>
+          <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #EAF0F4; display: flex; align-items: center; justify-content: center; color: #3E5A70"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{d.icon}}"></path></svg></span>
+        </span>
+      </sc-if>
+      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">{{d.name}}</span>
+        <sc-if value="{{d.hasWas}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 11px; font-weight: 800; color: #5A5040">Replaces {{d.was}}</span>
+        </sc-if>
+      </div>
+    </div>
+    <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{d.desc}}</span>
+    <sc-if value="{{d.hasNote}}" hint-placeholder-val="{{ false }}">
+      <span style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; background: #F1E8D8; font-size: 11.5px; font-weight: 800; color: #5A5040; line-height: 1.25">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg>{{d.note}}
+      </span>
+    </sc-if>
+    <span style="margin-top: auto"></span>
+    <sc-if value="{{d.learned}}" hint-placeholder-val="{{ false }}">
+      <span style="align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 15px; background: #E9F3E2; color: #2E6B3A; font-size: 12px; font-weight: 900; display: flex; align-items: center; gap: 5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Learned</span>
+    </sc-if>
+    <sc-if value="{{d.canTrain}}" hint-placeholder-val="{{ false }}">
+      <span style="align-self: stretch; filter: drop-shadow(0 4px 0 #7E3519); display: block">
+        <button type="button" onClick="{{d.train}}" style="width: 100%; height: 42px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 16px; cursor: pointer">Train</button>
+      </span>
+    </sc-if>
+  </aside>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const AT = 'tg'; // 'tg' = visiting the Training Grounds (can train); 'gear' = opened from the gear screen (view only)
+    const atTG = AT === 'tg';
+    const st = this.state || {};
+    const IC = {
+      longsword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4', greatsword: 'M19 3L8 14 M19 3h-4 M19 3v4 M5 11l8 8 M7 15l-4 4 M10 12l2 2',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', dagger: 'M14 3l7 7-9 9-3-1-1-3z M5 19l3-3',
+      card: 'M7 4h10v16H7z M10 9h4 M10 13h4', up: 'M12 19V5 M6 11l6-6 6 6', passive: 'M12 3l7 4v10l-7 4-7-4V7z M12 9v6 M9 12h6',
+      star: 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z'
+    };
+    // Trees: Weapons & gear → Weapon mastery (node names decided Oct 26, 2026). k: card = new card, up = upgrade, pas = passive
+    const TREES = {
+      longsword: { n: 'Longsword', icon: IC.longsword, base: [{ n: 'Parry', ap: 1, t: 'Block the next melee hit.' }], rows: [
+        { n: 'Duelist', nodes: [{ k: 'up', n: 'Riposte', was: 'Parry', ap: 1, t: 'A successful Parry triggers a free counterattack.' }, { k: 'card', n: 'Feint', ap: 1, t: 'Your next attack on a foe is easier to hit.' }, { k: 'card', n: 'Perfect Parry', ap: 2, t: 'Parry every melee attack this round and counter each.' }] },
+        { n: 'Warlord', nodes: [{ k: 'card', n: 'Sweep', ap: 1, t: 'Knock a foe back a hex.' }, { k: 'card', n: 'Lunge', ap: 1, t: 'Step forward and attack from 2 hexes away.' }, { k: 'card', n: 'Zone of Steel', ap: 2, t: 'Foes entering adjacent hexes are struck automatically this round.' }] },
+        { n: 'Blademaster', twoHanded: true, nodes: [{ k: 'card', n: 'Overhand Cut', ap: 1, t: 'A heavy downward strike with bonus damage.' }, { k: 'card', n: 'Mordhau', ap: 1, t: 'A reverse-grip pommel strike that stuns (CON save).' }, { k: 'card', n: 'Master Strike', ap: 2, t: "One perfect cut that can't miss and deals heavy damage." }] }
+      ] },
+      shield: { n: 'Shield', icon: IC.shield, base: [{ n: 'Block', ap: 1, t: 'Reduce damage this turn (replaces defend).' }, { n: 'Shield Bash', ap: 1, t: 'Push or stun a foe.' }], rows: [
+        { n: 'Guardian', nodes: [{ k: 'up', n: 'Steady Block', was: 'Block', ap: 1, t: "While Blocking you can't be pushed, pulled or knocked prone." }, { k: 'up', n: 'Steady Block+', was: 'Steady Block', ap: 1, t: 'Block reduces more damage.' }, { k: 'card', n: 'Fortress', ap: 2, t: "Until your next turn, attacks against you flip one fewer coin and Block's reduction is doubled." }] },
+        { n: 'Basher', nodes: [{ k: 'card', n: 'Shield Charge', ap: 2, t: 'Rush a few hexes and Shield Bash the first foe you reach.' }, { k: 'up', n: 'Shield Slam', was: 'Shield Bash', ap: 1, t: 'Shield Bash deals extra damage when it pushes a foe into a wall or another foe.' }, { k: 'card', n: 'Shield Throw', ap: 2, t: 'Hurl your shield so it bounces between up to 3 foes, then returns to you.' }] }
+      ] },
+      greatsword: { n: 'Greatsword', icon: IC.greatsword, base: [{ n: 'Cleave', ap: 1, t: 'Hit all adjacent enemies.' }], rows: [
+        { n: 'Executioner', nodes: [{ k: 'pas', n: 'Heavy Blade', t: 'Greatsword basic attacks deal more damage.' }, { k: 'card', n: 'Pommel Strike', ap: 1, t: 'A small hit that staggers.' }, { k: 'card', n: 'Execute', ap: 2, t: 'Massive damage to a foe below half HP.' }] },
+        { n: 'Sweeper', nodes: [{ k: 'up', n: 'Cleave+', was: 'Cleave', ap: 1, t: 'Cleave deals more damage for each extra foe it hits.' }, { k: 'card', n: 'Spinning Slash', ap: 2, t: 'Move and Cleave along the way.' }, { k: 'card', n: 'Whirlwind', ap: 3, t: 'Spin through a line of foes, hitting each.' }] }
+      ] },
+      dagger: { n: 'Dagger', icon: IC.dagger, base: [{ n: 'Throw', ap: 1, t: 'A ranged attack with the dagger.' }], pas: [{ n: 'Backstab', t: "The first dagger hit from behind each turn deals bonus damage." }], rows: [
+        { n: 'Shadow', nodes: [{ k: 'up', n: 'Backstab+', was: 'Backstab', ap: 0, t: 'Upgrades the Backstab passive: Backstab deals more damage.', mod: true }, { k: 'card', n: 'Shadowstep', ap: 1, t: 'Move behind an adjacent foe.' }, { k: 'card', n: 'Heartseeker', ap: 2, t: "A backstab that can't miss and deals massive damage." }] },
+        { n: 'Thrower', nodes: [{ k: 'up', n: 'Throw+', was: 'Throw', ap: 1, t: 'Throw has longer range.' }, { k: 'card', n: 'Ricochet', ap: 1, t: 'A throw that bounces to a second foe.' }, { k: 'up', n: 'Ricochet+', was: 'Ricochet', ap: 1, t: 'Ricochet bounces to every foe in range.' }] }
+      ] }
+    };
+    // Mockup party: what each has learned so far (placeholder progress)
+    const CH = [
+      { key: 'h', name: '[Hero name]', initial: 'H', color: '#E9C46A', sub: 'Human Tactician · Hero', fighter: true, weapons: ['longsword', 'shield', 'greatsword'], learned0: { longsword: ['0-0'], shield: [], greatsword: ['1-0'] } },
+      { key: 'm', name: 'Mel', initial: 'M', color: '#F4B6A8', sub: 'Rogue · Companion', fighter: false, weapons: ['dagger'], learned0: { dagger: ['0-0'] } }
+    ];
+    const TRAININGS = 1; // placeholder: trainings per visit (Leader: one per visit; others: progression pass)
+    const ci = st.ch ?? 0; const c = CH[ci];
+    const wk = st.w && c.weapons.indexOf(st.w) >= 0 ? st.w : c.weapons[0];
+    const T = TREES[wk];
+    const learned = (st.learned && st.learned[c.key] && st.learned[c.key][wk]) || c.learned0[wk] || [];
+    const used = (st.used && st.used[c.key]) || 0;
+    const tLeft = Math.max(0, TRAININGS - used);
+    const has = (r, i) => learned.indexOf(r + '-' + i) >= 0;
+    const startedRows = T.rows.map((_, r) => has(r, 0));
+    const committed = !c.fighter && startedRows.some(Boolean) ? startedRows.indexOf(true) : -1;
+    const state = (r, i) => {
+      if (has(r, i)) return 'done';
+      if (committed >= 0 && committed !== r) return 'locked';
+      if (i === 0 || has(r, i - 1)) return 'open';
+      return 'later';
+    };
+    // Layout (variant: climb)
+    const LAYOUT = 'climb';
+    const rowsN = T.rows.length;
+    const sel = st.sel && st.sel.w === wk && st.sel.c === c.key ? st.sel : { kind: 'node', r: 0, i: Math.min(learned.length ? 1 : 0, 2) };
+    const KIND = { card: 'New card', up: 'Upgrade', pas: 'Passive' };
+    const P = T.pas || [];
+    const pasUp = (p) => { let up = null; T.rows.forEach((row, r) => row.nodes.forEach((nd, i) => { if (nd.mod && nd.was === p.n && has(r, i)) up = nd; })); return up; };
+    const px = (v) => Math.round(v) + 'px';
+    const LINE = '#CDBFA6', DONE = '#B5532F', LOCKL = 'rgba(205,191,166,0.45)';
+    const links = [], slots = [], nodes = [], rlabels = [], bitems = [];
+    let tray = { show: false, x: '0', y: '0', w: '0', h: '0' }, wpn = { show: false, n: '', x: '0', y: '0', w: '0', h: '0', rim: '', face: '', ink: '', inset: '0', is: '0', fs: '0', icon: '', edge: '' };
+    // straight bar between two points (rotated div)
+    const seg = (x1, y1, x2, y2, done, lock) => { const dx = x2 - x1, dy = y2 - y1, t = done ? 3 : 2; return { x: px(x1), y: (y1 - t / 2) + 'px', w: Math.hypot(dx, dy) + 'px', h: t + 'px', rot: Math.atan2(dy, dx) + 'rad', bg: done ? DONE : (lock ? LOCKL : LINE) }; };
+    // node: mode 'below' | 'right' | 'inside'
+    const node = (r, i, cx, cy, hw, hh, mode, nw) => {
+      const nd = T.rows[r].nodes[i], s = state(r, i), cap = i === 2, on = sel.kind === 'node' && sel.r === r && sel.i === i;
+      const icon = nd.k === 'card' ? (cap ? IC.star : IC.card) : (nd.k === 'up' ? IC.up : IC.passive);
+      const box = mode === 'below' ? { x: cx - 40, y: cy - hh / 2 - 6, w: 80 } : (mode === 'right' ? { x: cx - hw / 2, y: cy - hh / 2, w: hw + 8 + nw } : { x: cx - hw / 2, y: cy - hh / 2, w: hw });
+      nodes.push({ n: nd.n, x: px(box.x), y: px(box.y), w: px(box.w), hw: px(hw), hh: px(hh), is: mode === 'inside' ? '18' : (cap ? '26' : '22'), icon: icon,
+        dir: mode === 'right' ? 'row' : 'column', gap: mode === 'right' ? '8px' : '3px', nameIn: mode === 'inside', nameOut: mode !== 'inside', ta: mode === 'right' ? 'left' : 'center', nw: mode === 'right' ? px(nw) : '80px',
+        rim: on ? '#3F86C8' : (s === 'done' ? '#B5532F' : (s === 'open' ? '#E4B54C' : '#CDBFA6')), inset: on ? '5px' : '3.5px',
+        face: s === 'done' ? '#FFF4E8' : (s === 'open' ? '#FFFBEF' : '#F1E8D8'), ink: s === 'done' ? '#9A4A12' : '#5A5040',
+        op: s === 'locked' ? '0.45' : (s === 'later' ? '0.7' : '1'), done: s === 'done', anim: s === 'open' && atTG && tLeft > 0 ? 'avail 1.6s ease-in-out infinite' : 'none',
+        pop: st.justLearned === wk + r + '-' + i ? 'learnpop 0.45s ease-out' : 'none', pressed: on ? 'true' : 'false',
+        aria: T.rows[r].n + ' ' + (i + 1) + ': ' + nd.n + ' (' + KIND[nd.k] + ', ' + ({ done: 'learned', open: 'can be trained', later: 'needs the previous node', locked: 'locked' })[s] + ')',
+        open: () => this.setState({ sel: { w: wk, c: c.key, kind: 'node', r: r, i: i } }) });
+    };
+    const rlabel = (r, x, y, dir, back) => { const lk = committed >= 0 && committed !== r; rlabels.push({ n: T.rows[r].n, twoHanded: !!T.rows[r].twoHanded, x: px(x), y: px(y), dir: dir, back: back, locked: lk, op: lk ? '0.5' : '1' }); };
+    // base items: the weapon's cards then its passives
+    const BASE = T.base.map((b, i) => ({ kind: 'base', i: i, n: b.n, ap: String(b.ap), icon: T.icon, isCard: true, up: false }))
+      .concat(P.map((p, i) => { const up = pasUp(p); return { kind: 'wpas', i: i, n: up ? up.n : p.n, ap: '', icon: IC.passive, isCard: false, up: !!up }; }));
+    const bitem = (b, x, y, mode, extra) => { const on = sel.kind === b.kind && sel.i === b.i;
+      bitems.push(Object.assign({ n: b.n, ap: b.ap, icon: b.icon, up: b.up, hasAp: b.isCard, x: px(x), y: px(y), dir: 'row', gap: '6px', asCard: false, asTile: false, asHex: false, nameIn: false, nameOut: false, ta: 'left', labInk: '#24302C',
+        border: on ? '#3F86C8' : '#5F7F99', borderW: on ? '3px' : '2.5px', tileBg: b.isCard ? '#FCF7EE' : '#EAF0F4',
+        rim: on ? '#3F86C8' : '#5F7F99', inset: on ? '4.5px' : '3px', face: b.isCard ? '#FCF7EE' : '#EAF0F4', hw: '40px', hh: '46px', is: '18',
+        aria: b.n + (b.isCard ? ', weapon card, ' + b.ap + ' AP' : ', weapon passive, always on'), open: () => this.setState({ sel: { w: wk, c: c.key, kind: b.kind, i: b.i } }) }, mode, extra || {})); };
+
+    if (LAYOUT === 'honey') {
+      // A patch of touching hexes, like placed map tiles: the weapon tile in the middle-left, its cards and passives around it, branches running east
+      const S = 42, W = Math.sqrt(3) * S, H = 2 * S, cx0 = 160, cy0 = 131;
+      const at = (q, r) => ({ x: cx0 + W * (q + r / 2), y: cy0 + 1.5 * S * r });
+      const hw = W - 3, hh = H - 3.5;
+      const RS = rowsN === 3 ? [-1, 0, 1] : [-1, 1], Q0 = { '-1': 1, '0': 1, '1': 0 };
+      const w0 = at(0, 0);
+      wpn = { show: true, n: T.n, x: px(w0.x - hw / 2), y: px(w0.y - hh / 2), w: px(hw), h: px(hh), rim: '#8F7458', face: '#B89C7E', ink: '#FFF8EE', inset: '3.5px', is: '24', fs: '11px', icon: T.icon, edge: '#7A6146' };
+      const spots = T.base.length > 1 ? [[0, -1], [-1, 1], [-1, 0]] : [[-1, 0], [0, -1], [-1, 1]];
+      BASE.forEach((b, k) => { const p = at(spots[k][0], spots[k][1]); bitem(b, p.x - hw / 2, p.y - hh / 2, { asHex: true, nameIn: true, hw: px(hw), hh: px(hh), is: '16' }); });
+      RS.forEach((rr, r) => { for (let i = 0; i < 3; i++) { const p = at(Q0[rr] + i, rr); node(r, i, p.x, p.y, hw, hh, 'inside'); }
+        const e = at(Q0[rr] + 2, rr); rlabel(r, e.x + W / 2 + 8, e.y - 11, 'column', 'transparent'); });
+      if (rowsN === 2) for (let q = 1; q <= 3; q++) { const p = at(q, 0); slots.push({ x: px(p.x - hw / 2), y: px(p.y - hh / 2), w: px(hw), h: px(hh) }); }
+      [[-1, -1], [-2, 1], [1, -2], [0, 2]].forEach(([q, r]) => { const p = at(q, r); if (p.y - hh / 2 > 0 && p.y + hh / 2 < 262 && p.x - hw / 2 > 0) slots.push({ x: px(p.x - hw / 2), y: px(p.y - hh / 2), w: px(hw), h: px(hh) }); });
+    } else if (LAYOUT === 'climb') {
+      // Branches climb in columns from the weapon tray at the bottom; capstones at the top
+      const colW = 594 / rowsN, Y = [170, 114, 56];
+      const cxs = T.rows.map((_, r) => colW * r + (rowsN === 3 ? 40 : 70));
+      T.rows.forEach((row, r) => {
+        const cx = cxs[r];
+        for (let i = 0; i < 3; i++) { const cap = i === 2; node(r, i, cx, Y[i], cap ? 50 : 44, cap ? 58 : 50, 'right', colW - (rowsN === 3 ? 84 : 120)); }
+        for (let i = 0; i < 2; i++) links.push(seg(cx, Y[i] - 25, cx, Y[i + 1] + (i === 1 ? 29 : 25), has(r, i + 1), state(r, i + 1) === 'locked'));
+        links.push(seg(cx, 200, cx, Y[0] + 25, has(r, 0), state(r, 0) === 'locked'));
+        rlabel(r, cx - 22, 5, 'row', '#F6EEDF');
+      });
+      // tray along the bottom with compact tiles
+      const tw = BASE.map((b) => 40 + b.n.length * 7 + (b.isCard ? 26 : 0) + (b.up ? 21 : 0));
+      const tot = tw.reduce((a, b) => a + b, 0) + 8 * (BASE.length - 1) + 20, tx = (594 - tot) / 2;
+      tray = { show: true, x: px(tx), y: '204px', w: px(tot), h: '50px' };
+      links.push(seg(cxs[0], 200, cxs[rowsN - 1], 200, false, false), seg(297, 200, 297, 204, false, false));
+      let x = tx + 10; BASE.forEach((b, k) => { bitem(b, x, 211, { asTile: true }); x += tw[k] + 8; });
+    } else {
+      // 'root': one big weapon hex starts the tree; its cards and passives hang off it as badges; lines fan out to each branch
+      const rowH = rowsN === 3 ? 82 : 110, top0 = rowsN === 3 ? 8 : 18, NX = [300, 400, 506];
+      wpn = { show: true, n: T.n, x: '18px', y: '78px', w: '92px', h: '106px', rim: '#5F7F99', face: '#FCF7EE', ink: '#3E5A70', inset: '4px', is: '38', fs: '13px', icon: T.icon, edge: '#A48A62' };
+      const spots = [[44, 28], [44, 188], [44, 28]];
+      BASE.forEach((b, k) => { bitem(b, spots[k][0] - 20, spots[k][1], { asHex: true, nameOut: true }); links.push(k === 1 ? seg(44, 172, 44, 190, false, false) : seg(44, 72, 44, 92, false, false)); });
+      T.rows.forEach((row, r) => {
+        const cy = top0 + r * rowH + rowH / 2;
+        for (let i = 0; i < 3; i++) node(r, i, NX[i], cy, i === 2 ? 56 : 48, i === 2 ? 65 : 55, 'below');
+        links.push(seg(108, 131, 170, cy, has(r, 0), state(r, 0) === 'locked'), seg(170, cy, NX[0] - 24, cy, has(r, 0), state(r, 0) === 'locked'));
+        for (let i = 0; i < 2; i++) links.push(seg(NX[i] + 24, cy, NX[i + 1] - (i === 1 ? 28 : 24), cy, has(r, i + 1), state(r, i + 1) === 'locked'));
+        rlabel(r, 170, cy - 10 - (row.twoHanded ? 11 : 0), 'column', '#F6EEDF');
+      });
+    }
+    // Details
+    let d;
+    if (sel.kind === 'wpas') {
+      const p = P[sel.i], up = pasUp(p);
+      d = { tag: 'Weapon passive · ' + T.n, tagInk: '#3E5A70', isCard: false, isPassive: true, name: up ? up.n : p.n, ap: '', icon: IC.passive, band: '#5F7F99', desc: up ? p.t + ' ' + up.n + ': ' + up.t.replace(/^Upgrades the [^:]+: /, '') : p.t, hasWas: false, was: '', hasNote: false, note: '', learned: true, canTrain: false, train: () => {} };
+    } else if (sel.kind === 'base') {
+      const b = T.base[sel.i];
+      d = { tag: 'Weapon card · ' + b.ap + ' AP', tagInk: '#3E5A70', isCard: true, isPassive: false, name: b.n, ap: String(b.ap), icon: T.icon, band: '#5F7F99', desc: b.t, hasWas: false, was: '', hasNote: false, note: '', learned: true, canTrain: false, train: () => {} };
+    } else {
+      const nd = T.rows[sel.r].nodes[sel.i], s = state(sel.r, sel.i);
+      const note = s === 'locked' ? 'Only Fighters can mix branches; ' + c.name + ' is on ' + T.rows[committed].n + '.' : (s === 'later' ? 'Needs ' + T.rows[sel.r].nodes[sel.i - 1].n + ' first.' : '');
+      d = { tag: KIND[nd.k] + (nd.k !== 'pas' && !nd.mod ? ' · ' + nd.ap + ' AP' : '') + ' · ' + T.rows[sel.r].n + ' ' + (sel.i + 1), tagInk: nd.k === 'pas' ? '#3E5A70' : '#9A4A12',
+        isCard: nd.k !== 'pas' && !nd.mod, isPassive: nd.k === 'pas' || !!nd.mod, name: nd.n, ap: String(nd.ap ?? ''), icon: nd.k === 'pas' || nd.mod ? IC.passive : T.icon, band: '#5F7F99',
+        desc: nd.t, hasWas: !!nd.was && nd.n.indexOf(nd.was) !== 0, was: nd.was || '', hasNote: !!note, note: note, learned: s === 'done',
+        canTrain: atTG && s === 'open' && tLeft > 0,
+        train: () => { const L = Object.assign({}, st.learned || {}); const mine = Object.assign({}, L[c.key] || {}); mine[wk] = learned.concat([sel.r + '-' + sel.i]); L[c.key] = mine;
+          const U = Object.assign({}, st.used || {}); U[c.key] = used + 1; this.setState({ learned: L, used: U, justLearned: wk + sel.r + '-' + sel.i }); } };
+    }
+    return {
+      bg: atTG ? '#D9E3C8' : '#BFD9D2', atTG: atTG, tLeft: '[' + tLeft + ']', tgAria: 'Training Grounds: [' + tLeft + '] training left this visit',
+      backHref: atTG ? 'Ref-Explore-v6b.dc.html' : 'Ref-Gear-Mastery-v4.dc.html', backAria: atTG ? 'Leave the Training Grounds' : 'Back to the gear screen',
+      c: { name: c.name, sub: c.sub },
+      party: CH.map((x, i) => ({ initial: x.initial, face: x.color, rim: i === ci ? '#B5532F' : '#BFAE8E', inset: i === ci ? '4px' : '3px', op: i === ci ? '1' : '0.75', aria: x.name + (i === ci ? ', shown' : ''),
+        pick: () => this.setState({ ch: i, w: null, sel: null }) })),
+      tabs: c.weapons.map((w) => { const L = ((st.learned && st.learned[c.key] && st.learned[c.key][w]) || c.learned0[w] || []).length; return { n: TREES[w].n, icon: TREES[w].icon, count: L + '/' + TREES[w].rows.length * 3,
+        pressed: w === wk ? 'true' : 'false', bg: w === wk ? '#24302C' : '#F6EEDF', ink: w === wk ? '#F6EEDF' : '#24302C', pick: () => this.setState({ w: w, sel: null }) }; }),
+      treeAria: T.n + ' mastery tree',
+      links: links, slots: slots, tray: tray, wpn: wpn, bitems: bitems, rlabels: rlabels, nodes: nodes, d: d,
+      reset: () => this.setState({ learned: null, used: null, justLearned: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

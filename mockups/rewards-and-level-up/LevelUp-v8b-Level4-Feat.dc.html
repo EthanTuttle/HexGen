@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Level up v8b</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes stepin{0%{transform:translateX(18px);opacity:0}100%{transform:translateX(0);opacity:1}}
+@keyframes coinin{0%{transform:scale(0)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #BFD9D2; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- Top bar -->
+  <header style="position: absolute; left: 12px; top: 10px; right: 12px; height: 56px; display: flex; align-items: center; gap: 12px">
+    <a href="Ref-Explore-LevelBanner.dc.html" aria-label="Back to map (your choices wait)" style="display: block; flex-shrink: 0; width: 44px; height: 51px; filter: drop-shadow(0 4px 0 #A48A62)">
+      <span style="position: relative; display: block; width: 44px; height: 51px">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+        </span>
+      </span>
+    </a>
+    <div style="display: flex; flex-direction: column; width: 170px">
+      <h1 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 22px; font-weight: 400; line-height: 1.05">Level up!</h1>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D">Party level {{lvFrom}} → {{lvTo}}</span>
+    </div>
+    <nav aria-label="Level-up steps" style="display: flex; gap: 6px; align-items: center">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+        <span role="img" aria-label="{{s.aria}}" style="position: relative; display: block; width: {{s.w}}; height: 40px; opacity: {{s.op}}; filter: drop-shadow(0 3px 0 #7E9A92)">
+          <span style="position: absolute; inset: 0; clip-path: {{s.clip}}; background: {{s.rim}}"></span>
+          <span style="position: absolute; inset: 3px; clip-path: {{s.clip}}; background: {{s.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: {{s.fs}}; color: #22262E">{{s.label}}</span>
+          <sc-if value="{{s.done}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; right: -4px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+          </sc-if>
+        </span>
+      </sc-for>
+    </nav>
+  </header>
+
+  <!-- Who -->
+  <aside style="position: absolute; left: 12px; top: 76px; width: 186px; height: 302px; box-sizing: border-box; padding: 14px 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+    <sc-if value="{{isChar}}" hint-placeholder-val="{{ true }}">
+      <span style="position: relative; display: block; width: 92px; height: 106px; filter: drop-shadow(0 4px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{who.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 40px; color: #22262E">{{who.initial}}</span>
+      </span>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">{{who.name}}</span>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D">{{who.sub}}</span>
+      <span role="img" aria-label="Max HP up by [HP]" style="margin-top: 6px; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 8px; border-radius: 17px; background: #E9F3E2; box-shadow: inset 0 0 0 2px #9CC79A; font-family: 'Lilita One', sans-serif; font-size: 16px; color: #2E6B3A">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#C4542A" stroke="none" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.5-10A5 5 0 0 1 12 6.5 5 5 0 0 1 21.5 11c-2 5.4-9.5 10-9.5 10z"></path></svg>Max HP +[HP]
+      </span>
+    </sc-if>
+    <sc-if value="{{isParty}}" hint-placeholder-val="{{ false }}">
+      <div style="display: grid; grid-template-columns: repeat(2, 44px); gap: 6px; justify-content: center; margin-top: 8px">
+        <sc-for list="{{partyFaces}}" as="p" hint-placeholder-count="4">
+          <span style="position: relative; display: block; width: 44px; height: 51px; filter: drop-shadow(0 3px 0 #A48A62)">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #22262E">{{p.initial}}</span>
+          </span>
+        </sc-for>
+      </div>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">The party</span>
+    </sc-if>
+  </aside>
+
+    <!-- Details pop-up for subclasses, cards and spells (same look as the item pop-up; it covers the character card so the choices stay visible) -->
+    <sc-if value="{{hasPop}}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-label="{{pop.name}} details" style="position: absolute; left: 12px; top: 76px; width: 186px; max-height: 302px; overflow-y: auto; box-sizing: border-box; background: #FCF7EE; border-radius: 16px; border: 3px solid {{pop.rim}}; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 5px; z-index: 5">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px">
+          <div style="display: flex; flex-direction: column; min-width: 0">
+            <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{pop.tagInk}}">{{pop.tag}}</span>
+            <span style="font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.1">{{pop.name}}</span>
+          </div>
+          <button type="button" aria-label="Close details" onClick="{{closePop}}" style="width: 44px; height: 44px; margin: -8px -8px -8px 0; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <span style="font-size: 11.5px; font-weight: 700; color: #43524D; line-height: 1.3">{{pop.desc}}</span>
+        <sc-for list="{{pop.lines}}" as="ln" hint-placeholder-count="0">
+          <span style="display: flex; flex-direction: column; gap: 1px; padding: 5px 7px; border-radius: 10px; background: #F3EADA">
+            <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #5A5040">{{ln.k}}</span>
+            <span style="font-size: 11px; font-weight: 800; line-height: 1.25">{{ln.v}}</span>
+          </span>
+        </sc-for>
+        <sc-if value="{{pop.canPick}}" hint-placeholder-val="{{ false }}">
+          <span style="align-self: flex-end; filter: drop-shadow(0 3px 0 #7E3519); display: block; margin-top: 2px">
+            <button type="button" onClick="{{pop.pick}}" style="height: 36px; padding: 0 20px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer">{{pop.pickLabel}}</button>
+          </span>
+        </sc-if>
+        <sc-if value="{{pop.picked}}" hint-placeholder-val="{{ false }}">
+          <span style="align-self: flex-end; height: 30px; padding: 0 12px; border-radius: 15px; background: #E9F3E2; color: #2E6B3A; font-size: 12px; font-weight: 900; display: flex; align-items: center; gap: 5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Chosen</span>
+        </sc-if>
+      </div>
+    </sc-if>
+
+  <!-- What they get -->
+  <section aria-label="{{panelAria}}" style="position: absolute; left: 210px; top: 76px; width: 622px; height: 302px; box-sizing: border-box; padding: 12px 14px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 8px">
+    <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; animation: stepin 0.25s ease-out">
+
+      <!-- Ability point: tiles show each score's coins, as on the gear screen -->
+      <sc-if value="{{hasPts}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 7px">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Place 1 ability point</h2>
+            <span role="img" aria-label="{{ptMark.aria}}" style="width: 16px; height: 16px; border-radius: 50%; background: {{ptMark.bg}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center">
+              <sc-if value="{{ptMark.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+            </span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat({{abCols}}, minmax(0, 1fr)); gap: {{abGap}}">
+            <sc-for list="{{scores}}" as="a" hint-placeholder-count="6">
+              <button type="button" aria-pressed="{{a.pressed}}" aria-label="{{a.aria}}" onClick="{{a.pick}}" style="height: {{a.h}}; box-sizing: border-box; padding: 6px 10px; border: 2.5px solid {{a.border}}; border-radius: 12px; background: {{a.bg}}; color: #24302C; cursor: pointer; display: flex; flex-direction: {{a.dir}}; align-items: center; justify-content: {{a.justify}}; gap: {{a.gap}}; font-family: Nunito, sans-serif">
+                <span style="display: flex; flex-direction: column; align-items: {{a.textAlign}}; gap: 1px">
+                  <span style="font-size: {{a.abFs}}; font-weight: 900; letter-spacing: 0.06em">{{a.ab}}</span>
+                  <span style="font-family: 'Lilita One', sans-serif; font-size: {{a.valFs}}; line-height: 1; color: {{a.valInk}}">{{a.val}}</span>
+                </span>
+                <span style="display: flex; flex-wrap: nowrap; justify-content: center; gap: {{a.coinGap}}; height: {{a.coinSz}}">
+                  <sc-for list="{{a.coins}}" as="coin" hint-placeholder-count="3">
+                    <span style="width: {{a.coinSz}}; height: {{a.coinSz}}; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F, 0 0 0 {{coin.ring}} #2E7A3E; animation: {{coin.anim}}"></span>
+                  </sc-for>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Level 3: one new class card (martials) or 2 spell picks (casters) -->
+      <sc-if value="{{hasL3}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 7px">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">{{l3Title}}</h2>
+            <sc-if value="{{l3Mark.show}}" hint-placeholder-val="{{ true }}">
+              <span role="img" aria-label="{{l3Mark.aria}}" style="width: 16px; height: 16px; border-radius: 50%; background: {{l3Mark.bg}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center">
+                <sc-if value="{{l3Mark.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+              </span>
+            </sc-if><span style="margin-left: auto; font-family: 'Lilita One', sans-serif; font-size: 15px; color: {{l3Ink}}">{{l3Count}}</span>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; row-gap: 4px">
+              <sc-for list="{{l3cards}}" as="g" hint-placeholder-count="3">
+                <button type="button" aria-pressed="{{g.pressed}}" aria-label="{{g.aria}}" onClick="{{g.open}}" style="position: relative; width: 74px; height: 84px; box-sizing: border-box; margin-top: {{g.drop}}; padding: 0; border: {{g.borderW}} {{g.borderStyle}} {{g.border}}; border-radius: 10px; background: {{g.bg}}; box-shadow: {{g.shadow}}; cursor: {{g.cursor}}; overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #24302C; font-family: Nunito, sans-serif; transition: margin-top 0.15s ease">
+                  <span style="display: block; width: 100%; height: 6px; background: {{g.band}}; flex-shrink: 0"></span>
+                  <sc-if value="{{g.hasAp}}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; left: 4px; top: 9px; width: 20px; height: 23px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{g.ap}}</span>
+                  </sc-if>
+                  <sc-if value="{{g.isUp}}" hint-placeholder-val="{{ false }}">
+                    <span role="img" aria-label="Upgraded" style="position: absolute; right: 4px; top: 10px; width: 18px; height: 18px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5 M6 11l6-6 6 6"></path></svg></span>
+                  </sc-if>
+                  <sc-if value="{{g.isNew}}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; right: 3px; top: 10px; height: 16px; padding: 0 5px; border-radius: 8px; background: #B5532F; color: #FFF8EE; font-size: 9px; font-weight: 900; line-height: 16px">New</span>
+                  </sc-if>
+                  <span style="margin-top: 12px; color: {{g.ink}}; opacity: {{g.iconOp}}">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{g.icon}}"></path></svg>
+                  </span>
+                  <span style="margin-top: 3px; padding: 0 4px; font-size: 11px; font-weight: 900; line-height: 1.1; text-align: center">{{g.n}}</span>
+                </button>
+              </sc-for>
+            </div>
+        </div>
+      </sc-if>
+
+      <!-- Level 5: subclass on top, what it gives below -->
+      <sc-if value="{{hasSub}}" hint-placeholder-val="{{ false }}">
+       <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 7px">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Subclass</h2>
+            <sc-if value="{{subMark.show}}" hint-placeholder-val="{{ true }}">
+              <span role="img" aria-label="{{subMark.aria}}" style="width: 16px; height: 16px; border-radius: 50%; background: {{subMark.bg}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center">
+                <sc-if value="{{subMark.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+              </span>
+            </sc-if>
+          </div>
+          <div style="display: flex; gap: 10px">
+              <sc-for list="{{subs}}" as="s" hint-placeholder-count="4">
+                <button type="button" aria-pressed="{{s.pressed}}" aria-label="{{s.aria}}" onClick="{{s.open}}" style="position: relative; width: 66px; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: Nunito, sans-serif; color: #24302C">
+                  <span style="position: relative; display: block; width: 50px; height: 58px; filter: drop-shadow(0 3px 0 #A48A62)">
+                    <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                    <span style="position: absolute; inset: {{s.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: #33403B">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                    </span>
+                  </span>
+                  <span style="font-size: 10.5px; font-weight: 900; line-height: 1.15; text-align: center">{{s.n}}</span>
+                  <sc-if value="{{s.isDefault}}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; left: 50%; top: -9px; transform: translateX(-50%); height: 16px; padding: 0 6px; border-radius: 8px; background: #24302C; color: #F6EEDF; font-size: 9px; font-weight: 900; line-height: 16px; white-space: nowrap">Default</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 7px">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">{{gainTitle}}</h2>
+            <sc-if value="{{gainMark.show}}" hint-placeholder-val="{{ true }}">
+              <span role="img" aria-label="{{gainMark.aria}}" style="width: 16px; height: 16px; border-radius: 50%; background: {{gainMark.bg}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center">
+                <sc-if value="{{gainMark.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+              </span>
+            </sc-if>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; row-gap: 4px">
+              <sc-for list="{{gains}}" as="g" hint-placeholder-count="3">
+                <button type="button" aria-pressed="{{g.pressed}}" aria-label="{{g.aria}}" onClick="{{g.open}}" style="position: relative; width: 74px; height: 84px; box-sizing: border-box; margin-top: {{g.drop}}; padding: 0; border: {{g.borderW}} {{g.borderStyle}} {{g.border}}; border-radius: 10px; background: {{g.bg}}; box-shadow: {{g.shadow}}; cursor: {{g.cursor}}; overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #24302C; font-family: Nunito, sans-serif; transition: margin-top 0.15s ease">
+                  <span style="display: block; width: 100%; height: 6px; background: {{g.band}}; flex-shrink: 0"></span>
+                  <sc-if value="{{g.hasAp}}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; left: 4px; top: 9px; width: 20px; height: 23px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{g.ap}}</span>
+                  </sc-if>
+                  <sc-if value="{{g.isUp}}" hint-placeholder-val="{{ false }}">
+                    <span role="img" aria-label="Upgraded" style="position: absolute; right: 4px; top: 10px; width: 18px; height: 18px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5 M6 11l6-6 6 6"></path></svg></span>
+                  </sc-if>
+                  <sc-if value="{{g.isNew}}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; right: 3px; top: 10px; height: 16px; padding: 0 5px; border-radius: 8px; background: #B5532F; color: #FFF8EE; font-size: 9px; font-weight: 900; line-height: 16px">New</span>
+                  </sc-if>
+                  <span style="margin-top: 12px; color: {{g.ink}}; opacity: {{g.iconOp}}">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{g.icon}}"></path></svg>
+                  </span>
+                  <span style="margin-top: 3px; padding: 0 4px; font-size: 11px; font-weight: 900; line-height: 1.1; text-align: center">{{g.n}}</span>
+                </button>
+              </sc-for>
+            </div>
+        </div>
+       </div>
+      </sc-if>
+
+      <!-- Level 4 / 12: general feats. One scrolling list, details on the right -->
+      <sc-if value="{{hasFeat}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: 12px; flex: 1; min-height: 0">
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 7px">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Pick a feat</h2>
+            <sc-if value="{{featMark.show}}" hint-placeholder-val="{{ true }}">
+              <span role="img" aria-label="{{featMark.aria}}" style="width: 16px; height: 16px; border-radius: 50%; background: {{featMark.bg}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center">
+                <sc-if value="{{featMark.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+              </span>
+            </sc-if><button type="button" role="switch" aria-checked="{{showAllOn}}" onClick="{{toggleAll}}" style="margin-left: auto; height: 28px; padding: 0 4px 0 10px; border: none; border-radius: 14px; background: #E6DCC8; color: #24302C; font-family: Nunito, sans-serif; font-size: 11.5px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 7px">Show all<span style="position: relative; width: 34px; height: 20px; border-radius: 10px; background: {{swBg}}"><span style="position: absolute; top: 2px; left: {{swX}}; width: 16px; height: 16px; border-radius: 50%; background: #FFF8EE; box-shadow: 0 1px 2px rgba(0,0,0,0.25)"></span></span></button>
+          </div>
+            <div role="listbox" aria-label="Feats" style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 4px 2px">
+              <sc-for list="{{featRows}}" as="f" hint-placeholder-count="6">
+                <sc-if value="{{f.isHead}}" hint-placeholder-val="{{ false }}">
+                  <span style="margin-top: 4px; font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #5A5040">{{f.head}}</span>
+                </sc-if>
+                <sc-if value="{{f.isFeat}}" hint-placeholder-val="{{ true }}">
+                  <button type="button" role="option" aria-selected="{{f.sel}}" aria-label="{{f.aria}}" onClick="{{f.open}}" style="flex-shrink: 0; height: 44px; box-sizing: border-box; padding: 0 10px 0 6px; border: {{f.bw}} solid {{f.border}}; border-radius: 12px; background: {{f.bg}}; color: #24302C; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: Nunito, sans-serif; text-align: left; opacity: {{f.op}}">
+                    <span style="position: relative; flex-shrink: 0; width: 28px; height: 32px">
+                      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{f.rim}}"></span>
+                      <span style="position: absolute; inset: 2.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{f.face}}; color: {{f.ink}}; display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"></path></svg></span>
+                    </span>
+                    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                      <span style="font-size: 12.5px; font-weight: 900; line-height: 1.15">{{f.n}}</span>
+                      <span style="font-size: 10.5px; font-weight: 700; color: #43524D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.t}}</span>
+                    </span>
+                    <sc-if value="{{f.hasReq}}" hint-placeholder-val="{{ false }}">
+                      <span style="flex-shrink: 0; display: flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 10px; background: {{f.reqBg}}; color: {{f.reqInk}}; font-size: 10px; font-weight: 900; white-space: nowrap">
+                        <sc-if value="{{f.locked}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg></sc-if>{{f.req}}
+                      </span>
+                    </sc-if>
+                    <sc-if value="{{f.chosen}}" hint-placeholder-val="{{ false }}">
+                      <span role="img" aria-label="Chosen" style="flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+                    </sc-if>
+                  </button>
+                </sc-if>
+              </sc-for>
+            </div>
+          </div>
+          <!-- Feat details -->
+          <div aria-live="polite" style="width: 196px; flex-shrink: 0; box-sizing: border-box; padding: 10px 12px; border-radius: 14px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #E2D5BC; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 10.5px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{fd.tagInk}}">{{fd.tag}}</span>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span style="position: relative; flex-shrink: 0; width: 40px; height: 46px; filter: drop-shadow(0 3px 0 #A48A62)">
+                <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{fd.rim}}"></span>
+                <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{fd.face}}; color: {{fd.ink}}; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{fd.icon}}"></path></svg></span>
+              </span>
+              <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">{{fd.n}}</span>
+            </div>
+            <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{fd.t}}</span>
+            <sc-if value="{{fd.hasReq}}" hint-placeholder-val="{{ false }}">
+              <span style="display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 10px; background: {{fd.reqBg}}; color: {{fd.reqInk}}; font-size: 11.5px; font-weight: 900">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{fd.reqIcon}}"></path></svg>Needs {{fd.req}}
+              </span>
+            </sc-if>
+            <span style="margin-top: auto"></span>
+            <sc-if value="{{fd.canPick}}" hint-placeholder-val="{{ true }}">
+              <span style="align-self: stretch; filter: drop-shadow(0 3px 0 #7E3519); display: block">
+                <button type="button" onClick="{{fd.pick}}" style="width: 100%; height: 38px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer">Choose</button>
+              </span>
+            </sc-if>
+            <sc-if value="{{fd.picked}}" hint-placeholder-val="{{ false }}">
+              <span style="align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 15px; background: #E9F3E2; color: #2E6B3A; font-size: 12px; font-weight: 900; display: flex; align-items: center; gap: 5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Chosen</span>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Party milestone -->
+      <sc-if value="{{isParty}}" hint-placeholder-val="{{ false }}">
+       <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 7px">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Add terrain cards</h2>
+            <span role="img" aria-label="{{terrMark.aria}}" style="width: 16px; height: 16px; border-radius: 50%; background: {{terrMark.bg}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center">
+              <sc-if value="{{terrMark.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+            </span>
+            <span style="margin-left: auto; font-family: 'Lilita One', sans-serif; font-size: 15px; color: {{terrInk}}">{{terrCount}}</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-for list="{{terrains}}" as="tr" hint-placeholder-count="9">
+              <button type="button" aria-pressed="{{tr.pressed}}" aria-label="{{tr.aria}}" onClick="{{tr.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; padding: 0; border: none; background: transparent; cursor: pointer; font-family: Nunito, sans-serif; color: #24302C">
+                <span style="position: relative; display: block; width: 44px; height: 51px; margin-top: {{tr.lift}}; filter: drop-shadow(0 3px 0 {{tr.edge}}); transition: margin-top 0.15s ease">
+                  <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{tr.rim}}"></span>
+                  <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{tr.bg}}; display: flex; align-items: center; justify-content: center; color: {{tr.ink}}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tr.icon}}"></path></svg>
+                  </span>
+                </span>
+                <span style="font-size: 10px; font-weight: 900">{{tr.n}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div role="img" aria-label="Sight range goes from 2 to [wider]" style="align-self: flex-start; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #E2D5BC">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24302C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"></path></svg>
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Sight 2 → [wider]</span>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+
+
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px">
+      <sc-if value="{{canBack}}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{goBack}}" style="height: 42px; padding: 0 18px; border: none; border-radius: 21px; background: #E6DCC8; color: #24302C; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Back</button>
+      </sc-if>
+      <sc-if value="{{showNext}}" hint-placeholder-val="{{ true }}">
+        <span style="filter: {{nextShadow}}; display: block">
+          <button type="button" onClick="{{goNext}}" aria-disabled="{{nextOff}}" style="height: 42px; padding: 0 26px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: {{nextBg}}; color: {{nextInk}}; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer">Next: {{nextName}}</button>
+        </span>
+      </sc-if>
+      <sc-if value="{{showDone}}" hint-placeholder-val="{{ false }}">
+        <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block">
+          <a href="Ref-Explore-v6b.dc.html" style="height: 42px; padding: 0 30px; text-decoration: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; display: flex; align-items: center">Done</a>
+        </span>
+      </sc-if>
+      <sc-if value="{{showDoneOff}}" hint-placeholder-val="{{ false }}">
+        <button type="button" aria-disabled="true" style="height: 42px; padding: 0 30px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #E6DCC8; color: #6B6152; font-family: 'Lilita One', sans-serif; font-size: 15px">Done</button>
+      </sc-if>
+    </div>
+  </section>
+
+</div>
+</x-dc><script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The level reached. What each level grants: Cards & progression → Levels and milestones, General feats; Classes & combat → Class action cards
+    const LEVEL = 4;
+    const st = this.state || {};
+    const L5 = LEVEL === 5;                       // subclass + new card/upgrade or spell, then the party milestone
+    const L3 = LEVEL === 3;                       // martials: one more class card; casters: 2 spell picks
+    const FEAT = LEVEL === 4 || LEVEL === 12;     // general feat pick, nothing else
+    const ASI = LEVEL === 8 || LEVEL === 16;      // +1 ability point
+
+    // Icons are mockup placeholders. Blurbs: Classes & combat → Subclass blurbs (Oct 26, 2026).
+    const IC = {
+      fist: 'M7 11V7a2 2 0 0 1 4 0v3 M11 10V6a2 2 0 0 1 4 0v4 M15 10V8a2 2 0 0 1 4 0v5c0 4-3 7-7 7s-6-2-7-5l-1-3a2 2 0 0 1 3-2l1 1',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M12 8v6 M9 11h6',
+      flag: 'M6 21V4 M6 4h11l-3 4 3 4H6',
+      rune: 'M12 3l7 4v10l-7 4-7-4V7z M12 8v8 M9 10l6 4 M15 10l-6 4',
+      mask: 'M4 8c3-2 13-2 16 0 0 6-3 10-8 10S4 14 4 8z M8.5 11h2 M13.5 11h2',
+      dagger: 'M14 3l7 7-9 9-3-1-1-3z M5 19l3-3',
+      dice: 'M5 5h14v14H5z M9 9h.01 M15 9h.01 M12 12h.01 M9 15h.01 M15 15h.01',
+      sparkle: 'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',
+      orb: 'M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4 0 0 1 4 4',
+      flame: 'M12 21c-4 0-6-3-6-6 0-4 4-6 4-10 3 2 8 6 8 10 0 3-2 6-6 6z',
+      burst: 'M12 2l1.8 4.6L18.5 4l-1.6 4.9 5 .9-4.2 2.7 3.4 3.7-5-.4.4 5L12.9 18 12 23l-.9-5-3.6 2.8.4-5-5 .4 3.4-3.7-4.2-2.7 5-.9L5.5 4l4.7 2.6z M12.7 8.6l-2.4 3.7h3.4l-2.4 3.7',
+      snow: 'M12 2v20 M3.3 7l17.4 10 M3.3 17l17.4-10 M9 4l3 2 3-2 M9 20l3-2 3 2',
+      bolt: 'M13 2L5 14h6l-1 8 8-12h-6z',
+      eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6',
+      drop: 'M12 3c3 4 6 8 6 11a6 6 0 0 1-12 0c0-3 3-7 6-11z',
+      sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1.5 1.5 M17.5 17.5L19 19 M5 19l1.5-1.5 M17.5 6.5L19 5',
+      moon: 'M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z',
+      heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      skull: 'M12 3a7 7 0 0 0-7 7v4l2 2v3h10v-3l2-2v-4a7 7 0 0 0-7-7z M9 11h.01 M15 11h.01',
+      card: 'M7 4h10v16H7z M10 9h4 M10 13h4', star: 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z', leaf: 'M5 19c0-8 6-14 15-14 0 9-6 15-14 15 M5 19l7-7', home: 'M4 11l8-6 8 6 M6 10v9h12v-9', crown: 'M3 8l4 4 5-7 5 7 4-4-2 11H5z', lock: 'M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+      up: 'M12 19V5 M6 11l6-6 6 6'
+    };
+    // Subclasses and their level-5 cards: Classes & combat → Subclasses, Martial class cards, Wizard: Library spell picks, Cleric spells.
+    const SUBS = {
+      fighter: [
+        { id: 'brawler', n: 'Brawler', icon: IC.fist, blurb: "A mighty warrior who won't go down without a fight.", card: { n: 'Bring It', ap: 1, t: 'Taunt adjacent foes to attack you; you take less damage from them until your next turn.' }, upName: 'Second Wind', up: 'Second Wind can be used twice per fight.', upNew: 'Second Wind+' },
+        { id: 'holy', n: 'Holy Defender', icon: IC.shield, blurb: "A righteous champion who smites foes and heals friends.", card: { n: 'Divine Smite', ap: 2, t: 'A weapon attack with heavy radiant bonus damage.' }, upName: 'Second Wind', up: 'Second Wind also heals adjacent allies.', upNew: 'Blessed Wind' },
+        { id: 'tactician', n: 'Tactician', icon: IC.flag, blurb: "A watchful master of war who manipulates the battlefield.", card: { n: 'Reposition', ap: 1, t: 'Swap places with an ally, or move an adjacent ally 2 hexes.' }, upName: 'Action Surge', up: 'Action Surge also gives every ally +1 bonus AP.', upNew: 'Battle Surge' },
+        { id: 'arcane', n: 'Arcane Knight', icon: IC.rune, blurb: "A master of spell and blade, fusing the two arts into one.", card: { n: 'Arcane Shield', ap: 1, t: 'You take less damage until your next turn.' }, upName: 'Second Wind', up: 'Second Wind also grants a ward (a damage-absorbing barrier).', upNew: 'Second Ward' }
+      ],
+      rogue: [
+        { id: 'con', n: 'Con Artist', icon: IC.mask, blurb: "A silver-tongued swindler who talks foes into dropping their guard.", card: { n: 'Fake Surrender', ap: 1, t: 'The foe lowers its guard (CHA save); on a fail, it becomes unaware of you.' }, upName: 'Poison Blade', up: 'Poison Blade becomes Sleeping Draught: hits this turn make foes drowsy.', upNew: 'Sleeping Draught' },
+        { id: 'assassin', n: 'Assassin', icon: IC.dagger, blurb: "A patient killer who strikes from the shadows, then vanishes.", card: { n: 'Vanish', ap: 1, t: 'Become hidden.' }, upName: 'Poison Blade', up: "Poison Blade's poison is deadlier.", upNew: 'Poison Blade+' },
+        { id: 'gambler', n: 'Gambler', icon: IC.dice, blurb: "A reckless risk-taker who bets everything on the flip of a coin.", card: { n: 'Raise the Stakes', ap: 1, t: 'Your next attack needs one more heads to hit, but deals much more damage.' }, upName: 'Poison Blade', up: 'Poison Blade becomes Wild Card: hits this turn apply a random status.', upNew: 'Wild Card' },
+        { id: 'trickster', n: 'Arcane Trickster', icon: IC.sparkle, blurb: "A sly thief who uses magic to gain the advantage.", card: { n: 'Mage Hand', ap: 1, t: 'Disarm a foe at range (STR save).' }, upName: 'Poison Blade', up: 'Hits this turn deal magic damage instead of poison.', upNew: 'Magical Blade' }
+      ],
+      wizard: [
+        { id: 'summoner', n: 'Summoner', icon: IC.orb, blurb: "A binder of souls who calls spirits and steel to fight beside them.", spells: [{ n: 'Unbind', ap: 1, t: 'Release your summon in a burst that hurts foes around it.' }, { n: 'Animate Armor', ap: 3, t: 'A tough suit of armor that absorbs hits aimed at adjacent allies.' }, { n: 'Soul Jar', ap: 2, t: "Trap a dying foe's soul; your next summon is stronger." }] },
+        { id: 'blaster', n: 'Blaster', icon: IC.burst, blurb: "A volatile spellcaster who unleashes fire, ice and lightning.", spells: [{ n: 'Fireball', ap: 3, t: 'Big area fire damage.' }, { n: 'Blizzard', ap: 3, t: 'An ice zone that slows and deals cold damage each turn.' }, { n: 'Chain Lightning', ap: 3, t: 'A bolt that jumps from foe to foe, up to 4.' }] },
+        { id: 'deceiver', n: 'Deceiver', icon: IC.eye, blurb: "A cunning illusionist who turns the enemy's own eyes against them.", spells: [{ n: 'Now You See Me', ap: 2, t: 'Become hidden and leave a decoy behind.' }, { n: 'Psychic Spike', ap: 1, t: 'Psychic damage, more if the foe is unaware of you.' }, { n: 'Nightmare', ap: 2, t: 'A foe takes psychic damage each turn.' }] },
+        { id: 'ritualist', n: 'Ritualist', icon: IC.drop, blurb: "A dark scholar who pays for power in their own blood.", spells: [{ n: 'Soul Siphon', ap: 2, t: 'Drain HP from a foe to heal yourself.' }, { n: 'Blood Bond', ap: 2, t: 'Link two foes; when one is hurt, the other takes half.' }, { n: 'Life Tap', ap: 1, t: 'Pay HP to gain 2 bonus AP this turn.' }] }
+      ],
+      cleric: [
+        { id: 'light', n: 'Order of Light', icon: IC.sun, blurb: "A radiant battle-priest who burns and blinds the wicked.", spells: [{ n: 'Burning Halo', ap: 2, t: 'An ally glows; foes that hit them take radiant damage.' }, { n: 'Sunlit Ground', ap: 2, t: "A zone where allies' attacks deal bonus radiant damage." }, { n: 'Lance of Dawn', ap: 2, t: 'A beam through a line of foes.' }] },
+        { id: 'night', n: 'Order of Night', icon: IC.moon, blurb: "A shadowed mystic who hides allies in darkness and sows fear.", spells: [{ n: 'Terror', ap: 2, t: 'A foe flees.' }, { n: 'Nightmare Shroud', ap: 2, t: 'Foes that attack the ally may become frightened.' }, { n: 'Snuff the Light', ap: 1, t: 'Blind a foe.' }] },
+        { id: 'good', n: 'Order of Good', icon: IC.heart, blurb: "A humble miracle-worker whose prayers can turn the tide.", spells: [{ n: 'Mass Heal', ap: 2, t: 'Heal all allies nearby.' }, { n: 'Miracle of Plenty', ap: 2, t: 'Every ally heals a little; their next consumable is free.' }, { n: 'Purify', ap: 2, t: 'Remove every status effect from every ally.' }] },
+        { id: 'evil', n: 'Order of Evil', icon: IC.skull, blurb: "A grim hexer who curses foes and drains their life away.", spells: [{ n: 'Vampiric Aura', ap: 2, t: 'Allies near you heal a little when they hit.' }, { n: 'Siphon Strength', ap: 2, t: 'A foe loses STR coins and an ally gains them.' }, { n: 'Curse of Ruin', ap: 2, t: 'A foe takes more damage from every source.' }] }
+      ]
+    };
+    // Mockup party (ability values are placeholders)
+    const CH = [
+      { key: 'h', name: '[Hero name]', initial: 'H', color: '#E9C46A', sub: 'Human Fighter · Hero', cls: 'fighter', martial: true, race: 'Human', bg: 'Folk Hero', l3: { n: 'Action Surge', ap: 1, icon: 'bolt', t: 'Gain 3 bonus AP this turn. Once per fight.' }, ab: { STR: 3, DEX: 2, CON: 3, INT: 1, WIS: 1, CHA: 2 } },
+      { key: 'f', name: 'Fluffy', initial: 'F', color: '#C9B3E6', sub: 'Cat Wizard · Companion', cls: 'wizard', martial: false, race: 'Cat', bg: null, def: 'blaster', ab: { STR: 1, DEX: 2, CON: 2, INT: 4, WIS: 2, CHA: 1 } },
+      { key: 'c', name: 'Chelmsford', initial: 'C', color: '#8EC3F2', sub: 'Dragonborn Cleric · Companion', cls: 'cleric', martial: false, race: 'Dragonborn', bg: null, def: 'good', ab: { STR: 3, DEX: 1, CON: 3, INT: 1, WIS: 3, CHA: 2 } },
+      { key: 'm', name: 'Mel', initial: 'M', color: '#F4B6A8', sub: 'Elf Rogue · Companion', cls: 'rogue', martial: true, race: 'Elf', bg: null, l3: { n: 'Poison Blade', ap: 1, icon: 'drop', t: 'Every hit for the rest of this turn poisons.' }, ab: { STR: 1, DEX: 4, CON: 2, INT: 2, WIS: 1, CHA: 3 } }
+    ];
+    const TERR = [
+      ['plains', 'Plains', '#A8CF7E', '#4F7A33', 'M4 18c1-4 2-6 3-7 M7 18c0-3 1-5 2-6 M14 18c1-4 2-6 3-7 M17 18c0-3 1-5 2-6'],
+      ['forest', 'Forest', '#5E8F5A', '#203E1E', 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4'],
+      ['hills', 'Hills', '#BFAE8E', '#5E4C30', 'M2 19l6-9 4 5 3-4 7 8z'],
+      ['swamp', 'Swamp', '#7F9A6E', '#2E4626', 'M6 20v-8 M6 12a2 2 0 0 1 0-4 M12 20V9 M12 9a2 2 0 0 1 0-4 M18 20v-7 M3 20h18'],
+      ['village', 'Village', '#E6C590', '#7A4A22', 'M4 11l8-6 8 6 M6 10v9h12v-9 M10 19v-5h4v5'],
+      ['river', 'River/lake', '#86BEDB', '#245A7E', 'M3 9c3-2 6 2 9 0s6-2 9 0 M3 15c3-2 6 2 9 0s6-2 9 0'],
+      ['desert', 'Desert', '#EDD49A', '#8A6A2A', 'M2 18c4-5 8-5 11-1 M10 16c3-4 8-5 12 0'],
+      ['farmland', 'Farmland', '#DCC562', '#6E5410', 'M12 21V8 M12 12c-3-1-4-3-4-5 3 0 4 2 4 5 M12 12c3-1 4-3 4-5-3 0-4 2-4 5 M12 17c-3-1-4-3-4-5 3 0 4 2 4 5 M12 17c3-1 4-3 4-5-3 0-4 2-4 5'],
+      ['ruins', 'Ruins', '#B3ADA4', '#4E4840', 'M5 20V9 M10 20V7 M15 20v-6 M19 20v-9 M3 20h18 M4 9h7']
+    ];
+    const TERR_PICKS = 3; // placeholder: how many cards a milestone adds isn't set
+    // Level-3 spells (before level 5 casters pick from any school or order): Classes & combat → Wizard spells, Cleric spells
+    const L3SP = {
+      wizard: [['Stone Sentinel', 3, 'Summoner', 'A sturdy construct that taunts: nearby foes must attack it.'], ['Soul Swap', 1, 'Summoner', 'Trade places with any of your summons.'],
+        ['Flame Burst', 2, 'Blaster', 'A small explosion hitting a few hexes around the target.'], ['Chain Spark', 2, 'Blaster', 'Lightning that jumps to a second target.'], ['Ice Wall', 2, 'Blaster', 'A short wall of ice that blocks movement and line of sight. It can be broken.'],
+        ['Mirror Burst', 1, 'Deceiver', 'Pop one of your decoys; foes next to it are blinded (INT save).'], ['Whisper', 2, 'Deceiver', "Convince a foe its ally is the real threat, so its next attack hits that ally (WIS save)."],
+        ['Blood Ward', 1, 'Ritualist', 'Pay HP to give an ally a damage-absorbing barrier.'], ['Hemorrhage', 2, 'Ritualist', 'Curse a foe so it bleeds each turn (CON save).']],
+      cleric: [['Holy Brand', 2, 'Order of Light', "Mark a foe; it takes radiant damage whenever it's hit (CON save)."], ['Dawn Pulse', 2, 'Order of Light', 'A radiant burst around you that hits foes only (DEX save).'],
+        ['Darkness', 2, 'Order of Night', 'A zone of magical darkness that affects foes only; allies inside are hidden.'], ['Shadow Cloak', 1, 'Order of Night', 'An ally in darkness becomes hidden.'],
+        ['Healing Word', 1, 'Order of Good', 'Heal an ally at range.'], ['Sanctuary', 2, 'Order of Good', 'Until your next turn, foes must pass a save to attack a chosen ally.'],
+        ['Curse of Frailty', 2, 'Order of Evil', 'A foe is easier to hit (CON save).'], ['Life Transfer', 2, 'Order of Evil', 'Drain a foe to heal an ally (CON save).']]
+    };
+    const SCHOOL_IC = { Summoner: IC.orb, Blaster: IC.burst, Deceiver: IC.eye, Ritualist: IC.drop, 'Order of Light': IC.sun, 'Order of Night': IC.moon, 'Order of Good': IC.heart, 'Order of Evil': IC.skull };
+    // General feats: Cards & progression → General feats (decided Oct 27, 2026). req: ability score [ab, min], race, background or level
+    const FEATS = [
+      ['Tough', 'gen', 'More max HP', { ab: ['CON', 2] }], ['Opening Strike', 'gen', 'Your first attack each fight flips +1 coin', {}],
+      ['Speedy', 'gen', 'Move covers +1 hex', { ab: ['DEX', 2] }], ['Weapon Training', 'gen', "Use one weapon category outside your class's list (no mastery for it). Humans can already use any weapon, so it does nothing for them", {}],
+      ['Heavy Hitter', 'gen', 'STR weapon basic attacks deal a little more damage', { ab: ['STR', 2] }], ['Keen Eye', 'gen', '+1 sight range', { ab: ['WIS', 2] }],
+      ['Forager', 'gen', 'Resting can yield a healing consumable', {}], ['Surveyor', 'gen', 'Peek at the top card of your map deck', { ab: ['INT', 2] }],
+      ['Skilled', 'gen', 'Learn any one proficiency, or raise one a rank', {}], ['Silver Tongue', 'gen', 'Once per dialogue, reflip a failed social check', { ab: ['CHA', 2] }],
+      ['Rallying Presence', 'gen', 'Allies start each fight with a little temporary HP', { ab: ['CHA', 2] }],
+      ['Quick Study', 'race', 'Class location visits teach 2 skills instead of 1', { race: 'Human' }], ['Light Step', 'race', '+1 coin on Stealth checks', { race: 'Elf' }],
+      ['Unmovable', 'race', "Can't be pushed or pulled", { race: 'Dwarf' }], ['Born Lucky', 'race', 'Lucky gets +1 reflip per rest', { race: 'Halfling' }],
+      ['Deep Breath', 'race', 'Breath weapon reaches 1 hex farther', { race: 'Dragonborn' }], ['Unsettling', 'race', '+1 coin on Intimidate checks', { race: 'Tiefling' }],
+      ['Drilled', 'bg', 'Defend/brace also protects one adjacent ally', { bg: 'Soldier' }], ['Devout', 'bg', "Meditation Rock's blessing lasts 2 fights instead of 1", { bg: 'Acolyte' }],
+      ['Fence', 'bg', 'Sell loot for more gold', { bg: 'Criminal' }], ['Tower Ties', 'bg', 'Wizard towers swap 2 cards per visit instead of 1', { bg: 'Sage' }],
+      ['Local Hero', 'bg', 'Quest boards in villages and inns show 1 extra quest', { bg: 'Folk Hero' }], ['Merchant Ties', 'bg', 'Traveling merchants stay twice as long', { bg: 'Noble' }],
+      ['Hard to Kill', 'l12', 'Once per fight, drop to 1 HP instead of being downed', { lv: 12, ab: ['CON', 3] }], ['Night Owl', 'l12', 'Night fights draw 1 extra card', { lv: 12 }],
+      ['Mulligan', 'l12', 'Once per rest, put a hand card on the bottom of the deck and draw a new one', { lv: 12, ab: ['INT', 3] }], ['Big Hand', 'l12', '+1 hand limit', { lv: 12 }],
+      ['Expert', 'l12', 'Raise one proficiency a rank', { lv: 12 }], ['Dragon Fear', 'l12', 'Breath weapon also frightens foes it hits (WIS save)', { lv: 12, race: 'Dragonborn' }],
+      ['Rock Volley', 'l12', 'Stone throw also hits a foe adjacent to the target', { lv: 12, race: 'Stone golem' }]
+    ];
+    const FGROUP = { gen: ['General', IC.star, '#5F7F99', '#EAF0F4', '#3E5A70'], race: ['Race', IC.leaf, '#4F7A33', '#EEF5E4', '#3D6128'], bg: ['Background', IC.home, '#9A4A12', '#FFF1E2', '#9A4A12'], l12: ['Level 12', IC.crown, '#7A5AA8', '#F1EAF8', '#5A3E86'] };
+
+    const stepCount = CH.length + (L5 ? 1 : 0);
+    const step = Math.min(st.step ?? 0, stepCount - 1);
+    const pts = st.pts ?? {};
+    const subs = st.subs ?? { c: 'good' };
+    const spells = st.spells ?? {};
+    const terr = st.terr ?? [];
+    const pop = st.pop ?? null; // { kind: 'sub' | 'card' | 'up' | 'spell', id }
+    const set = (k, obj, key, val) => { const o = Object.assign({}, obj); o[key] = val; const n = {}; n[k] = o; this.setState(n); };
+    const mark = (done, what) => ({ done: done, bg: done ? '#2E7A3E' : '#E07A2F', aria: done ? what + ': done' : what + ': to do', show: true });
+
+    const l3 = st.l3 ?? {};       // caster: chosen level-3 spells per character
+    const feats = st.feats ?? {}; // chosen feat per character
+    const fsel = st.fsel ?? {};   // feat shown in the details panel, per character
+    const showAll = !!st.showAll;
+    const L3_PICKS = 2;
+    const doneFor = (c) => {
+      if (ASI) return !!pts[c.key];
+      if (FEAT) return !!feats[c.key];
+      if (L3) return c.martial ? true : (l3[c.key] || []).length === L3_PICKS;
+      if (L5) return !!subs[c.key] && (c.martial ? true : !!spells[c.key]);
+      return true;
+    };
+    const partyDone = terr.length === TERR_PICKS;
+    const isParty = L5 && step === CH.length;
+    const c = isParty ? null : CH[step];
+
+    const HEX = 'polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)';
+    const PILL = 'polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%)';
+    const stepsV = CH.map((x, i) => {
+      const on = i === step, done = doneFor(x);
+      return { label: x.initial, w: '35px', clip: HEX, fs: '15px', face: x.color, rim: on ? '#B5532F' : '#BFAE8E', op: on || done ? '1' : '0.55', done: done && !on,
+        aria: x.name + (on ? ', current step' : (done ? ', done' : ', to do')) };
+    });
+    if (L5) stepsV.push({ label: 'Party', w: '64px', clip: PILL, fs: '12px', face: '#F6EEDF', rim: isParty ? '#B5532F' : '#BFAE8E', op: isParty || partyDone ? '1' : '0.55', done: partyDone && !isParty, aria: 'Party milestone' + (isParty ? ', current step' : (partyDone ? ', done' : ', to do')) });
+
+    let out = {
+      lvFrom: String(LEVEL - 1), lvTo: String(LEVEL), steps: stepsV, isParty: isParty, isChar: !isParty,
+      partyFaces: CH.map((x) => ({ initial: x.initial, face: x.color })),
+      panelAria: isParty ? 'Party milestone rewards' : 'Level-up choices',
+      hasSub: false, subs: [], gains: [], scores: [], terrains: [], gainTitle: '',
+      hasPts: false, hasL3: false, l3cards: [], l3Title: '', l3Count: '', l3Ink: '#43524D', l3Mark: { show: false, done: false, bg: '', aria: '' },
+      hasFeat: false, featRows: [], featMark: mark(false, 'Feat'), showAllOn: showAll ? 'true' : 'false', swBg: showAll ? '#2E7A3E' : '#BFAE8E', swX: showAll ? '16px' : '2px',
+      toggleAll: () => this.setState({ showAll: !showAll }),
+      fd: { tag: '', tagInk: '#5A5040', n: '', t: '', icon: '', rim: '#BFAE8E', face: '#FCF7EE', ink: '#24302C', hasReq: false, req: '', reqBg: '', reqInk: '', reqIcon: '', canPick: false, picked: false, pick: () => {} },
+      abCols: '3', abGap: '8px',
+      ptMark: mark(false, 'Ability point'), subMark: mark(false, 'Subclass'), gainMark: mark(false, ''), terrMark: mark(false, 'Terrain cards'),
+      terrCount: '', terrInk: '#43524D', hasPop: false,
+      pop: { tag: '', name: '', rim: '#BFAE8E', tagInk: '#5A5040', desc: '', lines: [], canPick: false, picked: false, pickLabel: '', pick: () => {} }
+    };
+    let popV = null;
+
+    if (c) {
+      const chosen = pts[c.key] || null;
+      out.who = { name: c.name, initial: c.initial, face: c.color, sub: c.sub };
+      out.ptMark = mark(!!chosen, 'Ability point');
+      out.hasPts = ASI;
+      out.scores = Object.keys(c.ab).map((ab) => {
+        const on = chosen === ab;
+        const n = c.ab[ab] + (on ? 1 : 0);
+        return { ab: ab, val: String(n), valInk: on ? '#2E6B3A' : '#24302C',
+          border: on ? '#2E7A3E' : '#E2D5BC', bg: on ? '#E9F3E2' : '#FCF7EE', pressed: on ? 'true' : 'false',
+          h: '96px', dir: 'row', justify: 'space-between', gap: '10px', textAlign: 'flex-start',
+          abFs: '13px', valFs: '34px', coinSz: '18px',
+          // Coins stay on one line: past what fits, they overlap a little instead of wrapping
+          coinGap: n > 6 ? '-6px' : '3px',
+          coins: Array.from({ length: n }, (_, i) => { const added = on && i === n - 1; return { ring: added ? '2px' : '0px', anim: added ? 'coinin 0.35s ease-out' : 'none' }; }),
+          aria: ab + ' ' + c.ab[ab] + (on ? ', plus 1 placed here' : ''),
+          pick: () => set('pts', pts, c.key, on ? null : ab) };
+      });
+      if (L5) {
+        const list = SUBS[c.cls];
+        const sid = subs[c.key] || null;
+        const S = list.find((s) => s.id === sid);
+        out.hasSub = true;
+        out.subMark = mark(!!sid, 'Subclass');
+        out.subs = list.map((s) => {
+          const on = sid === s.id, open = pop && pop.kind === 'sub' && pop.id === s.id;
+          return { n: s.n, icon: s.icon, isDefault: c.def === s.id, pressed: on ? 'true' : 'false', aria: s.n + (on ? ', chosen' : ''),
+            rim: on ? '#B5532F' : (open ? '#3F86C8' : '#BFAE8E'), inset: on ? '5px' : '3.5px', face: on ? '#FFF4E8' : '#FCF7EE',
+            open: () => this.setState({ pop: open ? null : { kind: 'sub', id: s.id } }) };
+        });
+        // Class cards use combat's class colour band; the chosen spell lifts like a picked hotbar card
+        const card = (open, on) => ({ pressed: on ? 'true' : 'false', band: '#B5532F', ink: '#9A4A12', iconOp: '1', bg: on ? '#FFF4E8' : '#FCF7EE',
+          border: on ? '#B5532F' : (open ? '#3F86C8' : '#B5532F'), borderW: on || open ? '3px' : '2.5px', borderStyle: 'solid', shadow: '0 4px 0 #A48A62', drop: on ? '0px' : '8px', cursor: 'pointer' });
+        const EMPTY = (n) => Array.from({ length: n }, () => ({ n: '', icon: '', hasAp: false, ap: '', isNew: false, isUp: false, pressed: 'false', aria: 'Choose a subclass first',
+          band: 'transparent', ink: '#24302C', iconOp: '0', bg: 'transparent', border: '#CDBFA6', borderW: '2px', borderStyle: 'dashed', shadow: 'none', drop: '8px', cursor: 'default', open: () => {} }));
+        const CARD_IC = { 'Second Wind': IC.heart, 'Action Surge': IC.bolt, 'Poison Blade': IC.drop, Fireball: IC.flame, Blizzard: IC.snow, 'Chain Lightning': IC.bolt };
+        const UP_AP = { 'Second Wind': 1, 'Action Surge': 1, 'Poison Blade': 1 };
+        if (c.martial) {
+          out.gainTitle = 'You gain';
+          out.gainMark = { show: false, done: false, bg: '', aria: '' };
+          out.gains = S ? [
+            { n: S.card.n, icon: S.icon, hasAp: true, ap: String(S.card.ap), isNew: true, isUp: false, kind: 'card', aria: 'New card: ' + S.card.n + ', ' + S.card.ap + ' AP' },
+            { n: S.upNew, icon: CARD_IC[S.upName] || IC.up, hasAp: true, ap: String(UP_AP[S.upName] || ''), isNew: false, isUp: true, kind: 'up', aria: 'Upgraded card: ' + S.upNew + ' (was ' + S.upName + ')' }
+          ].map((g) => { const open = pop && pop.kind === g.kind; return Object.assign(g, card(open, false), { open: () => this.setState({ pop: open ? null : { kind: g.kind } }) }); }) : EMPTY(2);
+        } else {
+          out.gainTitle = 'Pick a spell';
+          out.gainMark = mark(!!spells[c.key], 'Spell');
+          out.gains = S ? S.spells.map((p) => {
+            const on = spells[c.key] === p.n, open = pop && pop.kind === 'spell' && pop.id === p.n;
+            return Object.assign({ n: p.n, icon: CARD_IC[p.n] || S.icon, hasAp: true, ap: String(p.ap), isNew: false, isUp: false, aria: p.n + ', ' + p.ap + ' AP' + (on ? ', chosen' : '') },
+              card(open, on), { open: () => this.setState({ pop: open ? null : { kind: 'spell', id: p.n } }) });
+          }) : EMPTY(3);
+        }
+        // Pop-up contents
+        if (pop && pop.kind === 'sub') {
+          const P = list.find((s) => s.id === pop.id);
+          const lines = c.martial
+            ? [{ k: 'New card · ' + P.card.ap + ' AP', v: P.card.n + ': ' + P.card.t }, { k: 'Upgrade · ' + P.upName + ' → ' + P.upNew, v: P.up }]
+            : [{ k: 'Spells to pick from', v: P.spells.map((p) => p.n).join(', ') }];
+          popV = { tag: 'Subclass' + (c.def === P.id ? ' · Default' : ''), name: P.n, desc: P.blurb, lines: lines, canPick: sid !== P.id, picked: sid === P.id, pickLabel: 'Choose',
+            pick: () => { const ns = Object.assign({}, subs); ns[c.key] = P.id; const sp = Object.assign({}, spells); sp[c.key] = null; this.setState({ subs: ns, spells: sp, pop: null }); } };
+        } else if (pop && pop.kind === 'card' && S && S.card) {
+          popV = { tag: 'New card · ' + S.card.ap + ' AP', name: S.card.n, desc: S.card.t, lines: [], canPick: false, picked: false, pickLabel: '', pick: () => {} };
+        } else if (pop && pop.kind === 'up' && S && S.up) {
+          popV = { tag: 'Upgrade', name: S.upNew, desc: S.up, lines: S.upNew.indexOf(S.upName) === 0 ? [] : [{ k: 'Replaces', v: S.upName }], canPick: false, picked: false, pickLabel: '', pick: () => {} };
+        } else if (pop && pop.kind === 'spell' && S && S.spells) {
+          const P = S.spells.find((p) => p.n === pop.id);
+          if (P) popV = { tag: 'Spell · ' + P.ap + ' AP', name: P.n, desc: P.t, lines: [], canPick: spells[c.key] !== P.n, picked: spells[c.key] === P.n, pickLabel: 'Choose',
+            pick: () => { const sp = Object.assign({}, spells); sp[c.key] = P.n; this.setState({ spells: sp, pop: null }); } };
+        }
+      }
+      const card = (open, on) => ({ pressed: on ? 'true' : 'false', band: '#B5532F', ink: '#9A4A12', iconOp: '1', bg: on ? '#FFF4E8' : '#FCF7EE',
+        border: on ? '#B5532F' : (open ? '#3F86C8' : '#B5532F'), borderW: on || open ? '3px' : '2.5px', borderStyle: 'solid', shadow: '0 4px 0 #A48A62', drop: on ? '0px' : '8px', cursor: 'pointer' });
+      if (L3) {
+        out.hasL3 = true;
+        if (c.martial) {
+          out.l3Title = 'You gain';
+          const open = pop && pop.kind === 'l3card';
+          out.l3cards = [Object.assign({ n: c.l3.n, icon: IC[c.l3.icon], hasAp: true, ap: String(c.l3.ap), isNew: true, isUp: false, aria: 'New card: ' + c.l3.n + ', ' + c.l3.ap + ' AP' }, card(open, false),
+            { open: () => this.setState({ pop: open ? null : { kind: 'l3card' } }) })];
+          if (open) popV = { tag: 'New card · ' + c.l3.ap + ' AP', name: c.l3.n, desc: c.l3.t, lines: [], canPick: false, picked: false, pickLabel: '', pick: () => {} };
+        } else {
+          const mine = l3[c.key] || [];
+          out.l3Title = 'Pick ' + L3_PICKS + ' spells';
+          out.l3Mark = mark(mine.length === L3_PICKS, 'Spells');
+          out.l3Count = mine.length + ' / ' + L3_PICKS;
+          out.l3Ink = mine.length === L3_PICKS ? '#2E6B3A' : '#43524D';
+          const toggle = (n) => { const has = mine.indexOf(n) >= 0; const nx = has ? mine.filter((x) => x !== n) : (mine.length < L3_PICKS ? mine.concat([n]) : mine); set('l3', l3, c.key, nx); };
+          out.l3cards = L3SP[c.cls].map((p) => {
+            const on = mine.indexOf(p[0]) >= 0, open = pop && pop.kind === 'l3sp' && pop.id === p[0];
+            return Object.assign({ n: p[0], icon: SCHOOL_IC[p[2]], hasAp: true, ap: String(p[1]), isNew: false, isUp: false, aria: p[0] + ', ' + p[2] + ', ' + p[1] + ' AP' + (on ? ', picked' : '') }, card(open, on),
+              { open: () => this.setState({ pop: open ? null : { kind: 'l3sp', id: p[0] } }) });
+          });
+          if (pop && pop.kind === 'l3sp') {
+            const p = L3SP[c.cls].find((x) => x[0] === pop.id), on = mine.indexOf(p[0]) >= 0, full = mine.length >= L3_PICKS;
+            popV = { tag: 'Spell · ' + p[1] + ' AP', name: p[0], desc: p[3], lines: [{ k: c.cls === 'cleric' ? 'Order' : 'School', v: p[2] }],
+              canPick: true, picked: false, pickLabel: on ? 'Remove' : (full ? 'Swap in' : 'Choose'),
+              pick: () => { if (on || !full) toggle(p[0]); else set('l3', l3, c.key, mine.slice(1).concat([p[0]])); this.setState({ pop: null }); } };
+          }
+        }
+      }
+      if (FEAT) {
+        out.hasFeat = true;
+        const mine = feats[c.key] || null;
+        out.featMark = mark(!!mine, 'Feat');
+        const reqOf = (r) => { const parts = [], miss = [];
+          if (r.lv) { parts.push('Level ' + r.lv); if (LEVEL < r.lv) miss.push('Level ' + r.lv); }
+          if (r.ab) { const s = r.ab[0] + ' ' + r.ab[1] + '+'; parts.push(s); if ((c.ab[r.ab[0]] || 0) < r.ab[1]) miss.push(s); }
+          if (r.race) { parts.push(r.race); if (c.race !== r.race) miss.push(r.race); }
+          if (r.bg) { parts.push(r.bg); if (c.bg !== r.bg) miss.push(r.bg); }
+          return { all: parts.join(', '), miss: miss.join(', '), ok: miss.length === 0 }; };
+        const list = FEATS.map((f) => ({ n: f[0], g: f[1], t: f[2], rq: reqOf(f[3]) }));
+        const shown = list.filter((f) => showAll || f.rq.ok);
+        const ORDER = ['race', 'bg', 'gen', 'l12'], firstF = shown.slice().sort((x, y) => (y.rq.ok - x.rq.ok) || (ORDER.indexOf(x.g) - ORDER.indexOf(y.g)))[0];
+        const curN = fsel[c.key] || mine || (firstF && firstF.n);
+        const rows = [];
+        ['race', 'bg', 'gen', 'l12'].forEach((g) => {
+          const fs = shown.filter((f) => f.g === g);
+          if (!fs.length) return;
+          rows.push({ isHead: true, isFeat: false, head: FGROUP[g][0] });
+          fs.forEach((f) => { const G = FGROUP[g], on = f.n === curN, ch = f.n === mine;
+            rows.push({ isHead: false, isFeat: true, n: f.n, t: f.t, icon: f.rq.ok ? G[1] : IC.lock, rim: G[2], face: G[3], ink: G[4],
+              sel: on ? 'true' : 'false', chosen: ch, op: f.rq.ok ? '1' : '0.6',
+              border: ch ? '#B5532F' : (on ? '#3F86C8' : '#E2D5BC'), bw: ch || on ? '2.5px' : '2px', bg: ch ? '#FFF4E8' : '#FCF7EE',
+              hasReq: !!f.rq.all, locked: !f.rq.ok, req: f.rq.ok ? f.rq.all : f.rq.miss, reqBg: f.rq.ok ? '#E9F3E2' : '#F3E3DC', reqInk: f.rq.ok ? '#2E6B3A' : '#8A3A22',
+              aria: f.n + ': ' + f.t + (f.rq.all ? '. Needs ' + f.rq.all : '') + (f.rq.ok ? '' : ', locked') + (ch ? ', chosen' : ''),
+              open: () => set('fsel', fsel, c.key, f.n) }); });
+        });
+        out.featRows = rows;
+        const F = list.find((f) => f.n === curN);
+        if (F) { const G = FGROUP[F.g];
+          out.fd = { tag: G[0] + ' feat', tagInk: G[4], n: F.n, t: F.t, icon: G[1], rim: G[2], face: G[3], ink: G[4],
+            hasReq: !!F.rq.all, req: F.rq.all, reqBg: F.rq.ok ? '#E9F3E2' : '#F3E3DC', reqInk: F.rq.ok ? '#2E6B3A' : '#8A3A22', reqIcon: F.rq.ok ? 'M5 12l5 5 9-10' : IC.lock,
+            canPick: F.rq.ok && mine !== F.n, picked: mine === F.n, pick: () => set('feats', feats, c.key, F.n) }; }
+      }
+    } else {
+      out.terrains = TERR.map((t) => {
+        const on = terr.indexOf(t[0]) >= 0;
+        return { n: t[1], bg: t[2], ink: t[3], icon: t[4], rim: on ? '#B5532F' : '#FCF7EE', edge: on ? '#7E3519' : '#A48A62', lift: on ? '0px' : '6px', pressed: on ? 'true' : 'false',
+          aria: t[1] + (on ? ', picked' : ''),
+          pick: () => { if (on) this.setState({ terr: terr.filter((x) => x !== t[0]) }); else if (terr.length < TERR_PICKS) this.setState({ terr: terr.concat([t[0]]) }); } };
+      });
+      out.terrCount = terr.length + ' / [' + TERR_PICKS + ']';
+      out.terrInk = partyDone ? '#2E6B3A' : '#43524D';
+      out.terrMark = mark(partyDone, 'Terrain cards');
+    }
+    if (popV) {
+      out.hasPop = true;
+      out.pop = Object.assign({ rim: '#3F86C8', tagInk: '#225C91' }, popV);
+    }
+
+    const curDone = c ? doneFor(c) : partyDone;
+    const last = step === stepCount - 1;
+    const allDone = CH.every(doneFor) && (!L5 || partyDone);
+    const nextName = !last ? (step + 1 < CH.length ? CH[step + 1].name : 'Party') : '';
+    return Object.assign(out, {
+      closePop: () => this.setState({ pop: null }),
+      canBack: step > 0, goBack: () => this.setState({ step: step - 1, pop: null }),
+      showNext: !last, nextName: nextName, nextOff: curDone ? 'false' : 'true',
+      nextBg: curDone ? '#B5532F' : '#E6DCC8', nextInk: curDone ? '#FFF8EE' : '#6B6152', nextShadow: curDone ? 'drop-shadow(0 4px 0 #7E3519)' : 'none',
+      goNext: () => { if (curDone) this.setState({ step: step + 1, pop: null }); },
+      showDone: last && allDone, showDoneOff: last && !allDone
+    });
+  }
+}
+
+</script>
+</body>
+</html>

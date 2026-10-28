@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Style A: Game pieces</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.text}}; font-family: {{t.body}}">
+
+  <svg width="844" height="390" style="position: absolute; left: 0; top: 0; opacity: {{t.patternOp}}" aria-hidden="true">
+    <defs>
+      <pattern id="hexgrid" width="26" height="45" patternUnits="userSpaceOnUse">
+        <path d="M13 0L26 7.5V22.5L13 30L0 22.5V7.5Z M13 30V45" fill="none" stroke="{{t.pattern}}" stroke-width="1"></path>
+      </pattern>
+    </defs>
+    <rect width="844" height="390" fill="url(#hexgrid)"></rect>
+  </svg>
+
+  <div style="position: absolute; left: 0; top: 0; width: 844px; height: 390px; box-sizing: border-box; padding: 12px 18px 14px; display: flex; flex-direction: column; gap: 10px">
+
+    <div style="height: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px; width: 280px">
+        <button type="button" aria-label="Back to map" style="width: 44px; height: 51px; padding: 0; border: none; background: transparent; cursor: pointer; filter: {{t.shadow}}">
+          <span style="position: relative; display: block; width: 44px; height: 51px">
+            <span style="position: absolute; left: 0; top: 0; width: 44px; height: 51px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.btnRim}}"></span>
+            <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.btnFace}}; display: flex; align-items: center; justify-content: center; color: {{t.btnInk}}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+            </span>
+          </span>
+        </button>
+        <div style="display: flex; flex-direction: column">
+          <div style="font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 22px; line-height: 1.1">{{c.name}}</div>
+          <div style="font-size: 12px; font-weight: 700; color: {{t.sub}}">{{c.sub}}</div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px">
+        <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+          <button type="button" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="width: 46px; height: 53px; padding: 0; border: none; background: transparent; cursor: pointer; filter: {{t.shadow}}">
+            <span style="position: relative; display: block; width: 46px; height: 53px">
+              <span style="position: absolute; left: 0; top: 0; width: 46px; height: 53px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+              <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: {{p.ink}}; font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 19px">{{p.initial}}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="width: 280px; display: flex; justify-content: flex-end">
+        <span style="filter: {{t.accentShadow}}; display: block">
+          <button type="button" style="height: 44px; padding: 0 26px; border: none; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); background: {{t.accent}}; color: {{t.accentText}}; font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 16px; display: flex; align-items: center; gap: 8px; cursor: pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h11v14H4z M8 3h12v14"></path></svg>
+            Action cards
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 14px; flex: 1; min-height: 0">
+
+      <div style="width: 118px; flex-shrink: 0; box-sizing: border-box; padding: 12px 12px 10px; background: {{t.panel}}; border: {{t.panelBorder}}; border-radius: {{t.panelRadius}}; box-shadow: {{t.panelShadow}}; display: flex; flex-direction: column; gap: 2px">
+        <div style="font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 15px; margin-bottom: 4px">Abilities</div>
+        <sc-for list="{{c.abilities}}" as="a" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 6px; height: 30px">
+            <span style="width: 30px; font-weight: 900; font-size: 12px; letter-spacing: 0.04em">{{a.k}}</span>
+            <span style="display: flex; gap: 3px; flex: 1">
+              <sc-for list="{{a.coins}}" as="coin" hint-placeholder-count="2">
+                <span style="width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box; background: {{t.coin}}; box-shadow: {{t.coinShadow}}; border: {{t.coinBorder}}"></span>
+              </sc-for>
+            </span>
+            <span style="font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 15px">{{a.v}}</span>
+          </div>
+        </sc-for>
+        <div style="font-size: 11px; font-weight: 700; color: {{t.sub}}; line-height: 1.25; margin-top: auto">Coins flipped per check</div>
+      </div>
+
+      <div style="width: 450px; flex-shrink: 0; display: flex; align-items: center">
+
+        <div style="width: 150px; display: flex; flex-direction: column; align-items: flex-end">
+          <sc-for list="{{leftSlots}}" as="s" hint-placeholder-count="4">
+            <button type="button" aria-label="{{s.aria}}" style="display: flex; align-items: center; gap: 6px; padding: 0; border: none; background: transparent; cursor: pointer; text-align: right; color: {{t.text}}; font-family: {{t.body}}; margin-right: {{s.shift}}; margin-top: {{s.mt}}">
+              <span style="display: flex; flex-direction: column; width: 76px">
+                <span style="font-size: 11px; font-weight: 800; color: {{t.sub}}; white-space: nowrap">{{s.label}}</span>
+                <span style="font-size: 12px; font-weight: 800; color: {{s.nameColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.name}}</span>
+              </span>
+              <span style="position: relative; display: block; width: 44px; height: 51px; flex-shrink: 0; filter: {{t.shadow}}">
+                <span style="position: absolute; left: 0; top: 0; width: 44px; height: 51px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                </span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="width: 150px; display: flex; flex-direction: column; align-items: center; gap: 4px">
+          <span style="position: relative; display: block; width: 120px; height: 138px">
+            <span style="position: absolute; left: 0; top: 0; width: 120px; height: 138px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.figRim}}"></span>
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.figFace}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: {{t.sub}}">
+              <svg width="64" height="88" viewBox="0 0 140 190" aria-hidden="true">
+                <circle cx="70" cy="40" r="17" fill="currentColor" opacity="0.35"></circle>
+                <path d="M44 70 Q70 58 96 70 L102 120 Q96 124 90 120 L88 96 L86 128 L90 174 L76 174 L70 134 L64 174 L50 174 L54 128 L52 96 L50 120 Q44 124 38 120 Z" fill="currentColor" opacity="0.35"></path>
+              </svg>
+              <span style="font-size: 11px; font-weight: 800">[3D model]</span>
+            </span>
+          </span>
+
+          <div style="display: flex; align-items: center; gap: 3px">
+            <button type="button" aria-label="Swap weapon set, now {{setLabel}}" onClick="{{swapSet}}" style="width: 44px; height: 51px; padding: 0; border: none; background: transparent; cursor: pointer; filter: {{t.shadow}}">
+              <span style="position: relative; display: block; width: 44px; height: 51px">
+                <span style="position: absolute; left: 0; top: 0; width: 44px; height: 51px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.accent}}"></span>
+                <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.accent}}; display: flex; flex-direction: column; align-items: center; justify-content: center; color: {{t.accentText}}">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4 M3 8h14 M17 20l4-4-4-4 M21 16H7"></path></svg>
+                  <span style="font-size: 11px; font-weight: 900">{{setShort}}</span>
+                </span>
+              </span>
+            </button>
+            <sc-for list="{{weaponSlots}}" as="s" hint-placeholder-count="2">
+              <button type="button" aria-label="{{s.aria}}" style="width: 48px; height: 55px; padding: 0; border: none; background: transparent; cursor: pointer; filter: {{t.shadow}}">
+                <span style="position: relative; display: block; width: 48px; height: 55px">
+                  <span style="position: absolute; left: 0; top: 0; width: 48px; height: 55px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                  <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                  </span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="font-size: 12px; font-weight: 800; white-space: nowrap">{{weaponCaption}}</div>
+
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px">
+            <sc-for list="{{cons}}" as="s" hint-placeholder-count="2">
+              <button type="button" aria-label="{{s.aria}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: {{t.shadow}}">
+                <span style="position: relative; display: block; width: 40px; height: 46px">
+                  <span style="position: absolute; left: 0; top: 0; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                  <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                  </span>
+                </span>
+              </button>
+            </sc-for>
+            <span style="font-size: 11px; font-weight: 800; color: {{t.sub}}; line-height: 1.2; width: 56px">Belt (2)</span>
+          </div>
+        </div>
+
+        <div style="width: 150px; display: flex; flex-direction: column; align-items: flex-start">
+          <sc-for list="{{rightSlots}}" as="s" hint-placeholder-count="4">
+            <button type="button" aria-label="{{s.aria}}" style="display: flex; align-items: center; gap: 6px; padding: 0; border: none; background: transparent; cursor: pointer; text-align: left; color: {{t.text}}; font-family: {{t.body}}; margin-left: {{s.shift}}; margin-top: {{s.mt}}">
+              <span style="position: relative; display: block; width: 44px; height: 51px; flex-shrink: 0; filter: {{t.shadow}}">
+                <span style="position: absolute; left: 0; top: 0; width: 44px; height: 51px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                </span>
+              </span>
+              <span style="display: flex; flex-direction: column; width: 76px">
+                <span style="font-size: 11px; font-weight: 800; color: {{t.sub}}; white-space: nowrap">{{s.label}}</span>
+                <span style="font-size: 12px; font-weight: 800; color: {{s.nameColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.name}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 0; box-sizing: border-box; padding: 10px 10px 10px; background: {{t.panel}}; border: {{t.panelBorder}}; border-radius: {{t.panelRadius}}; box-shadow: {{t.panelShadow}}; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between">
+          <span style="font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 15px">Party inventory</span>
+          <span style="font-size: 11px; font-weight: 800; color: {{t.sub}}">Shared</span>
+        </div>
+        <div style="display: flex; gap: 4px">
+          <button type="button" onClick="{{pickGear}}" style="flex: 1; height: 34px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{tabGearBg}}; color: {{tabGearInk}}; font-family: {{t.body}}; font-weight: 900; font-size: 12px; cursor: pointer">Gear</button>
+          <button type="button" onClick="{{pickCons}}" style="flex: 1; height: 34px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{tabConsBg}}; color: {{tabConsInk}}; font-family: {{t.body}}; font-weight: 900; font-size: 12px; cursor: pointer">Consumables</button>
+        </div>
+
+        <div style="flex: 1; min-height: 0; padding: 2px 0 0 2px">
+          <sc-for list="{{invRows}}" as="row" hint-placeholder-count="2">
+            <div style="display: flex; gap: 3px; margin-left: {{row.indent}}; margin-top: {{row.mt}}">
+              <sc-for list="{{row.items}}" as="i" hint-placeholder-count="4">
+                <button type="button" aria-label="{{i.aria}}" aria-pressed="{{i.pressed}}" onClick="{{i.pick}}" style="width: 42px; height: 48px; padding: 0; border: none; background: transparent; cursor: pointer; filter: {{t.shadow}}">
+                  <span style="position: relative; display: block; width: 42px; height: 48px">
+                    <span style="position: absolute; left: 0; top: 0; width: 42px; height: 48px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{i.rim}}"></span>
+                    <span style="position: absolute; inset: {{i.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{i.face}}; display: flex; align-items: center; justify-content: center; color: {{i.ink}}">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{i.icon}}"></path></svg>
+                    </span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; border-top: {{t.divider}}; padding-top: 8px">
+          <span style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+            <span style="font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{selItem.name}}</span>
+            <span style="font-size: 11px; font-weight: 700; color: {{t.sub}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{selItem.sub}}</span>
+          </span>
+          <span style="filter: {{t.accentShadow}}; display: block">
+            <button type="button" style="height: 44px; padding: 0 18px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: {{t.accent}}; color: {{t.accentText}}; font-family: {{t.display}}; font-weight: {{t.displayWeight}}; font-size: 14px; cursor: pointer">Equip</button>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  theme() {
+    return {
+      bg: '#BFD9D2', pattern: '#2F5D52', patternOp: '0.14',
+      text: '#24302C', sub: '#43524D',
+      display: "'Lilita One', sans-serif", displayWeight: '400', body: "Nunito, sans-serif",
+      panel: '#F6EEDF', panelBorder: 'none', panelRadius: '18px', panelShadow: '0 5px 0 #CDB894',
+      divider: '2px dashed #DCCDB0',
+      shadow: 'drop-shadow(0 4px 0 #A48A62)', inset: '3px', stroke: '2.1',
+      rim: { C: '#BFAE8E', R: '#3F86C8', L: '#E07A2F' },
+      face: { C: '#FCF7EE', R: '#EAF3FB', L: '#FDEEDF' },
+      ink: { C: '#33403B', R: '#225C91', L: '#9A4A12' },
+      emptyRim: '#CFC2A8', emptyFace: '#EDE4D2', emptyInk: '#8A7D66',
+      btnRim: '#BFAE8E', btnFace: '#FCF7EE', btnInk: '#33403B',
+      figRim: '#BFAE8E', figFace: '#EFE6D4',
+      accent: '#B5532F', accentText: '#FFF8EE', accentShadow: 'drop-shadow(0 4px 0 #7E3519)',
+      selRim: '#B5532F',
+      coin: '#E4B54C', coinShadow: 'inset 0 -2px 0 #A67A1F', coinBorder: 'none',
+      tabOn: '#24302C', tabOnInk: '#F6EEDF', tabOff: '#E6DCC8', tabOffInk: '#4A4034'
+    };
+  }
+  renderVals() {
+    const T = this.theme();
+    const st = this.state || {};
+    const ci = st.ci ?? 0;
+    const setIdx = st.set ?? 0;
+    const tab = st.tab ?? 'gear';
+    const sel = st.sel ?? 0;
+
+    const ICON = {
+      helmet: 'M5 15a7 7 0 0 1 14 0v4H5z M12 8V5',
+      armor: 'M8 3L4 6v6h3v9h10v-9h3V6l-4-3c-1 2-7 2-8 0z',
+      gloves: 'M8 21v-6l-3-4 1.5-1.5L9 12V5a1.2 1.2 0 0 1 2.5 0v5V4a1.2 1.2 0 0 1 2.5 0v6V5a1.2 1.2 0 0 1 2.5 0v9l-1 7z',
+      leggings: 'M7 3h10l1 18h-4l-2-11-2 11H6z',
+      amulet: 'M6 3l6 8 6-8 M12 11a4 4 0 1 0 0 8a4 4 0 1 0 0-8',
+      ring: 'M12 9a6 6 0 1 0 0 12a6 6 0 1 0 0-12 M9.5 4h5l1.5 3h-8z',
+      boots: 'M8 3h6v10l5 2.5V21H7z M7 17h12',
+      sword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+      staff: 'M6 21L15 8 M15 8a3.5 3.5 0 1 1 3-5',
+      wand: 'M5 19L15 9 M17 3v3 M15.5 4.5h3 M20 8v2 M19 9h2',
+      mace: 'M5 19l8-8 M13 11a4 4 0 1 0 5-5a4 4 0 0 0-5 5z',
+      hammer: 'M5 19l9-9 M12 4l8 8 M14 2l8 8-3 3-8-8z',
+      lock: 'M8 11V8a4 4 0 0 1 8 0v3 M6 11h12v9H6z',
+      potion: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10',
+      bomb: 'M11 8a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13 M15 7l3-3 M19 2v1.5 M20.5 4H19',
+      bow: 'M6 3c9 3 9 15 0 18 M6 3v18 M3 12h15 M15 9l3 3-3 3',
+      axe: 'M5 19L15 9 M13 4c5 0 7 3 7 7-3 0-5-1-7-3z',
+      spear: 'M4 20L17 7 M17 7l3-4-4 1z',
+      tent: 'M3 20L12 4l9 16z M12 4v16 M9 20l3-5 3 5',
+      empty: 'M12 9v6 M9 12h6'
+    };
+    const RAR = { C: 'Common', R: 'Rare', L: 'Legendary' };
+    const it = (name, r, icon) => ({ name: name, r: r, icon: icon });
+
+    const chars = [
+      {
+        name: '[Hero name]', sub: 'Human Fighter · Lv 3', initial: 'H', color: '#E9C46A',
+        ab: { STR: 3, DEX: 1, CON: 2, INT: 1, WIS: 1, CHA: 2 },
+        sets: [
+          { main: it('Longsword', 'C', 'sword'), off: it('Shield', 'C', 'shield') },
+          { main: it('Greatsword', 'R', 'sword'), off: null, offNote: 'Two-handed', offIcon: 'lock' }
+        ],
+        slots: { helmet: it('Heavy helm', 'C', 'helmet'), armor: it('Heavy armor', 'C', 'armor'), gloves: it('Gloves', 'C', 'gloves'), leggings: it('Leggings', 'C', 'leggings'), amulet: null, ring1: it('Ring', 'R', 'ring'), ring2: null, boots: it('Boots', 'C', 'boots') },
+        cons: [it('Potion', 'C', 'potion'), it('Throwable', 'C', 'bomb')]
+      },
+      {
+        name: 'Fluffy', sub: 'Cat Wizard · Companion · Lv 3', initial: 'F', color: '#C9B3E6',
+        ab: { STR: 1, DEX: 2, CON: 1, INT: 3, WIS: 1, CHA: 1 },
+        sets: [
+          { main: it('Staff', 'C', 'staff'), off: null, offNote: 'Two-handed', offIcon: 'lock' },
+          { main: it('Wand', 'R', 'wand'), off: null, offNote: 'Empty', offIcon: 'empty' }
+        ],
+        slots: { helmet: null, armor: null, armorNote: 'None (Wizard)', armorIcon: 'lock', gloves: null, leggings: null, amulet: it('Amulet', 'R', 'amulet'), ring1: it('Ring', 'C', 'ring'), ring2: null, boots: null },
+        cons: [it('Potion', 'C', 'potion'), null]
+      },
+      {
+        name: 'Chelmsford', sub: 'Dragonborn Cleric · Companion · Lv 3', initial: 'C', color: '#8EC3F2',
+        ab: { STR: 2, DEX: 1, CON: 2, INT: 1, WIS: 3, CHA: 1 },
+        sets: [
+          { main: it('Mace', 'C', 'mace'), off: it('Shield', 'C', 'shield') },
+          { main: it('Warhammer', 'C', 'hammer'), off: null, offNote: 'Two-handed', offIcon: 'lock' }
+        ],
+        slots: { helmet: it('Medium helm', 'C', 'helmet'), armor: it('Medium armor', 'C', 'armor'), gloves: null, leggings: it('Leggings', 'C', 'leggings'), amulet: it('Amulet', 'C', 'amulet'), ring1: null, ring2: null, boots: it('Boots', 'C', 'boots') },
+        cons: [it('Potion', 'C', 'potion'), it('Potion', 'C', 'potion')]
+      }
+    ];
+    const c = chars[ci];
+
+    const mk = (label, item, note, emptyIcon, slotIcon) => item ? {
+      label: label + ' · ' + RAR[item.r], name: item.name, icon: ICON[item.icon],
+      rim: T.rim[item.r], face: T.face[item.r], ink: T.ink[item.r], nameColor: T.text,
+      aria: label + ': ' + item.name + ', ' + RAR[item.r]
+    } : {
+      label: label, name: note || 'Empty', icon: ICON[emptyIcon || slotIcon || 'empty'],
+      rim: T.emptyRim, face: T.emptyFace, ink: T.emptyInk, nameColor: T.sub,
+      aria: label + ': ' + (note || 'empty')
+    };
+
+    const s = c.slots;
+    const left = [mk('Helmet', s.helmet, null, null, 'helmet'), mk('Armor', s.armor, s.armorNote, s.armorIcon, 'armor'), mk('Gloves', s.gloves, null, null, 'gloves'), mk('Leggings', s.leggings, null, null, 'leggings')];
+    const right = [mk('Amulet', s.amulet, null, null, 'amulet'), mk('Ring', s.ring1, null, null, 'ring'), mk('Ring', s.ring2, null, null, 'ring'), mk('Boots', s.boots, null, null, 'boots')];
+    const zig = (arr) => arr.map((x, i) => Object.assign(x, { shift: i % 2 ? '25px' : '0px', mt: i ? '-8px' : '0px' }));
+
+    const ws = c.sets[setIdx];
+    const weaponSlots = [mk('Main hand', ws.main, null, null, 'sword'), mk('Off hand', ws.off, ws.offNote, ws.offIcon, 'shield')];
+    const weaponCaption = ws.main.name + (ws.off ? ' + ' + ws.off.name : ' · ' + ws.offNote);
+    const cons = c.cons.map((x) => mk('Belt item', x, null, null, 'potion'));
+
+    const abilities = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map((k) => ({
+      k: k, v: c.ab[k], coins: Array.from({ length: c.ab[k] }, (_, i) => ({ i: i }))
+    }));
+
+    const party = chars.map((p, i) => ({
+      initial: p.initial, face: p.color, ink: '#22262E',
+      rim: i === ci ? T.selRim : T.btnRim, inset: i === ci ? '4px' : T.inset,
+      aria: p.name + (i === ci ? ', selected' : ''),
+      pick: () => this.setState({ ci: i, set: 0 })
+    })).concat([{
+      initial: '+', face: T.emptyFace, ink: T.emptyInk, rim: T.emptyRim, inset: T.inset,
+      aria: 'Empty companion slot', pick: () => {}
+    }]);
+
+    const gearInv = [
+      { name: 'Shortbow', r: 'C', icon: 'bow', sub: 'Common · Two-handed' },
+      { name: 'Dagger', r: 'R', icon: 'sword', sub: 'Rare · One-handed' },
+      { name: 'Battleaxe', r: 'C', icon: 'axe', sub: 'Common · Versatile' },
+      { name: 'Light armor', r: 'C', icon: 'armor', sub: 'Common · Armor' },
+      { name: 'Ring', r: 'R', icon: 'ring', sub: 'Rare · Trinket' },
+      { name: 'Spear', r: 'L', icon: 'spear', sub: 'Legendary · Versatile, Reach' }
+    ];
+    const consInv = [
+      { name: 'Potion ×4', r: 'C', icon: 'potion', sub: 'Common · Consumable' },
+      { name: 'Throwable ×2', r: 'C', icon: 'bomb', sub: 'Common · Consumable' },
+      { name: 'Camp kit ×1', r: 'C', icon: 'tent', sub: 'Pitch a camp' }
+    ];
+    const list = tab === 'gear' ? gearInv : consInv;
+    const selIdx = Math.min(sel, list.length - 1);
+    const items = list.map((x, i) => ({
+      icon: ICON[x.icon],
+      rim: i === selIdx ? T.selRim : T.rim[x.r], inset: i === selIdx ? '4px' : T.inset,
+      face: T.face[x.r], ink: T.ink[x.r],
+      pressed: i === selIdx ? 'true' : 'false',
+      aria: x.name + ', ' + x.sub,
+      pick: () => this.setState({ sel: i })
+    }));
+    const invRows = [];
+    let idx = 0, r = 0;
+    while (idx < items.length) {
+      const n = r % 2 ? 3 : 4;
+      invRows.push({ items: items.slice(idx, idx + n), indent: r % 2 ? '22px' : '0px', mt: r ? '-9px' : '0px' });
+      idx += n; r += 1;
+    }
+
+    return {
+      t: T,
+      c: { name: c.name, sub: c.sub, abilities: abilities },
+      party: party,
+      leftSlots: zig(left),
+      rightSlots: zig(right),
+      weaponSlots: weaponSlots,
+      weaponCaption: weaponCaption,
+      cons: cons,
+      setLabel: 'set ' + (setIdx + 1),
+      setShort: 'Set ' + (setIdx + 1),
+      swapSet: () => this.setState({ set: setIdx === 0 ? 1 : 0 }),
+      invRows: invRows,
+      selItem: list[selIdx],
+      tabGearBg: tab === 'gear' ? T.tabOn : T.tabOff,
+      tabGearInk: tab === 'gear' ? T.tabOnInk : T.tabOffInk,
+      tabConsBg: tab === 'cons' ? T.tabOn : T.tabOff,
+      tabConsInk: tab === 'cons' ? T.tabOnInk : T.tabOffInk,
+      pickGear: () => this.setState({ tab: 'gear', sel: 0 }),
+      pickCons: () => this.setState({ tab: 'cons', sel: 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

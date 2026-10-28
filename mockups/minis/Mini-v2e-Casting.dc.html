@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chelmsford mini: Pose: casting</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+</style>
+</helmet>
+<div style="width: 420px; height: 480px; box-sizing: border-box; background: #EBD8DE; color: #24302C; font-family: Nunito, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+  <svg role="img" aria-label="{{aria}}" width="280" height="392" viewBox="0 0 200 280">
+    <ellipse cx="100" cy="262" rx="78" ry="12" fill="#24302C" opacity="0.14"></ellipse>
+    <polygon points="28,236 28,250 64,268 136,268 172,250 172,236 136,254 64,254" fill="#8C6A45"></polygon>
+    <polyline points="28,250 64,268 136,268 172,250" fill="none" stroke="#6E5236" stroke-width="1.5"></polyline>
+    <polygon points="28,236 64,218 136,218 172,236 136,254 64,254" fill="#C9A97A"></polygon>
+    <polygon points="38,236 68,221 132,221 162,236 132,251 68,251" fill="none" stroke="#8EC3F2" stroke-width="3"></polygon>
+    <ellipse cx="100" cy="238" rx="{{shadowRx}}" ry="8" fill="#24302C" opacity="0.22"></ellipse>
+
+    <g transform="{{t.body}}">
+      <path d="M116 212 q30 6 40 -12 q-4 24 -38 22 z" fill="{{c.skinDark}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></path>
+      <polygon points="84,196 96,196 95,232 80,234" fill="{{c.steelDark}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+      <polygon points="104,196 116,196 120,234 105,232" fill="{{c.steelDark}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+      <path d="M78 228 h18 v9 h-21 z" fill="{{c.boot}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></path>
+      <path d="M104 228 h17 l3 9 h-20 z" fill="{{c.boot}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></path>
+      <path d="M76 112 q24 -10 48 0 l4 44 h-56 z" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></path>
+      <polygon points="80,150 120,150 127,206 73,206" fill="{{c.cloth}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+      <line x1="73" y1="206" x2="127" y2="206" stroke="{{c.gold}}" stroke-width="3" opacity="{{p.trim}}"></line>
+      <polygon points="84,116 116,116 120,156 80,156" fill="{{c.cloth}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+      <g stroke="{{c.gold}}" stroke-width="2" stroke-linecap="round" opacity="{{p.trim}}">
+        <line x1="100" y1="122" x2="100" y2="125"></line><line x1="100" y1="143" x2="100" y2="146"></line>
+        <line x1="88" y1="134" x2="91" y2="134"></line><line x1="109" y1="134" x2="112" y2="134"></line>
+        <line x1="91.5" y1="125.5" x2="93.6" y2="127.6"></line><line x1="106.4" y1="140.4" x2="108.5" y2="142.5"></line>
+        <line x1="108.5" y1="125.5" x2="106.4" y2="127.6"></line><line x1="93.6" y1="140.4" x2="91.5" y2="142.5"></line>
+      </g>
+      <circle cx="100" cy="134" r="6" fill="{{c.gold}}"></circle>
+      <rect x="78" y="152" width="44" height="6" fill="{{c.leather}}"></rect>
+      <rect x="96" y="152" width="8" height="6" fill="{{c.gold}}"></rect>
+      <g fill="#000000" opacity="{{p.shade}}">
+        <polygon points="102,108 124,112 128,156 102,156"></polygon>
+        <polygon points="102,150 120,150 127,206 102,206"></polygon>
+        <polygon points="110,196 116,196 120,234 112,234"></polygon>
+      </g>
+      <polygon points="92,96 108,96 110,114 90,114" fill="{{c.skin}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+      <polygon points="96,98 104,98 105,114 96,114" fill="{{c.skinLight}}"></polygon>
+
+      <g opacity="{{t.raised}}">
+        <polygon points="64,118 76,122 66,141 55,136" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+        <polygon points="55,136 65,140 70,112 61,108" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+        <g transform="{{t.maceRaised}}">
+          <line x1="66" y1="112" x2="59" y2="70" stroke="{{c.leather}}" stroke-width="4" stroke-linecap="round"></line>
+          <polygon points="49,58 57,49 66,57 66,68 58,77 49,68" fill="{{c.steelLight}}" stroke="{{c.steelLine}}" stroke-width="1.5"></polygon>
+        </g>
+        <circle cx="66" cy="107" r="6" fill="{{c.skin}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></circle>
+      </g>
+      <g opacity="{{t.guard}}">
+        <polygon points="64,118 76,122 72,147 60,144" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+        <polygon points="60,144 72,147 74,170 62,170" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+        <g transform="{{t.maceGuard}}">
+          <line x1="68" y1="172" x2="58" y2="208" stroke="{{c.leather}}" stroke-width="4" stroke-linecap="round"></line>
+          <polygon points="48,208 56,200 64,208 64,218 56,226 48,218" fill="{{c.steelLight}}" stroke="{{c.steelLine}}" stroke-width="1.5"></polygon>
+        </g>
+        <circle cx="68" cy="172" r="6" fill="{{c.skin}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></circle>
+      </g>
+      <g opacity="{{t.cast}}">
+        <line x1="84" y1="156" x2="78" y2="188" stroke="{{c.leather}}" stroke-width="3.5" stroke-linecap="round"></line>
+        <polygon points="70,186 77,179 84,186 84,195 77,202 70,195" fill="{{c.steelLight}}" stroke="{{c.steelLine}}" stroke-width="1.5"></polygon>
+        <polygon points="64,118 76,122 66,141 55,136" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+        <polygon points="55,136 65,140 66,106 57,104" fill="{{c.steel}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></polygon>
+        <g transform="{{t.sun}}">
+          <circle cx="58" cy="86" r="17" fill="#FFF3B0" opacity="0.55"></circle>
+          <g stroke="{{c.gold}}" stroke-width="2.5" stroke-linecap="round">
+            <line x1="58" y1="72" x2="58" y2="76"></line><line x1="58" y1="96" x2="58" y2="100"></line>
+            <line x1="44" y1="86" x2="48" y2="86"></line><line x1="68" y1="86" x2="72" y2="86"></line>
+            <line x1="48" y1="76" x2="51" y2="79"></line><line x1="65" y1="93" x2="68" y2="96"></line>
+            <line x1="68" y1="76" x2="65" y2="79"></line><line x1="51" y1="93" x2="48" y2="96"></line>
+          </g>
+          <circle cx="58" cy="86" r="7" fill="{{c.gold}}"></circle>
+        </g>
+        <circle cx="61" cy="102" r="6" fill="{{c.skin}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></circle>
+      </g>
+      <ellipse cx="74" cy="116" rx="14" ry="9" fill="{{c.steelLight}}" stroke="{{c.steelLine}}" stroke-width="1.2"></ellipse>
+
+      <g transform="{{t.shield}}">
+        <circle cx="134" cy="150" r="26" fill="{{c.shield}}" stroke="{{c.gold}}" stroke-width="4"></circle>
+        <g stroke="{{c.gold}}" stroke-width="2.4" stroke-linecap="round" opacity="{{p.trim}}">
+          <line x1="134" y1="134" x2="134" y2="138"></line><line x1="134" y1="162" x2="134" y2="166"></line>
+          <line x1="118" y1="150" x2="122" y2="150"></line><line x1="146" y1="150" x2="150" y2="150"></line>
+          <line x1="122.7" y1="138.7" x2="125.5" y2="141.5"></line><line x1="142.5" y1="158.5" x2="145.3" y2="161.3"></line>
+          <line x1="145.3" y1="138.7" x2="142.5" y2="141.5"></line><line x1="125.5" y1="158.5" x2="122.7" y2="161.3"></line>
+        </g>
+        <circle cx="134" cy="150" r="8" fill="{{c.gold}}"></circle>
+        <path d="M134 124 a26 26 0 0 1 0 52 z" fill="#000000" opacity="{{p.shade}}"></path>
+        <path d="M114 136 q8 -12 22 -12" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="{{p.hi}}"></path>
+      </g>
+      <ellipse cx="126" cy="116" rx="14" ry="9" fill="{{c.steelLight}}" stroke="{{c.steelLine}}" stroke-width="1.2"></ellipse>
+      <g fill="none" stroke="#FFFFFF" stroke-linecap="round" opacity="{{p.hi}}">
+        <path d="M64 112 q8 -5 16 -2" stroke-width="1.5"></path>
+        <path d="M118 111 q8 -4 15 0" stroke-width="1.5"></path>
+        <path d="M80 114 q20 -8 40 0" stroke-width="1.2"></path>
+        <path d="M86 196 l-1 30" stroke-width="1.2"></path>
+      </g>
+    </g>
+
+    <g transform="{{t.head}}">
+      <path d="M108 74 q14 -10 22 -26 q-3 18 -16 32 z" fill="{{c.horn}}" stroke="{{c.hornLine}}" stroke-width="1"></path>
+      <path d="M112 80 q16 -4 27 -17 q-5 15 -22 24 z" fill="{{c.horn}}" stroke="{{c.hornLine}}" stroke-width="1"></path>
+      <polygon points="116,86 124,90 116,94" fill="{{c.skinDark}}"></polygon>
+      <polygon points="114,94 121,99 113,101" fill="{{c.skinDark}}"></polygon>
+      <ellipse cx="102" cy="84" rx="17" ry="15" fill="{{c.skin}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></ellipse>
+      <path d="M90 78 q-17 2 -22 11 q9 7 24 4 z" fill="{{c.skin}}" stroke="{{p.line}}" stroke-width="{{p.lw}}"></path>
+      <path d="M69 91 q11 6 22 2 l2 4 q-13 4 -24 -6 z" fill="{{c.skinLight}}"></path>
+      <path d="M102 69 a17 15 0 0 1 0 30 z" fill="#000000" opacity="{{p.shade}}"></path>
+      <circle cx="72" cy="86" r="1.2" fill="#22384B"></circle>
+      <ellipse cx="94" cy="80" rx="{{eyeRx}}" ry="{{eyeRy}}" fill="#F2D14E"></ellipse>
+      <line x1="94" y1="78.2" x2="94" y2="81.8" stroke="#22384B" stroke-width="1.2"></line>
+      <path d="M89 75.5 l10 -2.5" stroke="#22384B" stroke-width="1.5" stroke-linecap="round"></path>
+      <path d="M97 72 q8 -4 15 1" fill="none" stroke="#FFFFFF" stroke-width="1.8" opacity="{{p.hi}}"></path>
+    </g>
+  </svg>
+  <span style="font-family: 'Lilita One', sans-serif; font-size: 22px; line-height: 1">Chelmsford</span>
+  <span style="font-size: 12px; font-weight: 800; color: #43524D">{{label}}</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":420,"height":480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const CFG = {"prop": "heroic", "pose": "cast", "paint": "clean", "label": "Pose: casting"};
+    const PROP = {
+      heroic: { hs: 1.15, sx: 1, sy: 1, ws: 1.2 },
+      chunky: { hs: 1.55, sx: 1.08, sy: 0.78, ws: 1.1 },
+      realistic: { hs: 0.88, sx: 0.96, sy: 1.06, ws: 1 }
+    }[CFG.prop];
+    const PAINT = {
+      clean: { line: 'none', lw: '0', shade: '0', hi: '0.35', trim: '1' },
+      tabletop: { line: '#2A2F3A', lw: '1.3', shade: '0.22', hi: '0.6', trim: '1' },
+      toy: { line: 'none', lw: '0', shade: '0', hi: '0', trim: '0' }
+    }[CFG.paint];
+    const full = { skin: '#4F86C6', skinLight: '#9CC4EA', skinDark: '#3E6FA8', steel: '#8C99A8', steelLight: '#9AA6B2', steelDark: '#7A8796', steelLine: '#5E6875',
+      boot: '#4A4E58', cloth: '#EFE3C8', gold: '#E4B54C', leather: '#6B4C35', shield: '#3E5A70', horn: '#E8DCC0', hornLine: '#B9AC90' };
+    const toy = { skin: '#4F86C6', skinLight: '#4F86C6', skinDark: '#4F86C6', steel: '#8E9BAA', steelLight: '#8E9BAA', steelDark: '#8E9BAA', steelLine: '#8E9BAA',
+      boot: '#8E9BAA', cloth: '#F1E7D0', gold: '#E0A93B', leather: '#6B4C35', shield: '#3E5A70', horn: '#E8DCC0', hornLine: '#E8DCC0' };
+    const c = CFG.paint === 'toy' ? toy : full;
+    const around = (x, y, s) => 'translate(' + x + ' ' + y + ') scale(' + s + ') translate(' + (-x) + ' ' + (-y) + ')';
+    const neckY = 236 - (236 - 100) * PROP.sy;
+    const shieldPose = { raised: 'translate(0 0)', guard: 'translate(-12 -14)', cast: 'translate(2 10)' }[CFG.pose];
+    const t = {
+      body: 'translate(100 236) scale(' + PROP.sx + ' ' + PROP.sy + ') translate(-100 -236)',
+      head: 'translate(100 ' + neckY.toFixed(1) + ') scale(' + PROP.hs + ') translate(-100 -100)',
+      maceRaised: around(66, 107, PROP.ws), maceGuard: around(68, 172, PROP.ws), sun: around(61, 102, PROP.ws),
+      shield: shieldPose + ' ' + around(134, 150, CFG.pose === 'guard' ? PROP.ws * 1.08 : PROP.ws),
+      raised: CFG.pose === 'raised' ? '1' : '0', guard: CFG.pose === 'guard' ? '1' : '0', cast: CFG.pose === 'cast' ? '1' : '0'
+    };
+    return {
+      c: c, p: PAINT, t: t, label: CFG.label,
+      shadowRx: String(Math.round(38 * PROP.sx)),
+      eyeRx: CFG.prop === 'chunky' ? '4.4' : '3.6', eyeRy: CFG.prop === 'chunky' ? '3.4' : '2.6',
+      aria: 'Painted miniature of Chelmsford, a blue dragonborn cleric, on a hex base. ' + CFG.label
+    };
+  }
+}
+</script>
+</body>
+</html>

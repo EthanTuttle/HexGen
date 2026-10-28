@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Character and gear</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Nunito:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#A8D5A2}a:hover{color:#C8E8C3}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; box-sizing: border-box; background: #1F2430; color: #F2EEE6; font-family: Nunito, system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column">
+
+  <div style="height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; gap: 10px; width: 260px">
+      <button type="button" aria-label="Back to map" style="width: 44px; height: 44px; border-radius: 12px; background: #2A303D; border: 1px solid #3A4252; color: #F2EEE6; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex-shrink: 0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <div style="font-family: Fredoka, sans-serif; font-size: 19px; font-weight: 600; line-height: 1.15">{{c.name}}</div>
+        <div style="font-size: 12px; color: #A9B0BC; font-weight: 600; white-space: nowrap">{{c.sub}}</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px">
+      <sc-for list="{{party}}" as="p" hint-placeholder-count="3">
+        <button type="button" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="width: 44px; height: 44px; border-radius: 50%; box-sizing: border-box; background: {{p.bg}}; border: {{p.border}}; color: #1F2430; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 17px; cursor: pointer; padding: 0">{{p.initial}}</button>
+      </sc-for>
+      <button type="button" aria-label="Empty companion slot" style="width: 44px; height: 44px; border-radius: 50%; box-sizing: border-box; background: transparent; border: 2px dashed #4A5366; color: #A9B0BC; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </button>
+    </div>
+
+    <div style="width: 260px; display: flex; justify-content: flex-end">
+      <button type="button" style="height: 44px; padding: 0 16px; border-radius: 12px; background: {{accent}}; color: #1B2A1E; border: none; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="2"></rect><path d="M8 3h11a2 2 0 0 1 2 2v13"></path></svg>
+        Action cards
+      </button>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 14px; padding: 0 20px 14px; box-sizing: border-box; flex: 1; min-height: 0">
+
+    <div style="width: 132px; flex-shrink: 0; background: #2A303D; border-radius: 14px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #A9B0BC; margin-bottom: 4px">Abilities</div>
+      <sc-for list="{{c.abilities}}" as="a" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 6px; height: 31px">
+          <span style="width: 32px; font-weight: 800; font-size: 13px">{{a.k}}</span>
+          <div style="display: flex; gap: 3px; flex: 1">
+            <sc-for list="{{a.coins}}" as="coin" hint-placeholder-count="2">
+              <span style="width: 12px; height: 12px; border-radius: 50%; background: #E9C46A; box-shadow: inset 0 -2px 0 #B8923A"></span>
+            </sc-for>
+          </div>
+          <span style="font-size: 13px; font-weight: 800; color: #E9C46A">{{a.v}}</span>
+        </div>
+      </sc-for>
+      <div style="font-size: 11px; color: #A9B0BC; line-height: 1.3; margin-top: auto">Coins flipped on checks and attacks</div>
+    </div>
+
+    <div style="width: 392px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 14px; height: 208px">
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 112px">
+          <sc-for list="{{leftSlots}}" as="s" hint-placeholder-count="4">
+            <button type="button" aria-label="{{s.aria}}" style="width: 112px; height: 46px; box-sizing: border-box; border-radius: 10px; border: {{s.border}}; background: #2A303D; display: flex; align-items: center; gap: 8px; padding: 0 8px; text-align: left; cursor: pointer; color: #F2EEE6; font-family: Nunito, sans-serif">
+              <span style="width: 28px; height: 28px; border-radius: 7px; background: {{s.tile}}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #1F2430; font-size: 12px; font-weight: 800">{{s.letter}}</span>
+              <span style="display: flex; flex-direction: column; min-width: 0">
+                <span style="font-size: 10px; color: #A9B0BC; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800">{{s.label}}</span>
+                <span style="font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{s.nameColor}}">{{s.name}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="width: 140px; height: 208px; display: flex; flex-direction: column; align-items: center">
+          <svg width="140" height="190" viewBox="0 0 140 190" aria-hidden="true">
+            <ellipse cx="70" cy="178" rx="48" ry="9" fill="#2A303D"></ellipse>
+            <circle cx="70" cy="40" r="16" fill="#3A4252" stroke="#4A5366" stroke-width="1.5"></circle>
+            <path d="M44 70 Q70 58 96 70 L102 120 Q96 124 90 120 L88 96 L86 128 L90 174 L76 174 L70 134 L64 174 L50 174 L54 128 L52 96 L50 120 Q44 124 38 120 Z" fill="#3A4252" stroke="#4A5366" stroke-width="1.5" stroke-linejoin="round"></path>
+          </svg>
+          <span style="font-size: 11px; color: #A9B0BC; font-weight: 600">[3D character model]</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 112px">
+          <sc-for list="{{rightSlots}}" as="s" hint-placeholder-count="4">
+            <button type="button" aria-label="{{s.aria}}" style="width: 112px; height: 46px; box-sizing: border-box; border-radius: 10px; border: {{s.border}}; background: #2A303D; display: flex; align-items: center; gap: 8px; padding: 0 8px; text-align: left; cursor: pointer; color: #F2EEE6; font-family: Nunito, sans-serif">
+              <span style="width: 28px; height: 28px; border-radius: 7px; background: {{s.tile}}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #1F2430; font-size: 12px; font-weight: 800">{{s.letter}}</span>
+              <span style="display: flex; flex-direction: column; min-width: 0">
+                <span style="font-size: 10px; color: #A9B0BC; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800">{{s.label}}</span>
+                <span style="font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{s.nameColor}}">{{s.name}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; height: 54px">
+        <button type="button" aria-label="Swap weapon set" onClick="{{swapSet}}" style="width: 52px; height: 54px; box-sizing: border-box; border-radius: 10px; background: #343B49; border: 1px solid #4A5366; color: #F2EEE6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; padding: 0; font-family: Nunito, sans-serif">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4"></path><path d="M3 8h14"></path><path d="M17 20l4-4-4-4"></path><path d="M21 16H7"></path></svg>
+          <span style="font-size: 11px; font-weight: 800">{{setLabel}}</span>
+        </button>
+        <sc-for list="{{weaponSlots}}" as="s" hint-placeholder-count="2">
+          <button type="button" aria-label="{{s.aria}}" style="width: 108px; height: 54px; box-sizing: border-box; border-radius: 10px; border: {{s.border}}; background: #2A303D; display: flex; align-items: center; gap: 8px; padding: 0 8px; text-align: left; cursor: pointer; color: #F2EEE6; font-family: Nunito, sans-serif">
+            <span style="width: 30px; height: 30px; border-radius: 7px; background: {{s.tile}}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #1F2430; font-size: 12px; font-weight: 800">{{s.letter}}</span>
+            <span style="display: flex; flex-direction: column; min-width: 0">
+              <span style="font-size: 10px; color: #A9B0BC; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800">{{s.label}}</span>
+              <span style="font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{s.nameColor}}">{{s.name}}</span>
+            </span>
+          </button>
+        </sc-for>
+        <sc-for list="{{cons}}" as="s" hint-placeholder-count="2">
+          <button type="button" aria-label="{{s.aria}}" style="width: 46px; height: 54px; box-sizing: border-box; border-radius: 10px; border: {{s.border}}; background: #2A303D; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; padding: 0; color: #F2EEE6; font-family: Nunito, sans-serif">
+            <span style="width: 24px; height: 24px; border-radius: 6px; background: {{s.tile}}; display: flex; align-items: center; justify-content: center; color: #1F2430; font-size: 11px; font-weight: 800">{{s.letter}}</span>
+            <span style="font-size: 10px; font-weight: 700; color: {{s.nameColor}}">{{s.short}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex: 1; min-width: 0; background: #2A303D; border-radius: 14px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #A9B0BC">Inventory</span>
+        <span style="font-size: 11px; color: #A9B0BC; font-weight: 600">No cap</span>
+      </div>
+      <div style="display: flex; gap: 4px; background: #1F2430; border-radius: 10px; padding: 3px">
+        <button type="button" onClick="{{pickGear}}" style="flex: 1; height: 38px; border-radius: 8px; border: none; background: {{tabGearBg}}; color: #F2EEE6; font-family: Nunito, sans-serif; font-weight: 800; font-size: 13px; cursor: pointer">Gear</button>
+        <button type="button" onClick="{{pickCons}}" style="flex: 1; height: 38px; border-radius: 8px; border: none; background: {{tabConsBg}}; color: #F2EEE6; font-family: Nunito, sans-serif; font-weight: 800; font-size: 13px; cursor: pointer">Consumables</button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px">
+        <sc-for list="{{inv}}" as="i" hint-placeholder-count="5">
+          <button type="button" aria-label="{{i.aria}}" style="height: 44px; flex-shrink: 0; width: 100%; box-sizing: border-box; border-radius: 10px; border: none; background: #343B49; display: flex; align-items: center; gap: 10px; padding: 0 10px 0 8px; text-align: left; cursor: pointer; color: #F2EEE6; font-family: Nunito, sans-serif">
+            <span style="width: 28px; height: 28px; border-radius: 7px; background: {{i.tile}}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #1F2430; font-size: 12px; font-weight: 800">{{i.letter}}</span>
+            <span style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+              <span style="font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{i.name}}</span>
+              <span style="font-size: 11px; color: #B4BAC5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{i.sub}}</span>
+            </span>
+            <span style="font-size: 12px; font-weight: 800; color: #B4BAC5">{{i.count}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#A8D5A2","options":["#A8D5A2","#E9C46A","#8EC3F2","#F4A259"]},"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const ci = st.ci ?? 0;
+    const setIdx = st.set ?? 0;
+    const tab = st.tab ?? 'gear';
+    const accent = this.props.accent ?? '#A8D5A2';
+
+    const RAR = {
+      C: { color: '#C9CED6', label: 'Common' },
+      R: { color: '#6EB4F0', label: 'Rare' },
+      L: { color: '#F4A259', label: 'Legendary' }
+    };
+    const it = (name, r) => ({ name: name, r: r });
+
+    const chars = [
+      {
+        name: '[Hero name]', sub: 'Human Fighter · Folk Hero · Lv 3', initial: 'H', color: '#E9C46A',
+        ab: { STR: 3, DEX: 1, CON: 2, INT: 1, WIS: 1, CHA: 2 },
+        sets: [
+          { main: it('Longsword', 'C'), off: it('Shield', 'C') },
+          { main: it('Greatsword', 'R'), off: null, offNote: 'Two-handed' }
+        ],
+        slots: { helmet: it('Heavy helm', 'C'), armor: it('Heavy armor', 'C'), gloves: it('Gloves', 'C'), leggings: it('Leggings', 'C'), amulet: null, ring1: it('Ring', 'R'), ring2: null, boots: it('Boots', 'C') },
+        cons: ['Potion', 'Throwable']
+      },
+      {
+        name: 'Fluffy', sub: 'Cat Wizard · Companion · Lv 3', initial: 'F', color: '#D6B9F2',
+        ab: { STR: 1, DEX: 2, CON: 1, INT: 3, WIS: 1, CHA: 1 },
+        sets: [
+          { main: it('Staff', 'C'), off: null, offNote: 'Two-handed' },
+          { main: it('Wand', 'R'), off: null, offNote: 'Empty' }
+        ],
+        slots: { helmet: null, armor: null, armorNote: 'None (Wizard)', gloves: null, leggings: null, amulet: it('Amulet', 'R'), ring1: it('Ring', 'C'), ring2: null, boots: null },
+        cons: ['Potion', null]
+      },
+      {
+        name: 'Chelmsford', sub: 'Blue Dragonborn Cleric · Companion · Lv 3', initial: 'C', color: '#8EC3F2',
+        ab: { STR: 2, DEX: 1, CON: 2, INT: 1, WIS: 3, CHA: 1 },
+        sets: [
+          { main: it('Mace', 'C'), off: it('Shield', 'C') },
+          { main: it('Warhammer', 'C'), off: null, offNote: 'Two-handed' }
+        ],
+        slots: { helmet: it('Medium helm', 'C'), armor: it('Medium armor', 'C'), gloves: null, leggings: it('Leggings', 'C'), amulet: it('Amulet', 'C'), ring1: null, ring2: null, boots: it('Boots', 'C') },
+        cons: ['Potion', 'Potion']
+      }
+    ];
+    const c = chars[ci];
+
+    const mk = (label, item, note) => item ? {
+      label: label, name: item.name, letter: item.r,
+      aria: label + ': ' + item.name + ', ' + RAR[item.r].label,
+      border: '1.5px solid ' + RAR[item.r].color, tile: RAR[item.r].color, nameColor: '#F2EEE6'
+    } : {
+      label: label, name: note || 'Empty', letter: '',
+      aria: label + ': ' + (note || 'empty'),
+      border: '1.5px dashed #4A5366', tile: '#343B49', nameColor: '#A9B0BC'
+    };
+
+    const s = c.slots;
+    const leftSlots = [mk('Helmet', s.helmet), mk('Armor', s.armor, s.armorNote), mk('Gloves', s.gloves), mk('Leggings', s.leggings)];
+    const rightSlots = [mk('Amulet', s.amulet), mk('Ring', s.ring1), mk('Ring', s.ring2), mk('Boots', s.boots)];
+
+    const ws = c.sets[setIdx];
+    const weaponSlots = [mk('Main hand', ws.main), mk('Off hand', ws.off, ws.offNote)];
+
+    const cons = c.cons.map((n) => {
+      const base = mk('Item', n ? it(n, 'C') : null);
+      return Object.assign(base, { short: n ? (n.length > 6 ? n.slice(0, 5) + '.' : n) : 'Empty', letter: n ? n[0] : '' });
+    });
+
+    const abilities = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map((k) => ({
+      k: k, v: c.ab[k], coins: Array.from({ length: c.ab[k] }, (_, i) => ({ i: i }))
+    }));
+
+    const party = chars.map((p, i) => ({
+      initial: p.initial, bg: p.color,
+      aria: p.name + (i === ci ? ' (selected)' : ''),
+      border: i === ci ? '3px solid ' + accent : '3px solid #1F2430',
+      pick: () => this.setState({ ci: i, set: 0 })
+    }));
+
+    const gearInv = [
+      { name: 'Shortbow', r: 'C', sub: 'Common · Two-handed', count: '' },
+      { name: 'Dagger', r: 'R', sub: 'Rare · One-handed', count: '' },
+      { name: 'Battleaxe', r: 'C', sub: 'Common · Versatile', count: '' },
+      { name: 'Light armor', r: 'C', sub: 'Common · Armor', count: '' },
+      { name: 'Ring', r: 'R', sub: 'Rare · Trinket', count: '' },
+      { name: 'Spear', r: 'C', sub: 'Common · Versatile, Reach', count: '' }
+    ];
+    const consInv = [
+      { name: 'Potion', r: 'C', sub: 'Common · Consumable', count: '×4' },
+      { name: 'Throwable', r: 'C', sub: 'Common · Consumable', count: '×2' },
+      { name: 'Camp kit', r: 'C', sub: 'Pitch a camp on a cleared hex', count: '×1' }
+    ];
+    const inv = (tab === 'gear' ? gearInv : consInv).map((x) => ({
+      name: x.name, sub: x.sub, count: x.count, letter: x.r, tile: RAR[x.r].color,
+      aria: x.name + ', ' + x.sub + (x.count ? ', ' + x.count : '')
+    }));
+
+    return {
+      accent: accent,
+      c: { name: c.name, sub: c.sub, abilities: abilities },
+      party: party,
+      leftSlots: leftSlots,
+      rightSlots: rightSlots,
+      weaponSlots: weaponSlots,
+      cons: cons,
+      setLabel: 'Set ' + (setIdx + 1),
+      swapSet: () => this.setState({ set: setIdx === 0 ? 1 : 0 }),
+      inv: inv,
+      tabGearBg: tab === 'gear' ? '#3A4252' : 'transparent',
+      tabConsBg: tab === 'cons' ? '#3A4252' : 'transparent',
+      pickGear: () => this.setState({ tab: 'gear' }),
+      pickCons: () => this.setState({ tab: 'cons' })
+    };
+  }
+}
+</script>
+</body>
+</html>

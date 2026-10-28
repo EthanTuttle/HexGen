@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Level up v1b: level 5, subclass and milestone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes stepin{0%{transform:translateX(18px);opacity:0}100%{transform:translateX(0);opacity:1}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #BFD9D2; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- Top bar -->
+  <header style="position: absolute; left: 12px; top: 10px; right: 12px; height: 56px; display: flex; align-items: center; gap: 12px">
+    <a href="Ref-Explore-LevelBanner.dc.html" aria-label="Back to map (your choices wait)" style="display: block; flex-shrink: 0; width: 44px; height: 51px; filter: drop-shadow(0 4px 0 #A48A62)">
+      <span style="position: relative; display: block; width: 44px; height: 51px">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+        </span>
+      </span>
+    </a>
+    <div style="display: flex; flex-direction: column; width: 170px">
+      <h1 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 22px; font-weight: 400; line-height: 1.05">Level up!</h1>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D">Party level {{lvFrom}} → {{lvTo}}</span>
+    </div>
+    <nav aria-label="Level-up steps" style="display: flex; gap: 6px; align-items: center">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+        <span role="img" aria-label="{{s.aria}}" style="position: relative; display: block; width: {{s.w}}; height: 40px; opacity: {{s.op}}; filter: drop-shadow(0 3px 0 #7E9A92)">
+          <span style="position: absolute; inset: 0; clip-path: {{s.clip}}; background: {{s.rim}}"></span>
+          <span style="position: absolute; inset: 3px; clip-path: {{s.clip}}; background: {{s.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: {{s.fs}}; color: #22262E">{{s.label}}</span>
+          <sc-if value="{{s.done}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; right: -4px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+          </sc-if>
+        </span>
+      </sc-for>
+    </nav>
+  </header>
+
+  <!-- Who -->
+  <aside style="position: absolute; left: 12px; top: 76px; width: 186px; height: 302px; box-sizing: border-box; padding: 14px 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+    <sc-if value="{{isChar}}" hint-placeholder-val="{{ true }}">
+      <span style="position: relative; display: block; width: 92px; height: 106px; filter: drop-shadow(0 4px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{who.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 40px; color: #22262E">{{who.initial}}</span>
+      </span>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">{{who.name}}</span>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D">{{who.sub}}</span>
+      <span style="margin-top: 4px; font-size: 12px; font-weight: 800; color: #2E6B3A; line-height: 1.35">Max HP up<br><span style="font-weight: 700; color: #5A5040">[amount set by CON]</span></span>
+    </sc-if>
+    <sc-if value="{{isParty}}" hint-placeholder-val="{{ false }}">
+      <div style="display: grid; grid-template-columns: repeat(2, 44px); gap: 6px; justify-content: center; margin-top: 8px">
+        <sc-for list="{{partyFaces}}" as="p" hint-placeholder-count="4">
+          <span style="position: relative; display: block; width: 44px; height: 51px; filter: drop-shadow(0 3px 0 #A48A62)">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #22262E">{{p.initial}}</span>
+          </span>
+        </sc-for>
+      </div>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">The party</span>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D; line-height: 1.35">Milestone rewards are shared by everyone</span>
+    </sc-if>
+  </aside>
+
+  <!-- What they get -->
+  <section aria-label="{{panelAria}}" style="position: absolute; left: 210px; top: 76px; width: 622px; height: 302px; box-sizing: border-box; padding: 12px 14px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 8px">
+    <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; animation: stepin 0.25s ease-out">
+
+      <sc-if value="{{isChar}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Place 1 ability point</h2>
+            <span style="font-size: 11px; font-weight: 800; color: {{ptInk}}">{{ptNote}}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{scores}}" as="a" hint-placeholder-count="6">
+              <button type="button" aria-pressed="{{a.pressed}}" aria-label="{{a.aria}}" onClick="{{a.pick}}" style="height: 58px; box-sizing: border-box; padding: 0; border: 2.5px solid {{a.border}}; border-radius: 12px; background: {{a.bg}}; color: #24302C; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-family: Nunito, sans-serif">
+                <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em">{{a.ab}}</span>
+                <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1; color: {{a.valInk}}">{{a.val}}</span>
+                <span style="font-size: 10px; font-weight: 900; color: #2E6B3A; min-height: 12px">{{a.plus}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{hasSub}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Choose a subclass</h2>
+            <span style="font-size: 11px; font-weight: 800; color: #43524D">{{subNote}}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{subs}}" as="s" hint-placeholder-count="4">
+              <button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="position: relative; min-height: 70px; box-sizing: border-box; padding: 7px 8px; border: 2.5px solid {{s.border}}; border-radius: 12px; background: {{s.bg}}; color: #24302C; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font-family: Nunito, sans-serif">
+                <span style="font-family: 'Lilita One', sans-serif; font-size: 14px; line-height: 1.1">{{s.n}}</span>
+                <span style="font-size: 11px; font-weight: 700; color: #43524D; line-height: 1.25">{{s.blurb}}</span>
+                <sc-if value="{{s.isDefault}}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; right: 6px; top: -9px; height: 16px; padding: 0 6px; border-radius: 8px; background: #24302C; color: #F6EEDF; font-size: 9px; font-weight: 900; line-height: 16px">Default</span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showGain}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">{{gainTitle}}</h2>
+          <sc-if value="{{isMartial}}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px">
+              <div style="display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #B5532F">
+                <span style="width: 22px; height: 25px; flex-shrink: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{gain.ap}}</span>
+                <span style="display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #9A4A12">New class card</span>
+                  <span style="font-family: 'Lilita One', sans-serif; font-size: 14px">{{gain.n}}</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #43524D; line-height: 1.3">{{gain.t}}</span>
+                </span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 12px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #E2D5BC">
+                <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #3E5A70">Upgrade</span>
+                <span style="font-size: 12px; font-weight: 800; line-height: 1.3">{{gain.up}}</span>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{isCaster}}" hint-placeholder-val="{{ false }}">
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+              <sc-for list="{{spells}}" as="sp" hint-placeholder-count="3">
+                <button type="button" aria-pressed="{{sp.pressed}}" onClick="{{sp.pick}}" style="display: flex; gap: 7px; align-items: flex-start; box-sizing: border-box; padding: 8px; border: 2.5px solid {{sp.border}}; border-radius: 12px; background: {{sp.bg}}; color: #24302C; cursor: pointer; text-align: left; font-family: Nunito, sans-serif">
+                  <span style="width: 20px; height: 23px; flex-shrink: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{sp.ap}}</span>
+                  <span style="display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-family: 'Lilita One', sans-serif; font-size: 13px; line-height: 1.1">{{sp.n}}</span>
+                    <span style="font-size: 11px; font-weight: 700; color: #43524D; line-height: 1.25">{{sp.t}}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isChar}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{plainLevel}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 12px; font-weight: 700; color: #5A5040; line-height: 1.35">No new card at this level. (New cards and spell picks come at levels 3, 5 and 15; see Classes & combat → Class action cards.)</span>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{isParty}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <h2 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 16px; font-weight: 400">Milestone: add terrain cards to the deck</h2>
+            <span style="font-size: 11px; font-weight: 800; color: {{terrInk}}">{{terrNote}}</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-for list="{{terrains}}" as="tr" hint-placeholder-count="9">
+              <button type="button" aria-pressed="{{tr.pressed}}" aria-label="{{tr.aria}}" onClick="{{tr.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; padding: 0; border: none; background: transparent; cursor: pointer; font-family: Nunito, sans-serif; color: #24302C">
+                <span style="position: relative; display: block; width: 44px; height: 51px; margin-top: {{tr.lift}}; filter: drop-shadow(0 3px 0 {{tr.edge}}); transition: margin-top 0.15s ease">
+                  <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{tr.rim}}"></span>
+                  <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{tr.bg}}; display: flex; align-items: center; justify-content: center; color: {{tr.ink}}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tr.icon}}"></path></svg>
+                  </span>
+                </span>
+                <span style="font-size: 10px; font-weight: 900">{{tr.n}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #E2D5BC">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24302C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"></path></svg>
+          <span style="font-size: 13px; font-weight: 800">Sight range 2 → [wider]</span>
+          <span style="font-size: 11px; font-weight: 700; color: #5A5040">How much it widens isn't set. Sight only limits building at night.</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px">
+      <span style="margin-right: auto; font-size: 12px; font-weight: 800; color: {{todoInk}}">{{todo}}</span>
+      <sc-if value="{{canBack}}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{goBack}}" style="height: 42px; padding: 0 18px; border: none; border-radius: 21px; background: #E6DCC8; color: #24302C; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Back</button>
+      </sc-if>
+      <sc-if value="{{showNext}}" hint-placeholder-val="{{ true }}">
+        <span style="filter: {{nextShadow}}; display: block">
+          <button type="button" onClick="{{goNext}}" aria-disabled="{{nextOff}}" style="height: 42px; padding: 0 26px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: {{nextBg}}; color: {{nextInk}}; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer">Next: {{nextName}}</button>
+        </span>
+      </sc-if>
+      <sc-if value="{{showDone}}" hint-placeholder-val="{{ false }}">
+        <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block">
+          <a href="Ref-Explore-v6b.dc.html" style="height: 42px; padding: 0 30px; text-decoration: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; display: flex; align-items: center">Done</a>
+        </span>
+      </sc-if>
+      <sc-if value="{{showDoneOff}}" hint-placeholder-val="{{ false }}">
+        <button type="button" aria-disabled="true" style="height: 42px; padding: 0 30px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #E6DCC8; color: #6B6152; font-family: 'Lilita One', sans-serif; font-size: 15px">Done</button>
+      </sc-if>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LEVEL = 5; // the level reached (4 = a plain level, 5 = subclass + milestone)
+    const st = this.state || {};
+    const L5 = LEVEL === 5;
+
+    // Subclasses and their level-5 cards: Classes & combat → Subclasses, Martial class cards, Wizard: Library spell picks, Cleric spells.
+    const SUBS = {
+      fighter: [
+        { id: 'brawler', n: 'Brawler', blurb: 'A bare-knuckle tough who draws foes in.', card: { n: 'Bring It', ap: 1, t: 'Taunt adjacent foes to attack you; you take less damage from them until your next turn.' }, up: 'Second Wind can be used twice per fight.' },
+        { id: 'holy', n: 'Holy Defender', blurb: 'Borrows from the Cleric: picks a god and gains god spells.', card: { n: 'Divine Smite', ap: 2, t: 'A weapon attack with heavy radiant bonus damage.' }, up: 'Second Wind also heals adjacent allies.' },
+        { id: 'tactician', n: 'Tactician', blurb: 'Moves allies around and shares AP.', card: { n: 'Reposition', ap: 1, t: 'Swap places with an ally, or move an adjacent ally 2 hexes.' }, up: 'Action Surge also gives every ally +1 bonus AP.' },
+        { id: 'arcane', n: 'Arcane Knight', blurb: 'Borrows from the Wizard: arcane cards and the Library.', card: { n: 'Arcane Shield', ap: 1, t: 'You take less damage until your next turn.' }, up: 'Second Wind also grants a ward (a damage-absorbing barrier).' }
+      ],
+      rogue: [
+        { id: 'con', n: 'Con Artist', blurb: 'A social fighter who talks foes off guard.', card: { n: 'Fake Surrender', ap: 1, t: 'The foe lowers its guard (CHA save); on a fail, it becomes unaware of you.' }, up: 'Poison Blade becomes Sleeping Draught: hits this turn make foes drowsy.' },
+        { id: 'assassin', n: 'Assassin', blurb: 'Strikes from hiding.', card: { n: 'Vanish', ap: 1, t: 'Become hidden.' }, up: "Poison Blade's poison is deadlier." },
+        { id: 'gambler', n: 'Gambler', blurb: 'Risk-and-reward wagers on coin flips.', card: { n: 'Raise the Stakes', ap: 1, t: 'Your next attack needs one more heads to hit, but deals much more damage.' }, up: 'Poison Blade becomes Wild Card: hits this turn apply a random status.' },
+        { id: 'trickster', n: 'Arcane Trickster', blurb: 'Borrows from the Wizard: arcane tricks.', card: { n: 'Mage Hand', ap: 1, t: 'Disarm a foe at range (STR save).' }, up: 'Poison Blade becomes an arcane venom (magic damage).' }
+      ],
+      wizard: [
+        { id: 'summoner', n: 'Summoner', blurb: 'Bound spirits and animated objects fight for you.', spells: [{ n: 'Unbind', ap: 1, t: 'Release your summon in a burst that hurts foes around it.' }, { n: 'Animate Armor', ap: 3, t: 'A tough suit of armor that absorbs hits aimed at adjacent allies.' }, { n: 'Soul Jar', ap: 2, t: "Trap a dying foe's soul; your next summon is stronger." }] },
+        { id: 'blaster', n: 'Blaster', blurb: 'Fire, ice and lightning damage.', spells: [{ n: 'Fireball', ap: 3, t: 'Big area fire damage.' }, { n: 'Blizzard', ap: 3, t: 'An ice zone that slows and deals cold damage each turn.' }, { n: 'Chain Lightning', ap: 3, t: 'A bolt that jumps from foe to foe, up to 4.' }] },
+        { id: 'deceiver', n: 'Deceiver', blurb: 'Illusions that waste enemy turns.', spells: [{ n: 'Now You See Me', ap: 2, t: 'Become hidden and leave a decoy behind.' }, { n: 'Psychic Spike', ap: 1, t: 'Psychic damage, more if the foe is unaware of you.' }, { n: 'Nightmare', ap: 2, t: 'A foe takes psychic damage each turn.' }] },
+        { id: 'ritualist', n: 'Ritualist', blurb: 'Barriers and blood arts that cost HP.', spells: [{ n: 'Soul Siphon', ap: 2, t: 'Drain HP from a foe to heal yourself.' }, { n: 'Blood Bond', ap: 2, t: 'Link two foes; when one is hurt, the other takes half.' }, { n: 'Life Tap', ap: 1, t: 'Pay HP to gain 2 bonus AP this turn.' }] }
+      ],
+      cleric: [
+        { id: 'light', n: 'Order of Light', blurb: 'Radiant battle-priest who burns and blinds foes.', spells: [{ n: 'Burning Halo', ap: 2, t: 'An ally glows; foes that hit them take radiant damage.' }, { n: 'Sunlit Ground', ap: 2, t: "A zone where allies' attacks deal bonus radiant damage." }, { n: 'Lance of Dawn', ap: 2, t: 'A beam through a line of foes.' }] },
+        { id: 'night', n: 'Order of Night', blurb: 'Shadow and fear; hides allies in darkness.', spells: [{ n: 'Terror', ap: 2, t: 'A foe flees.' }, { n: 'Nightmare Shroud', ap: 2, t: 'Foes that attack the ally may become frightened.' }, { n: 'Snuff the Light', ap: 1, t: 'Blind a foe.' }] },
+        { id: 'good', n: 'Order of Good', blurb: 'Miracles: rare, big effects.', spells: [{ n: 'Mass Heal', ap: 2, t: 'Heal all allies nearby.' }, { n: 'Miracle of Plenty', ap: 2, t: 'Every ally heals a little; their next consumable is free.' }, { n: 'Purify', ap: 2, t: 'Remove every status effect from every ally.' }] },
+        { id: 'evil', n: 'Order of Evil', blurb: 'Draining curses.', spells: [{ n: 'Vampiric Aura', ap: 2, t: 'Allies near you heal a little when they hit.' }, { n: 'Siphon Strength', ap: 2, t: 'A foe loses STR coins and an ally gains them.' }, { n: 'Curse of Ruin', ap: 2, t: 'A foe takes more damage from every source.' }] }
+      ]
+    };
+    // Mockup party (ability values are placeholders)
+    const CH = [
+      { key: 'h', name: '[Hero name]', initial: 'H', color: '#E9C46A', sub: 'Human Fighter · Hero', cls: 'fighter', martial: true, ab: { STR: 3, DEX: 2, CON: 3, INT: 1, WIS: 1, CHA: 2 } },
+      { key: 'f', name: 'Fluffy', initial: 'F', color: '#C9B3E6', sub: 'Cat Wizard · Companion', cls: 'wizard', martial: false, ab: { STR: 1, DEX: 2, CON: 2, INT: 4, WIS: 2, CHA: 1 } },
+      { key: 'c', name: 'Chelmsford', initial: 'C', color: '#8EC3F2', sub: 'Dragonborn Cleric · Companion', cls: 'cleric', martial: false, def: 'good', ab: { STR: 3, DEX: 1, CON: 3, INT: 1, WIS: 3, CHA: 2 } },
+      { key: 'm', name: 'Mel', initial: 'M', color: '#F4B6A8', sub: 'Rogue · Companion', cls: 'rogue', martial: true, ab: { STR: 1, DEX: 4, CON: 2, INT: 2, WIS: 1, CHA: 3 } }
+    ];
+    const TERR = [
+      ['plains', 'Plains', '#A8CF7E', '#4F7A33', 'M4 18c1-4 2-6 3-7 M7 18c0-3 1-5 2-6 M14 18c1-4 2-6 3-7 M17 18c0-3 1-5 2-6'],
+      ['forest', 'Forest', '#5E8F5A', '#203E1E', 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4'],
+      ['hills', 'Hills', '#BFAE8E', '#5E4C30', 'M2 19l6-9 4 5 3-4 7 8z'],
+      ['swamp', 'Swamp', '#7F9A6E', '#2E4626', 'M6 20v-8 M6 12a2 2 0 0 1 0-4 M12 20V9 M12 9a2 2 0 0 1 0-4 M18 20v-7 M3 20h18'],
+      ['village', 'Village', '#E6C590', '#7A4A22', 'M4 11l8-6 8 6 M6 10v9h12v-9 M10 19v-5h4v5'],
+      ['river', 'River/lake', '#86BEDB', '#245A7E', 'M3 9c3-2 6 2 9 0s6-2 9 0 M3 15c3-2 6 2 9 0s6-2 9 0'],
+      ['desert', 'Desert', '#EDD49A', '#8A6A2A', 'M2 18c4-5 8-5 11-1 M10 16c3-4 8-5 12 0'],
+      ['farmland', 'Farmland', '#DCC562', '#6E5410', 'M12 21V8 M12 12c-3-1-4-3-4-5 3 0 4 2 4 5 M12 12c3-1 4-3 4-5-3 0-4 2-4 5 M12 17c-3-1-4-3-4-5 3 0 4 2 4 5 M12 17c3-1 4-3 4-5-3 0-4 2-4 5'],
+      ['ruins', 'Ruins', '#B3ADA4', '#4E4840', 'M5 20V9 M10 20V7 M15 20v-6 M19 20v-9 M3 20h18 M4 9h7']
+    ];
+    const TERR_PICKS = 3; // placeholder: how many cards a milestone adds isn't set
+
+    const stepCount = CH.length + (L5 ? 1 : 0);
+    const step = Math.min(st.step ?? 0, stepCount - 1);
+    const pts = st.pts ?? {};
+    const subs = st.subs ?? { c: 'good' };
+    const spells = st.spells ?? {};
+    const terr = st.terr ?? [];
+    const set = (k, obj, key, val) => { const o = Object.assign({}, obj); o[key] = val; const n = {}; n[k] = o; this.setState(n); };
+
+    const doneFor = (c) => {
+      if (!pts[c.key]) return false;
+      if (!L5) return true;
+      if (!subs[c.key]) return false;
+      return c.martial ? true : !!spells[c.key];
+    };
+    const partyDone = terr.length === TERR_PICKS;
+    const isParty = L5 && step === CH.length;
+    const c = isParty ? null : CH[step];
+
+    const HEX = 'polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)';
+    const PILL = 'polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%)';
+    const stepsV = CH.map((x, i) => {
+      const on = i === step, done = doneFor(x);
+      return { label: x.initial, w: '35px', clip: HEX, fs: '15px', face: x.color, rim: on ? '#B5532F' : '#BFAE8E', op: on || done ? '1' : '0.55', done: done && !on,
+        aria: x.name + (on ? ', current step' : (done ? ', done' : ', to do')) };
+    });
+    if (L5) stepsV.push({ label: 'Party', w: '64px', clip: PILL, fs: '12px', face: '#F6EEDF', rim: isParty ? '#B5532F' : '#BFAE8E', op: isParty || partyDone ? '1' : '0.55', done: partyDone && !isParty, aria: 'Party milestone' + (isParty ? ', current step' : (partyDone ? ', done' : ', to do')) });
+
+    let out = {
+      who: { name: '', initial: '', face: '#E6DCC8', sub: '' },
+      lvFrom: String(LEVEL - 1), lvTo: String(LEVEL), steps: stepsV, isParty: isParty, isChar: !isParty,
+      partyFaces: CH.map((x) => ({ initial: x.initial, face: x.color })),
+      panelAria: isParty ? 'Party milestone rewards' : 'Level-up choices',
+      hasSub: false, showGain: false, isMartial: false, isCaster: false, plainLevel: !L5, subs: [], spells: [], scores: [], gain: { n: '', ap: '', t: '', up: '' },
+      terrains: [], gainTitle: '', subNote: '', ptNote: '', ptInk: '#43524D', terrNote: '', terrInk: '#43524D'
+    };
+
+    let todo = '';
+    if (c) {
+      const chosen = pts[c.key] || null;
+      out.who = { name: c.name, initial: c.initial, face: c.color, sub: c.sub };
+      out.scores = Object.keys(c.ab).map((ab) => {
+        const on = chosen === ab;
+        return { ab: ab, val: String(c.ab[ab] + (on ? 1 : 0)), plus: on ? '+1' : '', valInk: on ? '#2E6B3A' : '#24302C',
+          border: on ? '#2E7A3E' : '#E2D5BC', bg: on ? '#E9F3E2' : '#FCF7EE', pressed: on ? 'true' : 'false',
+          aria: ab + ' ' + c.ab[ab] + (on ? ', plus 1 placed here' : ', tap to place the point here'),
+          pick: () => set('pts', pts, c.key, on ? null : ab) };
+      });
+      out.ptNote = chosen ? 'Placed on ' + chosen : '1 point to place';
+      out.ptInk = chosen ? '#2E6B3A' : '#9A4A12';
+      if (L5) {
+        const list = SUBS[c.cls];
+        const sid = subs[c.key] || null;
+        out.hasSub = true;
+        out.subNote = c.def ? 'His default is marked; any order can be picked' : 'Martials gain a card and an upgrade; casters pick a spell';
+        out.subs = list.map((s) => {
+          const on = sid === s.id;
+          return { n: s.n, blurb: s.blurb, isDefault: c.def === s.id, pressed: on ? 'true' : 'false', border: on ? '#B5532F' : '#E2D5BC', bg: on ? '#FFF4E8' : '#FCF7EE',
+            pick: () => { const ns = Object.assign({}, subs); ns[c.key] = s.id; const sp = Object.assign({}, spells); sp[c.key] = null; this.setState({ subs: ns, spells: sp }); } };
+        });
+        const S = list.find((s) => s.id === sid);
+        if (S) {
+          out.showGain = true;
+          if (c.martial) {
+            out.isMartial = true; out.gainTitle = 'You gain';
+            out.gain = { n: S.card.n, ap: String(S.card.ap), t: S.card.t, up: S.up };
+          } else {
+            out.isCaster = true; out.gainTitle = 'Pick 1 new spell (' + S.n + ', tier 1)';
+            out.spells = S.spells.map((p) => {
+              const on = spells[c.key] === p.n;
+              return { n: p.n, ap: String(p.ap), t: p.t, pressed: on ? 'true' : 'false', border: on ? '#B5532F' : '#E2D5BC', bg: on ? '#FFF4E8' : '#FCF7EE', pick: () => set('spells', spells, c.key, on ? null : p.n) };
+            });
+          }
+        }
+      }
+      const left = [];
+      if (!chosen) left.push('place the ability point');
+      if (L5 && !subs[c.key]) left.push('choose a subclass');
+      if (L5 && subs[c.key] && !c.martial && !spells[c.key]) left.push('pick a spell');
+      todo = left.length ? 'To do: ' + left.join(', ') : c.name + ' is ready.';
+    } else {
+      out.terrains = TERR.map((t) => {
+        const on = terr.indexOf(t[0]) >= 0;
+        return { n: t[1], bg: t[2], ink: t[3], icon: t[4], rim: on ? '#B5532F' : '#FCF7EE', edge: on ? '#7E3519' : '#A48A62', lift: on ? '0px' : '6px', pressed: on ? 'true' : 'false',
+          aria: t[1] + (on ? ', picked' : ''),
+          pick: () => { if (on) this.setState({ terr: terr.filter((x) => x !== t[0]) }); else if (terr.length < TERR_PICKS) this.setState({ terr: terr.concat([t[0]]) }); } };
+      });
+      out.terrNote = 'Picked ' + terr.length + ' of ' + TERR_PICKS + ' [number not set]';
+      out.terrInk = partyDone ? '#2E6B3A' : '#9A4A12';
+      todo = partyDone ? 'Ready.' : 'To do: pick ' + (TERR_PICKS - terr.length) + ' more terrain card' + (TERR_PICKS - terr.length === 1 ? '' : 's');
+    }
+
+    const curDone = c ? doneFor(c) : partyDone;
+    const last = step === stepCount - 1;
+    const allDone = CH.every(doneFor) && (!L5 || partyDone);
+    const nextName = !last ? (step + 1 < CH.length ? CH[step + 1].name : 'Party') : '';
+    return Object.assign(out, {
+      todo: todo, todoInk: curDone ? '#2E6B3A' : '#9A4A12',
+      canBack: step > 0, goBack: () => this.setState({ step: step - 1 }),
+      showNext: !last, nextName: nextName, nextOff: curDone ? 'false' : 'true',
+      nextBg: curDone ? '#B5532F' : '#E6DCC8', nextInk: curDone ? '#FFF8EE' : '#6B6152', nextShadow: curDone ? 'drop-shadow(0 4px 0 #7E3519)' : 'none',
+      goNext: () => { if (curDone) this.setState({ step: step + 1 }); },
+      showDone: last && allDone, showDoneOff: last && !allDone
+    });
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes avail{0%,100%{filter:drop-shadow(0 3px 0 #A48A62) drop-shadow(0 0 0 rgba(228,181,76,0))}50%{filter:drop-shadow(0 3px 0 #A48A62) drop-shadow(0 0 7px rgba(228,181,76,0.95))}}
+@keyframes learnpop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: {{bg}}; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- Top bar: back, character, party switcher, trainings left (Training Grounds only) -->
+  <header style="position: absolute; left: 12px; top: 10px; right: 12px; height: 56px; display: flex; align-items: center; gap: 10px">
+    <a href="{{backHref}}" aria-label="{{backAria}}" style="display: block; flex-shrink: 0; width: 44px; height: 51px; filter: drop-shadow(0 4px 0 #A48A62)">
+      <span style="position: relative; display: block; width: 44px; height: 51px">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+        </span>
+      </span>
+    </a>
+    <div style="display: flex; flex-direction: column; width: 200px">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 21px; line-height: 1.05">{{c.name}}</span>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D">{{c.sub}}</span>
+    </div>
+    <div style="display: flex; gap: 6px; align-items: center">
+      <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+        <button type="button" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; opacity: {{p.op}}; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: relative; display: block; width: 40px; height: 46px">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+            <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 16px; color: #22262E">{{p.initial}}</span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{atTG}}" hint-placeholder-val="{{ true }}">
+      <span role="img" aria-label="{{tgAria}}" style="margin-left: auto; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 6px; border-radius: 20px; background: #24302C; color: #F6EEDF">
+        <span style="width: 28px; height: 32px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #E4B54C; color: #24302C; display: flex; align-items: center; justify-content: center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4 M6 4h11l-3 4 3 4H6"></path></svg>
+        </span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Training ×{{tLeft}}</span>
+      </span>
+    </sc-if>
+  </header>
+
+  <!-- Weapon tabs: the character's equipped weapon categories (both sets) -->
+  <nav aria-label="Weapons" style="position: absolute; left: 12px; top: 74px; height: 34px; display: flex; gap: 6px">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+      <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="height: 34px; padding: 0 16px 0 10px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{t.bg}}; color: {{t.ink}}; font-family: Nunito, sans-serif; font-size: 12.5px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 6px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"></path></svg>{{t.n}}<span style="opacity: 0.7; font-weight: 800">{{t.count}}</span>
+      </button>
+    </sc-for>
+  </nav>
+
+  <!-- The tree: the weapon's category cards on the left, one row per branch, nodes 1 → 3 (capstone) -->
+  <section aria-label="{{treeAria}}" style="position: absolute; left: 12px; top: 116px; width: 594px; height: 262px; box-sizing: border-box; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894">
+    <!-- links from the base cards to each branch, and between nodes (drawn as bars) -->
+    <sc-for list="{{links}}" as="ln" hint-placeholder-count="9">
+      <span aria-hidden="true" style="position: absolute; left: {{ln.x}}; top: {{ln.y}}; width: {{ln.w}}; height: {{ln.h}}; border-radius: 2px; background: {{ln.bg}}"></span>
+    </sc-for>
+
+    <div role="group" aria-label="{{baseAria}}" style="position: absolute; left: 10px; top: {{baseTop}}; width: 82px; box-sizing: border-box; padding: 7px 0 8px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458; display: flex; flex-direction: column; align-items: center; gap: 6px">
+      <sc-for list="{{base}}" as="b" hint-placeholder-count="1">
+        <button type="button" aria-label="{{b.aria}}" onClick="{{b.open}}" style="position: relative; width: 66px; height: 76px; box-sizing: border-box; padding: 0; border: {{b.borderW}} solid {{b.border}}; border-radius: 10px; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #24302C; font-family: Nunito, sans-serif">
+          <span style="display: block; width: 100%; height: 6px; background: #5F7F99; flex-shrink: 0"></span>
+          <span style="position: absolute; left: 3px; top: 8px; width: 18px; height: 21px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{b.ap}}</span>
+          <span style="margin-top: 10px; color: #3E5A70"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></span>
+          <span style="margin-top: 2px; padding: 0 3px; font-size: 10.5px; font-weight: 900; line-height: 1.1; text-align: center">{{b.n}}</span>
+        </button>
+      </sc-for>
+      <sc-for list="{{wpas}}" as="p" hint-placeholder-count="0">
+        <button type="button" aria-label="{{p.aria}}" onClick="{{p.open}}" style="margin-top: 2px; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: Nunito, sans-serif; color: #24302C">
+          <span style="position: relative; display: block; width: 38px; height: 44px; filter: drop-shadow(0 3px 0 #A48A62)">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+            <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #EAF0F4; display: flex; align-items: center; justify-content: center; color: #3E5A70"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.icon}}"></path></svg></span>
+            <sc-if value="{{p.up}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; right: -5px; bottom: -1px; width: 16px; height: 16px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5 M6 11l6-6 6 6"></path></svg></span>
+            </sc-if>
+          </span>
+          <span style="font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center; color: #FFF8EE">{{p.n}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+      <div style="position: absolute; left: 110px; top: {{r.top}}; width: 110px; height: {{r.h}}; display: flex; flex-direction: column; justify-content: center; gap: 3px; opacity: {{r.op}}">
+        <span style="align-self: flex-start; display: flex; align-items: center; gap: 5px; padding: 1px 6px 1px 4px; background: #F6EEDF; font-family: 'Lilita One', sans-serif; font-size: 15px; line-height: 1.1">
+          <sc-if value="{{r.locked}}" hint-placeholder-val="{{ false }}">
+            <svg role="img" aria-label="Locked" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5A5040" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg>
+          </sc-if>{{r.n}}
+        </span>
+        <sc-if value="{{r.twoHanded}}" hint-placeholder-val="{{ false }}">
+          <span style="align-self: flex-start; height: 18px; padding: 0 7px; border-radius: 9px; background: #E6DCC8; font-size: 10px; font-weight: 900; line-height: 18px">Two-handed</span>
+        </sc-if>
+      </div>
+      <sc-for list="{{r.nodes}}" as="nd" hint-placeholder-count="3">
+        <button type="button" aria-label="{{nd.aria}}" aria-pressed="{{nd.pressed}}" onClick="{{nd.open}}" style="position: absolute; left: {{nd.x}}; top: {{nd.y}}; width: {{nd.w}}; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: Nunito, sans-serif; color: #24302C; opacity: {{nd.op}}">
+          <span style="position: relative; display: block; width: {{nd.hw}}; height: {{nd.hh}}; filter: drop-shadow(0 3px 0 #A48A62); animation: {{nd.anim}}">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{nd.rim}}"></span>
+            <span style="position: absolute; inset: {{nd.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{nd.face}}; display: flex; align-items: center; justify-content: center; color: {{nd.ink}}">
+              <svg width="{{nd.is}}" height="{{nd.is}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{nd.icon}}"></path></svg>
+            </span>
+            <sc-if value="{{nd.done}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; right: -3px; bottom: 0; width: 17px; height: 17px; border-radius: 50%; background: #2E7A3E; color: #FFF8EE; display: flex; align-items: center; justify-content: center; animation: {{nd.pop}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+            </sc-if>
+          </span>
+          <span style="font-size: 10.5px; font-weight: 900; line-height: 1.1; text-align: center; max-width: {{nd.w}}">{{nd.n}}</span>
+        </button>
+      </sc-for>
+    </sc-for>
+  </section>
+
+  <!-- Details: the selected node as the card it gives (or the passive), plus Train at the Training Grounds -->
+  <aside aria-label="Node details" style="position: absolute; left: 618px; top: 76px; width: 214px; height: 302px; box-sizing: border-box; padding: 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 7px">
+    <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{d.tagInk}}">{{d.tag}}</span>
+    <div style="display: flex; gap: 10px; align-items: flex-start">
+      <sc-if value="{{d.isCard}}" hint-placeholder-val="{{ true }}">
+        <span role="img" aria-label="{{d.name}} card" style="position: relative; flex-shrink: 0; width: 66px; height: 76px; box-sizing: border-box; border: 2.5px solid {{d.band}}; border-radius: 10px; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62; overflow: hidden; display: flex; flex-direction: column; align-items: center">
+          <span style="display: block; width: 100%; height: 6px; background: {{d.band}}"></span>
+          <span style="position: absolute; left: 3px; top: 8px; width: 18px; height: 21px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{d.ap}}</span>
+          <span style="margin-top: 10px; color: #3E5A70"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{d.icon}}"></path></svg></span>
+          <span style="margin-top: 2px; padding: 0 3px; font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center">{{d.name}}</span>
+        </span>
+      </sc-if>
+      <sc-if value="{{d.isPassive}}" hint-placeholder-val="{{ false }}">
+        <span role="img" aria-label="Passive" style="position: relative; flex-shrink: 0; display: block; width: 58px; height: 67px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #5F7F99"></span>
+          <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #EAF0F4; display: flex; align-items: center; justify-content: center; color: #3E5A70"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{d.icon}}"></path></svg></span>
+        </span>
+      </sc-if>
+      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">{{d.name}}</span>
+        <sc-if value="{{d.hasWas}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 11px; font-weight: 800; color: #5A5040">Replaces {{d.was}}</span>
+        </sc-if>
+      </div>
+    </div>
+    <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{d.desc}}</span>
+    <sc-if value="{{d.hasNote}}" hint-placeholder-val="{{ false }}">
+      <span style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; background: #F1E8D8; font-size: 11.5px; font-weight: 800; color: #5A5040; line-height: 1.25">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg>{{d.note}}
+      </span>
+    </sc-if>
+    <span style="margin-top: auto"></span>
+    <sc-if value="{{d.learned}}" hint-placeholder-val="{{ false }}">
+      <span style="align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 15px; background: #E9F3E2; color: #2E6B3A; font-size: 12px; font-weight: 900; display: flex; align-items: center; gap: 5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Learned</span>
+    </sc-if>
+    <sc-if value="{{d.canTrain}}" hint-placeholder-val="{{ false }}">
+      <span style="align-self: stretch; filter: drop-shadow(0 4px 0 #7E3519); display: block">
+        <button type="button" onClick="{{d.train}}" style="width: 100%; height: 42px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 16px; cursor: pointer">Train</button>
+      </span>
+    </sc-if>
+  </aside>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const AT = 'gear'; // 'tg' = visiting the Training Grounds (can train); 'gear' = opened from the gear screen (view only)
+    const atTG = AT === 'tg';
+    const st = this.state || {};
+    const IC = {
+      longsword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4', greatsword: 'M19 3L8 14 M19 3h-4 M19 3v4 M5 11l8 8 M7 15l-4 4 M10 12l2 2',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', dagger: 'M14 3l7 7-9 9-3-1-1-3z M5 19l3-3',
+      card: 'M7 4h10v16H7z M10 9h4 M10 13h4', up: 'M12 19V5 M6 11l6-6 6 6', passive: 'M12 3l7 4v10l-7 4-7-4V7z M12 9v6 M9 12h6',
+      star: 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z'
+    };
+    // Trees: Weapons & gear → Weapon mastery (node names decided Oct 26, 2026). k: card = new card, up = upgrade, pas = passive
+    const TREES = {
+      longsword: { n: 'Longsword', icon: IC.longsword, base: [{ n: 'Parry', ap: 1, t: 'Block the next melee hit.' }], rows: [
+        { n: 'Duelist', nodes: [{ k: 'up', n: 'Riposte', was: 'Parry', ap: 1, t: 'A successful Parry triggers a free counterattack.' }, { k: 'card', n: 'Feint', ap: 1, t: 'Your next attack on a foe is easier to hit.' }, { k: 'card', n: 'Perfect Parry', ap: 2, t: 'Parry every melee attack this round and counter each.' }] },
+        { n: 'Warlord', nodes: [{ k: 'card', n: 'Sweep', ap: 1, t: 'Knock a foe back a hex.' }, { k: 'card', n: 'Lunge', ap: 1, t: 'Step forward and attack from 2 hexes away.' }, { k: 'card', n: 'Zone of Steel', ap: 2, t: 'Foes entering adjacent hexes are struck automatically this round.' }] },
+        { n: 'Blademaster', twoHanded: true, nodes: [{ k: 'card', n: 'Overhand Cut', ap: 1, t: 'A heavy downward strike with bonus damage.' }, { k: 'card', n: 'Mordhau', ap: 1, t: 'A reverse-grip pommel strike that stuns (CON save).' }, { k: 'card', n: 'Master Strike', ap: 2, t: "One perfect cut that can't miss and deals heavy damage." }] }
+      ] },
+      shield: { n: 'Shield', icon: IC.shield, base: [{ n: 'Block', ap: 1, t: 'Reduce damage this turn (replaces defend).' }, { n: 'Shield Bash', ap: 1, t: 'Push or stun a foe.' }], rows: [
+        { n: 'Guardian', nodes: [{ k: 'up', n: 'Steady Block', was: 'Block', ap: 1, t: "While Blocking you can't be pushed, pulled or knocked prone." }, { k: 'up', n: 'Steady Block+', was: 'Steady Block', ap: 1, t: 'Block reduces more damage.' }, { k: 'card', n: 'Fortress', ap: 2, t: "Until your next turn, attacks against you flip one fewer coin and Block's reduction is doubled." }] },
+        { n: 'Basher', nodes: [{ k: 'card', n: 'Shield Charge', ap: 2, t: 'Rush a few hexes and Shield Bash the first foe you reach.' }, { k: 'up', n: 'Shield Slam', was: 'Shield Bash', ap: 1, t: 'Shield Bash deals extra damage when it pushes a foe into a wall or another foe.' }, { k: 'card', n: 'Shield Throw', ap: 2, t: 'Hurl your shield so it bounces between up to 3 foes, then returns to you.' }] }
+      ] },
+      greatsword: { n: 'Greatsword', icon: IC.greatsword, base: [{ n: 'Cleave', ap: 1, t: 'Hit all adjacent enemies.' }], rows: [
+        { n: 'Executioner', nodes: [{ k: 'pas', n: 'Heavy Blade', t: 'Greatsword basic attacks deal more damage.' }, { k: 'card', n: 'Pommel Strike', ap: 1, t: 'A small hit that staggers.' }, { k: 'card', n: 'Execute', ap: 2, t: 'Massive damage to a foe below half HP.' }] },
+        { n: 'Sweeper', nodes: [{ k: 'up', n: 'Cleave+', was: 'Cleave', ap: 1, t: 'Cleave deals more damage for each extra foe it hits.' }, { k: 'card', n: 'Spinning Slash', ap: 2, t: 'Move and Cleave along the way.' }, { k: 'card', n: 'Whirlwind', ap: 3, t: 'Spin through a line of foes, hitting each.' }] }
+      ] },
+      dagger: { n: 'Dagger', icon: IC.dagger, base: [{ n: 'Throw', ap: 1, t: 'A ranged attack with the dagger.' }], pas: [{ n: 'Backstab', t: "The first dagger hit from behind each turn deals bonus damage." }], rows: [
+        { n: 'Shadow', nodes: [{ k: 'up', n: 'Backstab+', was: 'Backstab', ap: 0, t: 'Upgrades the Backstab passive: Backstab deals more damage.', mod: true }, { k: 'card', n: 'Shadowstep', ap: 1, t: 'Move behind an adjacent foe.' }, { k: 'card', n: 'Heartseeker', ap: 2, t: "A backstab that can't miss and deals massive damage." }] },
+        { n: 'Thrower', nodes: [{ k: 'up', n: 'Throw+', was: 'Throw', ap: 1, t: 'Throw has longer range.' }, { k: 'card', n: 'Ricochet', ap: 1, t: 'A throw that bounces to a second foe.' }, { k: 'up', n: 'Ricochet+', was: 'Ricochet', ap: 1, t: 'Ricochet bounces to every foe in range.' }] }
+      ] }
+    };
+    // Mockup party: what each has learned so far (placeholder progress)
+    const CH = [
+      { key: 'h', name: '[Hero name]', initial: 'H', color: '#E9C46A', sub: 'Human Tactician · Hero', fighter: true, weapons: ['longsword', 'shield', 'greatsword'], learned0: { longsword: ['0-0'], shield: [], greatsword: ['1-0'] } },
+      { key: 'm', name: 'Mel', initial: 'M', color: '#F4B6A8', sub: 'Rogue · Companion', fighter: false, weapons: ['dagger'], learned0: { dagger: ['0-0'] } }
+    ];
+    const TRAININGS = 1; // placeholder: trainings per visit (Leader: one per visit; others: progression pass)
+    const ci = st.ch ?? 0; const c = CH[ci];
+    const wk = st.w && c.weapons.indexOf(st.w) >= 0 ? st.w : c.weapons[0];
+    const T = TREES[wk];
+    const learned = (st.learned && st.learned[c.key] && st.learned[c.key][wk]) || c.learned0[wk] || [];
+    const used = (st.used && st.used[c.key]) || 0;
+    const tLeft = Math.max(0, TRAININGS - used);
+    const has = (r, i) => learned.indexOf(r + '-' + i) >= 0;
+    const startedRows = T.rows.map((_, r) => has(r, 0));
+    const committed = !c.fighter && startedRows.some(Boolean) ? startedRows.indexOf(true) : -1;
+    const state = (r, i) => {
+      if (has(r, i)) return 'done';
+      if (committed >= 0 && committed !== r) return 'locked';
+      if (i === 0 || has(r, i - 1)) return 'open';
+      return 'later';
+    };
+    // Layout
+    const rowsN = T.rows.length;
+    const rowH = rowsN === 3 ? 82 : 110, top0 = rowsN === 3 ? 8 : 18;
+    const NX = [236, 336, 446];
+    const sel = st.sel && st.sel.w === wk && st.sel.c === c.key ? st.sel : { kind: 'node', r: 0, i: Math.min(learned.length ? 1 : 0, 2) };
+    const KIND = { card: 'New card', up: 'Upgrade', pas: 'Passive' };
+    const links = []; const rows = T.rows.map((row, r) => {
+      const cy = top0 + r * rowH + rowH / 2;
+      const nodes = row.nodes.map((nd, i) => {
+        const s = state(r, i), cap = i === 2;
+        const hw = cap ? 56 : 48, hh = cap ? 65 : 55;
+        const on = sel.kind === 'node' && sel.r === r && sel.i === i;
+        const icon = nd.k === 'card' ? (cap ? IC.star : IC.card) : (nd.k === 'up' ? IC.up : IC.passive);
+        return { n: nd.n, x: (NX[i] - 40) + 'px', y: (cy - hh / 2 - 6) + 'px', w: '80px', hw: hw + 'px', hh: hh + 'px', is: cap ? '26' : '22', icon: icon,
+          rim: on ? '#3F86C8' : (s === 'done' ? '#B5532F' : (s === 'open' ? '#E4B54C' : '#CDBFA6')), inset: on ? '5px' : '3.5px',
+          face: s === 'done' ? '#FFF4E8' : (s === 'open' ? '#FFFBEF' : '#F1E8D8'), ink: s === 'done' ? '#9A4A12' : '#5A5040',
+          op: s === 'locked' ? '0.45' : (s === 'later' ? '0.7' : '1'), done: s === 'done', anim: s === 'open' && atTG && tLeft > 0 ? 'avail 1.6s ease-in-out infinite' : 'none',
+          pop: st.justLearned === wk + r + '-' + i ? 'learnpop 0.45s ease-out' : 'none', pressed: on ? 'true' : 'false',
+          aria: row.n + ' ' + (i + 1) + ': ' + nd.n + ' (' + KIND[nd.k] + ', ' + ({ done: 'learned', open: 'can be trained', later: 'needs the previous node', locked: 'locked' })[s] + ')',
+          open: () => this.setState({ sel: { w: wk, c: c.key, kind: 'node', r: r, i: i } }) };
+      });
+      // links: trunk → node 1, node → node
+      const bar = (x1, x2, done, lock) => ({ x: x1 + 'px', y: (cy - (done ? 1.5 : 1)) + 'px', w: (x2 - x1) + 'px', h: done ? '3px' : '2px', bg: done ? '#B5532F' : (lock ? 'rgba(205,191,166,0.45)' : '#CDBFA6') });
+      links.push(bar(98, NX[0] - 24, has(r, 0), state(r, 0) === 'locked'));
+      for (let i = 0; i < 2; i++) links.push(bar(NX[i] + 24, NX[i + 1] - (i === 1 ? 28 : 24), has(r, i + 1), state(r, i + 1) === 'locked'));
+      return { n: row.n, twoHanded: !!row.twoHanded, top: (top0 + r * rowH) + 'px', h: rowH + 'px', locked: committed >= 0 && committed !== r, op: committed >= 0 && committed !== r ? '0.5' : '1', nodes: nodes };
+    });
+    const cys = T.rows.map((_, r) => top0 + r * rowH + rowH / 2);
+    links.unshift({ x: '97px', y: (cys[0] - 1) + 'px', w: '2px', h: (cys[cys.length - 1] - cys[0] + 2) + 'px', bg: '#CDBFA6' }, { x: '92px', y: (top0 + (rowsN === 3 ? rowH * 1.5 : rowH) - 1) + 'px', w: '10px', h: '2px', bg: '#CDBFA6' });
+    const base = T.base.map((b, i) => { const on = sel.kind === 'base' && sel.i === i; return { n: b.n, ap: String(b.ap), icon: T.icon, border: on ? '#3F86C8' : '#5F7F99', borderW: on ? '3px' : '2.5px', aria: b.n + ', weapon card, ' + b.ap + ' AP',
+      open: () => this.setState({ sel: { w: wk, c: c.key, kind: 'base', i: i } }) }; });
+    // Weapon passives (always-on modifiers: Weapons & gear → Weapon rules). An upgrade node with mod: true upgrades the passive it names
+    const P = T.pas || [];
+    const pasUp = (p) => { let up = null; T.rows.forEach((row, r) => row.nodes.forEach((nd, i) => { if (nd.mod && nd.was === p.n && has(r, i)) up = nd; })); return up; };
+    const wpas = P.map((p, i) => { const on = sel.kind === 'wpas' && sel.i === i; const up = pasUp(p); return { n: up ? up.n : p.n, icon: IC.passive, up: !!up, rim: on ? '#3F86C8' : '#5F7F99', inset: on ? '4.5px' : '3px',
+      aria: (up ? up.n : p.n) + ', weapon passive, always on', open: () => this.setState({ sel: { w: wk, c: c.key, kind: 'wpas', i: i } }) }; });
+    // Details
+    let d;
+    if (sel.kind === 'wpas') {
+      const p = P[sel.i], up = pasUp(p);
+      d = { tag: 'Weapon passive · ' + T.n, tagInk: '#3E5A70', isCard: false, isPassive: true, name: up ? up.n : p.n, ap: '', icon: IC.passive, band: '#5F7F99', desc: up ? p.t + ' ' + up.n + ': ' + up.t.replace(/^Upgrades the [^:]+: /, '') : p.t, hasWas: false, was: '', hasNote: false, note: '', learned: true, canTrain: false, train: () => {} };
+    } else if (sel.kind === 'base') {
+      const b = T.base[sel.i];
+      d = { tag: 'Weapon card · ' + b.ap + ' AP', tagInk: '#3E5A70', isCard: true, isPassive: false, name: b.n, ap: String(b.ap), icon: T.icon, band: '#5F7F99', desc: b.t, hasWas: false, was: '', hasNote: false, note: '', learned: true, canTrain: false, train: () => {} };
+    } else {
+      const nd = T.rows[sel.r].nodes[sel.i], s = state(sel.r, sel.i);
+      const note = s === 'locked' ? 'Only Fighters can mix branches; ' + c.name + ' is on ' + T.rows[committed].n + '.' : (s === 'later' ? 'Needs ' + T.rows[sel.r].nodes[sel.i - 1].n + ' first.' : '');
+      d = { tag: KIND[nd.k] + (nd.k !== 'pas' && !nd.mod ? ' · ' + nd.ap + ' AP' : '') + ' · ' + T.rows[sel.r].n + ' ' + (sel.i + 1), tagInk: nd.k === 'pas' ? '#3E5A70' : '#9A4A12',
+        isCard: nd.k !== 'pas' && !nd.mod, isPassive: nd.k === 'pas' || !!nd.mod, name: nd.n, ap: String(nd.ap ?? ''), icon: nd.k === 'pas' || nd.mod ? IC.passive : T.icon, band: '#5F7F99',
+        desc: nd.t, hasWas: !!nd.was && nd.n.indexOf(nd.was) !== 0, was: nd.was || '', hasNote: !!note, note: note, learned: s === 'done',
+        canTrain: atTG && s === 'open' && tLeft > 0,
+        train: () => { const L = Object.assign({}, st.learned || {}); const mine = Object.assign({}, L[c.key] || {}); mine[wk] = learned.concat([sel.r + '-' + sel.i]); L[c.key] = mine;
+          const U = Object.assign({}, st.used || {}); U[c.key] = used + 1; this.setState({ learned: L, used: U, justLearned: wk + sel.r + '-' + sel.i }); } };
+    }
+    return {
+      bg: atTG ? '#D9E3C8' : '#BFD9D2', atTG: atTG, tLeft: '[' + tLeft + ']', tgAria: 'Training Grounds: [' + tLeft + '] training left this visit',
+      backHref: atTG ? 'Ref-Explore-v6b.dc.html' : 'Ref-Gear-Mastery-v4.dc.html', backAria: atTG ? 'Leave the Training Grounds' : 'Back to the gear screen',
+      c: { name: c.name, sub: c.sub },
+      party: CH.map((x, i) => ({ initial: x.initial, face: x.color, rim: i === ci ? '#B5532F' : '#BFAE8E', inset: i === ci ? '4px' : '3px', op: i === ci ? '1' : '0.75', aria: x.name + (i === ci ? ', shown' : ''),
+        pick: () => this.setState({ ch: i, w: null, sel: null }) })),
+      tabs: c.weapons.map((w) => { const L = ((st.learned && st.learned[c.key] && st.learned[c.key][w]) || c.learned0[w] || []).length; return { n: TREES[w].n, icon: TREES[w].icon, count: L + '/' + TREES[w].rows.length * 3,
+        pressed: w === wk ? 'true' : 'false', bg: w === wk ? '#24302C' : '#F6EEDF', ink: w === wk ? '#F6EEDF' : '#24302C', pick: () => this.setState({ w: w, sel: null }) }; }),
+      treeAria: T.n + ' mastery tree', baseTop: (rowsN === 3 ? (top0 + rowH * 1.5 - (T.base.length * 82 - 6 + P.length * 62 + 15) / 2) : (top0 + rowH - (T.base.length * 82 - 6 + P.length * 62 + 15) / 2)) + 'px',
+      base: base, wpas: wpas, baseAria: T.n + ': weapon cards and passives', rows: rows, links: links, d: d,
+      reset: () => this.setState({ learned: null, used: null, justLearned: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

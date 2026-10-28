@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Combat v1b: 8-slot hotbar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #BFD9D2; color: #24302C; font-family: Nunito, sans-serif">
+
+  <svg width="844" height="390" style="position: absolute; left: 0; top: 0; opacity: 0.14" aria-hidden="true">
+    <defs>
+      <pattern id="hexgridc" width="26" height="45" patternUnits="userSpaceOnUse">
+        <path d="M13 0L26 7.5V22.5L13 30L0 22.5V7.5Z M13 30V45" fill="none" stroke="#2F5D52" stroke-width="1"></path>
+      </pattern>
+    </defs>
+    <rect width="844" height="390" fill="url(#hexgridc)"></rect>
+  </svg>
+
+  <div style="position: absolute; left: 18px; top: 14px; width: 60px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+    <sc-for list="{{party}}" as="p" hint-placeholder-count="3">
+      <button type="button" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: none; background: transparent; cursor: pointer">
+        <span style="position: relative; display: block; width: 46px; height: 53px; filter: drop-shadow(0 4px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+          <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 18px">{{p.initial}}</span>
+        </span>
+        <span style="display: block; width: 44px; height: 6px; border-radius: 3px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+          <span style="display: block; height: 6px; width: {{p.hpW}}; background: #4E9A5B"></span>
+        </span>
+        <span style="font-size: 11px; font-weight: 900; color: #24302C">{{p.apTxt}}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 92px; top: 14px; display: flex; flex-direction: column; gap: 4px">
+    <span style="height: 32px; padding: 0 18px; display: flex; align-items: center; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: #24302C; color: #F6EEDF; font-family: 'Lilita One', sans-serif; font-size: 14px">{{phaseLabel}}</span>
+    <span style="font-size: 11px; font-weight: 800; color: #2F3F3A; padding-left: 10px">Then: {{phaseNext}}</span>
+  </div>
+
+  <div style="position: absolute; left: 208px; top: 13px; width: 288px; height: 260px; filter: drop-shadow(0 6px 0 #5B7A52)">
+    <sc-for list="{{cells}}" as="cell" hint-placeholder-count="61">
+      <span style="position: absolute; left: {{cell.left}}; top: {{cell.top}}; width: 30px; height: 34.6px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{cell.bg}}; display: flex; align-items: center; justify-content: center; color: {{cell.ink}}">
+        <sc-if value="{{cell.tree}}" hint-placeholder-val="{{ false }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L5 13h4l-3 5h12l-3-5h4z M11 18h2v4h-2z"></path></svg>
+        </sc-if>
+        <sc-if value="{{cell.rock}}" hint-placeholder-val="{{ false }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 19l4-8 4 3 3-6 7 11z"></path></svg>
+        </sc-if>
+      </span>
+    </sc-for>
+  </div>
+  <div style="position: absolute; left: 208px; top: 13px; width: 288px; height: 260px">
+    <sc-for list="{{units}}" as="u" hint-placeholder-count="6">
+      <span style="position: absolute; left: {{u.ringLeft}}; top: {{u.ringTop}}; width: 34px; height: 39px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{u.ring}}"></span>
+      <button type="button" aria-label="{{u.aria}}" onClick="{{u.pick}}" style="position: absolute; left: {{u.left}}; top: {{u.top}}; width: 26px; height: 30px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 rgba(36,48,44,0.45))">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{u.rim}}"></span>
+        <span style="position: absolute; inset: 2px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{u.face}}; display: flex; align-items: center; justify-content: center; color: {{u.ink}}; font-family: 'Lilita One', sans-serif; font-size: 13px">{{u.label}}</span>
+      </button>
+      <span style="position: absolute; left: {{u.barLeft}}; top: {{u.barTop}}; width: 24px; height: 4px; border-radius: 2px; background: #24302C; overflow: hidden">
+        <span style="display: block; height: 4px; width: {{u.hpW}}; background: {{u.hpColor}}"></span>
+      </span>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 626px; top: 12px; width: 200px; height: 262px; box-sizing: border-box; padding: 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; flex-direction: column">
+      <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{card.bandInk}}">{{card.srcLabel}} · {{card.apLabel}}</span>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1.1">{{card.n}}</span>
+      <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.3">{{card.desc}}</span>
+    </div>
+    <span style="display: block; height: 2px; background: #A48A62; opacity: 0.5; border-radius: 1px; flex-shrink: 0"></span>
+
+    <sc-if value="{{mode.pick}}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 13px; font-weight: 800; line-height: 1.35">Pick a target. Foes in reach glow gold.</span>
+    </sc-if>
+
+    <sc-if value="{{mode.move}}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 13px; font-weight: 800; line-height: 1.35">Lit hexes are in reach.</span>
+      <span style="font-size: 12px; font-weight: 700; color: #43524D">Move distance: [hexes per Move, not set yet]</span>
+    </sc-if>
+
+    <sc-if value="{{mode.ready}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">{{target.n}}</span>
+        <span style="flex: 1; height: 6px; border-radius: 3px; background: #24302C; overflow: hidden">
+          <span style="display: block; height: 6px; width: {{target.hpW}}; background: #C4542A"></span>
+        </span>
+      </div>
+      <span style="font-size: 13px; font-weight: 800; line-height: 1.35">{{check.line1}}</span>
+      <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.3">{{check.line2}}</span>
+    </sc-if>
+
+    <sc-if value="{{mode.result}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        <sc-for list="{{result.coins}}" as="coin" hint-placeholder-count="3">
+          <span role="img" aria-label="{{coin.aria}}" style="width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box; background: {{coin.bg}}; box-shadow: inset 0 -3px 0 {{coin.edge}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 15px; color: {{coin.ink}}">{{coin.t}}</span>
+        </sc-for>
+      </div>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 22px; color: {{result.color}}">{{result.title}}</span>
+      <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.3">{{result.sub}}</span>
+    </sc-if>
+
+    <sc-if value="{{mode.selfDone}}" hint-placeholder-val="{{ false }}">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; color: #2E7A3E">Used</span>
+    </sc-if>
+
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 4px">
+      <sc-if value="{{btn.show}}" hint-placeholder-val="{{ true }}">
+        <span style="filter: {{btn.shadow}}; display: block">
+          <button type="button" onClick="{{btn.act}}" aria-disabled="{{btn.disabled}}" style="width: 100%; height: 44px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: {{btn.bg}}; color: {{btn.ink}}; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px">
+            <span style="width: 18px; height: 18px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+            {{btn.label}}
+          </button>
+        </span>
+      </sc-if>
+      <sc-if value="{{btn.hasNote}}" hint-placeholder-val="{{ false }}">
+        <span style="font-size: 11px; font-weight: 800; color: #5A5040; text-align: center">{{btn.note}}</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 18px; top: 286px; width: 808px; height: 92px; display: flex; align-items: center; gap: 10px">
+    <div style="width: 86px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{activeName}}</span>
+      <div role="img" aria-label="{{apAria}}" style="display: flex; gap: 3px">
+        <sc-for list="{{apPips}}" as="pip" hint-placeholder-count="3">
+          <span style="width: 22px; height: 25px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{pip.bg}}"></span>
+        </sc-for>
+      </div>
+      <span style="font-size: 11px; font-weight: 900; color: #2F3F3A">{{apText}}</span>
+    </div>
+
+    <div style="display: flex; gap: 5px; align-items: flex-end; height: 92px">
+      <sc-for list="{{hotbar}}" as="k" hint-placeholder-count="8">
+        <button type="button" aria-label="{{k.aria}}" aria-pressed="{{k.pressed}}" onClick="{{k.pick}}" style="position: relative; width: 60px; height: 84px; box-sizing: border-box; margin-bottom: {{k.lift}}; padding: 0; border: 2.5px solid {{k.border}}; border-radius: 10px; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; align-items: center; opacity: {{k.opacity}}; color: #24302C; font-family: Nunito, sans-serif">
+          <span style="display: block; width: 100%; height: 6px; background: {{k.band}}; flex-shrink: 0"></span>
+          <span style="position: absolute; left: 4px; top: 9px; width: 20px; height: 23px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{k.apTxt}}</span>
+          <sc-if value="{{k.once}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; right: 4px; top: 10px; font-size: 11px; font-weight: 900; color: #3E5A70">1×</span>
+          </sc-if>
+          <span style="margin-top: 12px; color: {{k.iconInk}}">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.icon}}"></path></svg>
+          </span>
+          <span style="margin-top: 3px; padding: 0 4px; font-size: 11px; font-weight: 900; line-height: 1.1; text-align: center">{{k.n}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <button type="button" onClick="{{openAll}}" style="width: 56px; height: 84px; align-self: flex-end; flex-shrink: 0; box-sizing: border-box; border: none; border-radius: 10px; background: #24302C; color: #F6EEDF; box-shadow: 0 4px 0 #11181A; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; line-height: 1.1">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"></path></svg>
+      All actions
+    </button>
+
+    <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block; margin-left: auto; align-self: center">
+      <button type="button" onClick="{{endPhase}}" style="height: 52px; width: 112px; border: none; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 14px; line-height: 1.05; cursor: pointer">End allies' phase</button>
+    </span>
+  </div>
+
+  <sc-if value="{{showAll}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="All actions" style="position: absolute; left: 90px; top: 12px; width: 524px; height: 262px; box-sizing: border-box; padding: 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 8px; z-index: 10">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 18px">All actions · {{activeName}}</span>
+        <button type="button" aria-label="Close all actions" onClick="{{closeAll}}" style="width: 44px; height: 44px; margin: -8px -6px 0 0; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg>
+        </button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-content: start">
+        <sc-for list="{{allCards}}" as="k" hint-placeholder-count="9">
+          <button type="button" onClick="{{k.pickClose}}" style="height: 48px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 2px solid {{k.border}}; border-left-width: 2px; border-radius: 10px; background: #FCF7EE; cursor: pointer; text-align: left; opacity: {{k.opacity}}; color: #24302C; font-family: Nunito, sans-serif">
+            <span style="width: 20px; height: 23px; flex-shrink: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{k.apTxt}}</span>
+            <span style="color: {{k.iconInk}}; display: flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.icon}}"></path></svg></span>
+            <span style="display: flex; flex-direction: column; min-width: 0">
+              <span style="font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{k.n}}</span>
+              <span style="font-size: 11px; font-weight: 700; color: #43524D">{{k.srcLabel}}{{k.onHot}}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{enemyPhase}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(36,48,44,0.55); display: flex; align-items: center; justify-content: center; z-index: 20">
+      <div role="dialog" aria-label="Enemies' phase" style="width: 280px; box-sizing: border-box; padding: 16px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 22px">Enemies' phase</span>
+        <span style="font-size: 12px; font-weight: 700; color: #43524D">[Enemy actions play out on the board]</span>
+        <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block">
+          <button type="button" onClick="{{nextRound}}" style="height: 44px; padding: 0 26px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer">Back to allies' phase</button>
+        </span>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const SLOTS = 8;
+    const st = this.state || {};
+    const active = st.active ?? 'h';
+    const sel = st.sel ?? 'attack';
+    const target = st.target === undefined ? 'e1' : st.target;
+    const result = st.result ?? null;
+    const selfDone = st.selfDone ?? null;
+    const ap = st.ap ?? { h: 3, f: 3, c: 3 };
+    const used = st.used ?? { h: [], f: [], c: [] };
+    const hp = st.hp ?? { e1: 1, e2: 0.8, e3: 1 };
+    const phase = st.phase ?? 'allies';
+    const showAll = !!st.showAll;
+
+    const ICON = {
+      move: 'M5 12h11 M12 7l5 5-5 5 M3 5v14',
+      sword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4',
+      defend: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M9 12l2 2 4-4',
+      potion: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10',
+      parry: 'M4 20L16 8 M20 20L8 8 M14 4h6v6 M10 4H4v6',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+      bash: 'M11 4l6 2.5v5c0 4-2.8 6.5-6 7.5-3.2-1-6-3.5-6-7.5v-5z M19 4l2-2 M20 9h3 M19 14l2 2',
+      heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z M12 9v5 M9.5 11.5h5',
+      bolt: 'M13 2L5 14h6l-1 8 8-12h-6z',
+      staff: 'M6 21L15 8 M15 8a3.5 3.5 0 1 1 3-5',
+      trip: 'M4 20h16 M6 16l6-10 M12 6l6 10',
+      ward: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 8v8 M8 12h8',
+      fire: 'M12 21c-4 0-6-3-6-6 0-4 4-6 4-10 2 2 3 4 3 6 1-1 2-2 2-4 2 2 3 5 3 8 0 3-2 6-6 6z',
+      snow: 'M12 3v18 M4 7.5l16 9 M20 7.5l-16 9',
+      mace: 'M5 19l8-8 M13 11a4 4 0 1 0 5-5a4 4 0 0 0-5 5z',
+      flame: 'M12 3v4 M12 21a5 5 0 0 0 5-5c0-3-2-5-5-8-3 3-5 5-5 8a5 5 0 0 0 5 5z',
+      star: 'M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.5-4 6-.6z'
+    };
+    const SRC = {
+      basic: { band: '#BFAE8E', ink: '#5A5040', label: 'Basic', iconInk: '#33403B' },
+      weapon: { band: '#5F7F99', ink: '#3E5A70', label: 'Weapon', iconInk: '#3E5A70' },
+      klass: { band: '#B5532F', ink: '#9A4A12', label: 'Class', iconInk: '#9A4A12' }
+    };
+    const basics = (weapon, wIcon, ab, coins) => [
+      { id: 'move', n: 'Move', src: 'basic', ap: 1, kind: 'move', icon: 'move', desc: 'Move a set number of hexes.' },
+      { id: 'attack', n: 'Attack', src: 'basic', ap: 1, kind: 'attack', range: 1, ab: ab, coins: coins, icon: wIcon, desc: 'Basic attack with your ' + weapon + '. Can be repeated.' },
+      { id: 'defend', n: 'Defend', src: 'basic', ap: 1, kind: 'self', icon: 'defend', desc: 'Defend or brace.' },
+      { id: 'item', n: 'Use item', src: 'basic', ap: 1, kind: 'self', icon: 'potion', desc: 'Use an equipped consumable.' }
+    ];
+    const CH = {
+      h: {
+        name: '[Hero name]', initial: 'H', color: '#E9C46A', q: 0, r: 0, hp: 0.85,
+        cards: basics('longsword', 'sword', 'STR', 3).concat([
+          { id: 'parry', n: 'Parry', src: 'weapon', ap: null, kind: 'self', once: true, icon: 'parry', desc: 'Longsword: block the next melee hit.' },
+          { id: 'block', n: 'Block', src: 'weapon', ap: null, kind: 'self', once: true, icon: 'shield', desc: 'Shield: reduce damage this turn.' },
+          { id: 'bash', n: 'Shield Bash', src: 'weapon', ap: null, kind: 'attack', range: 1, ab: 'STR', coins: 3, once: true, icon: 'bash', desc: 'Shield: push or stun.' },
+          { id: 'second', n: 'Second Wind', src: 'klass', ap: null, kind: 'self', icon: 'heart', desc: 'Fighter: heal yourself.' },
+          { id: 'surge', n: 'Action Surge', src: 'klass', ap: null, kind: 'self', icon: 'bolt', desc: 'Fighter: gain extra AP this turn.' }
+        ]),
+        hot: { 6: ['move', 'attack', 'parry', 'bash', 'second', 'surge'], 8: ['move', 'attack', 'defend', 'item', 'parry', 'block', 'bash', 'second'] }
+      },
+      f: {
+        name: 'Fluffy', initial: 'F', color: '#C9B3E6', q: -2, r: 1, hp: 0.6,
+        cards: basics('staff', 'staff', 'INT', 3).concat([
+          { id: 'trip', n: 'Trip', src: 'weapon', ap: null, kind: 'attack', range: 1, ab: 'INT', coins: 3, once: true, icon: 'trip', desc: 'Staff: knock an enemy prone.' },
+          { id: 'ward', n: 'Ward', src: 'weapon', ap: null, kind: 'self', once: true, icon: 'ward', desc: 'Staff: a small magic shield.' },
+          { id: 'firebolt', n: 'Firebolt', src: 'klass', ap: 1, kind: 'attack', range: 5, ab: 'INT', coins: 3, icon: 'fire', desc: 'Blaster spell: one heavy-hitting shot.' },
+          { id: 'frost', n: 'Frost Ray', src: 'klass', ap: 1, kind: 'attack', range: 5, ab: 'INT', coins: 3, icon: 'snow', desc: 'Blaster spell: damage plus slow.' }
+        ]),
+        hot: { 6: ['move', 'attack', 'firebolt', 'frost', 'trip', 'ward'], 8: ['move', 'attack', 'defend', 'item', 'firebolt', 'frost', 'trip', 'ward'] }
+      },
+      c: {
+        name: 'Chelmsford', initial: 'C', color: '#8EC3F2', q: -1, r: 2, hp: 1,
+        cards: basics('mace', 'mace', 'STR', 2).concat([
+          { id: 'bone', n: 'Bonebreaker', src: 'weapon', ap: null, kind: 'attack', range: 1, ab: 'STR', coins: 2, once: true, icon: 'mace', desc: 'Mace: lower enemy movement.' },
+          { id: 'block', n: 'Block', src: 'weapon', ap: null, kind: 'self', once: true, icon: 'shield', desc: 'Shield: reduce damage this turn.' },
+          { id: 'bash', n: 'Shield Bash', src: 'weapon', ap: null, kind: 'attack', range: 1, ab: 'STR', coins: 2, once: true, icon: 'bash', desc: 'Shield: push or stun.' },
+          { id: 'sacred', n: 'Sacred Flame', src: 'klass', ap: 1, kind: 'save', range: 5, saveAb: 'DEX', icon: 'flame', desc: 'Order of Light: radiant damage. The target makes a DEX save.' },
+          { id: 'bless', n: 'Bless', src: 'klass', ap: 1, kind: 'self', icon: 'star', desc: 'Order of Good: an ally flips an extra coin on its next check.' }
+        ]),
+        hot: { 6: ['move', 'attack', 'sacred', 'bless', 'bone', 'block'], 8: ['move', 'attack', 'defend', 'item', 'sacred', 'bless', 'bone', 'bash'] }
+      }
+    };
+    const ENEMIES = [
+      { id: 'e1', n: '[Enemy A]', label: 'A', q: 1, r: -1 },
+      { id: 'e2', n: '[Enemy B]', label: 'B', q: 2, r: -2 },
+      { id: 'e3', n: '[Enemy C]', label: 'C', q: -1, r: -2 }
+    ];
+    const ENEMY_SAVE_COINS = 2;
+
+    const ch = CH[active];
+    const card = ch.cards.find((k) => k.id === sel) || ch.cards[1];
+    const dist = (a, b) => (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.q + a.r - b.q - b.r)) / 2;
+    const alive = (e) => (hp[e.id] ?? 0) > 0;
+    const usedNow = used[active] || [];
+    const isTargeting = card.kind === 'attack' || card.kind === 'save';
+    const inReach = (e) => isTargeting && alive(e) && dist(ch, e) <= (card.range || 1);
+    const tgt = ENEMIES.find((e) => e.id === target && inReach(e)) || null;
+
+    // Board
+    const W = 32, H = 37, N = 4, CX = 144, CY = 129.5;
+    const TREES = ['-3,0', '-2,-1', '2,1', '3,-1', '1,2', '-4,2'];
+    const ROCKS = ['0,-2', '-1,4', '3,-3', '4,-1'];
+    const occupied = {};
+    Object.keys(CH).forEach((k) => { occupied[CH[k].q + ',' + CH[k].r] = true; });
+    ENEMIES.filter(alive).forEach((e) => { occupied[e.q + ',' + e.r] = true; });
+    const px = (q, r) => ({ x: CX + W * (q + r / 2), y: CY + 0.75 * H * r });
+    const cells = [];
+    for (let r = -N; r <= N; r++) {
+      for (let q = Math.max(-N, -r - N); q <= Math.min(N, -r + N); q++) {
+        const key = q + ',' + r;
+        const p = px(q, r);
+        const tree = TREES.indexOf(key) >= 0, rock = ROCKS.indexOf(key) >= 0;
+        const lit = card.kind === 'move' && !occupied[key] && !rock && dist(ch, { q: q, r: r }) <= 2 && dist(ch, { q: q, r: r }) > 0;
+        const alt = ((q * 7 + r * 13) % 3 + 3) % 3;
+        let bg = ['#8DBB7A', '#96C283', '#88B575'][alt];
+        if (tree) bg = '#5E8F5A';
+        if (rock) bg = '#A9A39A';
+        if (lit) bg = tree ? '#86B97E' : '#D3EBC1';
+        cells.push({ left: (p.x - 15).toFixed(1) + 'px', top: (p.y - 17.3).toFixed(1) + 'px', bg: bg, tree: tree, rock: rock, ink: tree ? '#2F5A2C' : '#6B655C' });
+      }
+    }
+
+    const units = [];
+    Object.keys(CH).forEach((k) => {
+      const c = CH[k], p = px(c.q, c.r), on = k === active;
+      units.push({
+        label: c.initial, face: c.color, ink: '#22262E', rim: on ? '#FCF7EE' : '#7A6A4F',
+        ring: on ? '#FCF7EE' : 'transparent', hpW: Math.round(c.hp * 100) + '%', hpColor: '#4E9A5B',
+        aria: c.name + (on ? ', acting now' : ', ally: tap to act with'),
+        pick: () => this.setState({ active: k, sel: 'attack', target: null, result: null, selfDone: null, showAll: false }),
+        left: (p.x - 13).toFixed(1) + 'px', top: (p.y - 19).toFixed(1) + 'px',
+        ringLeft: (p.x - 17).toFixed(1) + 'px', ringTop: (p.y - 23.5).toFixed(1) + 'px',
+        barLeft: (p.x - 12).toFixed(1) + 'px', barTop: (p.y + 13).toFixed(1) + 'px'
+      });
+    });
+    ENEMIES.filter(alive).forEach((e) => {
+      const p = px(e.q, e.r), reach = inReach(e), isT = tgt && tgt.id === e.id;
+      units.push({
+        label: e.label, face: '#F2D4CA', ink: '#5E2219', rim: '#8E3B2E',
+        ring: isT ? '#B5532F' : (reach ? '#F2C14E' : 'transparent'),
+        hpW: Math.round((hp[e.id] ?? 0) * 100) + '%', hpColor: '#C4542A',
+        aria: e.n + (isT ? ', targeted' : (reach ? ', in reach: tap to target' : ', out of reach')),
+        pick: () => { if (reach) this.setState({ target: e.id, result: null }); },
+        left: (p.x - 13).toFixed(1) + 'px', top: (p.y - 19).toFixed(1) + 'px',
+        ringLeft: (p.x - 17).toFixed(1) + 'px', ringTop: (p.y - 23.5).toFixed(1) + 'px',
+        barLeft: (p.x - 12).toFixed(1) + 'px', barTop: (p.y + 13).toFixed(1) + 'px'
+      });
+    });
+
+    // Cards
+    const apNow = ap[active];
+    const mkCard = (k) => {
+      const s = SRC[k.src];
+      const isUsed = k.once && usedNow.indexOf(k.id) >= 0;
+      const on = k.id === card.id;
+      return {
+        id: k.id, n: k.n, apTxt: k.ap == null ? '?' : String(k.ap), icon: ICON[k.icon], band: s.band, iconInk: s.iconInk,
+        srcLabel: s.label, once: !!k.once,
+        border: on ? '#B5532F' : s.band, lift: on ? '8px' : '0px', pressed: on ? 'true' : 'false',
+        opacity: isUsed ? '0.45' : '1',
+        aria: k.n + ', ' + s.label + ' card, ' + (k.ap == null ? 'AP cost not set' : k.ap + ' AP') + (k.once ? ', once per turn' : '') + (isUsed ? ', used this turn' : ''),
+        pick: () => this.setState({ sel: k.id, result: null, selfDone: null }),
+        pickClose: () => this.setState({ sel: k.id, result: null, selfDone: null, showAll: false })
+      };
+    };
+    const hotIds = ch.hot[SLOTS];
+    const hotbar = hotIds.map((id) => mkCard(ch.cards.find((k) => k.id === id)));
+    const allCards = ch.cards.map((k) => Object.assign(mkCard(k), { onHot: hotIds.indexOf(k.id) >= 0 ? ' · on hotbar' : '' }));
+
+    // Panel
+    const s = SRC[card.src];
+    const cardUsed = card.once && usedNow.indexOf(card.id) >= 0;
+    const canPay = card.ap != null && apNow >= card.ap;
+    const spend = (extra) => {
+      const nap = Object.assign({}, ap); nap[active] = apNow - card.ap;
+      const nused = Object.assign({}, used);
+      if (card.once) nused[active] = usedNow.concat([card.id]);
+      this.setState(Object.assign({ ap: nap, used: nused }, extra));
+    };
+    const flip = (n) => Array.from({ length: n }, () => Math.random() < 0.5);
+    const doFlip = () => {
+      if (!tgt || !canPay || cardUsed) return;
+      const nhp = Object.assign({}, hp);
+      let res;
+      if (card.kind === 'attack') {
+        const coins = flip(card.coins);
+        const heads = coins.filter(Boolean).length;
+        const hit = heads >= 1;
+        if (hit) nhp[tgt.id] = Math.max(0, (nhp[tgt.id] ?? 0) - 0.35);
+        res = { coins: coins, title: hit ? 'Hit!' : 'Miss', good: hit, sub: heads + ' heads (needs 1). ' + (hit ? 'Damage: [set by ' + card.ab + ']' : 'No damage.') };
+      } else {
+        const coins = flip(ENEMY_SAVE_COINS);
+        const heads = coins.filter(Boolean).length;
+        const saved = heads >= 1;
+        nhp[tgt.id] = Math.max(0, (nhp[tgt.id] ?? 0) - (saved ? 0.18 : 0.35));
+        res = { coins: coins, title: saved ? 'Saved: half damage' : 'Failed save!', good: !saved, sub: tgt.n + ' flipped ' + heads + ' heads (needs 1 to save). ' + (saved ? 'Riders are ignored.' : 'Full damage: [set by WIS]') };
+      }
+      spend({ result: res, hp: nhp });
+    };
+    const doUse = () => { if (!canPay || cardUsed) return; spend({ selfDone: card.id }); };
+
+    const mode = {
+      pick: isTargeting && !tgt && !result,
+      ready: isTargeting && !!tgt && !result,
+      result: isTargeting && !!result,
+      move: card.kind === 'move',
+      selfDone: card.kind === 'self' && selfDone === card.id
+    };
+    const check = tgt ? (card.kind === 'attack'
+      ? { line1: 'Flip ' + card.coins + ' coins (' + card.ab + ')', line2: 'Needs 1 heads to hit.' }
+      : { line1: tgt.n + ' flips ' + ENEMY_SAVE_COINS + ' coins (' + card.saveAb + ' save)', line2: 'Needs 1 heads to save. A save halves the damage.' })
+      : { line1: '', line2: '' };
+    const resView = result ? {
+      title: result.title, sub: result.sub, color: result.good ? '#2E7A3E' : '#8E3B2E',
+      coins: result.coins.map((h) => ({ t: h ? 'H' : 'T', bg: h ? '#E4B54C' : '#CFC2A8', edge: h ? '#A67A1F' : '#8A7D66', ink: h ? '#5A3A05' : '#4A4034', aria: h ? 'Heads' : 'Tails' }))
+    } : { title: '', sub: '', color: '#24302C', coins: [] };
+
+    let btn = { show: false, label: '', act: () => {}, bg: '#B5532F', ink: '#FFF8EE', shadow: 'drop-shadow(0 4px 0 #7E3519)', disabled: 'false', hasNote: false, note: '' };
+    const note = card.ap == null ? 'AP cost not set yet' : (cardUsed ? 'Once per turn: already used' : (!canPay ? 'Not enough AP' : ''));
+    const off = { bg: '#E6DCC8', ink: '#6B6152', shadow: 'none', disabled: 'true' };
+    if (mode.ready || mode.result) {
+      btn = Object.assign(btn, { show: true, label: mode.result ? 'Flip again' : (card.kind === 'save' ? 'Cast' : 'Flip coins'), act: doFlip });
+      if (note) btn = Object.assign(btn, off, { hasNote: true, note: note });
+    } else if (card.kind === 'self') {
+      btn = Object.assign(btn, { show: true, label: 'Use', act: doUse });
+      if (note) btn = Object.assign(btn, off, { hasNote: true, note: note });
+    }
+
+    const party = Object.keys(CH).map((k) => {
+      const c = CH[k], on = k === active;
+      return {
+        initial: c.initial, face: c.color, rim: on ? '#B5532F' : '#BFAE8E', inset: on ? '4px' : '3px',
+        hpW: Math.round(c.hp * 100) + '%', apTxt: ap[k] + ' AP',
+        aria: c.name + ', ' + ap[k] + ' AP left' + (on ? ', acting now' : ''),
+        pick: () => this.setState({ active: k, sel: 'attack', target: null, result: null, selfDone: null, showAll: false })
+      };
+    });
+
+    return {
+      party: party, cells: cells, units: units, hotbar: hotbar, allCards: allCards,
+      card: { n: card.n, desc: card.desc, srcLabel: s.label, bandInk: s.ink, apLabel: card.ap == null ? 'AP not set' : card.ap + ' AP' + (card.once ? ' · once per turn' : '') },
+      mode: mode, check: check, result: resView, btn: btn,
+      target: tgt ? { n: tgt.n, hpW: Math.round((hp[tgt.id] ?? 0) * 100) + '%' } : { n: '', hpW: '0%' },
+      activeName: ch.name,
+      apPips: [0, 1, 2].map((i) => ({ bg: i < apNow ? '#E4B54C' : '#E6DCC8' })),
+      apText: apNow + ' of 3 AP left', apAria: apNow + ' of 3 action points left',
+      phaseLabel: "Allies' phase", phaseNext: "Enemies' phase",
+      showAll: showAll, enemyPhase: phase === 'enemies',
+      openAll: () => this.setState({ showAll: true }),
+      closeAll: () => this.setState({ showAll: false }),
+      endPhase: () => this.setState({ phase: 'enemies', showAll: false }),
+      nextRound: () => this.setState({ phase: 'allies', ap: { h: 3, f: 3, c: 3 }, used: { h: [], f: [], c: [] }, result: null, selfDone: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

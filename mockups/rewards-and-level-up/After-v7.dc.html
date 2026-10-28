@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>After combat v7</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes xpfill0{0%{width:62%}70%{width:100%}100%{width:100%}}
+@keyframes lvout0{0%{opacity:1}100%{opacity:0}}
+@keyframes lvpop0{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes reveal0{0%{transform:translate(var(--dx),var(--dy)) scale(0.3);opacity:0}22%{transform:translate(var(--dx),var(--dy)) scale(1.9);opacity:1}55%{transform:translate(var(--dx),var(--dy)) scale(1.75);opacity:1}100%{transform:translate(0,0) scale(1);opacity:1}}
+@keyframes glow0{0%{transform:scale(0.4);opacity:0}30%{transform:scale(1);opacity:0.9}100%{transform:scale(1.3);opacity:0}}
+@keyframes btnin0{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes xpfill1{0%{width:62%}70%{width:100%}100%{width:100%}}
+@keyframes lvout1{0%{opacity:1}100%{opacity:0}}
+@keyframes lvpop1{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes reveal1{0%{transform:translate(var(--dx),var(--dy)) scale(0.3);opacity:0}22%{transform:translate(var(--dx),var(--dy)) scale(1.9);opacity:1}55%{transform:translate(var(--dx),var(--dy)) scale(1.75);opacity:1}100%{transform:translate(0,0) scale(1);opacity:1}}
+@keyframes glow1{0%{transform:scale(0.4);opacity:0}30%{transform:scale(1);opacity:0.9}100%{transform:scale(1.3);opacity:0}}
+@keyframes btnin1{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes revealL0{0%{transform:translate(var(--dx),var(--dy)) scale(0.3);opacity:0}8%{transform:translate(var(--dx),var(--dy)) scale(1.9);opacity:1}78%{transform:translate(var(--dx),var(--dy)) scale(1.85);opacity:1}100%{transform:translate(0,0) scale(1);opacity:1}}
+@keyframes shake0{0%,10%{transform:rotate(0)}14%{transform:rotate(-4deg)}18%{transform:rotate(4deg)}22%{transform:rotate(-3deg)}26%{transform:rotate(3deg)}30%{transform:rotate(-5deg)}34%{transform:rotate(5deg)}38%{transform:rotate(-6deg)}42%{transform:rotate(6deg)}46%{transform:rotate(-7deg)}50%,100%{transform:rotate(0)}}
+@keyframes flip0{0%,50%{transform:scaleX(1)}56%{transform:scaleX(0)}62%,100%{transform:scaleX(1)}}
+@keyframes back0{0%,55.9%{opacity:1}56%,100%{opacity:0}}
+@keyframes leak0{0%,8%{opacity:0;transform:scale(0.6)}20%{opacity:0.35;transform:scale(0.8)}32%{opacity:0.6;transform:scale(0.9)}44%{opacity:0.85;transform:scale(1)}56%{opacity:1;transform:scale(1.35)}78%{opacity:0.5;transform:scale(1.1)}100%{opacity:0;transform:scale(0.8)}}
+@keyframes revealL1{0%{transform:translate(var(--dx),var(--dy)) scale(0.3);opacity:0}8%{transform:translate(var(--dx),var(--dy)) scale(1.9);opacity:1}78%{transform:translate(var(--dx),var(--dy)) scale(1.85);opacity:1}100%{transform:translate(0,0) scale(1);opacity:1}}
+@keyframes shake1{0%,10%{transform:rotate(0)}14%{transform:rotate(-4deg)}18%{transform:rotate(4deg)}22%{transform:rotate(-3deg)}26%{transform:rotate(3deg)}30%{transform:rotate(-5deg)}34%{transform:rotate(5deg)}38%{transform:rotate(-6deg)}42%{transform:rotate(6deg)}46%{transform:rotate(-7deg)}50%,100%{transform:rotate(0)}}
+@keyframes flip1{0%,50%{transform:scaleX(1)}56%{transform:scaleX(0)}62%,100%{transform:scaleX(1)}}
+@keyframes back1{0%,55.9%{opacity:1}56%,100%{opacity:0}}
+@keyframes leak1{0%,8%{opacity:0;transform:scale(0.6)}20%{opacity:0.35;transform:scale(0.8)}32%{opacity:0.6;transform:scale(0.9)}44%{opacity:0.85;transform:scale(1)}56%{opacity:1;transform:scale(1.35)}78%{opacity:0.5;transform:scale(1.1)}100%{opacity:0;transform:scale(0.8)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #EBD8DE; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- the battlefield, dimmed behind the results -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0.35">
+    <div style="width: 360px; height: 300px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #8DBB7A"></div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(36,48,44,0.28)"></div>
+
+  <button type="button" onClick="{{replay}}" style="position: absolute; left: 8px; bottom: 14px; width: 74px; height: 52px; padding: 0 6px; border: none; border-radius: 12px; line-height: 1.2; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 900; cursor: pointer; z-index: 6">Debug<br>Replay</button>
+
+  <main style="position: absolute; left: 90px; top: 14px; width: 664px; height: 362px; box-sizing: border-box; padding: 14px 18px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 10px">
+
+    <div style="display: flex; align-items: baseline; gap: 12px">
+      <h1 style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 30px; font-weight: 400; line-height: 1; color: #2E6B3A">Victory!</h1>
+      <span style="font-size: 13px; font-weight: 800; color: #43524D">[Enemy group] defeated</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 14px; flex: 1; min-height: 0">
+
+      <!-- Left: party status + XP -->
+      <section aria-label="Party" style="display: flex; flex-direction: column; min-height: 0">
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; padding: 10px 12px; background: #B89C7E; border-radius: 14px; box-shadow: 0 4px 0 #8F7458">
+          <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #FFF8EE">Party</span>
+          <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+            <div role="group" aria-label="{{p.aria}}" style="display: flex; align-items: center; gap: 10px">
+              <span style="position: relative; display: block; width: 40px; height: 46px; flex-shrink: 0; filter: drop-shadow(0 2px 0 #7E5F44); opacity: {{p.op}}">
+                <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+                <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 17px; color: #22262E">{{p.initial}}</span>
+              </span>
+              <span style="display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0">
+                <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; color: #FFF8EE"><span>{{p.name}}</span><span style="color: {{p.noteInk}}">{{p.note}}</span></span>
+                <span style="display: block; height: 8px; border-radius: 4px; background: #6F5A41; overflow: hidden"><span style="display: block; height: 8px; width: {{p.hpW}}; background: {{p.hpColor}}"></span></span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+
+      </section>
+
+      <!-- Right: one rewards panel; each reward is revealed in the middle, then settles into its slot -->
+      <section aria-label="Rewards" onClick="{{skip}}" style="position: relative; z-index: 1; border-radius: 14px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #E2D5BC; overflow: hidden">
+        <span style="position: absolute; left: 14px; top: 8px; font-family: 'Lilita One', sans-serif; font-size: 16px">Rewards</span>
+        <span aria-hidden="true" style="position: absolute; left: 107px; top: 41px; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, rgba(228,181,76,0.75) 0%, rgba(228,181,76,0.25) 45%, rgba(228,181,76,0) 70%); opacity: 0; animation: {{glowAnim}}"></span>
+        <sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+          <span role="img" aria-label="{{c.n}}" style="position: absolute; left: {{c.x}}; top: {{c.y}}; display: block; width: 60px; height: 69px; filter: drop-shadow(0 3px 0 #A48A62); --dx: {{c.dx}}; --dy: {{c.dy}}; animation: {{c.anim}}; z-index: {{c.z}}">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE"></span>
+            <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{c.bg}}; display: flex; align-items: center; justify-content: center; color: {{c.ink}}">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"></path></svg>
+            </span>
+          </span>
+        </sc-for>
+        <span role="img" aria-label="[gold] gold" style="position: absolute; left: {{gold.x}}; top: {{gold.y}}; display: flex; align-items: center; gap: 8px; height: 52px; white-space: nowrap; padding: 0 16px 0 8px; border-radius: 26px; background: #24302C; color: #F6EEDF; font-family: 'Lilita One', sans-serif; font-size: 20px; --dx: {{gold.dx}}; --dy: {{gold.dy}}; animation: {{gold.anim}}; z-index: {{gold.z}}">
+          <span style="width: 36px; height: 36px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -3px 0 #A67A1F"></span>+[gold]
+        </span>
+        <sc-for list="{{loot}}" as="l" hint-placeholder-count="2">
+          <button type="button" aria-label="{{l.aria}}" onClick="{{l.pin}}" onMouseEnter="{{l.hover}}" onMouseLeave="{{unhover}}" style="position: absolute; left: {{l.x}}; top: {{l.y}}; width: 60px; height: 69px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62); --dx: {{l.dx}}; --dy: {{l.dy}}; animation: {{l.anim}}; z-index: {{l.z}}">
+            <span aria-hidden="true" style="position: absolute; left: -30px; top: -26px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(224,122,47,0.95) 0%, rgba(240,170,80,0.45) 40%, rgba(224,122,47,0) 70%); opacity: 0; animation: {{l.leakAnim}}"></span>
+            <span style="position: absolute; inset: 0; animation: {{l.shakeAnim}}">
+              <span style="position: absolute; inset: 0; animation: {{l.flipAnim}}">
+                <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{l.rim}}"></span>
+                <span style="position: absolute; inset: {{l.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{l.face}}; display: flex; align-items: center; justify-content: center; color: {{l.ink}}">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon}}"></path></svg>
+                </span>
+                <span aria-hidden="true" style="position: absolute; inset: 0; opacity: {{l.backOp}}; animation: {{l.backAnim}}">
+                  <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #8F7458"></span>
+                  <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #B89C7E; box-shadow: inset 0 0 14px rgba(224,122,47,0.9)"></span>
+                  <span style="position: absolute; inset: 14px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #A68866"></span>
+                </span>
+              </span>
+            </span>
+          </button>
+        </sc-for>
+      </section>
+    </div>
+
+    <sc-if value="{{hasPop}}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-label="{{pop.name}} details" style="position: absolute; left: 18px; bottom: 70px; width: 240px; box-sizing: border-box; background: #FCF7EE; border-radius: 16px; border: 3px solid {{pop.rim}}; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; z-index: 5">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px">
+          <div style="display: flex; flex-direction: column; min-width: 0">
+            <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{pop.tagInk}}">{{pop.tag}}</span>
+            <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1.1">{{pop.name}}</span>
+          </div>
+          <button type="button" aria-label="Close details" onClick="{{closePop}}" style="width: 44px; height: 44px; margin: -8px -10px 0 0; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{pop.desc}}</span>
+        <sc-if value="{{pop.hasCards}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px">
+            <sc-for list="{{pop.cards}}" as="cd" hint-placeholder-count="1">
+              <span style="height: 26px; padding: 0 12px; display: flex; align-items: center; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900">{{cd.n}}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <span style="font-size: 11px; font-weight: 700; color: #5A5040">[Item stats]</span>
+      </div>
+    </sc-if>
+
+    <!-- Bottom row: XP and level bar, then the buttons -->
+    <div style="display: flex; justify-content: flex-end; align-items: flex-end; gap: 10px">
+        <div style="flex: 1; max-width: 330px; display: flex; flex-direction: column; gap: 5px; margin-right: auto">
+        <div style="display: flex; align-items: baseline; justify-content: space-between">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 18px">+[XP] XP</span>
+          <span style="display: grid; justify-items: end; align-items: baseline">
+            <span style="grid-area: 1 / 1; font-size: 11px; font-weight: 800; color: #43524D; animation: {{lvOut}}">Party level {{lvFrom}}</span>
+            <sc-if value="{{levelled}}" hint-placeholder-val="{{ true }}">
+              <span style="grid-area: 1 / 1; font-family: 'Lilita One', sans-serif; font-size: 15px; color: #B5532F; white-space: nowrap; transform-origin: 100% 100%; animation: {{lvPop}}">Level {{lvTo}}!</span>
+            </sc-if>
+          </span>
+        </div>
+        <div role="img" aria-label="{{xpAria}}" style="position: relative; height: 14px; border-radius: 7px; background: #E6DCC8; box-shadow: inset 0 0 0 1.5px #A48A62; overflow: visible">
+          <span style="display: block; height: 14px; border-radius: 7px; background: #E4B54C; box-shadow: inset 0 -3px 0 #A67A1F; width: {{xpW}}; animation: {{xpAnim}}"></span>
+        </div>
+      </div>
+      <sc-if value="{{levelled}}" hint-placeholder-val="{{ true }}">
+        <span style="display: flex; gap: 10px; align-items: center; animation: {{btnAnim}}">
+        <a href="Ref-Explore-LevelBanner.dc.html" style="height: 44px; padding: 0 22px; border-radius: 22px; background: #E6DCC8; color: #24302C; text-decoration: none; display: flex; align-items: center; font-family: Nunito, sans-serif; font-size: 14px; font-weight: 900">Later</a>
+        <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block">
+          <a href="LevelUp-v1b-Level5.dc.html" style="height: 44px; padding: 0 28px; text-decoration: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 16px; display: flex; align-items: center">Level up now</a>
+        </span>
+        </span>
+      </sc-if>
+    </div>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const T = {
+      forest: { n: 'Forest', bg: '#5E8F5A', ink: '#203E1E', icon: 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4' },
+      plains: { n: 'Plains', bg: '#A8CF7E', ink: '#4F7A33', icon: 'M4 18c1-4 2-6 3-7 M7 18c0-3 1-5 2-6 M14 18c1-4 2-6 3-7 M17 18c0-3 1-5 2-6' },
+      river: { n: 'River/lake', bg: '#86BEDB', ink: '#245A7E', icon: 'M3 9c3-2 6 2 9 0s6-2 9 0 M3 15c3-2 6 2 9 0s6-2 9 0' }
+    };
+    const drawn = ['forest', 'plains', 'river'];
+    const PARTY = [
+      { name: '[Hero name]', initial: 'H', color: '#E9C46A', hp: 0.62 },
+      { name: 'Fluffy', initial: 'F', color: '#C9B3E6', hp: 0.4 },
+      { name: 'Chelmsford', initial: 'C', color: '#8EC3F2', hp: 0.9 },
+      { name: 'Mel', initial: 'M', color: '#F4B6A8', hp: 0.1, downed: true }
+    ];
+    // Rarity colours and item data as on the character & gear screen (v8d)
+    const TR = {
+      rim: { C: '#BFAE8E', R: '#3F86C8', L: '#E07A2F' }, face: { C: '#FCF7EE', R: '#EAF3FB', L: '#FDEEDF' },
+      ink: { C: '#33403B', R: '#225C91', L: '#9A4A12' }, tagInk: { C: '#5A5040', R: '#225C91', L: '#9A4A12' }, sel: '#B5532F'
+    };
+    const RAR = { C: 'Common', R: 'Rare', L: 'Legendary' };
+    const LOOT = [
+      { name: 'Longsword', r: 'R', kind: 'Weapon', desc: 'Versatile: one- or two-handed.', cards: ['Parry'], icon: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4' },
+      { name: 'Potion', r: 'C', kind: 'Consumable', desc: 'Consumable', cards: [], icon: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10' },
+      { name: '[Legendary item]', r: 'L', kind: 'Gear', desc: '[Item description]', cards: [], icon: 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z' }
+    ];
+    const k = (st.run || 0) % 2, done = !!st.skip;
+    // Reveal timing (mockup placeholder): one reward every 0.55s, then XP fills, then the level-up and buttons
+    const T0 = 0.5, STEP = 0.55, DUR = 0.9;
+    const CX = 182, CY = 116; // middle of the rewards panel, where each reward is shown big
+    const DUR_L = 2.2; // Legendary: face-down shake (leaking light), coin-style flip, then settle
+    const kinds = drawn.map(() => 'C').concat(['C'], LOOT.map((l) => l.r));
+    const starts = []; let t = T0;
+    kinds.forEach((r) => { starts.push(t); t += r === 'L' ? DUR_L + 0.15 : STEP; });
+    const fly = (i, x, y, w, h) => ({ x: x + 'px', y: y + 'px', dx: (CX - x - w / 2) + 'px', dy: (CY - y - h / 2) + 'px', z: String(10 + i),
+      anim: done ? 'none' : (kinds[i] === 'L' ? 'revealL' + k + ' ' + DUR_L + 's ease-in-out ' : 'reveal' + k + ' ' + DUR + 's ease-in-out ') + starts[i].toFixed(2) + 's both' });
+    const nItems = kinds.length;
+    const nPlain = kinds.filter((r) => r !== 'L').length;
+    const last = nItems - 1;
+    const tLoot = starts[last] + (kinds[last] === 'L' ? DUR_L : DUR);
+    const tXp = tLoot + 0.2;          // XP starts filling once the last reward has landed
+    const tLv = tXp + 0.85;           // the bar reaches full 70% of the way through its 1.2s fill
+    const tEnd = tLv + 0.45;          // buttons come in after the "Level 5!" pop
+    const pinned = st.pinned ?? null;
+    const active = st.hover ?? pinned;
+    const popRaw = active != null ? LOOT[active] : null;
+    return {
+      party: PARTY.map((p) => ({
+        name: p.name, initial: p.initial, face: p.color, hpW: Math.round(p.hp * 100) + '%',
+        hpColor: p.downed ? '#C4542A' : '#4E9A5B', op: p.downed ? '0.6' : '1',
+        note: p.downed ? 'Was downed' : Math.round(p.hp * 100) + '%', noteInk: p.downed ? '#FFD7C2' : '#FFF8EE',
+        aria: p.name + (p.downed ? ': was downed in the fight, back on their feet with low HP' : ': ' + Math.round(p.hp * 100) + '% HP')
+      })),
+      lvFrom: '4', lvTo: '5', levelled: true,
+      xpW: '100%', xpAnim: done ? 'none' : 'xpfill' + k + ' 1.2s ease-out ' + tXp.toFixed(2) + 's both',
+      lvOut: done ? 'lvout' + k + ' 0s 0s both' : 'lvout' + k + ' 0.2s ease-in ' + (tLv - 0.05).toFixed(2) + 's both',
+      lvPop: done ? 'none' : 'lvpop' + k + ' 0.45s ease-out ' + tLv.toFixed(2) + 's both',
+      glowAnim: done ? 'none' : 'glow' + k + ' ' + STEP + 's ease-out ' + T0.toFixed(2) + 's ' + nPlain + ' both',
+      btnAnim: done ? 'none' : 'btnin' + k + ' 0.3s ease-out ' + tEnd.toFixed(2) + 's both',
+      gold: fly(drawn.length, 10, 137, 132, 52),
+      skip: () => this.setState({ skip: true }),
+      replay: () => this.setState({ run: (st.run || 0) + 1, skip: false, pinned: null, hover: null }),
+      xpAria: 'XP bar filled: the party reached level 5',
+      cards: drawn.map((t, i) => Object.assign({ n: T[t].n, bg: T[t].bg, ink: T[t].ink, icon: T[t].icon }, fly(i, 80 + i * 72, 48, 60, 69))),
+      loot: LOOT.map((l, i) => {
+        const on = active === i;
+        const leg = l.r === 'L' && !done;
+        const fx = (name) => leg ? name + k + ' ' + DUR_L + 's linear ' + starts[drawn.length + 1 + i].toFixed(2) + 's both' : 'none';
+        return Object.assign(fly(drawn.length + 1 + i, 154 + i * 72, 129, 60, 69), { aria: l.name + ', ' + RAR[l.r], icon: l.icon,
+          rim: on ? TR.sel : TR.rim[l.r], inset: on ? '6px' : '4px', face: TR.face[l.r], ink: TR.ink[l.r],
+          leakAnim: fx('leak'), shakeAnim: fx('shake'), flipAnim: fx('flip'), backAnim: fx('back'), backOp: '0',
+          pin: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ pinned: pinned === i ? null : i }); }, hover: () => this.setState({ hover: i }) });
+      }),
+      hasPop: !!popRaw,
+      pop: popRaw ? { tag: 'Loot · ' + RAR[popRaw.r], name: popRaw.name, rim: TR.rim[popRaw.r], tagInk: TR.tagInk[popRaw.r], desc: popRaw.desc, cards: popRaw.cards.map((n) => ({ n: n })), hasCards: popRaw.cards.length > 0 }
+        : { tag: '', name: '', rim: '#BFAE8E', tagInk: '#5A5040', desc: '', cards: [], hasCards: false },
+      closePop: () => this.setState({ pinned: null, hover: null }),
+      unhover: () => this.setState({ hover: null })
+    };
+  }
+}
+</script>
+</body>
+</html>
