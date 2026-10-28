@@ -19,14 +19,14 @@ Approved by Ethan, Oct 28, 2026. From the bio: snooty; a fey creature who chose 
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list (none of them breaks a "never" above).
+Reviewed against the voice sheet and the tells list with Ethan, Oct 28, 2026: Persuade and Lore rewritten; the bar line and the Lady of the Lake line kept.
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 
 | Proficiency | Line |
 | --- | --- |
-| Persuade | "Oh, just say yes. I have a nap at noon and you are ruining it." |
-| Lore | "Obviously it's the other way round. Honestly, must I do everything?" |
+| Persuade | "Agree, and I shall permit you to sit near me. Briefly." (was: "Oh, just say yes. I have a nap at noon and you are ruining it.") |
+| Lore | "Why, I'll be. Has nobody here read anything at all?" (was: "Obviously it's the other way round. Honestly, must I do everything?") |
 
 **Special lines** (said instead of the generic one with a big story NPC)
 
