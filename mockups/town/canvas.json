@@ -99,6 +99,33 @@
    "title": "Linked · Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Town-v3a-Square.dc.html": {
+   "x": 0,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Town v3a · the town square: walking in swaps the board for the town's own hexes (well, market stall, quest board post, the inn at the back, houses); each card matches a place. With the chosen shop (v2a counter) and inn (v2e night at the bar, ending in v1's rest results)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v3b-TapBuildings.dc.html": {
+   "x": 924,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Town v3b · v3a, and the stall, the quest board post and the inn glow and can be tapped; the party walks there first (from the cards too)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v3c-Townsfolk.dc.html": {
+   "x": 1848,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Town v3c · v3b plus life: townsfolk wander the square (tap one for a [Townsfolk line] or [Rumour]) and smoke rises from the chimneys",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -110,6 +137,9 @@
   "Town-v2c-ShelfCards.dc.html",
   "Town-v2d-InnkeeperMenu.dc.html",
   "Town-v2e-InnNight.dc.html",
+  "Town-v3a-Square.dc.html",
+  "Town-v3b-TapBuildings.dc.html",
+  "Town-v3c-Townsfolk.dc.html",
   "Ref-Explore-v8b.dc.html",
   "Ref-Gear-v8d.dc.html"
  ],
@@ -134,6 +164,13 @@
    "text": "v2 · on v1a's scene: three shops (a–c) and two inns (d–e); the quest board stays as in v1",
    "kind": "title1",
    "maxW": 4540
+  },
+  "v3": {
+   "x": 0,
+   "y": 2030,
+   "text": "v3 · the whole town on a town-square board: shop v2a, inn v2e with v1's results, quest board v1",
+   "kind": "title1",
+   "maxW": 2692
   }
  }
 }
