@@ -182,7 +182,7 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 Every proficiency is covered at least once. Persuade and Lore are the most common (4 each); Stealth, Survival, Nature and Thievery have one companion each (Timothy, Kris, Frim, Mel).
 
-**Companion chime-in lines** (in progress Oct 28, 2026; one generic line per proficiency, said in any scene when the companion steps in: pattern in Dialogue writing; rule: [Classes & combat](03 Classes & combat.md) → Checks outside combat)
+**Companion chime-in lines** (written Oct 28, 2026, picked by Ethan from drafts; one generic line per proficiency, said in any scene when the companion steps in: pattern in Dialogue writing; rule: [Classes & combat](03 Classes & combat.md) → Checks outside combat)
 
 | Companion | Proficiency | Line |
 | --- | --- | --- |
@@ -192,6 +192,26 @@ Every proficiency is covered at least once. Persuade and Lore are the most commo
 | Fluffy | Lore | "Obviously it's the other way round. Honestly, must I do everything?" |
 | Mel | Deceive | "It's true! I was there. I saw the whole thing." (She wasn't.) |
 | Mel | Thievery | "Small hands, see? Let me." |
+| Grant Augustus | Lore | "Ah! This is from the old tales. I know how this one goes!" |
+| Grant Augustus | Perception | "Wait! Did you see that? That's going in the song." |
+| Kris Huntington | Survival | "Ja, ja, this way. The forest does not lie." |
+| Kris Huntington | Animal | "Shh. Easy, little one. I only hunt the big ones." |
+| Timothy | Persuade | "Um. P-please? They're very nice. Honestly." |
+| Timothy | Stealth | "Shh! Small steps. Like sneaking into choir late." |
+| Dolmund | Athletics | "Ha! Dwarves are built for this." |
+| Dolmund | Intimidate | (cracks his knuckles) "Try it." |
+| Lilian | Deceive | "Oh, it's true, darling. I'd know." (She winks.) |
+| Lilian | Perception | "Look closer, sweetheart. Over there." |
+| Frim | Perception | "Hold on. Something's off. Ten silver says it's over there." |
+| Frim | Nature | "I'd bet my boots this one's poisonous. Don't touch." |
+| Grimhold | Lore | "The cult taught me this." |
+| Grimhold | Intimidate | (very quietly) "Do as they ask." |
+| Leo Conley | Animal | "Leave this one to me. Animals are easier than people." |
+| Leo Conley | Intimidate | "Back off, mate, or the wolf gets lunch." |
+| Reginald | Lore | "If I may: the estate library covered this. Volume four, I believe." |
+| Reginald | Persuade | "Forgive the interruption. My employer is a person of their word." |
+
+Notes in brackets are stage notes, shown in small italics above the line. Reginald's Persuade line calls the hero "my employer", which fits the Noble path, where he serves the hero's family; for other paths it may need a background variant.
 
 Special lines (said instead of the generic one with a big story NPC):
 
@@ -378,7 +398,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 
 ## Open questions
 
-- [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); proficiencies now set (Companion proficiencies, under Background paths), so the lines can be written
+- [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: see Companion chime-in lines). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines). Still open: who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
