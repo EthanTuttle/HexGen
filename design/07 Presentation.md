@@ -276,12 +276,13 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Subclass, card, spell and feat icons | Level-up v2–v9 | Icons (Open questions below) |
 | Training ×[1] (trainings left this visit) | Weapon mastery v1a–v5c | Training counts (progression pass: [Cards & progression](05 Cards & progression.md) → Open questions) |
 | Node type icons (new card, upgrade, passive) | Weapon mastery v1–v5 | Icons (Open questions below) |
-| The Lady of the Lake's lines, the option lines, "[Chelmsford's chime-in line]" and "[Mel's chime-in line]", [Portrait] | Social encounter v1 | The Lady's dialogue and companion chime-in lines ([World & story](01 World & story.md) → Open questions) |
+| The Lady of the Lake's lines and the option lines (v1 only: written from v2), "[Chelmsford's chime-in line]" and "[Mel's chime-in line]", the Lady's [Portrait] | Social encounter v1–v5 | Companion chime-in lines ([World & story](01 World & story.md) → Open questions) |
 | Coins and heads needed per option (3 coins / 2 heads, 2 / 1, 1 / 1); Chelmsford proficient in Persuade, Mel in Deceive | Social encounter v1 | Companion proficiencies and check sizes ([Classes & combat](03 Classes & combat.md) → Open questions) |
 | Approach tag colours and icons | Social encounter v1 | Icons (Open questions below) |
 | Party scores and proficiencies (e.g. Fluffy INT 3 with Lore, Chelmsford with Athletics and Persuade); heads needed (Persuade 2, Intimidate 2, runes 1, pull 2); blessing, runes and curse worth 1 coin each | Social encounter v2 | Companion proficiencies and check sizes ([Classes & combat](03 Classes & combat.md) → Open questions); blessing and curse amounts ([World & story](01 World & story.md) → Open questions) |
 | The sword pull scene's text, [Sword name] | Social encounter v2 | The pull scene's text ([World & story](01 World & story.md) → Open questions) |
 | Three numbered generic enemy tokens beside the Lady when her fight starts; reward descriptions ("+[coins] on the pull") | Social encounter v3 | Enemy roster ([World & story](01 World & story.md) → Open questions); blessing and curse amounts (same) |
+| [Opening quest], [Quest step]; the debug list's [Side quest 1–4], [Curse] and [Passive name] | Exploration v7–v8, social v4–v5 | The opening quest's name and steps ([World & story](01 World & story.md) → Main story outline); the debug entries only fill the lists |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
