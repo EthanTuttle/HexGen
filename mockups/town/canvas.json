@@ -153,6 +153,51 @@
    "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Town-v5a-NavFan.dc.html": {
+   "x": 0,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Town v5a · the nav button's camera buttons fan out as a small honeycomb above it, over the open board, clear of the cards; a tap on the board closes them",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v5b-NavTray.dc.html": {
+   "x": 924,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Town v5b · the camera buttons sit in a small wood tray that pops up above the nav button, on top of everything; a tap on the board closes it",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v5c-NavRoom.dc.html": {
+   "x": 1848,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Town v5c · the camera buttons open to the right as before, and while they're open the card row (town cards, the shop counter, the inn's cards) slides right to make room",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b-ForV5.dc.html": {
+   "x": 2772,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Town v5a / v5b / v5c opens each, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV5.dc.html": {
+   "x": 3696,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -171,7 +216,12 @@
   "Ref-Gear-v8d.dc.html",
   "Town-v4-Camera.dc.html",
   "Ref-Explore-v8b-ForV4.dc.html",
-  "Ref-Gear-v8d-ForV4.dc.html"
+  "Ref-Gear-v8d-ForV4.dc.html",
+  "Town-v5a-NavFan.dc.html",
+  "Town-v5b-NavTray.dc.html",
+  "Town-v5c-NavRoom.dc.html",
+  "Ref-Explore-v8b-ForV5.dc.html",
+  "Ref-Gear-v8d-ForV5.dc.html"
  ],
  "notes": {
   "v1": {
@@ -208,6 +258,13 @@
    "text": "v4 · the town square with the camera, as in scenes",
    "kind": "title1",
    "maxW": 2692
+  },
+  "v5": {
+   "x": 0,
+   "y": 3550,
+   "text": "v5 · keeping the opened camera buttons clear of the cards: fan, pop-up tray, or the cards make room",
+   "kind": "title1",
+   "maxW": 4540
   }
  }
 }

@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Town v5a: camera buttons as a fan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes fadein{0%{opacity:0}100%{opacity:1}}
+@keyframes panelin{0%{transform:translateY(10px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes linein0{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes linein1{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes chipin{0%{transform:scale(0.6);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes hop0{0%{transform:translateZ(0)}35%{transform:translateZ(26px)}70%{transform:translateZ(0)}85%{transform:translateZ(6px)}100%{transform:translateZ(0)}}
+@keyframes hop1{0%{transform:translateZ(0)}35%{transform:translateZ(26px)}70%{transform:translateZ(0)}85%{transform:translateZ(6px)}100%{transform:translateZ(0)}}
+@keyframes bob{0%{transform:translateZ(0)}50%{transform:translateZ(7px)}100%{transform:translateZ(0)}}
+@keyframes smoke{0%{transform:translateZ(14px) scale(0.5);opacity:0}25%{opacity:0.7}100%{transform:translateZ(70px) scale(1.6);opacity:0}}
+@keyframes ringpulse{0%{opacity:0.35}50%{opacity:1}100%{opacity:0.35}}
+@keyframes fly0{0%{transform:translate(0,0) scale(0.3);opacity:0}14%{transform:translate(0,0) scale(1.1);opacity:1}24%{transform:translate(0,0) scale(1);opacity:1}68%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0.12);opacity:0}}
+@keyframes fly1{0%{transform:translate(0,0) scale(0.3);opacity:0}14%{transform:translate(0,0) scale(1.1);opacity:1}24%{transform:translate(0,0) scale(1);opacity:1}68%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0.12);opacity:0}}
+@keyframes goldpop0{0%{transform:translateY(0);opacity:0}20%{transform:translateY(-4px);opacity:1}80%{transform:translateY(-10px);opacity:1}100%{transform:translateY(-16px);opacity:0}}
+@keyframes goldpop1{0%{transform:translateY(0);opacity:0}20%{transform:translateY(-4px);opacity:1}80%{transform:translateY(-10px);opacity:1}100%{transform:translateY(-16px);opacity:0}}
+@keyframes navout{0%{transform:translateX(-12px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes fanin{0%{transform:translate(-30px,50px) scale(0.4);opacity:0}100%{transform:none;opacity:1}}
+@keyframes trayin{0%{transform:translateY(10px) scale(0.92);opacity:0}100%{transform:none;opacity:1}}
+@keyframes dotpulse{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #D9E7EC; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- The board: the town square (well, market stall, quest board post, the inn and houses), or inside the inn -->
+  <div aria-label="Scene. Drag to pan, pinch to zoom, twist to rotate; tap to continue." onPointerDown="{{cam.down}}" onPointerMove="{{cam.move}}" onPointerUp="{{cam.up}}" onPointerCancel="{{cam.cancel}}" onPointerLeave="{{cam.leave}}" onWheel="{{cam.wheel}}" onContextMenu="{{cam.menu}}" style="position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: {{cam.cursor}}; perspective: 900px; perspective-origin: {{board.po}}">
+    <div style="position: absolute; left: {{board.left}}; top: {{board.top}}; width: 600px; height: 520px; transform-style: preserve-3d; transform-origin: {{board.origin}}; transform: {{cam.transform}}; transition: {{cam.transition}}">
+      <div style="position: absolute; inset: 0; transform: translateZ(-10px)">
+        <sc-for list="{{board.tiles}}" as="t" hint-placeholder-count="19">
+          <span style="position: absolute; left: {{t.sLeft}}; top: {{t.sTop}}; width: 68px; height: 78.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35"></span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; inset: 0; transform-style: preserve-3d">
+        <sc-for list="{{board.tiles}}" as="t" hint-placeholder-count="19">
+          <span style="position: absolute; left: {{t.left}}; top: {{t.top}}; width: 64px; height: 74px; transform-style: preserve-3d">
+            <sc-if value="{{t.glow}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; inset: -5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FFE58A; animation: ringpulse 1.6s ease-in-out infinite; pointer-events: none"></span>
+            </sc-if>
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.rim}}"></span>
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.bg}}; display: flex; align-items: center; justify-content: center; color: {{t.ink}}">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: {{t.iconOp}}"><path d="{{t.icon}}"></path></svg>
+            </span>
+            <sc-if value="{{t.smoke}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; left: 40px; top: 10px; width: 12px; height: 12px; border-radius: 50%; background: #F2F2EE; animation: smoke 2.6s ease-out {{t.smokeDelay}} infinite; pointer-events: none"></span>
+              <span style="position: absolute; left: 44px; top: 6px; width: 9px; height: 9px; border-radius: 50%; background: #F2F2EE; animation: smoke 2.6s ease-out {{t.smokeDelay2}} infinite; pointer-events: none"></span>
+            </sc-if>
+            <sc-if value="{{t.tappable}}" hint-placeholder-val="{{ false }}">
+              <button type="button" tabindex="-1" onClick="{{t.tap}}" style="position: absolute; inset: 0; border: none; padding: 0; background: transparent; cursor: pointer; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)"></button>
+            </sc-if>
+          </span>
+        </sc-for>
+        <sc-for list="{{board.tokens}}" as="k" hint-placeholder-count="5">
+          <span style="position: absolute; left: {{k.x}}; top: {{k.y}}; width: 0; height: 0; transform-style: preserve-3d; transition: left {{k.speed}} ease-in-out, top {{k.speed}} ease-in-out">
+            <span style="position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; animation: {{k.anim}}">
+              <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #4A3524; transform: translateZ(1px)"></span>
+              <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35; transform: translateZ(4px)"></span>
+              <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #C9A97A; transform: translateZ(7px)">
+                <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{k.face}}; display: flex; align-items: center; justify-content: center; color: #24302C">
+                  <sc-if value="{{k.isFolk}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M4 21c1-4 4-6 8-6s7 2 8 6"></path></svg></sc-if>
+                  <sc-if value="{{k.isLetter}}" hint-placeholder-val="{{ true }}"><span style="display: block; font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1; transform: rotateZ({{cam.counter}}); transition: {{cam.transition}}">{{k.initial}}</span></sc-if>
+                </span>
+                <sc-if value="{{k.tappable}}" hint-placeholder-val="{{ false }}">
+                  <button type="button" tabindex="-1" onClick="{{k.tap}}" style="position: absolute; inset: 0; border: none; padding: 0; background: transparent; cursor: pointer"></button>
+                </sc-if>
+              </span>
+            </span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- Night falls while the party rests at the inn, then morning comes -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #14203A; opacity: {{night.op}}; transition: opacity 1.1s ease-in-out"></div>
+  <sc-if value="{{night.moon}}" hint-placeholder-val="{{ false }}">
+    <span aria-hidden="true" style="position: absolute; left: 50%; top: 150px; margin-left: -24px; z-index: 4; color: #F2E3B0; animation: fadein 0.8s ease-out 0.4s both"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"></path></svg></span>
+  </sc-if>
+
+  <!-- Party tray (mugs go up during the night at the inn) -->
+  <div style="position: absolute; left: 12px; top: 12px; width: 60px; padding: 8px 6px; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+    <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+      <span role="img" aria-label="{{p.aria}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="position: relative; display: block; width: 38px; height: 44px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{p.initial}}</span>
+          <sc-if value="{{p.mug}}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" style="position: absolute; right: -9px; top: -4px; width: 22px; height: 22px; border-radius: 50%; background: #F2C14E; box-shadow: 0 2px 0 #A67A1F; color: #5A3A05; display: flex; align-items: center; justify-content: center; animation: chipin 0.3s ease-out both"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{icons.mug}}"></path></svg></span>
+          </sc-if>
+        </span>
+        <span style="display: block; width: 40px; height: 5px; border-radius: 3px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+          <span style="display: block; height: 5px; width: {{p.hpW}}; background: #4E9A5B; transition: width 0.9s ease-out"></span>
+        </span>
+      </span>
+    </sc-for>
+  </div>
+
+  <!-- Quests and equipment under the party panel -->
+  <div style="position: absolute; left: 22px; top: 260px; z-index: 5; display: flex; flex-direction: column; gap: 6px">
+    <button type="button" aria-label="Quests" onClick="{{log.open}}" style="position: relative; width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.scroll}}"></path></svg>
+      </span>
+      <sc-if value="{{log.dot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF; animation: dotpulse 1.2s ease-in-out infinite"></span></sc-if>
+    </button>
+    <div style="display: flex; align-items: center; gap: 6px">
+      <a href="Ref-Gear-v8d-ForV5.dc.html" aria-label="Character and gear" style="position: relative; display: block; width: 40px; height: 46px; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"></path></svg>
+        </span>
+        <sc-if value="{{gearDot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF; animation: dotpulse 1.2s ease-in-out infinite"></span></sc-if>
+      </a>
+        <button type="button" aria-label="Camera controls" aria-expanded="{{cam.navExpanded}}" onClick="{{cam.toggleNav}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+            <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{cam.navBg}}; color: {{cam.navInk}}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3 4H9z M12 22l3-4H9z M2 12l4-3v6z M22 12l-4-3v6z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"></path></svg>
+            </span>
+          </button>
+          <sc-if value="{{navUI.row}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 4px; padding-left: 4px; animation: navout 0.22s ease-out">
+              <sc-for list="{{cam.buttons}}" as="b" hint-placeholder-count="5">
+                <button type="button" aria-label="{{b.aria}}" onClick="{{b.act}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; opacity: {{b.opacity}}; filter: drop-shadow(0 3px 0 #A48A62)">
+                  <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; color: #24302C">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+    </div>
+  </div>
+
+  <!-- v5a: the camera buttons fan out as a small honeycomb above the nav button, over the open board -->
+  <sc-if value="{{navUI.fan}}" hint-placeholder-val="{{ false }}">
+    <div role="group" aria-label="Camera controls" style="position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 9">
+      <sc-for list="{{navUI.btns}}" as="b" hint-placeholder-count="5">
+        <button type="button" aria-label="{{b.aria}}" onClick="{{b.act}}" style="position: absolute; left: {{b.x}}; top: {{b.y}}; width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; opacity: {{b.opacity}}; filter: drop-shadow(0 3px 0 #A48A62); animation: fanin 0.25s ease-out {{b.delay}} both">
+          <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; color: #24302C">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- v5b: the camera buttons in a small wood tray that pops up above the nav button, on top of everything; a tap on the board closes it -->
+  <sc-if value="{{navUI.tray}}" hint-placeholder-val="{{ false }}">
+    <div role="group" aria-label="Camera controls" style="position: absolute; left: 76px; top: 200px; z-index: 9; padding: 6px 8px 8px; display: flex; gap: 4px; background: #B89C7E; border-radius: 16px; box-shadow: 0 4px 0 #8F7458, 0 8px 16px rgba(36,48,44,0.2); animation: trayin 0.2s ease-out">
+      <span aria-hidden="true" style="position: absolute; left: 4px; bottom: -9px; width: 18px; height: 10px; background: #B89C7E; clip-path: polygon(0 0, 100% 0, 50% 100%)"></span>
+      <sc-for list="{{cam.buttons}}" as="b" hint-placeholder-count="5">
+        <button type="button" aria-label="{{b.aria}}" onClick="{{b.act}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; opacity: {{b.opacity}}; filter: drop-shadow(0 3px 0 #8F7458)">
+          <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; color: #24302C">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- The line on top: the town's, a townsperson's, the shopkeeper's, the innkeeper's, or a companion's at the bar -->
+  <sc-if value="{{inScene}}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{revel.panelTap}}" style="position: absolute; left: 160px; top: 12px; width: 560px; min-height: 76px; box-sizing: border-box; padding: 10px; z-index: 5; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; gap: 12px; align-items: flex-start">
+      <span role="img" aria-label="{{head.name}}" style="position: relative; display: block; width: 46px; height: 53px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{head.face}}; display: flex; align-items: center; justify-content: center; color: {{head.ink}}">
+          <sc-if value="{{head.isIcon}}" hint-placeholder-val="{{ true }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{head.icon}}"></path></svg></sc-if>
+          <sc-if value="{{head.isPerson}}" hint-placeholder-val="{{ false }}"><span style="font-family: 'Lilita One', sans-serif; font-size: 20px; color: #24302C">{{head.initial}}</span></sc-if>
+        </span>
+      </span>
+      <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 16px; color: #245A7E">{{head.name}}</span>
+          <span style="font-size: 11px; font-weight: 800; color: #5A5040">{{head.sub}}</span>
+        </div>
+        <span style="font-size: 14px; font-weight: 800; line-height: 1.35; animation: {{head.lineAnim}}">{{head.line}}</span>
+      </div>
+    </div>
+
+    <!-- In the square: the services as option cards -->
+    <sc-if value="{{inSquare}}" hint-placeholder-val="{{ true }}">
+      <div role="list" style="position: absolute; left: {{navUI.cardsLeft}}; right: 12px; bottom: 14px; transition: left 0.25s ease-out; z-index: 5; display: flex; justify-content: center; gap: 8px; animation: fadein 0.25s ease-out">
+        <sc-for list="{{services}}" as="o" hint-placeholder-count="3">
+          <button type="button" role="listitem" aria-label="{{o.name}}" onClick="{{o.open}}" style="position: relative; width: 108px; height: 108px; padding: 0; border: none; border-radius: 12px; overflow: hidden; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62, inset 0 0 0 2px #E2D5BC; display: flex; flex-direction: column; align-items: stretch; font-family: Nunito, sans-serif; color: #24302C; cursor: pointer; text-align: center">
+            <span style="height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{o.color}}; color: #FFF8EE; font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase">Town</span>
+            <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: {{o.color}}">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg>
+            </span>
+            <span style="padding: 0 8px; font-size: 14px; font-family: 'Lilita One', sans-serif; line-height: 1.1">{{o.name}}</span>
+          </button>
+        </sc-for>
+        <a href="Ref-Explore-v8b-ForV5.dc.html" style="width: 78px; height: 108px; border-radius: 12px; background: #24302C; color: #F6EEDF; text-decoration: none; box-shadow: 0 4px 0 #11181A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 900">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          Leave
+        </a>
+      </div>
+    </sc-if>
+
+    <!-- Shop (v2a, chosen): the shopkeeper's counter along the bottom -->
+    <sc-if value="{{atShop}}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: {{navUI.cardsLeft}}; right: 12px; bottom: 14px; transition: left 0.25s ease-out; height: 108px; z-index: 5; display: flex; gap: 8px; animation: fadein 0.25s ease-out">
+        <div style="width: 78px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{shop.tabs}}" as="tb" hint-placeholder-count="2">
+            <button type="button" aria-pressed="{{tb.on}}" onClick="{{tb.pick}}" style="flex: 1; border: none; border-radius: 12px; background: {{tb.bg}}; color: {{tb.ink}}; box-shadow: 0 4px 0 {{tb.shadow}}; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">{{tb.label}}</button>
+          </sc-for>
+        </div>
+        <div role="list" aria-label="{{shop.trayLabel}}" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 10px 12px 8px; border-radius: 14px; background: #B89C7E; box-shadow: 0 4px 0 #8F7458, inset 0 -10px 0 #A4876A; display: flex; gap: 6px; align-items: flex-start; overflow-x: auto">
+          <sc-for list="{{shop.items}}" as="it" hint-placeholder-count="7">
+            <button type="button" role="listitem" aria-label="{{it.aria}}" aria-pressed="{{it.on}}" onClick="{{it.pick}}" style="width: 58px; flex-shrink: 0; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: Nunito, sans-serif">
+              <span style="position: relative; display: block; width: 54px; height: 62px; filter: drop-shadow(0 3px 0 #8F7458)">
+                <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{it.ring}}"></span>
+                <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{it.rim}}"></span>
+                <span style="position: absolute; inset: 6px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{it.face}}; display: flex; align-items: center; justify-content: center; color: {{it.ink}}">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{it.icon}}"></path></svg>
+                </span>
+              </span>
+              <span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #FCF7EE; color: #24302C; font-size: 11px; font-weight: 900; display: flex; align-items: center; white-space: nowrap">{{it.price}}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{shop.empty}}" hint-placeholder-val="{{ false }}">
+            <span style="flex: 1; align-self: center; text-align: center; font-size: 13px; font-weight: 800; color: #FCF7EE">Nothing to sell</span>
+          </sc-if>
+        </div>
+        <button type="button" onClick="{{shop.back}}" style="width: 78px; flex-shrink: 0; border: none; border-radius: 12px; background: #24302C; color: #F6EEDF; box-shadow: 0 4px 0 #11181A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          Back
+        </button>
+      </div>
+      <span style="position: absolute; right: 12px; top: 12px; z-index: 6; height: 34px; padding: 0 12px 0 6px; box-sizing: border-box; border-radius: 17px; background: #24302C; color: #F6EEDF; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900">
+        <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+        [gold]
+        <sc-if value="{{goldPop.show}}" hint-placeholder-val="{{ false }}">
+          <span role="status" style="position: absolute; right: 4px; top: 36px; padding: 2px 8px; border-radius: 10px; background: #4E9A5B; color: #FFF8EE; font-size: 12px; font-weight: 900; white-space: nowrap; pointer-events: none; animation: {{goldPop.anim}}">+[gold]</span>
+        </sc-if>
+      </span>
+      <sc-if value="{{pop.show}}" hint-placeholder-val="{{ false }}">
+        <div role="dialog" aria-label="{{pop.name}} details" style="position: absolute; left: {{pop.left}}; bottom: 132px; width: 220px; box-sizing: border-box; z-index: 9; background: #FCF7EE; border-radius: 16px; border: 3px solid {{pop.rim}}; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; animation: panelin 0.2s ease-out">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px">
+            <div style="display: flex; flex-direction: column; min-width: 0">
+              <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{pop.tagInk}}">{{pop.tag}}</span>
+              <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1.1">{{pop.name}}</span>
+            </div>
+            <button type="button" aria-label="Close details" onClick="{{pop.close}}" style="width: 44px; height: 44px; margin: -8px -10px 0 0; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg>
+            </button>
+          </div>
+          <sc-if value="{{pop.hasDesc}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{pop.desc}}</span>
+          </sc-if>
+          <sc-if value="{{pop.hasCards}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 4px">
+              <sc-for list="{{pop.cards}}" as="cd" hint-placeholder-count="1">
+                <span style="height: 26px; padding: 0 12px; display: flex; align-items: center; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%); background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900">{{cd.name}}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <span style="font-size: 11px; font-weight: 700; color: #5A5040">[Item stats]</span>
+          <span style="filter: drop-shadow(0 3px 0 #7E3519); display: block; align-self: flex-start">
+            <button type="button" onClick="{{pop.act}}" style="height: 44px; padding: 0 22px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 14px; cursor: pointer">{{pop.actLabel}}</button>
+          </span>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- Inn (v2e, chosen): inside the inn, Rest the night starts a night at the bar -->
+    <sc-if value="{{innCards.show}}" hint-placeholder-val="{{ false }}">
+      <div role="list" style="position: absolute; left: {{navUI.cardsLeft}}; right: 12px; bottom: 14px; transition: left 0.25s ease-out; z-index: 5; display: flex; justify-content: center; gap: 8px; animation: fadein 0.25s ease-out">
+        <button type="button" role="listitem" aria-label="{{innCards.aria}}" aria-disabled="{{innCards.off}}" onClick="{{innCards.rest}}" style="position: relative; width: 108px; height: 108px; padding: 0; border: none; border-radius: 12px; overflow: hidden; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62, inset 0 0 0 2px #E2D5BC; display: flex; flex-direction: column; align-items: stretch; font-family: Nunito, sans-serif; color: #24302C; cursor: pointer; text-align: center; opacity: {{innCards.op}}">
+          <span style="height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 4px; background: {{innCards.band}}; color: #FFF8EE; font-size: 11px; font-weight: 900">
+            <span aria-hidden="true" style="width: 11px; height: 11px; border-radius: 50%; background: #E4B54C; display: {{innCards.coin}}"></span>{{innCards.bandText}}
+          </span>
+          <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #3F6FA8">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.inn}}"></path></svg>
+          </span>
+          <span style="padding: 0 8px; font-size: 14px; font-family: 'Lilita One', sans-serif; line-height: 1.1">Rest the night</span>
+        </button>
+        <button type="button" onClick="{{innCards.back}}" style="width: 78px; height: 108px; border: none; border-radius: 12px; background: #24302C; color: #F6EEDF; box-shadow: 0 4px 0 #11181A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          Back
+        </button>
+      </div>
+    </sc-if>
+    <sc-if value="{{revel.on}}" hint-placeholder-val="{{ false }}">
+      <button type="button" aria-label="Next line" onClick="{{revel.next}}" style="position: absolute; left: 676px; top: 44px; z-index: 6; width: 44px; height: 44px; border: none; padding: 0; background: transparent; color: #B5532F; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+    </sc-if>
+  </sc-if>
+
+  <!-- After the night: the rest's results as in v1 (the party's HP filling, ticks on what the rest did) -->
+  <sc-if value="{{res.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="Rested" style="position: absolute; left: 178px; top: 104px; width: 520px; box-sizing: border-box; z-index: 8; padding: 12px 14px 14px; background: #F6EEDF; border-radius: 20px; box-shadow: 0 5px 0 #CDB894, 0 10px 24px rgba(36,48,44,0.25); display: flex; flex-direction: column; align-items: center; gap: 10px; animation: panelin 0.25s ease-out">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1">Rested</span>
+      <div style="display: flex; gap: 14px; padding: 10px 18px; border-radius: 18px; background: #B89C7E; box-shadow: inset 0 3px 0 #8F7458">
+        <sc-for list="{{res.party}}" as="p" hint-placeholder-count="4">
+          <span role="img" aria-label="{{p.aria}}" style="display: flex; flex-direction: column; align-items: center; gap: 5px">
+            <span style="position: relative; display: block; width: 52px; height: 60px; filter: drop-shadow(0 3px 0 #8F7458)">
+              <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+              <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 21px">{{p.initial}}</span>
+            </span>
+            <span style="display: block; width: 56px; height: 7px; border-radius: 4px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+              <span style="display: block; height: 7px; width: {{p.hpW}}; background: #4E9A5B; transition: width 1.1s ease-out"></span>
+            </span>
+            <sc-if value="{{p.hurt}}" hint-placeholder-val="{{ false }}">
+              <span style="height: 18px; padding: 0 6px; border-radius: 9px; background: #8E3B2E; color: #FFF8EE; font-size: 10px; font-weight: 900; display: flex; align-items: center">Injured</span>
+            </sc-if>
+            <sc-if value="{{p.healed}}" hint-placeholder-val="{{ false }}">
+              <span style="height: 18px; padding: 0 6px; border-radius: 9px; background: #4E9A5B; color: #FFF8EE; font-size: 10px; font-weight: 900; display: flex; align-items: center; animation: chipin 0.3s ease-out both">Healed</span>
+            </sc-if>
+          </span>
+        </sc-for>
+      </div>
+      <div role="list" aria-label="What the rest did" style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center">
+        <sc-for list="{{res.chips}}" as="c" hint-placeholder-count="5">
+          <span role="listitem" style="height: 28px; padding: 0 11px 0 4px; border-radius: 14px; background: {{c.bg}}; color: #24302C; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 900; transition: background 0.4s ease">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background: {{c.dot}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"></path></svg></span>
+            {{c.label}}
+          </span>
+        </sc-for>
+      </div>
+      <button type="button" onClick="{{res.done}}" style="height: 40px; padding: 0 28px; border: none; border-radius: 20px; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Carry on</button>
+    </div>
+  </sc-if>
+
+  <!-- Quest board (v1's panel, kept) -->
+  <sc-if value="{{pn.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="Quest board" style="position: absolute; left: 96px; top: 12px; width: 736px; height: 366px; box-sizing: border-box; z-index: 8; padding: 10px 12px 12px; background: #F6EEDF; border-radius: 20px; box-shadow: 0 5px 0 #CDB894, 0 10px 24px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 8px; animation: panelin 0.25s ease-out">
+      <div style="height: 50px; flex-shrink: 0; display: flex; align-items: center; gap: 10px">
+        <span style="position: relative; display: block; width: 40px; height: 46px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #4E7A3F; display: flex; align-items: center; justify-content: center; color: #FFF8EE">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.board}}"></path></svg>
+          </span>
+        </span>
+        <div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 21px; line-height: 1.05">Quest board</span>
+          <span style="font-size: 12px; font-weight: 700; color: #43524D">[Town name]</span>
+        </div>
+        <button type="button" aria-label="Close" onClick="{{pn.close}}" style="width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 22px; background: #E6DCC8; color: #24302C; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      </div>
+      <div role="list" style="flex: 1; min-height: 0; padding: 14px; border-radius: 16px; background: #B89C7E; box-shadow: inset 0 3px 0 #8F7458; display: flex; gap: 12px; justify-content: center; align-items: stretch">
+        <sc-for list="{{board2.quests}}" as="q" hint-placeholder-count="3">
+          <div role="listitem" style="position: relative; width: 210px; box-sizing: border-box; padding: 16px 12px 12px; background: {{q.paper}}; border-radius: 6px; box-shadow: 0 4px 0 #8F7458; transform: rotate({{q.tilt}}); display: flex; flex-direction: column; gap: 5px">
+            <span aria-hidden="true" style="position: absolute; left: 50%; top: 5px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #B5532F; box-shadow: 0 2px 0 #7E3519"></span>
+            <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: #4E7A3F">[Quest giver]</span>
+            <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">[Quest name]</span>
+            <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">[Quest goal]</span>
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 900">
+              <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+              [Reward]
+            </span>
+            <span style="flex: 1"></span>
+            <sc-if value="{{q.open}}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{q.take}}" style="height: 40px; border: none; border-radius: 20px; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Take</button>
+            </sc-if>
+            <sc-if value="{{q.taken}}" hint-placeholder-val="{{ false }}">
+              <span style="height: 40px; border-radius: 20px; box-shadow: inset 0 0 0 2px #4E7A3F; color: #4E7A3F; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Taken</span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Rewards pop big in the middle, then fly home -->
+  <sc-for list="{{flying}}" as="r" hint-placeholder-count="0">
+    <div role="status" aria-label="{{r.aria}}" style="position: absolute; left: 352px; top: 128px; width: 200px; height: 132px; box-sizing: border-box; z-index: 12; pointer-events: none; padding: 10px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; align-items: center; gap: 4px; --tx: {{r.tx}}; --ty: {{r.ty}}; animation: {{r.anim}}">
+      <span style="position: relative; display: block; width: 52px; height: 60px; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{r.color}}"></span>
+        <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: {{r.color}}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"></path></svg>
+        </span>
+      </span>
+      <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{r.tagInk}}">{{r.type}}</span>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.1; text-align: center">{{r.name}}</span>
+    </div>
+  </sc-for>
+
+  <!-- Quest log pop-up -->
+  <sc-if value="{{log.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="Quests" style="position: absolute; left: 70px; bottom: 74px; width: 240px; max-height: 250px; box-sizing: border-box; z-index: 22; padding: 9px 12px 10px; background: #FCF7EE; border-radius: 16px; border: 3px solid #4E7A3F; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 6px">
+      <span style="padding-right: 30px; font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.1">Quests</span>
+      <button type="button" aria-label="Close" onClick="{{log.close}}" style="position: absolute; right: 0; top: 0; width: 44px; height: 40px; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      <div style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0">
+        <sc-for list="{{log.rows}}" as="row" hint-placeholder-count="1">
+          <div style="display: flex; align-items: flex-start; gap: 8px">
+            <span style="width: 22px; height: 22px; margin-top: 1px; flex-shrink: 0; border-radius: 50%; background: #4E7A3F; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.scroll}}"></path></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.2">
+              <span style="font-size: 13px; font-weight: 900">{{row.name}}</span>
+              <span style="font-size: 11px; font-weight: 700; color: #5A5040">{{row.desc}}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  // Which v3 variant this artboard shows: 'square' = the town square board, services from the cards (v3a);
+  // (v4 keeps 'square', chosen, and adds the camera) 'tap' = the same, and the buildings can be tapped, the party walking over first (v3b); 'life' = v3b plus townsfolk and chimney smoke (v3c)
+  variant() { return 'square'; }
+  navStyle() { return 'fan'; }
+  componentDidMount() {
+    if (this.variant() === 'life') this._iv = setInterval(() => this.setState({ tick: ((this.state && this.state.tick) || 0) + 1 }), 2600);
+  }
+  componentWillUnmount() { (this._timers || []).forEach(clearTimeout); if (this._iv) clearInterval(this._iv); }
+  renderVals() {
+    const st = this.state || {};
+    const V = this.variant();
+    const canTap = V === 'tap' || V === 'life';
+    const later = (ms, fn) => { this._timers = this._timers || []; this._timers.push(setTimeout(fn, ms)); };
+
+    const ICON = {
+      house: 'M4 11l8-6 8 6v9H4z M10 20v-5h4v5',
+      person: 'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M4 21c1-4 4-6 8-6s7 2 8 6',
+      scroll: 'M7 4h11v13a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1h11v1a3 3 0 0 0 3 3 M7 4a3 3 0 0 0-3 3v1h3 M10 9h5 M10 12h5',
+      shop: 'M4 9l1.5-5h13L20 9 M4 9h16v2a3 3 0 0 1-5 2 3 3 0 0 1-6 0 3 3 0 0 1-5-2z M5 13v7h14v-7 M10 20v-4h4v4',
+      inn: 'M3 18V8 M3 14h18v4 M21 14v-2a3 3 0 0 0-3-3h-7v5 M7 11a1.5 1.5 0 1 0 0.01 0',
+      board: 'M4 4h16v12H4z M8 20l4-4 4 4 M8 8h3 M8 11h5 M15 8h1',
+      well: 'M5 10h14 M7 10v9h10v-9 M8 10V5h8v5 M6 5h12 M12 5v3',
+      tree: 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4',
+      flowers: 'M7 12a2 2 0 1 0 0.01 0 M17 9a2 2 0 1 0 0.01 0 M12 15a2 2 0 1 0 0.01 0 M7 14v6 M17 11v9 M12 17v3',
+      heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      bandage: 'M8 8l8 8 M5 13l8-8a3 3 0 0 1 4 4l-8 8a3 3 0 0 1-4-4z M11 11h0.01 M13 13h0.01',
+      clock: 'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16 M12 8v4l3 2',
+      cards: 'M8 4h10v14H8z M5 7v13h10',
+      check: 'M5 12l5 5 9-10',
+      potion: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10',
+      bow: 'M6 3c9 3 9 15 0 18 M6 3v18 M3 12h15 M15 9l3 3-3 3',
+      axe: 'M5 19L15 9 M13 4c5 0 7 3 7 7-3 0-5-1-7-3z',
+      spear: 'M4 20L17 7 M17 7l3-4-4 1z',
+      sword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4',
+      armor: 'M8 3L4 6v6h3v9h10v-9h3V6l-4-3c-1 2-7 2-8 0z',
+      ring: 'M12 9a6 6 0 1 0 0 12a6 6 0 1 0 0-12 M9.5 4h5l1.5 3h-8z',
+      tent: 'M3 20L12 4l9 16z M12 4v16 M9 20l3-5 3 5',
+      mug: 'M5 8h10v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z M15 11h2a2 2 0 0 1 0 4h-2 M7 5c0-1 1-2 2-2s1 1 2 1 2-1 2-1',
+      flame: 'M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 3 2 0-2-1-4 0-6z',
+      table: 'M3 9h18 M6 9v10 M18 9v10 M4 13h16'
+    };
+    const T = { rim: { C: '#BFAE8E', R: '#3F86C8', L: '#E07A2F' }, face: { C: '#FCF7EE', R: '#EAF3FB', L: '#FDEEDF' }, ink: { C: '#33403B', R: '#225C91', L: '#9A4A12' }, tagInk: { C: '#5A5040', R: '#225C91', L: '#9A4A12' } };
+    const RAR = { C: 'Common', R: 'Rare', L: 'Legendary' };
+    const SEL = '#B5532F';
+
+    // Where the player is: null = the square, 'shop' = the counter, 'inn' = inside the inn, 'board' = the quest board panel
+    const mode = st.mode || null;
+    const phase = st.phase || null; // the inn's rest: null, 'revel', 'night', 'results'
+    const rested = !!st.rested;
+    const PARTY = [
+      { name: '[Hero name]', initial: 'H', face: '#E9C46A', hp: 0.62 },
+      { name: 'Fluffy', initial: 'F', face: '#C9B3E6', hp: 0.4 },
+      { name: 'Chelmsford', initial: 'C', face: '#8EC3F2', hp: 0.9 },
+      { name: 'Mel', initial: 'M', face: '#F4B6A8', hp: 0.5, injured: true }
+    ];
+    const party = PARTY.map((p) => {
+      const hp = rested ? 1 : p.hp;
+      return { initial: p.initial, face: p.face, mug: phase === 'revel', hpW: Math.round(hp * 100) + '%', aria: p.name + ': ' + Math.round(hp * 100) + '% HP' + (!rested && p.injured ? ', injured' : '') };
+    });
+
+    const SV = {
+      shop: { name: 'Shop', icon: ICON.shop, color: '#B0672A' },
+      inn: { name: 'Inn', icon: ICON.inn, color: '#3F6FA8' },
+      board: { name: 'Quest board', icon: ICON.board, color: '#4E7A3F' }
+    };
+    const open = (id) => this.setState({ mode: id, walk: null, sel: null, log: false, talk: null, phase: null });
+    // v3b–v3c: going somewhere walks the party there first; v3a opens it at once
+    const goTo = (id) => {
+      if (!canTap) { open(id); return; }
+      if (st.walk) return;
+      this.setState({ walk: id, talk: null, log: false });
+      later(900, () => open(id));
+    };
+    const services = ['shop', 'inn', 'board'].map((id) => ({ name: SV[id].name, icon: SV[id].icon, color: SV[id].color, open: () => goTo(id) }));
+
+    const fly = st.fly || { n: 0, items: [] };
+    const HOME = { quests: { x: 42, y: 283 }, bag: { x: 42, y: 335 } };
+    const CENTER = { x: 452, y: 194 };
+    const flying = fly.items.map((r, i) => ({
+      type: r.type, name: r.name, color: r.color, tagInk: r.tagInk, icon: r.icon, aria: r.type + ': ' + r.name,
+      tx: (HOME[r.home].x - CENTER.x) + 'px', ty: (HOME[r.home].y - CENTER.y) + 'px',
+      anim: 'fly' + (fly.n % 2) + ' 1.8s ease-in-out ' + (i * 0.35).toFixed(2) + 's both'
+    }));
+    const launch = (r, patch) => this.setState(Object.assign({ fly: { n: fly.n + 1, items: [r] } }, patch || {}));
+
+    // Shop (v2a): stock and the shared inventory are mockup placeholders, as before
+    const STOCK = [
+      { name: 'Camp kit', r: 'C', icon: 'tent', kind: 'Consumable', desc: 'Pitch a camp. One kit covers the whole party.' },
+      { name: 'Potion', r: 'C', icon: 'potion', kind: 'Consumable' },
+      { name: 'Spear', r: 'C', icon: 'spear', kind: 'Weapon', desc: 'Versatile. Reach: hits 2 squares away.', cards: ['Throw'] },
+      { name: 'Battleaxe', r: 'C', icon: 'axe', kind: 'Weapon', desc: 'Versatile. Can be thrown.', cards: ['Hack', 'Throw'] },
+      { name: 'Shortbow', r: 'C', icon: 'bow', kind: 'Weapon' },
+      { name: 'Light armor', r: 'C', icon: 'armor', kind: 'Armor' },
+      { name: 'Dagger', r: 'R', icon: 'sword', kind: 'Weapon', cards: ['Backstab', 'Throw'] }
+    ].map((x, i) => Object.assign({ id: 's' + i }, x));
+    const START_INV = [
+      { name: 'Shortbow', r: 'C', icon: 'bow', kind: 'Weapon' },
+      { name: 'Dagger', r: 'R', icon: 'sword', kind: 'Weapon', cards: ['Backstab', 'Throw'] },
+      { name: 'Battleaxe', r: 'C', icon: 'axe', kind: 'Weapon', desc: 'Versatile. Can be thrown.', cards: ['Hack', 'Throw'] },
+      { name: 'Light armor', r: 'C', icon: 'armor', kind: 'Armor' },
+      { name: 'Ring', r: 'R', icon: 'ring', kind: 'Trinket' },
+      { name: 'Spear', r: 'L', icon: 'spear', kind: 'Weapon', desc: 'Versatile. Reach: hits 2 squares away.', cards: ['Throw'] }
+    ].map((x, i) => Object.assign({ id: 'i' + i }, x));
+    const inv = st.inv || START_INV;
+    const tab = st.tab || 'buy';
+    const list = tab === 'buy' ? STOCK : inv;
+    const selIdx = list.findIndex((x) => x.id === st.sel);
+    const selItem = selIdx >= 0 ? list[selIdx] : null;
+    const goldN = st.goldN || 0;
+    const buy = (x) => {
+      const n = (st.bought || 0) + 1;
+      launch({ type: 'Item', name: x.name, color: T.rim[x.r], tagInk: T.tagInk[x.r], icon: ICON[x.icon], home: 'bag' },
+        { inv: inv.concat([Object.assign({}, x, { id: 'b' + n })]), bought: n, gearDot: true, sel: null });
+    };
+    const sell = (x) => this.setState({ inv: inv.filter((y) => y.id !== x.id), sel: null, goldN: goldN + 1 });
+    const shop = {
+      trayLabel: tab === 'buy' ? 'For sale' : 'Shared inventory',
+      tabs: [['buy', 'Buy'], ['sell', 'Sell']].map((t) => {
+        const on = tab === t[0];
+        return { label: t[1], on: on ? 'true' : 'false', bg: on ? '#B5532F' : '#FCF7EE', ink: on ? '#FFF8EE' : '#24302C', shadow: on ? '#7E3519' : '#A48A62', pick: () => this.setState({ tab: t[0], sel: null }) };
+      }),
+      items: list.map((x) => {
+        const on = !!selItem && selItem.id === x.id;
+        return { icon: ICON[x.icon], rim: T.rim[x.r], face: T.face[x.r], ink: T.ink[x.r], ring: on ? SEL : 'transparent', on: on ? 'true' : 'false',
+          price: tab === 'buy' ? '[price]' : '+[gold]', aria: x.name + ', ' + RAR[x.r], pick: () => this.setState({ sel: on ? null : x.id }) };
+      }),
+      empty: list.length === 0,
+      back: () => this.setState({ mode: null, sel: null })
+    };
+    const popLeft = Math.max(96, Math.min(612, 194 + 12 + selIdx * 64 + 29 - 110));
+    const pop = selItem ? {
+      show: true, left: popLeft + 'px', tag: selItem.kind + ' · ' + RAR[selItem.r], tagInk: T.tagInk[selItem.r], rim: T.rim[selItem.r], name: selItem.name,
+      desc: selItem.desc || '', hasDesc: !!selItem.desc, cards: (selItem.cards || []).map((c) => ({ name: c })), hasCards: !!(selItem.cards && selItem.cards.length),
+      actLabel: tab === 'buy' ? 'Buy · [price]' : 'Sell · +[gold]', act: () => (tab === 'buy' ? buy(selItem) : sell(selItem)), close: () => this.setState({ sel: null })
+    } : { show: false, left: '0', tag: '', tagInk: '#5A5040', rim: '#E2D5BC', name: '', desc: '', hasDesc: false, cards: [], hasCards: false, actLabel: '', act: () => {}, close: () => {} };
+    const goldPop = { show: goldN > 0, anim: 'goldpop' + (goldN % 2) + ' 1.2s ease-out both' };
+
+    // Inn (v2e): a night at the bar. The companions and the hero trade lines (placeholders), a tap between each; then night, then v1's results
+    const atInn = mode === 'inn';
+    const step = st.step || 0;
+    const BANTER = [{ who: 1, line: "[Fluffy's bar line]" }, { who: 2, line: "[Chelmsford's bar line]" }, { who: 3, line: "[Mel's bar line]" }, { who: 0, line: '[Hero toast line]' }];
+    const rest = () => { if (rested || phase) return; this.setState({ phase: 'revel', step: 0, hopN: 1 }); };
+    const nextLine = () => {
+      if (step < BANTER.length - 1) { this.setState({ step: step + 1, hopN: (st.hopN || 0) + 1 }); return; }
+      this.setState({ phase: 'night' });
+      later(2300, () => { this.setState({ phase: 'results', barsFull: false }); later(250, () => this.setState({ barsFull: true, rested: true })); });
+    };
+    const revel = { on: phase === 'revel', next: nextLine, panelTap: () => { if (phase === 'revel') nextLine(); } };
+    const innCards = {
+      show: atInn && !phase,
+      bandText: rested ? 'Rested' : '[price]', band: rested ? '#5A5040' : '#3F6FA8', coin: rested ? 'none' : 'block', off: rested ? 'true' : 'false', op: rested ? '0.6' : '1',
+      aria: rested ? 'Rest the night, done' : 'Rest the night, [price]', rest: rest,
+      back: () => this.setState({ mode: null, phase: null })
+    };
+    const night = { op: phase === 'night' ? '0.62' : '0', moon: phase === 'night' };
+    const full = !!st.barsFull;
+    const chip = (icon, label) => ({ icon: full ? ICON.check : icon, label: label, bg: full ? '#DDEBD5' : '#E6DCC8', dot: full ? '#4E9A5B' : '#5A5040' });
+    const res = {
+      show: phase === 'results',
+      party: PARTY.map((p) => ({ initial: p.initial, face: p.face, hpW: Math.round((full ? 1 : p.hp) * 100) + '%', hurt: !full && !!p.injured, healed: full && !!p.injured, aria: p.name + ': ' + Math.round((full ? 1 : p.hp) * 100) + '% HP' })),
+      chips: [chip(ICON.heart, 'Heal'), chip(ICON.bandage, 'Injuries'), chip(ICON.clock, '+8 hours'), chip(ICON.cards, 'Reshuffle deck'), chip(ICON.cards, 'Hand to 7')],
+      done: () => this.setState({ phase: null })
+    };
+
+    // Quest board (v1, kept)
+    const taken = st.taken || [];
+    const board2 = {
+      quests: [0, 1, 2].map((i) => {
+        const tk = taken.indexOf(i) >= 0;
+        return { open: !tk, taken: tk, paper: tk ? '#EDE4D2' : '#FCF7EE', tilt: ['-1.5deg', '1deg', '-0.5deg'][i],
+          take: () => launch({ type: 'Quest', name: '[Quest name]', color: '#4E7A3F', tagInk: '#4E7A3F', icon: ICON.scroll, home: 'quests' }, { taken: taken.concat([i]), questDot: true }) };
+      })
+    };
+    const log = {
+      show: !!st.log, dot: !!st.questDot,
+      open: () => this.setState({ log: !st.log, questDot: false }), close: () => this.setState({ log: false }),
+      rows: taken.length ? taken.map(() => ({ name: '[Quest name]', desc: '[Quest goal]' })) : [{ name: 'Nothing yet', desc: '' }]
+    };
+    const pn = { show: mode === 'board', close: () => this.setState({ mode: null }) };
+
+    // Townsfolk (v3c): they wander between the square's open hexes; a tap gives their line or a rumour
+    const tick = st.tick || 0;
+    const ROUTE = [[0, -1], [-1, -1], [-2, 0], [-1, 1], [0, 1], [1, 1], [2, 0], [2, -1], [1, -1]];
+    const FOLK = [{ line: '[Townsfolk line]' }, { line: '[Rumour]' }, { line: '[Townsfolk line]' }];
+    const talk = st.talk;
+
+    // The line on top
+    const sp = phase === 'revel' ? PARTY[BANTER[step].who] : null;
+    const npc = (name, sub, line, face, ink, icon, anim) => ({ name: name, sub: sub, line: line, face: face, ink: ink, icon: icon, isIcon: true, isPerson: false, initial: '', lineAnim: anim || 'linein0 0.3s ease-out' });
+    const head = sp
+      ? { name: sp.name, sub: 'At the bar', line: BANTER[step].line, face: sp.face, ink: '#24302C', icon: '', isIcon: false, isPerson: true, initial: sp.initial, lineAnim: 'linein' + (step % 2) + ' 0.3s ease-out' }
+      : atInn ? npc('[Innkeeper]', '[Town name] · Inn', phase === 'night' ? '[Innkeeper goodnight line]' : phase === 'results' || rested ? '[Innkeeper morning line]' : '[Innkeeper line]', '#C9DCEF', '#3F6FA8', ICON.person, 'linein1 0.3s ease-out')
+      : mode === 'shop' ? npc('[Shopkeeper]', '[Town name] · Shop', '[Shopkeeper line]', '#F2D8B0', '#B0672A', ICON.person, 'linein1 0.3s ease-out')
+      : talk != null ? npc('[Townsperson]', '[Town name]', FOLK[talk].line, '#E6DCC8', '#5A5040', ICON.person, 'linein' + ((st.talkN || 0) % 2) + ' 0.3s ease-out')
+      : npc('[Town name]', 'Market town', '[Town greeting]', '#E2C79A', '#6B4C35', ICON.house);
+
+
+    // Camera in scenes (v9): one finger or a mouse drag pans, two fingers pinch to zoom and twist to rotate, the wheel zooms, a right-drag rotates;
+    // rotation snaps to 60° steps on release. A press that barely moves and lets go quickly is a tap (it moves the line on); a long hold does nothing.
+    // The camera stays where the player puts it, and eases back to frame the scene when the scene changes (frameKey).
+    const makeCam = (frameKey, baseScale, onTap) => {
+      const own = st.camKey === frameKey;
+      const z = own ? (st.z ?? 1) : 1;
+      const pan = own ? (st.pan ?? { x: 0, y: 0 }) : { x: 0, y: 0 };
+      const rot = st.rot ?? 0;
+      const zMin = 0.6, zMax = 1.8;
+      const clampZ = (v) => Math.min(zMax, Math.max(zMin, v));
+      const set = (patch) => this.setState(Object.assign({ camKey: frameKey, z: z, pan: pan }, patch));
+      const TAP_MOVE = 8, TAP_MS = 350;
+      return {
+        transform: 'translate(' + pan.x.toFixed(1) + 'px, ' + pan.y.toFixed(1) + 'px) scale(' + (baseScale * z).toFixed(3) + ') rotateX(50deg) rotateZ(' + rot + 'deg)',
+        transition: st.camLive ? 'none' : 'transform 1.1s ease-in-out',
+        counter: (-rot) + 'deg',
+        cursor: st.camLive ? 'grabbing' : 'grab',
+        down: (e) => {
+          const P = this._ptrs = this._ptrs || {};
+          P[e.pointerId] = { x: e.clientX, y: e.clientY };
+          const ids = Object.keys(P);
+          if (ids.length === 2) {
+            const a = P[ids[0]], b = P[ids[1]];
+            this._g = { d0: Math.hypot(b.x - a.x, b.y - a.y) || 1, a0: Math.atan2(b.y - a.y, b.x - a.x), z0: z, r0: rot };
+            this._drag = null;
+          } else if (ids.length === 1) {
+            this._drag = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, r0: rot, t: Date.now(), moved: false, spin: e.button === 2 };
+          }
+        },
+        move: (e) => {
+          const P = this._ptrs || {};
+          if (P[e.pointerId]) P[e.pointerId] = { x: e.clientX, y: e.clientY };
+          const ids = Object.keys(P);
+          if (this._g && ids.length >= 2) {
+            const a = P[ids[0]], b = P[ids[1]], g = this._g;
+            const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+            set({ camLive: true, z: clampZ(g.z0 * d / g.d0), rot: g.r0 + (Math.atan2(b.y - a.y, b.x - a.x) - g.a0) * 180 / Math.PI });
+            return;
+          }
+          const dr = this._drag; if (!dr) return;
+          const dx = e.clientX - dr.x, dy = e.clientY - dr.y;
+          if (!dr.moved && Math.abs(dx) + Math.abs(dy) > TAP_MOVE) dr.moved = true;
+          if (!dr.moved) return;
+          if (dr.spin) set({ camLive: true, rot: dr.r0 + dx * 0.5 });
+          else set({ camLive: true, pan: { x: dr.px + dx, y: dr.py + dy } });
+        },
+        up: (e) => {
+          const P = this._ptrs || {};
+          if (e && e.pointerId != null) delete P[e.pointerId];
+          if (this._g) {
+            if (Object.keys(P).length < 2) { this._g = null; this._drag = null; set({ camLive: false, rot: Math.round(rot / 60) * 60 }); }
+            return;
+          }
+          const dr = this._drag; this._drag = null; if (!dr) return;
+          if (dr.moved) { set({ camLive: false, rot: dr.spin ? Math.round(rot / 60) * 60 : rot }); return; }
+          if (!dr.spin && Date.now() - dr.t < TAP_MS && onTap) onTap();
+        },
+        cancel: () => { this._ptrs = {}; this._g = null; this._drag = null; if (st.camLive) set({ camLive: false, rot: Math.round(rot / 60) * 60 }); },
+        leave: (e) => { if (e && e.pointerType === 'mouse' && this._drag) { const dr = this._drag; this._drag = null; this._ptrs = {}; if (dr.moved) set({ camLive: false, rot: Math.round(rot / 60) * 60 }); } },
+        wheel: (e) => { set({ z: clampZ(z * (e.deltaY < 0 ? 1.12 : 1 / 1.12)) }); },
+        menu: (e) => { if (e && e.preventDefault) e.preventDefault(); },
+        navOpen: !!st.navOpen, navExpanded: st.navOpen ? 'true' : 'false', navBg: st.navOpen ? '#24302C' : '#F6EEDF', navInk: st.navOpen ? '#F6EEDF' : '#24302C',
+        toggleNav: () => this.setState({ navOpen: !st.navOpen }),
+        buttons: [
+          { aria: 'Zoom in', icon: 'M12 5v14 M5 12h14', opacity: z < zMax ? '1' : '0.45', act: () => set({ z: clampZ(z * 1.25) }) },
+          { aria: 'Zoom out', icon: 'M5 12h14', opacity: z > zMin ? '1' : '0.45', act: () => set({ z: clampZ(z / 1.25) }) },
+          { aria: 'Rotate left', icon: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5', opacity: '1', act: () => set({ rot: rot - 60 }) },
+          { aria: 'Rotate right', icon: 'M21 12a9 9 0 1 1-3-6.7 M21 4v5h-5', opacity: '1', act: () => set({ rot: rot + 60 }) },
+          { aria: 'Frame the scene', icon: 'M12 3v4 M12 17v4 M3 12h4 M17 12h4 M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6', opacity: '1', act: () => this.setState({ camKey: frameKey, z: 1, pan: { x: 0, y: 0 }, rot: 0 }) }
+        ]
+      };
+    };
+    const cam = makeCam(atInn ? 'inn' : mode === 'shop' ? 'shop' : 'square', 1, () => { if (st.navOpen && this.navStyle() !== 'room') { this.setState({ navOpen: false }); return; } if (phase === 'revel') nextLine(); });
+
+    // How the camera buttons open (v5): 'fan' = a honeycomb above the nav button (v5a); 'tray' = a pop-up wood tray on top (v5b);
+    // 'room' = they open to the right as before and the card row slides over to make room (v5c)
+    const NAV = this.navStyle();
+    const navOn = !!st.navOpen;
+    const FAN = [[100, 240], [144, 240], [122, 200], [166, 200], [188, 240]];
+    const navUI = {
+      row: navOn && (NAV === 'room'), fan: navOn && NAV === 'fan', tray: navOn && NAV === 'tray',
+      cardsLeft: navOn && NAV === 'room' ? '344px' : '96px',
+      btns: cam.buttons.map((b, i) => Object.assign({}, b, { x: (FAN[i][0] - 20) + 'px', y: (FAN[i][1] - 23) + 'px', delay: (i * 0.04).toFixed(2) + 's' }))
+    };
+
+    // The board
+    const W = 64, H = 74, OX = 300, OY = 260;
+    const px = (q, r) => ({ x: OX + W * (q + r / 2), y: OY + 0.75 * H * r });
+    const hexes = [];
+    for (let q = -2; q <= 2; q++) for (let r = -2; r <= 2; r++) { if (Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r)) <= 2) hexes.push([q, r]); }
+    const tile = (q, r, t, extra) => { const p = px(q, r); return Object.assign({ left: (p.x - 32) + 'px', top: (p.y - 37) + 'px', sLeft: (p.x - 34) + 'px', sTop: (p.y - 39.25) + 'px', rim: t.rim, bg: t.bg, ink: t.ink, icon: t.icon, iconOp: t.op, glow: false, smoke: false, smokeDelay: '0s', smokeDelay2: '0s', tappable: false, tap: () => {} }, extra || {}); };
+    let tiles = [];
+    let tokens = [];
+    const tok = (q, r, face, initial, extra) => { const p = px(q, r); return Object.assign({ x: p.x + 'px', y: p.y + 'px', face: face, initial: initial, isLetter: true, isFolk: false, anim: 'none', speed: '0.8s', tappable: false, tap: () => {} }, extra || {}); };
+    if (atInn) {
+      // Inside the inn (v2e): wooden floor, the bar along the back, a hearth and tables
+      const IN = {
+        floor: { bg: '#C9A47A', rim: '#A88358', ink: '#8A6A48', icon: '', op: '0' },
+        bar: { bg: '#7A5236', rim: '#5E3E28', ink: '#F2D8B0', icon: ICON.mug, op: '0.8' },
+        hearth: { bg: '#C4542A', rim: '#8E3B2E', ink: '#FFE2A8', icon: ICON.flame, op: '0.95' },
+        table: { bg: '#A0784F', rim: '#7A5236', ink: '#F2D8B0', icon: ICON.table, op: '0.8' }
+      };
+      const INSIDE = { '0,-2': 'bar', '1,-2': 'bar', '2,-2': 'bar', '-2,1': 'hearth', '0,0': 'table', '2,0': 'table' };
+      tiles = hexes.map((h) => tile(h[0], h[1], IN[INSIDE[h[0] + ',' + h[1]] || 'floor']));
+      const AT = [[1, 0], [0, 1], [-1, 1], [1, -1]];
+      const reveling = phase === 'revel';
+      const hopAnim = 'hop' + ((st.hopN || 0) % 2) + ' 0.6s ease-out';
+      tokens.push(tok(0, -1, '#C9DCEF', 'I'));
+      PARTY.forEach((p, i) => {
+        const speaking = reveling && BANTER[step].who === i;
+        tokens.push(tok(AT[i][0], AT[i][1], p.face, p.initial, { anim: speaking ? hopAnim : reveling ? 'bob 1.1s ease-in-out ' + (i * 0.27).toFixed(2) + 's infinite' : 'none', speed: '0s' }));
+      });
+    } else {
+      // The town square: the well in the middle, the market stall (shop), the quest board post, the inn at the back, houses around
+      const STALL = 'repeating-linear-gradient(90deg, #B0672A 0 9px, #F6E2C0 9px 18px)';
+      const SQ = {
+        cobble: { bg: '#D8CBB0', rim: '#BBAA88', ink: '#8A7D66', icon: '', op: '0' },
+        well: { bg: '#B3ADA4', rim: '#8A847C', ink: '#33403B', icon: ICON.well, op: '0.9' },
+        house: { bg: '#E2C79A', rim: '#B5532F', ink: '#6B4C35', icon: ICON.house, op: '0.85' },
+        grass: { bg: '#A8CF7E', rim: '#8DB866', ink: '#4F7A33', icon: ICON.flowers, op: '0.5' },
+        tree: { bg: '#5E8F5A', rim: '#4C7A48', ink: '#203E1E', icon: ICON.tree, op: '0.6' },
+        shop: { bg: STALL, rim: '#7E3519', ink: '#24302C', icon: ICON.shop, op: '0.95' },
+        inn: { bg: '#8F6A48', rim: '#3F6FA8', ink: '#F6E2C0', icon: ICON.inn, op: '0.95' },
+        board: { bg: '#A0784F', rim: '#4E7A3F', ink: '#F6E2C0', icon: ICON.board, op: '0.95' }
+      };
+      const PLACE = { '0,0': 'well', '-1,0': 'shop', '1,0': 'board', '1,-2': 'inn', '0,-2': 'house', '2,-2': 'house', '-2,1': 'house', '-2,2': 'house', '2,-1': 'tree', '-1,2': 'grass', '1,1': 'cobble', '0,2': 'grass', '-2,0': 'cobble' };
+      const SERVICE_AT = { shop: '-1,0', board: '1,0', inn: '1,-2' };
+      const target = st.walk || mode;
+      tiles = hexes.map((h, i) => {
+        const k = h[0] + ',' + h[1];
+        const kind = PLACE[k] || 'cobble';
+        const svc = kind === 'shop' || kind === 'inn' || kind === 'board' ? kind : null;
+        return tile(h[0], h[1], SQ[kind], {
+          glow: !!svc && (target === svc || (canTap && !mode && !st.walk)),
+          smoke: V === 'life' && (kind === 'house' || kind === 'inn'), smokeDelay: (i * 0.37 % 2.6).toFixed(2) + 's', smokeDelay2: ((i * 0.37 + 1.1) % 2.6).toFixed(2) + 's',
+          tappable: canTap && !!svc && !mode, tap: () => (svc ? goTo(svc) : null)
+        });
+      });
+      // The party stands by the well, or walks to where it's going (the shopkeeper waits at the stall)
+      const SPOTS = { none: [[0, 1], [-1, 1], [1, 1], [0, 2]], shop: [[-1, 1], [-2, 1], [0, 1], [-2, 2]], board: [[1, 1], [2, 0], [0, 1], [1, 2]], inn: [[1, -1], [0, -1], [2, -1], [0, 0]] };
+      const spots = SPOTS[target || 'none'] || SPOTS.none;
+      tokens.push(tok(-1, 0, '#F2D8B0', 'S'));
+      PARTY.forEach((p, i) => tokens.push(tok(spots[i][0], spots[i][1], p.face, p.initial)));
+      if (V === 'life') FOLK.forEach((f, i) => {
+        const c = ROUTE[(tick + i * 3) % ROUTE.length];
+        tokens.push(tok(c[0], c[1], '#E6DCC8', '', { isLetter: false, isFolk: true, speed: '2.2s', tappable: !mode, tap: () => this.setState({ talk: i, talkN: (st.talkN || 0) + 1 }) }));
+      });
+    }
+    const mid = { x: px(0.5, 0).x, y: px(0, -0.3).y };
+    const VC = { x: 452, y: 196 };
+    const board = { tiles: tiles, tokens: tokens, left: (VC.x - mid.x) + 'px', top: (VC.y - mid.y) + 'px', origin: mid.x + 'px ' + mid.y + 'px', po: VC.x + 'px ' + (VC.y - 40) + 'px', transform: 'scale(1) rotateX(50deg)' };
+
+    return {
+      board: board, cam: cam, navUI: navUI, party: party, icons: ICON, services: services, head: head,
+      inScene: mode !== 'board' && phase !== 'results', inSquare: !mode && !st.walk, atShop: mode === 'shop',
+      shop: shop, pop: pop, goldPop: goldPop, innCards: innCards, revel: revel, night: night, res: res,
+      pn: pn, board2: board2, log: log, flying: flying, gearDot: !!st.gearDot
+    };
+  }
+}
+</script>
+</body>
+</html>
