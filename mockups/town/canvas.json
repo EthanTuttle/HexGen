@@ -37,6 +37,51 @@
    "is_interactive": true,
    "radius": 28
   },
+  "Town-v2a-Counter.dc.html": {
+   "x": 0,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Town v2a · shop as the shopkeeper's counter: the scene stays, the shopkeeper's line on top, items on a wooden counter along the bottom; tapping one opens the gear screen's item pop-up with Buy or Sell. Shopkeeper, lines and prices are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v2b-TwoTrays.dc.html": {
+   "x": 924,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Town v2b · shop as two trays: the shop's stock and the shared inventory side by side; drag an item across, or tap it and use the button between, to buy or sell. No tabs",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v2c-ShelfCards.dc.html": {
+   "x": 1848,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Town v2c · shop as shelf cards: each item is a big card (rarity band, icon, name, price) dealt in a row that scrolls sideways; tapping one turns it over to show its details and Buy",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v2d-InnkeeperMenu.dc.html": {
+   "x": 2772,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Town v2d · inn as the innkeeper's menu: the innkeeper's line on top, services as cards with their price on the band (Rest the night, and [Inn extra] for later inn services). Resting dims to night and back, then the results show in the line",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v2e-InnNight.dc.html": {
+   "x": 3696,
+   "y": 1520,
+   "w": 844,
+   "h": 390,
+   "title": "Town v2e · a night at the inn: the board becomes the inn's interior (bar, hearth, tables), the party gathers at a table, companions trade banter lines (placeholders), mugs go up, night falls and morning comes, then the results",
+   "is_interactive": true,
+   "radius": 28
+  },
   "Ref-Explore-v8b.dc.html": {
    "x": 0,
    "y": 760,
@@ -60,6 +105,11 @@
   "Main.dc.html",
   "Town-v1b-Hub.dc.html",
   "Town-v1c-MapPopup.dc.html",
+  "Town-v2a-Counter.dc.html",
+  "Town-v2b-TwoTrays.dc.html",
+  "Town-v2c-ShelfCards.dc.html",
+  "Town-v2d-InnkeeperMenu.dc.html",
+  "Town-v2e-InnNight.dc.html",
   "Ref-Explore-v8b.dc.html",
   "Ref-Gear-v8d.dc.html"
  ],
@@ -77,6 +127,13 @@
    "text": "Linked screens · exploration (way in and out) and gear",
    "kind": "title1",
    "maxW": 1768
+  },
+  "v2": {
+   "x": 0,
+   "y": 1270,
+   "text": "v2 · on v1a's scene: three shops (a–c) and two inns (d–e); the quest board stays as in v1",
+   "kind": "title1",
+   "maxW": 4540
   }
  }
 }

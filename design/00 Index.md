@@ -196,7 +196,10 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: a downed ally's HP after a won fight
 - [x] ~~Social encounter layout~~ (settled Oct 28: v1d, options as cards over the zoomed hex)
 - [ ] New: approach tag colours and icons for social options
-- [ ] New: town screen: which way in (v1a scene, v1b hub, v1c map pop-up), and the service panels' layout
+- [x] ~~Town screen: which way in~~ (settled Oct 28: v1a, a scene with a card per service)
+- [ ] New: town shop layout (v2a–v2c) and inn (v2d–v2e)
+- [ ] New: town NPCs (named shopkeepers and innkeepers?) and inn services besides resting
+- [ ] New: inn banter lines (v2e)
 - [ ] New: towns: names and greetings, shop stock, quest board quests
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)

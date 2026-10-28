@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Town v2b: two trays</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes fadein{0%{opacity:0}100%{opacity:1}}
+@keyframes panelin{0%{transform:translateY(10px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes linein{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes fly0{0%{transform:translate(0,0) scale(0.3);opacity:0}14%{transform:translate(0,0) scale(1.1);opacity:1}24%{transform:translate(0,0) scale(1);opacity:1}68%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0.12);opacity:0}}
+@keyframes fly1{0%{transform:translate(0,0) scale(0.3);opacity:0}14%{transform:translate(0,0) scale(1.1);opacity:1}24%{transform:translate(0,0) scale(1);opacity:1}68%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0.12);opacity:0}}
+@keyframes goldpop0{0%{transform:translateY(0);opacity:0}20%{transform:translateY(-4px);opacity:1}80%{transform:translateY(-10px);opacity:1}100%{transform:translateY(-16px);opacity:0}}
+@keyframes goldpop1{0%{transform:translateY(0);opacity:0}20%{transform:translateY(-4px);opacity:1}80%{transform:translateY(-10px);opacity:1}100%{transform:translateY(-16px);opacity:0}}
+@keyframes dotpulse{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #D9E7EC; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- World board, zoomed onto the town's hex -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; overflow: hidden; perspective: 900px; perspective-origin: {{board.po}}">
+    <div style="position: absolute; left: {{board.left}}; top: {{board.top}}; width: 600px; height: 520px; transform-style: preserve-3d; transform-origin: {{board.origin}}; transform: {{board.transform}}">
+      <div style="position: absolute; inset: 0; transform: translateZ(-10px)">
+        <sc-for list="{{board.tiles}}" as="t" hint-placeholder-count="19">
+          <span style="position: absolute; left: {{t.sLeft}}; top: {{t.sTop}}; width: 68px; height: 78.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35"></span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; inset: 0; transform-style: preserve-3d">
+        <sc-for list="{{board.tiles}}" as="t" hint-placeholder-count="19">
+          <span style="position: absolute; left: {{t.left}}; top: {{t.top}}; width: 64px; height: 74px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.rim}}">
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.bg}}; display: flex; align-items: center; justify-content: center; color: {{t.ink}}">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: {{t.iconOp}}"><path d="{{t.icon}}"></path></svg>
+            </span>
+          </span>
+        </sc-for>
+        <sc-for list="{{board.tokens}}" as="k" hint-placeholder-count="5">
+          <span style="position: absolute; left: {{k.x}}; top: {{k.y}}; width: 0; height: 0; transform-style: preserve-3d">
+            <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #4A3524; transform: translateZ(1px)"></span>
+            <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35; transform: translateZ(4px)"></span>
+            <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #C9A97A; transform: translateZ(7px)">
+              <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{k.face}}; display: flex; align-items: center; justify-content: center">
+                <span style="display: block; font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1; color: #24302C">{{k.initial}}</span>
+              </span>
+            </span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- Party tray -->
+  <div style="position: absolute; left: 12px; top: 12px; width: 60px; padding: 8px 6px; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+    <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+      <span role="img" aria-label="{{p.aria}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="position: relative; display: block; width: 38px; height: 44px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{p.initial}}</span>
+        </span>
+        <span style="display: block; width: 40px; height: 5px; border-radius: 3px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+          <span style="display: block; height: 5px; width: {{p.hpW}}; background: #4E9A5B; transition: width 0.9s ease-out"></span>
+        </span>
+      </span>
+    </sc-for>
+  </div>
+
+  <!-- Quests and equipment under the party panel -->
+  <div style="position: absolute; left: 22px; top: 260px; z-index: 5; display: flex; flex-direction: column; gap: 6px">
+    <button type="button" aria-label="Quests" onClick="{{log.open}}" style="position: relative; width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.scroll}}"></path></svg>
+      </span>
+      <sc-if value="{{log.dot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF; animation: dotpulse 1.2s ease-in-out infinite"></span></sc-if>
+    </button>
+    <a href="Ref-Gear-v8d.dc.html" aria-label="Character and gear" style="position: relative; display: block; width: 40px; height: 46px; filter: drop-shadow(0 3px 0 #A48A62)">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"></path></svg>
+      </span>
+      <sc-if value="{{gearDot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF; animation: dotpulse 1.2s ease-in-out infinite"></span></sc-if>
+    </a>
+  </div>
+
+  <!-- Scene line: the town's, or the shopkeeper's at the counter -->
+  <sc-if value="{{inScene}}" hint-placeholder-val="{{ true }}">
+    <div style="position: absolute; left: 160px; top: 12px; width: 560px; min-height: 76px; box-sizing: border-box; padding: 10px; z-index: 5; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; gap: 12px; align-items: flex-start">
+      <span role="img" aria-label="{{head.name}}" style="position: relative; display: block; width: 46px; height: 53px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{head.face}}; display: flex; align-items: center; justify-content: center; color: {{head.ink}}">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{head.icon}}"></path></svg>
+        </span>
+      </span>
+      <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 16px; color: #245A7E">{{head.name}}</span>
+          <span style="font-size: 11px; font-weight: 800; color: #5A5040">{{head.sub}}</span>
+        </div>
+        <span style="font-size: 14px; font-weight: 800; line-height: 1.35; animation: linein 0.3s ease-out">{{head.line}}</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Town: services as option cards -->
+  <sc-if value="{{inTown}}" hint-placeholder-val="{{ true }}">
+    <div role="list" style="position: absolute; left: 96px; right: 12px; bottom: 14px; z-index: 5; display: flex; justify-content: center; gap: 8px; animation: fadein 0.25s ease-out">
+      <sc-for list="{{services}}" as="o" hint-placeholder-count="3">
+        <button type="button" role="listitem" aria-label="{{o.name}}" onClick="{{o.open}}" style="position: relative; width: 108px; height: 108px; padding: 0; border: none; border-radius: 12px; overflow: hidden; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62, inset 0 0 0 2px #E2D5BC; display: flex; flex-direction: column; align-items: stretch; font-family: Nunito, sans-serif; color: #24302C; cursor: pointer; text-align: center">
+          <span style="height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{o.color}}; color: #FFF8EE; font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase">Town</span>
+          <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: {{o.color}}">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg>
+          </span>
+          <span style="padding: 0 8px; font-size: 14px; font-family: 'Lilita One', sans-serif; line-height: 1.1">{{o.name}}</span>
+        </button>
+      </sc-for>
+      <a href="Ref-Explore-v8b.dc.html" style="width: 78px; height: 108px; border-radius: 12px; background: #24302C; color: #F6EEDF; text-decoration: none; box-shadow: 0 4px 0 #11181A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 900">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        Leave
+      </a>
+    </div>
+  </sc-if>
+
+  <!-- v2b: the shop as two trays, the shop's stock and the shared inventory; drag across, or tap and use the button between -->
+  <sc-if value="{{atShop}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="Shop" style="position: absolute; left: 96px; top: 12px; width: 736px; height: 366px; box-sizing: border-box; z-index: 8; padding: 10px 12px 12px; background: #F6EEDF; border-radius: 20px; box-shadow: 0 5px 0 #CDB894, 0 10px 24px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 8px; animation: panelin 0.25s ease-out">
+      <div style="height: 50px; flex-shrink: 0; display: flex; align-items: center; gap: 10px">
+        <span style="position: relative; display: block; width: 40px; height: 46px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #B0672A; display: flex; align-items: center; justify-content: center; color: #FFF8EE">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.shop}}"></path></svg>
+          </span>
+        </span>
+        <div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 21px; line-height: 1.05">Shop</span>
+          <span style="font-size: 12px; font-weight: 700; color: #43524D">[Town name]</span>
+        </div>
+        <span style="position: relative; height: 34px; padding: 0 12px 0 6px; box-sizing: border-box; border-radius: 17px; background: #24302C; color: #F6EEDF; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900">
+          <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+          [gold]
+          <sc-if value="{{goldPop.show}}" hint-placeholder-val="{{ false }}">
+            <span role="status" style="position: absolute; right: 4px; top: -20px; padding: 2px 8px; border-radius: 10px; background: #4E9A5B; color: #FFF8EE; font-size: 12px; font-weight: 900; white-space: nowrap; pointer-events: none; animation: {{goldPop.anim}}">+[gold]</span>
+          </sc-if>
+        </span>
+        <button type="button" aria-label="Close" onClick="{{shop.back}}" style="width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 22px; background: #E6DCC8; color: #24302C; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      </div>
+      <div style="flex: 1; min-height: 0; display: flex; gap: 10px">
+        <sc-for list="{{shop.trays}}" as="tr" hint-placeholder-count="2">
+          <div style="order: {{tr.order}}; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #5A5040; padding-left: 4px">{{tr.label}}</span>
+            <div role="list" aria-label="{{tr.label}}" onDragOver="{{shop.allow}}" onDrop="{{tr.drop}}" style="flex: 1; min-height: 0; align-content: flex-start; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 4px; padding: 10px 6px; border-radius: 16px; background: #B89C7E; box-shadow: inset 0 3px 0 #8F7458, inset 0 0 0 3px {{tr.glow}}; overflow-y: auto; transition: box-shadow 0.2s ease">
+              <sc-for list="{{tr.items}}" as="it" hint-placeholder-count="6">
+                <button type="button" role="listitem" draggable="true" onDragStart="{{it.drag}}" onDragEnd="{{shop.dragEnd}}" aria-label="{{it.aria}}" aria-pressed="{{it.on}}" onClick="{{it.pick}}" style="padding: 0; border: none; background: transparent; cursor: grab; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: Nunito, sans-serif">
+                  <span style="position: relative; display: block; width: 54px; height: 62px; filter: drop-shadow(0 3px 0 #8F7458)">
+                    <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{it.ring}}"></span>
+                    <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{it.rim}}"></span>
+                    <span style="position: absolute; inset: 6px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{it.face}}; display: flex; align-items: center; justify-content: center; color: {{it.ink}}">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{it.icon}}"></path></svg>
+                    </span>
+                  </span>
+                  <span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #FCF7EE; color: #24302C; font-size: 11px; font-weight: 900; display: flex; align-items: center; white-space: nowrap">{{it.price}}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{tr.empty}}" hint-placeholder-val="{{ false }}">
+                <span style="grid-column: 1 / -1; padding: 20px 0; text-align: center; font-size: 13px; font-weight: 800; color: #FCF7EE">Empty</span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <!-- Between the trays: the picked item and the button that moves it across -->
+        <div style="order: 1; width: 128px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding-top: 18px; text-align: center">
+          <sc-if value="{{shop.has}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: {{shop.d.tagInk}}">{{shop.d.tag}}</span>
+            <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">{{shop.d.name}}</span>
+            <sc-if value="{{shop.d.hasDesc}}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 11px; font-weight: 700; color: #43524D; line-height: 1.3">{{shop.d.desc}}</span>
+            </sc-if>
+            <sc-if value="{{shop.d.hasCards}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 3px">
+                <sc-for list="{{shop.d.cards}}" as="cd" hint-placeholder-count="1">
+                  <span style="height: 22px; padding: 0 10px; display: flex; align-items: center; clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 7px 100%, 0 50%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900">{{cd.name}}</span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block; margin-top: 4px">
+              <button type="button" onClick="{{shop.d.act}}" style="width: 124px; height: 48px; border: none; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; line-height: 1.05; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center">{{shop.d.actLabel}}<span style="font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900">{{shop.d.actSub}}</span></button>
+            </span>
+          </sc-if>
+          <sc-if value="{{shop.none}}" hint-placeholder-val="{{ true }}">
+            <span aria-hidden="true" style="color: #A48A62; display: flex; flex-direction: column; align-items: center; gap: 2px">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h14l-4-4 M20 15H6l4 4"></path></svg>
+            </span>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- v1 panels, unchanged: the inn and the quest board -->
+  <sc-if value="{{pn.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="{{pn.name}}" style="position: absolute; left: 96px; top: 12px; width: 736px; height: 366px; box-sizing: border-box; z-index: 8; padding: 10px 12px 12px; background: #F6EEDF; border-radius: 20px; box-shadow: 0 5px 0 #CDB894, 0 10px 24px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 8px; animation: panelin 0.25s ease-out">
+      <div style="height: 50px; flex-shrink: 0; display: flex; align-items: center; gap: 10px">
+        <span style="position: relative; display: block; width: 40px; height: 46px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{pn.color}}; display: flex; align-items: center; justify-content: center; color: #FFF8EE">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{pn.icon}}"></path></svg>
+          </span>
+        </span>
+        <div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 21px; line-height: 1.05">{{pn.name}}</span>
+          <span style="font-size: 12px; font-weight: 700; color: #43524D">[Town name]</span>
+        </div>
+        <span style="height: 34px; padding: 0 12px 0 6px; box-sizing: border-box; border-radius: 17px; background: #24302C; color: #F6EEDF; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900">
+          <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+          [gold]
+        </span>
+        <button type="button" aria-label="Close" onClick="{{pn.close}}" style="width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 22px; background: #E6DCC8; color: #24302C; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      </div>
+      <sc-if value="{{pn.isInn}}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center">
+          <div style="display: flex; gap: 14px; padding: 12px 18px; border-radius: 18px; background: #B89C7E; box-shadow: inset 0 3px 0 #8F7458">
+            <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+              <span role="img" aria-label="{{p.aria}}" style="display: flex; flex-direction: column; align-items: center; gap: 5px">
+                <span style="position: relative; display: block; width: 56px; height: 65px; filter: drop-shadow(0 3px 0 #8F7458)">
+                  <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+                  <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 22px">{{p.initial}}</span>
+                </span>
+                <span style="display: block; width: 58px; height: 7px; border-radius: 4px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+                  <span style="display: block; height: 7px; width: {{p.hpW}}; background: #4E9A5B; transition: width 0.9s ease-out"></span>
+                </span>
+                <sc-if value="{{p.hurt}}" hint-placeholder-val="{{ false }}">
+                  <span style="height: 18px; padding: 0 6px; border-radius: 9px; background: #8E3B2E; color: #FFF8EE; font-size: 10px; font-weight: 900; display: flex; align-items: center">Injured</span>
+                </sc-if>
+              </span>
+            </sc-for>
+          </div>
+          <div role="list" aria-label="Resting" style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center">
+            <sc-for list="{{inn.chips}}" as="c" hint-placeholder-count="4">
+              <span role="listitem" style="height: 30px; padding: 0 12px 0 5px; border-radius: 15px; background: {{c.bg}}; color: #24302C; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 900">
+                <span style="width: 22px; height: 22px; border-radius: 50%; background: {{c.dot}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"></path></svg></span>
+                {{c.label}}
+              </span>
+            </sc-for>
+          </div>
+          <span style="filter: drop-shadow(0 4px 0 {{inn.shadow}}); display: block">
+            <button type="button" onClick="{{inn.rest}}" aria-disabled="{{inn.done}}" style="width: 220px; height: 46px; border: none; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); background: {{inn.bg}}; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 17px; cursor: pointer">{{inn.label}}</button>
+          </span>
+        </div>
+      </sc-if>
+      <sc-if value="{{pn.isBoard}}" hint-placeholder-val="{{ false }}">
+        <div role="list" style="flex: 1; min-height: 0; padding: 14px; border-radius: 16px; background: #B89C7E; box-shadow: inset 0 3px 0 #8F7458; display: flex; gap: 12px; justify-content: center; align-items: stretch">
+          <sc-for list="{{board2.quests}}" as="q" hint-placeholder-count="3">
+            <div role="listitem" style="position: relative; width: 210px; box-sizing: border-box; padding: 16px 12px 12px; background: {{q.paper}}; border-radius: 6px; box-shadow: 0 4px 0 #8F7458; transform: rotate({{q.tilt}}); display: flex; flex-direction: column; gap: 5px">
+              <span aria-hidden="true" style="position: absolute; left: 50%; top: 5px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #B5532F; box-shadow: 0 2px 0 #7E3519"></span>
+              <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: #4E7A3F">[Quest giver]</span>
+              <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.1">[Quest name]</span>
+              <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">[Quest goal]</span>
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 900">
+                <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+                [Reward]
+              </span>
+              <span style="flex: 1"></span>
+              <sc-if value="{{q.open}}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{q.take}}" style="height: 40px; border: none; border-radius: 20px; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Take</button>
+              </sc-if>
+              <sc-if value="{{q.taken}}" hint-placeholder-val="{{ false }}">
+                <span style="height: 40px; border-radius: 20px; box-shadow: inset 0 0 0 2px #4E7A3F; color: #4E7A3F; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Taken</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- Rewards pop big in the middle, then fly home -->
+  <sc-for list="{{flying}}" as="r" hint-placeholder-count="0">
+    <div role="status" aria-label="{{r.aria}}" style="position: absolute; left: 352px; top: 128px; width: 200px; height: 132px; box-sizing: border-box; z-index: 12; pointer-events: none; padding: 10px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; align-items: center; gap: 4px; --tx: {{r.tx}}; --ty: {{r.ty}}; animation: {{r.anim}}">
+      <span style="position: relative; display: block; width: 52px; height: 60px; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{r.color}}"></span>
+        <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: {{r.color}}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"></path></svg>
+        </span>
+      </span>
+      <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{r.tagInk}}">{{r.type}}</span>
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.1; text-align: center">{{r.name}}</span>
+    </div>
+  </sc-for>
+
+  <!-- Quest log pop-up -->
+  <sc-if value="{{log.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="Quests" style="position: absolute; left: 70px; bottom: 74px; width: 240px; max-height: 250px; box-sizing: border-box; z-index: 22; padding: 9px 12px 10px; background: #FCF7EE; border-radius: 16px; border: 3px solid #4E7A3F; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 6px">
+      <span style="padding-right: 30px; font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.1">Quests</span>
+      <button type="button" aria-label="Close" onClick="{{log.close}}" style="position: absolute; right: 0; top: 0; width: 44px; height: 40px; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      <div style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0">
+        <sc-for list="{{log.rows}}" as="row" hint-placeholder-count="1">
+          <div style="display: flex; align-items: flex-start; gap: 8px">
+            <span style="width: 22px; height: 22px; margin-top: 1px; flex-shrink: 0; border-radius: 50%; background: #4E7A3F; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icons.scroll}}"></path></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.2">
+              <span style="font-size: 13px; font-weight: 900">{{row.name}}</span>
+              <span style="font-size: 11px; font-weight: 700; color: #5A5040">{{row.desc}}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+
+    const ICON = {
+      house: 'M4 11l8-6 8 6v9H4z M10 20v-5h4v5',
+      person: 'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M4 21c1-4 4-6 8-6s7 2 8 6',
+      scroll: 'M7 4h11v13a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1h11v1a3 3 0 0 0 3 3 M7 4a3 3 0 0 0-3 3v1h3 M10 9h5 M10 12h5',
+      shop: 'M4 9l1.5-5h13L20 9 M4 9h16v2a3 3 0 0 1-5 2 3 3 0 0 1-6 0 3 3 0 0 1-5-2z M5 13v7h14v-7 M10 20v-4h4v4',
+      inn: 'M3 18V8 M3 14h18v4 M21 14v-2a3 3 0 0 0-3-3h-7v5 M7 11a1.5 1.5 0 1 0 0.01 0',
+      board: 'M4 4h16v12H4z M8 20l4-4 4 4 M8 8h3 M8 11h5 M15 8h1',
+      heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      bandage: 'M8 8l8 8 M5 13l8-8a3 3 0 0 1 4 4l-8 8a3 3 0 0 1-4-4z M11 11h0.01 M13 13h0.01',
+      clock: 'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16 M12 8v4l3 2',
+      cards: 'M8 4h10v14H8z M5 7v13h10',
+      check: 'M5 12l5 5 9-10',
+      potion: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10',
+      bow: 'M6 3c9 3 9 15 0 18 M6 3v18 M3 12h15 M15 9l3 3-3 3',
+      axe: 'M5 19L15 9 M13 4c5 0 7 3 7 7-3 0-5-1-7-3z',
+      spear: 'M4 20L17 7 M17 7l3-4-4 1z',
+      sword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4',
+      armor: 'M8 3L4 6v6h3v9h10v-9h3V6l-4-3c-1 2-7 2-8 0z',
+      ring: 'M12 9a6 6 0 1 0 0 12a6 6 0 1 0 0-12 M9.5 4h5l1.5 3h-8z',
+      tent: 'M3 20L12 4l9 16z M12 4v16 M9 20l3-5 3 5'
+    };
+    const T = { rim: { C: '#BFAE8E', R: '#3F86C8', L: '#E07A2F' }, face: { C: '#FCF7EE', R: '#EAF3FB', L: '#FDEEDF' }, ink: { C: '#33403B', R: '#225C91', L: '#9A4A12' }, tagInk: { C: '#5A5040', R: '#225C91', L: '#9A4A12' } };
+    const RAR = { C: 'Common', R: 'Rare', L: 'Legendary' };
+    const SEL = '#B5532F';
+
+    const rested = !!st.rested;
+    const PARTY = [
+      { name: '[Hero name]', initial: 'H', face: '#E9C46A', hp: 0.62 },
+      { name: 'Fluffy', initial: 'F', face: '#C9B3E6', hp: 0.4 },
+      { name: 'Chelmsford', initial: 'C', face: '#8EC3F2', hp: 0.9 },
+      { name: 'Mel', initial: 'M', face: '#F4B6A8', hp: 0.5, injured: true }
+    ];
+    const party = PARTY.map((p) => {
+      const hp = rested ? 1 : p.hp;
+      return { initial: p.initial, face: p.face, hpW: Math.round(hp * 100) + '%', hurt: !rested && !!p.injured, aria: p.name + ': ' + Math.round(hp * 100) + '% HP' + (!rested && p.injured ? ', injured' : '') };
+    });
+
+    const SV = {
+      shop: { name: 'Shop', icon: ICON.shop, color: '#B0672A' },
+      inn: { name: 'Inn', icon: ICON.inn, color: '#3F6FA8' },
+      board: { name: 'Quest board', icon: ICON.board, color: '#4E7A3F' }
+    };
+    const panel = st.panel || null; // 'shop' is the counter here; 'inn' and 'board' are v1's panels
+    const services = ['shop', 'inn', 'board'].map((id) => ({ name: SV[id].name, icon: SV[id].icon, color: SV[id].color, open: () => this.setState({ panel: id, sel: null, log: false }) }));
+
+    const fly = st.fly || { n: 0, items: [] };
+    const HOME = { quests: { x: 42, y: 283 }, bag: { x: 42, y: 335 } };
+    const CENTER = { x: 452, y: 194 };
+    const flying = fly.items.map((r, i) => ({
+      type: r.type, name: r.name, color: r.color, tagInk: r.tagInk, icon: r.icon, aria: r.type + ': ' + r.name,
+      tx: (HOME[r.home].x - CENTER.x) + 'px', ty: (HOME[r.home].y - CENTER.y) + 'px',
+      anim: 'fly' + (fly.n % 2) + ' 1.8s ease-in-out ' + (i * 0.35).toFixed(2) + 's both'
+    }));
+    const launch = (r, patch) => this.setState(Object.assign({ fly: { n: fly.n + 1, items: [r] } }, patch || {}));
+
+    // Shop stock and the shared inventory (mockup placeholders, as in v1)
+    const STOCK = [
+      { name: 'Camp kit', r: 'C', icon: 'tent', kind: 'Consumable', desc: 'Pitch a camp. One kit covers the whole party.' },
+      { name: 'Potion', r: 'C', icon: 'potion', kind: 'Consumable' },
+      { name: 'Spear', r: 'C', icon: 'spear', kind: 'Weapon', desc: 'Versatile. Reach: hits 2 squares away.', cards: ['Throw'] },
+      { name: 'Battleaxe', r: 'C', icon: 'axe', kind: 'Weapon', desc: 'Versatile. Can be thrown.', cards: ['Hack', 'Throw'] },
+      { name: 'Shortbow', r: 'C', icon: 'bow', kind: 'Weapon' },
+      { name: 'Light armor', r: 'C', icon: 'armor', kind: 'Armor' },
+      { name: 'Dagger', r: 'R', icon: 'sword', kind: 'Weapon', cards: ['Backstab', 'Throw'] }
+    ].map((x, i) => Object.assign({ id: 's' + i }, x));
+    const START_INV = [
+      { name: 'Shortbow', r: 'C', icon: 'bow', kind: 'Weapon' },
+      { name: 'Dagger', r: 'R', icon: 'sword', kind: 'Weapon', cards: ['Backstab', 'Throw'] },
+      { name: 'Battleaxe', r: 'C', icon: 'axe', kind: 'Weapon', desc: 'Versatile. Can be thrown.', cards: ['Hack', 'Throw'] },
+      { name: 'Light armor', r: 'C', icon: 'armor', kind: 'Armor' },
+      { name: 'Ring', r: 'R', icon: 'ring', kind: 'Trinket' },
+      { name: 'Spear', r: 'L', icon: 'spear', kind: 'Weapon', desc: 'Versatile. Reach: hits 2 squares away.', cards: ['Throw'] }
+    ].map((x, i) => Object.assign({ id: 'i' + i }, x));
+    const inv = st.inv || START_INV;
+    const selItem = STOCK.concat(inv).find((x) => x.id === st.sel) || null;
+    const goldN = st.goldN || 0;
+    const buy = (x) => {
+      const n = (st.bought || 0) + 1;
+      launch({ type: 'Item', name: x.name, color: T.rim[x.r], tagInk: T.tagInk[x.r], icon: ICON[x.icon], home: 'bag' },
+        { inv: inv.concat([Object.assign({}, x, { id: 'b' + n })]), bought: n, gearDot: true, sel: null, dragFrom: null });
+    };
+    const sell = (x) => this.setState({ inv: inv.filter((y) => y.id !== x.id), sel: null, goldN: goldN + 1, dragFrom: null });
+    const move = (x, from) => (from === 'shop' ? buy(x) : sell(x));
+    const tray = (id, label, src, order) => ({
+      label: label, order: order, empty: src.length === 0,
+      glow: st.dragFrom && st.dragFrom !== id ? '#F2C14E' : 'transparent',
+      drop: (e) => { if (e && e.preventDefault) e.preventDefault(); const d = this._drag; this._drag = null; if (d && d.from !== id) move(d.item, d.from); else this.setState({ dragFrom: null }); },
+      items: src.map((x) => {
+        const on = !!selItem && selItem.id === x.id;
+        return { icon: ICON[x.icon], rim: T.rim[x.r], face: T.face[x.r], ink: T.ink[x.r], ring: on ? SEL : 'transparent', on: on ? 'true' : 'false',
+          price: id === 'shop' ? '[price]' : '+[gold]', aria: x.name + ', ' + RAR[x.r],
+          pick: () => this.setState({ sel: on ? null : x.id }),
+          drag: (e) => { this._drag = { item: x, from: id }; try { e.dataTransfer.setData('text/plain', x.id); e.dataTransfer.effectAllowed = 'move'; } catch (err) {} this.setState({ dragFrom: id }); } };
+      })
+    });
+    const fromShop = !!selItem && STOCK.some((x) => x.id === selItem.id);
+    const shop = {
+      trays: [tray('shop', 'For sale', STOCK, 0), tray('bag', 'Shared inventory', inv, 2)],
+      allow: (e) => { if (e && e.preventDefault) e.preventDefault(); },
+      dragEnd: () => this.setState({ dragFrom: null }),
+      has: !!selItem, none: !selItem,
+      d: selItem ? {
+        tag: selItem.kind + ' · ' + RAR[selItem.r], tagInk: T.tagInk[selItem.r], name: selItem.name,
+        desc: selItem.desc || '', hasDesc: !!selItem.desc, cards: (selItem.cards || []).map((c) => ({ name: c })), hasCards: !!(selItem.cards && selItem.cards.length),
+        actLabel: fromShop ? 'Buy →' : '← Sell', actSub: fromShop ? '[price]' : '+[gold]', act: () => move(selItem, fromShop ? 'shop' : 'bag')
+      } : { tag: '', tagInk: '#5A5040', name: '', desc: '', hasDesc: false, cards: [], hasCards: false, actLabel: '', actSub: '', act: () => {} },
+      back: () => this.setState({ panel: null, sel: null })
+    };
+    const pop = { show: false };
+    const goldPop = { show: goldN > 0, anim: 'goldpop' + (goldN % 2) + ' 1.2s ease-out both' };
+
+    // Inn (v1)
+    const chip = (icon, label) => ({ icon: rested ? ICON.check : icon, label: label, bg: rested ? '#DDEBD5' : '#E6DCC8', dot: rested ? '#4E9A5B' : '#5A5040' });
+    const inn = {
+      chips: [chip(ICON.heart, 'Heal'), chip(ICON.bandage, 'Injuries'), chip(ICON.clock, '+8 hours'), chip(ICON.cards, 'Reshuffle deck'), chip(ICON.cards, 'Hand to 7')],
+      done: rested ? 'true' : 'false', label: rested ? 'Rested' : 'Rest · [price]', bg: rested ? '#5A5040' : '#B5532F', shadow: rested ? '#3A3428' : '#7E3519',
+      rest: () => { if (!rested) this.setState({ rested: true }); }
+    };
+
+    // Quest board (v1, liked)
+    const taken = st.taken || [];
+    const board2 = {
+      quests: [0, 1, 2].map((i) => {
+        const tk = taken.indexOf(i) >= 0;
+        return { open: !tk, taken: tk, paper: tk ? '#EDE4D2' : '#FCF7EE', tilt: ['-1.5deg', '1deg', '-0.5deg'][i],
+          take: () => launch({ type: 'Quest', name: '[Quest name]', color: '#4E7A3F', tagInk: '#4E7A3F', icon: ICON.scroll, home: 'quests' }, { taken: taken.concat([i]), questDot: true }) };
+      })
+    };
+    const log = {
+      show: !!st.log, dot: !!st.questDot,
+      open: () => this.setState({ log: !st.log, questDot: false }), close: () => this.setState({ log: false }),
+      rows: taken.length ? taken.map(() => ({ name: '[Quest name]', desc: '[Quest goal]' })) : [{ name: 'Nothing yet', desc: '' }]
+    };
+
+    const isPanel = panel === 'inn' || panel === 'board';
+    const pn = isPanel ? { show: true, name: SV[panel].name, icon: SV[panel].icon, color: SV[panel].color, isInn: panel === 'inn', isBoard: panel === 'board', close: () => this.setState({ panel: null }) }
+      : { show: false, name: '', icon: '', color: '#BFAE8E', isInn: false, isBoard: false, close: () => {} };
+
+    const atShop = panel === 'shop';
+    const head = { name: '[Town name]', sub: 'Market town', line: '[Town greeting]', face: '#E2C79A', ink: '#6B4C35', icon: ICON.house };
+
+    // Board: the town's hex and its neighbours
+    const TT = {
+      town: { bg: '#E2C79A', ink: '#6B4C35', icon: ICON.house },
+      forest: { bg: '#5E8F5A', ink: '#203E1E', icon: 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4' },
+      plains: { bg: '#A8CF7E', ink: '#4F7A33', icon: 'M4 18c1-4 2-6 3-7 M7 18c0-3 1-5 2-6 M14 18c1-4 2-6 3-7 M17 18c0-3 1-5 2-6' }
+    };
+    const W = 64, H = 74, OX = 300, OY = 260;
+    const px = (q, r) => ({ x: OX + W * (q + r / 2), y: OY + 0.75 * H * r });
+    const TOWN = ['0,0', '-1,0', '0,-1', '1,-1', '-1,1'];
+    const tiles = [];
+    for (let q = -2; q <= 2; q++) for (let r = -2; r <= 2; r++) {
+      const ring = Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r)); if (ring > 2) continue;
+      const k = q + ',' + r;
+      const t = TOWN.indexOf(k) >= 0 ? TT.town : (((q * 7 + r * 13 + 50) % 5 === 0) ? TT.forest : TT.plains);
+      const p = px(q, r);
+      tiles.push({ left: (p.x - 32) + 'px', top: (p.y - 37) + 'px', sLeft: (p.x - 34) + 'px', sTop: (p.y - 39.25) + 'px',
+        rim: t === TT.town ? '#FCF7EE' : t.bg, bg: t.bg, ink: t.ink, icon: t.icon, iconOp: t === TT.town ? '0.85' : '0.55' });
+    }
+    const PARTY_AT = [[1, 0], [2, -1], [2, 0], [1, 1]];
+    const tokens = PARTY.map((p, i) => { const c = px(PARTY_AT[i][0], PARTY_AT[i][1]); return { x: c.x + 'px', y: c.y + 'px', face: p.face, initial: p.initial }; });
+    const mid = { x: px(0.5, 0).x, y: px(0, 0).y };
+    const VC = { x: 450, y: 200 };
+    const board = { tiles: tiles, tokens: tokens, left: (VC.x - mid.x) + 'px', top: (VC.y - mid.y) + 'px', origin: mid.x + 'px ' + mid.y + 'px', po: VC.x + 'px ' + (VC.y - 40) + 'px', transform: 'scale(1) rotateX(50deg)' };
+
+    return {
+      board: board, party: party, icons: ICON, services: services, head: head,
+      inScene: !isPanel && !atShop, inTown: !panel, atShop: atShop, shop: shop, pop: pop, goldPop: goldPop,
+      pn: pn, inn: inn, board2: board2, log: log, flying: flying, gearDot: !!st.gearDot
+    };
+  }
+}
+</script>
+</body>
+</html>
