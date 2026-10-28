@@ -20,14 +20,14 @@ Approved by Ethan, Oct 28, 2026. From the bio: a wood golem ranger (Hunter), car
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list.
+Reviewed against the voice sheet and the tells list with Ethan, Oct 28, 2026: Animal rewritten; Survival and the bar line kept (their "Ja" stays: Ethan kept both).
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 
 | Proficiency | Line |
 | --- | --- |
 | Survival | "Ja, ja, this way. The forest does not lie." |
-| Animal | "Shh. Easy, little one. I only hunt the big ones." |
+| Animal | "Easy. It is only scared. I would be too, if I were this small." (was: "Shh. Easy, little one. I only hunt the big ones.") |
 
 **Inn: fallback bar line** (said to the table when the companion beside them has no exchange with them; pair exchanges: [Pairs](Pairs.md))
 
