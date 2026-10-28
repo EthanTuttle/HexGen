@@ -65,7 +65,7 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 
 ## Open questions
 
-- [ ] Voice sheets for the other 9 companions (Fluffy's, Chelmsford's and Mel's are done, Oct 28, 2026: Ethan's sample lines first, then the fields as choices)
+- [ ] Voice sheets for the other 8 companions (Fluffy's, Chelmsford's, Mel's and Grant's are done, Oct 28, 2026: Ethan's sample lines first, then the fields as choices)
 - [ ] Review the lines written before the voice sheets (chime-ins and bar lines, Oct 28, 2026) against each sheet and the tells list, and redo the weakest
 - [ ] Inn banter still to write, after the voice sheets: fallback bar lines for Timothy (the lightweight line, wording open), Lilian (about wanting to dance), Frim, Grimhold, Leo Conley and Reginald; then cross-path pairs
 - [ ] More chime-in lines per proficiency later, so they repeat less
