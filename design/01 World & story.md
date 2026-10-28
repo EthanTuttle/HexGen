@@ -254,6 +254,21 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
   - **Persuade:** a light cost on a fail: she refuses her blessing.
   - **Intimidate:** a heavy cost on a fail: she fights back, which starts a fight. If the party wins, she yields and tells them where the sword is, but curses it: the pull flips fewer coins.
   - **Offer a deed** (no check): she asks the hero to return a lost blade, a fallen knight's sword in a nearby lair or ruin, to rest in her lake. Bringing it back wins the blessing.
+- **Her lines** (written Oct 28, 2026, picked by Ethan from drafts):
+
+| Moment | Hero's card (intent) | The Lady |
+| --- | --- | --- |
+| Greeting | — | "Long have these waters waited, traveller. Few come seeking me, and fewer still come worthy. Speak, and let the lake hear what manner of soul you are." |
+| The sword (no check) | Ask about the sword | "It lies far from here, bound in stone beneath an open sky. I will show you the way. But mark me: the stone yields only once. Fail it, and the blade is lost to you forever." |
+| Persuade passes | Swear you are true | "There is truth in you. I feel it as I feel the rain. Take my blessing, and let the stone know you come in my name." |
+| Persuade fails | Swear you are true | "Not today. Prove yourself in deed, not word, and perhaps the lake will think again." |
+| Intimidate passes | Draw your weapon | "Boldly spoken. The old kings were bold too, and the stone answered them. Go, with what blessing a threat can buy." |
+| Intimidate fails (the fight starts) | Draw your weapon | "You dare threaten me at my own waters? Then let the lake answer you." |
+| She is beaten (curse) | — | "Go, then. Find your stone. But the hand that struck me will find it heavier than any stone in the world." |
+| The deed is set (no check) | Ask how to prove it | "A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died. Bring it home to me, and I will know your worth." |
+| The blade comes back | — | "Rest now, old friend." (to the blade, as it sinks) "And you: you have my blessing, and my thanks." |
+
+  Her Intimidate pass line mentions "the old kings" who pulled the sword before; who they were isn't set. Companion chime-ins with her stay placeholders until companion proficiencies are set.
 
 ### Other Legendary quests
 
@@ -309,7 +324,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 ## Open questions
 
 - [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); waits on which proficiencies each companion has ([Classes & combat](03 Classes & combat.md) → Open questions)
-- [ ] **New (in progress Oct 28, 2026):** the Lady of the Lake's lines: greeting, her answer about the sword, the deed, and her replies to Persuade and Intimidate
+- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Still open: special companion chime-ins with her (after companion proficiencies), and who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
 - [ ] **New:** how many coins the blessing adds to the pull, and how many the curse takes away
 - [ ] **New:** the Sword in the Stone scene's options (e.g. "Pull the sword" vs "[STR] Force the sword out": does the first need the blessing?)
