@@ -52,7 +52,8 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 2. **Who drafts.** Ethan's rough lines or voice notes come first where he has them; Claude tidies and files them. When Claude drafts, the options are mixed, not four quips: one plain, one earnest, one odd, one funny (or a single draft for Ethan to rewrite).
 3. **Check the tells** above before offering any line.
 4. **Blind test.** Hide the name: if you can't tell who's talking, it isn't in their voice yet.
-5. **Filing.** A line goes in the speaker's file under where it's said (a pair's line in [Pairs](Pairs.md)), with the date it was written.
+5. **Pair lines wait for both voices** (decided Oct 28, 2026): a pair's exchange is reviewed and changed only once both companions' voice sheets are done, so one half isn't rewritten against a partner who may still change.
+6. **Filing.** A line goes in the speaker's file under where it's said (a pair's line in [Pairs](Pairs.md)), with the date it was written.
 
 ## Voice sheet template
 
