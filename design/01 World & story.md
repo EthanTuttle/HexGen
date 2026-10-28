@@ -294,6 +294,8 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 | Chelmsford | "Good company, a warm fire. A fine day's work, everyone. Truly." |
 | Mel | "Whose purse is this?" (a beat) "Mine now." |
 | Grant Augustus | "Hold on, I've nearly got a rhyme for 'tavern'." |
+| Kris Huntington | "Ja, good meat. I knew this boar. Tough fellow." |
+| Dolmund | "Call this ale? Back home we wash the forge with this." |
 - **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
 
 ## Quests
