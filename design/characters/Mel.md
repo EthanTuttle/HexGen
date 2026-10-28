@@ -19,15 +19,15 @@ Approved by Ethan, Oct 28, 2026. From the bio: a small wood elf girl, lost and s
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list.
+Reviewed against the voice sheet and the tells list with Ethan, Oct 28, 2026: all rewritten.
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 
 | Proficiency | Line |
 | --- | --- |
-| Deceive | "It's true! I was there. I saw the whole thing." (She wasn't.) |
-| Thievery | "Small hands, see? Let me." |
+| Deceive | "It's true, I saw it, everyone saw it, there were loads of us." (was: "It's true! I was there. I saw the whole thing." (She wasn't.)) |
+| Thievery | "Oh look, it's open. I didn't do anything. It was like that." (was: "Small hands, see? Let me.") |
 
 **Inn: fallback bar line** (said to the table when the companion beside them has no exchange with them; pair exchanges: [Pairs](Pairs.md))
 
-"Whose purse is this?" (a beat) "Mine now."
+"I found this purse. On a man at the bar. He wasn't using it." (was: "Whose purse is this?" (a beat) "Mine now.", which broke her "never admits stealing")

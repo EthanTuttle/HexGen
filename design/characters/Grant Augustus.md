@@ -4,6 +4,8 @@ Soldier path companion. Bio, home and personal quest: [World & story](../01%20Wo
 
 ## Voice sheet
 
+Note for his sheet (Ethan, Oct 28, 2026): he can rhyme. He shouldn't fail as a bard because he's bad at rhyming.
+
 Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice sheet template). From the bio: a failed bard who needs one great hero's tale to make his name. Home: Clan Hall (highlands), performing at clan feasts. Personal quest: perform the hero's epic at a grand venue, where it goes wrong in a fun way.
 
 - **How they talk:**

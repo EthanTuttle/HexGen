@@ -43,6 +43,7 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 - **The joke is the character's trait.** Fluffy is royal, Mel steals, Kris hunts, Grant rhymes. A line that only points at the bio makes the character a summary of themselves. Show the trait sideways, or show something else.
 - **Tics carrying the voice.** "Ja", "darling", "sweetheart" and the stammer are seasoning, not the voice. Take them out: if the line no longer sounds like the character, it wasn't in their voice.
 - **Nothing specific.** Name the dish, the place, the person, or something that happened on this run. A generic inn and generic ale read as filler.
+- **Forgetting who they are.** Check the bio before every line: Mel is a small girl, so no drinking at the bar; Grant is a bard, so he can rhyme.
 - **Everyone equally clever.** Characters can be wrong, slow, rambling, rude, boring or not in on the joke.
 
 ## How we write
