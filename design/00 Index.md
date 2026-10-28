@@ -202,7 +202,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: each town type's scene content (places, services, stock, NPCs), in the docs
 - [ ] New: feedback on the camera in scenes (social v9, town v4)
 - [x] ~~Wheel zoom and right-drag rotate on the map and in combat too?~~ (settled Oct 28: one set of camera controls for every hex screen)
-- [ ] New: opened camera buttons covering the cards (town v5a fan, v5b tray, v5c cards make room)
+- [x] ~~Opened camera buttons covering the cards~~ (settled Oct 28: v6c, nav between Quests and equipment with the fan; standard everywhere)
 - [ ] New: town NPCs (named shopkeepers, innkeepers, townsfolk? rumours?) and inn services besides resting
 - [ ] New: inn banter lines (v2e)
 - [ ] New: towns: names and greetings, shop stock, quest board quests
