@@ -180,7 +180,8 @@ Skills (learned at class locations such as Training Grounds, Tree of Life and Co
 
 (Decided Oct 22, 2026. A proficiency's signature effect works on top of its coin bonus.)
 - A proficiency can be learned again to raise it a rank (more coins). Rank cap: open.
-- Sources: class locations (1 pick per visit from that location's list; see [Cards & progression](05 Cards & progression.md) → Class locations) and backgrounds (see [World & story](01 World & story.md) → Backgrounds; how many each grants: open).
+- **Starting proficiencies** (decided Oct 28, 2026): a new hero starts with 2: one picked from their background's short list and one from their class location's list (see [Cards & progression](05 Cards & progression.md) → Class locations). Story companions start with 2, hand-picked to fit who they are, regardless of class (see [World & story](01 World & story.md) → Background paths).
+- Sources: class locations (1 pick per visit from that location's list; see [Cards & progression](05 Cards & progression.md) → Class locations) and backgrounds (1 pick at creation from the background's short list; the lists: open).
 
 ## Turns, AP and health
 
@@ -570,7 +571,8 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
 - [ ] **New (Oct 28, 2026):** companion chime-in: which companion steps in when several are proficient, and how it combines with the Silver Tongue feat's reflip ([Cards & progression](05 Cards & progression.md) → General feats): chime-in first, reflip after, or the player's pick?
-- [ ] **New (mockup placeholder, social encounter v1):** which social proficiencies each story companion has (v1 assumes Chelmsford: Persuade, Mel: Deceive, nobody: Intimidate), and the coins and heads needed per dialogue check
+- [ ] **New (in progress Oct 28, 2026):** each story companion's 2 proficiencies (count settled: see Skills → Starting proficiencies); the mockups' guesses (Chelmsford: Persuade and Athletics, Fluffy: Lore, Mel: Deceive) stand until then. Still open too: the coins and heads needed per dialogue check
+- [ ] **New (Oct 28, 2026):** each background's short list of proficiencies to pick from at creation; and the College's skill list, since a Bard hero needs one to pick their class proficiency (05 Cards & progression → Class locations only says "learn flourishes (skills)")
 - [ ] **New:** can a failed social check be retried in the same conversation? (Social encounter v1 uses each option once)
 - [ ] Class and subclass cards at level 15 and later (level 15 in progress, Oct 22, 2026)
 - [ ] **New:** names for the class location upgrades at levels 10 and 20 (Training Grounds, Thieves Guild, Tree of Life) under the upgrade-name rule (weapon mastery nodes: named Oct 26, 2026)
