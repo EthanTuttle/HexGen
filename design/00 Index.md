@@ -37,7 +37,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
 - [x] ~~Each companion's chime-in lines~~ (written Oct 28: World & story → Companion chime-in lines). Still open: more lines later; a Reginald variant for heroes he doesn't serve
-- [ ] New: the Lady of the Lake (lines written Oct 28): her deed's knight and lair; who "the old kings" were
+- [x] ~~The Lady of the Lake's last details~~ (settled Oct 28: Sir Bedivere, a far-off chimera's lair, water spirits, she sinks for good if beaten, the old kings left vague). Still open: the chimera and water spirits in the enemy roster
 - [ ] Background unique starter item for each background (parked)
 - [ ] Pantheon follow-ups: further detail per god
 - [ ] Enemy roster and bosses

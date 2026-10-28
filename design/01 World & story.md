@@ -327,8 +327,10 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 - **What she judges:** worthiness, meaning honour and truth.
 - **Ways to win her blessing:**
   - **Persuade:** a light cost on a fail: she refuses her blessing.
-  - **Intimidate:** a heavy cost on a fail: she fights back, which starts a fight. If the party wins, she yields and tells them where the sword is, but curses it: the pull flips fewer coins.
-  - **Offer a deed** (no check): she asks the hero to return a lost blade, a fallen knight's sword in a nearby lair or ruin, to rest in her lake. Bringing it back wins the blessing.
+  - **Intimidate:** a heavy cost on a fail: she fights back, which starts a fight, with water spirits (fey) rising from the lake beside her. If the party wins, she yields and tells them where the sword is, but curses it: the pull flips fewer coins. Then she sinks into the lake for good (decided Oct 28, 2026): she never speaks again, and that enchanted lake loses its resting blessing.
+  - **Offer a deed** (no check): she asks the hero to bring her fallen champion's blade home to rest in her lake. Bringing it back wins the blessing.
+- **Her champion and the deed** (decided Oct 28, 2026): Sir Bedivere was her sworn knight, who guarded the lake for her and rode out to face something he couldn't beat; she mourns him. He fell far from the lake, in a chimera's lair, which the quest places on the map far away (matching her line "He fell far from these waters"). The chimera still dens there with his blade. She never says his name: the player learns it from the blade they carry back, the item "Sir Bedivere's Blade". (In the legend, Bedivere is the knight who returned Excalibur to the Lady.)
+- **The old kings** (decided Oct 28, 2026: left vague): a legend only. Their names are cut in the stone, but they have no set history.
 - **Her lines** (written Oct 28, 2026, picked by Ethan from drafts):
 
 | Moment | Hero's card (intent) | The Lady |
@@ -343,7 +345,7 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 | The deed is set (no check) | Ask how to prove it | "A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died. Bring it home to me, and I will know your worth." |
 | The blade comes back | — | "Rest now, old friend." (to the blade, as it sinks) "And you: you have my blessing, and my thanks." |
 
-  Her Intimidate pass line mentions "the old kings" who pulled the sword before; who they were isn't set. Companion chime-ins with her: see Companion chime-in lines (Fluffy has a special one).
+  Companion chime-ins with her: see Companion chime-in lines (Fluffy has a special one).
 
 ### Other Legendary quests
 
@@ -399,8 +401,8 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 ## Open questions
 
 - [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: see Companion chime-in lines). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
-- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines). Still open: who "the old kings" in her lines were
-- [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
+- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines); the old kings were left vague (see The Lady of the Lake)
+- [x] ~~The Lady's deed, her fight, what happens after, and the old kings~~ (settled Oct 28, 2026: Sir Bedivere, a chimera's lair placed far away, water spirits beside her, she sinks into the lake for good if beaten, the old kings left vague; see The Lady of the Lake). Still open: the chimera and the water spirits in the enemy roster (stats, cards)
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
 - [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon

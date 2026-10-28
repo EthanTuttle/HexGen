@@ -106,7 +106,7 @@ Decided Oct 24, 2026. Each is variant → its Legendary location.
 | Dwarven hold | Dwarf allies join fights there; mine events can give ore; better gear at shops |
 | Great city | Safe (no wild spawns); extra shops and quest givers; the quest board refreshes faster |
 | Fairgrounds | Shows and minigames across its tiles; fewer hostile spawns; festive events |
-| Enchanted lake | Water-spirit events; resting by the lake gives a blessing for the next day |
+| Enchanted lake | Water-spirit events; resting by the lake gives a blessing for the next day (lost if the party beats the Lady of the Lake in a fight: [World & story](01 World & story.md) → The Lady of the Lake) |
 | Buried city | Sandstorms hide and reveal tiles; trap and relic events; construct and undead foes |
 | Breadbasket kingdom | Cheap supplies; resting there gives a buff; bandit raids more often |
 | Feywild crossing | Fey encounters with tricks or boons; the day clock runs oddly (faster or slower) inside |
