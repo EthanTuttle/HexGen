@@ -71,7 +71,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Classes & combat**
 
-- [ ] New (Oct 28): who flips a non-social check in an encounter scene (player picks, always the hero, or auto-pick highest score); v2 compares them
+- [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
 - [ ] New (Oct 28): companion chime-in: which companion steps in when several are proficient; order with Silver Tongue's reflip
 - [ ] New (placeholder): story companions' social proficiencies and the size of dialogue checks
 - [ ] New: can a failed social check be retried in the same conversation?
@@ -195,3 +195,4 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: a downed ally's HP after a won fight
 - [x] ~~Social encounter layout~~ (settled Oct 28: v1d, options as cards over the zoomed hex)
 - [ ] New: approach tag colours and icons for social options
+- [ ] New: social encounter rewards: v3a reveal then home, v3b toast, v3c icon row, v3d straight to the tray
