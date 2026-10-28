@@ -249,6 +249,7 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 **The sword pull scene** (decided Oct 28, 2026)
 
 - **Options:** "Pull the sword" (STR + Athletics, so a proficient companion can chime in), "Read the runes on the stone" (a Lore check: a pass adds 1 coin to the pull; a fail loses nothing), and Leave to come back later.
+- **Coin amounts** (decided Oct 28, 2026): the Lady's blessing adds 2 coins to the pull and her curse takes 2 away; the runes add 1. Balance risk, accepted: with a typical 4-coin puller and a 2-heads pull (placeholder), a plain pull passes 69%, blessed 89% (94% with the runes) and cursed 25%. A failed pull loses the sword for good, so threatening her nearly costs the sword.
 - **The pull's name shows its bonuses,** like upgraded cards: each bonus adds a "+" and the curse takes one away. Pull++ with the blessing and the runes; Pull+ with one of them; Pull with neither, or with the curse and one bonus; Pull− when cursed with no bonus.
 - **Anyone in the party can pull** (who flips: [Classes & combat](03 Classes & combat.md) → Checks outside combat), and the blessing and the runes help whoever pulls.
 
@@ -332,7 +333,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 - [ ] **New (Oct 28, 2026):** each companion's chime-in lines: one generic line per approach they're proficient in, plus special lines for big story NPCs (pattern: Dialogue writing); waits on which proficiencies each companion has ([Classes & combat](03 Classes & combat.md) → Open questions)
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Still open: special companion chime-ins with her (after companion proficiencies), and who "the old kings" in her lines were
 - [ ] **New:** the Lady's deed: which fallen knight, which lair or ruin holds the blade, and how far away it is placed
-- [ ] **New:** how many coins the blessing adds to the pull, and how many the curse takes away
+- [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
 - [x] ~~The sword pull scene's options~~ (settled Oct 28, 2026: Pull and the Lore runes; see The sword pull scene). Still open: the heads the pull needs, and the scene's own text (no NPC speaks there)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
