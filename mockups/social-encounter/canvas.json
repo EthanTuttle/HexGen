@@ -90,6 +90,51 @@
    "title": "Linked · Exploration v6a (copied; Debug → Meet the Lady opens v2a–v2c, and Leave comes back here)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Social-v3a-RevealHome.dc.html": {
+   "x": 0,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v3a · v2a + rewards pop big, then fly to their home (Quests, Bag, badges on the party tray). Tap anywhere to continue; the party stands on the board; enemies drop in when a fight starts",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v3b-Toast.dc.html": {
+   "x": 924,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v3b · the same, with rewards as a toast above the cards that fades",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v3c-IconRow.dc.html": {
+   "x": 1848,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v3c · the same, with one icon hex per result beside the line's panel (tap for details)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v3d-StraightToTray.dc.html": {
+   "x": 2772,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v3d · the same homes as v3a with no pop-up moment: a dot on Quests or Bag, badges on the tray",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v6a-ForV3.dc.html": {
+   "x": 3696,
+   "y": 2280,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v6a (copied; Debug → Meet the Lady opens v3a–v3d, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -101,7 +146,12 @@
   "Social-v2a-PlayerPicks.dc.html",
   "Social-v2b-AlwaysHero.dc.html",
   "Social-v2c-AutoPick.dc.html",
-  "Ref-Explore-v6a-ForV2.dc.html"
+  "Ref-Explore-v6a-ForV2.dc.html",
+  "Social-v3a-RevealHome.dc.html",
+  "Social-v3b-Toast.dc.html",
+  "Social-v3c-IconRow.dc.html",
+  "Social-v3d-StraightToTray.dc.html",
+  "Ref-Explore-v6a-ForV3.dc.html"
  ],
  "notes": {
   "v1": {
@@ -124,6 +174,13 @@
    "text": "v2 · who flips? Try Draw your weapon for the fight, Debug → Go to the sword for Pull and the runes",
    "kind": "title1",
    "maxW": 3616
+  },
+  "v3": {
+   "x": 0,
+   "y": 2030,
+   "text": "v3 · where rewards go: Ask about the sword, Ask how to prove it, then the runes and Pull (Debug → Go to the sword)",
+   "kind": "title1",
+   "maxW": 4540
   }
  },
  "designSystems": []

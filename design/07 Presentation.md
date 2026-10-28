@@ -277,6 +277,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Approach tag colours and icons | Social encounter v1 | Icons (Open questions below) |
 | Party scores and proficiencies (e.g. Fluffy INT 3 with Lore, Chelmsford with Athletics and Persuade); heads needed (Persuade 2, Intimidate 2, runes 1, pull 2); blessing, runes and curse worth 1 coin each | Social encounter v2 | Companion proficiencies and check sizes ([Classes & combat](03 Classes & combat.md) → Open questions); blessing and curse amounts ([World & story](01 World & story.md) → Open questions) |
 | The sword pull scene's text, [Sword name] | Social encounter v2 | The pull scene's text ([World & story](01 World & story.md) → Open questions) |
+| Three numbered generic enemy tokens beside the Lady when her fight starts; reward descriptions ("+[coins] on the pull") | Social encounter v3 | Enemy roster ([World & story](01 World & story.md) → Open questions); blessing and curse amounts (same) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -291,7 +292,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Exploration | In progress (latest: v6a side column / v6b next tile only, with landmark pins, 5+/7+ regions and a debug tab) | — | — | [HexGen · Exploration (working)](https://claude.ai/artifact/GQ6LxMzHa214Rjzcabgjr4) |
 | Rewards & level-up | After combat: final. Level-up: in progress (latest: v9a level 3 / v9b level 4 feat, with v8c level 5 / v8d level 8: each level shows only what it grants) | After combat v7 | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Rewards & level-up (working)](https://claude.ai/artifact/UeCB1R47oqpqYZs172hNjg) |
 | Weapon mastery | Final (v5c: the weapon hex is the root of the tree) | v5c | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Weapon mastery (working)](https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum) |
-| Social encounter | In progress (layout chosen: v1d; latest: v2a–v2c compare who flips, with the Lady's lines, the fight start and the sword pull) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
+| Social encounter | In progress (layout v1d and who flips v2a chosen; latest: v3a–v3d compare where rewards go) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 
 ## Camera and controls
