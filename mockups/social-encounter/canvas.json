@@ -162,6 +162,33 @@
    "title": "Linked · Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Social-v5-Sleeve.dc.html": {
+   "x": 0,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v5 · v4 with the passives on the sleeve beside the party panel (exploration v8b), tighter pop-ups, and the quest log opening upward",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b-ForV5.dc.html": {
+   "x": 924,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Meet the Lady (v5) opens v5, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV5.dc.html": {
+   "x": 1848,
+   "y": 3800,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -181,7 +208,10 @@
   "Ref-Explore-v6a-ForV3.dc.html",
   "Social-v4-SharedHomes.dc.html",
   "Ref-Explore-v7a-ForV4.dc.html",
-  "Ref-Gear-v8d-ForV4.dc.html"
+  "Ref-Gear-v8d-ForV4.dc.html",
+  "Social-v5-Sleeve.dc.html",
+  "Ref-Explore-v8b-ForV5.dc.html",
+  "Ref-Gear-v8d-ForV5.dc.html"
  ],
  "notes": {
   "v1": {
@@ -216,6 +246,13 @@
    "x": 0,
    "y": 2790,
    "text": "v4 · rewards fly to homes shared with the map",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v5": {
+   "x": 0,
+   "y": 3550,
+   "text": "v5 · passives on the sleeve, as on the map",
    "kind": "title1",
    "maxW": 2692
   }
