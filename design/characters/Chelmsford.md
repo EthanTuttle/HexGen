@@ -12,7 +12,12 @@ Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice 
 - **What they want and what worries them:**
 - **Sounds like:**
 - **When they're not joking:**
-- **Sample lines:**
+- **Sample lines** (drafted by Claude, picked by Ethan, Oct 28, 2026):
+  - "Sorry, is this seat taken? Only I've been on my feet since Tuesday."
+  - "Mum always said the sun comes up whether you've earned it or not. I find that rather comforting."
+  - "I'll take first watch. No, really, I don't mind. Someone ought to."
+  - "Terribly sorry about the lightning. It does that when I sneeze."
+  - (as the ogre falls) "Right. Everyone all right? I'll put the kettle on."
 
 ## Lines
 
