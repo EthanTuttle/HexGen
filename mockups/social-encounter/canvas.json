@@ -135,6 +135,33 @@
    "title": "Linked · Exploration v6a (copied; Debug → Meet the Lady opens v3a–v3d, and Leave comes back here)",
    "is_interactive": true,
    "radius": 28
+  },
+  "Social-v4-SharedHomes.dc.html": {
+   "x": 0,
+   "y": 3040,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v4 · v3a's reveal, flying to the same homes as on the map: passives stacked beside the party panel, Quests and equipment under it (equipment opens Character & gear)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v7a-ForV4.dc.html": {
+   "x": 924,
+   "y": 3040,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v7a (copied; Debug → Meet the Lady (v4) opens v4, and Leave comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV4.dc.html": {
+   "x": 1848,
+   "y": 3040,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -151,7 +178,10 @@
   "Social-v3b-Toast.dc.html",
   "Social-v3c-IconRow.dc.html",
   "Social-v3d-StraightToTray.dc.html",
-  "Ref-Explore-v6a-ForV3.dc.html"
+  "Ref-Explore-v6a-ForV3.dc.html",
+  "Social-v4-SharedHomes.dc.html",
+  "Ref-Explore-v7a-ForV4.dc.html",
+  "Ref-Gear-v8d-ForV4.dc.html"
  ],
  "notes": {
   "v1": {
@@ -181,6 +211,13 @@
    "text": "v3 · where rewards go: Ask about the sword, Ask how to prove it, then the runes and Pull (Debug → Go to the sword)",
    "kind": "title1",
    "maxW": 4540
+  },
+  "v4": {
+   "x": 0,
+   "y": 2790,
+   "text": "v4 · rewards fly to homes shared with the map",
+   "kind": "title1",
+   "maxW": 2692
   }
  },
  "designSystems": []

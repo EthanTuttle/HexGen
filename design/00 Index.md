@@ -195,4 +195,5 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: a downed ally's HP after a won fight
 - [x] ~~Social encounter layout~~ (settled Oct 28: v1d, options as cards over the zoomed hex)
 - [ ] New: approach tag colours and icons for social options
-- [ ] New: social encounter rewards: v3a reveal then home, v3b toast, v3c icon row, v3d straight to the tray
+- [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
+- [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)

@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exploration v7a: side column, quests and equipment buttons, passives, nav button</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@700&amp;family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes litpulse{0%{opacity:0.75}50%{opacity:1}100%{opacity:0.75}}
+@keyframes placepop0{0%{transform:translateZ(18px)}70%{transform:translateZ(-2px)}100%{transform:translateZ(0)}}
+@keyframes navout{0%{transform:translateX(-12px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes placepop1{0%{transform:translateZ(18px)}70%{transform:translateZ(-2px)}100%{transform:translateZ(0)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: {{sky}}; transition: background 0.8s ease; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- Board -->
+  <div aria-label="World map. Drag to pan; use the buttons to zoom and rotate." onPointerDown="{{cam.down}}" onPointerMove="{{cam.move}}" onPointerUp="{{cam.up}}" onPointerCancel="{{cam.up}}" onPointerLeave="{{cam.leave}}" style="position: absolute; left: 0; top: 0; width: 844px; height: 390px; overflow: hidden; touch-action: none; perspective: 900px; perspective-origin: {{cam.po}}; cursor: {{cam.cursor}}">
+    <div style="position: absolute; left: 0; top: 0; width: 704px; height: 640px; transform-style: preserve-3d; transform-origin: {{cam.origin}}; transform: {{cam.transform}}; transition: {{cam.transition}}">
+      <div style="position: absolute; left: 0; top: 0; width: 704px; height: 640px; transform: translateZ(-9px)">
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="12">
+          <span style="position: absolute; left: {{t.sLeft}}; top: {{t.sTop}}; width: 47px; height: 54.3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35"></span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; left: 0; top: 0; width: 704px; height: 640px; transform: translateZ(-4.5px)">
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="12">
+          <span style="position: absolute; left: {{t.sLeft}}; top: {{t.sTop}}; width: 47px; height: 54.3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #8A6446"></span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; left: 0; top: 0; width: 704px; height: 640px; transform-style: preserve-3d">
+        <sc-for list="{{slots}}" as="s" hint-placeholder-count="14">
+          <button type="button" aria-label="{{s.aria}}" onClick="{{s.tap}}" style="padding: 0; border: none; position: absolute; left: {{s.left}}; top: {{s.top}}; width: 44px; height: 50.8px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.bg}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}; cursor: {{s.cursor}}; animation: {{s.anim}}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity: {{s.iconOp}}"><path d="{{s.icon}}"></path></svg>
+          </button>
+        </sc-for>
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="12">
+          <button type="button" aria-label="{{t.aria}}" onClick="{{t.tap}}" style="padding: 0; border: none; position: absolute; left: {{t.left}}; top: {{t.top}}; width: 44px; height: 50.8px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.rim}}; cursor: pointer; animation: {{t.anim}}">
+            <span style="position: absolute; inset: {{t.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.bg}}; display: flex; align-items: center; justify-content: center; color: {{t.ink}}">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"></path></svg>
+            </span>
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: rgba(30,36,64,0.5); opacity: {{t.fog}}; transition: opacity 0.6s ease"></span>
+          </button>
+        </sc-for>
+        <sc-for list="{{ground}}" as="g" hint-placeholder-count="1">
+          <span style="position: absolute; left: {{g.x}}; top: {{g.y}}; width: 0; height: 0; transform: translateZ(0.6px); pointer-events: none">
+            <span style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) rotateZ({{g.counter}}); transition: {{cam.transition}}; white-space: nowrap; font-family: 'Cormorant SC', Georgia, serif; font-weight: 700; font-size: 10px; letter-spacing: 0.06em; line-height: 1; color: #33261A; text-shadow: 0 0 2px #F6EEDF, 0 0 2px #F6EEDF, 0 0 3px #F6EEDF">{{g.text}}</span>
+          </span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; left: 0; top: 0; width: 704px; height: 640px; transform-style: preserve-3d; transform: translateZ(1px); pointer-events: none">
+        <sc-for list="{{pins}}" as="p" hint-placeholder-count="1">
+          <span style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 0; height: 0; transform-style: preserve-3d">
+            <span style="position: absolute; left: 0; top: 0; width: 0; height: 0; transform: translateZ(4px) {{stand}} translateY(-22px); transition: {{cam.transition}}">
+              <button type="button" aria-label="{{p.aria}}" onClick="{{p.tap}}" onPointerDown="{{cam.stop}}" style="position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; padding: 0; border: 2px solid #8A6446; border-radius: 50%; background: #FCF7EE; color: #5E4C30; box-shadow: 0 2px 0 #6B4C35; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l3 4H9z M8 7h8v2H8z M9 9v10 M15 9v10 M6 19h12v2H6z"></path></svg>
+              </button>
+              <sc-if value="{{p.open}}" hint-placeholder-val="{{ false }}">
+                <span role="status" style="position: absolute; left: 0; bottom: 14px; transform: translateX(-50%); white-space: nowrap; padding: 4px 10px; background: #FCF7EE; border-radius: 10px; box-shadow: 0 3px 0 #CDB894; display: flex; flex-direction: column; align-items: center; pointer-events: none">
+                  <span style="font-family: 'Lilita One', sans-serif; font-size: 12px; line-height: 1.1; color: #24302C">{{p.name}}</span>
+                  <span style="font-size: 9px; font-weight: 800; color: #5A5040; line-height: 1.2">{{p.region}}</span>
+                </span>
+              </sc-if>
+            </span>
+          </span>
+        </sc-for>
+        <sc-for list="{{marks}}" as="m" hint-placeholder-count="3">
+          <span style="position: absolute; left: {{m.x}}; top: {{m.y}}; width: 0; height: 0; transform-style: preserve-3d">
+            <span role="img" aria-label="{{m.aria}}" style="position: absolute; left: {{m.l}}; top: -12px; height: 24px; min-width: 22px; box-sizing: border-box; padding: 0 7px; border-radius: 12px; background: {{m.bg}}; color: {{m.ink}}; box-shadow: 0 3px 0 {{m.edge}}; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: 'Lilita One', sans-serif; font-size: 13px; white-space: nowrap; transform-origin: 50% 100%; transform: translateZ(4px) {{stand}} translateY(-26px); transition: {{cam.transition}}">
+              <sc-if value="{{m.swords}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l11 11 M19 5L8 16 M14 18l4-4 M10 18l-4-4 M17 17l3 3 M7 17l-3 3"></path></svg></sc-if>
+              {{m.text}}
+            </span>
+          </span>
+        </sc-for>
+        <span style="position: absolute; left: {{hero.x}}; top: {{hero.y}}; width: 0; height: 0; transform-style: preserve-3d; transition: left 0.24s ease-in-out, top 0.24s ease-in-out">
+          <span style="position: absolute; left: -15px; top: -17.3px; width: 30px; height: 34.6px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #4A3524; transform: translateZ(1px)"></span>
+          <span style="position: absolute; left: -15px; top: -17.3px; width: 30px; height: 34.6px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35; transform: translateZ(3px)"></span>
+          <span role="img" aria-label="{{hero.aria}}" style="position: absolute; left: -15px; top: -17.3px; width: 30px; height: 34.6px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #C9A97A; transform: translateZ(5px)">
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #E9C46A; display: flex; align-items: center; justify-content: center">
+              <span style="display: block; font-family: 'Lilita One', sans-serif; font-size: 15px; line-height: 1; color: #24302C; transform: rotateZ({{hero.counter}}); transition: {{cam.transition}}">H</span>
+            </span>
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Debug tools (mockup only: not game rules) -->
+  <div role="group" aria-label="Debug tools" style="position: absolute; left: 130px; top: 12px; z-index: 6; display: flex; flex-direction: column; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(36,48,44,0.82)">
+    <button type="button" aria-expanded="{{dbg.expanded}}" onClick="{{dbg.flip}}" onPointerDown="{{cam.stop}}" style="height: 28px; padding: 0 10px; border: none; border-radius: 14px; background: transparent; color: #F2C14E; font-family: Nunito, sans-serif; font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 4px">Debug <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{dbg.chev}})"><path d="M9 5l7 7-7 7"></path></svg></button>
+    <sc-if value="{{dbg.open}}" hint-placeholder-val="{{ true }}">
+    <button type="button" aria-pressed="{{dbg.pressed}}" onClick="{{dbg.toggle}}" onPointerDown="{{cam.stop}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: {{dbg.bg}}; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap">{{dbg.label}}</button>
+    <button type="button" onClick="{{dbg.refill}}" onPointerDown="{{cam.stop}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: #F6EEDF; color: #24302C; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer">+5 cards</button>
+    <button type="button" aria-pressed="{{hud.ladyOn}}" onClick="{{hud.toggleLady}}" onPointerDown="{{cam.stop}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: #F6EEDF; color: #24302C; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap">{{hud.ladyLabel}}</button>
+    </sc-if>
+  </div>
+
+  <!-- Party tray: portraits open the character & gear screen -->
+  <div style="position: absolute; left: 12px; top: 12px; width: 60px; padding: 8px 6px; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+    <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+      <a href="Ref-Gear-v8d.dc.html" aria-label="{{p.aria}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none">
+        <span style="position: relative; display: block; width: 38px; height: 44px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{p.initial}}</span>
+        </span>
+        <span style="display: block; width: 40px; height: 5px; border-radius: 3px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+          <span style="display: block; height: 5px; width: {{p.hpW}}; background: #4E9A5B"></span>
+        </span>
+      </a>
+    </sc-for>
+  </div>
+
+  <!-- Passives (blessings, curses and other lasting effects): small hexes stacked to the right of the party panel -->
+  <div style="position: absolute; left: 82px; top: 12px; z-index: 5; display: flex; flex-direction: column; gap: 4px">
+    <sc-for list="{{hud.passives}}" as="ps" hint-placeholder-count="0">
+      <button type="button" aria-label="{{ps.aria}}" onClick="{{ps.open}}" onPointerDown="{{cam.stop}}" style="position: relative; width: 36px; height: 41px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{ps.color}}"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: {{ps.color}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ps.icon}}"></path></svg>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <!-- Quests and equipment under the party panel; the nav button beside equipment opens the camera controls out to the right -->
+  <div style="position: absolute; left: 22px; top: 260px; z-index: 5; display: flex; flex-direction: column; gap: 6px">
+    <button type="button" aria-label="Quests" onClick="{{hud.openQuests}}" onPointerDown="{{cam.stop}}" style="position: relative; width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h10l2 2v16H6z M9 8h6 M9 12h6 M9 16h4"></path></svg>
+      </span>
+      <sc-if value="{{hud.questDot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF"></span></sc-if>
+    </button>
+    <div style="display: flex; align-items: center; gap: 6px">
+      <a href="Ref-Gear-v8d.dc.html" aria-label="Character and gear" onPointerDown="{{cam.stop}}" style="position: relative; display: block; width: 40px; height: 46px; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"></path></svg>
+        </span>
+      </a>
+      <button type="button" aria-label="Camera controls" aria-expanded="{{hud.navExpanded}}" onClick="{{hud.toggleNav}}" onPointerDown="{{cam.stop}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{hud.navBg}}; color: {{hud.navInk}}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3 4H9z M12 22l3-4H9z M2 12l4-3v6z M22 12l-4-3v6z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"></path></svg>
+        </span>
+      </button>
+      <sc-if value="{{hud.navOpen}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: 4px; padding-left: 4px; animation: navout 0.22s ease-out">
+          <sc-for list="{{cam.buttons}}" as="b" hint-placeholder-count="5">
+            <button type="button" aria-label="{{b.aria}}" onClick="{{b.act}}" onPointerDown="{{cam.stop}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; opacity: {{b.opacity}}; filter: drop-shadow(0 3px 0 #A48A62)">
+              <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; color: #24302C">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Pop-up for a passive or the quest log -->
+  <sc-if value="{{hud.info.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="{{hud.info.title}}" onPointerDown="{{cam.stop}}" style="position: absolute; left: {{hud.info.left}}; top: {{hud.info.top}}; width: 230px; box-sizing: border-box; z-index: 22; padding: 10px 12px 12px; background: #FCF7EE; border-radius: 16px; border: 3px solid {{hud.info.rim}}; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.15">{{hud.info.title}}</span>
+        <button type="button" aria-label="Close" onClick="{{hud.info.close}}" style="width: 44px; height: 44px; margin: -10px -12px 0 0; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      </div>
+      <sc-for list="{{hud.info.rows}}" as="row" hint-placeholder-count="1">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: {{row.color}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{row.icon}}"></path></svg></span>
+          <span style="display: flex; flex-direction: column; min-width: 0">
+            <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: {{row.color}}">{{row.type}}</span>
+            <span style="font-size: 13px; font-weight: 900">{{row.name}}</span>
+            <span style="font-size: 11px; font-weight: 700; color: #5A5040">{{row.desc}}</span>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- Prompt banner -->
+  <sc-if value="{{banner.show}}" hint-placeholder-val="{{ true }}">
+    <div role="status" style="position: absolute; left: {{banner.left}}; top: 14px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 8px; height: 40px; box-sizing: border-box; padding: 0 6px 0 16px; background: #F6EEDF; border-radius: 20px; box-shadow: 0 4px 0 #CDB894; white-space: nowrap">
+      <span style="font-size: 13px; font-weight: 800">{{banner.text}}</span>
+      <sc-if value="{{banner.cancel}}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{banner.onCancel}}" style="height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: #E6DCC8; color: #4A4034; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 900; cursor: pointer">Cancel</button>
+      </sc-if>
+      <sc-if value="{{banner.pad}}" hint-placeholder-val="{{ false }}"><span style="width: 10px"></span></sc-if>
+    </div>
+  </sc-if>
+
+  <!-- Toast -->
+  <sc-if value="{{toast.show}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: {{toast.left}}; bottom: 16px; transform: translateX(-50%); z-index: 6; max-width: 420px; box-sizing: border-box; padding: 9px 16px; background: {{toast.bg}}; color: {{toast.ink}}; border-radius: 16px; box-shadow: 0 4px 0 {{toast.edge}}; font-size: 13px; font-weight: 800; line-height: 1.3; text-align: center">{{toast.text}}</div>
+  </sc-if>
+
+  <!-- Day clock: sun/moon dial (tap to skip ahead: mockup only) -->
+  <button type="button" aria-label="{{clock.aria}}" onClick="{{clock.skip}}" style="position: absolute; left: {{clock.left}}; top: {{clock.top}}; z-index: 6; width: {{clock.w}}; padding: 6px 8px; border: none; border-radius: 16px; background: #F6EEDF; box-shadow: 0 4px 0 #CDB894; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: Nunito, sans-serif; color: #24302C; text-align: left">
+    <svg width="46" height="46" viewBox="-25 -25 50 50" aria-hidden="true" style="flex-shrink: 0">
+      <circle r="22" fill="#F2D88A"></circle>
+      <path d="{{clock.nightArc}}" fill="#3E4A78"></path>
+      <circle r="22" fill="none" stroke="#A48A62" stroke-width="2"></circle>
+      <g transform="rotate({{clock.deg}})">
+        <line x1="0" y1="0" x2="0" y2="-13" stroke="#24302C" stroke-width="2.4" stroke-linecap="round"></line>
+        <circle cy="-15" r="6" fill="{{clock.markFill}}" stroke="#24302C" stroke-width="1.6"></circle>
+      </g>
+      <circle r="2.6" fill="#24302C"></circle>
+    </svg>
+    <span style="display: flex; flex-direction: column; min-width: 0">
+      <span style="font-family: 'Lilita One', sans-serif; font-size: 15px; line-height: 1.1">Day {{clock.day}} · {{clock.phase}}</span>
+      <span style="font-size: 11px; font-weight: 800; color: {{clock.subInk}}; line-height: 1.25">{{clock.sub}}</span>
+    </span>
+  </button>
+
+  <!-- v1a: hand in a side column -->
+  <sc-if value="{{isCol}}" hint-placeholder-val="{{ true }}">
+    <div style="position: absolute; left: 680px; top: 84px; width: 152px; height: 294px; box-sizing: border-box; padding: 10px; z-index: 5; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Hand</span>
+        <span style="font-size: 11px; font-weight: 900; color: {{handInk}}">{{handCount}} / 7</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 40px); justify-content: space-between; row-gap: 2px">
+        <sc-for list="{{hand}}" as="c" hint-placeholder-count="6">
+          <button type="button" aria-label="{{c.aria}}" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="position: relative; width: 40px; height: 46px; margin-top: {{c.lift}}; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 {{c.edge}}); transition: margin-top 0.15s ease">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{c.rim}}"></span>
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{c.bg}}; display: flex; align-items: center; justify-content: center; color: {{c.ink}}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"></path></svg>
+            </span>
+            <sc-if value="{{c.toss}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; right: -2px; top: -2px; width: 16px; height: 16px; border-radius: 50%; background: #8E3B2E; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></span>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+      <span style="font-size: 12px; font-weight: 800; color: #43524D; line-height: 1.3; min-height: 32px">{{selName}}</span>
+      <div style="margin-top: auto; display: flex; justify-content: space-between">
+        <sc-for list="{{piles}}" as="pl" hint-placeholder-count="2">
+          <span role="img" aria-label="{{pl.aria}}" style="display: flex; align-items: center; gap: 5px">
+            <span style="position: relative; width: 26px; height: 30px; filter: drop-shadow(0 2px 0 #7E5F44)">
+              <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{pl.bg}}"></span>
+              <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); border: none; background: {{pl.face}}; display: flex; align-items: center; justify-content: center; color: #F6EEDF; font-family: 'Lilita One', sans-serif; font-size: 12px">{{pl.n}}</span>
+            </span>
+            <span style="font-size: 11px; font-weight: 900; color: #43524D">{{pl.label}}</span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- v1b: next tile only -->
+  <sc-if value="{{isNext}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; right: 12px; bottom: 12px; z-index: 5; width: 196px; height: 150px; box-sizing: border-box; padding: 10px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894">
+      <span style="position: absolute; left: 30px; top: 22px; width: 68px; height: 78.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #CDB894; opacity: {{stackOp2}}"></span>
+      <span style="position: absolute; left: 24px; top: 16px; width: 68px; height: 78.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #DCCBA8; opacity: {{stackOp1}}"></span>
+      <span role="img" aria-label="{{next.aria}}" style="position: absolute; left: 14px; top: 8px; width: 74px; height: 85.4px; filter: drop-shadow(0 4px 0 {{next.edge}})">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{next.rim}}"></span>
+        <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{next.bg}}; display: flex; align-items: center; justify-content: center; color: {{next.ink}}">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{next.icon}}"></path></svg>
+        </span>
+      </span>
+      <span style="position: absolute; left: 10px; bottom: 8px; width: 84px; text-align: center; font-family: 'Lilita One', sans-serif; font-size: 14px">{{next.name}}</span>
+      <div style="position: absolute; right: 10px; top: 10px; width: 84px; display: flex; flex-direction: column; gap: 6px; align-items: stretch">
+        <span style="font-size: 11px; font-weight: 900; color: {{handInk}}; text-align: center">+{{nextMore}} in hand · {{handCount}}/7</span>
+        <sc-if value="{{hasOver}}" hint-placeholder-val="{{ false }}"><span style="margin-top: -4px; font-size: 10px; font-weight: 800; color: #8E3B2E; text-align: center; line-height: 1.2">{{overNote}}</span></sc-if>
+        <button type="button" onClick="{{next.cycle}}" aria-disabled="{{next.cycleOff}}" style="height: 34px; border: none; border-radius: 17px; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; opacity: {{next.cycleOp}}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4 M3 11V9a3 3 0 0 1 3-3h15"></path></svg>
+          Next tile
+        </button>
+        <sc-if value="{{next.toss}}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{next.discard}}" style="height: 34px; border: none; border-radius: 17px; background: #8E3B2E; color: #FFF8EE; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 900; cursor: pointer">Discard</button>
+        </sc-if>
+        <sc-for list="{{piles}}" as="pl" hint-placeholder-count="2">
+          <span role="img" aria-label="{{pl.aria}}" style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 900; color: #43524D">{{pl.label}} <span style="font-family: 'Lilita One', sans-serif; font-size: 13px; color: #24302C">{{pl.n}}</span></span>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Encounter pop-up -->
+  <sc-if value="{{enc.show}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(36,48,44,0.45); display: flex; align-items: center; justify-content: center; z-index: 20">
+      <div role="dialog" aria-label="Encounter" style="width: 300px; box-sizing: border-box; padding: 16px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #8E3B2E">Encounter · {{enc.where}}</span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 20px">[Enemy group]</span>
+        <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{enc.text}}</span>
+        <sc-if value="{{enc.hasCoins}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 6px">
+            <sc-for list="{{enc.coins}}" as="coin" hint-placeholder-count="2">
+              <span role="img" aria-label="{{coin.aria}}" style="width: 30px; height: 30px; border-radius: 50%; background: {{coin.bg}}; box-shadow: inset 0 -3px 0 {{coin.edge}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 14px; color: {{coin.ink}}">{{coin.t}}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="display: flex; gap: 8px; margin-top: 4px">
+          <span style="flex: 1; filter: drop-shadow(0 4px 0 #7E3519); display: block">
+            <a href="Ref-Combat-v14.dc.html" style="height: 40px; text-decoration: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; display: flex; align-items: center; justify-content: center">Fight</a>
+          </span>
+          <sc-if value="{{enc.canSneak}}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{enc.sneak}}" style="flex: 1; height: 40px; border: none; border-radius: 20px; background: #E6DCC8; color: #24302C; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 900; cursor: pointer; line-height: 1.1">Sneak past<br><span style="font-weight: 700; color: #5A5040">Stealth, group</span></button>
+          </sc-if>
+          <sc-if value="{{enc.canLeave}}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{enc.close}}" style="flex: 1; height: 40px; border: none; border-radius: 20px; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Carry on</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const VARIANT = 'col';
+    const isCol = VARIANT === 'col';
+    const st = this.state || {};
+
+    // Terrain (docs: Map & exploration → Exploration and terrain). Colours and icons are mockup placeholders.
+    const T = {
+      plains: { n: 'Plains', bg: '#A8CF7E', ink: '#4F7A33', icon: 'M4 18c1-4 2-6 3-7 M7 18c0-3 1-5 2-6 M14 18c1-4 2-6 3-7 M17 18c0-3 1-5 2-6', v1: 'Rolling meadows', lm: 'Nomad Camp' },
+      forest: { n: 'Forest', bg: '#5E8F5A', ink: '#203E1E', icon: 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4', v1: 'Deep, old forest', lm: 'Hidden Shrine' },
+      hills: { n: 'Hills', bg: '#BFAE8E', ink: '#5E4C30', icon: 'M2 19l6-9 4 5 3-4 7 8z', v1: 'Highlands', lm: 'Clan Hall' },
+      swamp: { n: 'Swamp', bg: '#7F9A6E', ink: '#2E4626', icon: 'M6 20v-8 M6 12a2 2 0 0 1 0-4 M12 20V9 M12 9a2 2 0 0 1 0-4 M18 20v-7 M3 20h18', v1: 'Bog', lm: "Witch's Hut" },
+      village: { n: 'Village', bg: '#E6C590', ink: '#7A4A22', icon: 'M4 11l8-6 8 6 M6 10v9h12v-9 M10 19v-5h4v5', v1: 'Market town', lm: 'Trading House' },
+      river: { n: 'River/lake', bg: '#86BEDB', ink: '#245A7E', icon: 'M3 9c3-2 6 2 9 0s6-2 9 0 M3 15c3-2 6 2 9 0s6-2 9 0', v1: 'River delta', lm: 'River Port' },
+      desert: { n: 'Desert', bg: '#EDD49A', ink: '#8A6A2A', icon: 'M2 18c4-5 8-5 11-1 M10 16c3-4 8-5 12 0', v1: 'Dunes', lm: 'Sandstone Sphinx' },
+      farmland: { n: 'Farmland', bg: '#DCC562', ink: '#6E5410', icon: 'M12 21V8 M12 12c-3-1-4-3-4-5 3 0 4 2 4 5 M12 12c3-1 4-3 4-5-3 0-4 2-4 5 M12 17c-3-1-4-3-4-5 3 0 4 2 4 5 M12 17c3-1 4-3 4-5-3 0-4 2-4 5', v1: 'Windmill country', lm: 'Great Windmill' },
+      ruins: { n: 'Ruins', bg: '#B3ADA4', ink: '#4E4840', icon: 'M5 20V9 M10 20V7 M15 20v-6 M19 20v-9 M3 20h18 M4 9h7', v1: 'Excavation', lm: 'Dig Site' },
+      start: { n: 'Starting hex', bg: '#F3E6C8', ink: '#9A4A12', icon: 'M6 21V4 M6 4h11l-3 4 3 4H6' }
+    };
+    const LANDMARK_ICON = 'M12 3l3 4H9z M8 7h8v2H8z M9 9v10 M15 9v10 M6 19h12v2H6z';
+    // Banned neighbours (docs: Map & exploration → Placement → Terrain pairings)
+    const BANS = [['desert', 'swamp'], ['desert', 'forest'], ['swamp', 'hills'], ['farmland', 'desert'], ['farmland', 'swamp']];
+    const banned = (a, b) => BANS.some((p) => (p[0] === a && p[1] === b) || (p[1] === a && p[0] === b));
+
+    // Mockup numbers (not in the docs yet): cluster goal shows from 2 hexes with a 4+ target; times per action.
+    const GOAL_FROM = 2, SIGHT = 2, HAND_MAX = 7;
+    const GOAL_T1 = 5, GOAL_T2 = 7;
+    const goalFor = (tt) => (regions.some((g) => g.t === tt) ? GOAL_T2 : GOAL_T1);
+    const DAY_MIN = 30, NIGHT_AT = 20; // docs: ~30 real minutes a day, night ~10 of them
+    const PLACE_MIN = 0.5, STEP_MIN = 1, SKIP_MIN = 5;
+
+    const INIT = {
+      '0,0': { t: 'start', o: 0 }, '1,0': { t: 'plains', o: 1 }, '2,-1': { t: 'plains', o: 2 },
+      '-1,0': { t: 'forest', o: 3 }, '-1,1': { t: 'forest', o: 4 }, '-2,1': { t: 'forest', o: 5 },
+      '0,1': { t: 'river', o: 6 }, '1,1': { t: 'river', o: 7 }, '0,-1': { t: 'hills', o: 8 },
+      '2,0': { t: 'desert', o: 9 }, '-2,0': { t: 'farmland', o: 10 }, '-1,2': { t: 'village', o: 11 }
+    };
+    const tiles = st.tiles ?? INIT;
+    const debug = st.debug ?? true;
+    const PLACEABLE = ['plains', 'forest', 'hills', 'swamp', 'village', 'river', 'desert', 'farmland', 'ruins'];
+    const randT = () => PLACEABLE[Math.floor(Math.random() * PLACEABLE.length)];
+    const hand = st.hand ?? ['forest', 'desert', 'swamp', 'plains', 'village', 'river'];
+    const deckList = st.deckList ?? ['plains', 'desert', 'ruins', 'farmland', 'forest', 'hills'];
+    const discard = st.discard ?? 3;
+    const regions = st.regions ?? [];
+    const hero = st.hero ?? { q: 0, r: 0 };
+    const t = st.t ?? 14;
+    const day = st.day ?? 3;
+    const night = t >= NIGHT_AT;
+    // Hand limit (Oct 24, 2026): the hand can go over 7 while exploring; it is discarded down to 7 when the party rests.
+    const toss = 0;
+    const over = Math.max(0, hand.length - HAND_MAX);
+    const selIdx = isCol ? (st.sel ?? null) : (hand.length ? 0 : null);
+    const held = toss === 0 && selIdx != null && hand[selIdx] ? hand[selIdx] : null;
+    const enc = st.enc ?? { key: '2,-1', live: true };
+
+    const key = (q, r) => q + ',' + r;
+    const parse = (k) => { const a = k.split(',').map(Number); return { q: a[0], r: a[1] }; };
+    const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
+    const nb = (q, r) => DIRS.map((d) => ({ q: q + d[0], r: r + d[1] }));
+    const dist = (a, b) => (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.q + a.r - b.q - b.r)) / 2;
+
+    // Regions: connected same-terrain clusters (the starting hex is a Story card and joins none)
+    const regionOf = (k) => regions.find((g) => g.keys.indexOf(k) >= 0) || null;
+    const clusterOf = (k0, tl) => {
+      const tt = tl[k0].t; const seen = {}; seen[k0] = true; const out = [k0]; const stack = [k0];
+      while (stack.length) {
+        const c = parse(stack.pop());
+        nb(c.q, c.r).forEach((n) => { const k = key(n.q, n.r); if (!seen[k] && tl[k] && tl[k].t === tt) { seen[k] = true; out.push(k); stack.push(k); } });
+      }
+      return out;
+    };
+
+    // Board geometry and camera (same camera as combat: tilt, rotate in 60° steps, zoom, pan)
+    const W = 44, H = 50.8, CX = 352, CY = 320;
+    const px = (q, r) => ({ x: CX + W * (q + r / 2), y: CY + 0.75 * H * r });
+    const VCX = isCol ? 378 : 430, VCY = isCol ? 200 : 180;
+    // Zoom is continuous so a pinch can set any level; the buttons step by 25%. Night: the camera tightens on the hero.
+    const zMin = night ? 1 : 0.6, zMax = 1.8;
+    const clampZ = (v) => Math.min(zMax, Math.max(zMin, v));
+    const z = clampZ(st.z ?? 1);
+    const fp = st.fp ?? px(hero.q, hero.r);
+    const pan = st.pan ?? { x: 0, y: 0 };
+    const TILT = 50;
+    const rot = st.rot ?? 0;
+    const wasDrag = () => { const w = this._wasDrag; this._wasDrag = false; return w; };
+    const cam = {
+      transform: 'translate(' + (VCX - fp.x + pan.x).toFixed(1) + 'px, ' + (VCY - fp.y + pan.y).toFixed(1) + 'px) scale(' + z + ') rotateX(' + TILT + 'deg) rotateZ(' + rot + 'deg)',
+      origin: fp.x.toFixed(1) + 'px ' + fp.y.toFixed(1) + 'px',
+      po: VCX + 'px ' + (VCY - 40) + 'px',
+      transition: st.dragging || st.gesturing ? 'none' : 'transform 0.4s ease, transform-origin 0.4s ease',
+      cursor: st.dragging ? 'grabbing' : 'grab',
+      // One finger (or mouse) pans. Two fingers: pinch to zoom, twist to rotate; the rotation snaps to 60° steps on release.
+      down: (e) => {
+        const P = this._ptrs = this._ptrs || {};
+        P[e.pointerId] = { x: e.clientX, y: e.clientY };
+        const ids = Object.keys(P);
+        if (ids.length === 2) {
+          const a = P[ids[0]], b = P[ids[1]];
+          this._g = { d0: Math.hypot(b.x - a.x, b.y - a.y) || 1, a0: Math.atan2(b.y - a.y, b.x - a.x), z0: z, r0: rot };
+          this._drag = null; this._wasDrag = true;
+        } else if (ids.length === 1) {
+          this._wasDrag = false; this._drag = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, moved: false };
+        }
+      },
+      move: (e) => {
+        const P = this._ptrs || {};
+        if (P[e.pointerId]) P[e.pointerId] = { x: e.clientX, y: e.clientY };
+        const ids = Object.keys(P);
+        if (this._g && ids.length >= 2) {
+          const a = P[ids[0]], b = P[ids[1]], g = this._g;
+          const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+          const ang = Math.atan2(b.y - a.y, b.x - a.x);
+          this.setState({ gesturing: true, z: clampZ(g.z0 * d / g.d0), rot: g.r0 + (ang - g.a0) * 180 / Math.PI });
+          return;
+        }
+        const dr = this._drag; if (!dr) return;
+        const dx = e.clientX - dr.x, dy = e.clientY - dr.y;
+        if (!dr.moved && Math.abs(dx) + Math.abs(dy) > 5) dr.moved = true;
+        if (dr.moved) this.setState({ dragging: true, fp: fp, pan: { x: dr.px + dx, y: dr.py + dy } });
+      },
+      up: (e) => {
+        const P = this._ptrs || {};
+        if (e && e.pointerId != null) delete P[e.pointerId];
+        if (this._g) {
+          if (Object.keys(P).length < 2) {
+            this._g = null; this._drag = null; this._wasDrag = true;
+            this.setState({ gesturing: false, rot: Math.round(rot / 60) * 60 });
+          }
+          return;
+        }
+        const d = this._drag; if (d) { this._wasDrag = d.moved; this._drag = null; if (d.moved) this.setState({ dragging: false }); }
+      },
+      leave: (e) => { if (e && e.pointerType === 'mouse') { const P = this._ptrs || {}; delete P[e.pointerId]; const d = this._drag; if (d) { this._wasDrag = d.moved; this._drag = null; if (d.moved) this.setState({ dragging: false }); } } },
+      stop: (e) => { e.stopPropagation(); },
+      buttons: [
+        { aria: 'Zoom in', icon: 'M12 5v14 M5 12h14', opacity: z < zMax ? '1' : '0.45', act: () => this.setState({ z: clampZ(z * 1.25) }) },
+        { aria: night ? 'Zoom out (limited at night)' : 'Zoom out', icon: 'M5 12h14', opacity: z > zMin ? '1' : '0.45', act: () => this.setState({ z: clampZ(z / 1.25) }) },
+        { aria: 'Rotate left', icon: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5', opacity: '1', act: () => this.setState({ rot: rot - 60 }) },
+        { aria: 'Rotate right', icon: 'M21 12a9 9 0 1 1-3-6.7 M21 4v5h-5', opacity: '1', act: () => this.setState({ rot: rot + 60 }) },
+        { aria: 'Center on the party', icon: 'M12 3v4 M12 17v4 M3 12h4 M17 12h4 M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6', opacity: '1', act: () => this.setState({ fp: px(hero.q, hero.r), pan: { x: 0, y: 0 } }) }
+      ]
+    };
+    const stand = 'rotateZ(' + (-rot) + 'deg) rotateX(' + (-TILT) + 'deg)';
+
+    // Time
+    const advance = (n, mins) => {
+      let nt = (n.t ?? t) + mins, nd = n.day ?? day;
+      while (nt >= DAY_MIN) { nt -= DAY_MIN; nd += 1; }
+      n.t = nt; n.day = nd;
+      return n;
+    };
+
+    // Where the held card can go
+    const inSight = (q, r) => dist(hero, { q: q, r: r }) <= SIGHT;
+    const check = (q, r, tt) => {
+      if (night && !inSight(q, r)) return { ok: false, why: 'Night: you can only build within sight of the party (' + SIGHT + ' hexes).', kind: 'dark' };
+      const bad = nb(q, r).map((n) => tiles[key(n.q, n.r)]).filter((x) => x && banned(tt, x.t));
+      if (bad.length) return { ok: false, why: T[tt].n + " can't go next to " + T[bad[0].t].n + '.', kind: 'ban' };
+      return { ok: true };
+    };
+
+    const place = (q, r) => {
+      if (!held) return;
+      const k = key(q, r);
+      const nt = Object.assign({}, tiles); nt[k] = { t: held, o: Object.keys(tiles).length };
+      const nh = hand.slice(); nh.splice(selIdx, 1);
+      let n = { tiles: nt, hand: nh, sel: null, toast: null, popKey: k, popN: (st.popN || 0) + 1 };
+      advance(n, PLACE_MIN);
+      // Cluster goal reached? The cluster becomes a region (tier 1 the first time for a terrain).
+      const cl = clusterOf(k, nt);
+      const joined = regions.find((g) => cl.some((c) => g.keys.indexOf(c) >= 0));
+      if (joined) {
+        n.regions = regions.map((g) => g === joined ? Object.assign({}, g, { keys: cl }) : g);
+        n.toast = { text: T[held].n + ' added to ' + joined.name + '.', good: true };
+      } else if (cl.length >= goalFor(held)) {
+        const first = !regions.some((g) => g.t === held);
+        const lmKey = cl[Math.floor(Math.random() * cl.length)];
+        const name = first ? T[held].v1 : '[Tier 2 ' + T[held].n.toLowerCase() + ' variant]';
+        const lm = first ? T[held].lm : '[landmark]';
+        n.regions = regions.concat([{ t: held, keys: cl, name: name, lm: lm, lmKey: lmKey }]);
+        const draw = first ? 3 : 5;
+        const dl = deckList.slice(); const got = dl.splice(0, draw);
+        n.deckList = dl; n.hand = nh.concat(got);
+        const lost = draw - got.length;
+        const nOver = n.hand.length - HAND_MAX;
+        n.toast = { text: name + '! Region finished: draw ' + draw + (lost ? ' (' + lost + ' lost: deck empty, rest to reshuffle)' : '') + '. Landmark: ' + lm + '.' + (nOver > 0 ? ' Hand ' + n.hand.length + '/7: keep building; you discard down to 7 when you rest.' : ''), good: true };
+      }
+      if (debug) n.hand = n.hand.concat([randT()]);
+      n.openLm = null;
+      if (n.regions && n.regions.length > regions.length) {
+        const lk = n.regions[n.regions.length - 1].lmKey;
+        n.reveal = lk;
+        setTimeout(() => { if ((this.state || {}).reveal === lk) this.setState({ reveal: null }); }, 3500);
+      }
+      this.setState(n);
+    };
+
+    // Walking: along placed hexes, one step at a time; the camera follows
+    const walk = (goal) => {
+      if (hero.q === goal.q && hero.r === goal.r) return;
+      const start = key(hero.q, hero.r); const prev = {}; prev[start] = null; const queue = [start];
+      while (queue.length) {
+        const c = queue.shift(); if (c === key(goal.q, goal.r)) break;
+        const p = parse(c);
+        nb(p.q, p.r).forEach((n) => { const k = key(n.q, n.r); if (tiles[k] && !(k in prev)) { prev[k] = c; queue.push(k); } });
+      }
+      const gk = key(goal.q, goal.r); if (!(gk in prev)) return;
+      const path = []; let c = gk; while (c !== start) { path.unshift(parse(c)); c = prev[c]; }
+      this._walkId = (this._walkId || 0) + 1; const id = this._walkId;
+      path.forEach((h, i) => {
+        setTimeout(() => {
+          if (this._walkId !== id) return;
+          const s = this.state || {}; const e = s.enc ?? enc;
+          const n = advance({ hero: h, fp: px(h.q, h.r), pan: { x: 0, y: 0 }, t: s.t ?? t, day: s.day ?? day, toast: null }, STEP_MIN);
+          if (e.live && key(h.q, h.r) === e.key) { n.encOpen = { stage: 'ask' }; this._walkId += 1; }
+          this.setState(n);
+        }, 260 * i);
+      });
+    };
+
+    // Tiles
+    const tileList = Object.keys(tiles).map((k) => {
+      const p = parse(k), pp = px(p.q, p.r), tl = tiles[k], tt = T[tl.t];
+      const g = regionOf(k);
+      const isLm = g && g.lmKey === k;
+      const fog = night && !inSight(p.q, p.r);
+      return {
+        o: tl.o,
+        left: (pp.x - 22).toFixed(1) + 'px', top: (pp.y - 25.4).toFixed(1) + 'px',
+        sLeft: (pp.x - 23.5).toFixed(1) + 'px', sTop: (pp.y - 27.15).toFixed(1) + 'px',
+        rim: g ? '#FCF7EE' : tt.bg, inset: g ? '3px' : '0px', bg: tt.bg, ink: tt.ink, icon: isLm ? LANDMARK_ICON : tt.icon,
+        fog: fog ? '1' : '0',
+        anim: st.popKey === k ? 'placepop' + ((st.popN || 0) % 2) + ' 0.35s ease-out' : 'none',
+        aria: tt.n + (g ? ', ' + g.name : '') + (isLm ? ', landmark: ' + g.lm : '') + (fog ? ', out of sight' : '') + '. Tap to walk here.',
+        tap: () => { if (wasDrag()) return; if (st.openLm) this.setState({ openLm: null }); walk(p); }
+      };
+    }).sort((a, b) => a.o - b.o);
+
+    // Empty slots touching land
+    const slotKeys = {};
+    Object.keys(tiles).forEach((k) => { const p = parse(k); nb(p.q, p.r).forEach((n) => { const nk = key(n.q, n.r); if (!tiles[nk]) slotKeys[nk] = n; }); });
+    const slots = Object.keys(slotKeys).map((k) => {
+      const p = slotKeys[k], pp = px(p.q, p.r);
+      const base = { left: (pp.x - 22).toFixed(1) + 'px', top: (pp.y - 25.4).toFixed(1) + 'px' };
+      if (!held) return Object.assign(base, { bg: night && !inSight(p.q, p.r) ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.38)', ink: 'transparent', icon: '', iconOp: '0', cursor: 'inherit', anim: 'none', aria: 'Empty space', tap: () => {} });
+      const c = check(p.q, p.r, held);
+      if (c.ok) return Object.assign(base, { bg: '#FCF7EE', ink: T[held].ink, icon: T[held].icon, iconOp: '0.55', cursor: 'pointer', anim: 'litpulse 1.6s ease-in-out infinite', aria: 'Place ' + T[held].n + ' here', tap: () => { if (wasDrag()) return; place(p.q, p.r); } });
+      const ban = c.kind === 'ban';
+      return Object.assign(base, {
+        bg: ban ? 'rgba(181,83,47,0.32)' : 'rgba(255,255,255,0.1)', ink: ban ? '#8E3B2E' : 'transparent', icon: ban ? 'M6 6l12 12 M18 6L6 18' : '', iconOp: ban ? '0.8' : '0',
+        cursor: 'pointer', anim: 'none', aria: c.why, tap: () => { if (wasDrag()) return; this.setState({ toast: { text: c.why, good: false } }); }
+      });
+    });
+
+    // Markers: cluster goals, region names, the encounter
+    const marks = [];
+    const done = {};
+    // Landmark names (v4): only the landmark's short name. 'pin' = a small pin, name on tap (and shown briefly when the region finishes); 'ground' = painted flat on the board.
+    const LABELS = 'pin';
+    const pins = [], ground = [];
+    regions.forEach((g) => {
+      g.keys.forEach((k) => { done[k] = true; });
+      const p = parse(g.lmKey), pp = px(p.q, p.r);
+      if (LABELS === 'pin') {
+        const open = st.openLm === g.lmKey || st.reveal === g.lmKey;
+        pins.push({ x: pp.x + 'px', y: pp.y + 'px', name: g.lm, region: g.name, open: open,
+          aria: g.lm + ' (' + g.name + ')' + (open ? '' : ': tap for its name'),
+          tap: () => this.setState({ openLm: st.openLm === g.lmKey ? null : g.lmKey, reveal: null }) });
+      } else {
+        ground.push({ x: pp.x.toFixed(1) + 'px', y: (pp.y + 15).toFixed(1) + 'px', text: g.lm, counter: (-rot) + 'deg' });
+      }
+    });
+    const seenCl = {};
+    Object.keys(tiles).forEach((k) => {
+      if (seenCl[k] || done[k] || tiles[k].t === 'start') return;
+      const cl = clusterOf(k, tiles); cl.forEach((c) => { seenCl[c] = true; });
+      if (cl.length < GOAL_FROM) return;
+      const newest = cl.reduce((a, b) => tiles[a].o > tiles[b].o ? a : b);
+      const p = parse(newest), pp = px(p.q, p.r);
+      const goal = goalFor(tiles[k].t);
+      marks.push({ x: pp.x + 'px', y: pp.y + 'px', l: '-11px', text: String(goal - cl.length), bg: '#24302C', ink: '#F6EEDF', edge: '#11181A', swords: false, aria: 'Cluster goal: grow this ' + T[tiles[k].t].n.toLowerCase() + ' to ' + goal + '+ hexes, ' + (goal - cl.length) + ' more' });
+    });
+    if (enc.live) { const p = parse(enc.key), pp = px(p.q, p.r); marks.push({ x: pp.x + 'px', y: pp.y + 'px', l: '-14px', text: '', bg: '#8E3B2E', ink: '#FFF8EE', edge: '#5A2A22', swords: true, aria: 'Encounter on this hex' }); }
+    // labels get a centred offset
+    marks.forEach((m) => { if (m.l === '-60px') m.l = '-' + Math.round(m.text.length * 3.4 + 8) + 'px'; });
+
+    // Hand
+    const handView = hand.map((tt, i) => {
+      const on = isCol && selIdx === i && !toss;
+      return {
+        bg: T[tt].bg, ink: T[tt].ink, icon: T[tt].icon, rim: on ? '#B5532F' : '#FCF7EE', edge: on ? '#7E3519' : '#A48A62', lift: on ? '0px' : '6px', pressed: on ? 'true' : 'false', toss: toss > 0,
+        aria: T[tt].n + (toss ? ', tap to discard' : (on ? ', held: tap a lit hex to place' : ', tap to hold')),
+        pick: () => {
+          if (toss) { const nh = hand.slice(); nh.splice(i, 1); this.setState({ hand: nh, discard: discard + 1, sel: null, toast: nh.length > HAND_MAX ? null : { text: 'Discarded ' + T[tt].n + '.', good: true } }); return; }
+          this.setState({ sel: selIdx === i ? null : i, toast: null });
+        }
+      };
+    });
+    const piles = [
+      { label: 'Deck', n: String(deckList.length), bg: '#6B4C35', face: '#8A6446', aria: deckList.length + ' cards in the deck' },
+      { label: 'Discard', n: String(discard), bg: '#8F7E6A', face: '#B3A38C', aria: discard + ' cards in the discard pile (reshuffled when you rest)' }
+    ];
+    const cur = hand[0];
+    const next = cur ? {
+      bg: T[cur].bg, ink: T[cur].ink, icon: T[cur].icon, rim: '#FCF7EE', edge: '#A48A62', name: T[cur].n,
+      aria: 'Next tile: ' + T[cur].n,
+      cycle: () => { if (hand.length > 1) this.setState({ hand: hand.slice(1).concat([hand[0]]), toast: null }); },
+      cycleOff: hand.length > 1 ? 'false' : 'true', cycleOp: hand.length > 1 ? '1' : '0.45',
+      toss: toss > 0,
+      discard: () => { const nh = hand.slice(1); this.setState({ hand: nh, discard: discard + 1, toast: nh.length > HAND_MAX ? null : { text: 'Discarded ' + T[cur].n + '.', good: true } }); }
+    } : { bg: '#E6DCC8', ink: '#8A7D66', icon: '', rim: '#E6DCC8', edge: '#CDB894', name: 'Hand empty', aria: 'Hand empty', cycle: () => {}, cycleOff: 'true', cycleOp: '0.45', toss: false, discard: () => {} };
+
+    // Banner
+    let banner = { show: false, text: '', cancel: false, pad: true, left: (isCol ? 378 : 430) + 'px', onCancel: () => this.setState({ sel: null }) };
+    if (toss) banner = Object.assign(banner, { show: true, text: 'Hand limit 7: discard ' + toss + (isCol ? ' (tap a card)' : '') });
+    else if (held) banner = Object.assign(banner, { show: true, text: 'Place ' + T[held].n + ' · tap a lit hex', cancel: isCol, pad: !isCol });
+    else if (isCol && hand.length) banner = Object.assign(banner, { show: true, text: 'Pick a card to build, or tap a hex to walk' });
+
+    // Clock
+    const deg = t / DAY_MIN * 360;
+    const a0 = NIGHT_AT / DAY_MIN * 2 * Math.PI, r0 = 22;
+    const ax = (ang) => (Math.sin(ang) * r0).toFixed(2) + ' ' + (-Math.cos(ang) * r0).toFixed(2);
+    const phase = night ? 'Night' : (t < 5 ? 'Dawn' : (t < 15 ? 'Midday' : 'Dusk'));
+    const left = night ? DAY_MIN - t : NIGHT_AT - t;
+    const mins = (m) => (m < 1 ? 'under a minute' : Math.ceil(m) + ' min');
+    const clock = {
+      day: String(day), phase: phase, deg: deg.toFixed(1),
+      nightArc: 'M0 0 L' + ax(a0) + ' A22 22 0 0 1 ' + ax(2 * Math.PI - 0.0001) + ' Z',
+      markFill: night ? '#DDE3F2' : '#F7C948',
+      sub: night ? 'Dawn in ' + mins(left) : 'Nightfall in ' + mins(left),
+      subInk: night || left <= 5 ? '#8E3B2E' : '#43524D',
+      aria: 'Day ' + day + ', ' + phase + '. ' + (night ? 'Dawn' : 'Nightfall') + ' in ' + mins(left) + '. Tap to skip ahead ' + SKIP_MIN + ' minutes (mockup only).',
+      skip: () => { const n = advance({ toast: null }, SKIP_MIN); const nowNight = n.t >= NIGHT_AT; if (nowNight && !night) { n.fp = px(hero.q, hero.r); n.pan = { x: 0, y: 0 }; n.toast = { text: 'Night falls. Build only within sight of the party, and find somewhere to rest.', good: false }; } this.setState(n); },
+      left: isCol ? '680px' : '632px', top: '12px', w: isCol ? '152px' : '200px'
+    };
+    // Backdrop drifts with the time of day (docs: Presentation → Art direction; exact colours open)
+    const sky = night ? '#A9AECB' : (t < 5 ? '#F4DCCB' : (t < 15 ? '#D9E7EC' : '#EDCFD7'));
+
+    // Encounter pop-up
+    const eo = st.encOpen || null;
+    const coinsV = (eo && eo.coins ? eo.coins : []).map((h) => ({ t: h ? 'H' : 'T', bg: h ? '#E4B54C' : '#CFC2A8', edge: h ? '#A67A1F' : '#8A7D66', ink: h ? '#5A3A05' : '#4A4034', aria: h ? 'Heads' : 'Tails' }));
+    const encView = {
+      show: !!eo, where: T[(tiles[enc.key] || { t: 'plains' }).t].n,
+      text: !eo ? '' : (eo.stage === 'ask' ? 'Foes block the way. Fight them, or try to slip past with a Stealth group check (everyone flips; needs 1 heads).' : (eo.stage === 'passed' ? 'You slipped past. The encounter stays on the map until it despawns.' : 'Spotted! The fight is on.')),
+      hasCoins: coinsV.length > 0, coins: coinsV,
+      canSneak: !!eo && eo.stage === 'ask', canLeave: !!eo && eo.stage === 'passed',
+      sneak: () => { const c = [Math.random() < 0.5, Math.random() < 0.5]; this.setState({ encOpen: { stage: c.some(Boolean) ? 'passed' : 'spotted', coins: c } }); },
+      close: () => this.setState({ encOpen: null })
+    };
+
+    const toastV = st.toast ? { show: true, text: st.toast.text, bg: st.toast.good ? '#24302C' : '#8E3B2E', ink: '#F6EEDF', edge: st.toast.good ? '#11181A' : '#5A2A22', left: (isCol ? 378 : 360) + 'px' } : { show: false, text: '', bg: '#24302C', ink: '#F6EEDF', edge: '#11181A', left: '378px' };
+
+    const PARTY = [
+      { name: '[Hero name]', initial: 'H', color: '#E9C46A', hp: 0.85 },
+      { name: 'Fluffy', initial: 'F', color: '#C9B3E6', hp: 0.6 },
+      { name: 'Chelmsford', initial: 'C', color: '#8EC3F2', hp: 1 },
+      { name: 'Mel', initial: 'M', color: '#F4B6A8', hp: 0.7 }
+    ];
+
+    // HUD (Oct 28, 2026): quests and equipment under the party panel, passives stacked beside it, camera controls behind the nav button.
+    // Mockup: the debug "Back from the Lady" switch fills them as if the party had won her blessing (World & story → The Lady of the Lake).
+    const lady = !!st.lady;
+    const QICON = 'M6 3h10l2 2v16H6z M9 8h6 M9 12h6 M9 16h4';
+    const SICON = 'M12 2v12 M9 5h6 M10 14h4l-2 4z M7 21h10 M8 21l1-3h6l1 3';
+    const quests = [{ type: 'Quest', name: '[Opening quest]', desc: '[Quest step]', color: '#B5532F', icon: QICON }]
+      .concat(lady ? [{ type: 'Quest', name: 'Sword in the Stone', desc: 'Find the stone and pull the sword.', color: '#B5532F', icon: SICON }] : []);
+    const PASSIVES = lady ? [{ type: 'Blessing', name: 'Lady of the Lake', desc: '+[coins] on the pull.', color: '#3F86C8', icon: 'M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z' }] : [];
+    const info = st.info || null;
+    const hud = {
+      passives: PASSIVES.map((p, i) => ({ color: p.color, icon: p.icon, aria: p.type + ': ' + p.name, open: () => this.setState({ info: { title: p.type, rows: [p], left: '126px', top: (12 + i * 45) + 'px', rim: p.color } }) })),
+      openQuests: () => this.setState({ info: info && info.title === 'Quests' ? null : { title: 'Quests', rows: quests, left: '72px', top: '200px', rim: '#B5532F' }, questSeen: true }),
+      questDot: lady && !st.questSeen,
+      navOpen: !!st.navOpen, navExpanded: st.navOpen ? 'true' : 'false', navBg: st.navOpen ? '#24302C' : '#F6EEDF', navInk: st.navOpen ? '#F6EEDF' : '#24302C',
+      toggleNav: () => this.setState({ navOpen: !st.navOpen }),
+      info: info ? { show: true, title: info.title, rows: info.rows, left: info.left, top: info.top, rim: info.rim, close: () => this.setState({ info: null }) } : { show: false, title: '', rows: [], left: '0', top: '0', rim: '#BFAE8E', close: () => {} },
+      ladyOn: lady ? 'true' : 'false', ladyLabel: lady ? 'Back from the Lady: on' : 'Back from the Lady: off',
+      toggleLady: () => this.setState({ lady: !lady, questSeen: false, info: null })
+    };
+
+    return {
+      hud: hud,
+      isCol: isCol, isNext: !isCol, sky: sky, stand: stand, cam: cam,
+      tiles: tileList, slots: slots, marks: marks, pins: pins, ground: ground,
+      hero: { x: px(hero.q, hero.r).x.toFixed(1) + 'px', y: px(hero.q, hero.r).y.toFixed(1) + 'px', counter: (-rot) + 'deg', aria: 'Your party' },
+      party: PARTY.map((p) => ({ initial: p.initial, face: p.color, hpW: Math.round(p.hp * 100) + '%', aria: p.name + ': open character and gear' })),
+      hand: handView, handCount: String(hand.length), handInk: hand.length > HAND_MAX ? '#8E3B2E' : '#43524D',
+      selName: (held ? T[held].n + ' held. Lit hexes can take it; red ones clash with a neighbour.' : 'Tap a card to hold it.') + (over ? ' Over the limit: discard down to 7 at your next rest.' : ''),
+      overNote: over ? 'Over 7: discard at rest' : '', hasOver: over > 0,
+      piles: piles, next: next, nextMore: String(Math.max(0, hand.length - 1)),
+      dbg: {
+        on: debug, label: debug ? 'Endless hand: on' : 'Endless hand: off', bg: debug ? '#2E6B3A' : '#6B6152', pressed: debug ? 'true' : 'false',
+        toggle: () => this.setState({ debug: !debug }),
+        open: !!st.dbgOpen, expanded: st.dbgOpen ? 'true' : 'false', chev: st.dbgOpen ? '-90deg' : '0deg', flip: () => this.setState({ dbgOpen: !st.dbgOpen }),
+        refill: () => this.setState({ hand: hand.concat([randT(), randT(), randT(), randT(), randT()]), toast: { text: 'Debug: +5 random terrain cards.', good: true } })
+      },
+      stackOp1: hand.length > 1 ? '1' : '0', stackOp2: hand.length > 2 ? '1' : '0',
+      banner: banner, toast: toastV, clock: clock, enc: encView
+    };
+  }
+}
+</script>
+</body>
+</html>

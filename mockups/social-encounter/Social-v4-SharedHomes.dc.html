@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Social encounter v4: rewards fly to the same homes as on the map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes coinspin{0%{transform:rotateY(0)}100%{transform:rotateY(720deg)}}
+@keyframes coinland{0%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes chimein{0%{transform:translateX(40px) scale(0.6);opacity:0}100%{transform:none;opacity:1}}
+@keyframes linein{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes tilein{0%{transform:translateZ(60px);opacity:0}100%{transform:translateZ(0);opacity:1}}
+@keyframes tokendrop{0%{transform:translateZ(90px);opacity:0}70%{transform:translateZ(-3px);opacity:1}100%{transform:translateZ(0);opacity:1}}
+@keyframes fadein{0%{opacity:0}100%{opacity:1}}
+@keyframes bannerin{0%{transform:translate(-50%,-14px) scale(0.8);opacity:0}100%{transform:translate(-50%,0) scale(1);opacity:1}}
+@keyframes fly0{0%{transform:translate(0,0) scale(0.3);opacity:0}14%{transform:translate(0,0) scale(1.1);opacity:1}24%{transform:translate(0,0) scale(1);opacity:1}68%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0.12);opacity:0}}
+@keyframes fly1{0%{transform:translate(0,0) scale(0.3);opacity:0}14%{transform:translate(0,0) scale(1.1);opacity:1}24%{transform:translate(0,0) scale(1);opacity:1}68%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0.12);opacity:0}}
+@keyframes toast0{0%{transform:translateY(12px);opacity:0}8%{transform:none;opacity:1}86%{transform:none;opacity:1}100%{transform:translateY(-6px);opacity:0}}
+@keyframes toast1{0%{transform:translateY(12px);opacity:0}8%{transform:none;opacity:1}86%{transform:none;opacity:1}100%{transform:translateY(-6px);opacity:0}}
+@keyframes iconpop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes dotpulse{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #D9E7EC; color: #24302C; font-family: Nunito, sans-serif">
+
+  <!-- World board, zoomed onto the scene's hex. In a fight its edges grow out into a whole combat map and the enemies drop in. -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; overflow: hidden; perspective: 900px; perspective-origin: {{board.po}}">
+    <div style="position: absolute; left: {{board.left}}; top: {{board.top}}; width: 600px; height: 520px; transform-style: preserve-3d; transform-origin: {{board.origin}}; transform: {{board.transform}}; transition: transform 1.3s ease-in-out">
+      <div style="position: absolute; inset: 0; transform: translateZ(-10px)">
+        <sc-for list="{{board.tiles}}" as="t" hint-placeholder-count="19">
+          <span style="position: absolute; left: {{t.sLeft}}; top: {{t.sTop}}; width: 68px; height: 78.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35; animation: {{t.fade}}"></span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; inset: 0; transform-style: preserve-3d">
+        <sc-for list="{{board.tiles}}" as="t" hint-placeholder-count="19">
+          <span style="position: absolute; left: {{t.left}}; top: {{t.top}}; width: 64px; height: 74px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.rim}}; animation: {{t.anim}}">
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.bg}}; display: flex; align-items: center; justify-content: center; color: {{t.ink}}">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: {{t.iconOp}}"><path d="{{t.icon}}"></path></svg>
+            </span>
+          </span>
+        </sc-for>
+        <sc-for list="{{board.tokens}}" as="k" hint-placeholder-count="5">
+          <span style="position: absolute; left: {{k.x}}; top: {{k.y}}; width: 0; height: 0; transform-style: preserve-3d; animation: {{k.anim}}">
+            <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #4A3524; transform: translateZ(1px)"></span>
+            <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #6B4C35; transform: translateZ(4px)"></span>
+            <span style="position: absolute; left: -21px; top: -24px; width: 42px; height: 48.5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #C9A97A; transform: translateZ(7px)">
+              <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{k.face}}; transition: background 0.6s ease; display: flex; align-items: center; justify-content: center">
+                <span style="display: block; font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1; color: {{k.ink}}">{{k.initial}}</span>
+              </span>
+            </span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- Party tray (v3a, v3d: lasting effects show as badges at its foot) -->
+  <div style="position: absolute; left: 12px; top: 12px; width: 60px; padding: 8px 6px; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+    <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+      <span role="img" aria-label="{{p.aria}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="position: relative; display: block; width: 38px; height: 44px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{p.initial}}</span>
+        </span>
+        <span style="display: block; width: 40px; height: 5px; border-radius: 3px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+          <span style="display: block; height: 5px; width: {{p.hpW}}; background: #4E9A5B"></span>
+        </span>
+      </span>
+    </sc-for>
+  </div>
+
+  <!-- Passives: small hexes stacked to the right of the party panel, as on the map -->
+  <div style="position: absolute; left: 82px; top: 12px; z-index: 5; display: flex; flex-direction: column; gap: 4px">
+    <sc-for list="{{rv.badges}}" as="b" hint-placeholder-count="0">
+      <button type="button" aria-label="{{b.aria}}" onClick="{{b.open}}" style="position: relative; width: 36px; height: 41px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62); animation: {{b.anim}}">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{b.color}}"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: {{b.color}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <!-- Quests and equipment under the party panel, as on the map (the camera is held on the scene, so there is no nav button here) -->
+  <div style="position: absolute; left: 22px; top: {{rv.homesTop}}; z-index: 5; display: flex; flex-direction: column; gap: 6px">
+    <button type="button" aria-label="Quests" onClick="{{rv.quests.open}}" style="position: relative; width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62)">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{rv.quests.icon}}"></path></svg>
+      </span>
+      <sc-if value="{{rv.quests.dot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF; animation: dotpulse 1.2s ease-in-out infinite"></span></sc-if>
+    </button>
+    <a href="Ref-Gear-v8d-ForV4.dc.html" aria-label="Character and gear" style="position: relative; display: block; width: 40px; height: 46px; filter: drop-shadow(0 3px 0 #A48A62)">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F6EEDF; display: flex; align-items: center; justify-content: center; color: #24302C">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"></path></svg>
+      </span>
+      <sc-if value="{{rv.gearDot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; right: -2px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #B5532F; box-shadow: 0 0 0 2px #F6EEDF; animation: dotpulse 1.2s ease-in-out infinite"></span></sc-if>
+    </a>
+  </div>
+
+  <!-- Scene: the speaker's line on top (a tap anywhere pages it), the options dealt as cards along the bottom -->
+  <sc-if value="{{inScene}}" hint-placeholder-val="{{ true }}">
+    <div style="position: absolute; left: 160px; top: 12px; width: 560px; min-height: 76px; box-sizing: border-box; padding: 10px 52px 10px 10px; z-index: 5; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; gap: 12px; align-items: flex-start">
+      <span role="img" aria-label="{{head.name}}" style="position: relative; display: block; width: 46px; height: 53px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+        <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+        <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{head.face}}; display: flex; align-items: center; justify-content: center; color: #24302C">
+          <sc-if value="{{head.isNpc}}" hint-placeholder-val="{{ true }}"><span style="font-family: 'Lilita One', sans-serif; font-size: 20px">L</span></sc-if>
+          <sc-if value="{{head.isPlace}}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{swordIcon}}"></path></svg></sc-if>
+        </span>
+      </span>
+      <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 16px; color: #245A7E">{{head.name}}</span>
+          <sc-if value="{{hasYou}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 11px; font-weight: 800; color: #5A5040">{{you}}</span>
+          </sc-if>
+        </div>
+        <sc-if value="{{pg.hasNote}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 11px; font-weight: 700; font-style: italic; color: #5A5040">{{pg.note}}</span>
+        </sc-if>
+        <span style="font-size: 14px; font-weight: 800; line-height: 1.35; animation: linein 0.3s ease-out">{{pg.text}}</span>
+      </div>
+      <sc-if value="{{pg.more}}" hint-placeholder-val="{{ false }}">
+        <span aria-hidden="true" style="position: absolute; right: 14px; bottom: 12px; color: #B5532F; display: flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+      </sc-if>
+    </div>
+    <sc-if value="{{showCards}}" hint-placeholder-val="{{ true }}">
+      <div role="list" style="position: absolute; left: 96px; right: 12px; bottom: 14px; z-index: 5; display: flex; justify-content: center; gap: 8px; animation: fadein 0.25s ease-out">
+        <sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+          <button type="button" role="listitem" aria-label="{{o.aria}}" onClick="{{o.pick}}" style="position: relative; width: 108px; height: 108px; padding: 0; border: none; border-radius: 12px; overflow: hidden; background: #FCF7EE; box-shadow: 0 4px 0 #A48A62, inset 0 0 0 2px #E2D5BC; display: flex; flex-direction: column; align-items: stretch; font-family: Nunito, sans-serif; color: #24302C; cursor: pointer; text-align: center">
+            <span style="height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{o.band}}; color: {{o.bandInk}}; font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase">{{o.bandText}}</span>
+            <span style="height: 40px; display: flex; align-items: center; justify-content: center; color: {{o.iconInk}}">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg>
+            </span>
+            <span style="padding: 0 8px; font-size: {{o.size}}; font-family: {{o.font}}; font-weight: 800; line-height: 1.2">{{o.text}}</span>
+          </button>
+        </sc-for>
+        <a href="Ref-Explore-v7a-ForV4.dc.html" style="width: 78px; height: 108px; border-radius: 12px; background: #24302C; color: #F6EEDF; text-decoration: none; box-shadow: 0 4px 0 #11181A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 900">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          Leave
+        </a>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- v3c: one icon hex per result, beside the line's panel -->
+  <sc-if value="{{rv.iconRow}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 730px; top: 12px; width: 100px; z-index: 5; display: flex; flex-wrap: wrap; gap: 4px 8px">
+      <sc-for list="{{rv.icons}}" as="ic" hint-placeholder-count="1">
+        <button type="button" aria-label="{{ic.aria}}" onClick="{{ic.open}}" style="position: relative; width: 44px; height: 50px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 3px 0 #A48A62); animation: {{ic.anim}}">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{ic.color}}"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: {{ic.color}}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.icon}}"></path></svg>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- v3a: each reward pops big in the middle, then flies to its home -->
+  <sc-if value="{{rv.reveal}}" hint-placeholder-val="{{ false }}">
+    <sc-for list="{{rv.flying}}" as="r" hint-placeholder-count="1">
+      <div role="status" aria-label="{{r.aria}}" style="position: absolute; left: 352px; top: 128px; width: 200px; height: 132px; box-sizing: border-box; z-index: 12; pointer-events: none; padding: 10px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; align-items: center; gap: 4px; --tx: {{r.tx}}; --ty: {{r.ty}}; animation: {{r.anim}}">
+        <span style="position: relative; display: block; width: 52px; height: 60px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{r.color}}"></span>
+          <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: {{r.color}}">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"></path></svg>
+          </span>
+        </span>
+        <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{r.color}}">{{r.type}}</span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.1; text-align: center">{{r.name}}</span>
+      </div>
+    </sc-for>
+  </sc-if>
+
+  <!-- v3b: a toast slides in above the cards and fades -->
+  <sc-if value="{{rv.toast}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 96px; right: 12px; bottom: 134px; z-index: 12; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 6px">
+      <sc-for list="{{rv.toasts}}" as="r" hint-placeholder-count="1">
+        <div role="status" style="height: 38px; box-sizing: border-box; padding: 0 16px 0 6px; background: #F6EEDF; border-radius: 19px; box-shadow: 0 4px 0 #CDB894; display: flex; align-items: center; gap: 8px; white-space: nowrap; animation: {{r.anim}}">
+          <span style="width: 28px; height: 28px; border-radius: 50%; background: {{r.color}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"></path></svg></span>
+          <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{r.color}}">{{r.type}}</span>
+          <span style="font-size: 13px; font-weight: 900">{{r.name}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- Details of a reward, a quest list or the bag -->
+  <sc-if value="{{info.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="{{info.title}}" style="position: absolute; left: {{info.left}}; top: {{info.top}}; width: 230px; box-sizing: border-box; z-index: 22; padding: 10px 12px 12px; background: #FCF7EE; border-radius: 16px; border: 3px solid {{info.rim}}; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 17px; line-height: 1.15">{{info.title}}</span>
+        <button type="button" aria-label="Close" onClick="{{info.close}}" style="width: 44px; height: 44px; margin: -10px -12px 0 0; border: none; background: transparent; color: #43524D; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+      </div>
+      <sc-for list="{{info.rows}}" as="row" hint-placeholder-count="1">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: {{row.color}}; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{row.icon}}"></path></svg></span>
+          <span style="display: flex; flex-direction: column; min-width: 0">
+            <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: {{row.tagInk}}">{{row.type}}</span>
+            <span style="font-size: 13px; font-weight: 900">{{row.name}}</span>
+            <span style="font-size: 11px; font-weight: 700; color: #5A5040">{{row.desc}}</span>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- A fight started from the scene: the hex has grown into a combat map -->
+  <sc-if value="{{fightOn}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 50%; top: 16px; z-index: 6; transform: translateX(-50%); padding: 10px 18px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; align-items: center; gap: 14px; animation: bannerin 0.35s ease-out both; white-space: nowrap">
+      <span style="display: flex; flex-direction: column">
+        <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #8E3B2E">Fight</span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 20px">Lady of the Lake</span>
+      </span>
+      <button type="button" onClick="{{winFight}}" style="height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: rgba(36,48,44,0.82); color: #F2C14E; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer">Debug: win the fight</button>
+    </div>
+  </sc-if>
+
+  <!-- While a line has more pages, a tap anywhere moves it on -->
+  <sc-if value="{{pg.more}}" hint-placeholder-val="{{ false }}">
+    <button type="button" aria-label="Continue" onClick="{{pg.next}}" style="position: absolute; inset: 0; z-index: 15; padding: 0; border: none; background: transparent; cursor: pointer"></button>
+  </sc-if>
+
+  <!-- Debug tools (mockup only: not game rules) -->
+  <div role="group" aria-label="Debug tools" style="position: absolute; right: 10px; bottom: 10px; z-index: 30; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(36,48,44,0.82)">
+    <button type="button" aria-expanded="{{dbg.expanded}}" onClick="{{dbg.flip}}" style="height: 28px; padding: 0 10px; border: none; border-radius: 14px; background: transparent; color: #F2C14E; font-family: Nunito, sans-serif; font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 4px">Debug <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{dbg.chev}})"><path d="M9 5l7 7-7 7"></path></svg></button>
+    <sc-if value="{{dbg.open}}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{dbg.restart}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: #F6EEDF; color: #24302C; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer">Restart</button>
+      <button type="button" aria-pressed="{{dbg.curseOn}}" onClick="{{dbg.curse}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: #F6EEDF; color: #24302C; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap">{{dbg.curseLabel}}</button>
+      <sc-if value="{{dbg.canReturn}}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{dbg.returnBlade}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: #F6EEDF; color: #24302C; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap">Return the blade</button>
+      </sc-if>
+      <button type="button" onClick="{{dbg.goScene}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: #F6EEDF; color: #24302C; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap">{{dbg.sceneLabel}}</button>
+      <button type="button" aria-pressed="{{dbg.pressed}}" onClick="{{dbg.toggle}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 15px; background: {{dbg.bg}}; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap">{{dbg.label}}</button>
+    </sc-if>
+  </div>
+
+  <!-- Check pop-up -->
+  <sc-if value="{{chk.show}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; z-index: 20; background: rgba(36,48,44,0.45); display: flex; align-items: center; justify-content: center">
+      <div role="dialog" aria-label="{{chk.tag}} check" style="position: relative; width: 360px; box-sizing: border-box; padding: 14px 16px 16px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 7px">
+        <span style="align-self: flex-start; height: 24px; padding: 0 12px; display: flex; align-items: center; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%); background: {{chk.tagBg}}; color: #FFF8EE; font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase">{{chk.tag}}</span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 18px; line-height: 1.15">{{chk.text}}</span>
+        <sc-if value="{{chk.picker}}" hint-placeholder-val="{{ false }}">
+          <div role="radiogroup" aria-label="Who tries" style="display: flex; gap: 8px; align-items: flex-end">
+            <sc-for list="{{chk.members}}" as="m" hint-placeholder-count="4">
+              <button type="button" role="radio" aria-checked="{{m.checked}}" aria-label="{{m.aria}}" onClick="{{m.pick}}" style="width: 52px; padding: 2px 0 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: Nunito, sans-serif">
+                <span style="position: relative; display: block; width: 40px; height: 46px; filter: drop-shadow(0 3px 0 #A48A62)">
+                  <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{m.rim}}"></span>
+                  <span style="position: absolute; inset: {{m.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{m.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{m.initial}}</span>
+                </span>
+                <span style="font-size: 10px; font-weight: 900; color: {{m.ink}}">{{m.coins}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="position: relative; display: block; width: 28px; height: 32px; flex-shrink: 0">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+            <span style="position: absolute; inset: 2px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{chk.flipper.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 12px">{{chk.flipper.initial}}</span>
+          </span>
+          <span style="font-size: 12px; font-weight: 900; color: #43524D">{{chk.line}}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; min-height: 40px; flex-wrap: wrap">
+          <sc-for list="{{chk.coins}}" as="coin" hint-placeholder-count="3">
+            <span role="img" aria-label="{{coin.aria}}" style="width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box; background: {{coin.bg}}; box-shadow: inset 0 -3px 0 {{coin.edge}}, 0 0 0 {{coin.ringW}} {{coin.ring}}; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 15px; color: {{coin.ink}}; animation: {{coin.anim}}">{{coin.t}}</span>
+          </sc-for>
+          <sc-if value="{{chk.chime}}" hint-placeholder-val="{{ false }}">
+            <span style="display: flex; align-items: center; gap: 6px; margin-left: 4px; padding-left: 10px; border-left: 2px dashed #CDB894; animation: chimein 0.35s ease-out">
+              <span role="img" aria-label="{{chk.compAria}}" style="width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box; background: {{chk.comp.bg}}; box-shadow: inset 0 -3px 0 {{chk.comp.edge}}, 0 0 0 3px #4E9A5B; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 15px; color: {{chk.comp.ink}}; animation: {{chk.comp.anim}}">{{chk.comp.t}}</span>
+            </span>
+          </sc-if>
+        </div>
+        <sc-if value="{{chk.chime}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 8px; animation: chimein 0.35s ease-out">
+            <span style="position: relative; display: block; width: 38px; height: 44px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #A48A62)">
+              <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+              <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{chk.helper.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{chk.helper.initial}}</span>
+            </span>
+            <span style="position: relative; flex: 1; padding: 7px 12px; border-radius: 12px; background: #FCF7EE; box-shadow: inset 0 0 0 2px #CFE3D2; font-size: 12px; font-weight: 800; line-height: 1.3">
+              <span style="display: block; font-size: 10px; font-weight: 900; color: #2E6B3A">{{chk.helper.name}} · +1 coin</span>
+              {{chk.helper.line}}
+            </span>
+          </div>
+        </sc-if>
+        <sc-if value="{{chk.done}}" hint-placeholder-val="{{ false }}">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; color: {{chk.resInk}}; animation: linein 0.3s ease-out">{{chk.res}}</span>
+        </sc-if>
+        <div style="display: flex; gap: 8px; margin-top: 2px">
+          <sc-if value="{{chk.ready}}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{chk.back}}" style="flex: 1; height: 40px; border: none; border-radius: 20px; background: #E6DCC8; color: #24302C; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Back</button>
+            <span style="flex: 1; filter: drop-shadow(0 4px 0 #7E3519); display: block">
+              <button type="button" onClick="{{chk.flip}}" style="width: 100%; height: 40px; border: none; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 15px; cursor: pointer">Flip coins</button>
+            </span>
+          </sc-if>
+          <sc-if value="{{chk.done}}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{chk.cont}}" style="flex: 1; height: 40px; border: none; border-radius: 20px; background: #24302C; color: #F6EEDF; font-family: Nunito, sans-serif; font-size: 13px; font-weight: 900; cursor: pointer">Continue</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { (this._timers || []).forEach(clearTimeout); }
+  // New results are announced once: each render lists the current reward keys, and any not yet known start the variant's moment.
+  componentDidUpdate() {
+    const s = this.state || {}, keys = this._rkeys || [], known = s.known || [];
+    const fresh = keys.filter((k) => known.indexOf(k) < 0);
+    if (!fresh.length) return;
+    this.setState({ known: known.concat(fresh), batch: { n: (s.batch ? s.batch.n : 0) + 1, keys: fresh }, unseen: (s.unseen || []).concat(fresh) });
+  }
+  renderVals() {
+    // How scene rewards show (being compared, Oct 28, 2026): 'reveal' = pop big, then fly home; 'toast' = a toast that fades; 'icons' = an icon row beside the panel; 'tray' = straight to their homes.
+    const REW = 'reveal'; // chosen Oct 28, 2026 (v3a), with homes shared with the map
+    const st = this.state || {};
+    const later = (ms, fn) => { this._timers = this._timers || []; this._timers.push(setTimeout(fn, ms)); };
+
+    // Party. Scores and proficiencies are mockup placeholders (companion proficiencies aren't set yet).
+    const PARTY = [
+      { id: 'hero', name: '[Hero name]', initial: 'H', face: '#E9C46A', hp: 0.62, sc: { STR: 2, INT: 1, CHA: 2 }, prof: ['persuade'] },
+      { id: 'fluffy', name: 'Fluffy', initial: 'F', face: '#C9B3E6', hp: 0.4, sc: { STR: 1, INT: 3, CHA: 2 }, prof: ['lore'] },
+      { id: 'chelmsford', name: 'Chelmsford', initial: 'C', face: '#8EC3F2', hp: 0.9, sc: { STR: 2, INT: 1, CHA: 1 }, prof: ['athletics', 'persuade'] },
+      { id: 'mel', name: 'Mel', initial: 'M', face: '#F4B6A8', hp: 0.8, sc: { STR: 1, INT: 2, CHA: 2 }, prof: ['deceive'] }
+    ];
+    const byPid = (id) => PARTY.find((p) => p.id === id);
+
+    // The Lady of the Lake's lines (World & story → The Lady of the Lake), split into pages that a tap moves through.
+    const L = {
+      greet: [{ t: 'Long have these waters waited, traveller. Few come seeking me, and fewer still come worthy.' }, { t: 'Speak, and let the lake hear what manner of soul you are.' }],
+      sword: [{ t: 'It lies far from here, bound in stone beneath an open sky. I will show you the way.' }, { t: 'But mark me: the stone yields only once. Fail it, and the blade is lost to you forever.' }],
+      pPass: [{ t: 'There is truth in you. I feel it as I feel the rain.' }, { t: 'Take my blessing, and let the stone know you come in my name.' }],
+      pFail: [{ t: 'Not today. Prove yourself in deed, not word, and perhaps the lake will think again.' }],
+      iPass: [{ t: 'Boldly spoken. The old kings were bold too, and the stone answered them.' }, { t: 'Go, with what blessing a threat can buy.' }],
+      iFail: [{ t: 'You dare threaten me at my own waters? Then let the lake answer you.' }],
+      beaten: [{ t: 'Go, then. Find your stone.' }, { t: 'But the hand that struck me will find it heavier than any stone in the world.' }],
+      deedSet: [{ t: 'A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died.' }, { t: 'Bring it home to me, and I will know your worth.' }],
+      deedDone: [{ t: 'Rest now, old friend.', note: 'To the blade, as it sinks' }, { t: 'And you: you have my blessing, and my thanks.' }],
+      // The sword pull scene has no speaker: its text is a placeholder.
+      stone: [{ t: '[Scene text: the sword in the stone]' }],
+      rPass: [{ t: '[Scene text: the runes are read]' }],
+      rFail: [{ t: '[Scene text: the runes stay a mystery]' }],
+      won: [{ t: '[Scene text: the sword comes free]' }],
+      lost: [{ t: '[Scene text: the stone holds the sword for good]' }]
+    };
+
+    const scene = st.scene || 'lady';
+    const f = st.f || {}; // blessed, cursed, runes, told, deedSet, deedDone, pulled
+    const used = st.used || {};
+    const said = st.said || { line: scene === 'sword' ? 'stone' : 'greet', you: null };
+    const page = st.page || 0;
+    const pages = L[said.line];
+    const lastPage = page >= pages.length - 1;
+    const chk = st.chk || null;
+    const rig = st.rig || 'random';
+    const fight = st.fight || null; // { phase: 'grow' | 'on' }
+
+    const SWORD_ICON = 'M12 2v12 M9 5h6 M10 14h4l-2 4z M7 21h10 M8 21l1-3h6l1 3';
+    const AP = {
+      persuade: { n: 'Persuade', ab: 'CHA', bg: '#3E7F66', icon: 'M4 5h16v10H9l-5 4z' },
+      intimidate: { n: 'Intimidate', ab: 'STR', bg: '#9A3F2A', icon: 'M5 19L19 5 M15 5h4v4 M7 13l4 4 M5 17l2 2' },
+      lore: { n: 'Lore', ab: 'INT', bg: '#4F5FA0', icon: 'M4 5h7v14H4z M13 5h7v14h-7z M6 9h3 M15 9h3 M6 12h3 M15 12h3' },
+      athletics: { n: 'Athletics', ab: 'STR', bg: '#8A6420', icon: SWORD_ICON }
+    };
+    const TALK = { band: '#E6DCC8', bandInk: '#5A5040', bandText: 'Talk', iconInk: '#5A5040' };
+
+    // Pull+ / Pull++ / Pull− : each bonus (blessing, runes) adds a +, the curse takes one away. Mockup: each is worth 1 coin (amounts open).
+    const bonus = (f.blessed ? 1 : 0) + (f.runes ? 1 : 0) - (f.cursed ? 1 : 0);
+    const pullName = 'Pull' + (bonus > 0 ? '+'.repeat(bonus) : (bonus < 0 ? '−'.repeat(-bonus) : ''));
+
+    // Checks (mockup numbers: heads needed are placeholders)
+    const CHECKS = {
+      swear: { prof: 'persuade', need: 2, social: true, text: 'Swear you are true', pass: 'pPass', fail: 'pFail', onPass: { blessed: true } },
+      draw: { prof: 'intimidate', need: 2, social: true, text: 'Draw your weapon', pass: 'iPass', fail: 'iFail', onPass: { blessed: true }, failFight: true },
+      runes: { prof: 'lore', need: 1, social: false, text: 'Read the runes on the stone', pass: 'rPass', fail: 'rFail', onPass: { runes: true } },
+      pull: { prof: 'athletics', need: 2, social: false, text: pullName, pass: 'won', fail: 'lost', onPass: { pulled: 'won' }, onFail: { pulled: 'lost' }, bonus: true }
+    };
+
+    const coinsFor = (m, c) => Math.max(1, m.sc[AP[c.prof].ab] + (m.prof.indexOf(c.prof) >= 0 ? 1 : 0) + (c.bonus ? bonus : 0));
+    // The player picks who tries a non-social check (chosen Oct 28, 2026: v2a); social checks are the hero's.
+    const flipperFor = (c, picked) => (c.social ? PARTY[0] : byPid(picked || 'hero'));
+
+    const say = (line, you, extra) => this.setState(Object.assign({ said: { line: line, you: you }, page: 0, info: null }, extra || {}));
+    const setF = (patch) => Object.assign({}, f, patch);
+
+    // Fight: the zoomed hex's edges grow out into a whole combat map, then the enemies drop in
+    const startFight = () => {
+      this.setState({ fight: { phase: 'grow' }, info: null });
+      later(1500, () => { const s = this.state || {}; if (s.fight) this.setState({ fight: { phase: 'on' } }); });
+    };
+
+    const nextPage = () => {
+      if (!lastPage) { this.setState({ page: page + 1 }); return; }
+      if (st.pendingFight) { this.setState({ pendingFight: false }); startFight(); }
+    };
+
+    const open = (id) => this.setState({ chk: { id: id, phase: 'ready', who: 'hero', run: (st.runN || 0) + 1 }, runN: (st.runN || 0) + 1, info: null });
+
+    const upd = (run, patch) => { const c = (this.state || {}).chk; if (!c || c.run !== run) return; this.setState({ chk: Object.assign({}, c, patch) }); };
+    const flip = () => {
+      const c = CHECKS[chk.id], run = chk.run, who = flipperFor(c, chk.who), n = coinsFor(who, c);
+      let coins = [];
+      if (rig === 'near') { for (let i = 0; i < n; i++) coins.push(i < c.need - 1); coins.sort(() => Math.random() - 0.5); }
+      else { for (let i = 0; i < n; i++) coins.push(Math.random() < 0.5); }
+      const heads = coins.filter(Boolean).length;
+      const helper = PARTY.find((p) => p.id !== who.id && p.prof.indexOf(c.prof) >= 0) || null;
+      const chime = !!helper && heads === c.need - 1;
+      this.setState({ chk: { id: chk.id, who: chk.who, run: run, phase: 'flip', coins: coins, shown: 0, chime: chime, helper: helper ? helper.id : null, comp: Math.random() < 0.5, compShown: false } });
+      coins.forEach((x, i) => later(380 * (i + 1), () => upd(run, { shown: i + 1 })));
+      const tEnd = 380 * coins.length + 350;
+      if (chime) { later(tEnd, () => upd(run, { phase: 'chime' })); later(tEnd + 1300, () => upd(run, { compShown: true, phase: 'done' })); }
+      else later(tEnd, () => upd(run, { phase: 'done' }));
+    };
+
+    const face = (h) => ({ t: h ? 'H' : 'T', bg: h ? '#E4B54C' : '#CFC2A8', edge: h ? '#A67A1F' : '#8A7D66', ink: h ? '#5A3A05' : '#4A4034', aria: h ? 'Heads' : 'Tails', anim: 'coinland 0.25s ease-out' });
+    const blank = (spin) => ({ t: '', bg: '#EFE6D3', edge: '#CDB894', ink: '#4A4034', aria: spin ? 'Flipping' : 'Coin to flip', anim: spin ? 'coinspin 0.38s linear infinite' : 'none' });
+
+    let chkV = { show: false, tag: '', tagBg: '#24302C', text: '', line: '', picker: false, members: [], flipper: { face: '#FFF', initial: '' }, coins: [], chime: false, comp: blank(false), compAria: '', helper: { face: '#FFF', initial: '', name: '', line: '' }, done: false, ready: false, res: '', resInk: '#24302C', back: () => {}, flip: () => {}, cont: () => {} };
+    if (chk) {
+      const c = CHECKS[chk.id], a = AP[c.prof], ph = chk.phase;
+      const who = flipperFor(c, chk.who), n = coinsFor(who, c);
+      // Bonus coins (blessing, runes) carry a coloured ring
+      const nBonus = c.bonus ? Math.max(0, bonus) : 0;
+      const ringOf = (i) => (i >= n - nBonus ? { ringW: '3px', ring: '#3F86C8' } : { ringW: '0px', ring: 'transparent' });
+      const coins = (ph === 'ready' ? Array.from({ length: n }, () => blank(false)) : chk.coins.map((h, i) => (i < chk.shown ? face(h) : blank(i === chk.shown && ph === 'flip'))))
+        .map((x, i) => Object.assign(x, ringOf(i)));
+      const heads = ph === 'ready' ? 0 : chk.coins.filter(Boolean).length + (chk.chime && chk.compShown && chk.comp ? 1 : 0);
+      const passed = heads >= c.need;
+      const hp = chk.helper ? byPid(chk.helper) : null;
+      chkV = {
+        show: true, tag: a.n + ' · ' + a.ab, tagBg: a.bg, text: c.text,
+        picker: !c.social && ph === 'ready',
+        members: PARTY.map((p) => {
+          const on = p.id === who.id;
+          return { initial: p.initial, face: p.face, rim: on ? '#B5532F' : '#BFAE8E', inset: on ? '5px' : '3px', ink: on ? '#B5532F' : '#5A5040', checked: on ? 'true' : 'false', coins: coinsFor(p, c) + ' coins', aria: p.name + ', ' + coinsFor(p, c) + ' coins', pick: () => this.setState({ chk: Object.assign({}, chk, { who: p.id }) }) };
+        }),
+        flipper: { face: who.face, initial: who.initial },
+        line: who.name + ' · ' + n + (n === 1 ? ' coin' : ' coins') + ' · ' + a.ab + ' · needs ' + c.need + ' heads',
+        coins: coins,
+        chime: !!chk.chime && (ph === 'chime' || ph === 'done'),
+        comp: chk.compShown ? face(chk.comp) : blank(true),
+        compAria: hp ? hp.name + '’s coin' : '',
+        helper: hp ? { face: hp.face, initial: hp.initial, name: hp.name, line: '[' + hp.name + '’s chime-in line]' } : { face: '#FFF', initial: '', name: '', line: '' },
+        ready: ph === 'ready', done: ph === 'done',
+        res: passed ? 'Passed!' : 'Failed', resInk: passed ? '#2E6B3A' : '#8E3B2E',
+        back: () => this.setState({ chk: null }),
+        flip: flip,
+        cont: () => {
+          const u = Object.assign({}, used); u[chk.id] = true;
+          const patch = passed ? (c.onPass || {}) : (c.onFail || {});
+          say(passed ? c.pass : c.fail, c.text, { chk: null, used: u, f: setF(patch), pendingFight: !passed && !!c.failFight });
+        }
+      };
+    }
+
+    // Options for the current scene
+    const card = (o) => Object.assign({ size: '11px', font: 'Nunito, sans-serif' }, o);
+    let options = [];
+    if (scene === 'lady') {
+      const open1 = !f.blessed && !f.cursed;
+      if (!f.told) options.push(card(Object.assign({}, TALK, { text: 'Ask about the sword', icon: 'M12 3v4 M12 17v4 M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6', aria: 'Ask about the sword', pick: () => say('sword', 'Ask about the sword', { f: setF({ told: true }) }) })));
+      ['swear', 'draw'].forEach((id) => {
+        if (!open1 || used[id]) return;
+        const c = CHECKS[id], a = AP[c.prof];
+        options.push(card({ band: a.bg, bandInk: '#FFF8EE', bandText: a.n, iconInk: a.bg, icon: a.icon, text: c.text, aria: a.n + ': ' + c.text, pick: () => open(id) }));
+      });
+      if (open1 && !f.deedSet) options.push(card(Object.assign({}, TALK, { text: 'Ask how to prove it', icon: 'M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z', aria: 'Ask how to prove your worth', pick: () => say('deedSet', 'Ask how to prove it', { f: setF({ deedSet: true }) }) })));
+    } else if (scene === 'sword' && !f.pulled) {
+      ['runes', 'pull'].forEach((id) => {
+        if (used[id]) return;
+        const c = CHECKS[id], a = AP[c.prof];
+        const big = id === 'pull';
+        options.push(card({ band: a.bg, bandInk: '#FFF8EE', bandText: a.n, iconInk: a.bg, icon: a.icon, text: c.text, size: big ? '20px' : '11px', font: big ? "'Lilita One', sans-serif" : 'Nunito, sans-serif', aria: a.n + ': ' + c.text, pick: () => open(id) }));
+      });
+    }
+
+    // Rewards: what the scene has given so far, and where each lives (placeholder descriptions)
+    const ICON = {
+      quest: 'M6 3h10l2 2v16H6z M9 8h6 M9 12h6 M9 16h4',
+      drop: 'M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z',
+      curse: 'M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z M8 9l8 8 M16 9l-8 8',
+      book: 'M4 5h7v14H4z M13 5h7v14h-7z',
+      bag: 'M6 8h12l-1 12H7z M9 8V6a3 3 0 0 1 6 0v2',
+      sword: SWORD_ICON
+    };
+    const RW = {
+      'quest-sword': { type: 'Quest', name: 'Sword in the Stone', home: 'quests', color: '#B5532F', icon: ICON.sword, desc: 'Find the stone and pull the sword.' },
+      'quest-blade': { type: 'Quest', name: 'The fallen knight’s blade', home: 'quests', color: '#B5532F', icon: ICON.quest, desc: 'Bring the blade home to the lake.' },
+      'bless': { type: 'Blessing', name: 'Lady of the Lake', home: 'status', color: '#3F86C8', icon: ICON.drop, desc: '+[coins] on the pull.' },
+      'curse': { type: 'Curse', name: 'Lady of the Lake', home: 'status', color: '#5E2A3A', icon: ICON.curse, desc: '−[coins] on the pull.' },
+      'runes': { type: 'Runes', name: 'Read', home: 'status', color: '#4F5FA0', icon: ICON.book, desc: '+1 coin on the pull.' },
+      'sword': { type: 'Legendary', name: '[Sword name]', home: 'bag', color: '#E07A2F', icon: ICON.sword, desc: '[Item description]' },
+      'quest-open': { type: 'Quest', name: '[Opening quest]', home: 'none', color: '#B5532F', icon: ICON.quest, desc: '[Quest step]' },
+      'quest-lost': { type: 'Quest failed', name: 'Sword in the Stone', home: 'quests', color: '#43524D', icon: ICON.sword, desc: 'The stone holds the sword for good.' }
+    };
+    const rkeys = [];
+    if (f.told && !f.pulled) rkeys.push('quest-sword');
+    if (f.deedSet && !f.deedDone) rkeys.push('quest-blade');
+    if (f.blessed) rkeys.push('bless');
+    if (f.cursed) rkeys.push('curse');
+    if (f.runes) rkeys.push('runes');
+    if (f.pulled === 'won') rkeys.push('sword');
+    if (f.pulled === 'lost') rkeys.push('quest-lost');
+    this._rkeys = rkeys;
+    const batch = st.batch || { n: 0, keys: [] };
+    const k2 = batch.n % 2;
+    const unseen = st.unseen || [];
+    const homesTop = 260;
+    const nStatus = rkeys.filter((k) => RW[k].home === 'status').length;
+    const HOME = { quests: { x: 42, y: homesTop + 23 }, bag: { x: 42, y: homesTop + 75 }, status: { x: 100, y: 32 + Math.max(0, nStatus - 1) * 45 } };
+    const row = (k) => { const r = RW[k]; return { type: r.type, name: r.name, desc: r.desc, color: r.color, icon: r.icon, tagInk: r.color }; };
+    const openInfo = (title, keys, left, top, rim) => this.setState({ info: { title: title, keys: keys, left: left, top: top, rim: rim }, unseen: unseen.filter((u) => keys.indexOf(u) < 0) });
+    const homeKeys = (h) => rkeys.filter((k) => RW[k].home === h);
+    const useHomes = REW === 'reveal' || REW === 'tray';
+    const statusKeys = homeKeys('status');
+    const rv = {
+      reveal: REW === 'reveal', toast: REW === 'toast', iconRow: REW === 'icons', homes: useHomes, homesTop: homesTop + 'px',
+      hasBadges: useHomes && statusKeys.length > 0,
+      badges: statusKeys.map((k, i) => {
+        const r = RW[k];
+        const isNew = batch.keys.indexOf(k) >= 0;
+        return { color: r.color, icon: r.icon, aria: r.type + ': ' + r.name, anim: isNew ? 'iconpop 0.4s ease-out ' + (REW === 'reveal' ? (batch.keys.indexOf(k) * 1.9 + 1.8).toFixed(2) : '0') + 's both' : 'none',
+          open: () => openInfo(r.type, [k], '126px', (12 + i * 45) + 'px', r.color) };
+      }),
+      quests: { icon: ICON.quest, dot: homeKeys('quests').some((k) => unseen.indexOf(k) >= 0), open: () => openInfo('Quests', ['quest-open'].concat(homeKeys('quests')), '72px', (homesTop - 60) + 'px', '#B5532F') },
+      gearDot: homeKeys('bag').some((k) => unseen.indexOf(k) >= 0),
+      flying: batch.keys.filter((k) => RW[k]).map((k, i) => {
+        const r = RW[k], h = HOME[r.home];
+        return { type: r.type, name: r.name, color: r.color, icon: r.icon, aria: r.type + ': ' + r.name, tx: (h.x - 452) + 'px', ty: (h.y - 194) + 'px', anim: 'fly' + k2 + ' 1.9s ease-in-out ' + (i * 1.9).toFixed(2) + 's both' };
+      }),
+      toasts: batch.keys.filter((k) => RW[k]).map((k, i) => { const r = RW[k]; return { type: r.type, name: r.name, color: r.color, icon: r.icon, anim: 'toast' + k2 + ' 3.4s ease-in-out ' + (i * 0.35).toFixed(2) + 's both' }; }),
+      icons: rkeys.map((k) => { const r = RW[k]; return { color: r.color, icon: r.icon, aria: r.type + ': ' + r.name, anim: batch.keys.indexOf(k) >= 0 ? 'iconpop 0.4s ease-out both' : 'none', open: () => openInfo(r.type, [k], '600px', '72px', r.color) }; })
+    };
+    const inf = st.info || null;
+    const info = inf ? { show: true, title: inf.title, left: inf.left, top: inf.top, rim: inf.rim,
+      rows: inf.keys.length ? inf.keys.filter((k) => RW[k]).map(row) : [{ type: '', name: 'Nothing yet', desc: '', color: '#BFAE8E', icon: '', tagInk: '#5A5040' }],
+      close: () => this.setState({ info: null }) } : { show: false, title: '', left: '0', top: '0', rim: '#BFAE8E', rows: [], close: () => {} };
+
+    // Board: the scene's hex and its neighbours (radius 2); a fight grows it to radius 5
+    const TT = {
+      river: { bg: '#86BEDB', ink: '#245A7E', icon: 'M3 9c3-2 6 2 9 0s6-2 9 0 M3 15c3-2 6 2 9 0s6-2 9 0' },
+      forest: { bg: '#5E8F5A', ink: '#203E1E', icon: 'M12 3l-5 8h3l-4 6h12l-4-6h3z M12 17v4' },
+      plains: { bg: '#A8CF7E', ink: '#4F7A33', icon: 'M4 18c1-4 2-6 3-7 M7 18c0-3 1-5 2-6 M14 18c1-4 2-6 3-7 M17 18c0-3 1-5 2-6' },
+      hills: { bg: '#BFAE8E', ink: '#5E4C30', icon: 'M2 19l6-9 4 5 3-4 7 8z' },
+      stone: { bg: '#B3ADA4', ink: '#33261A', icon: SWORD_ICON }
+    };
+    const inFight = !!fight;
+    const R = inFight ? 5 : 2;
+    const W = 64, H = 74, OX = 300, OY = 260;
+    const px = (q, r) => ({ x: OX + W * (q + r / 2), y: OY + 0.75 * H * r });
+    const LAKE = ['0,0', '0,1', '-1,1', '-1,0', '0,-1', '-2,1', '-1,2', '-2,2', '1,-1'];
+    const terrain = (q, r) => {
+      const k = q + ',' + r;
+      if (scene === 'sword') { if (k === '0,0') return TT.stone; return ((q * 5 + r * 3 + 40) % 4 === 0) ? TT.hills : TT.plains; }
+      if (LAKE.indexOf(k) >= 0) return TT.river;
+      return ((q * 7 + r * 13 + 50) % 5 === 0) ? TT.forest : TT.plains;
+    };
+    const tiles = [];
+    for (let q = -R; q <= R; q++) for (let r = -R; r <= R; r++) {
+      const ring = Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r)); if (ring > R) continue;
+      const t = terrain(q, r), p = px(q, r), grow = ring > 2;
+      const delay = ((ring - 3) * 0.2 + 0.1).toFixed(2) + 's';
+      tiles.push({ ring: ring, left: (p.x - 32) + 'px', top: (p.y - 37) + 'px', sLeft: (p.x - 34) + 'px', sTop: (p.y - 39.25) + 'px',
+        rim: (scene === 'lady' && t === TT.river) || t === TT.stone ? '#FCF7EE' : t.bg, bg: t.bg, ink: t.ink, icon: t.icon, iconOp: t === TT.stone ? '0.9' : '0.55',
+        anim: grow ? 'tilein 0.45s ease-out ' + delay + ' both' : 'none', fade: grow ? 'fadein 0.45s ease-out ' + delay + ' both' : 'none' });
+    }
+    tiles.sort((a, b) => a.ring - b.ring);
+    // The whole party stands on the board beside the hero; in a fight, generic enemies drop onto the grid
+    const PARTY_AT = [[1, 0], [2, -1], [2, 0], [1, 1]];
+    const tok = (q, r, face, ink, initial, anim) => { const p = px(q, r); return { x: p.x + 'px', y: p.y + 'px', face: face, ink: ink, initial: initial, anim: anim || 'none' }; };
+    const tokens = [];
+    if (scene === 'lady') tokens.push(tok(0, 0, inFight ? '#C4542A' : '#86BEDB', inFight ? '#FFF8EE' : '#24302C', 'L'));
+    PARTY.forEach((p, i) => tokens.push(tok(PARTY_AT[i][0], PARTY_AT[i][1], p.face, '#24302C', p.initial)));
+    if (inFight) [[-3, 1], [-2, -1], [-3, 3]].forEach((e, i) => tokens.push(tok(e[0], e[1], '#C4542A', '#FFF8EE', String(i + 1), 'tokendrop 0.5s ease-out ' + (1.25 + i * 0.22).toFixed(2) + 's both')));
+    const mid = { x: px(0.5, 0).x, y: px(0, 0).y };
+    const VC = inFight ? { x: 452, y: 200 } : { x: 450, y: 200 };
+    const board = {
+      tiles: tiles, tokens: tokens,
+      left: (VC.x - mid.x) + 'px', top: (VC.y - mid.y) + 'px', origin: mid.x + 'px ' + mid.y + 'px', po: VC.x + 'px ' + (VC.y - 40) + 'px',
+      transform: inFight ? 'scale(0.62) rotateX(50deg)' : 'scale(1) rotateX(50deg)'
+    };
+
+    const pg = pages[Math.min(page, pages.length - 1)];
+    const isLady = scene === 'lady';
+    return {
+      board: board,
+      party: PARTY.map((p) => ({ initial: p.initial, face: p.face, hpW: Math.round(p.hp * 100) + '%', aria: p.name + ': ' + Math.round(p.hp * 100) + '% HP' })),
+      inScene: !inFight,
+      fightOn: inFight && fight.phase === 'on',
+      winFight: () => this.setState({ fight: null, scene: 'lady', said: { line: 'beaten', you: null }, page: 0, f: setF({ cursed: true, told: true }) }),
+      swordIcon: SWORD_ICON,
+      head: { name: isLady ? 'Lady of the Lake' : 'Sword in the Stone', face: isLady ? '#86BEDB' : '#B3ADA4', isNpc: isLady, isPlace: !isLady },
+      hasYou: !!said.you && page === 0, you: said.you ? 'You: ' + said.you : '',
+      pg: { text: pg.t, note: pg.note || '', hasNote: !!pg.note, more: !inFight && (!lastPage || !!st.pendingFight), next: nextPage },
+      showCards: lastPage && !st.pendingFight,
+      options: options,
+      rv: rv, info: info,
+      chk: chkV,
+      dbg: {
+        open: !!st.dbgOpen, expanded: st.dbgOpen ? 'true' : 'false', chev: st.dbgOpen ? '-90deg' : '0deg', flip: () => this.setState({ dbgOpen: !st.dbgOpen }),
+        pressed: rig === 'near' ? 'true' : 'false', bg: rig === 'near' ? '#B5532F' : '#43524D',
+        label: rig === 'near' ? 'Coins: near miss' : 'Coins: random',
+        toggle: () => this.setState({ rig: rig === 'near' ? 'random' : 'near' }),
+        sceneLabel: isLady ? 'Go to the sword' : 'Back to the Lady',
+        goScene: () => this.setState({ scene: isLady ? 'sword' : 'lady', said: { line: isLady ? 'stone' : 'greet', you: null }, page: 0, chk: null, fight: null, pendingFight: false, info: null }),
+        canReturn: !!f.deedSet && !f.deedDone && isLady,
+        returnBlade: () => say('deedDone', null, { f: setF({ deedDone: true, blessed: !f.cursed }) }),
+        curseOn: f.cursed ? 'true' : 'false', curseLabel: f.cursed ? 'Cursed: on' : 'Cursed: off',
+        curse: () => this.setState({ f: setF({ cursed: !f.cursed }) }),
+        restart: () => this.setState({ scene: 'lady', f: {}, used: {}, said: null, page: 0, chk: null, fight: null, pendingFight: false, info: null, known: [], unseen: [], batch: { n: (st.batch ? st.batch.n : 0) + 1, keys: [] } })
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
