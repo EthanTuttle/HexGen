@@ -218,7 +218,7 @@
    "radius": 28
   },
   "Ref-Explore-v8b-ForV6.dc.html": {
-   "x": 1848,
+   "x": 4620,
    "y": 4560,
    "w": 844,
    "h": 390,
@@ -227,11 +227,38 @@
    "radius": 28
   },
   "Ref-Gear-v8d-ForV6.dc.html": {
-   "x": 2772,
+   "x": 5544,
    "y": 4560,
    "w": 844,
    "h": 390,
    "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v6c-NavBetween.dc.html": {
+   "x": 1848,
+   "y": 4560,
+   "w": 844,
+   "h": 390,
+   "title": "Town v6c · the nav button sits between Quests and equipment, the three hexes touching in a zig-zag; opened, the camera buttons fan out against it on the right (v6a's fan)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v8b-ForV6c.dc.html": {
+   "x": 2772,
+   "y": 4560,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v8b (copied; Debug → Town v6a / v6b / v6c opens each, and Leave from v6c comes back here)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Gear-v8d-ForV6c.dc.html": {
+   "x": 3696,
+   "y": 4560,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Character & gear v8d (copied; opened by v6c's equipment button)",
    "is_interactive": true,
    "radius": 28
   }
@@ -260,6 +287,9 @@
   "Ref-Gear-v8d-ForV5.dc.html",
   "Town-v6a-NavFan.dc.html",
   "Town-v6b-NavTray.dc.html",
+  "Town-v6c-NavBetween.dc.html",
+  "Ref-Explore-v8b-ForV6c.dc.html",
+  "Ref-Gear-v8d-ForV6c.dc.html",
   "Ref-Explore-v8b-ForV6.dc.html",
   "Ref-Gear-v8d-ForV6.dc.html"
  ],
@@ -311,7 +341,7 @@
    "y": 4310,
    "text": "v6 · the fan and the tray moved in close to the nav button",
    "kind": "title1",
-   "maxW": 3616
+   "maxW": 6388
   }
  }
 }
