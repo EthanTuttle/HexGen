@@ -285,6 +285,15 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 | Dolmund and Lilian | Lilian: "Dance with me, Dolmund." Dolmund: "Dwarves don't dance. We stomp. Rhythmically." |
 | Frim and Grimhold | Frim: "Ten silver says you smile before midnight." Grimhold: "I haven't smiled since I left the cult. Make it twenty." |
 | Leo Conley and Reginald | Reginald: "Young man, your wolf is eating off my plate." Leo: "He's family. Family shares." |
+
+  - **Fallback bar lines** (one per companion, said to the table when the companion beside them has no exchange with them; written Oct 28, 2026):
+
+| Companion | Fallback line |
+| --- | --- |
+| Fluffy | "Innkeeper! Another saucer. I am celebrating being magnificent." |
+| Chelmsford | "Good company, a warm fire. A fine day's work, everyone. Truly." |
+| Mel | "Whose purse is this?" (a beat) "Mine now." |
+| Grant Augustus | "Hold on, I've nearly got a rhyme for 'tavern'." |
 - **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
 
 ## Quests
