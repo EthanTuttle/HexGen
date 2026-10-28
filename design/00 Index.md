@@ -197,3 +197,4 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: approach tag colours and icons for social options
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)
+- [ ] New: where the passives sit (exploration v8a own tray, v8b sleeve, v8c row by the buttons)
