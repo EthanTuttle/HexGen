@@ -6,6 +6,7 @@ Folk Hero path companion. Bio, home and personal quest: [World & story](../01%20
 
 Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice sheet template). From the bio: an Order of Good cleric of Aurora. Home: Keep (fortified town). For heroes of other paths, meeting him unlocks a quest to save his mother from cultists, who took her for her faith in Aurora (in the Folk Hero path, the hero saved her from early cultists years ago), which earns his loyalty the way the Folk Hero earned it years ago.
 
+- **Flavour** (chosen Oct 28, 2026): a British village vicar: gentle, apologetic, endlessly kind, very English politeness, offers tea in a crisis. His lines use British spelling and terms (Writing guide → Accents and dialect spelling).
 - **How they talk:**
 - **Words they use / never use:**
 - **What they want and what worries them:**

@@ -20,6 +20,7 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 - **Scenes with no speaker use narration** (decided Oct 28, 2026): short, neutral and in the second person ("The stone stands alone beneath an open sky"). It describes what the party sees and what happens, never what the hero thinks or says.
 - **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not, and any kind of check can be an option ([Classes & combat](03 Classes & combat.md) → Checks outside combat).
 - **Failure costs fit the approach.** A gentle approach failing can cost little (the NPC says no); a harsh one can cost a lot, even a fight. Whether an NPC fights back is set per scene.
+- **Accents and dialect spelling** (decided Oct 28, 2026): a character's spoken lines can use their own spelling and words, like an accent: Chelmsford's lines are in British spelling and terms ("armour", "colour", "cuppa"). UI text, item names and narration keep the game's own spelling.
 - **Stage notes** go in brackets and show in small italics above the line, e.g. "(cracks his knuckles)". They describe what we see, not explain the joke.
 
 ## Line types
