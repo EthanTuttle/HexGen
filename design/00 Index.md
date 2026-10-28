@@ -10,13 +10,15 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 | Doc | What it covers |
 | --- | --- |
-| [01 World & story](01 World & story.md) | Lore, pantheon, enemy types, main story, backgrounds and their paths, mentors, companions and NPC homes, side quests and Legendary quests |
+| [01 World & story](01 World & story.md) | Lore, pantheon, enemy types, main story, backgrounds and their paths, mentors, companions and NPC homes, side quests and Legendary quests (character voices and lines: characters/) |
 | [02 Map & exploration](02 Map & exploration.md) | Campaign map, placement rules, day and night, encounters, terrain, clustered regions and region variants, corruption, camps and rest, defeat |
 | [03 Classes & combat](03 Classes & combat.md) | Hero and companions, subclass blurbs, races, ability scores (starting scores, class main scores), coin checks (pass chances), skills, AP and bonus AP, combat rules (hex grid, 6-slot hotbar, once-per-turn default), class action cards, half-classes, wizard/cleric/bard spells |
 | [04 Weapons & gear](04 Weapons & gear.md) | Equipment slots, weapon and armor categories, class gear, weapon rules, weapon category cards, weapon mastery trees, loot, shared party inventory and gold |
 | [05 Cards & progression](05 Cards & progression.md) | Card types (terrain, Story; landmarks come from regions), deck and hand, hand refill and draw amounts, deck shaping, levels and milestones, general feats (levels 4 and 12), starting decks, class locations and class/subclass quests, landmark list |
 | [06 Multiplayer & tech](06 Multiplayer & tech.md) | Platform, all multiplayer rules, saving |
 | [07 Presentation](07 Presentation.md) | Art direction (including minis and their pose library), UI style ("Game pieces"), screen text rules, item display, character and gear screen, combat screen, exploration screen, after-combat and level-up screens, weapon mastery screen, action cards screen (one hotbar per weapon set), screen mockups (workflow, placeholders and index), camera and controls, audio, onboarding |
+
+**Characters** ([characters/](characters/00%20Writing%20guide.md)): how characters are written. [Writing guide](characters/00%20Writing%20guide.md) (dialogue rules, line types, tells to avoid, how we write, voice sheet template), one file per companion (voice sheet and every line they say) and [Pairs](characters/Pairs.md) (inn banter between two companions).
 
 **Briefs** (production hand-offs, built from these docs)
 
@@ -36,7 +38,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **World & story**
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
-- [x] ~~Each companion's chime-in lines~~ (written Oct 28: World & story → Companion chime-in lines). Still open: more lines later; a Reginald variant for heroes he doesn't serve
+- [x] ~~Each companion's chime-in lines~~ (written Oct 28: in each companion's file in characters/). Still open: more lines later; a Reginald variant for heroes he doesn't serve
 - [x] ~~The Lady of the Lake's last details~~ (settled Oct 28: Sir Bedivere, a far-off chimera's lair, water spirits, she sinks for good if beaten, the old kings left vague). Still open: the chimera and water spirits in the enemy roster
 - [ ] Background unique starter item for each background (parked)
 - [ ] Pantheon follow-ups: further detail per god
@@ -204,7 +206,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Wheel zoom and right-drag rotate on the map and in combat too?~~ (settled Oct 28: one set of camera controls for every hex screen)
 - [x] ~~Opened camera buttons covering the cards~~ (settled Oct 28: v6c, nav between Quests and equipment with the fan; standard everywhere)
 - [ ] New: town NPCs (named shopkeepers, innkeepers, townsfolk? rumours?) and inn services besides resting
-- [ ] New: inn banter (pair exchanges, fallback lines, toast options): World & story
+- [ ] New: companion voice sheets (Fluffy first), then review the lines written so far against them and the tells list; remaining inn banter: characters → Writing guide
 - [ ] New: towns: names and greetings, shop stock, quest board quests
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)

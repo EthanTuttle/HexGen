@@ -182,42 +182,7 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 Every proficiency is covered at least once. Persuade and Lore are the most common (4 each); Stealth, Survival, Nature and Thievery have one companion each (Timothy, Kris, Frim, Mel).
 
-**Companion chime-in lines** (written Oct 28, 2026, picked by Ethan from drafts; one generic line per proficiency, said in any scene when the companion steps in: pattern in Dialogue writing; rule: [Classes & combat](03 Classes & combat.md) → Checks outside combat)
-
-| Companion | Proficiency | Line |
-| --- | --- | --- |
-| Chelmsford | Persuade | "If I may, there's no finer soul in all the realm. I'd stake my life on it. Rather already have, actually." |
-| Chelmsford | Athletics | "Right then, mind your fingers!" (as he heaves alongside) |
-| Fluffy | Persuade | "Oh, just say yes. I have a nap at noon and you are ruining it." |
-| Fluffy | Lore | "Obviously it's the other way round. Honestly, must I do everything?" |
-| Mel | Deceive | "It's true! I was there. I saw the whole thing." (She wasn't.) |
-| Mel | Thievery | "Small hands, see? Let me." |
-| Grant Augustus | Lore | "Ah! This is from the old tales. I know how this one goes!" |
-| Grant Augustus | Perception | "Wait! Did you see that? That's going in the song." |
-| Kris Huntington | Survival | "Ja, ja, this way. The forest does not lie." |
-| Kris Huntington | Animal | "Shh. Easy, little one. I only hunt the big ones." |
-| Timothy | Persuade | "Um. P-please? They're very nice. Honestly." |
-| Timothy | Stealth | "Shh! Small steps. Like sneaking into choir late." |
-| Dolmund | Athletics | "Ha! Dwarves are built for this." |
-| Dolmund | Intimidate | (cracks his knuckles) "Try it." |
-| Lilian | Deceive | "Oh, it's true, darling. I'd know." (She winks.) |
-| Lilian | Perception | "Look closer, sweetheart. Over there." |
-| Frim | Perception | "Hold on. Something's off. Ten silver says it's over there." |
-| Frim | Nature | "I'd bet my boots this one's poisonous. Don't touch." |
-| Grimhold | Lore | "The cult taught me this." |
-| Grimhold | Intimidate | (very quietly) "Do as they ask." |
-| Leo Conley | Animal | "Leave this one to me. Animals are easier than people." |
-| Leo Conley | Intimidate | "Back off, mate, or the wolf gets lunch." |
-| Reginald | Lore | "If I may: the estate library covered this. Volume four, I believe." |
-| Reginald | Persuade | "Forgive the interruption. My employer is a person of their word." |
-
-Notes in brackets are stage notes, shown in small italics above the line. Reginald's Persuade line calls the hero "my employer", which fits the Noble path, where he serves the hero's family; for other paths it may need a background variant.
-
-Special lines (said instead of the generic one with a big story NPC):
-
-| Companion | With | Check | Line |
-| --- | --- | --- | --- |
-| Fluffy | The Lady of the Lake | Persuade ("Swear you are true") | "I am King Alexander the All Conquering Legend and He Who Rules, and I vouch for them. That should settle it." |
+**Companion chime-in lines:** in each companion's file in characters/ ([Writing guide](characters/00%20Writing%20guide.md) → Line types).
 
 ## NPC homes and stories
 
@@ -246,7 +211,7 @@ Heroes from other paths find each path NPC at one home location, grown by a regi
 - All six paths converge on Gronogon. On arrival, every hero meets (or is met by) the king, King Grel, who asks or charges them to investigate the cultist plot. From there the main story plays out mostly the same for every background, with slight variances in how the hero responds to certain situations depending on their background.
 - (The old Dungeon card reward on reaching Gronogon was dropped on Oct 24, 2026, since dungeons are now region landmarks.)
 - King Grel is a trustworthy ally.
-- Background variances appear as different dialogue lines, extra dialogue options, and different NPC reactions (how dialogue is written: see Dialogue writing).
+- Background variances appear as different dialogue lines, extra dialogue options, and different NPC reactions (how dialogue is written: see [characters → Writing guide](characters/00%20Writing%20guide.md)).
 - First lead: climb the highest peak in the region (a Story card) to study the rift. The climb includes a cultist ambush, a hermit/NPC, and a low-level eldritch horror. On the mountain they learn the prison is a certain dungeon: the hermit, an elf who remembers the god, tells the hero where it is, and the prison dungeon is placed on the board as a fixed location.
 - NPCs from the other paths are found at region locations (see NPC homes and stories).
 - The elf hermit is a quest NPC only, not recruitable.
@@ -255,48 +220,7 @@ Heroes from other paths find each path NPC at one home location, grown by a regi
 
 ## Dialogue writing
 
-Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Classes & combat](03 Classes & combat.md) → Checks outside combat. How it shows: [Presentation](07 Presentation.md) → Social encounter screen.
-
-- **The hero speaks as intent only.** A hero option names what the hero wants or does ("Ask about the sword"); the hero's own words are never written out. Every other character, NPCs and companions alike, speaks in written lines.
-- **The hero's voice is neutral.** Options fit any hero. Backgrounds add flavour where it matters: an extra option for that background, or an NPC reacting to who the hero is (see Background variances under Shared main story).
-- **NPC lines have no set length.** Write what the moment needs; long speeches page with a tap.
-- **A tagged option names the angle.** The text says what the hero leans on ("Appeal to her honour", "Claim a knight's right", "Threaten the lake"), and the tag names the approach (Persuade, Deceive, Intimidate).
-- **Replies show the consequence.** After a check, pass or fail, the NPC reacts in character and says what changes in the world ("Then the sword stays hidden from you"), so the cost of failing is clear in the story. Rewards also show as chips on screen.
-- **Scenes with no speaker use narration** (decided Oct 28, 2026): short, neutral and in the second person ("The stone stands alone beneath an open sky"). It describes what the party sees and what happens, never what the hero thinks or says.
-- **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not, and any kind of check can be an option ([Classes & combat](03 Classes & combat.md) → Checks outside combat).
-- **Failure costs fit the approach.** A gentle approach failing can cost little (the NPC says no); a harsh one can cost a lot, even a fight. Whether an NPC fights back is set per scene.
-- **Inn banter** (decided Oct 28, 2026; how it shows: [Presentation](07 Presentation.md) → Town screen): a night at an inn's bar is where the party's personality shows. Companions talk to each other in **pair banter**: short written exchanges for particular pairs of companions, with one generic bar line per companion as a fallback for pairs that have no exchange. The night ends with **the toast as a choice**: the hero picks an intent option (the hero's words are never written, as above) and the companions react. Which pairs get exchanges, the toast options and the lines themselves are being written (Open questions).
-  - **Pairs** (decided Oct 28, 2026): the six path pairs first (the two companions each background brings), then cross-path pairs that clash or click. Lines can't lean on shared history, since outside their own path the two meet separately.
-  - **The toast** (chosen Oct 28, 2026, a mix; each answered by a narration beat only, no companion line):
-
-| Toast | Narration |
-| --- | --- |
-| Stand on the table and raise a toast | "You climb onto the table. Mugs go up all over the room, and the whole inn roars." |
-| Toast whoever's paying | "The table cheers. Behind the bar, the innkeeper starts adding up the tab." |
-| Toast absent friends | "The table goes quiet. Mugs touch, softly, and nobody says anything for a while." |
-
-  - **Pair exchanges** (the six path pairs, written Oct 28, 2026):
-
-| Pair | Exchange |
-| --- | --- |
-| Fluffy and Chelmsford | Fluffy: "This cream is watered. I can tell. I can always tell." Chelmsford: "It's milk, Your Majesty. You ordered milk." |
-| Mel and Grant Augustus | Grant: "What rhymes with 'Mel'?" Mel: "'Paid in full.' Which you aren't. That's two drinks you owe me." |
-| Kris Huntington and Timothy | Kris: "Tomorrow we hunt something bigger." Timothy: "C-can tomorrow's thing be smaller? Like a rabbit?" |
-| Dolmund and Lilian | Lilian: "Dance with me, Dolmund." Dolmund: "Dwarves don't dance. We stomp. Rhythmically." |
-| Frim and Grimhold | Frim: "Ten silver says you smile before midnight." Grimhold: "I haven't smiled since I left the cult. Make it twenty." |
-| Leo Conley and Reginald | Reginald: "Young man, your wolf is eating off my plate." Leo: "He's family. Family shares." |
-
-  - **Fallback bar lines** (one per companion, said to the table when the companion beside them has no exchange with them; written Oct 28, 2026):
-
-| Companion | Fallback line |
-| --- | --- |
-| Fluffy | "Innkeeper! Another saucer. I am celebrating being magnificent." |
-| Chelmsford | "Good company, a warm fire. A fine day's work, everyone. Truly." |
-| Mel | "Whose purse is this?" (a beat) "Mine now." |
-| Grant Augustus | "Hold on, I've nearly got a rhyme for 'tavern'." |
-| Kris Huntington | "Ja, good meat. I knew this boar. Tough fellow." |
-| Dolmund | "Call this ale? Back home we wash the forge with this." |
-- **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
+Moved Oct 28, 2026 to [characters → Writing guide](characters/00%20Writing%20guide.md): the dialogue rules, the line types (chime-ins, inn banter and the toast), the tells to avoid and the voice sheets. Each companion's lines are in their own file in characters/.
 
 ## Quests
 
@@ -340,7 +264,7 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 - **The sword is Excalibur** (decided Oct 28, 2026), and the pull needs 2 heads.
 - **Coin amounts** (decided Oct 28, 2026): the Lady's blessing adds 2 coins to the pull and her curse takes 2 away; the runes add 1. Balance risk, accepted: with a typical 4-coin puller and the 2-heads pull, a plain pull passes 69%, blessed 89% (94% with the runes) and cursed 25%. A failed pull loses the sword for good, so threatening her nearly costs the sword.
 - **The pull's name shows its bonuses,** like upgraded cards: each bonus adds a "+" and the curse takes one away. Pull++ with the blessing and the runes; Pull+ with one of them; Pull with neither, or with the curse and one bonus; Pull− when cursed with no bonus.
-- **Its text** (written Oct 28, 2026, picked by Ethan from drafts; narration, since nobody speaks here: see Dialogue writing):
+- **Its text** (written Oct 28, 2026, picked by Ethan from drafts; narration, since nobody speaks here: see [characters → Writing guide](characters/00%20Writing%20guide.md)):
 
 | Moment | Narration |
 | --- | --- |
@@ -376,7 +300,7 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 | The deed is set (no check) | Ask how to prove it | "A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died. Bring it home to me, and I will know your worth." |
 | The blade comes back | — | "Rest now, old friend." (to the blade, as it sinks) "And you: you have my blessing, and my thanks." |
 
-  Companion chime-ins with her: see Companion chime-in lines (Fluffy has a special one).
+  Companion chime-ins with her: in each companion's file in characters/ (Fluffy has a special one).
 
 ### Other Legendary quests
 
@@ -430,10 +354,10 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 | Generated quests | Rare items, XP and gold |
 
 ## Open questions
-- [ ] **New:** inn banter: each companion's fallback bar line (next), then cross-path pairs (the six path pairs and the toasts are written)
+- [ ] Inn banter and companion voices: see [characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions
 
-- [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: see Companion chime-in lines). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
-- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines); the old kings were left vague (see The Lady of the Lake)
+- [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: now in each companion's file in characters/). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
+- [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (in [Fluffy](characters/Fluffy.md)); the old kings were left vague (see The Lady of the Lake)
 - [x] ~~The Lady's deed, her fight, what happens after, and the old kings~~ (settled Oct 28, 2026: Sir Bedivere, a chimera's lair placed far away, water spirits beside her, she sinks into the lake for good if beaten, the old kings left vague; see The Lady of the Lake). Still open: the chimera and the water spirits in the enemy roster (stats, cards)
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
 - [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)
