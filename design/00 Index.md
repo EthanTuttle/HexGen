@@ -36,6 +36,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **World & story**
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
+- [ ] New (Oct 28): each companion's chime-in lines for social checks
+- [ ] New (placeholder): the Lady of the Lake's dialogue lines
 - [ ] Background unique starter item for each background (parked)
 - [ ] Pantheon follow-ups: further detail per god
 - [ ] Enemy roster and bosses
@@ -69,6 +71,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Classes & combat**
 
+- [ ] New (Oct 28): companion chime-in: which companion steps in when several are proficient; order with Silver Tongue's reflip
+- [ ] New (placeholder): story companions' social proficiencies and the size of dialogue checks
+- [ ] New: can a failed social check be retried in the same conversation?
 - [ ] Class and subclass cards at level 15 and later (in progress; level 10 gives no card)
 - [ ] New (placeholder): does the player name the hero?
 - [ ] New (placeholder): hexes per Move
@@ -187,3 +192,4 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: weapon mastery: should the base cards show their upgraded name, as the passives do (Backstab → Backstab+)?
 - [x] ~~Companions' default subclass: fixed or changeable?~~ (settled: changeable at level 5, as World & story says)
 - [ ] New: a downed ally's HP after a won fight
+- [ ] New: social encounter layout (v1a zoom to the hex, v1b dimmed card, v1c face to face, v1d option cards); approach tag colours and icons

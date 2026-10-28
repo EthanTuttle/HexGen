@@ -148,7 +148,7 @@ Decided Oct 22, 2026. Details for each kind of check are in progress.
 - **Failure:** each check sets its own cost of failure.
 - **Scouting:** two checks. Spot encounters: entering a hex, a check reveals encounters on nearby hexes and what they are. Ambush: before a fight, a check decides who is surprised.
 - **Avoiding a fight:** an avoided encounter isn't cleared. It stays on the map until it despawns as normal (see [Map & exploration](02 Map & exploration.md) → Hex contents and encounters), so it can still be fought later.
-- **Social:** three approaches, Persuade, Deceive and Intimidate, each its own proficiency. Each dialogue option is tagged with an approach and uses that proficiency's base ability (see Skills). The hero always does the talking; a companion proficient in that approach chimes in and adds a coin.
+- **Social:** three approaches, Persuade, Deceive and Intimidate, each its own proficiency. Dialogue options that need a check are tagged with an approach and use that proficiency's base ability (see Skills); not every option needs a check (decided Oct 28, 2026), and untagged ones just talk. The hero always does the talking. **Companion chime-in** (decided Oct 28, 2026): only when the hero misses by exactly 1 heads, a companion proficient in that approach steps in on their own, says one of their own chime-in lines and flips 1 extra coin; heads saves the check. An extra coin only changes the result when the hero is 1 short, so the odds are the same as always adding it; saving it for the near miss makes it a clutch moment rather than a routine bonus. How it shows: [Presentation](07 Presentation.md) → Social encounter screen.
 - **Dungeon and hex events:** traps, locks, secrets and other event checks can be tried by any party member; proficiency makes them reliable (no class-only options). Where events and dungeons happen: see [Map & exploration](02 Map & exploration.md) → Hex contents and encounters.
 - **Traversal:** crossing obstacles (cliffs, deep water, dense growth, harsh climate); one party member leads the check. Rules: see [Map & exploration](02 Map & exploration.md) → Obstacles.
 
@@ -565,6 +565,9 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 ## Open questions
 
+- [ ] **New (Oct 28, 2026):** companion chime-in: which companion steps in when several are proficient in the approach, and how it combines with the Silver Tongue feat's reflip ([Cards & progression](05 Cards & progression.md) → General feats): chime-in first, reflip after, or the player's pick?
+- [ ] **New (mockup placeholder, social encounter v1):** which social proficiencies each story companion has (v1 assumes Chelmsford: Persuade, Mel: Deceive, nobody: Intimidate), and the coins and heads needed per dialogue check
+- [ ] **New:** can a failed social check be retried in the same conversation? (Social encounter v1 uses each option once)
 - [ ] Class and subclass cards at level 15 and later (level 15 in progress, Oct 22, 2026)
 - [ ] **New:** names for the class location upgrades at levels 10 and 20 (Training Grounds, Thieves Guild, Tree of Life) under the upgrade-name rule (weapon mastery nodes: named Oct 26, 2026)
 - [ ] **New (mockup placeholder "[Hero name]"):** does the player name their hero at creation (Hero creation lists class, race and background only)?

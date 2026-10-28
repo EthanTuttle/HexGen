@@ -19,3 +19,4 @@ The files need the Design canvas runtime to render, so they won't open on their 
 | `rewards-and-level-up` | HexGen · Rewards & level-up (working) | https://claude.ai/artifact/UeCB1R47oqpqYZs172hNjg |
 | `weapon-mastery` | HexGen · Weapon mastery (working) | https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum |
 | `action-cards` | HexGen · Action Cards (working) | https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu |
+| `social-encounter` | HexGen · Social encounter (working) | https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC |

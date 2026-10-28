@@ -286,6 +286,8 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 
 ## Open questions
 
+- [ ] **New (Oct 28, 2026):** each companion's chime-in lines for social checks (rule: [Classes & combat](03 Classes & combat.md) → Checks outside combat), e.g. a set per approach; to work through with Ethan
+- [ ] **New (mockup placeholders, social encounter v1):** the Lady of the Lake's dialogue: greeting, her answer about the sword, and her replies to the Persuade, Deceive and Intimidate options
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
 - [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)

@@ -158,6 +158,14 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Debug tools (mockup only, v5; a collapsible Debug tab from v6):** an Endless hand switch (each placement draws a random terrain) and a +5 cards button, for testing big areas. They deliberately break the hand and deck rules and aren't part of the game.
 - Mockup placeholders (terrain colours and icons, the cluster badge trigger, time per placement and per hex walked, the dial skip): see Screen mockups → Mockup placeholders.
 
+**Social encounter screen** (in progress, latest v1; choices made Oct 28, 2026; rules: [Classes & combat](03 Classes & combat.md) → Checks outside combat)
+
+- Opens when the party talks to an NPC with a social encounter (v1 shows the Lady of the Lake at her enchanted lake, from [World & story](01 World & story.md) → Sword in the Stone). Leave returns to the map. Quest and blessing results show as small chips under the NPC's line (e.g. "Quest · Sword in the Stone").
+- **Options show only their approach** (chosen Oct 28, 2026): an option that needs a check carries an approach tag (Persuade, Deceive or Intimidate) and nothing else; options without a check have no tag. Picking a tagged option opens a check pop-up with the coin line ("3 coins · CHA · needs 2 heads", as in combat's details panel), the coins, Back and Flip coins, so nothing is committed until Flip.
+- **Companion chime-in** (chosen Oct 28, 2026): on a miss by exactly 1, the proficient companion's portrait slides into the pop-up with one of their chime-in lines and "+1 coin", and their coin (with a green ring) flips. The pop-up never says beforehand that a companion could help.
+- **Layout: being compared** (v1, Oct 28, 2026). **v1a, zoom to the hex:** the camera zooms onto the NPC's hex, the NPC and party tokens stand side by side, and the dialogue panel runs along the bottom (lines on the left, options on the right). **v1b, card over the dimmed world:** a cream card like the after-combat screen's, with a big NPC portrait hex on the left. **v1c, face to face:** NPC and hero portrait hexes on either side, speech bubbles between them, options as pills along the bottom. **v1d, options as cards:** the NPC's line on top and the options dealt along the bottom like hotbar cards, each with an approach band.
+- **Debug tools (mockup only):** a near-miss switch (the hero's coins land 1 heads short, to show the chime-in) and Restart talk. The linked exploration copy's Debug tab opens each layout.
+
 **After-combat screen** (final: v7, locked Oct 26, 2026, in the Final screens canvas; choices made Oct 26, 2026)
 
 - Shown when a fight is won, before returning to the map. It shows: XP gained and the party's progress bar to the next level; the terrain cards drawn into the hand (draw amounts: [Cards & progression](05 Cards & progression.md) → Core loop and hand refill); gold and loot going to the shared inventory ([Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold); and each character's HP after the fight, including who was downed.
@@ -254,6 +262,9 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Subclass, card, spell and feat icons | Level-up v2–v9 | Icons (Open questions below) |
 | Training ×[1] (trainings left this visit) | Weapon mastery v1a–v5c | Training counts (progression pass: [Cards & progression](05 Cards & progression.md) → Open questions) |
 | Node type icons (new card, upgrade, passive) | Weapon mastery v1–v5 | Icons (Open questions below) |
+| The Lady of the Lake's lines, the option lines, "[Chelmsford's chime-in line]" and "[Mel's chime-in line]", [Portrait] | Social encounter v1 | The Lady's dialogue and companion chime-in lines ([World & story](01 World & story.md) → Open questions) |
+| Coins and heads needed per option (3 coins / 2 heads, 2 / 1, 1 / 1); Chelmsford proficient in Persuade, Mel in Deceive | Social encounter v1 | Companion proficiencies and check sizes ([Classes & combat](03 Classes & combat.md) → Open questions) |
+| Approach tag colours and icons | Social encounter v1 | Icons (Open questions below) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -268,6 +279,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Exploration | In progress (latest: v6a side column / v6b next tile only, with landmark pins, 5+/7+ regions and a debug tab) | — | — | [HexGen · Exploration (working)](https://claude.ai/artifact/GQ6LxMzHa214Rjzcabgjr4) |
 | Rewards & level-up | After combat: final. Level-up: in progress (latest: v9a level 3 / v9b level 4 feat, with v8c level 5 / v8d level 8: each level shows only what it grants) | After combat v7 | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Rewards & level-up (working)](https://claude.ai/artifact/UeCB1R47oqpqYZs172hNjg) |
 | Weapon mastery | Final (v5c: the weapon hex is the root of the tree) | v5c | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Weapon mastery (working)](https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum) |
+| Social encounter | In progress (latest: v1a–v1d, four layouts with the Lady of the Lake) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 
 ## Camera and controls
@@ -333,3 +345,5 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~A companion's default subclass: fixed or changeable at level 5?~~ (settled: changeable, as [World & story](01 World & story.md) → Background paths says; v1b's marked default with any pick allowed matches)
 - [ ] **New:** after a won fight, what HP does a downed ally have? (v1 shows them back up at low HP)
 - [x] ~~Landmark names on the exploration board~~ (settled Oct 24, 2026: pin, name on tap; painted names rejected)
+- [ ] **New:** social encounter layout: v1a zoom to the hex, v1b card over the dimmed world, v1c face to face, or v1d options as cards?
+- [ ] **New:** approach tag colours and icons for social options (v1's are placeholders)

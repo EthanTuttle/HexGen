@@ -1,0 +1,83 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-28T01:00:00Z"
+ },
+ "title": "HexGen · Social encounter (working)",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v1a · zoom to the hex: Lady and party tokens on the board, dialogue panel along the bottom. Lines, coins, heads needed and who is proficient are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v1b-DimmedCard.dc.html": {
+   "x": 924,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v1b · a cream card over the dimmed world (like after-combat): big NPC portrait hex, lines and options beside it",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v1c-FaceToFace.dc.html": {
+   "x": 1848,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v1c · face to face: NPC and hero portrait hexes, speech bubbles between them, options as pills along the bottom",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Social-v1d-OptionCards.dc.html": {
+   "x": 2772,
+   "y": 0,
+   "w": 844,
+   "h": 390,
+   "title": "Social encounter v1d · options as cards: the NPC's line on top, reply options dealt like hotbar cards with an approach band",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Ref-Explore-v6a.dc.html": {
+   "x": 0,
+   "y": 760,
+   "w": 844,
+   "h": 390,
+   "title": "Linked · Exploration v6a (copied; Debug → Meet the Lady opens v1a–v1d, and Leave comes back here. Portraits and Fight don't link from this canvas)",
+   "is_interactive": true,
+   "radius": 28
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Social-v1b-DimmedCard.dc.html",
+  "Social-v1c-FaceToFace.dc.html",
+  "Social-v1d-OptionCards.dc.html",
+  "Ref-Explore-v6a.dc.html"
+ ],
+ "notes": {
+  "v1": {
+   "x": 0,
+   "y": -250,
+   "text": "v1 · four layouts. Pick a tagged option to see its check; Debug → near miss shows a companion chiming in",
+   "kind": "title1",
+   "maxW": 3616
+  },
+  "refs": {
+   "x": 0,
+   "y": 510,
+   "text": "Linked screens · exploration (way in and out)",
+   "kind": "title1",
+   "maxW": 1768
+  }
+ },
+ "designSystems": []
+}
