@@ -4,14 +4,18 @@ Soldier path companion. Bio, home and personal quest: [World & story](../01%20Wo
 
 ## Voice sheet
 
-Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice sheet template). From the bio: orphaned when cultists burned her wood elf village; she survives by cons. Home: Black Market (slums). Personal quest: find what's left of her people.
+Approved by Ethan, Oct 28, 2026. From the bio: a small wood elf girl, lost and scared, who tries to steal food from the hero; orphaned when cultists burned her village; survives by cons (rogue, Con Artist). Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
 
-- **How they talk:**
-- **Words they use / never use:**
-- **What they want and what worries them:**
-- **Sounds like:**
-- **When they're not joking:**
-- **Sample lines:**
+- **Flavour:** she should be pretty funny (Ethan, Oct 28, 2026).
+- **How she talks:** fast, then deadpan. A quick patter when she's working a con, flat and dry the rest of the time; the jokes come from excuses delivered straight and lies that fall apart as she tells them. Earnest only when it slips out.
+- **Words she uses:** plain words off the street, sometimes slightly wrong ones. **Never:** admits stealing (it was borrowing, helping or finding), says she's scared (she shows it, never says it), or uses big words.
+- **What she wants and what worries her:** day to day, food, a safe place to sleep and not being left behind again; underneath it, finding any of her people. Worries that there's no one left, or that they won't remember her.
+- **Sounds like:** the Artful Dodger (Oliver Twist's pickpocket: cocky, street-smart, charming).
+- **When she's not joking:** small and plain. The patter stops and she sounds her age: short questions, very quiet.
+- **Sample lines** (drafted by Claude, picked and tweaked by Ethan, Oct 28, 2026):
+  - "That man's purse is too heavy for him. I'm helping."
+  - "I've never stolen anything. Ask anyone. Ask him. Actually, don't ask him."
+  - "Do you think my people would still remember me? If any of them are left?"
 
 ## Lines
 
