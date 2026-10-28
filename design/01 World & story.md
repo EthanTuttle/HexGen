@@ -267,7 +267,15 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 - **Failure costs fit the approach.** A gentle approach failing can cost little (the NPC says no); a harsh one can cost a lot, even a fight. Whether an NPC fights back is set per scene.
 - **Inn banter** (decided Oct 28, 2026; how it shows: [Presentation](07 Presentation.md) → Town screen): a night at an inn's bar is where the party's personality shows. Companions talk to each other in **pair banter**: short written exchanges for particular pairs of companions, with one generic bar line per companion as a fallback for pairs that have no exchange. The night ends with **the toast as a choice**: the hero picks an intent option (the hero's words are never written, as above) and the companions react. Which pairs get exchanges, the toast options and the lines themselves are being written (Open questions).
   - **Pairs** (decided Oct 28, 2026): the six path pairs first (the two companions each background brings), then cross-path pairs that clash or click. Lines can't lean on shared history, since outside their own path the two meet separately.
-  - **The toast** (chosen Oct 28, 2026, a mix): "Stand on the table and raise a toast" (rowdy), "Toast whoever's paying" (mock-solemn), "Toast absent friends" (sincere). Reactions: to be written.
+  - **The toast** (chosen Oct 28, 2026, a mix; each answered by a narration beat only, no companion line):
+
+| Toast | Narration |
+| --- | --- |
+| Stand on the table and raise a toast | "You climb onto the table. Mugs go up all over the room, and the whole inn roars." |
+| Toast whoever's paying | "The table cheers. Behind the bar, the innkeeper starts adding up the tab." |
+| Toast absent friends | "The table goes quiet. Mugs touch, softly, and nobody says anything for a while." |
+
+  - **Pair exchanges** (the six path pairs, written Oct 28, 2026):
 
 | Pair | Exchange |
 | --- | --- |
@@ -411,7 +419,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 | Generated quests | Rare items, XP and gold |
 
 ## Open questions
-- [ ] **New:** inn banter: cross-path pairs (the six path pairs are written), each companion's fallback bar line, and the toast reactions
+- [ ] **New:** inn banter: each companion's fallback bar line (next), then cross-path pairs (the six path pairs and the toasts are written)
 
 - [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: see Companion chime-in lines). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (Companion chime-in lines); the old kings were left vague (see The Lady of the Lake)
