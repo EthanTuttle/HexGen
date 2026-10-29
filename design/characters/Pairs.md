@@ -7,7 +7,7 @@ Inn banter between two companions: one row per pair, written once here. Rules: [
 | Pair | Exchange |
 | --- | --- |
 | Fluffy and Chelmsford | Fluffy: "This cream has been watered." Chelmsford: "It's milk, Your Majesty. I believe that's what you ordered." (both halves reviewed against their voice sheets, Oct 28, 2026; Chelmsford's wording is Ethan's) |
-| Mel and Grant Augustus | Grant: "A tragedy, friends! My purse, my only purse, has vanished from my very belt!" Mel: "Shame. What did it look like? Brown? Leather? Two silvers in it? Shame." (reworked Oct 28, 2026 after both reviews: the old rhyme joke didn't rhyme, and had Mel, a small girl, owed drinks) |
+| Mel and Grant Augustus | Grant: "A tragedy, friends! My purse, my only purse, has vanished from my very belt!" Mel: "Shame. Was it brown leather, with two silvers in it and a bit of string?" (repass Oct 29, 2026: Mel's half was "Shame. What did it look like? Brown? Leather? Two silvers in it? Shame."; reworked Oct 28, 2026 after both reviews: the old rhyme joke didn't rhyme, and had Mel, a small girl, owed drinks) |
 | Kris Huntington and Timothy | Kris: "Tomorrow we hunt something bigger." Timothy: "C-can tomorrow's thing be smaller? Like a rabbit?" (both halves reviewed, Oct 29, 2026: kept as written, stammer included) |
 | Dolmund and Lilian | Lilian: "Dance with me, Dolmund." Dolmund: "Dwarves don't dance. We stomp." (both halves reviewed, Oct 29, 2026: the one-word tag "Rhythmically." dropped) |
 | Frim and Grimhold | Frim: "Want to learn dice? It's easy, you just roll and I win." Grimhold: "I've read there's a whole mathematics to it, so I'd like to see the odds written down first." (reworked Oct 29, 2026 after both reviews; was the "Make it twenty" smile bet) |

@@ -69,5 +69,5 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 
 - [x] ~~Voice sheets for all 12 companions, and a review of the lines written before them~~ (done Oct 28–29, 2026)
 - [ ] Inn banter still to write: cross-path pairs (all 12 voice sheets, fallback bar lines and path pairs done, Oct 29, 2026)
-- [ ] Next: a repass over every companion's lines (and Pairs) for clipped sentence chains (Ethan, Oct 29, 2026)
+- [x] ~~Repass over every line for clipped sentence chains~~ (done Oct 29, 2026: 8 lines changed for Fluffy, Mel, Lilian and the Mel and Grant pair; Kris, Timothy and Dolmund keep short lines, since their sheets say short)
 - [ ] More chime-in lines per proficiency later, so they repeat less

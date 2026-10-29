@@ -25,15 +25,15 @@ Reviewed against the voice sheet and the tells list with Ethan, Oct 28, 2026: Pe
 
 | Proficiency | Line |
 | --- | --- |
-| Persuade | "Agree, and I shall permit you to sit near me. Briefly." (was: "Oh, just say yes. I have a nap at noon and you are ruining it.") |
+| Persuade | "Agree, and I shall permit you to sit near me, briefly." (repass, Oct 29, 2026; before that: "Oh, just say yes. I have a nap at noon and you are ruining it.") |
 | Lore | "Why, I'll be. Has nobody here read anything at all?" (was: "Obviously it's the other way round. Honestly, must I do everything?") |
 
 **Special lines** (said instead of the generic one with a big story NPC)
 
 | With | Check | Line |
 | --- | --- | --- |
-| The Lady of the Lake | Persuade ("Swear you are true") | "I am King Alexander the All Conquering Legend and He Who Rules, and I vouch for them. That should settle it." |
+| The Lady of the Lake | Persuade ("Swear you are true") | "I am King Alexander the All Conquering Legend and He Who Rules, and I vouch for them." (repass, Oct 29, 2026: "That should settle it." dropped) |
 
 **Inn: fallback bar line** (said to the table when the companion beside them has no exchange with them; pair exchanges: [Pairs](Pairs.md))
 
-"Innkeeper! Another saucer. I am celebrating being magnificent."
+"Innkeeper, another saucer, for I am celebrating being magnificent." (repass, Oct 29, 2026; was: "Innkeeper! Another saucer. I am celebrating being magnificent.")

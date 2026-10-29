@@ -24,8 +24,8 @@ Reviewed against the voice sheet and the tells list with Ethan, Oct 29, 2026: De
 
 | Proficiency | Line |
 | --- | --- |
-| Deceive | (winks) "Oh, it's true, darling. I'd know." |
-| Perception | "Look closer, sweetheart. Over there." |
+| Deceive | (winks) "Oh, it's perfectly true, darling, and believe me, I'd know." (repass, Oct 29, 2026; was: "Oh, it's true, darling. I'd know.") |
+| Perception | "Look closer, sweetheart, just over there." (repass, Oct 29, 2026; was: "Look closer, sweetheart. Over there.") |
 
 **Inn: fallback bar line** (said to the table when the companion beside them has no exchange with them; pair exchanges: [Pairs](Pairs.md))
 
