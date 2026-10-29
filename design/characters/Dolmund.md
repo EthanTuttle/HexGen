@@ -4,18 +4,21 @@ Criminal path companion. Bio, home and personal quest: [World & story](../01%20W
 
 ## Voice sheet
 
-Not filled in yet (template: [Writing guide](00%20Writing%20guide.md) → Voice sheet template). From the bio: believes the hero is better than their crimes and sticks around to keep them honest. Home: Salamander Den (volcanic peaks), keeping miners safe from fire creatures. Personal quest: make right the time he failed to protect a noble's child, taken by cultists on his watch and maybe still alive.
+Approved by Ethan, Oct 29, 2026. From the bio: a shield dwarf fighter (Brawler) who just wants to keep people safe; believes the hero is better than their crimes and sticks around to keep them honest. Home: Salamander Den (volcanic peaks), keeping miners safe from fire creatures. Personal quest: make right the time he failed to protect a noble's child, taken by cultists on his watch and maybe still alive. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
 
-- **How they talk:**
-- **Words they use / never use:**
-- **What they want and what worries them:**
-- **Sounds like:**
-- **When they're not joking:**
-- **Sample lines:**
+- **How he talks:** gruff and direct. Short and plain, gives orders, repeats himself when he means it. Warm under the growl.
+- **Never:** leaves anyone behind; gives up on the hero, however bad the job.
+- **What he wants and what worries him:** wants everyone home alive. Worries he'll fail again, like with the child.
+- **Sounds like:** Gimli: a gruff, proud dwarf with a soft heart.
+- **When he's not joking:** quiet. Short, and he won't meet your eye.
+- **Sample lines** (drafted by Claude, picked by Ethan, Oct 29, 2026):
+  - "Put it back. I don't care whose it was. Put it back."
+  - "I've seen what you do when nobody's watching. You're better than the jobs you take."
+  - "(pats his beard) Still there. You'd be amazed how often it isn't, after a fire."
 
 ## Lines
 
-Written Oct 28, 2026, before the voice sheet: to review against it and the tells list.
+Reviewed against the voice sheet and the tells list with Ethan, Oct 29, 2026: all three kept.
 
 **Chime-ins** (one per proficiency, said when they step in on a near miss; rule: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat)
 

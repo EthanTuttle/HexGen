@@ -40,7 +40,7 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 
 - **Every line a setup and a punchline.** Most lines in a scene should just be talk: plain, awkward, mid-thought, sincere or a little off-topic. One joke in a scene lands better than four.
 - **The same rhythms.** The three-beat build ("I can tell. I can always tell."), "X. Not Y.", a "(a beat)" pause before the payoff, and a one-word tag on the end ("Truly.", "Honestly.", "Personally.", "Rhythmically.").
-- **The joke is the character's trait.** Fluffy is royal, Mel steals, Kris hunts, Grant rhymes. A line that only points at the bio makes the character a summary of themselves. Show the trait sideways, or show something else.
+- **Too many jokes are the character's trait** (softened Oct 29, 2026). Fluffy is royal, Mel steals, Kris hunts, Grant rhymes. A line that leans on the trait is fine ("Ha! Dwarves are built for this."), but if most of a character's lines only point at their bio, they become a summary of themselves. Mix in lines that show the trait sideways, or show something else.
 - **Tics carrying the voice.** "Ja", "darling", "sweetheart" and the stammer are seasoning, not the voice. Take them out: if the line no longer sounds like the character, it wasn't in their voice.
 - **Nothing specific.** Name the dish, the place, the person, or something that happened on this run. A generic inn and generic ale read as filler.
 - **Forgetting who they are.** Check the bio before every line: Mel is a small girl, so no drinking at the bar; Grant is a bard, so he can rhyme.
@@ -66,7 +66,7 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 
 ## Open questions
 
-- [ ] Voice sheets for the other 6 companions (Fluffy's, Chelmsford's, Mel's, Grant's and Kris's are done, Oct 28, 2026, and Timothy's, Oct 29: Ethan's sample lines first, then the fields as choices)
+- [ ] Voice sheets for the other 5 companions (Fluffy's, Chelmsford's, Mel's, Grant's and Kris's are done, Oct 28, 2026, and Timothy's and Dolmund's, Oct 29: Ethan's sample lines first, then the fields as choices)
 - [ ] Review the lines written before the voice sheets (chime-ins and bar lines, Oct 28, 2026) against each sheet and the tells list, and redo the weakest
 - [ ] Inn banter still to write, after the voice sheets: fallback bar lines for Lilian (about wanting to dance), Frim, Grimhold, Leo Conley and Reginald; then cross-path pairs
 - [ ] More chime-in lines per proficiency later, so they repeat less
