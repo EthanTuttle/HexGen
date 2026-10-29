@@ -67,8 +67,7 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 
 ## Open questions
 
-- [ ] Voice sheet for the last companion (Reginald) (Fluffy's, Chelmsford's, Mel's, Grant's and Kris's are done, Oct 28, 2026, and Timothy's, Dolmund's, Lilian's, Frim's, Grimhold's and Leo's, Oct 29: Ethan's sample lines first, then the fields as choices)
-- [ ] Review the lines written before the voice sheets (chime-ins and bar lines, Oct 28, 2026) against each sheet and the tells list, and redo the weakest
-- [ ] Inn banter still to write, after the voice sheets: the fallback bar line for Reginald; then cross-path pairs
-- [ ] Once all 12 voice sheets are done, a repass over every companion's lines (and Pairs) for clipped sentence chains (Ethan, Oct 29, 2026)
+- [x] ~~Voice sheets for all 12 companions, and a review of the lines written before them~~ (done Oct 28–29, 2026)
+- [ ] Inn banter still to write: cross-path pairs (all 12 voice sheets, fallback bar lines and path pairs done, Oct 29, 2026)
+- [ ] Next: a repass over every companion's lines (and Pairs) for clipped sentence chains (Ethan, Oct 29, 2026)
 - [ ] More chime-in lines per proficiency later, so they repeat less

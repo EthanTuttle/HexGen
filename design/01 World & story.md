@@ -356,7 +356,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 ## Open questions
 - [ ] Inn banter and companion voices: see [characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions
 
-- [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: now in each companion's file in characters/). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written; a variant of Reginald's Persuade line for heroes he doesn't serve
+- [x] ~~Each companion's chime-in lines~~ (written Oct 28, 2026: now in each companion's file in characters/). Still open: more lines per proficiency later so they repeat less; special lines with other big story NPCs as they're written
 - [x] ~~The Lady of the Lake's lines~~ (written Oct 28, 2026: see The Lady of the Lake). Fluffy's special chime-in with her is written (in [Fluffy](characters/Fluffy.md)); the old kings were left vague (see The Lady of the Lake)
 - [x] ~~The Lady's deed, her fight, what happens after, and the old kings~~ (settled Oct 28, 2026: Sir Bedivere, a chimera's lair placed far away, water spirits beside her, she sinks into the lake for good if beaten, the old kings left vague; see The Lady of the Lake). Still open: the chimera and the water spirits in the enemy roster (stats, cards)
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
