@@ -20,7 +20,7 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 - **Scenes with no speaker use narration** (decided Oct 28, 2026): short, neutral and in the second person ("The stone stands alone beneath an open sky"). It describes what the party sees and what happens, never what the hero thinks or says.
 - **Choices are free per scene.** No fixed count or mix of options: each conversation offers what fits, tagged or not, and any kind of check can be an option ([Classes & combat](03 Classes & combat.md) → Checks outside combat).
 - **Failure costs fit the approach.** A gentle approach failing can cost little (the NPC says no); a harsh one can cost a lot, even a fight. Whether an NPC fights back is set per scene.
-- **Accents and dialect spelling** (decided Oct 28, 2026): a character's spoken lines can use their own spelling and words, like an accent: Chelmsford's lines are in British spelling and terms ("armour", "colour", "cuppa"). UI text, item names and narration keep the game's own spelling.
+- **Accents and dialect spelling** (decided Oct 28, 2026): a character's spoken lines can use their own spelling and words, like an accent: Chelmsford's lines are in British spelling and terms ("armour", "colour", "cuppa"). Leo Conley's use heavy Australian slang ("mate", "reckon", "yeah, nah") with the game's normal spelling (Oct 29, 2026). UI text, item names and narration keep the game's own spelling.
 - **Stage notes** go in brackets and show in small italics above the line, e.g. "(cracks his knuckles)". They describe what we see, not explain the joke.
 
 ## Line types
@@ -67,8 +67,8 @@ Patterns that make lines read as machine-written (listed Oct 28, 2026). Check ev
 
 ## Open questions
 
-- [ ] Voice sheets for the other 2 companions (Fluffy's, Chelmsford's, Mel's, Grant's and Kris's are done, Oct 28, 2026, and Timothy's, Dolmund's, Lilian's, Frim's and Grimhold's, Oct 29: Ethan's sample lines first, then the fields as choices)
+- [ ] Voice sheet for the last companion (Reginald) (Fluffy's, Chelmsford's, Mel's, Grant's and Kris's are done, Oct 28, 2026, and Timothy's, Dolmund's, Lilian's, Frim's, Grimhold's and Leo's, Oct 29: Ethan's sample lines first, then the fields as choices)
 - [ ] Review the lines written before the voice sheets (chime-ins and bar lines, Oct 28, 2026) against each sheet and the tells list, and redo the weakest
-- [ ] Inn banter still to write, after the voice sheets: fallback bar lines for Leo Conley and Reginald; then cross-path pairs
+- [ ] Inn banter still to write, after the voice sheets: the fallback bar line for Reginald; then cross-path pairs
 - [ ] Once all 12 voice sheets are done, a repass over every companion's lines (and Pairs) for clipped sentence chains (Ethan, Oct 29, 2026)
 - [ ] More chime-in lines per proficiency later, so they repeat less
