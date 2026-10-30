@@ -1,0 +1,21 @@
+# Unity generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+*.csproj
+*.sln
+*.slnx
+*.pidb
+*.userprefs
+*.unityproj
+.DS_Store
+
+# Copy of art/export/*.glb, made by HexGen > Sync art (art/ stays the source of truth)
+/Assets/Resources/Art/
+/Assets/Resources/Art.meta
