@@ -96,7 +96,7 @@ Races: Human, Elf, Dwarf, Halfling, Golem (an animatronic of stone, wood or meta
 | Race | Sub-type | Ability |
 | --- | --- | --- |
 | Human | — | Versatile (renamed from Fast learner, Oct 27, 2026): can use any weapon or armor regardless of class (each class is otherwise limited to its own weapon and armor categories). An out-of-class weapon gives its weapon category cards, and its mastery tree if the class can train mastery (e.g. a Human Ranger can, a Human Wizard can't; decided Oct 27, 2026) |
-| Elf | High elf | Innate magic: learns a free spell every 7 levels (7, 14 …), chosen from a small elven spell list (designed in the spell pass). Casts them with INT, whatever the class (decided Oct 27, 2026; briefly their highest of INT, WIS or CHA earlier that day) |
+| Elf | High elf | Innate magic: learns a free spell at level 1 and every 7 levels after (1, 7, 14 …; level 1 added Oct 30, 2026), chosen from the elven spell list (see Racial spells below). Casts them with INT, whatever the class (decided Oct 27, 2026; briefly their highest of INT, WIS or CHA earlier that day) |
 | Elf | Wood elf | Moves faster: +1 hex per Move in combat, and walks faster on the hex map (how much: open) (decided Oct 27, 2026) |
 | Dwarf | Shield dwarf | Naturally more health: extra max HP every level (amount set with the HP rules; decided Oct 27, 2026) |
 | Dwarf | Forge dwarf | Flips an extra coin on weapon attacks (kept as is, Oct 27, 2026) |
@@ -106,7 +106,7 @@ Races: Human, Elf, Dwarf, Halfling, Golem (an animatronic of stone, wood or meta
 | Golem | Wood | **Regrowth**: heals a little at the start of each of its turns in combat (replaced forest rest, Oct 27, 2026, which became the wood golem feat Forest Rest: see [Cards & progression](05 Cards & progression.md) → General feats) |
 | Dragonborn | By dragon type | Racial card: **Breath Weapon** (2 AP, once per turn; decided Oct 27, 2026): a line of 3 hexes in one of the 6 directions. It hits everyone in the line, allies included; each target makes a DEX save (half damage on a pass, and no rider). Damage grows with level. The element comes from the chosen dragon type: red = fire (hits harder), blue = lightning (the line reaches 1 hex farther), white = cold (slows), black = acid (the target is easier to hit), green = poison (poisons) |
 | Fluffy's cat race (companion only; race name: open) | — | A fey creature who chose to be a cat (lore: [World & story](01 World & story.md) → NPC homes and stories). **Cat Reflexes** (decided Oct 27, 2026; replaced the "harder to hit" sketch): takes half damage from area attacks and spells, and none when it passes the save. Racial card: **Claw Swipe** (1 AP, once per turn): a melee scratch, a DEX attack flip, that makes the foe bleed; usable whatever he's holding. No race feat (decided Oct 27, 2026) |
-| Tiefling | By bloodline | Gains a free spell every 7 levels like high elves (7, 14 …), but set by bloodline rather than chosen, and cast with CHA whatever the class (decided Oct 27, 2026). Tiefling types are the flame god's bloodlines, each one face of Egan's flame (lore: [World & story](01 World & story.md) → Pantheon). Each bloodline has its own racial card (decided Oct 27, 2026): **Hayes, destruction: Burn It Down** (2 AP): fire bursts on every adjacent hex, allies included; DEX save. **Conley, rebirth: From the Ashes** (passive, once per day cycle): the first time you'd be downed, you get back up at low HP instead. **Keegan, the hearth: Hearthfire** (2 AP, concentration): warm ground around you; allies inside heal a little each turn. All three bloodlines are playable, Hayes included |
+| Tiefling | By bloodline | Gains a free spell at level 1 and every 7 levels after, like high elves (1, 7, 14 …; level 1 added Oct 30, 2026), but set by bloodline rather than chosen (see Racial spells below), and cast with CHA whatever the class (decided Oct 27, 2026). Tiefling types are the flame god's bloodlines, each one face of Egan's flame (lore: [World & story](01 World & story.md) → Pantheon). Each bloodline has its own racial card (decided Oct 27, 2026): **Hayes, destruction: Burn It Down** (2 AP): fire bursts on every adjacent hex, allies included; DEX save. **Conley, rebirth: From the Ashes** (passive, once per day cycle): the first time you'd be downed, you get back up at low HP instead. **Keegan, the hearth: Hearthfire** (2 AP, concentration): warm ground around you; allies inside heal a little each turn. All three bloodlines are playable, Hayes included |
 
 **Race blurbs** (chosen Oct 30, 2026 by Ethan from drafts in the class blurb style; shown on the character creator's race step: [Presentation](07 Presentation.md) → Character creator screen. The Tiefling's says "an old god's blood" rather than naming Egan, since people don't know why tieflings are shunned and few remember Egan; sub-type blurbs below)
 
@@ -141,6 +141,17 @@ Races: Human, Elf, Dwarf, Halfling, Golem (an animatronic of stone, wood or meta
 | Tiefling | Keegan | A child of the hearth, whose flame warms friends instead of burning them. |
 
 Race flags (accepted for now): a wood elf with the Speedy feat gets +2 hexes per Move, which may double their speed depending on hexes per Move; Duck Behind does the same swap as part of the Tactician's Reposition; with any 2 boosts and any gear, Humans are the all-rounder (accepted Oct 27, 2026: other races win through stronger traits). To check: Regrowth heals every turn for free, close to Holy Sanctum and Overgrowth (3 AP spells); Hearthfire is another steady-heal zone (with Sanguine Circle, Holy Sanctum and Overgrowth); From the Ashes stacks with the Hard to Kill feat (two saves from being downed per fight); Cat Reflexes makes Fluffy nearly safe from friendly area fire, his own Blaster spells included (kept on purpose, Oct 27, 2026).
+
+**Racial spells** (designed Oct 30, 2026; high elves and tieflings get their first at level 1, then one every 7 levels. These are spells, separate from the racial cards. Later spells for 7, 14 … come in the spell pass, in stronger tiers like the wizard's Library tiers)
+
+| Spell | Who | AP | Roll | Effect |
+| --- | --- | --- | --- | --- |
+| Glimmerstep | High elf (pick 1 of 3 at level 1; INT) | 1 | No roll | Vanish and reappear in an empty hex up to 3 hexes away. (Close to the Arcane Trickster's Blink, which could become the stronger version) |
+| Faerie Fire | High elf (INT) | 1 | DEX save | The foe glows until your next turn: attacks against it flip 1 extra coin, and it can't hide. |
+| Lull | High elf (INT) | 1 | WIS save | The foe dozes off and loses its next attack. Any hit wakes it. |
+| Scorch | Hayes tiefling (set; CHA) | 1 | Attack flip | A lance of fire at one foe in range. |
+| Ember Mend | Conley tiefling (set; CHA) | 1 | No roll | Heal an ally a little, more if they're below half HP. (Near the Bard's Soothing Melody; the below-half bonus sets it apart) |
+| Guiding Ember | Keegan tiefling (set; CHA) | 1 | No roll | A small light drifts out and reveals hidden foes and traps within 3 hexes. |
 
 **Racial ability-score boosts** (each race boosts 3 scores, Humans any; the player picks 2 of them for +1 each: see Ability scores → Starting scores. Being rebalanced race by race, Oct 27, 2026: before the review CON was boosted by 5 of 7 races and INT and WIS by only 2 each)
 
@@ -637,12 +648,12 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] **New:** Claim Trophy's damage cap; Thick Hide vs a once-per-turn 1 AP card every turn (strong for 1 AP; check in the balance pass)
 - [ ] **New:** Ranger nature cards (calling vines, animal spirits) move from the Tree of Life to later Ranger level-ups; which levels, and what does the Tree of Life teach instead?
 - [ ] **New:** what each class location upgrades and teaches (College still to do)
-- [ ] Race details: breath weapon damage (rules set Oct 27, 2026: see Races); high elf and tiefling bloodline spell lists (after the spell pass). (Bonus sizes settled Oct 27, 2026: see Ability scores → Starting scores)
+- [ ] Race details: breath weapon damage (rules set Oct 27, 2026: see Races); high elf and tiefling spells for levels 7, 14 … (level 1 set Oct 30, 2026: see Racial spells). (Bonus sizes settled Oct 27, 2026: see Ability scores → Starting scores)
 - [ ] **New (Oct 27, 2026, race review: all seven launch races done):** Fluffy's cat race also done; still open: the cat race's name; race lore for every race; amounts for metal golem damage reduction, Regrowth, Hearthfire and breath weapon damage; how NPCs and rivals react to a player Hayes (see [World & story](01 World & story.md))
-- [ ] **New (Oct 27, 2026):** how much faster wood elves walk on the hex map; the shield dwarf's extra HP per level (with the HP rules); the elven spell list (spell pass)
+- [ ] **New (Oct 27, 2026):** how much faster wood elves walk on the hex map; the shield dwarf's extra HP per level (with the HP rules); the elven spells for levels 7+ (the level-1 list is set: see Racial spells)
 - [ ] **New (Oct 27, 2026):** heads targets at higher levels: score increases alone take a main score from 3 to 5 by level 16, so a 3-heads check is 50% there. How much should gear and proficiency add, and when do targets rise? (See the pass chances table in Coin checks)
 - [ ] **New (Oct 30, 2026):** each companion's ability scores and gear at each stage of the game (mockups use placeholders, e.g. Mel's in character & gear v9)
-- [ ] Set spells for each tiefling bloodline (Hayes, Conleys, Keegans), to be assigned after the spell pass
+- [ ] Set spells for each tiefling bloodline (Hayes, Conleys, Keegans) for levels 7, 14 … (level 1 set Oct 30, 2026: Scorch, Ember Mend, Guiding Ember)
 - [ ] Big spell pass: define the spells, then assign them to tiefling bloodlines, high elf choices and casters
 - [ ] Spell balance pass: Retell, Requiem, Charge!, Holy Defender god spells, and caster vs martial scaling
 - [ ] Playtest: caster vs martial card count gap (accepted for now)

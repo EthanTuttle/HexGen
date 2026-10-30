@@ -88,7 +88,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Race details (breath weapon damage, high elf and tiefling spell lists; bonus sizes and breath weapon rules settled Oct 27)
 - [ ] New (Oct 27): race review done for all seven races; Fluffy's cat race done too; still open: the cat race's name, race lore, amounts (wood elf map speed, shield dwarf HP, metal golem damage reduction, Regrowth, Hearthfire), Regrowth and Hearthfire vs healing spells, From the Ashes + Hard to Kill stacking
 - [ ] New (Oct 27): heads targets vs coin growth (a main score goes 3 → 5 by level 16 from score increases alone)
-- [ ] Tiefling bloodline spells
+- [ ] Tiefling bloodline and elven spells for levels 7+ (level 1 set Oct 30: see Classes & combat → Racial spells)
 - [ ] Big spell pass
 - [ ] Spell balance pass (Retell, Requiem, Charge!, Holy Defender god spells, caster vs martial scaling)
 - [ ] Playtest: caster vs martial card count gap
