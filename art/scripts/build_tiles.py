@@ -40,7 +40,7 @@ def centre_outline(scale=1.0):
 GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "plains"}
 
 
-def base(terrain, col):
+def base(terrain, col, ground=None):
     p = hk.Piece(f"base_{terrain}")
     bm = p.bm
     corners = hk.hex_corners(hk.TILE_RADIUS, pointy=True)
@@ -50,7 +50,7 @@ def base(terrain, col):
         bm.faces.new((mid, ring[(i + 1) % 6], ring[i]))
     # Subdivide the top so the engine's shader can fade colours toward neighbours.
     bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=7, use_grid_fill=True)
-    top = p._slot(GROUND.get(terrain, terrain))
+    top = p._slot(ground or GROUND.get(terrain, terrain))
     for f in bm.faces:
         f.material_index = top
     for i in range(6):
@@ -186,24 +186,35 @@ def border_join(p, rng, side):
     border_line(p, rng, Vector((BORDER_X, y, 0)), Vector((X1, y, 0)))
 
 
+def farm_grid(p, rng, ripe=False, leave_out=None):
+    """The centre's grid of wheat plots on a dirt yard. ripe: every plot gold (no young green one).
+    leave_out: index of a plot to skip; its (cx, cy, w, h) in the turned grid is returned for something else."""
+    cols, rows = FARM_LAYOUT
+    w, h, gap = FARM_GRID[FARM_LAYOUT]
+    total_w, total_h = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
+    pad = gap
+    p.flat([turned(-total_w / 2 - pad, -total_h / 2 - pad), turned(total_w / 2 + pad, -total_h / 2 - pad),
+            turned(total_w / 2 + pad, total_h / 2 + pad), turned(-total_w / 2 - pad, total_h / 2 + pad)],
+           0.015, "road")
+    crops = ["field_a", "field_b"] * (cols * rows)
+    young = -1 if ripe else rng.randrange(cols * rows)
+    spare = None
+    for i in range(cols):
+        for j in range(rows):
+            cx = -total_w / 2 + w / 2 + i * (w + gap)
+            cy = -total_h / 2 + h / 2 + j * (h + gap)
+            if i * rows + j == leave_out:
+                spare = (cx, cy, w, h)
+                continue
+            crop = "field_c" if i * rows + j == young else crops[(i + j + rng.randrange(2)) % 2]
+            wheat_plot(p, rng, cx, cy, w, h, crop)
+    return spare
+
+
 def farmland(p, rng, kind):
     """A neat grid of wheat plots with dirt paths; tracks join neighbouring farms, hedges close off the rest."""
     if kind == "centre":
-        cols, rows = FARM_LAYOUT
-        w, h, gap = FARM_GRID[FARM_LAYOUT]
-        total_w, total_h = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
-        pad = gap
-        p.flat([turned(-total_w / 2 - pad, -total_h / 2 - pad), turned(total_w / 2 + pad, -total_h / 2 - pad),
-                turned(total_w / 2 + pad, total_h / 2 + pad), turned(-total_w / 2 - pad, total_h / 2 + pad)],
-               0.015, "road")
-        crops = ["field_a", "field_b"] * (cols * rows)
-        young = rng.randrange(cols * rows)
-        for i in range(cols):
-            for j in range(rows):
-                cx = -total_w / 2 + w / 2 + i * (w + gap)
-                cy = -total_h / 2 + h / 2 + j * (h + gap)
-                crop = "field_c" if i * rows + j == young else crops[(i + j + rng.randrange(2)) % 2]
-                wheat_plot(p, rng, cx, cy, w, h, crop)
+        farm_grid(p, rng)
         return
     if kind == "same":  # a dirt track runs on to the neighbouring farm
         p.flat([Vector((X0, -0.22, 0)), Vector((X1, -0.22, 0)), Vector((X1, 0.22, 0)), Vector((X0, 0.22, 0))],
@@ -312,11 +323,12 @@ def height_at(at, kind):
     return hill_height(at.x, abs(at.y) / (at.x * TAN30), kind)
 
 
-def hill_surface(p, sectors, d0, d1, kind):
-    """Triangulated ground over the given sectors between depths d0 and d1, faces painted grass or cliff."""
+def hill_surface(p, sectors, d0, d1, kind, grass="hill_grass", rock_slope=0.6):
+    """Triangulated ground over the given sectors between depths d0 and d1: faces steeper than rock_slope
+    (by their normal's height) show rock, the rest grass."""
     bm = p.bm
     nd = max(2, round(ND * (d1 - d0) / X1))
-    grass, cliff = p._slot("hill_grass"), p._slot("cliff")
+    grass, cliff = p._slot(grass), p._slot("cliff")
     middle = bm.verts.new((0, 0, hill_height(0, 0, kind) + 0.01)) if d0 == 0 else None
     for i in sectors:
         n = hk.edge_normal(i)
@@ -342,7 +354,7 @@ def hill_surface(p, sectors, d0, d1, kind):
                         continue
                     f = bm.faces.new(tri)
                     f.normal_update()
-                    f.material_index = cliff if f.normal.z < 0.6 else grass
+                    f.material_index = cliff if f.normal.z < rock_slope else grass
                     p.surface.add(f)
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
 
@@ -360,8 +372,9 @@ MOUNTAINS = {
 RINGS = (0.22, 0.45, 0.7, 1.0)  # share of the base radius at each ring of the mountain
 
 
-def mountain(p, rng, kind):
+def mountain(p, rng, kind, scale=1.0, grass="hill_grass"):
     centre, height, radius, (a0, a1), sym = MOUNTAINS[kind]
+    height *= scale
     centre = Vector((centre.x, centre.y, 0))
     phases = [rng.uniform(0, 2 * math.pi) for _ in range(4)]
 
@@ -371,7 +384,7 @@ def mountain(p, rng, kind):
                 + 0.1 * math.sin(sym * (3 + k) * th + phases[k + 2]))
 
     bm = p.bm
-    rock, rock_dark, grass = p._slot("rock"), p._slot("rock_dark"), p._slot("hill_grass")
+    rock, rock_dark, grass = p._slot("rock"), p._slot("rock_dark"), p._slot(grass)
     angles = [math.radians(a) for a in range(a0, a1 + 1, 20)]
     if a1 - a0 == 360:
         angles = angles[:-1]
@@ -461,14 +474,14 @@ def pool_plates(p, outline, rim):
     p.flat(outline, 0.022, "bog_water")
 
 
-def round_pool(p, rng, centre, radius):
+def round_pool(p, rng, centre, radius, water="bog_water"):
     pts = wt.circle((centre.x, centre.y), radius, rng, 0.15)
     p.flat([centre + (Vector((x, y, 0)) - centre) * ((radius + 0.18) / radius) for x, y in pts], 0.012, "mud")
-    p.flat([Vector((x, y, 0)) for x, y in pts], 0.022, "bog_water")
+    p.flat([Vector((x, y, 0)) for x, y in pts], 0.022, water)
     return pts
 
 
-def edge_pool(p, rng, half=1.0, depth=1.3):
+def edge_pool(p, rng, half=1.0, depth=1.3, water="bog_water"):
     """Half a pool on the edge's middle; the joined neighbour draws the other half."""
     wobble = [0] + [rng.uniform(-0.1, 0.1) for _ in range(11)] + [0]
 
@@ -477,7 +490,7 @@ def edge_pool(p, rng, half=1.0, depth=1.3):
                for th, w in ((-math.pi / 2 + math.pi * k / 12, wobble[k]) for k in range(13))]
         return pts[::-1]
     p.flat(outline(0.18), 0.012, "mud")
-    p.flat(outline(0.0), 0.022, "bog_water")
+    p.flat(outline(0.0), 0.022, water)
     return [(v.x, v.y) for v in outline(0.0)]
 
 
@@ -598,6 +611,16 @@ def build():
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"
             p = hk.Piece(name)
             BUILDERS[terrain](p, hk.seeded(name), kind)
+            p.finish(col)
+    # Tier 1 region variants (variants.py): the same pieces under the variant's name.
+    import variants
+    for variant, (terrain, builder, ground, extras) in variants.VARIANTS.items():
+        col = hk.new_collection(variant)
+        base(variant, col, ground)
+        for kind in ("centre", "same", "other") + extras:
+            name = f"{variant}_{kind}" if kind not in ("same", "other") else f"{variant}_edge_{kind}"
+            p = hk.Piece(name)
+            builder(p, hk.seeded(name), kind)
             p.finish(col)
     col = hk.new_collection("borders")
     for name, side in (("border_join_l", 1), ("border_join_r", -1)):

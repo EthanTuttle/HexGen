@@ -72,6 +72,37 @@ PALETTE = {
     "mud": "#7A7152",
     "hummock": "#6F8E5C",
     "deadwood": "#7C6E5E",
+    # tier 1 region variants
+    "deep_forest": "#466F47",
+    "pine_deep": "#2F5734",
+    "hide": "#8A6A4E",
+    "hide_light": "#C9B79C",
+    "flower_pink": "#E9A3B8",
+    "flower_white": "#F4F1E8",
+    "flower_blue": "#9DB4E0",
+    "highland_grass": "#9FB07E",
+    "heather": "#9C6FA0",
+    "hay": "#E3C45E",
+    "stubble": "#D9C27A",
+    "sail": "#EFE6D2",
+    "timber": "#5E4532",
+    "awning_a": "#C8553D",
+    "awning_b": "#F2E8D5",
+    "crate": "#A7825A",
+    "fruit": "#D9822B",
+    "sandbar": "#E3D3A8",
+    "bog": "#6B8462",
+    "bog_dark": "#4A6457",
+    "toadstool": "#F0C24E",
+    "poison_purple": "#8E4FA6",
+    "poison_yellow": "#E6D23F",
+    "spiky": "#4F6B3A",
+    "wasteland": "#E2CFA2",
+    "sandstone": "#D6B484",
+    "bone": "#F1EBDD",
+    "pit": "#6B5038",
+    "canvas": "#E9DFC8",
+    "lantern": "#F6D36B",
     "slot": "#F6EFE4",
     "backdrop": "#CFE4F2",
     # combat cells
@@ -234,6 +265,12 @@ class Piece:
              @ Matrix.Rotation(math.pi / 2, 4, "Y"))
         r = bmesh.ops.create_cone(self.bm, cap_ends=True, cap_tris=False, segments=segments,
                                   radius1=radius, radius2=radius, depth=length, matrix=m)
+        self._paint(r["verts"], mat_name)
+
+    def box_rot(self, at, size, mat_name, rot):
+        """A box centred on `at`, turned by the 3x3 or 4x4 matrix `rot` (sails, ladders, tilted stones)."""
+        m = Matrix.Translation(at) @ rot.to_4x4() @ Matrix.Diagonal((*size, 1))
+        r = bmesh.ops.create_cube(self.bm, size=1.0, matrix=m)
         self._paint(r["verts"], mat_name)
 
     def gable_roof(self, at, w, d, h, mat_name, z, spin=0.0):

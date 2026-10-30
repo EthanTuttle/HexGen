@@ -9,6 +9,9 @@ so dunes carry on across joined desert tiles and every dune on the map lines up 
    edge, so there are no cracks. The sand is one colour; the light shows the crests (colouring the lee
    faces made the grid's stair-steps show along every crest).
 4. Cacti, rocks and dry bushes are scattered on the sand from a world-space hash, like ground cover.
+5. The wasteland (desert's tier 1 region variant) has lower swells broken by flat patches of cracked earth,
+   and buried ruins, bones and dead trees instead of cacti. Where a desert tile meets a wasteland tile
+   (two finished regions side by side, which is rare) the swell heights don't match yet.
 Everything above is plain Python so the engines can copy it; only add_sand() uses Blender.
 """
 import math
@@ -20,6 +23,7 @@ WIND = math.radians(25)    # the wind blows along this direction; crests run acr
 FADE = (0.3, 2.2)          # flat within 0.3 m of a non-desert edge, full height from 2.2 m
 ND, NV = 28, 32            # grid samples across one sixth of a tile: depth, side to side
 PROP_CELL = 2.4
+DESERTS = {"desert", "wasteland"}  # the desert terrain and its variants
 
 
 def profile(phase, windward):
@@ -30,11 +34,19 @@ def profile(phase, windward):
     return 0.5 + 0.5 * math.cos(math.pi * (f - windward) / (1 - windward))
 
 
-def height(x, y):
+def flats(x, y):
+    """Wasteland only: 0 on flat patches of cracked earth, 1 where the swells rise."""
+    t = 0.5 + 0.5 * math.sin(x / 4.3 + 0.7) * math.sin(y / 3.9 - 0.3)
+    t = max(0.0, min(1.0, (t - 0.25) / 0.35))
+    return t * t * (3 - 2 * t)
+
+
+def height(x, y, look="desert"):
     u = x * math.cos(WIND) + y * math.sin(WIND)     # along the wind
     w = -x * math.sin(WIND) + y * math.cos(WIND)    # across it
     phase = u / 6.5 + 0.25 * math.sin(w / 7.0 + 0.5) + 0.15 * math.sin(w / 3.1)
-    return 0.55 * (0.75 + 0.25 * math.sin(w / 5.3)) * profile(phase, 0.7)
+    swell = 0.55 * (0.75 + 0.25 * math.sin(w / 5.3)) * profile(phase, 0.7)
+    return swell * 0.55 * flats(x, y) if look == "wasteland" else swell
 
 
 def seg_dist(p, a, b):
@@ -48,14 +60,14 @@ def fade(terrains, q, r, x, y):
     cx, cy = gc.tile_centre(q, r)
     p = (x - cx, y - cy)
     near = min([seg_dist(p, wt.corner(i - 1), wt.corner(i)) for i, (dq, dr) in enumerate(gc.NEIGHBOURS)
-                if terrains.get((q + dq, r + dr)) != "desert"] or [99.0])
+                if terrains.get((q + dq, r + dr)) not in DESERTS] or [99.0])
     a, b = FADE
     t = max(0.0, min(1.0, (near - a) / (b - a)))
     return t * t * (3 - 2 * t)
 
 
 def surface_z(terrains, q, r, x, y):
-    return height(x, y) * fade(terrains, q, r, x, y)
+    return height(x, y, terrains[(q, r)]) * fade(terrains, q, r, x, y)
 
 
 def tile_surface(terrains, q, r):
@@ -102,7 +114,11 @@ def props(terrains, q, r):
             if fade(terrains, q, r, x, y) < 0.8:
                 continue
             k = gc.hash01(ix, iy, 13)
-            kind = "cactus" if k < 0.5 else "rock" if k < 0.8 else "bush"
+            if terrains[(q, r)] == "wasteland":
+                kind = ("cracked" if flats(x, y) < 0.05 and k < 0.45 else "column" if k < 0.3 else
+                        "wall" if k < 0.45 else "statue" if k < 0.55 else "bones" if k < 0.75 else "deadtree")
+            else:
+                kind = "cactus" if k < 0.5 else "rock" if k < 0.8 else "bush"
             out.append((kind, x - cx, y - cy, surface_z(terrains, q, r, x, y), (ix, iy)))
     return out
 
@@ -118,7 +134,8 @@ def add_sand(piece, terrains, q, r):
     verts, tris = tile_surface(terrains, q, r)
     bm = piece.bm
     vs = [bm.verts.new((x, y, z + 0.01)) for x, y, z in verts]
-    ground = piece._slot("desert")
+    look = terrains[(q, r)]
+    ground = piece._slot(look)
     for tri in tris:
         f = bm.faces.new([vs[k] for k in tri])
         f.material_index = ground
@@ -126,9 +143,52 @@ def add_sand(piece, terrains, q, r):
     for kind, x, y, z, (ix, iy) in props(terrains, q, r):
         rng = random.Random(gc.hash01(ix, iy, 14))
         at = Vector((x, y, z - 0.03))
-        if kind == "cactus":
+        if look == "wasteland":
+            wasteland_prop(piece, rng, kind, at)
+        elif kind == "cactus":
             bt.cactus(piece, rng, at)
         elif kind == "rock":
             piece.blob(at, rng.uniform(0.18, 0.3), "rock_light", squash=0.6)
         else:
             piece.blob(at, rng.uniform(0.15, 0.22), "scrub", squash=0.7)
+
+
+def wasteland_prop(piece, rng, kind, at):
+    """Buried ruins, bones, dead trees and cracked earth for the wasteland, sunk a little into the sand."""
+    import math as m
+
+    from mathutils import Matrix, Vector
+
+    import water as w
+    spin = rng.uniform(0, 2 * m.pi)
+    along = Vector((m.cos(spin), m.sin(spin), 0))
+    if kind == "cracked":
+        piece.flat([Vector((x, y, at.z + 0.02)) for x, y in w.circle((at.x, at.y), rng.uniform(0.7, 1.1), rng, 0.25)],
+                   0.012, "cracked")
+    elif kind == "column":  # a sandstone column, standing or broken off
+        piece.cylinder(at, 0.2, rng.choice([0.5, 0.9, 1.4]), "sandstone", segments=8, z=-0.25)
+        if rng.random() < 0.5:
+            piece.log(at + along * 0.7, 0.18, 0.9, "sandstone", spin=spin, z=0.05)
+    elif kind == "wall":  # the top of a buried wall
+        for k in range(3):
+            piece.box(at + along * (k - 1) * 0.42, (0.4, 0.3, rng.uniform(0.3, 0.55)), "sandstone", z=-0.2,
+                      spin=spin + rng.uniform(-0.05, 0.05))
+    elif kind == "statue":  # a toppled statue: a body on its side and a head beside it
+        piece.box_rot(at + Vector((0, 0, 0.12)), (0.9, 0.38, 0.32), "sandstone",
+                      Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.25, 3, "X"))
+        piece.blob(at + along * 0.75, 0.2, "sandstone", z=0.05)
+    elif kind == "bones":  # a spine with ribs and a skull
+        piece.log(at, 0.035, 1.0, "bone", spin=spin, z=0.04)
+        side = Vector((-along.y, along.x, 0))
+        for k in range(4):
+            for s in (-1, 1):
+                piece.log(at + along * (k * 0.18 - 0.3) + side * s * 0.2, 0.025, 0.35, "bone",
+                          spin=spin + m.pi / 2, z=0.06)
+        piece.blob(at + along * 0.62, 0.12, "bone", z=0.06, squash=0.8)
+    else:  # a dead tree
+        h = rng.uniform(1.1, 1.6)
+        piece.cone(at, 0.11, h, "deadwood", segments=5)
+        for z in (0.5, 0.75):
+            ang = rng.uniform(0, 2 * m.pi)
+            piece.log(at + Vector((m.cos(ang), m.sin(ang), 0)) * 0.18, 0.03, 0.4, "deadwood", spin=ang, z=z * h,
+                      segments=4)
