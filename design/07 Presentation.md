@@ -314,7 +314,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; latest v11a–v11b, names on narrow banners): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; next: the Background step): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
 
 - **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
 - **v1, three layouts to compare:**
@@ -335,6 +335,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Sub-type selectors** (v8, two to compare, since v7a's plain pills looked off): **v8a, hex tokens** strung on the stitched line under the blurb, each with an icon (dragon types as hexes in their colour) and its name below; the picked one gets the orange rim and gold glow. **v8b, cloth tabs** along the banner's top edge under the rod: unpicked tabs tucked in a darker shade (dragon types in their colours), the picked one merged into the banner with a gold underline.
 - **v8a's hex tokens chosen** (Oct 30, 2026, over v8b's cloth tabs). **v9 polish:** dragon types and the Breath Weapon card use **element icons** (fire flame, lightning bolt, cold snowflake, acid droplet with bubbles, poison skull); before a type is picked the Breath Weapon card shows a breath icon and the **Dragonborn banner is slate**, a colour none of the five types use. **Centring:** a banner's rows only hold what they show (an empty text column had pushed the boosts left of centre). **Racial spells on the race step:** a high elf picks 1 of the 3 elven spells from cards hanging off the banner, with a "Pick 1 elven spell" chip beside them (spell cards have a blue band; the pick gets a tick and lifts; tapping one picks it and opens its pop-up); a tiefling's bloodline spell hangs beside its racial card. **v10** (Oct 30, 2026): tieflings no longer have a racial card at level 1 (Burn It Down, From the Ashes and Hearthfire are now their level-7 bloodline spells), so a new tiefling shows only its level-1 bloodline spell. The race step isn't done until a high elf has picked (rules: [Classes & combat](03 Classes & combat.md) → Racial spells).
 - **Narrow banner names** (v11, Oct 30, 2026): when a banner is picked the others narrow to 50px, and "Dragonborn" ran past its cloth. **v11a** writes narrow banners' names top to bottom down the cloth, so any length fits (on the class, god and race steps). **v11b** widens narrow banners to 60px with 10px names, but the picked banner loses 70px, so longer blurbs wrap again. The Tiefling blurb was shortened to fit one line (both versions).
+- **v11a chosen** (Oct 30, 2026): narrow banners always write their names top to bottom. Not picked: v11b's wider narrow banners.
 - Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
@@ -417,7 +418,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
-| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; latest: v11a–v11b, names on narrow banners) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
+| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; next: the Background step) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -486,7 +487,8 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator: feedback on v6~~ (approved Oct 30, 2026)
 - [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30, 2026: v7a, sub-types in the banner)
 - [x] ~~Character creator sub-type selector~~ (settled Oct 30, 2026: v8a, hex tokens; polished in v9)
-- [ ] **New:** character creator narrow banner names: vertical (v11a) or wider banners (v11b); then Background
+- [x] ~~Character creator narrow banner names~~ (settled Oct 30, 2026: v11a, vertical)
+- [ ] **New:** character creator Background step
 - [ ] **New:** names for the racial passives that have none in the docs (v8 working names: Moves faster, Naturally more health, Extra weapon coin, Damage reduction, Bloodline spell), and passive icons
 - [ ] **New:** race emblems and banner colours (v7 placeholders)
 - [ ] **New:** character creator finale after naming (chosen as a moment, not designed yet)

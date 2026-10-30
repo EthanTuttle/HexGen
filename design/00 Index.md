@@ -205,7 +205,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator: feedback on v6~~ (approved Oct 30)
 - [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30: v7a)
 - [x] ~~Character creator sub-type selector~~ (settled Oct 30: v8a hex tokens)
-- [ ] New: character creator narrow banner names: v11a vertical or v11b wider; then Background
+- [x] ~~Character creator narrow banner names~~ (settled Oct 30: v11a)
+- [ ] New: character creator Background step
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
