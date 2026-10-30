@@ -311,11 +311,12 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 **General**
 
 - Map cards and combat action cards use different frames/colors so they are easy to tell apart.
+- **One icon per weapon category** (Ethan, Oct 30, 2026): every weapon category has its own icon and no two repeat, so players learn to recognise a weapon type by its icon alone. The same icon is used on every screen that shows the weapon. The first set of stand-ins (21) is in character creator v18a/v18b; older mockups still share icons between swords, axes, polearms and fist weapons.
 - **Plain screen backgrounds** (Ethan, Oct 30, 2026): screens sit on a plain colour, with no hex-line pattern behind them, as most screens already do. The pattern made the background too busy. It's taken out of the character creator (v16) and the character and gear screen (v13a/v13c, copies of v12a/v12c).
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; Background step v13; Scores and Skills v14a–v14d, v15a chosen; plain background from v16; Gear step v17a / v17b): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; Background step v13; Scores and Skills v14a–v14d, v15a chosen; plain background from v16; Gear step v17a / v17b; unique weapon icons in v18a / v18b): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
 
 - **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
 - **v1, three layouts to compare:**
@@ -391,7 +392,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Terrain colours and icons | Exploration, after-combat | Final terrain colours and icons (Open questions below) |
 | Reveal pacing (one reward every 0.55 s; about 2 s for a Legendary's flip) | After-combat v5b–v7 | Reveal pacing (Open questions below) |
 | [Legendary item], [Item description] | After-combat v6–v7 | Specific gear items ([Weapons & gear](04 Weapons & gear.md) → Open questions) |
-| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v5; the banner colours and race emblems (v4a–v12); starting-place art (v12–v14d); proficiency icons and ability banner colours (v14–v15) | Icons (Open questions below) |
+| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v5; the banner colours and race emblems (v4a–v12); starting-place art (v12–v14d); proficiency icons and ability banner colours (v14–v15); weapon icons (stand-ins, creator v18) | Icons (Open questions below) |
 | Training ×[1] (trainings left this visit) | Weapon mastery v1a–v5c | Training counts (progression pass: [Cards & progression](05 Cards & progression.md) → Open questions) |
 | Node type icons (new card, upgrade, passive) | Weapon mastery v1–v5 | Icons (Open questions below) |
 | The Lady of the Lake's lines and the option lines (v1 only: written from v2); "[<companion>'s chime-in line]" (v1–v7 only: v8 uses the written lines); the Lady's [Portrait] | Social encounter v1–v8 | Chime-in lines: [World & story](01 World & story.md) → Companion chime-in lines; the portrait: art pass |
@@ -430,7 +431,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
-| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; Background v13; Scores and Skills v15a chosen; plain background from v16; latest: v17a / v17b, the Gear step) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
+| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; Background v13; Scores and Skills v15a chosen; plain background from v16; latest: v18a / v18b, the Gear step with unique weapon icons) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -502,7 +503,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator narrow banner names~~ (settled Oct 30, 2026: v11a, vertical)
 - [x] ~~Character creator: feedback on v13's Background step~~ (approved Oct 30, 2026)
 - [x] ~~Character creator Scores and Skills~~ (settled Oct 30, 2026: v15a, level-up tiles and the feat-style list; v14a's banners out)
-- [ ] **New:** character creator Gear step: slots with item hexes (v17a) or weapons drawn as their cards (v17b)
+- [ ] **New:** character creator Gear step: slots with item hexes (v17a, with unique weapon icons in v18a) or weapons drawn as their cards (v17b / v18b)
 - [ ] **New:** starting-place art for each background's banner (v12 draws a hex tile with an icon as a stand-in)
 - [ ] **New:** names for the racial passives that have none in the docs (v8 working names: Moves faster, Naturally more health, Extra weapon coin, Damage reduction, Bloodline spell), and passive icons
 - [ ] **New:** race emblems and banner colours (v7 placeholders)
