@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chelmsford mini v4d: orthographic left side</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+</style>
+</helmet>
+<div style="width: 512px; height: 512px; box-sizing: border-box; background: {{bg}}; display: flex; align-items: center; justify-content: center">
+  <svg role="img" aria-label="Chelmsford mini, orthographic left side view, facing left" width="480" height="480" viewBox="-15 25 230 230">
+    <rect x="37.6" y="236" width="62.4" height="14" fill="#9A7650"></rect>
+    <rect x="100" y="236" width="62.4" height="14" fill="#7E5E3C"></rect>
+    <g>
+      <g transform="translate(88 104) scale(1.2) translate(-88 -104)">
+        <line x1="88" y1="108" x2="82" y2="66" stroke="#55402D" stroke-width="4" stroke-linecap="round"></line>
+        <polygon points="72,54 80,45 89,53 89,64 81,73 72,64" fill="#7E8994" stroke="#4E5763" stroke-width="1.5"></polygon>
+      </g>
+      <circle cx="88" cy="104" r="6" fill="#3E6FA8"></circle>
+      <path d="M112 202 q32 4 44 -12 q-4 24 -42 20 z" fill="#3E6FA8"></path>
+      <polygon points="98,196 108,196 112,234 99,232" fill="#6C7886"></polygon>
+      <path d="M97 228 h16 l2 9 h-19 z" fill="#3E424B"></path>
+      <polygon points="90,196 101,196 98,232 84,234" fill="#7A8796"></polygon>
+      <path d="M80 228 h19 v9 h-22 z" fill="#4A4E58"></path>
+      <path d="M86 112 q14 -8 28 0 l4 44 h-34 z" fill="#8C99A8"></path>
+      <polygon points="82,150 118,150 124,206 76,206" fill="#EFE3C8"></polygon>
+      <line x1="76" y1="206" x2="124" y2="206" stroke="#E4B54C" stroke-width="3"></line>
+      <polygon points="84,116 92,116 92,156 82,156" fill="#EFE3C8"></polygon>
+      <polygon points="110,116 116,116 120,156 111,156" fill="#EFE3C8"></polygon>
+      <rect x="83" y="152" width="36" height="6" fill="#6B4C35"></rect>
+      <rect x="83" y="152" width="6" height="6" fill="#E4B54C"></rect>
+      <polygon points="96,96 110,96 112,114 94,114" fill="#4F86C6"></polygon>
+      <polygon points="94,98 99,98 99,114 94,114" fill="#9CC4EA"></polygon>
+      <polygon points="96,118 108,122 100,140 90,136" fill="#8C99A8"></polygon>
+      <polygon points="90,136 100,140 82,148 77,141" fill="#8C99A8"></polygon>
+      <ellipse cx="74" cy="148" rx="8" ry="31" fill="#3E5A70" stroke="#E4B54C" stroke-width="3"></ellipse>
+      <path d="M70 124 q-3 10 -2 22" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.35"></path>
+      <ellipse cx="102" cy="116" rx="13" ry="9" fill="#9AA6B2" stroke="#5E6875" stroke-width="1.2"></ellipse>
+      <g fill="none" stroke="#FFFFFF" stroke-linecap="round" opacity="0.35">
+        <path d="M92 112 q8 -5 16 -2" stroke-width="1.5"></path>
+        <path d="M90 196 l-1 30" stroke-width="1.2"></path>
+      </g>
+    </g>
+    <g transform="translate(100 100) scale(1.15) translate(-100 -100)">
+      <path d="M112 74 q16 -8 26 -22 q-3 18 -18 30 z" fill="#E8DCC0" stroke="#B9AC90" stroke-width="1"></path>
+      <path d="M114 82 q18 -2 28 -14 q-5 15 -24 22 z" fill="#E8DCC0" stroke="#B9AC90" stroke-width="1"></path>
+      <polygon points="118,88 127,92 118,96" fill="#3E6FA8"></polygon>
+      <polygon points="116,96 124,101 115,103" fill="#3E6FA8"></polygon>
+      <ellipse cx="106" cy="84" rx="16" ry="14" fill="#4F86C6"></ellipse>
+      <path d="M94 77 q-22 0 -30 10 q10 8 32 4 z" fill="#4F86C6"></path>
+      <path d="M65 89 q14 6 30 3 l2 4 q-17 4 -32 -7 z" fill="#9CC4EA"></path>
+      <circle cx="67" cy="85" r="1.2" fill="#22384B"></circle>
+      <ellipse cx="96" cy="79" rx="3.6" ry="2.6" fill="#F2D14E"></ellipse>
+      <line x1="96" y1="77.2" x2="96" y2="80.8" stroke="#22384B" stroke-width="1.2"></line>
+      <path d="M91 75 l10 -2.5" stroke="#22384B" stroke-width="1.5" stroke-linecap="round"></path>
+      <path d="M100 72 q8 -4 15 1" fill="none" stroke="#FFFFFF" stroke-width="1.8" opacity="0.35"></path>
+    </g>
+  </svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"bg":{"editor":"color","default":"#FFFFFF"},"$preview":{"width":512,"height":512}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { bg: this.props.bg ?? '#FFFFFF' };
+  }
+}
+</script>
+</body>
+</html>
