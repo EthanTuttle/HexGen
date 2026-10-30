@@ -11,6 +11,17 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
 - Placed hexes blend at their edges into continuous regions: forests merge into woods, fields into patchwork farmland, rivers into lakes, houses into towns. Hex outlines are only faintly visible on the grass.
 - Unplaced space is a flat, soft pastel backdrop (pink in this image). In Dorfromantik the pastel colour changes over time; HexGen keeps a pastel backdrop that changes colour by its own rules (chosen Oct 21, 2026):
   - **Time of day (main rule):** the pastel drifts with the day clock, for example soft peach at dawn, pale sky-blue at midday and rose at dusk, with a darker, cooler pastel at night. It doubles as a quiet hint of how close nightfall is. Combat pauses the clock, so a fight keeps the colour it started with. (Day clock: see [Map & exploration](02 Map & exploration.md) → Day and night.)
+    - **The light** (chosen Oct 30, 2026, from the Godot prototype; revisit in playtesting): it colours the land as well as the backdrop. Warm light and long shadows at dawn and dusk; at night it's cooler and dimmer but still readable, with lanterns and glowing toadstools standing out. The values blend smoothly between these hours (Godot: `scripts/time_of_day.gd` and the loop's backdrops in `scripts/game/game.gd`):
+
+      | Time (hour) | Backdrop | Sun colour | Sun strength | Sun height | Ambient light |
+      | --- | --- | --- | --- | --- | --- |
+      | Night (20:00–4:30) | #A9AECB | #AFC0E8 (moonlight) | 0.35 | 35° | 0.5 |
+      | Dawn (6:30) | #F4DCCB | #FFE2C8 | 1.1 | 24°, rising in the east | 0.7 |
+      | Morning and afternoon (9:00, 15:00) | #D9E7EC | #FFFFFF | 1.18 | 30° | 0.55 |
+      | Midday (12:00) | #D9E7EC | #FFFFFF | 1.18 | 38° | 0.5 |
+      | Dusk (18:00) | #EDCFD7 | #FFD8CC | 1.1 | 24°, setting in the west | 0.7 |
+
+      Ambient light is lifted when the sun is low so dense shade (the deep forest) doesn't go black. The water dims at night. The Blender previews use the midday light with the older backdrop #CFE4F2.
   - **Story progress (slow layer):** as the rift grows each chapter, the pastel shifts gradually toward an uneasy lilac on top of the time-of-day colour. (The rift: see [World & story](01 World & story.md).)
   - Not used: tinting by the terrain underfoot (risks the contrast problem of combat v9b–v9d), and a fixed colour per campaign.
 - Along the map's edge, empty slots show as pale, translucent hexes; gaps inside the map show the same way.
@@ -429,7 +440,8 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** how high ability scores can go. [Classes & combat](03 Classes & combat.md) → Ability scores sets no maximum. From v10 the gear screen's abilities strip keeps coins on one line in a 52px space, so they overlap more as scores grow; past about 6 they get hard to count (v1–v9's panel wrapped 3 coins per line, up to about 9)
 - [ ] **New:** feedback on character & gear v8d (group trays, ability dividers), then confirm it as final
 - [ ] **New:** combat screen: where the acting character's name shows, now that the separate AP block under the party is gone (the highlighted portrait is the only cue)
-- [ ] **New:** exact backdrop colours for each time of day, and how far the rift's lilac shift goes by the final chapter
+- [x] ~~Exact backdrop colours for each time of day~~ (settled Oct 30, 2026: the Godot prototype's light; see Art direction → Time of day; revisit in playtesting)
+- [ ] **New:** how far the rift's lilac shift goes by the final chapter
 - [ ] **New:** whether the mini's base rim colour marks the character or the side (ally/enemy)
 - [ ] **New:** exploration v9: the party as a cluster of true-scale minis instead of one token; combat v15: flat-top cells (both chosen Oct 29, 2026)
 - [x] ~~Region variant art: what a variant changes~~ (settled Oct 30, 2026: whatever makes it look best, while still blending in; tier 1 looks chosen, see Art direction → Region variant looks)
