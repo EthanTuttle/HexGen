@@ -278,12 +278,8 @@ def village(p, rng, kind):
 #   - an "other" wedge slopes from H0 down to the ground at the tile edge, so corners and edges facing other
 #     terrain sit at ground level;
 #   - a "same" wedge adds a ridge that reaches HE at the middle of the edge, where it meets the neighbour's.
-# Styles: "raised" keeps smooth slopes; "terraced" snaps the same heights into ledges with cliff faces.
 H0, HPEAK, HE = 1.0, 1.6, 0.7
-TERRACE = 0.4
-HILL_STYLES = {"raised": "hills", "terraced": "hills_terraced"}  # style -> piece name prefix
-GRID = {"raised": (24, 24), "terraced": (60, 64)}  # samples across a sector of the whole tile: depth, side to side
-# (terraces need the fine grid so their cliff edges don't zigzag)
+ND, NV = 24, 24  # samples across a sector of the whole tile: depth, side to side
 SLOPE0 = -2 * (HPEAK - H0) / X0 * (X1 - X0) / H0  # the wedges leave the mound at its own slope
 
 
@@ -292,37 +288,36 @@ def smooth(a, b, x):
     return t * t * (3 - 2 * t)
 
 
-def hill_height(d, s, kind, style):
+def hill_height(d, s, kind):
     """Ground height at depth d and side share s (0 on the wedge's middle line, 1 on its sides)."""
     if d <= X0:
-        h = H0 + (HPEAK - H0) * (1 - (d / X0) ** 2)
-    else:
-        t = (d - X0) / (X1 - X0)
-        t += 0.6 * s * s * t * (1 - t)  # drop sooner toward the corners, so the hill reads round, not hexagonal
-        h = H0 * (2 * t ** 3 - 3 * t ** 2 + 1 + SLOPE0 * (t ** 3 - 2 * t ** 2 + t))
-        if kind == "same":
-            h += HE * smooth(0, 1, t) * (1 - smooth(0.3, 0.95, s))
-    if style == "terraced":
-        k, f = divmod(h, TERRACE)
-        h = TERRACE * (k + smooth(0.7, 1.0, f / TERRACE))
+        return H0 + (HPEAK - H0) * (1 - (d / X0) ** 2)
+    t = (d - X0) / (X1 - X0)
+    t += 0.6 * s * s * t * (1 - t)  # drop sooner toward the corners, so the hill reads round, not hexagonal
+    h = H0 * (2 * t ** 3 - 3 * t ** 2 + 1 + SLOPE0 * (t ** 3 - 2 * t ** 2 + t))
+    if kind == "same":
+        h += HE * smooth(0, 1, t) * (1 - smooth(0.3, 0.95, s))
     return h
 
 
-def height_at(at, kind, style):
+def hex_depth(at):
+    return max(at.dot(hk.edge_normal(i)) for i in range(6))
+
+
+def height_at(at, kind):
     """hill_height for a point in edge 0's wedge (or the centre)."""
-    d = max(at.dot(hk.edge_normal(i)) for i in range(6))
+    d = hex_depth(at)
     if d <= X0 or kind == "centre":
-        return hill_height(d, 0, "centre", style)
-    return hill_height(at.x, abs(at.y) / (at.x * TAN30), kind, style)
+        return hill_height(d, 0, "centre")
+    return hill_height(at.x, abs(at.y) / (at.x * TAN30), kind)
 
 
-def hill_surface(p, sectors, d0, d1, kind, style):
+def hill_surface(p, sectors, d0, d1, kind):
     """Triangulated ground over the given sectors between depths d0 and d1, faces painted grass or cliff."""
     bm = p.bm
-    ND, NV = GRID[style]
     nd = max(2, round(ND * (d1 - d0) / X1))
     grass, cliff = p._slot("hill_grass"), p._slot("cliff")
-    middle = bm.verts.new((0, 0, hill_height(0, 0, kind, style) + 0.01)) if d0 == 0 else None
+    middle = bm.verts.new((0, 0, hill_height(0, 0, kind) + 0.01)) if d0 == 0 else None
     for i in sectors:
         n = hk.edge_normal(i)
         t = Vector((-n.y, n.x, 0))
@@ -336,7 +331,7 @@ def hill_surface(p, sectors, d0, d1, kind, style):
             for b in range(NV + 1):
                 v = -1 + 2 * b / NV
                 q = n * d + t * (v * d * TAN30)
-                q.z = hill_height(d, abs(v), kind, style) + 0.01
+                q.z = hill_height(d, abs(v), kind) + 0.01
                 row.append(bm.verts.new(q))
             grid.append(row)
         for a in range(nd):
@@ -347,33 +342,80 @@ def hill_surface(p, sectors, d0, d1, kind, style):
                         continue
                     f = bm.faces.new(tri)
                     f.normal_update()
-                    f.material_index = cliff if f.normal.z < (0.8 if style == "terraced" else 0.6) else grass
+                    f.material_index = cliff if f.normal.z < 0.6 else grass
                     p.surface.add(f)
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
 
 
-def crag(p, rng, style):
-    """The rocky peak on top of the mound, built from z = 0 at the mound's top so the engine can scale it."""
-    top = hill_height(0, 0, "centre", style)
-    for x, y, r, h in ((0, 0, 0.75, 1.4), (0.6, -0.35, 0.45, 0.85), (-0.5, -0.4, 0.4, 0.65)):
-        at = Vector((x, y, 0))
-        z = hill_height(max(at.dot(hk.edge_normal(i)) for i in range(6)), 0, "centre", style) - top
-        p.cone(at, r, h, rng.choice(["rock", "rock_dark", "rock_light"]), segments=5, z=z - 0.1,
-               spin=rng.uniform(0, 1))
+# Mountains: joined hills share one bigger mountain. A lone hills tile has its own peak on its mound; two joined
+# tiles each draw half of one mountain on their shared edge; three tiles around a corner each draw a third of
+# one on that corner. Each part's outline wobbles with the symmetry of how its copies are turned (half turns on
+# an edge, third turns on a corner), so the parts meet exactly. The engine's rule is in render_preview.py.
+#   kind: (centre, height, base radius, first and last angle this tile draws, symmetry)
+MOUNTAINS = {
+    "peak": (Vector((0, 0, 0)), 2.6, 1.65, (0, 360), 1),
+    "mountain_edge": (Vector((X1, 0, 0)), 3.4, 2.15, (90, 270), 2),
+    "mountain_corner": (hk.hex_corners(hk.TILE_RADIUS, pointy=True)[1], 4.3, 3.0, (150, 270), 3),
+}
+RINGS = (0.22, 0.45, 0.7, 1.0)  # share of the base radius at each ring of the mountain
 
 
-def hills(p, rng, kind, style="raised"):
-    if kind == "peak":
-        crag(p, rng, style)
+def mountain(p, rng, kind):
+    centre, height, radius, (a0, a1), sym = MOUNTAINS[kind]
+    centre = Vector((centre.x, centre.y, 0))
+    phases = [rng.uniform(0, 2 * math.pi) for _ in range(4)]
+
+    def wobble(th, k):
+        # Harmonics of the symmetry only, so a copy turned by 360 / sym degrees has the same outline.
+        return (0.16 * math.sin(sym * (1 + k) * th + phases[k])
+                + 0.1 * math.sin(sym * (3 + k) * th + phases[k + 2]))
+
+    bm = p.bm
+    rock, rock_dark, grass = p._slot("rock"), p._slot("rock_dark"), p._slot("hill_grass")
+    angles = [math.radians(a) for a in range(a0, a1 + 1, 20)]
+    if a1 - a0 == 360:
+        angles = angles[:-1]
+    lift = (lambda q: hill_height(hex_depth(q), 0, "centre")) if kind == "peak" else (lambda q: -0.05)
+    apex = bm.verts.new(centre + Vector((0, 0, height + lift(centre))))
+    rings = []
+    for k, share in enumerate(RINGS):
+        ring = []
+        for th in angles:
+            r = radius * share * (1 + wobble(th, 0))
+            q = centre + Vector((math.cos(th), math.sin(th), 0)) * r
+            # Concave sides and ragged ring heights, so it reads as a rocky mountain rather than a cone.
+            drop = (1 - share) ** 1.25 * (1 + 1.2 * wobble(th + k, 1)) if share < 1 else 0.0
+            q.z = height * drop + lift(q)
+            ring.append(bm.verts.new(q))
+        rings.append(ring)
+    n = len(angles)
+    steps = range(n) if a1 - a0 == 360 else range(n - 1)
+    faces = []
+    for j in steps:
+        faces.append(((apex, rings[0][j], rings[0][(j + 1) % n]), 0))
+        for k in range(len(RINGS) - 1):
+            a, b = rings[k], rings[k + 1]
+            faces.append(((a[j], b[j], b[(j + 1) % n]), k + 1))
+            faces.append(((a[j], b[(j + 1) % n], a[(j + 1) % n]), k + 1))
+    for verts, ring in faces:
+        f = bm.faces.new(verts)
+        # Rock above, a grassy skirt on the lowest ring; facets alternate between two rock shades.
+        f.material_index = grass if ring == len(RINGS) - 1 else rock if rng.random() < 0.6 else rock_dark
+        p.surface.add(f)
+
+
+def hills(p, rng, kind):
+    if kind in MOUNTAINS:
+        mountain(p, rng, kind)
         return
     if kind == "centre":
-        hill_surface(p, range(6), 0, X0, kind, style)
+        hill_surface(p, range(6), 0, X0, kind)
         pts = hk.scatter(rng, lambda q: hk.in_centre(q, 0.2) and q.length > 1.1, 3, 0.6, hk.CENTRE_BOUNDS)
     else:
-        hill_surface(p, [0], X0, X1, kind, style)
+        hill_surface(p, [0], X0, X1, kind)
         pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 4, 0.8, hk.WEDGE_BOUNDS)
     for at in pts:
-        at.z = height_at(at, kind, style)
+        at.z = height_at(at, kind)
         if kind != "centre" and rng.random() < 0.25:
             tree(p, rng, at)
         else:
@@ -600,14 +642,12 @@ def build():
         col = hk.new_collection(terrain)
         base(terrain, col)
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
-        # Hills come in two styles to compare, with a peak piece the engine scales by joined neighbours.
-        styles = HILL_STYLES.items() if terrain == "hills" else [(None, terrain)]
-        for style, prefix in styles:
-            for kind in kinds + (("peak",) if style else ()):
-                name = f"{prefix}_{kind}" if kind in ("centre", "corner", "peak") else f"{prefix}_edge_{kind}"
-                p = hk.Piece(name)
-                BUILDERS[terrain](p, hk.seeded(name), kind, **({"style": style} if style else {}))
-                p.finish(col)
+        kinds += tuple(MOUNTAINS) if terrain == "hills" else ()
+        for kind in kinds:
+            name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"
+            p = hk.Piece(name)
+            BUILDERS[terrain](p, hk.seeded(name), kind)
+            p.finish(col)
     col = hk.new_collection("borders")
     for name, side in (("border_join_l", 1), ("border_join_r", -1)):
         p = hk.Piece(name)
