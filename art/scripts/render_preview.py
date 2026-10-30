@@ -89,7 +89,11 @@ def build_map(templates, animated=False, tiles=None):
         # edge pieces are picked by its terrain.
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
-        place(templates, f"base_{name}", col, at)
+        base = place(templates, f"base_{terrain}", col, at)
+        if name in vr.VARIANTS:
+            # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
+            base.material_slots[0].link = "OBJECT"
+            base.material_slots[0].material = hk.material(vr.VARIANTS[name][2])
         if terrain == "river":
             # Water is drawn per tile from its own water neighbours, the way the engines will.
             near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]

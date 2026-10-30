@@ -111,6 +111,10 @@ PALETTE = {
     "cell_grass_c": "#88B575",
 }
 
+# Surfaces the engines treat specially keep their own material; everything else on a piece shares one "kit"
+# material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool"}
+
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
 
@@ -118,13 +122,27 @@ def srgb_to_linear(c):
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
 
+def linear(name):
+    hexcol = PALETTE[name].lstrip("#")
+    return [srgb_to_linear(int(hexcol[i:i + 2], 16) / 255) for i in (0, 2, 4)]
+
+
 def material(name):
-    """One flat-colour material per palette entry, made once."""
+    """One flat-colour material per palette entry, made once. "kit" is the shared vertex-colour material."""
     mat = bpy.data.materials.get(name)
     if mat:
         return mat
-    hexcol = PALETTE[name].lstrip("#")
-    rgb = [srgb_to_linear(int(hexcol[i:i + 2], 16) / 255) for i in (0, 2, 4)]
+    if name == "kit":
+        mat = bpy.data.materials.new("kit")
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        bsdf = nodes.get("Principled BSDF")
+        attr = nodes.new("ShaderNodeVertexColor")
+        attr.layer_name = "Col"
+        mat.node_tree.links.new(attr.outputs["Color"], bsdf.inputs["Base Color"])
+        bsdf.inputs["Roughness"].default_value = 0.9
+        return mat
+    rgb = linear(name)
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
@@ -284,11 +302,24 @@ class Piece:
                   (v[0], v[4], v[3]), (v[1], v[2], v[5])):
             self.bm.faces.new(f).material_index = idx
 
-    def finish(self, collection, location=(0, 0, 0)):
+    def finish(self, collection, location=(0, 0, 0), merge=True):
+        """merge: one shared "kit" material with the colours in vertex colours (see OWN_MATERIAL).
+        merge=False keeps one material per colour (the base slabs, whose top the engine recolours)."""
         bmesh.ops.recalc_face_normals(self.bm, faces=[f for f in self.bm.faces if f not in self.surface])
         mesh = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(mesh)
         self.bm.free()
+        if merge and self.mats:
+            used = [m for m in self.mats if m in OWN_MATERIAL]
+            keep = (["kit"] if any(m not in OWN_MATERIAL for m in self.mats) else []) + used
+            colours = mesh.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
+            rgba = {m: (*linear(m), 1.0) for m in self.mats}
+            for poly in mesh.polygons:
+                name = self.mats[poly.material_index]
+                for li in poly.loop_indices:
+                    colours.data[li].color = rgba[name]
+                poly.material_index = keep.index(name if name in OWN_MATERIAL else "kit")
+            self.mats = keep
         for m in self.mats:
             mesh.materials.append(material(m))
         for poly in mesh.polygons:

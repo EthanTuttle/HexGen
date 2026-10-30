@@ -21,7 +21,7 @@ import water as wt
 
 WIND = math.radians(25)    # the wind blows along this direction; crests run across it
 FADE = (0.3, 2.2)          # flat within 0.3 m of a non-desert edge, full height from 2.2 m
-ND, NV = 28, 32            # grid samples across one sixth of a tile: depth, side to side
+ND, NV = 14, 16            # grid samples across one sixth of a tile: depth, side to side (swells are 6.5 m long)
 PROP_CELL = 2.4
 DESERTS = {"desert", "wasteland"}  # the desert terrain and its variants
 
@@ -163,8 +163,8 @@ def wasteland_prop(piece, rng, kind, at):
     spin = rng.uniform(0, 2 * m.pi)
     along = Vector((m.cos(spin), m.sin(spin), 0))
     if kind == "cracked":
-        piece.flat([Vector((x, y, at.z + 0.02)) for x, y in w.circle((at.x, at.y), rng.uniform(0.7, 1.1), rng, 0.25)],
-                   0.012, "cracked")
+        piece.prism([Vector((x, y, 0)) for x, y in w.circle((at.x, at.y), rng.uniform(0.7, 1.1), rng, 0.25)],
+                    at.z, at.z + 0.045, "cracked")  # lifted with the sand under it, so the patch shows
     elif kind == "column":  # a sandstone column, standing or broken off
         piece.cylinder(at, 0.2, rng.choice([0.5, 0.9, 1.4]), "sandstone", segments=8, z=-0.25)
         if rng.random() < 0.5:
