@@ -156,6 +156,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Simultaneous placement in multiplayer
 - [ ] New: shared party inventory in multiplayer (guests' access, what a leaving guest takes)
 - [x] ~~Night building in multiplayer~~ (settled Oct 23: each player's own controllable party's sight range)
+- [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
+- [ ] Godot on iPhone: check the prototype's frame rate on the iPhone 15 Pro (see Multiplayer & tech)
 - [x] ~~Engine prototype: which terrains the test tiles cover~~ (settled Oct 29: plains, forest, farmland, river/lake, village; see Multiplayer & tech → Engine prototype)
 
 **Presentation**
