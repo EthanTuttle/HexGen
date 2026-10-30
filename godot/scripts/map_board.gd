@@ -1,7 +1,7 @@
 class_name MapBoard
 extends Node3D
 ## A map assembled by art/scripts/render_preview.py's rules (build_map): edge wedges same/other,
-## farm-village linking, border joins, hills mountains; water drawn per tile; desert sand shaped in
+## farm-village linking, border joins, hills mountains and ranges; water drawn per tile; desert sand shaped in
 ## world space; ground cover scattered. A tile's name is a terrain or a region variant (Variants).
 
 ## Pointy-top axial (q, r) -> terrain. Copied from render_preview.py.
@@ -247,11 +247,19 @@ func _build_tile(t: Vector2i) -> void:
 			triple.append(joined[i] and joined[(i + 1) % 6])   # corner i: between edges i and i + 1
 		if not joined.has(true):
 			Kit.place(node, _kit, name + "_peak", at)
+		var parts := []
 		for i in 6:
 			if triple[i]:
-				Kit.place(node, _kit, name + "_mountain_corner", at, deg_to_rad(60.0 * i))
+				parts.append(["corner", i])
 			elif joined[i] and not triple[posmod(i - 1, 6)]:
-				Kit.place(node, _kit, name + "_mountain_edge", at, deg_to_rad(60.0 * i))
+				parts.append(["edge", i])
+		for part in parts:
+			Kit.place(node, _kit, name + "_mountain_" + part[0], at, deg_to_rad(60.0 * part[1]))
+		# In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
+		if parts.size() >= 2:
+			Kit.place(node, _kit, name + "_ridge_knot", at)
+			for part in parts:
+				Kit.place(node, _kit, name + "_ridge_" + part[0], at, deg_to_rad(60.0 * part[1]))
 	for i in 6:
 		var angle := deg_to_rad(60.0 * i)
 		Kit.place(node, _kit, name + ("_edge_same" if joined[i] else "_edge_other"), at, angle)
