@@ -1,6 +1,6 @@
 # HexGen — Multiplayer & tech
 
-Last updated Oct 24, 2026 · @Ethan · Part of the [Index](00 Index.md)
+Last updated Oct 29, 2026 · @Ethan · Part of the [Index](00 Index.md)
 
 Platform, business model, multiplayer rules, saving and implementation. This doc holds every multiplayer exception; other docs describe single-player and link here.
 
@@ -62,8 +62,9 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 
 - Build the same small prototype in **Godot** and in **Unity**, then pick one. Unreal was considered and set aside for now.
 - Scope: **card placement plus a small fight.** Draw a hand, place hex tiles following terrain pairing, then run a tiny hex-grid fight with a coin flip. Walking the hero between hexes is out of scope.
+- Screens: each prototype rebuilds the **exploration and combat screens from the mockups** (chosen Oct 29, 2026), not placeholder UI. Other screens (after-combat, level-up, town and so on) wait for the chosen engine. Mockups: [Presentation](07 Presentation.md) → Screen mockups.
 - Deciding factor: **look**, meaning which engine gets closer to the Dorfromantik-like art style (see [Presentation](07 Presentation.md) → Art direction).
-- Art: **Ethan makes a few tiles himself, plus a simple blockout mini on a wooden hex base**. Both prototypes use the same files.
+- Art: **Ethan makes a few tiles himself, plus a simple blockout mini on a wooden hex base**. Both prototypes use the same files. Tool (chosen Oct 29, 2026): **Blender**, exporting glTF for both engines. The blockout mini may start as an AI image-to-3D draft made from the Chelmsford turnaround (Minis canvas, v3b), then cleaned up in Blender; check the service's licence before using its output.
 - Look tests, all four in both engines (each is described in [Presentation](07 Presentation.md)):
   - Hex edge blending into continuous regions
   - Lighting and the pastel backdrop shifting with time of day
@@ -92,7 +93,7 @@ Engine comparison as of Oct 2026 (checked against public info; re-check pricing 
 - [ ] Placement: simultaneous placement in multiplayer
 - [ ] **New:** shared party inventory in multiplayer (see [Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold). Do guests use the host's shared inventory, and what does a leaving guest take: only their hero's equipped gear, or also items they picked up?
 - [x] ~~Night building in multiplayer~~ (settled Oct 23, 2026: each player builds within their own controllable party's sight range; see [Map & exploration](02 Map & exploration.md) → Day and night)
-- [ ] **New:** engine choice. Settled (Oct 24): Godot vs Unity prototype of card placement plus a small fight, judged on look, on PC first, with an iPhone tie-break if close; Ethan makes the tiles and a blockout mini; all four look tests. Still open: which terrains the tiles cover
+- [ ] **New:** engine choice. Settled (Oct 24): Godot vs Unity prototype of card placement plus a small fight, judged on look, on PC first, with an iPhone tie-break if close; Ethan makes the tiles and a blockout mini; all four look tests. Oct 29: the prototypes rebuild the exploration and combat mockup screens; art made in Blender. Still open: which terrains the tiles cover
 - [x] ~~iOS build route from Windows~~ (settled Oct 24: a used Mac)
 - [x] ~~How often to make iPhone builds~~ (settled Oct 24: weekly once development is underway)
 - [ ] **New:** Android: test it too later, or ship iOS first?

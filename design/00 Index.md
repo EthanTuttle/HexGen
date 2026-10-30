@@ -155,6 +155,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Simultaneous placement in multiplayer
 - [ ] New: shared party inventory in multiplayer (guests' access, what a leaving guest takes)
 - [x] ~~Night building in multiplayer~~ (settled Oct 23: each player's own controllable party's sight range)
+- [ ] New: engine prototype, which terrains the test tiles cover (scope, look tests and tools settled; see Multiplayer & tech → Engine prototype)
 
 **Presentation**
 
