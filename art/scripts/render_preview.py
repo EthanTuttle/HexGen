@@ -77,10 +77,21 @@ def stage(target, distance, elevation_deg, lens=50):
         except TypeError:
             continue
     scene.render.resolution_x, scene.render.resolution_y = 1600, 1000
+    # Show colours as authored (Blender's default AgX transform greys flat colours out).
+    scene.view_settings.view_transform = "Standard"
+    # The pastel backdrop: full strength where the camera sees it, softer as light on the scene.
     world = bpy.data.worlds.new("backdrop")
     world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs["Color"].default_value = hk.material("backdrop").diffuse_color
-    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.6
+    nodes, links = world.node_tree.nodes, world.node_tree.links
+    colour = hk.material("backdrop").diffuse_color
+    seen, light = nodes["Background"], nodes.new("ShaderNodeBackground")
+    seen.inputs["Color"].default_value = light.inputs["Color"].default_value = colour
+    seen.inputs["Strength"].default_value, light.inputs["Strength"].default_value = 1.0, 0.5
+    mix, path = nodes.new("ShaderNodeMixShader"), nodes.new("ShaderNodeLightPath")
+    links.new(path.outputs["Is Camera Ray"], mix.inputs["Fac"])
+    links.new(light.outputs["Background"], mix.inputs[1])
+    links.new(seen.outputs["Background"], mix.inputs[2])
+    links.new(mix.outputs["Shader"], nodes["World Output"].inputs["Surface"])
     scene.world = world
     # Camera from the south, tilted down; light from the top left of the view.
     el = math.radians(elevation_deg)
