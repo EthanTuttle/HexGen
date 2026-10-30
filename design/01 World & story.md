@@ -4,6 +4,10 @@ Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 
 Lore, the pantheon, enemy types, the main story, background paths and their NPCs, and all quest content.
 
+## Naming
+
+Decided Oct 30, 2026. Place and character names draw on **Irish, Gaelic and German** roots, so new names can be built from those languages (e.g. Dunfaire: Gaelic/Irish dún "fort" + faire "watch"; Sternbrunn: German Stern "star" + Brunnen "well"; Weizenhof: German Weizen "wheat" + Hof "farmstead"). Plain English names are fine too where they suit (e.g. The Oak & Lantern, a common folk's inn). Town names: [characters → Places](characters/Places.md).
+
 ## Magic and the gods (lore)
 
 - Magic is manifested through souls and the force of will behind them.
@@ -74,12 +78,12 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 | Background | Starting hex | Starting gear | Starting quest | Proficiency list (pick 1) |
 | --- | --- | --- | --- | --- |
-| Soldier | Guard tower | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers | Athletics, Intimidate, Perception |
-| Acolyte | Church | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion | Lore, Nature, Survival |
-| Criminal | Town | TBD | Steals an artifact important to the cast-out god: a key to the god's prison | Thievery, Stealth, Deceive |
-| Sage | Wizard tower | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) | Lore, Nature, Perception |
-| Folk Hero | Inn | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
-| Noble | Farm (estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
+| Soldier | Dunfaire Tower (guard tower) | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers | Athletics, Intimidate, Perception |
+| Acolyte | East Rime Chapel (church) | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion | Lore, Nature, Survival |
+| Criminal | Monto Town (town) | TBD | Steals an artifact important to the cast-out god: a key to the god's prison | Thievery, Stealth, Deceive |
+| Sage | Sternbrunn Spire (wizard tower) | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) | Lore, Nature, Perception |
+| Folk Hero | The Oak & Lantern (inn) | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
+| Noble | Weizenhof Estate (the family estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
 
 - **Background blurbs** (chosen Oct 30, 2026 by Ethan; present tense, since the hero still holds that role when the story starts; shown on the character creator's background step: [Presentation](07%20Presentation.md) → Character creator screen):
 
@@ -93,7 +97,7 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 | Noble | A young noble learning to carry the family name and all it demands. |
 
 - **Proficiency lists** (decided Oct 30, 2026): the hero picks 1 starting proficiency from their background's 3 (rules: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies).
-- Starting hexes are Story cards: special versions of these locations, not the standard landmarks.
+- Starting hexes are Story cards: special versions of these locations, not the standard landmarks. Each has its own name (named Oct 30, 2026; roots: see Naming).
 - Starting gear: see [Weapons & gear](04 Weapons & gear.md) → Starting gear. Each background may also add a unique starter item (to be decided).
 
 ## Background paths
