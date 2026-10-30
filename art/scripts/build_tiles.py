@@ -417,9 +417,54 @@ def mountain(p, rng, kind, scale=1.0, grass="hill_grass"):
         p.surface.add(f)
 
 
+# Ranges: a tile that holds parts of two or more mountains runs a rocky ridge from its middle out to each of them,
+# meeting on a knob in the middle, so a bigger group of hills reads as one long range rather than separate peaks.
+RIDGES = {"ridge_edge": Vector((X1, 0, 0)),                                       # to the mountain on edge 0
+          "ridge_corner": Vector(hk.hex_corners(hk.TILE_RADIUS, pointy=True)[1].xy).to_3d()}  # to corner 0's
+RIDGE_KINDS = ("ridge_edge", "ridge_corner", "ridge_knot")
+RIDGE_HEIGHT = 1.4  # crest height above the ground under it
+RIDGE_HALF = 1.5    # half the ridge's width at its foot: broad, so it reads as mountain, not a wall
+
+
+def ridge(p, rng, kind, scale=1.0):
+    def ground(c):
+        # The edge ridge runs along edge 0's wedge middle, the corner ridge along the wedge's side (s = 1).
+        d = hex_depth(c)
+        return hill_height(d, 0, "centre") if d <= X0 else hill_height(c.x, abs(c.y) / (c.x * TAN30), "same")
+
+    if kind == "ridge_knot":
+        p.cone(Vector((0, 0, 0)), 1.0, RIDGE_HEIGHT * scale + 0.6, "rock", segments=6, z=ground(Vector()) - 0.3,
+               spin=rng.uniform(0, 1))
+        return
+    end = RIDGES[kind]
+    along = end.normalized()
+    side = Vector((-along.y, along.x, 0))
+    rock, rock_dark = p._slot("rock"), p._slot("rock_dark")
+    rows, n = [], 10
+    for k in range(n + 1):
+        c = end * (k / n)
+        g = ground(c)
+        crest = g + RIDGE_HEIGHT * scale * (0.75 + 0.4 * rng.random())
+        jag = side * rng.uniform(-0.12, 0.12)
+        # A shoulder halfway down each side breaks up the slope.
+        rows.append([p.bm.verts.new(c - side * RIDGE_HALF + Vector((0, 0, g - 0.5))),
+                     p.bm.verts.new(c - side * RIDGE_HALF * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
+                     p.bm.verts.new(c + jag + Vector((0, 0, crest))),
+                     p.bm.verts.new(c + side * RIDGE_HALF * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
+                     p.bm.verts.new(c + side * RIDGE_HALF + Vector((0, 0, g - 0.5)))])
+    for a, b in zip(rows, rows[1:]):
+        for j in range(4):
+            f = p.bm.faces.new((a[j], b[j], b[j + 1], a[j + 1]))
+            f.material_index = rock if rng.random() < 0.6 else rock_dark
+            p.surface.add(f)
+
+
 def hills(p, rng, kind):
     if kind in MOUNTAINS:
         mountain(p, rng, kind)
+        return
+    if kind in RIDGE_KINDS:
+        ridge(p, rng, kind)
         return
     if kind == "centre":
         hill_surface(p, range(6), 0, X0, kind)
@@ -606,7 +651,7 @@ def build():
         col = hk.new_collection(terrain)
         base(terrain, col)
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
-        kinds += tuple(MOUNTAINS) if terrain == "hills" else ()
+        kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"
             p = hk.Piece(name)
