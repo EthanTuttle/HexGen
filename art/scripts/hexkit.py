@@ -35,7 +35,7 @@ PALETTE = {
     "soil_light": "#8A6446",
     "soil_dark": "#6B4C35",
     # props
-    "grass_ink": "#4F7A33",
+    "grass_ink": "#7FA95A",  # tufts: close to the grass, so open ground reads calm, not speckled
     "leaf": "#4E8049",
     "leaf_dark": "#3B6A3A",
     "trunk": "#7A5236",
