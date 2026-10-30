@@ -1,6 +1,6 @@
 # HexGen — World & story
 
-Last updated Oct 27, 2026 · @Ethan · Part of the [Index](00 Index.md)
+Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 
 Lore, the pantheon, enemy types, the main story, background paths and their NPCs, and all quest content.
 
@@ -72,15 +72,16 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 6 backgrounds at launch: Soldier, Acolyte, Criminal, Sage, Folk Hero, Noble. A background sets the starting hex, starting gear, starting quest, and one of the starting deck's terrains (see [Cards & progression](05 Cards & progression.md) → Starting decks; decided Oct 24, 2026).
 
-| Background | Starting hex | Starting gear | Starting quest |
-| --- | --- | --- | --- |
-| Soldier | Guard tower | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers |
-| Acolyte | Church | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion |
-| Criminal | Town | TBD | Steals an artifact important to the cast-out god: a key to the god's prison |
-| Sage | Wizard tower | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) |
-| Folk Hero | Inn | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) |
-| Noble | Farm (estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. |
+| Background | Starting hex | Starting gear | Starting quest | Proficiency list (pick 1) |
+| --- | --- | --- | --- | --- |
+| Soldier | Guard tower | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers | Athletics, Intimidate, Perception |
+| Acolyte | Church | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion | Lore, Nature, Survival |
+| Criminal | Town | TBD | Steals an artifact important to the cast-out god: a key to the god's prison | Thievery, Stealth, Deceive |
+| Sage | Wizard tower | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) | Lore, Nature, Perception |
+| Folk Hero | Inn | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
+| Noble | Farm (estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
 
+- **Proficiency lists** (decided Oct 30, 2026): the hero picks 1 starting proficiency from their background's 3 (rules: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies).
 - Starting hexes are Story cards: special versions of these locations, not the standard landmarks.
 - Starting gear: see [Weapons & gear](04 Weapons & gear.md) → Starting gear. Each background may also add a unique starter item (to be decided).
 

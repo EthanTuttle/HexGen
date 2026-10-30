@@ -1,6 +1,6 @@
 # HexGen — Classes & combat
 
-Last updated Oct 27, 2026 · @Ethan · Part of the [Index](00 Index.md)
+Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 
 Heroes and companions, races, ability scores, coin checks, tactical combat, classes and subclasses, class action cards and all spell schools. Weapons, weapon cards and mastery trees live in [Weapons & gear](04 Weapons & gear.md).
 
@@ -15,6 +15,18 @@ Heroes and companions, races, ability scores, coin checks, tactical combat, clas
 ## Hero creation
 
 The hero is defined by class, race/ancestry and background. All three use custom lists. Backgrounds are in [World & story](01 World & story.md) → Backgrounds.
+
+**What the player picks at creation** (gathered Oct 30, 2026; how the screen looks: [Presentation](07 Presentation.md) → Character creator)
+
+- **Name:** typed by the player (a plain text field; decided Oct 30, 2026).
+- **Pronouns:** he, she or they, for NPC lines about the hero. This is its own pick, separate from the body build (decided Oct 30, 2026).
+- **Class**, then **race** and its sub-type where it has one (elf, dwarf and golem sub-types, dragon type, tiefling bloodline: see Races), then **background**.
+- **Ability scores:** the race +1s and the class +1 (see Ability scores → Starting scores).
+- **God** (Clerics only; see Cleric spells).
+- **Starting proficiencies:** 2 (see Skills → Starting proficiencies).
+- **Starting gear:** picked piece by piece (see [Weapons & gear](04 Weapons & gear.md) → Starting gear).
+- **Level-1 spells** (casters only: Wizard, Cleric and Bard): their 2 level-1 picks happen in the creator (decided Oct 30, 2026).
+- **Appearance:** build, heads and hair, colours (see [Presentation](07 Presentation.md) → Hero appearance at character creation).
 
 - 6 classes at launch: Fighter, Rogue, Wizard, Cleric, Ranger, Bard.
 - No multiclassing; heroes choose a subclass at level 5. Each class has 4 subclasses.
@@ -180,8 +192,8 @@ Skills (learned at class locations such as Training Grounds, Tree of Life and Co
 
 (Decided Oct 22, 2026. A proficiency's signature effect works on top of its coin bonus.)
 - A proficiency can be learned again to raise it a rank (more coins). Rank cap: open.
-- **Starting proficiencies** (decided Oct 28, 2026): a new hero starts with 2: one picked from their background's short list and one from their class location's list (see [Cards & progression](05 Cards & progression.md) → Class locations). Story companions start with 2, hand-picked to fit who they are, regardless of class (see [World & story](01 World & story.md) → Background paths).
-- Sources: class locations (1 pick per visit from that location's list; see [Cards & progression](05 Cards & progression.md) → Class locations) and backgrounds (1 pick at creation from the background's short list; the lists: open).
+- **Starting proficiencies** (decided Oct 28, 2026): a new hero starts with 2: one picked from their background's short list and one from their class location's list (see [Cards & progression](05 Cards & progression.md) → Class locations). Story companions start with 2, hand-picked to fit who they are, regardless of class (see [World & story](01 World & story.md) → Background paths). **Both picks can be the same proficiency** (decided Oct 30, 2026), which then starts at rank 2.
+- Sources: class locations (1 pick per visit from that location's list; see [Cards & progression](05 Cards & progression.md) → Class locations) and backgrounds (1 pick at creation from the background's short list of 3: see [World & story](01 World & story.md) → Backgrounds).
 
 ## Turns, AP and health
 
@@ -572,11 +584,12 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
 - [x] ~~Which companion chimes in when several are proficient, and how it combines with Silver Tongue~~ (settled Oct 28, 2026: highest score, then party order; Silver Tongue's reflip first, automatically; see Checks outside combat)
 - [x] ~~Each story companion's 2 proficiencies~~ (settled Oct 28, 2026: [World & story](01 World & story.md) → Companion proficiencies). Still open: the coins and heads needed per dialogue check
-- [ ] **New (Oct 28, 2026):** each background's short list of proficiencies to pick from at creation; and the College's skill list, since a Bard hero needs one to pick their class proficiency (05 Cards & progression → Class locations only says "learn flourishes (skills)")
+- [x] ~~Each background's short list of proficiencies~~ (settled Oct 30, 2026: see [World & story](01 World & story.md) → Backgrounds)
+- [ ] **New (Oct 28, 2026):** the College's skill list, since a Bard hero needs one to pick their class proficiency (05 Cards & progression → Class locations only says "learn flourishes (skills)"); the character creator mockup shows "[Bard proficiency]"
 - [ ] **New:** can a failed social check be retried in the same conversation? (Social encounter v1 uses each option once)
 - [ ] Class and subclass cards at level 15 and later (level 15 in progress, Oct 22, 2026)
 - [ ] **New:** names for the class location upgrades at levels 10 and 20 (Training Grounds, Thieves Guild, Tree of Life) under the upgrade-name rule (weapon mastery nodes: named Oct 26, 2026)
-- [ ] **New (mockup placeholder "[Hero name]"):** does the player name their hero at creation (Hero creation lists class, race and background only)?
+- [x] ~~Does the player name their hero at creation?~~ (settled Oct 30, 2026: yes, typed; see Hero creation)
 - [ ] **New (mockup placeholder, 2 hexes in combat v13–v14):** how many hexes one Move covers, and how DEX and race change it
 - [ ] **New:** Claim Trophy's damage cap; Thick Hide vs a once-per-turn 1 AP card every turn (strong for 1 AP; check in the balance pass)
 - [ ] **New:** Ranger nature cards (calling vines, animal spirits) move from the Tree of Life to later Ranger level-ups; which levels, and what does the Tree of Life teach instead?

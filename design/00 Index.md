@@ -1,6 +1,6 @@
 # HexGen — Design Index
 
-Last updated Oct 27, 2026 · @Ethan
+Last updated Oct 30, 2026 · @Ethan
 
 ## Overview
 
@@ -76,10 +76,11 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
 - [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
 - [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
-- [ ] New: each background's proficiency list; the College's skill list for Bard heroes
+- [x] ~~Each background's proficiency list~~ (settled Oct 30: 3 each; see World & story → Backgrounds)
+- [ ] New: the College's skill list for Bard heroes
 - [ ] New: can a failed social check be retried in the same conversation?
 - [ ] Class and subclass cards at level 15 and later (in progress; level 10 gives no card)
-- [ ] New (placeholder): does the player name the hero?
+- [x] ~~Does the player name the hero?~~ (settled Oct 30: yes, typed; pronouns are a separate pick)
 - [ ] New (placeholder): hexes per Move
 - [ ] New: name the location (level 10/20) upgrades under the upgrade-name rule (weapon mastery nodes done Oct 26)
 - [ ] New: Ranger nature cards as later level-ups, and what the Tree of Life teaches instead
@@ -184,7 +185,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: AI minis: which service after the Meshy vs Tripo test, and its licence
 - [x] ~~AI minis: how fused AI output becomes modular gear~~ (AI makes parts, not finished minis)
 - [ ] New: armour fitting test, then decide whether all worn gear still shows on minis
-- [ ] New: hero creation: builds per race, colours, heads and hairstyles per race
+- [x] ~~Hero creation: builds per race, colours~~ (settled Oct 30: 3 builds per race, swatches per race)
+- [ ] New: hero creation: final heads and hairstyles per race, and each race's swatches
+- [ ] New: character creator screen: layout and step order
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3
