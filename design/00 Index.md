@@ -206,7 +206,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30: v7a)
 - [x] ~~Character creator sub-type selector~~ (settled Oct 30: v8a hex tokens)
 - [x] ~~Character creator narrow banner names~~ (settled Oct 30: v11a)
-- [ ] New: character creator Scores and Skills: v14a on the banners, v14b stones, v14c ability banners or v14d one Training step
+- [ ] New: character creator Scores and Skills in the level-up look: v15a tiles + feat-style list, v15b ability details or v15c one Training step (v14a out)
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
