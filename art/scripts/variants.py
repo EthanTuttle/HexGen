@@ -37,10 +37,14 @@ def pine(p, rng, at, h, mat):
 
 def deep_forest(p, rng, kind):
     """Dark pine stands: tall pines packed tight, a darker green, little light reaching the ground."""
-    if kind == "centre":  # a small clearing lets the ground show, so the wood still reads in low light
+    if kind == "centre":  # a clearing lets the ground show, so the wood still reads in low light
         clearing = Vector((0.45, -0.35, 0))
-        pts = hk.scatter(rng, lambda q: hk.in_centre(q) and (q - clearing).length > 0.75, 9, 0.6, hk.CENTRE_BOUNDS)
-    elif kind == "same":
+        pts = hk.scatter(rng, lambda q: hk.in_centre(q) and (q - clearing).length > 1.0, 8, 0.6, hk.CENTRE_BOUNDS)
+        for at in pts:  # shorter pines round its rim, so the game camera can see into it
+            pine(p, rng, at, rng.uniform(1.8, 2.3) if (at - clearing).length < 1.6 else rng.uniform(2.6, 3.6),
+                 "pine_deep")
+        return
+    if kind == "same":
         pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.1, inner=0, side=0), 15, 0.6, hk.WEDGE_BOUNDS)
     else:
         pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x1=X0 + 0.7 * (X1 - X0), margin=0.2, inner=0, side=0),
@@ -107,7 +111,8 @@ def highlands(p, rng, kind):
         bt.mountain(p, rng, kind, scale=HIGHLAND_PEAKS, grass="highland_grass")
         return
     if kind in bt.RIDGE_KINDS:
-        bt.ridge(p, rng, kind, scale=HIGHLAND_PEAKS)
+        # Lower and narrower than the peaks' scale, so the heather slopes between the peaks stay in view.
+        bt.ridge(p, rng, kind, scale=0.8, half=1.05)
         return
     if kind == "centre":
         bt.hill_surface(p, range(6), 0, X0, kind, grass="highland_grass", rock_slope=0.78)
@@ -305,8 +310,21 @@ def dig_pit(p, rng, at):
 
 
 def tent(p, rng, at, spin):
-    p.gable_roof(at, 1.2, 0.95, 0.75, "canvas", z=0.0, spin=spin)
-    p.box(at + turn(Vector((0.61, 0, 0)), spin), (0.02, 0.3, 0.45), "timber", spin=spin)
+    p.gable_roof(at, 1.6, 1.25, 1.0, "canvas", z=0.0, spin=spin)
+    p.box(at + turn(Vector((0.81, 0, 0)), spin), (0.02, 0.4, 0.6), "timber", spin=spin)
+    p.box(at + turn(Vector((0.85, 0, 0)), spin), (0.04, 0.04, 1.15), "trunk", spin=spin)  # tent pole
+
+
+def pit_frame(p, at):
+    """A timber frame over a pit, with a rope and bucket, so the dig reads from far off."""
+    for dx in (-0.55, 0.55):
+        for dy in (-0.45, 0.45):
+            p.box(at + Vector((dx, dy, 0)), (0.07, 0.07, 1.5), "trunk")
+    for dy in (-0.45, 0.45):
+        p.box(at + Vector((0, dy, 0)), (1.2, 0.07, 0.07), "trunk", z=1.5)
+    p.box(at, (0.07, 1.0, 0.07), "trunk", z=1.55)
+    p.box(at, (0.02, 0.02, 0.9), "rope", z=0.65)
+    p.cylinder(at, 0.1, 0.16, "crate", segments=6, z=0.5)
 
 
 def finds_table(p, rng, at, spin):
@@ -338,6 +356,7 @@ def excavation(p, rng, kind):
     bt.ruins(p, rng, kind)
     if kind == "centre":
         dig_pit(p, rng, Vector((0.35, 0.4, 0)))
+        pit_frame(p, Vector((0.35, 0.4, 0)))
         tent(p, rng, Vector((-1.05, -0.55, 0)), 0.4)
         finds_table(p, rng, Vector((0.3, -0.9, 0)), -0.2)
         lantern(p, Vector((-0.4, 0.95, 0)))

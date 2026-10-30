@@ -426,7 +426,8 @@ RIDGE_HEIGHT = 1.4  # crest height above the ground under it
 RIDGE_HALF = 1.5    # half the ridge's width at its foot: broad, so it reads as mountain, not a wall
 
 
-def ridge(p, rng, kind, scale=1.0):
+def ridge(p, rng, kind, scale=1.0, half=None):
+    half = RIDGE_HALF if half is None else half
     def ground(c):
         # The edge ridge runs along edge 0's wedge middle, the corner ridge along the wedge's side (s = 1).
         d = hex_depth(c)
@@ -447,11 +448,11 @@ def ridge(p, rng, kind, scale=1.0):
         crest = g + RIDGE_HEIGHT * scale * (0.75 + 0.4 * rng.random())
         jag = side * rng.uniform(-0.12, 0.12)
         # A shoulder halfway down each side breaks up the slope.
-        rows.append([p.bm.verts.new(c - side * RIDGE_HALF + Vector((0, 0, g - 0.5))),
-                     p.bm.verts.new(c - side * RIDGE_HALF * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
+        rows.append([p.bm.verts.new(c - side * half + Vector((0, 0, g - 0.5))),
+                     p.bm.verts.new(c - side * half * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
                      p.bm.verts.new(c + jag + Vector((0, 0, crest))),
-                     p.bm.verts.new(c + side * RIDGE_HALF * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
-                     p.bm.verts.new(c + side * RIDGE_HALF + Vector((0, 0, g - 0.5)))])
+                     p.bm.verts.new(c + side * half * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
+                     p.bm.verts.new(c + side * half + Vector((0, 0, g - 0.5)))])
     for a, b in zip(rows, rows[1:]):
         for j in range(4):
             f = p.bm.faces.new((a[j], b[j], b[j + 1], a[j + 1]))
