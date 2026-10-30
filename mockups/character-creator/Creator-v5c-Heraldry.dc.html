@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Character creator v5c: heraldry</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+.hb{padding:0;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:Nunito,sans-serif;min-width:48px}
+.hx{position:relative;display:block;filter:drop-shadow(0 3px 0 #A48A62)}
+.hx>.r,.hx>.f{position:absolute;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.hx>.r{inset:0}
+.hx>.f{display:flex;align-items:center;justify-content:center;font-family:'Lilita One',sans-serif}
+.lb{font-size:10px;font-weight:800;color:#33403B;white-space:nowrap}
+.pw{display:inline-block}
+.pill{border:none;cursor:pointer;height:28px;padding:0 14px;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,9px 100%,0 50%);font-family:Nunito,sans-serif;font-weight:800;font-size:12px;white-space:nowrap}
+.big{border:none;cursor:pointer;height:40px;padding:0 24px;clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,13px 100%,0 50%);font-family:'Lilita One',sans-serif;font-size:16px}
+.big:disabled{background:#D9CDB6 !important;color:#8A7D66 !important;cursor:default}
+.cap{font-size:10px;font-weight:900;letter-spacing:.06em;color:#5A6862;text-transform:uppercase}
+.sw{width:22px;height:22px;border-radius:50%;border:2px solid #FCF7EE;cursor:pointer;padding:0;outline-offset:1px}
+.row{display:flex;align-items:center;gap:8px}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:11px;font-size:11px;font-weight:800}
+.spc{border:none;cursor:pointer;width:124px;height:40px;border-radius:10px;padding:0 10px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;font-family:Nunito,sans-serif;text-align:left}
+@keyframes dangle{0%{opacity:0;transform:translateY(-14px) rotate(-8deg)}60%{opacity:1;transform:translateY(2px) rotate(4deg)}100%{transform:translateY(0) rotate(0)}}
+@keyframes reveal{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes minirise{0%{opacity:0;transform:scale(0.6) translateY(30px);filter:drop-shadow(0 0 0 #FFE9A8)}60%{opacity:1;transform:scale(1.06);filter:drop-shadow(0 0 22px #FFE9A8)}100%{transform:scale(1);filter:drop-shadow(0 0 0 #FFE9A8)}}
+</style>
+</helmet>
+<div style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #BFD9D2; color: #24302C; font-family: Nunito, sans-serif">
+
+  <svg width="844" height="390" style="position: absolute; left: 0; top: 0; opacity: 0.14" aria-hidden="true">
+    <defs>
+      <pattern id="hexgridA" width="26" height="45" patternUnits="userSpaceOnUse">
+        <path d="M13 0L26 7.5V22.5L13 30L0 22.5V7.5Z M13 30V45" fill="none" stroke="#2F5D52" stroke-width="1"></path>
+      </pattern>
+    </defs>
+    <rect width="844" height="390" fill="url(#hexgridA)"></rect>
+  </svg>
+
+  <div style="position: absolute; inset: 0; box-sizing: border-box; padding: 12px 18px 14px; display: flex; flex-direction: column; gap: 8px">
+
+    <div style="height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 14px">
+      <button type="button" aria-label="Back to main menu" style="width: 44px; height: 51px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 4px 0 #A48A62)">
+        <span style="position: relative; display: block; width: 44px; height: 51px">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+          </span>
+        </span>
+      </button>
+      <div style="width: 118px; font-family: 'Lilita One', sans-serif; font-size: 22px">New hero</div>
+      <div style="flex: 1; display: flex; justify-content: center; gap: 4px">
+        <sc-for list="{{pips}}" as="p" hint-placeholder-count="9">
+          <button type="button" aria-label="{{p.n}}" aria-current="{{p.cur}}" disabled="{{p.dis}}" onClick="{{p.go}}" style="width: 58px; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: {{p.op}}; font-family: Nunito, sans-serif">
+            <span class="hx" style="width: 28px; height: 32px">
+              <span class="r" style="background: {{p.rim}}"></span>
+              <span class="f" style="inset: 3px; background: {{p.face}}; color: {{p.ink}}; font-size: 13px">
+                <sc-if value="{{p.done}}" hint-placeholder-val="{{ false }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+                </sc-if>
+                <sc-if value="{{p.notDone}}" hint-placeholder-val="{{ true }}">{{p.num}}</sc-if>
+              </span>
+            </span>
+            <span style="font-size: 10px; font-weight: 800; color: #33403B">{{p.n}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 14px; flex: 1; min-height: 0">
+
+      <sc-if value="{{showMini}}" hint-placeholder-val="{{ false }}">
+      <div style="width: 220px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: minirise 0.8s ease-out">
+        <span style="position: relative; display: block; width: 197px; height: 228px; flex-shrink: 0; filter: drop-shadow(0 5px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+          <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #EFE6D4; display: flex; flex-direction: column; align-items: center; justify-content: center">
+            <svg width="140" height="190" viewBox="0 0 140 190" aria-hidden="true">
+              <ellipse cx="70" cy="180" rx="46" ry="9" fill="#8F7458"></ellipse>
+              <ellipse cx="70" cy="177" rx="46" ry="9" fill="#B89C7E"></ellipse>
+              <g transform="{{v.mini.tf}}">
+                <path d="M44 70 Q70 58 96 70 L102 120 Q96 124 90 120 L88 96 L86 128 L90 174 L76 174 L70 134 L64 174 L50 174 L54 128 L52 96 L50 120 Q44 124 38 120 Z" fill="{{v.mini.cloth}}"></path>
+                <circle cx="40" cy="121" r="5" fill="{{v.mini.skin}}"></circle>
+                <circle cx="100" cy="121" r="5" fill="{{v.mini.skin}}"></circle>
+                <rect x="64" y="52" width="12" height="10" fill="{{v.mini.skin}}"></rect>
+                <path d="{{v.mini.hornD}}" fill="#E8DCC0"></path>
+                <ellipse cx="70" cy="40" rx="{{v.mini.rx}}" ry="{{v.mini.ry}}" fill="{{v.mini.skin}}"></ellipse>
+                <path d="{{v.mini.hairD}}" fill="{{v.mini.hair}}"></path>
+                <circle cx="64" cy="42" r="2.4" fill="{{v.mini.eyes}}"></circle>
+                <circle cx="76" cy="42" r="2.4" fill="{{v.mini.eyes}}"></circle>
+                <g transform="translate(90 96) scale(1.5)"><path d="{{v.mini.wD}}" fill="none" stroke="#33403B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></g>
+                <g transform="translate(16 102) scale(1.3)"><path d="{{v.mini.shD}}" fill="#FCF7EE" stroke="#33403B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></g>
+              </g>
+            </svg>
+          </span>
+        </span>
+        <div style="text-align: center">
+          <div style="font-family: 'Lilita One', sans-serif; font-size: 19px; line-height: 1.1">{{v.dispName}}</div>
+          <div style="font-size: 11px; font-weight: 700; color: #43524D">{{v.subLine}}</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{bannerStep}}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0">{{stepTitle}}</h2>
+          <div style="flex: 1; min-height: 0; display: flex; gap: 8px; padding-top: 6px">
+            <sc-for list="{{banners}}" as="b" hint-placeholder-count="6">
+              <button type="button" aria-pressed="{{b.sel}}" aria-label="{{b.n}}" onClick="{{b.pick}}" style="position: relative; width: {{b.w}}; flex-shrink: 0; height: 100%; padding: 0; border: none; background: transparent; cursor: pointer; transition: width 0.4s ease; font-family: Nunito, sans-serif; color: {{b.ink}}; text-align: left">
+                <span style="position: absolute; left: -3px; right: -3px; top: -6px; height: 9px; border-radius: 5px; background: #8F7458; box-shadow: 0 2px 0 #6E5A44; z-index: 1"></span>
+                <span style="position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 26px), 50% 100%, 0 calc(100% - 26px)); background: {{b.edge}}"></span>
+                <span style="position: absolute; left: 3px; right: 3px; top: 0; bottom: 5px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), 50% 100%, 0 calc(100% - 24px)); background: {{b.cloth}}; opacity: {{b.op}}; transition: opacity 0.3s"></span>
+                <span style="position: absolute; left: 0; right: 0; top: 12px; bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 10px; overflow: hidden">
+                  <sc-if value="{{b.notSel}}" hint-placeholder-val="{{ true }}">
+                    <span class="hx" style="flex-shrink: 0; width: {{b.hexW}}; height: {{b.hexH}}; filter: {{b.glow}}; transition: width 0.4s, height 0.4s"><span class="r" style="background: {{b.rim}}"></span><span class="f" style="inset: 3px; background: #FCF7EE; color: #33403B"><svg width="{{b.iconSz}}" height="{{b.iconSz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></span></span>
+                    <span style="font-family: 'Lilita One', sans-serif; font-size: {{b.nameSz}}; line-height: 1.05; text-align: center">{{b.n}}</span>
+                  </sc-if>
+                  <sc-if value="{{b.teaser}}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size: 11px; font-weight: 800; line-height: 1.3; text-align: center; opacity: 0.9">{{b.bl}}</span>
+                  </sc-if>
+                  <sc-if value="{{b.sel}}" hint-placeholder-val="{{ false }}">
+                    <span style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; animation: reveal 0.45s ease-out">
+                      <span class="hx" style="width: 46px; height: 53px; filter: {{b.glow}}"><span class="r" style="background: {{b.rim}}"></span><span class="f" style="inset: 3px; background: #FCF7EE; color: #33403B"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></span></span>
+                      <span style="font-family: 'Lilita One', sans-serif; font-size: 22px; line-height: 1">{{b.n}}</span>
+                      <span style="font-size: 12px; font-weight: 800; line-height: 1.3; opacity: 0.9; max-width: 440px">{{b.bl}}</span>
+                    </span>
+                    <span style="align-self: stretch; display: flex; align-items: center; gap: 8px; color: {{b.stitch}}; animation: reveal 0.5s ease-out 0.05s both" aria-hidden="true"><span style="flex: 1; border-top: 2px dashed currentColor"></span><svg width="10" height="12" viewBox="0 0 24 28"><path d="M12 0L24 7V21L12 28L0 21V7Z" fill="currentColor"></path></svg><span style="flex: 1; border-top: 2px dashed currentColor"></span></span>
+                    <span style="display: flex; align-items: center; justify-content: center; gap: 16px; animation: reveal 0.5s ease-out 0.12s both">
+                      <sc-if value="{{b.hasChips}}" hint-placeholder-val="{{ true }}">
+                        <span style="display: flex; gap: 5px; flex-shrink: 0">
+                          <sc-for list="{{b.chips}}" as="m" hint-placeholder-count="3">
+                            <span class="hx" style="width: 30px; height: 34px; filter: drop-shadow(0 2px 0 rgba(36,48,44,0.3))"><span class="r" style="background: #BFAE8E"></span><span class="f" style="inset: 2px; background: #FCF7EE; color: #24302C; font-family: Nunito, sans-serif; font-size: 9.5px; font-weight: 900">{{m.k}}</span></span>
+                          </sc-for>
+                        </span>
+                      </sc-if>
+                      <span style="display: flex; flex-direction: column; gap: 4px; max-width: 280px">
+                        <sc-for list="{{b.lines}}" as="f" hint-placeholder-count="2">
+                          <span style="display: flex; gap: 6px; align-items: flex-start"><span class="cap" style="color: {{b.soft}}; width: 58px; flex-shrink: 0; padding-top: 2px">{{f.k}}</span><span style="font-size: 11.5px; font-weight: 800; line-height: 1.3">{{f.v}}</span></span>
+                        </sc-for>
+                      </span>
+                    </span>
+                  </sc-if>
+                </span>
+              <sc-if value="{{b.sel}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; left: 50%; bottom: -50px; transform: translateX(-50%); z-index: 2; display: flex; flex-direction: column; align-items: center; pointer-events: none">
+                  <span style="width: 2px; height: 12px; background: #6E5A44"></span>
+                  <span style="display: flex; gap: 5px; animation: dangle 0.7s ease-out 0.25s both; transform-origin: 50% 0">
+                          <sc-for list="{{b.kit}}" as="k" hint-placeholder-count="1">
+                            <sc-if value="{{k.isCard}}" hint-placeholder-val="{{ true }}">
+                              <span style="position: relative; width: 62px; height: 70px; flex-shrink: 0; box-sizing: border-box; border: 2px solid #B5532F; border-radius: 9px; background: #FCF7EE; box-shadow: 0 3px 0 rgba(36,48,44,0.35); overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #24302C">
+                                <span style="display: block; width: 100%; height: 5px; background: #B5532F; flex-shrink: 0"></span>
+                                <span style="position: absolute; left: 3px; top: 8px; width: 18px; height: 21px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #24302C; color: #F6EEDF; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{k.ap}}</span>
+                                <span style="margin-top: 11px; color: #9A4A12"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.icon}}"></path></svg></span>
+                                <span style="margin-top: 2px; padding: 0 3px; font-size: 9.5px; font-weight: 900; line-height: 1.1; text-align: center">{{k.n}}</span>
+                              </span>
+                            </sc-if>
+                            <sc-if value="{{k.isSlot}}" hint-placeholder-val="{{ false }}">
+                              <span style="width: 44px; height: 70px; flex-shrink: 0; box-sizing: border-box; border: 2px dashed #A48A62; border-radius: 9px; background: #FCF7EE; box-shadow: 0 3px 0 rgba(36,48,44,0.3); display: flex; align-items: center; justify-content: center; padding: 0 3px; font-size: 9.5px; font-weight: 900; color: #6E5A44; text-align: center; line-height: 1.15">{{k.n}}</span>
+                            </sc-if>
+                          </sc-for>
+                  </span>
+                </span>
+              </sc-if>
+              </button>
+            </sc-for>
+          </div>
+          <div class="row" style="justify-content: space-between; flex-shrink: 0">
+            <span class="pw" style="filter: drop-shadow(0 4px 0 #A48A62)"><button type="button" class="big" disabled="{{backDis}}" onClick="{{back}}" style="background: #FCF7EE; color: #33403B">Back</button></span>
+            <span class="pw" style="filter: drop-shadow(0 4px 0 #7E3519)"><button type="button" class="big" disabled="{{nextDis}}" onClick="{{next}}" style="background: #B5532F; color: #FFF8EE">Next</button></span>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{notBanner}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; min-width: 0; box-sizing: border-box; padding: 12px 16px 12px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; display: flex; flex-direction: column; gap: 8px">
+        <h2 style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0">{{stepTitle}}</h2>
+
+        <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 9px">
+
+          <sc-if value="{{sRace}}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="gap: 6px">
+              <sc-for list="{{v.raceOpts}}" as="o" hint-placeholder-count="7">
+                <button type="button" class="hb" aria-label="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}">
+                  <span class="hx" style="width: 44px; height: 51px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}; font-size: 17px">{{o.txt}}</span></span>
+                  <span class="lb">{{o.label}}</span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{v.hasSubs}}" hint-placeholder-val="{{ false }}">
+              <div class="cap">{{v.subL}}</div>
+              <div class="row" style="gap: 6px">
+                <sc-for list="{{v.subOpts}}" as="o" hint-placeholder-count="3">
+                  <button type="button" class="hb" aria-label="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 62px">
+                    <span class="hx" style="width: 38px; height: 44px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}; font-size: 15px">{{o.txt}}</span></span>
+                    <span class="lb">{{o.label}}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{v.racePicked}}" hint-placeholder-val="{{ true }}">
+              <div class="row" style="flex-wrap: wrap; gap: 6px 14px; font-size: 12px; font-weight: 700">
+                <span class="row" style="gap: 6px"><span class="cap">Boosts</span>{{v.raceInfo.boosts}}</span>
+                <span class="row" style="gap: 6px"><span class="cap">Trait</span>{{v.raceInfo.tr}}</span>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{sBg}}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="gap: 8px">
+              <sc-for list="{{v.bgOpts}}" as="o" hint-placeholder-count="6">
+                <button type="button" class="hb" aria-label="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 58px">
+                  <span class="hx" style="width: 44px; height: 51px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg></span></span>
+                  <span class="lb">{{o.label}}</span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{v.bgPicked}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700">
+                <span class="row" style="gap: 6px"><span class="cap">Starts at</span>{{v.bgInfo.hex}}<span class="chip" style="background: {{v.bgInfo.tc}}; color: #24302C">{{v.bgInfo.tn}}</span></span>
+                <span class="row" style="gap: 6px"><span class="cap">Proficiencies</span>{{v.bgInfo.pr}}</span>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{sScores}}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="gap: 6px">
+              <sc-for list="{{v.scores}}" as="a" hint-placeholder-count="6">
+                <div style="width: 78px; height: 74px; box-sizing: border-box; padding: 6px 4px; border-radius: 12px; background: #FCF7EE; box-shadow: 0 3px 0 #CDB894; display: flex; flex-direction: column; align-items: center; gap: 2px">
+                  <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.04em">{{a.k}}</span>
+                  <span style="font-family: 'Lilita One', sans-serif; font-size: 22px; line-height: 1">{{a.v}}</span>
+                  <span style="display: flex; gap: 3px">
+                    <sc-for list="{{a.coins}}" as="c" hint-placeholder-count="1"><span style="width: 12px; height: 12px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span></sc-for>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+            <div class="cap">{{v.rbTitle}}</div>
+            <div class="row" style="gap: 8px; flex-wrap: wrap">
+              <sc-for list="{{v.rbOpts}}" as="o" hint-placeholder-count="3">
+                <span class="pw" style="filter: drop-shadow(0 3px 0 {{o.sh}})"><button type="button" class="pill" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.ink}}">{{o.label}}</button></span>
+              </sc-for>
+            </div>
+            <div class="cap">{{v.cbTitle}}</div>
+            <div class="row" style="gap: 8px">
+              <sc-for list="{{v.cbOpts}}" as="o" hint-placeholder-count="3">
+                <span class="pw" style="filter: drop-shadow(0 3px 0 {{o.sh}})"><button type="button" class="pill" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.ink}}">{{o.label}}</button></span>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{sSkills}}" hint-placeholder-val="{{ false }}">
+            <div class="cap">{{v.pbTitle}}</div>
+            <div class="row" style="gap: 8px; flex-wrap: wrap">
+              <sc-for list="{{v.pbOpts}}" as="o" hint-placeholder-count="3">
+                <span class="pw" style="filter: drop-shadow(0 3px 0 {{o.sh}})"><button type="button" class="pill" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.ink}}">{{o.label}}</button></span>
+              </sc-for>
+            </div>
+            <div class="cap" style="margin-top: 4px">{{v.pcTitle}}</div>
+            <div class="row" style="gap: 8px; flex-wrap: wrap">
+              <sc-for list="{{v.pcOpts}}" as="o" hint-placeholder-count="4">
+                <span class="pw" style="filter: drop-shadow(0 3px 0 {{o.sh}})"><button type="button" class="pill" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.ink}}">{{o.label}}</button></span>
+              </sc-for>
+            </div>
+            <div class="row" style="gap: 6px; margin-top: 6px; font-size: 13px; font-weight: 800"><span class="cap">Starting with</span>{{v.profLine}}</div>
+          </sc-if>
+
+          <sc-if value="{{sGear}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 10px">
+              <div class="cap" style="width: 64px; flex-shrink: 0; padding-top: 12px">Main hand</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 3px 4px">
+                <sc-for list="{{v.mainOpts}}" as="o" hint-placeholder-count="12">
+                  <button type="button" class="hb" aria-label="{{o.label}}" title="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 34px">
+                    <span class="hx" style="width: 32px; height: 37px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg></span></span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; min-height: 40px">
+              <div class="cap" style="width: 64px; flex-shrink: 0">Offhand</div>
+              <sc-if value="{{v.hasOff}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 3px 4px">
+                  <sc-for list="{{v.offOpts}}" as="o" hint-placeholder-count="3">
+                    <button type="button" class="hb" aria-label="{{o.label}}" title="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 34px">
+                      <span class="hx" style="width: 32px; height: 37px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg></span></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <span style="font-size: 12px; font-weight: 700; color: #5A6862">{{v.offNote}}</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center">
+              <div class="cap" style="width: 64px; flex-shrink: 0">Armour</div>
+              <div style="display: flex; gap: 4px">
+                <sc-for list="{{v.armOpts}}" as="o" hint-placeholder-count="3">
+                  <button type="button" class="hb" aria-label="{{o.label}}" title="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 34px">
+                    <span class="hx" style="width: 32px; height: 37px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}; font-size: 12px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg></span></span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="font-size: 13px; font-weight: 800">{{v.gearLine}}</div>
+          </sc-if>
+
+          <sc-if value="{{sSpells}}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="justify-content: space-between">
+              <span class="cap">Level 1 spells</span>
+              <span style="font-family: 'Lilita One', sans-serif; font-size: 15px">{{v.spCount}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+              <sc-if value="{{v.hasFree}}" hint-placeholder-val="{{ false }}">
+                <div style="height: 40px; border-radius: 10px; padding: 0 10px; background: #E3EFD9; box-shadow: 0 3px 0 #9DBB8C; display: flex; flex-direction: column; justify-content: center">
+                  <span style="font-size: 12px; font-weight: 900">{{v.freeN}}</span>
+                  <span style="font-size: 10px; font-weight: 800; color: #2E5A2A">Free · {{v.godName}}</span>
+                </div>
+              </sc-if>
+              <sc-for list="{{v.spellOpts}}" as="o" hint-placeholder-count="8">
+                <button type="button" class="spc" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="width: auto; background: {{o.bg}}; color: {{o.ink}}; box-shadow: 0 3px 0 {{o.sh}}">
+                  <span style="font-size: 12px; font-weight: 900">{{o.label}}</span>
+                  <span style="font-size: 10px; font-weight: 800; opacity: 0.8">{{o.school}}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px; font-size: 12px; font-weight: 700">
+              <sc-for list="{{v.spDescs}}" as="d" hint-placeholder-count="2">
+                <span><b>{{d.n}}:</b> {{d.d}}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{sLook}}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="gap: 18px">
+              <div class="row" style="gap: 6px"><span class="cap" style="width: 40px">Build</span>
+                <sc-for list="{{v.buildOpts}}" as="o" hint-placeholder-count="3">
+                  <span class="pw" style="filter: drop-shadow(0 3px 0 {{o.sh}})"><button type="button" class="pill" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.ink}}">{{o.label}}</button></span>
+                </sc-for>
+              </div>
+              <div class="row" style="gap: 6px"><span class="cap">Pronouns</span>
+                <sc-for list="{{v.pronOpts}}" as="o" hint-placeholder-count="3">
+                  <span class="pw" style="filter: drop-shadow(0 3px 0 {{o.sh}})"><button type="button" class="pill" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.ink}}">{{o.label}}</button></span>
+                </sc-for>
+              </div>
+            </div>
+            <div class="row" style="gap: 18px">
+              <div class="row" style="gap: 4px"><span class="cap" style="width: 40px">Head</span>
+                <sc-for list="{{v.headOpts}}" as="o" hint-placeholder-count="4">
+                  <button type="button" class="hb" aria-label="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 34px">
+                    <span class="hx" style="width: 32px; height: 37px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}; font-size: 14px">{{o.txt}}</span></span>
+                  </button>
+                </sc-for>
+              </div>
+              <sc-if value="{{v.hasHair}}" hint-placeholder-val="{{ true }}">
+                <div class="row" style="gap: 4px"><span class="cap">Hair</span>
+                  <sc-for list="{{v.hairOpts}}" as="o" hint-placeholder-count="6">
+                    <button type="button" class="hb" aria-label="{{o.label}}" aria-pressed="{{o.sel}}" onClick="{{o.pick}}" style="min-width: 34px">
+                      <span class="hx" style="width: 32px; height: 37px"><span class="r" style="background: {{o.rim}}"></span><span class="f" style="inset: {{o.inset}}; background: {{o.face}}; color: {{o.ink}}; font-size: 14px">{{o.txt}}</span></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px">
+              <sc-for list="{{v.parts}}" as="p" hint-placeholder-count="4">
+                <div class="row" style="gap: 5px">
+                  <span class="cap" style="width: 52px">{{p.n}}</span>
+                  <sc-for list="{{p.sw}}" as="w" hint-placeholder-count="6">
+                    <button type="button" class="sw" aria-label="{{w.aria}}" onClick="{{w.pick}}" style="background: {{w.c}}; outline: 2px solid {{w.ring}}; box-shadow: 0 2px 0 #CDB894"></button>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{sName}}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="gap: 10px">
+              <label for="heroNameA" class="cap">Name</label>
+              <input id="heroNameA" type="text" value="{{v.name}}" onChange="{{v.setName}}" maxlength="20" placeholder="[Hero name]" style="width: 240px; height: 34px; box-sizing: border-box; padding: 0 12px; border: 2px solid #BFAE8E; border-radius: 10px; background: #FCF7EE; font-family: 'Lilita One', sans-serif; font-size: 16px; color: #24302C">
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 18px; padding: 10px 12px; background: #FCF7EE; border-radius: 12px; box-shadow: 0 3px 0 #CDB894">
+              <sc-for list="{{v.summary}}" as="r" hint-placeholder-count="8">
+                <div class="row" style="gap: 6px; font-size: 12px; font-weight: 700; min-width: 0"><span class="cap" style="width: 84px; flex-shrink: 0">{{r.k}}</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.v}}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <div class="row" style="justify-content: space-between">
+          <span class="pw" style="filter: drop-shadow(0 4px 0 #A48A62)"><button type="button" class="big" disabled="{{backDis}}" onClick="{{back}}" style="background: #FCF7EE; color: #33403B">Back</button></span>
+          <sc-if value="{{begun}}" hint-placeholder-val="{{ false }}">
+            <span class="chip" style="background: #24302C; color: #F6EEDF; height: 26px">Starting hex: {{v.startHex}}</span>
+          </sc-if>
+          <sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}">
+            <span class="pw" style="filter: drop-shadow(0 4px 0 #7E3519)"><button type="button" class="big" disabled="{{nextDis}}" onClick="{{next}}" style="background: #B5532F; color: #FFF8EE">Next</button></span>
+          </sc-if>
+          <sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}">
+            <span class="pw" style="filter: drop-shadow(0 4px 0 #7E3519)"><button type="button" class="big" disabled="{{beginDis}}" onClick="{{begin}}" style="background: #B5532F; color: #FFF8EE">Begin</button></span>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+const AB=['STR','DEX','CON','INT','WIS','CHA'];
+const IC={sword:'M14 4h6v6l-9 9-3-3z M8 16l-4 4 M6 13l5 5',dagger:'M15 4h5v5l-7 7-3-3z M9 15l-4 4',axe:'M6 20L16 6 M13 4c4 0 7 3 7 7l-5-2z',mace:'M5 19l9-9 M14 7a3 3 0 1 0 6 0a3 3 0 1 0-6 0',hammer:'M5 19l9-9 M11 6l7 7 3-3-7-7z',spear:'M4 20L17 7 M14 4h6v6z',bow:'M7 4c8 3 8 13 0 16 M7 4v16 M4 12h12',xbow:'M4 12h16 M12 6v12 M6 8c4 2 8 2 12 0',staff:'M7 21L17 5 M15 5a2 2 0 1 0 4 0a2 2 0 1 0-4 0',wand:'M6 18l9-9 M18 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z',fist:'M7 11V7a2 2 0 0 1 4 0v3 M11 10V6a2 2 0 0 1 4 0v4 M15 10V8a2 2 0 0 1 4 0v5c0 4-3 7-7 7s-6-3-6-6v-2a2 2 0 0 1 4 0',shield:'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',armour:'M8 4l4 2 4-2 4 3-2 4v9H6v-9L4 7z',none:'M7 7l10 10 M17 7L7 17',lute:'M15 3l6 6 M18 6l-6 6 M11 11a5 5 0 1 0 2 2z',book:'M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h10',tower:'M7 21V9h10v12 M6 9V4h3v2h2V4h2v2h2V4h3v5',church:'M12 2v5 M10 4h4 M6 21v-9l6-5 6 5v9 M10 21v-4h4v4',town:'M3 21v-8l5-4 5 4v8 M13 21v-11l4-3 4 3v11',inn:'M4 21V9l8-5 8 5v12 M9 21v-6h6v6 M7 11h2',farm:'M3 21v-9l9-6 9 6v9 M9 21v-6h6v6'};
+const TER={plains:['Plains','#A8CF7E'],forest:['Forest','#5E8F5A'],hills:['Hills/mountains','#BFAE8E'],swamp:['Swamp','#7F9A6E'],village:['Village','#E6C590'],river:['River/lake','#86BEDB'],desert:['Desert','#EDD49A'],farmland:['Farmland','#DCC562'],ruins:['Ruins','#B3ADA4']};
+const CLS=[
+{id:'Fighter',i:'sword',main:['STR','DEX','CON'],t:['plains','desert'],card:'Second Wind',pr:['Athletics','Perception','Intimidate','Survival'],w:'all',a:['Light','Medium','Heavy'],sh:true},
+{id:'Rogue',i:'dagger',main:['DEX','INT','CHA'],t:['swamp','village'],card:'Sneak Attack',pr:['Stealth','Thievery','Deceive','Intimidate'],w:['shortsword','rapier','scimitar','dagger','shortbow','crossbow','gauntlets','knuckles','wraps'],a:['Light']},
+{id:'Wizard',i:'staff',main:['INT','CON','DEX'],t:['hills','ruins'],sp:'wiz',pr:['Lore','Nature','Perception','Persuade'],w:['dagger','staff','wand'],a:[]},
+{id:'Cleric',i:'mace',main:['WIS','STR','CON'],t:['river','village'],sp:'clr',pr:['Lore','Persuade','Perception','Survival'],w:['mace','warhammer','staff'],a:['Light','Medium'],sh:true},
+{id:'Ranger',i:'bow',main:['DEX','CON','WIS'],t:['forest','plains'],card:"Hunter's Mark",pr:['Survival','Nature','Animal','Perception'],w:['longsword','shortsword','scimitar','dagger','spear','glaive','shortbow','longbow','crossbow','gauntlets','knuckles','wraps'],a:['Light','Medium']},
+{id:'Bard',i:'lute',main:['CHA','DEX','STR'],t:['village','plains'],sp:'brd',pr:['[Bard proficiency]'],w:['longsword','shortsword','rapier','dagger','shortbow','crossbow'],a:['Light']}
+];
+const HEART='M12 21s-7.5-4.6-9.5-10A5 5 0 0 1 12 6.5 5 5 0 0 1 21.5 11c-2 5.4-9.5 10-9.5 10z';
+const CX={
+Fighter:{bl:'A tireless combatant who wins through skill, steel and sheer nerve.',wt:'All weapons',at:'All armour, shields',kit:[{n:'Second Wind',ap:'1',icon:HEART,t:'Heal yourself.',use:'Once per fight'}]},
+Rogue:{bl:'A nimble opportunist who lives by cunning, stealth and a sharp blade.',wt:'Daggers, shortswords, rapiers, scimitars, shortbows, crossbows, fist weapons',at:'Light',kit:[{n:'Sneak Attack',ap:'1',icon:'M15 4h5v5l-7 7-3-3z M9 15l-4 4',t:'A weapon attack that deals bonus damage if the foe is flanked or unaware.'}]},
+Wizard:{bl:'A studious arcanist who bends the world through hard-won knowledge.',wt:'Daggers, staves, wands',at:'None'},
+Cleric:{bl:'A faithful champion whose prayers mend friends and break foes.',wt:'Maces, warhammers, staves',at:'Light, medium, shields'},
+Ranger:{bl:'A hardy outlander who is most at home far from any road.',wt:'Longswords, shortswords, scimitars, daggers, spears, glaives, shortbows, longbows, crossbows, fist weapons',at:'Light, medium',kit:[{n:"Hunter's Mark",ap:'1',icon:'M12 3v4 M12 17v4 M3 12h4 M17 12h4 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8',t:'A marked foe takes extra damage from you for the fight.'}]},
+Bard:{bl:'A travelling entertainer who wins hearts, fights and arguments alike.',wt:'Rapiers, longswords, shortswords, daggers, shortbows, crossbows',at:'Light'}
+};
+const GX={Aurora:['plains','M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1.5 1.5 M17.5 17.5L19 19 M5 19l1.5-1.5 M17.5 6.5L19 5'],Selene:['river','M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z'],Morin:['hills','M4 9h12l4-3v3c0 2-2 3-4 3h-1v3h3v3H6v-3h3v-3H8C6 12 4 11 4 9z'],Toyoko:['farmland','M12 21V8 M12 12c-3-1-4-3-4-5 3 0 4 2 4 5 M12 12c3-1 4-3 4-5-3 0-4 2-4 5 M12 17c-3-1-4-3-4-5 3 0 4 2 4 5 M12 17c3-1 4-3 4-5-3 0-4 2-4 5'],Adam:['forest','M2 19l6-9 4 5 3-4 7 8z'],Canto:['village','M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0 M20 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0'],Eve:['desert','M3 6c3 1 6 1 9 0s6-1 9 0c0 7-4 12-9 12S3 13 3 6z M8 10h2 M14 10h2'],Tod:['swamp','M12 3a8 8 0 0 0-8 8c0 3 2 5 4 6v3h8v-3c2-1 4-3 4-6a8 8 0 0 0-8-8z M9 11h.01 M15 11h.01 M10 20v-2 M14 20v-2']};
+const W=[['greatsword','Greatsword',2,'sword'],['longsword','Longsword','v','sword'],['shortsword','Shortsword',1,'sword'],['rapier','Rapier',1,'sword'],['scimitar','Scimitar',1,'sword'],['dagger','Dagger',1,'dagger'],['battleaxe','Battleaxe','v','axe'],['greataxe','Greataxe',2,'axe'],['mace','Mace',1,'mace'],['warhammer','Warhammer',2,'hammer'],['spear','Spear','v','spear'],['halberd','Halberd',2,'spear'],['glaive','Glaive',2,'spear'],['staff','Staff','v','staff'],['wand','Wand',1,'wand'],['shortbow','Shortbow',2,'bow'],['longbow','Longbow',2,'bow'],['crossbow','Crossbow',2,'xbow'],['gauntlets','Gauntlets','f','fist'],['knuckles','Brass knuckles','f','fist'],['wraps','Wraps','f','fist']].map(function(x){return {id:x[0],n:x[1],h:x[2],i:x[3]};});
+const SKIN=['#F3D2B5','#E2B48F','#C68E64','#9C6844','#6E4630','#4A2E20'];
+const HAIR=['#2B211C','#5A3A26','#9A6A3A','#D9B26A','#C8C2B8','#8A3A2A'];
+const EYES=['#4F7A33','#3E6FA0','#7A5230','#C9A24A','#8C3A3A','#6A5A8C'];
+const CLOTH=['#B5532F','#3E6F8C','#5E8F5A','#7A4A8C','#E6C590','#43524D'];
+const RACES=[
+{id:'Human',tx:'Hu',b:AB,h:1,hair:true,sk:SKIN,tr:'Versatile: any weapon or armour'},
+{id:'Elf',tx:'El',b:['DEX','INT','WIS'],h:1,hair:true,sk:['#F6E1CC','#E9C7A6','#C99A72','#9E7350','#6E5038','#D8B898'],subL:'Sub-type',subs:[{id:'High elf',tr:'Innate magic: a free elven spell every 7 levels'},{id:'Wood elf',tr:'+1 hex per Move, faster on the map'}]},
+{id:'Dwarf',tx:'Dw',b:['CON','STR','WIS'],h:0.84,hair:true,sk:SKIN,subL:'Sub-type',subs:[{id:'Shield dwarf',tr:'Extra max HP every level'},{id:'Forge dwarf',tr:'An extra coin on weapon attacks'}]},
+{id:'Halfling',tx:'Ha',b:['DEX','CHA','WIS'],h:0.74,hair:true,sk:SKIN,tr:'Lucky: 3 reflips per rest · Duck Behind'},
+{id:'Golem',tx:'Go',b:['STR','CON','INT'],h:1.04,hair:false,sk:['#9AA3AB','#B8865A','#6F7A82','#C9CED2','#8A6A4A','#55606A'],subL:'Sub-type',subs:[{id:'Metal',tr:'Damage reduction · Lockdown',sk:['#9AA3AB','#B8865A','#6F7A82','#C9CED2','#8A6A4A','#55606A']},{id:'Stone',tr:'Stone Throw',sk:['#A8A39A','#8C8478','#C2B8A3','#6E6A62','#B59A7A','#9AA59A']},{id:'Wood',tr:'Regrowth: heals a little each turn',sk:['#A07850','#7A5A3A','#C49A6C','#5E4630','#8A8A50','#B38A5A']}]},
+{id:'Dragonborn',tx:'Dr',b:['STR','CHA','CON'],h:1.08,hair:false,horns:true,sk:['#B8463A','#4E7FB8','#DCE3E8','#3A3A40','#5E9A5A','#C9A24A'],subL:'Dragon type',subs:[{id:'Red',tr:'Breath Weapon: fire',c:'#B8463A'},{id:'Blue',tr:'Breath Weapon: lightning',c:'#4E7FB8'},{id:'White',tr:'Breath Weapon: cold',c:'#DCE3E8'},{id:'Black',tr:'Breath Weapon: acid',c:'#3A3A40'},{id:'Green',tr:'Breath Weapon: poison',c:'#5E9A5A'}]},
+{id:'Tiefling',tx:'Ti',b:['CHA','INT','DEX'],h:1,hair:true,horns:true,sk:['#C0473A','#9B3A5A','#7A4A8C','#D07A5A','#5C6FA8','#E3B9A0'],subL:'Bloodline',subs:[{id:'Hayes',tr:'Destruction · Burn It Down'},{id:'Conley',tr:'Rebirth · From the Ashes'},{id:'Keegan',tr:'The hearth · Hearthfire'}]}
+];
+const BGS=[
+{id:'Soldier',i:'tower',hex:'Guard tower',t:'ruins',pr:['Athletics','Intimidate','Perception']},
+{id:'Acolyte',i:'church',hex:'Church',t:'hills',pr:['Lore','Nature','Survival']},
+{id:'Criminal',i:'town',hex:'Town',t:'river',pr:['Thievery','Stealth','Deceive']},
+{id:'Sage',i:'book',hex:'Wizard tower',t:'desert',pr:['Lore','Nature','Perception']},
+{id:'Folk Hero',i:'inn',hex:'Inn',t:'forest',pr:['Animal','Survival','Athletics']},
+{id:'Noble',i:'farm',hex:'Farm (estate)',t:'farmland',pr:['Persuade','Deceive','Lore']}
+];
+const GODS=[{id:'Aurora',dom:'Sun',sp:'Sunspot',d:'A patch of light; enemies in it are easier to hit'},{id:'Selene',dom:'Moon',sp:'Moonveil',d:'Attacks against a veiled ally flip one fewer coin'},{id:'Morin',dom:'Forge',sp:'Heat Metal',d:'A foe’s metal gear burns each turn'},{id:'Toyoko',dom:'Bounty and harvests',sp:'Thorn Patch',d:'Slows foes that cross it'},{id:'Adam',dom:'Earth',sp:'Stone Skin',d:'An ally takes less damage this turn'},{id:'Canto',dom:'Music',sp:'Hymn',d:'Nearby allies flip an extra coin on their next check'},{id:'Eve',dom:'Trickery',sp:'Sleight',d:'Swap places with an ally or foe'},{id:'Tod',dom:'Death',sp:'Toll the Dead',d:'Necrotic damage, more if the foe is hurt'}];
+const SP={
+wiz:[{n:'Animated Blade',s:'Summoner',d:'A floating sword that fights for you'},{n:'Wisp',s:'Summoner',d:'A small bound soul that zaps foes at range'},{n:'Firebolt',s:'Blaster',d:'One heavy-hitting shot'},{n:'Frost Ray',s:'Blaster',d:'Damage plus slow'},{n:'Shocking Grasp',s:'Blaster',d:'A melee jolt that pushes the target back'},{n:'Blood Bolt',s:'Ritualist',d:'Pay some HP for a strong hit'},{n:'Warding Circle',s:'Ritualist',d:'Allies standing in it take less damage'},{n:'Mirror Image',s:'Deceiver',d:'Copies of you appear; foes may hit a copy'},{n:'Phantom Ally',s:'Deceiver',d:'A fake party member that foes chase'}],
+clr:[{n:'Sacred Flame',s:'Light',d:'Radiant damage'},{n:'Searing Touch',s:'Light',d:'Melee radiant damage, bonus vs undead'},{n:'Shadow Bolt',s:'Night',d:'Necrotic damage, more if the foe is in darkness'},{n:'Dread',s:'Night',d:'A foe flips one fewer coin on its next attack'},{n:'Bless',s:'Good',d:'An ally flips an extra coin on its next check'},{n:'Shield of Faith',s:'Good',d:'An ally is harder to hit'},{n:'Bane',s:'Evil',d:'A foe flips one fewer coin on its next check'},{n:'Hex',s:'Evil',d:'Every hit on the hexed foe heals the attacker a little'}],
+brd:[{n:'Mockery',s:'Narrator',d:'A cutting insult deals psychic damage'},{n:'Heroic Tale',s:'Narrator',d:'An ally gains temporary HP'},{n:'Rousing Tune',s:'Musician',d:'An ally flips an extra coin on attacks while sustained'},{n:'Soothing Melody',s:'Musician',d:'Heal an ally a little'},{n:'Dazzle',s:'Dancer',d:'A foe is mesmerized and its attacks are harder'},{n:'Blade Twirl',s:'Dancer',d:'Weapon attack, then a free short move'},{n:'Rallying Strike',s:'Leader',d:'Weapon attack; an ally gains temporary HP'},{n:'War Cry',s:'Leader',d:'Nearby allies flip an extra coin on their next attack'}]
+};
+const HAIRD=['M53 40a17 17 0 0 1 34 0c-6-5-28-5-34 0z','M52 42a18 18 0 0 1 36 0v26h-6V44c-6-6-18-6-24 0v24h-6z','M53 38a17 17 0 0 1 34 0c-6-5-28-5-34 0z M64 16a6 6 0 1 0 12 0a6 6 0 1 0-12 0','M53 38l4-14 5 8 4-12 4 10 5-10 3 12 5-8 4 14c-8-4-26-4-34 0z','M64 36V18c2-4 10-4 12 0v18c-3-2-9-2-12 0z','M53 42a17 17 0 0 1 34 0l2 14-6-4c-2-10-24-10-26 0l-6 4z'];
+const HORN='M58 27c-7-6-8-13-4-18 0 6 4 9 8 12z M82 27c7-6 8-13 4-18 0 6-4 9-8 12z';
+
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={step:'class',cls:null,race:null,sub:null,god:null,bg:null,rb:[],cb:null,pb:null,pc:null,main:null,off:null,arm:null,sp:[],build:'Average',head:0,hair:0,col:{},name:'',pro:null,begun:false}; }
+  core(){
+    const s=this.state; const set=(o)=>this.setState(o);
+    const cls=CLS.find(c=>c.id===s.cls)||null;
+    const race=RACES.find(r=>r.id===s.race)||null;
+    const sub=(race&&race.subs)?(race.subs.find(x=>x.id===s.sub)||null):null;
+    const bg=BGS.find(b=>b.id===s.bg)||null;
+    const god=GODS.find(g=>g.id===s.god)||null;
+    const human=!!race&&race.id==='Human';
+    const isCleric=!!cls&&cls.id==='Cleric';
+    const hx=(sel,dis)=>sel?{rim:'#B5532F',face:'#FCF7EE',ink:'#7E3519',inset:'4px'}:(dis?{rim:'#CDB894',face:'#E6DCC8',ink:'#8A7D66',inset:'3px'}:{rim:'#BFAE8E',face:'#FCF7EE',ink:'#33403B',inset:'3px'});
+    const pl=(sel)=>sel?{bg:'#B5532F',ink:'#FFF8EE',sh:'#7E3519'}:{bg:'#FCF7EE',ink:'#33403B',sh:'#BFAE8E'};
+    const classOpts=CLS.map(c=>Object.assign({label:c.id,icon:IC[c.i],sel:s.cls===c.id,pick:()=>set({cls:c.id,cb:null,pc:null,main:null,off:null,arm:null,sp:[],god:c.id==='Cleric'?s.god:null})},hx(s.cls===c.id)));
+    const raceOpts=RACES.map(r=>Object.assign({label:r.id,txt:r.tx,sel:s.race===r.id,pick:()=>{ if(s.race===r.id) return; const flip=(r.id==='Human')!==human; set(Object.assign({race:r.id,sub:null,rb:[],col:{}},flip?{main:null,off:null,arm:null}:{})); }},hx(s.race===r.id)));
+    const subOpts=(race&&race.subs)?race.subs.map(x=>{ const sel=s.sub===x.id; const b=hx(sel); if(x.c){ b.face=x.c; b.ink=x.c==='#DCE3E8'?'#33403B':'#FFF8EE'; } return Object.assign({label:x.id,txt:x.c?'':x.id.slice(0,2),sel,pick:()=>{ const o={sub:x.id}; if(x.c) o.col=Object.assign({},s.col,{skin:x.c}); if(race.id==='Golem') o.col=Object.assign({},s.col,{skin:null}); set(o); }},b); }):[];
+    const godOpts=GODS.map(g=>Object.assign({label:g.id,txt:g.id[0],sel:s.god===g.id,pick:()=>set({god:g.id})},hx(s.god===g.id)));
+    const bgOpts=BGS.map(b=>Object.assign({label:b.id,icon:IC[b.i],sel:s.bg===b.id,pick:()=>set({bg:b.id,pb:null})},hx(s.bg===b.id)));
+    const clsInfo=cls?{main:cls.main.join(' · '),lvl1:cls.sp?'2 spells':cls.card,ters:cls.t.map(k=>({n:TER[k][0],c:TER[k][1]}))}:{main:'',lvl1:'',ters:[]};
+    const raceInfo={tr:sub?sub.tr:(race&&race.tr?race.tr:'—'),boosts:race?(human?'Any 2':race.b.join(' · ')):''};
+    const bgInfo=bg?{hex:bg.hex,tn:TER[bg.t][0],tc:TER[bg.t][1],pr:bg.pr.join(' · ')}:{hex:'',tn:'',tc:'#FCF7EE',pr:''};
+    const godInfo=god?(god.dom+' · Free spell: '+god.sp):'';
+    const scores=AB.map(k=>{ const n=1+(s.rb.indexOf(k)>=0?1:0)+(s.cb===k?1:0); const coins=[]; for(let i=0;i<n;i++) coins.push({i}); return {k,v:String(n),coins}; });
+    const rbList=race?(human?AB:race.b):[];
+    const rbOpts=rbList.map(k=>{ const sel=s.rb.indexOf(k)>=0; return Object.assign({label:'+1 '+k,sel,pick:()=>{ let rb=s.rb.slice(); if(sel) rb=rb.filter(x=>x!==k); else { rb.push(k); if(rb.length>2) rb=rb.slice(-2); } set({rb}); }},pl(sel)); });
+    const cbOpts=cls?cls.main.map(k=>Object.assign({label:'+1 '+k,sel:s.cb===k,pick:()=>set({cb:k})},pl(s.cb===k))):[];
+    const pbOpts=bg?bg.pr.map(p=>Object.assign({label:p,sel:s.pb===p,pick:()=>set({pb:p})},pl(s.pb===p))):[];
+    const pcOpts=cls?cls.pr.map(p=>Object.assign({label:p,sel:s.pc===p,pick:()=>set({pc:p})},pl(s.pc===p))):[];
+    const profLine=(s.pb&&s.pc)?(s.pb===s.pc?s.pb+' (rank 2)':s.pb+' · '+s.pc):(s.pb||s.pc||'—');
+    const HN={1:'one-handed',2:'two-handed',v:'versatile',f:'worn as a pair'};
+    const allowedW=!cls?[]:((human||cls.w==='all')?W:W.filter(w=>cls.w.indexOf(w.id)>=0));
+    const mainOpts=allowedW.map(w=>Object.assign({label:w.n,icon:IC[w.i],sel:s.main===w.id,pick:()=>set({main:w.id,off:null})},hx(s.main===w.id)));
+    const mw=W.find(w=>w.id===s.main)||null;
+    const shOK=human||(!!cls&&!!cls.sh);
+    const offL=[];
+    if(mw&&(mw.h===1||mw.h==='v')){ offL.push({id:'none',n:'Empty hand',i:'none'}); if(shOK) offL.push({id:'shield',n:'Shield',i:'shield'}); if(mw.h===1) allowedW.filter(w=>w.h===1).forEach(w=>offL.push({id:w.id,n:w.n,i:w.i})); }
+    const offOpts=offL.map(o=>Object.assign({label:o.n,icon:IC[o.i],sel:s.off===o.id,pick:()=>set({off:o.id})},hx(s.off===o.id)));
+    const offNote=mw?(offL.length?'':(mw.h==='f'?'Worn as a pair':'Both hands')):'—';
+    const armL=[{id:'none',n:'No armour'}].concat((human?['Light','Medium','Heavy']:(cls?cls.a:[])).map(a=>({id:a,n:a+' armour'})));
+    const armOpts=cls?armL.map(a=>Object.assign({label:a.n,icon:a.id==='none'?IC.none:IC.armour,sel:s.arm===a.id,pick:()=>set({arm:a.id})},hx(s.arm===a.id))):[];
+    const offW=offL.find(o=>o.id===s.off)||null;
+    const armW=armL.find(a=>a.id===s.arm)||null;
+    const gearLine=[mw?mw.n+' ('+HN[mw.h]+')':'',offW&&offW.id!=='none'?offW.n:'',armW?armW.n:''].filter(Boolean).join(' · ')||'—';
+    const caster=!!cls&&!!cls.sp;
+    const pool=caster?SP[cls.sp]:[];
+    const spellOpts=pool.map(x=>{ const sel=s.sp.indexOf(x.n)>=0; return Object.assign({label:x.n,school:x.s,sel,pick:()=>{ let sp=s.sp.slice(); if(sel) sp=sp.filter(y=>y!==x.n); else { sp.push(x.n); if(sp.length>2) sp=sp.slice(-2); } set({sp}); }},pl(sel)); });
+    const spDescs=s.sp.map(n=>pool.find(y=>y.n===n)).filter(Boolean).map(x=>({n:x.n,d:x.d}));
+    const hasFree=isCleric&&!!god;
+    const buildOpts=['Slim','Average','Broad'].map(b=>Object.assign({label:b,sel:s.build===b,pick:()=>set({build:b})},pl(s.build===b)));
+    const pronOpts=['He','She','They'].map(p=>Object.assign({label:p,sel:s.pro===p,pick:()=>set({pro:p})},pl(s.pro===p)));
+    const headOpts=[0,1,2,3].map(i=>Object.assign({label:'Head '+(i+1),txt:String(i+1),sel:s.head===i,pick:()=>set({head:i})},hx(s.head===i)));
+    const hasHair=!race||race.hair;
+    const hairOpts=hasHair?[0,1,2,3,4,5].map(i=>Object.assign({label:'Hairstyle '+(i+1),txt:String(i+1),sel:s.hair===i,pick:()=>set({hair:i})},hx(s.hair===i))):[];
+    const golemSub=race&&race.id==='Golem'?(sub||race.subs[0]):null;
+    const skinPal=race?(golemSub?golemSub.sk:race.sk):SKIN;
+    const partsDef=[{k:'skin',n:race&&race.id==='Dragonborn'?'Scales':(golemSub?'Material':'Skin'),pal:skinPal}];
+    if(hasHair) partsDef.push({k:'hair',n:'Hair',pal:HAIR});
+    partsDef.push({k:'eyes',n:'Eyes',pal:EYES},{k:'cloth',n:'Cloth',pal:CLOTH});
+    const cur={};
+    partsDef.forEach(p=>{ const c=s.col[p.k]; cur[p.k]=(c&&p.pal.indexOf(c)>=0)?c:p.pal[0]; });
+    const parts=partsDef.map(p=>({n:p.n,sw:p.pal.map((c,i)=>({c,aria:p.n+' '+(i+1),ring:cur[p.k]===c?'#24302C':'transparent',pick:()=>{ const col=Object.assign({},s.col); col[p.k]=c; set({col}); }}))}));
+    const sx={Slim:0.86,Average:1,Broad:1.16}[s.build]||1;
+    const hs=race?race.h:1;
+    const HD=[[17,17],[15,18.5],[18.5,16],[16,17]][s.head]||[17,17];
+    const mini={skin:cur.skin,hair:hasHair?cur.hair:'none',eyes:cur.eyes,cloth:cur.cloth,hairD:hasHair?HAIRD[s.hair]:'',hornD:race&&race.horns?HORN:'',rx:String(HD[0]),ry:String(HD[1]),tf:'translate(70 176) scale('+(sx*hs).toFixed(3)+' '+hs.toFixed(3)+') translate(-70 -176)',wD:mw?IC[mw.i]:'',shD:s.off==='shield'?IC.shield:(offW&&offW.id!=='none'?IC[offW.i]:'')};
+    const raceName=race?(sub?(race.id==='Dragonborn'?sub.id+' dragonborn':race.id==='Golem'?sub.id+' golem':race.id==='Tiefling'?sub.id+' tiefling':sub.id):race.id):'';
+    const subLine=[[raceName,cls?cls.id:''].filter(Boolean).join(' '),bg?bg.id:''].filter(Boolean).join(' · ')||'Level 1';
+    const dispName=s.name.trim()||'[Hero name]';
+    const clsDone=!!cls;
+    const raceDone=!!race&&(!race.subs||!!sub);
+    const bgDone=!!bg;
+    const scoresDone=!!race&&!!cls&&s.rb.length===2&&!!s.cb;
+    const skillsDone=!!s.pb&&!!s.pc&&!!bg&&!!cls;
+    const gearDone=!!mw&&(offL.length===0||!!s.off)&&!!s.arm;
+    const spellsDone=!caster||s.sp.length===2;
+    const lookDone=!!s.pro;
+    const nameDone=s.name.trim().length>0;
+    const allDone=clsDone&&(!isCleric||!!god)&&raceDone&&bgDone&&scoresDone&&skillsDone&&gearDone&&spellsDone&&lookDone&&nameDone;
+    const spellsLine=caster?([hasFree?god.sp:''].concat(s.sp).filter(Boolean).join(' · ')||'—'):'—';
+    const scoreLine=scores.filter(a=>a.v!=='1').map(a=>a.k+' '+a.v).join(' · ')||'All 1';
+    const summary=[{k:'Class',v:cls?(cls.id+(god?' of '+god.id:'')):'—'},{k:'Race',v:raceName||'—'},{k:'Background',v:bg?bg.id+' · '+bg.hex:'—'},{k:'Scores',v:scoreLine},{k:'Proficiencies',v:profLine},{k:'Gear',v:gearLine},{k:'Spells',v:spellsLine},{k:'Look',v:s.build+' · '+(s.pro||'—')}];
+    return {classOpts,raceOpts,subOpts,hasSubs:subOpts.length>0,subL:race&&race.subL?race.subL:'',godOpts,isCleric,bgOpts,clsPicked:!!cls,racePicked:!!race,bgPicked:!!bg,clsInfo,raceInfo,bgInfo,godInfo,scores,rbOpts,cbOpts,
+      rbTitle:race?(race.id+': +1 to 2'):'Race: +1 to 2',cbTitle:cls?(cls.id+': +1 to 1'):'Class: +1 to 1',pbTitle:bg?bg.id:'Background',pcTitle:cls?cls.id:'Class',pbOpts,pcOpts,profLine,
+      mainOpts,offOpts,hasOff:offOpts.length>0,offNote,armOpts,gearLine,caster,spellOpts,spDescs,hasFree,freeN:hasFree?god.sp:'',godName:god?god.id:'',spCount:s.sp.length+' / 2',
+      buildOpts,pronOpts,headOpts,hairOpts,hasHair,parts,mini,dispName,subLine,name:s.name,setName:(e)=>this.setState({name:e.target.value.slice(0,20)}),summary,startHex:bg?bg.hex:'',
+      clsDone,raceDone,bgDone,scoresDone,skillsDone,gearDone,spellsDone,lookDone,nameDone,allDone};
+  }
+  extra(){
+    const s=this.state; const set=(o)=>this.setState(o);
+    const cls=CLS.find(c=>c.id===s.cls)||null;
+    const god=GODS.find(g=>g.id===s.god)||null;
+    const kitOf=(c)=>{ const x=CX[c.id]; if(x.kit) return x.kit.map(k=>({isCard:true,isSlot:false,n:k.n,ap:k.ap,icon:k.icon})); const sl=[{isCard:false,isSlot:true,n:'Spell',ap:'',icon:''},{isCard:false,isSlot:true,n:'Spell',ap:'',icon:''}]; if(c.id==='Cleric') sl.push({isCard:false,isSlot:true,n:'God’s spell',ap:'',icon:''}); return sl; };
+    const info=(c)=>{ const x=CX[c.id]; return {id:c.id,n:c.id,icon:IC[c.i],bl:x.bl,main:c.main.map(k=>({k})),mainT:c.main.join(' · '),wt:x.wt,at:x.at,kit:kitOf(c),kitN:x.kit?x.kit[0].n:'2 spells',kitT:x.kit?x.kit[0].t:(c.id==='Cleric'?'2 spells, plus your god’s spell':'2 spells'),use:x.kit&&x.kit[0].use?x.kit[0].use:'',hasUse:!!(x.kit&&x.kit[0].use),hasKitText:!!x.kit}; };
+    const ci=cls?info(cls):{id:'',n:'',icon:'',bl:'',main:[],mainT:'',wt:'',at:'',kit:[],kitN:'',kitT:'',use:'',hasUse:false,hasKitText:false};
+    const gx=god?GX[god.id]:null;
+    const godX=god?{n:god.id,dom:god.dom,sp:god.sp,d:god.d,tn:TER[gx[0]][0],tc:TER[gx[0]][1],icon:gx[1]}:{n:'',dom:'',sp:'',d:'',tn:'',tc:'#FCF7EE',icon:''};
+    const godOpts2=GODS.map(g=>{ const sel=s.god===g.id; return Object.assign({label:g.id,icon:GX[g.id][1],sel,pick:()=>set({god:g.id})},sel?{rim:'#B5532F',face:'#FCF7EE',ink:'#7E3519',inset:'4px'}:{rim:'#BFAE8E',face:'#FCF7EE',ink:'#33403B',inset:'3px'}); });
+    return {ci,godX,godOpts2,godPicked:!!god,godDone:!!god,info};
+  }
+  renderVals(){
+    const v=Object.assign(this.core(),this.extra()); const s=this.state;
+    const st=[['class','Class',v.clsDone]];
+    if(v.isCleric) st.push(['god','God',v.godDone]);
+    st.push(['race','Race',v.raceDone],['bg','Background',v.bgDone],['scores','Scores',v.scoresDone],['skills','Skills',v.skillsDone],['gear','Gear',v.gearDone]);
+    if(v.caster) st.push(['spells','Spells',v.spellsDone]);
+    st.push(['look','Look',v.lookDone],['name','Name',v.nameDone]);
+    let idx=st.findIndex(x=>x[0]===s.step); if(idx<0) idx=0;
+    const firstOpen=st.findIndex(x=>!x[2]); const reach=firstOpen<0?st.length-1:firstOpen;
+    const pips=st.map((x,i)=>{ const cur=i===idx; const ok=i<=reach||x[2]; return {n:x[1],num:String(i+1),cur,done:x[2]&&!cur,notDone:!(x[2]&&!cur),rim:cur?'#7E3519':(x[2]?'#5E8F5A':'#BFAE8E'),face:cur?'#B5532F':(x[2]?'#E3EFD9':'#FCF7EE'),ink:cur?'#FFF8EE':(x[2]?'#2E5A2A':'#33403B'),dis:!ok,op:ok?'1':'0.5',go:()=>{ if(ok) this.setState({step:x[0]}); }}; });
+    const k=st[idx][0]; const last=idx===st.length-1;
+    const DARK={forest:1,swamp:1};
+    const shade=(h,f)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(h.substr(i,2),16)*f))).toString(16).padStart(2,'0')).join('');
+    const mkBanners=(items,picked,total)=>{
+      const n=items.length, gaps=8*(n-1), avail=808-gaps;
+      const narrow=n>6?50:60;
+      return items.map(it=>{ const sel=picked===it.id; const any=!!picked; const w=any?(sel?(avail-narrow*(n-1)):narrow):Math.floor(avail/n);
+        const cloth=TER[it.ter][1]; const ink=DARK[it.ter]?'#FFF8EE':'#24302C';
+        return {n:it.n,bl:it.bl,icon:it.icon,sel,notSel:!sel,teaser:!any,w:w+'px',cloth,edge:shade(cloth,0.72),op:any&&!sel?'0.7':'1',ink,
+          rim:sel?'#B5532F':'#BFAE8E',glow:sel?'drop-shadow(0 0 10px #FFE9A8) drop-shadow(0 3px 0 #A48A62)':'drop-shadow(0 3px 0 #A48A62)',
+          hexW:any&&!sel?'40px':(sel?'48px':'54px'),hexH:any&&!sel?'46px':(sel?'55px':'62px'),iconSz:any&&!sel?'20':'28',nameSz:any&&!sel?'11px':(n>6?'14px':'17px'),headAlign:sel?'flex-start':'center',
+          facts:it.facts,chips:it.chips,hasChips:it.chips.length>0,lines:it.lines,soft:DARK[it.ter]?'rgba(255,248,238,0.78)':'rgba(36,48,44,0.62)',stitch:DARK[it.ter]?'rgba(255,248,238,0.5)':'rgba(36,48,44,0.38)',patch:shade(cloth,DARK[it.ter]?1.14:0.93),slotBg:DARK[it.ter]?'rgba(255,248,238,0.08)':'rgba(255,255,255,0.25)',kitCap:it.kitCap,kit:it.kit,kitT:it.kitT,hasKitText:!!it.kitT,pick:it.pick}; });
+    };
+    const classItems=CLS.map(c=>{ const x=v.info(c); return {id:c.id,n:c.id,bl:x.bl,icon:IC[c.i],ter:c.t[0],facts:[{k:'Main scores',v:x.mainT},{k:'Weapons',v:x.wt},{k:'Armour',v:x.at}],chips:c.main.map(m=>({k:m})),lines:[{k:'Weapons',v:x.wt,gc:'1 / span 2',gr:'2'},{k:'Armour',v:x.at,gc:'2',gr:'1'}],kitCap:'Level 1',kit:x.kit,kitT:x.hasKitText?(x.kitT+(x.use?' '+x.use+'.':'')):'',pick:v.classOpts.find(o=>o.label===c.id).pick}; });
+    const godItems=GODS.map(g=>({id:g.id,n:g.id,bl:g.dom,icon:GX[g.id][1],ter:GX[g.id][0],facts:[],chips:[],lines:[{k:'Starting deck',v:'+2 '+TER[GX[g.id][0]][0],gc:'1 / span 2',gr:'1'}],kitCap:'Free spell',kit:[{isCard:true,isSlot:false,n:g.sp,ap:'1',icon:GX[g.id][1]}],kitT:g.d,pick:()=>this.setState({god:g.id})}));
+    const banners=k==='class'?mkBanners(classItems,s.cls):(k==='god'?mkBanners(godItems,s.god):[]);
+    const bannerStep=k==='class'||k==='god';
+    return {v,pips,banners,bannerStep,notBanner:!bannerStep,showMini:k==='look'||k==='name',stepTitle:st[idx][1],stepDone:!!st[idx][2],
+      sClass:k==='class',sGod:k==='god',sRace:k==='race',sBg:k==='bg',sScores:k==='scores',sSkills:k==='skills',sGear:k==='gear',sSpells:k==='spells',sLook:k==='look',sName:k==='name',
+      backDis:idx===0,back:()=>{ if(idx>0) this.setState({step:st[idx-1][0]}); },
+      notLast:!last,isLast:last,nextDis:!st[idx][2],next:()=>{ if(st[idx][2]&&!last) this.setState({step:st[idx+1][0]}); },
+      beginDis:!v.allDone,begin:()=>this.setState({begun:true}),begun:!!s.begun&&v.allDone};
+  }
+}
+</script>
+</body>
+</html>
