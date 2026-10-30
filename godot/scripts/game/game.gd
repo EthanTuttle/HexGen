@@ -19,7 +19,7 @@ var deck: Deck
 var map := MapBoard.new()
 var rig := CameraRig.new()
 var clock: TimeOfDay
-var party_node: Node3D
+var party_node: PartyWalker
 var party_tile := Rules.START_TILE
 var party: Array[Dictionary] = []     # per member: name, initial, color, mini, ability, score, hp, max_hp, cards
 var held := -1                        # index into the hand, or -1
@@ -49,7 +49,6 @@ var _sky := Color(0, 0, 0, 0)
 var popup := BoardPopup.new()         # long-press / hover details
 var picked = null                     # the hex a first tap picked to walk to (Vector2i), or null
 var _path_marks: Array[Node3D] = []
-var _follow: Tween                    # the camera following the walking party
 
 
 func _ready() -> void:
@@ -71,8 +70,10 @@ func _ready() -> void:
 		var member: Dictionary = m.duplicate(true)
 		member.max_hp = m.hp
 		party.append(member)
-	party_node = Minis.party(Hex.tile_position(party_tile.x, party_tile.y))
+	party_node = PartyWalker.new()
+	party_node.name = "party"
 	add_child(party_node)
+	party_node.setup(map, party_tile)
 
 	deck = Deck.new(Rules.STARTING_DECK, rng)
 	deck.draw(Rules.STARTING_HAND)
@@ -87,7 +88,7 @@ func _ready() -> void:
 	rig.min_distance = 8.0
 	rig.max_distance = 110.0
 	rig.focus = Vector2(378, 200)       # Explore v8b: the open area left of the hand column
-	rig.frame(party_node.position, 58.0, 50.0)
+	rig.frame(party_node.centre(), 58.0, 50.0)
 	_make_slot_materials()
 
 	add_child(ui)
@@ -144,6 +145,9 @@ func _process(delta: float) -> void:
 	_sky = _sky.lerp(sky, minf(1.0, delta * 4.0)) if _sky.a > 0 else sky
 	clock.environment.background_color = _sky
 	clock.environment.ambient_light_color = _sky
+	# The camera follows the walking party, unless the player has moved it (DOCS: the player's camera wins).
+	if party_node.walking and not rig.player_moved:
+		rig.target = rig.target.lerp(party_node.centre(), minf(1.0, delta * 4.0))
 	# At night the camera can't zoom all the way out (DOCS: Exploration screen -> Placing).
 	rig.max_distance = 60.0 if Rules.is_night(minute) else 110.0
 	# Spawned encounters disappear after about 15 minutes unless a wipe made them stay (DOCS).
@@ -478,28 +482,23 @@ func walk_to(goal: Vector2i) -> void:
 	pick(null)
 	rig.player_moved = false   # PLACEHOLDER (what "the next action" is isn't decided): a new walk follows again
 	_refresh()
-	for step in path:
-		var to := Hex.to3(Hex.tile_position(step.x, step.y) + Minis.PARTY_OFFSET)
-		var d := to - party_node.position
-		var tw := create_tween().set_parallel()
-		tw.tween_property(party_node, "rotation:y", party_node.rotation.y + wrapf(atan2(d.x, d.z) - party_node.rotation.y, -PI, PI), 0.15)
-		tw.tween_property(party_node, "position", to, Rules.STEP_SECONDS).set_trans(Tween.TRANS_SINE)
-		if not rig.player_moved:
-			_follow = create_tween()
-			_follow.tween_property(rig, "target", to, Rules.STEP_SECONDS)
-		# A small bob per step, so the minis read as walking pieces (PLACEHOLDER: how minis move is open in the docs).
-		for mini in party_node.get_children():
-			var body: Node3D = mini.get_node("body")
-			var bob := create_tween()
-			bob.tween_property(body, "position:y", 0.12, Rules.STEP_SECONDS * 0.5).set_trans(Tween.TRANS_SINE)
-			bob.tween_property(body, "position:y", 0.0, Rules.STEP_SECONDS * 0.5).set_trans(Tween.TRANS_SINE)
-		await tw.finished
-		party_tile = step
+	# The walk stops on the first hex with an encounter.
+	for i in path.size():
+		if encounters.has(path[i]):
+			path = path.slice(0, i + 1)
+			break
+	# The day clock moves on as the hero steps onto each hex (PartyWalker: How the party moves).
+	var on_step := func(t: Vector2i):
+		party_tile = t
 		_advance(Rules.STEP_MINUTES)
-		if encounters.has(step):
-			_encounter_tile = step
-			hud.show_encounter(Rules.NAMES[land(step)], "ask", [])
-			return
+	party_node.entered.connect(on_step)
+	await party_node.walk(path)
+	party_node.entered.disconnect(on_step)
+	party_tile = path[-1]
+	if encounters.has(party_tile):
+		_encounter_tile = party_tile
+		hud.show_encounter(Rules.NAMES[land(party_tile)], "ask", [])
+		return
 	busy = false
 	_refresh()
 
@@ -572,10 +571,10 @@ func start_fight(t: Vector2i) -> void:
 	map.visible = true
 	if not won:
 		party_tile = Rules.START_TILE
-	party_node.position = Hex.to3(Hex.tile_position(party_tile.x, party_tile.y) + Minis.PARTY_OFFSET)
+	party_node.place_at(party_tile)
 	party_node.visible = true
 	hud.visible = true
-	rig.frame(party_node.position, 58.0, 50.0)
+	rig.frame(party_node.centre(), 58.0, 50.0)
 	busy = false
 	if not won:
 		toast("The party fell back to camp. %d card%s dropped where they fell: win that fight to get them back." % [
@@ -616,7 +615,7 @@ func camera_button(which: String) -> void:
 			rig.ease_to(rig.target, rig.distance, rig.yaw_deg - Rules.ROTATE_STEP)
 		"center":
 			rig.player_moved = false   # the centre button gives the camera back to the game
-			rig.ease_to(party_node.position, rig.distance, rig.yaw_deg)
+			rig.ease_to(party_node.centre(), rig.distance, rig.yaw_deg)
 
 
 # --- Input -------------------------------------------------------------------
@@ -649,9 +648,6 @@ func _connect_gestures() -> void:
 		# A HUD control's details: what hover shows on PC (its tooltip text), first part as the title.
 		var parts := Array(c.tooltip_text.split(","))
 		popup.show_at(pos, parts[0], parts.slice(1).map(func(x): return str(x).strip_edges())))
-	rig.player_moved_camera.connect(func():
-		if _follow:
-			_follow.kill())
 
 
 ## The map hex pop-up (DOCS: Camera and controls -> Long-press on the board): its terrain, its region and

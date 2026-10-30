@@ -275,6 +275,48 @@ func _build_tile(t: Vector2i) -> void:
 				Kit.place(node, _kit, "border_join_l", at, angle)
 			if not joined[posmod(i - 1, 6)]:
 				Kit.place(node, _kit, "border_join_r", at, angle)
+	if terrain in ["hills", "desert"]:
+		_add_ground_collision(node)
+
+
+## Collision for the ground the party walks on (PartyWalker.ground raycasts it): the hills pieces' grass
+## (their `hill_grass` / `highland_grass` surfaces, not their trees or rocks), whole peaks, mountains and ridges,
+## and the desert's sand. Everything else is flat at height 0.
+static var _shapes := {}
+
+
+func _add_ground_collision(node: Node3D) -> void:
+	for c in node.get_children():
+		if not c is MeshInstance3D:
+			continue
+		var mi := c as MeshInstance3D
+		var n := String(mi.name)
+		var whole := n == "sand" or "_peak" in n or "_mountain_" in n or "_ridge_" in n
+		if not whole and not (n.begins_with("hills_") or n.begins_with("highlands_")):
+			continue
+		var key := [mi.mesh, whole]
+		if not _shapes.has(key):
+			var faces := PackedVector3Array()
+			for k in mi.mesh.get_surface_count():
+				if whole or mi.mesh.surface_get_material(k) == _ground:   # the hills' grass (_setup_materials)
+					var arrays := mi.mesh.surface_get_arrays(k)
+					var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+					var idx = arrays[Mesh.ARRAY_INDEX]
+					if idx is PackedInt32Array and idx.size() > 0:
+						for q in idx:
+							faces.append(v[q])
+					else:
+						faces.append_array(v)
+			var shape := ConcavePolygonShape3D.new()
+			shape.set_faces(faces)
+			_shapes[key] = shape if faces.size() > 0 else null
+		if _shapes[key] == null:
+			continue
+		var body := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		cs.shape = _shapes[key]
+		body.add_child(cs)
+		mi.add_child(body)
 
 
 # --- Water -------------------------------------------------------------------

@@ -55,7 +55,29 @@ const MIDDAY_UNTIL := 15.0
 const START_MINUTE := 6.0                # PLACEHOLDER: the campaign starts early in the midday phase
 const PLACE_MINUTES := 0.5               # PLACEHOLDER (Explore v8b): "placing a card costs a little real time"
 const STEP_MINUTES := 1.0                # PLACEHOLDER (Explore v8b): walking one hex
-const STEP_SECONDS := 0.45               # PLACEHOLDER: how long one hex step takes on screen
+
+# --- How the party moves (DOCS: Exploration screen -> Walking -> How the party moves; every number a
+# PLACEHOLDER, tuned by eye in the prototype) -----------------------------------------------------------
+const WALK_SPEED := 4.5                  # m/s on open ground (a hex is 7.8 m across: about 1.7 s a hex)
+const TERRAIN_SPEED := {"swamp": 0.55, "bog": 0.5, "forest": 0.7, "deep_forest": 0.6}   # x WALK_SPEED
+const WALK_EASE_IN := 1.5                # m to reach full speed
+const WALK_EASE_OUT := 2.2               # m to slow to a stop
+const FOLLOW_DELAY := 0.32               # s each companion trails the one ahead on the leader's path
+const STAND_SPREAD := 1.35              # the standing cluster, x the render's spots (they "spread out a little")
+const WALK_SPREAD := 0.3                 # share of the standing formation's sideways spread kept while walking
+const LOOK_AHEAD := 1.3                  # m ahead on the path a mini faces, so it turns before a corner
+const TURN_RATE := 7.0                   # how fast a mini turns toward that (1/s)
+const WADDLE_STRIDE := 1.1               # m per side-to-side rock (one rock left and right is two strides)
+const WADDLE_DEG := 9.0                  # how far a mini rocks onto each side at full speed
+const WADDLE_BOB := 0.035                # m it lifts as it rocks
+const SETTLE_DEG := 6.0                  # the wobble on stopping
+const SETTLE_SECONDS := 0.9
+const LOOK_AROUND_DEG := 35.0            # on arrival, each looks this far aside and back
+const IDLE_LOOK_EVERY := Vector2(4.0, 9.0)   # s between one mini looking elsewhere while they stand
+const IDLE_LOOK_DEG := 55.0
+const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover bends away
+const WADE_DEPTH := 0.07                 # m a mini sinks in a ford
+const FOOTPRINT_SECONDS := 14.0          # how long a footprint stays in the sand
 const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game hours (8/24 of a 30-minute day)
 
 # --- Encounters (design/02 -> Hex contents and encounters) --------------------

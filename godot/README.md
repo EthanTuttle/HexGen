@@ -52,6 +52,29 @@ swift godot/tools/png_to_mp4.swift /tmp/variants godot/screens/variants_movie.mp
 
 The demo uses the same calls a player's clicks make, and plays simply. One exception: if no encounter has spawned by the time the hand runs low, it adds one and says so on screen. `--seed=N` changes the shuffle and the coin flips; the default is seed 1. `--demo=variants` stages its hand (5 forest, then 5 hills, then 5 plains, said on screen) so three regions finish in a row; placement still follows the rules.
 
+## How the party moves
+
+The rule is in `design/07 Presentation.md` → Exploration screen → Walking → How the party moves; it's built in `scripts/game/party_walker.gd` (the party on the map: each mini moves on its own), with every number a placeholder in `rules.gd`.
+
+| Part | How it's done | Tuned to (placeholders) |
+| --- | --- | --- |
+| **Waddle** | Each mini's body rocks onto one side then the other as it slides, with a small lift; the rock follows the distance slid, so it slows with the mini | 9° each side at full speed, one rock per 1.1 m, 3.5 cm lift |
+| **Curved paths** | The route runs from the party through the middle of each edge it crosses and bends through each hex (quadratic curves pulled toward the hex centre), then curves to the stopping spot. The hero eases in and out; every mini faces a point a little way ahead on the route, so it turns before a corner | 4.5 m/s on open ground (about 1.7 s a hex); 1.5 m to reach full speed, 2.2 m to stop; faces 1.3 m ahead |
+| **Follow the leader** | The companions replay the hero's position along the route a beat behind each, so when the hero slows (swamp, forest, the end) they bunch up, and when it speeds up they stretch out. While walking they close up into a loose file (keeping a third of the cluster's sideways spread) and open out again at both ends | 0.32 s behind the one ahead; 30% of the spread while walking |
+| **Ground height** | Minis follow the ground: the hills' grass and the whole of peaks, mountains and ridges, and the desert sand (collision built from those surfaces, `MapBoard._add_ground_collision`; trees and rocks on the hills don't count). In a ford they sink a little | 7 cm deep in water |
+| **Terrain speed** | Slower in swamp and forest | swamp ×0.55, bog ×0.5, forest ×0.7, deep forest ×0.6 |
+| **Splash, dust, footprints** | Each rock of the waddle is a footstep: in water, a burst of droplets; on sand or wasteland, a puff of sand-coloured dust and a footprint that fades | footprints last 14 s |
+| **The grass parts** | The ground cover's shader bends tufts and flowers away from the minis (higher parts more), `shaders/grass.gdshader` | within 0.75 m |
+| **Arrival** | On stopping, each mini wobbles (a damped rock), the group opens back out into its cluster, and each looks aside, the other way, and back, one after another | 6° wobble over 0.9 s; looks 35° aside |
+| **Standing** | Now and then one mini turns to look elsewhere for a moment | every 4–9 s, 55° |
+| **Cluster** | The standing cluster is the render's spots spread a little wider ("spread out a little") | ×1.35 |
+
+The camera follows the hero while the party walks (unless the player has moved it). The day clock still moves on one step per hex, as the hero enters each one; the walk stops on the first hex with an encounter.
+
+`screens/walk_movie.mp4` (23 s, 22 MB) is the party crossing a staged strip from the camp: plains, a hill, plains, a ford over a river, and sand (`-- --demo=walk`; the map is staged and says so on screen). `screens/walk_01…10_*.png` are stills.
+
+**Not covered by the docs (for Ethan):** the route goes straight over a lone hill's peak and over the mountain between joined hills tiles, because it bends through each hex's centre and the middle of each edge, which is where the hills put their peaks and mountains. Should the party climb them (as now) or walk round them?
+
 ## Touch controls (for the iPhone)
 
 The rules are in `design/07 Presentation.md` → Camera and controls, and Exploration screen → Placing and Walking. Everything works the same with a mouse; touch adds:

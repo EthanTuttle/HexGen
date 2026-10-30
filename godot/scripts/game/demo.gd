@@ -19,6 +19,8 @@ func _ready() -> void:
 	shots = "--shots" in OS.get_cmdline_user_args()
 	if "--demo=variants" in OS.get_cmdline_user_args():
 		_variants.call_deferred()
+	elif "--demo=walk" in OS.get_cmdline_user_args():
+		_walk.call_deferred()
 	else:
 		_run.call_deferred()
 
@@ -33,6 +35,37 @@ func _place(i: int, pause: float) -> void:
 	await _wait(pause)
 	while game.busy:
 		await _wait(0.1)
+
+
+## The walk recording (How the party moves): a staged strip of land from the camp eastward, plains, a hill,
+## plains, a river crossing (a ford), then sand; the party walks it in one go with the camera close behind,
+## then stands a while (settling, looking around, an idle look). The map is staged and says so on screen.
+func _walk() -> void:
+	_prefix = "walk"
+	var strip := {Vector2i(1, 0): "plains", Vector2i(1, -1): "plains", Vector2i(0, 1): "plains",
+		Vector2i(2, 0): "hills", Vector2i(3, 0): "plains", Vector2i(3, -1): "plains", Vector2i(2, 1): "plains",
+		Vector2i(4, -1): "river", Vector2i(4, 0): "river", Vector2i(3, 1): "river",
+		Vector2i(5, 0): "desert", Vector2i(5, -1): "desert", Vector2i(6, 0): "desert", Vector2i(4, 1): "plains"}
+	game.map.retile(strip)
+	for t in strip:
+		game.order[t] = game.order.size()
+	game.toast("(demo) Staged map: plains, a hill, a ford and sand.", true)
+	game.rig.frame(game.party_node.centre(), 30.0, 50.0)
+	await _wait(2.5)
+	await _shot("start")
+	var goal := Vector2i(6, 0)
+	game.walk_to(goal)
+	var k := 0
+	while game.busy:
+		await _wait(0.1)
+		k += 1
+		if k % 15 == 0:
+			await _shot("step%02d" % (k / 15))
+	await _wait(7.0)
+	await _shot("arrived")
+	print("DEMO DONE")
+	if shots or "--quit" in OS.get_cmdline_user_args():
+		get_tree().quit()
 
 
 ## The variants recording: three regions finish one after another, the camera on each.

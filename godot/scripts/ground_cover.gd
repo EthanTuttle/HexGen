@@ -17,6 +17,21 @@ const R := Water.R
 const A := Water.A
 
 
+static var _grass: ShaderMaterial
+
+
+## The ground cover's material: vertex colours, bending away from the minis (shaders/grass.gdshader; the
+## party walker sets their positions).
+static func grass_material() -> ShaderMaterial:
+	if _grass == null:
+		_grass = ShaderMaterial.new()
+		_grass.shader = load("res://shaders/grass.gdshader")
+		_grass.set_shader_parameter("radius", Rules.GRASS_PART_RADIUS)
+		_grass.set_shader_parameter("minis", PackedVector3Array([Vector3(1e5, 0, 1e5), Vector3(1e5, 0, 1e5),
+				Vector3(1e5, 0, 1e5), Vector3(1e5, 0, 1e5)]))
+	return _grass
+
+
 static func hash01(ix: int, iy: int, k: int) -> float:
 	var h := (ix * 374761393 + iy * 668265263 + k * 1442695041) & 0xFFFFFFFF
 	h = ((h ^ (h >> 13)) * 1274126177) & 0xFFFFFFFF
@@ -140,4 +155,6 @@ static func _build(items: Array) -> MeshInstance3D:
 				piece.box(at, Vector3(0.08, 0.08, 0.12), Hex.colour(hue), 0.0, rng.uniform(0, 1))
 			_:
 				piece.blob(at, rng.uniform(0.07, 0.12), rock, 0.0, 0.6)
-	return piece.instance("ground_cover")
+	var mi := piece.instance("ground_cover")
+	mi.material_override = grass_material()
+	return mi
