@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Style A v11: everything together</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+@keyframes popin{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes land0{0%{transform:scale(0.3);opacity:0}70%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes land1{0%{transform:scale(0.3);opacity:0}70%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes glow{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
+@keyframes dotpulse{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}100%{transform:translateX(0)}}
+</style>
+</helmet>
+<div data-root="gear" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerLeave="{{dragCancel}}" style="width: 844px; height: 390px; position: relative; overflow: hidden; background: #BFD9D2; color: #24302C; font-family: Nunito, sans-serif; user-select: none">
+
+  <svg width="844" height="390" style="position: absolute; left: 0; top: 0; opacity: 0.14" aria-hidden="true">
+    <defs>
+      <pattern id="hexgrid11" width="26" height="45" patternUnits="userSpaceOnUse">
+        <path d="M13 0L26 7.5V22.5L13 30L0 22.5V7.5Z M13 30V45" fill="none" stroke="#2F5D52" stroke-width="1"></path>
+      </pattern>
+    </defs>
+    <rect width="844" height="390" fill="url(#hexgrid11)"></rect>
+  </svg>
+
+  <!-- Party tray: the same tray, in the same spot, as on the map -->
+  <div role="group" aria-label="Party" style="position: absolute; left: 12px; top: 12px; width: 60px; padding: 8px 6px; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+    <sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+      <button type="button" aria-label="{{p.aria}}" aria-pressed="{{p.on}}" onClick="{{p.pick}}" style="padding: 0; border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit">
+        <span style="position: relative; display: block; width: 38px; height: 44px; filter: drop-shadow(0 3px 0 #A48A62)">
+          <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.rim}}"></span>
+          <span style="position: absolute; inset: {{p.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{p.face}}; display: flex; align-items: center; justify-content: center; color: #22262E; font-family: 'Lilita One', sans-serif; font-size: 16px">{{p.initial}}</span>
+          <sc-if value="{{p.injured}}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" style="position: absolute; right: -8px; top: -4px; width: 20px; height: 20px; border-radius: 50%; background: #8E3B2E; box-shadow: 0 2px 0 #5E2219; color: #FFF8EE; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l8 8 M5 13l8-8a3 3 0 0 1 4 4l-8 8a3 3 0 0 1-4-4z M11 11h0.01 M13 13h0.01"></path></svg></span>
+          </sc-if>
+        </span>
+        <span style="display: block; width: 40px; height: 5px; border-radius: 3px; background: #E6DCC8; overflow: hidden; box-shadow: inset 0 0 0 1px #A48A62">
+          <span style="display: block; height: 5px; width: {{p.hpW}}; background: #4E9A5B"></span>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 0; width: 844px; height: 390px; box-sizing: border-box; padding: 12px 18px 12px 96px; display: flex; flex-direction: column; gap: 8px">
+
+    <!-- Top bar -->
+    <div style="height: 51px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px; width: 310px">
+        <button type="button" aria-label="Back to map" style="width: 44px; height: 51px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 4px 0 #A48A62)">
+          <span style="position: relative; display: block; width: 44px; height: 51px">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+            <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #FCF7EE; display: flex; align-items: center; justify-content: center; color: #33403B">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+            </span>
+          </span>
+        </button>
+        <div style="display: flex; flex-direction: column">
+          <div style="font-family: 'Lilita One', sans-serif; font-size: 22px; line-height: 1.1">{{c.name}}</div>
+          <div style="font-size: 12px; font-weight: 700; color: #43524D; white-space: nowrap">{{c.sub}}</div>
+        </div>
+      </div>
+      <div style="width: 280px; display: flex; justify-content: flex-end; gap: 8px">
+        <span style="filter: drop-shadow(0 4px 0 #A48A62); display: block">
+          <button type="button" style="height: 44px; padding: 0 18px; border: none; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); background: #FCF7EE; color: #24302C; font-family: 'Lilita One', sans-serif; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v10l-7 4-7-4V7z M12 8v8 M9 11l3-3 3 3"></path></svg>
+            Mastery
+          </button>
+        </span>
+        <span style="filter: drop-shadow(0 4px 0 #7E3519); display: block">
+          <button type="button" style="height: 44px; padding: 0 18px; border: none; clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); background: #B5532F; color: #FFF8EE; font-family: 'Lilita One', sans-serif; font-size: 16px; display: flex; align-items: center; gap: 8px; cursor: pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h11v14H4z M8 3h12v14"></path></svg>
+            Action cards
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <!-- Abilities strip: tap or hover a tile for its proficiencies -->
+    <div role="group" aria-label="Abilities" style="height: 36px; flex-shrink: 0; box-sizing: border-box; padding: 0 6px; background: #F6EEDF; border-radius: 14px; box-shadow: 0 4px 0 #CDB894; display: flex; align-items: center">
+      <sc-for list="{{c.abilities}}" as="a" hint-placeholder-count="6">
+        <sc-if value="{{a.divider}}" hint-placeholder-val="{{ true }}">
+          <span style="display: block; width: 2px; height: 20px; flex-shrink: 0; background: #A48A62; opacity: 0.5; border-radius: 1px"></span>
+        </sc-if>
+        <button type="button" aria-label="{{a.aria}}" aria-expanded="{{a.open}}" onClick="{{a.pin}}" onMouseEnter="{{a.hover}}" onMouseLeave="{{unhover}}" style="flex: 1; min-width: 0; height: 36px; border: none; background: {{a.bg}}; border-radius: 10px; cursor: pointer; font-family: inherit; color: inherit; display: flex; align-items: center; gap: 6px; padding: 0 8px">
+          <span style="width: 28px; flex-shrink: 0; font-weight: 900; font-size: 12px; letter-spacing: 0.04em; text-align: left">{{a.k}}</span>
+          <span style="display: flex; width: 52px; flex-shrink: 0">
+            <sc-for list="{{a.coins}}" as="coin" hint-placeholder-count="2">
+              <span style="display: block; flex-shrink: 0; width: 13px; height: 13px; margin-left: {{coin.ml}}; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F, 0 0 0 1px #F6EEDF"></span>
+            </sc-for>
+          </span>
+          <span style="flex: 1; text-align: right; font-family: 'Lilita One', sans-serif; font-size: 16px">{{a.v}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; gap: 14px; flex: 1; min-height: 0">
+
+      <!-- Gear around the mini -->
+      <div style="width: 372px; flex-shrink: 0; position: relative; display: flex; flex-direction: column; gap: 6px">
+        <div style="height: 196px; display: flex; align-items: center; justify-content: space-between">
+          <div style="width: 69px; display: flex; flex-direction: column; align-items: flex-start; padding: 7px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+            <sc-for list="{{leftSlots}}" as="s" hint-placeholder-count="4">
+              <button type="button" data-drop="{{s.id}}" aria-label="{{s.aria}}" onPointerDown="{{s.down}}" onMouseEnter="{{s.hover}}" onMouseLeave="{{unhover}}" style="position: relative; width: 46px; height: 53px; flex-shrink: 0; padding: 0; border: none; background: transparent; cursor: pointer; touch-action: none; filter: drop-shadow(0 4px 0 #A48A62); margin-left: {{s.ml}}; margin-top: {{s.mt}}; transform: {{s.lift}}; transition: transform 0.15s ease-out">
+                <span style="position: absolute; inset: -5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F2C14E; opacity: {{s.glowOp}}; animation: {{s.glowAnim}}"></span>
+                <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                <span style="position: absolute; inset: {{s.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}; opacity: {{s.dim}}; animation: {{s.anim}}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                  <span style="position: absolute; left: 0; right: 0; bottom: 7px; display: flex; justify-content: center; gap: 3px">
+                    <sc-for list="{{s.pips}}" as="pp" hint-placeholder-count="0"><span style="display: block; width: 4px; height: 4px; border-radius: 50%; background: {{pp.c}}"></span></sc-for>
+                  </span>
+                </span>
+                <sc-if value="{{s.cross}}" hint-placeholder-val="{{ false }}">
+                  <span aria-hidden="true" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #B3261E"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"></path></svg></span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+
+          <!-- Model hex: a stand-in mini on its wooden base, showing the gear it wears -->
+          <span style="position: relative; display: block; width: 170px; height: 196px; flex-shrink: 0; filter: drop-shadow(0 5px 0 #A48A62)">
+            <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #BFAE8E"></span>
+            <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #EFE6D4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0">
+              <svg role="img" aria-label="{{mini.aria}}" width="112" height="152" viewBox="0 0 140 190">
+                <path d="M30 170 v6 l20 12 h40 l20-12 v-6 l-20 12 h-40z" fill="#7E5C3C"></path>
+                <polygon points="30,170 50,158 90,158 110,170 90,182 50,182" fill="#A47C55"></polygon>
+                <path d="M54 128 L50 166 L64 166 L70 134 L76 166 L90 166 L86 128 Z" fill="{{mini.legs}}"></path>
+                <path d="M47 158h18v10H44z M75 158h18v10H75z" fill="#5A4632" opacity="{{mini.bootsOp}}"></path>
+                <path d="M44 70 Q70 58 96 70 L100 118 Q96 124 90 120 L88 100 L86 130 L54 130 L52 100 L50 120 Q44 124 40 118 Z" fill="{{mini.body}}"></path>
+                <circle cx="70" cy="44" r="16" fill="{{mini.skin}}"></circle>
+                <path d="M53 46 a17 17 0 0 1 34 0 v3 h-34z" fill="{{mini.helm}}" opacity="{{mini.helmOp}}"></path>
+                <circle cx="44" cy="120" r="5.5" fill="#6B5640" opacity="{{mini.glovesOp}}"></circle>
+                <circle cx="96" cy="120" r="5.5" fill="#6B5640" opacity="{{mini.glovesOp}}"></circle>
+                <g transform="translate(4 84) scale(1.9)" opacity="{{mini.mainOp}}"><path d="{{mini.mainIcon}}" fill="none" stroke="#33403B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></g>
+                <g transform="translate(90 84) scale(1.9)" opacity="{{mini.offOp}}"><path d="{{mini.offIcon}}" fill="none" stroke="#33403B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></g>
+              </svg>
+              <span style="font-size: 10px; font-weight: 800; color: #5A5040; margin-top: -4px">[Mini]</span>
+            </span>
+          </span>
+
+          <div style="width: 69px; display: flex; flex-direction: column; align-items: flex-end; padding: 7px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+            <sc-for list="{{rightSlots}}" as="s" hint-placeholder-count="4">
+              <button type="button" data-drop="{{s.id}}" aria-label="{{s.aria}}" onPointerDown="{{s.down}}" onMouseEnter="{{s.hover}}" onMouseLeave="{{unhover}}" style="position: relative; width: 46px; height: 53px; flex-shrink: 0; padding: 0; border: none; background: transparent; cursor: pointer; touch-action: none; filter: drop-shadow(0 4px 0 #A48A62); margin-right: {{s.ml}}; margin-top: {{s.mt}}; transform: {{s.lift}}; transition: transform 0.15s ease-out">
+                <span style="position: absolute; inset: -5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F2C14E; opacity: {{s.glowOp}}; animation: {{s.glowAnim}}"></span>
+                <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+                <span style="position: absolute; inset: {{s.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}; opacity: {{s.dim}}; animation: {{s.anim}}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                  <span style="position: absolute; left: 0; right: 0; bottom: 7px; display: flex; justify-content: center; gap: 3px">
+                    <sc-for list="{{s.pips}}" as="pp" hint-placeholder-count="0"><span style="display: block; width: 4px; height: 4px; border-radius: 50%; background: {{pp.c}}"></span></sc-for>
+                  </span>
+                </span>
+                <sc-if value="{{s.cross}}" hint-placeholder-val="{{ false }}">
+                  <span aria-hidden="true" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #B3261E"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"></path></svg></span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Weapon set, then the belt -->
+        <div style="height: 60px; box-sizing: border-box; align-self: center; padding: 2px 12px 5px; display: flex; align-items: center; justify-content: center; gap: 4px; background: #B89C7E; border-radius: 18px; box-shadow: 0 4px 0 #8F7458">
+          <button type="button" aria-label="Swap weapon set, now {{setLabel}}" onClick="{{swapSet}}" style="width: 40px; height: 46px; padding: 0; border: none; background: transparent; cursor: pointer; filter: drop-shadow(0 4px 0 #7E3519)">
+            <span style="position: relative; display: block; width: 40px; height: 46px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #B5532F; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #FFF8EE">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4 M3 8h14 M17 20l4-4-4-4 M21 16H7"></path></svg>
+              <span style="font-size: 11px; font-weight: 900">{{setShort}}</span>
+            </span>
+          </button>
+          <sc-for list="{{bottomSlots}}" as="s" hint-placeholder-count="4">
+            <sc-if value="{{s.gapBefore}}" hint-placeholder-val="{{ false }}">
+              <span style="display: block; width: 2px; height: 36px; background: #F6EEDF; opacity: 0.6; margin: 0 8px; border-radius: 1px"></span>
+            </sc-if>
+            <button type="button" data-drop="{{s.id}}" aria-label="{{s.aria}}" onPointerDown="{{s.down}}" onMouseEnter="{{s.hover}}" onMouseLeave="{{unhover}}" style="position: relative; width: 46px; height: 53px; flex-shrink: 0; padding: 0; border: none; background: transparent; cursor: pointer; touch-action: none; filter: drop-shadow(0 4px 0 #A48A62); transform: {{s.lift}}; transition: transform 0.15s ease-out">
+              <span style="position: absolute; inset: -5px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F2C14E; opacity: {{s.glowOp}}; animation: {{s.glowAnim}}"></span>
+              <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.rim}}"></span>
+              <span style="position: absolute; inset: {{s.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.face}}; display: flex; align-items: center; justify-content: center; color: {{s.ink}}; opacity: {{s.dim}}; animation: {{s.anim}}">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg>
+                <span style="position: absolute; left: 0; right: 0; bottom: 7px; display: flex; justify-content: center; gap: 3px">
+                  <sc-for list="{{s.pips}}" as="pp" hint-placeholder-count="0"><span style="display: block; width: 4px; height: 4px; border-radius: 50%; background: {{pp.c}}"></span></sc-for>
+                </span>
+              </span>
+              <sc-if value="{{s.cross}}" hint-placeholder-val="{{ false }}">
+                <span aria-hidden="true" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #B3261E"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"></path></svg></span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Shared party inventory -->
+      <div data-drop="inv" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 10px; background: #F6EEDF; border-radius: 18px; box-shadow: 0 5px 0 #CDB894; outline: {{inv.outline}}; outline-offset: -4px; display: flex; flex-direction: column; gap: 8px">
+        <div style="height: 20px; display: flex; align-items: center; justify-content: space-between; gap: 6px">
+          <span style="font-family: 'Lilita One', sans-serif; font-size: 15px">Party inventory</span>
+          <sc-if value="{{inv.hasFilter}}" hint-placeholder-val="{{ false }}">
+            <button type="button" aria-label="Show all items" onClick="{{inv.clearFilter}}" style="height: 24px; padding: 0 8px 0 10px; border: none; border-radius: 12px; background: #24302C; color: #F6EEDF; font-family: inherit; font-size: 11px; font-weight: 900; display: flex; align-items: center; gap: 4px; cursor: pointer">
+              {{inv.filterLabel}}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg>
+            </button>
+          </sc-if>
+          <span style="margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 900; color: #5A3A05">
+            <span aria-hidden="true" style="display: block; width: 13px; height: 13px; border-radius: 50%; background: #E4B54C; box-shadow: inset 0 -2px 0 #A67A1F"></span>
+            [gold]
+          </span>
+        </div>
+        <div style="display: flex; gap: 4px">
+          <sc-for list="{{inv.tabs}}" as="tb" hint-placeholder-count="2">
+            <button type="button" aria-pressed="{{tb.on}}" onClick="{{tb.pick}}" style="position: relative; flex: 1; height: 34px; border: none; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{tb.bg}}; color: {{tb.ink}}; font-family: Nunito, sans-serif; font-weight: 900; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px">
+              <sc-if value="{{tb.dot}}" hint-placeholder-val="{{ false }}">
+                <span aria-label="New items" style="display: block; width: 8px; height: 8px; border-radius: 50%; background: #E0582F; box-shadow: 0 0 0 2px #FCF7EE"></span>
+              </sc-if>
+              {{tb.label}}
+            </button>
+          </sc-for>
+        </div>
+        <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 6px 0 6px 2px">
+          <sc-for list="{{inv.rows}}" as="row" hint-placeholder-count="2">
+            <div style="display: flex; gap: 4px; margin-left: {{row.indent}}; margin-top: {{row.mt}}">
+              <sc-for list="{{row.items}}" as="i" hint-placeholder-count="5">
+                <button type="button" data-item="{{i.uid}}" aria-label="{{i.aria}}" onPointerDown="{{i.down}}" onMouseEnter="{{i.hover}}" onMouseLeave="{{unhover}}" style="position: relative; width: 44px; height: 51px; flex-shrink: 0; padding: 0; border: none; background: transparent; cursor: pointer; touch-action: none; filter: drop-shadow(0 4px 0 #A48A62); opacity: {{i.dim}}; transform: {{i.lift}}; transition: transform 0.15s ease-out">
+                  <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{i.rim}}"></span>
+                  <span style="position: absolute; inset: {{i.inset}}; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{i.face}}; display: flex; align-items: center; justify-content: center; color: {{i.ink}}; animation: {{i.anim}}">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{i.icon}}"></path></svg>
+                    <span style="position: absolute; left: 0; right: 0; bottom: 7px; display: flex; justify-content: center; gap: 3px">
+                      <sc-for list="{{i.pips}}" as="pp" hint-placeholder-count="0"><span style="display: block; width: 4px; height: 4px; border-radius: 50%; background: {{pp.c}}"></span></sc-for>
+                    </span>
+                  </span>
+                  <sc-if value="{{i.isNew}}" hint-placeholder-val="{{ false }}">
+                    <span aria-hidden="true" style="position: absolute; left: 1px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #E0582F; box-shadow: 0 0 0 2px #FCF7EE; animation: dotpulse 1.4s ease-in-out infinite"></span>
+                  </sc-if>
+                  <sc-if value="{{i.hasCount}}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; right: 0; bottom: 5px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #24302C; color: #F6EEDF; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{i.count}}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+          <sc-if value="{{inv.empty}}" hint-placeholder-val="{{ false }}">
+            <span style="display: block; padding: 10px 2px; font-size: 12px; font-weight: 800; color: #5A5040">Nothing that fits</span>
+          </sc-if>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- What's held (as on the map when a card is held); a crossed slot's reason shows here -->
+  <sc-if value="{{held.show}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 96px; top: 118px; width: 372px; z-index: 12; display: flex; justify-content: center; pointer-events: none; animation: popin 0.18s ease-out">
+      <span style="height: 30px; padding: 0 6px 0 16px; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: {{held.bg}}; color: #FFF8EE; font-size: 12px; font-weight: 900; display: flex; align-items: center; gap: 4px; pointer-events: auto; animation: {{held.anim}}">
+        {{held.text}}
+        <button type="button" aria-label="Put it back" onClick="{{held.cancel}}" style="width: 30px; height: 30px; border: none; background: transparent; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg>
+        </button>
+      </span>
+    </div>
+  </sc-if>
+
+  <!-- Details pop-up, opened beside what it describes -->
+  <sc-if value="{{pop.show}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="{{pop.name}} details" style="position: absolute; left: {{pop.left}}; top: {{pop.top}}; bottom: {{pop.bottom}}; width: 220px; box-sizing: border-box; background: #FCF7EE; border-radius: 16px; border: 3px solid {{pop.rim}}; box-shadow: 0 5px 0 #A48A62, 0 10px 18px rgba(36,48,44,0.25); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; z-index: 14; pointer-events: none; animation: popin 0.15s ease-out">
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: {{pop.tagInk}}">{{pop.tag}}</span>
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1.1">{{pop.name}}</span>
+      </div>
+      <sc-if value="{{pop.hasDesc}}" hint-placeholder-val="{{ true }}">
+        <span style="font-size: 12px; font-weight: 700; color: #43524D; line-height: 1.35">{{pop.desc}}</span>
+      </sc-if>
+      <sc-if value="{{pop.hasCards}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 4px">
+          <sc-for list="{{pop.cards}}" as="cd" hint-placeholder-count="1">
+            <span style="height: 26px; padding: 0 12px; display: flex; align-items: center; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%); background: {{cd.bg}}; color: #F6EEDF; font-size: 11px; font-weight: 900">{{cd.n}}</span>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{pop.hasStats}}" hint-placeholder-val="{{ true }}">
+        <span style="font-size: 11px; font-weight: 700; color: #5A5040">[Item stats]</span>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- Items flying between the inventory and the slots -->
+  <sc-for list="{{flies}}" as="f" hint-placeholder-count="0">
+    <span aria-hidden="true" style="position: absolute; left: {{f.left}}; top: {{f.top}}; width: 46px; height: 53px; z-index: 20; pointer-events: none; transition: {{f.tr}}; filter: drop-shadow(0 6px 4px rgba(36,48,44,0.3))">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{f.rim}}"></span>
+      <span style="position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{f.face}}; display: flex; align-items: center; justify-content: center; color: {{f.ink}}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{f.icon}}"></path></svg>
+      </span>
+    </span>
+  </sc-for>
+
+  <!-- Dragged item -->
+  <sc-if value="{{ghost.show}}" hint-placeholder-val="{{ false }}">
+    <span aria-hidden="true" style="position: absolute; left: {{ghost.left}}; top: {{ghost.top}}; width: 46px; height: 53px; z-index: 22; pointer-events: none; transform: rotate(-6deg) scale(1.08); filter: drop-shadow(0 8px 5px rgba(36,48,44,0.35))">
+      <span style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #B5532F"></span>
+      <span style="position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{ghost.face}}; display: flex; align-items: center; justify-content: center; color: {{ghost.ink}}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ghost.icon}}"></path></svg>
+      </span>
+    </span>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      rim: { C: '#BFAE8E', R: '#3F86C8', L: '#E07A2F' },
+      face: { C: '#FCF7EE', R: '#EAF3FB', L: '#FDEEDF' },
+      ink: { C: '#33403B', R: '#225C91', L: '#9A4A12' },
+      tagInk: { C: '#5A5040', R: '#225C91', L: '#9A4A12' },
+      emptyRim: '#CFC2A8', emptyFace: '#EDE4D2', emptyInk: '#8A7D66',
+      sel: '#B5532F'
+    };
+    const ICON = {
+      helmet: 'M5 15a7 7 0 0 1 14 0v4H5z M12 8V5',
+      armor: 'M8 3L4 6v6h3v9h10v-9h3V6l-4-3c-1 2-7 2-8 0z',
+      gloves: 'M8 21v-6l-3-4 1.5-1.5L9 12V5a1.2 1.2 0 0 1 2.5 0v5V4a1.2 1.2 0 0 1 2.5 0v6V5a1.2 1.2 0 0 1 2.5 0v9l-1 7z',
+      leggings: 'M7 3h10l1 18h-4l-2-11-2 11H6z',
+      amulet: 'M6 3l6 8 6-8 M12 11a4 4 0 1 0 0 8a4 4 0 1 0 0-8',
+      ring: 'M12 9a6 6 0 1 0 0 12a6 6 0 1 0 0-12 M9.5 4h5l1.5 3h-8z',
+      boots: 'M8 3h6v10l5 2.5V21H7z M7 17h12',
+      sword: 'M20 4L9 15 M20 4h-5 M20 4v5 M6 12l6 6 M8 16l-4 4',
+      dagger: 'M18 6L10 14 M18 6h-3 M18 6v3 M8 12l4 4 M9 15l-3 3',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+      staff: 'M6 21L15 8 M15 8a3.5 3.5 0 1 1 3-5',
+      wand: 'M5 19L15 9 M17 3v3 M15.5 4.5h3 M20 8v2 M19 9h2',
+      mace: 'M5 19l8-8 M13 11a4 4 0 1 0 5-5a4 4 0 0 0-5 5z',
+      hammer: 'M5 19l9-9 M12 4l8 8 M14 2l8 8-3 3-8-8z',
+      lock: 'M8 11V8a4 4 0 0 1 8 0v3 M6 11h12v9H6z',
+      potion: 'M10 3h4 M10 3v5l-4.5 6.5A4.5 4.5 0 0 0 9.5 21h5a4.5 4.5 0 0 0 4-6.5L14 8V3 M7 14h10',
+      bomb: 'M11 8a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13 M15 7l3-3 M19 2v1.5 M20.5 4H19',
+      bow: 'M6 3c9 3 9 15 0 18 M6 3v18 M3 12h15 M15 9l3 3-3 3',
+      axe: 'M5 19L15 9 M13 4c5 0 7 3 7 7-3 0-5-1-7-3z',
+      spear: 'M4 20L17 7 M17 7l3-4-4 1z',
+      tent: 'M3 20L12 4l9 16z M12 4v16 M9 20l3-5 3 5',
+      empty: 'M12 9v6 M9 12h6'
+    };
+    const RAR = { C: 'Common', R: 'Rare', L: 'Legendary' };
+    // Weapon category cards, as on the earlier versions
+    const CARDS = {
+      Longsword: ['Parry'], Greatsword: ['Cleave'], Shield: ['Block', 'Shield Bash'], Staff: ['Trip', 'Ward'],
+      Wand: ['Magic Bolt'], Mace: ['Bonebreaker'], Warhammer: ['Shatter'], Shortbow: ['Double Shot'],
+      Dagger: ['Backstab', 'Throw'], Battleaxe: ['Hack', 'Throw'], Spear: ['Throw']
+    };
+    const DESC = {
+      Longsword: 'Versatile: one- or two-handed.', Greatsword: 'Two-handed.', Shield: 'Offhand.',
+      Staff: 'Versatile. Uses INT or WIS.', Wand: 'One-handed. Uses INT or WIS.', Mace: 'One-handed.',
+      Warhammer: 'Two-handed.', Shortbow: 'Two-handed. Uses DEX.', Dagger: 'One-handed. Can be thrown.',
+      Battleaxe: 'Versatile. Can be thrown.', Spear: 'Versatile. Reach: hits 2 squares away.',
+      Potion: 'Consumable.', Throwable: 'Consumable.', 'Camp kit': 'Pitch a camp. One kit covers the whole party.'
+    };
+    const PLURAL = { longsword: 'longswords', greatsword: 'greatswords', shortbow: 'shortbows', dagger: 'daggers', battleaxe: 'battleaxes', spear: 'spears', staff: 'staves', wand: 'wands', mace: 'maces', warhammer: 'warhammers' };
+    // Class gear (Weapons & gear → Class gear); Humans ignore these limits
+    const CLASS = {
+      Fighter: { w: 'all', a: ['light', 'medium', 'heavy', 'shield'] },
+      Wizard: { w: ['dagger', 'staff', 'wand'], a: [] },
+      Cleric: { w: ['mace', 'warhammer', 'staff'], a: ['light', 'medium', 'shield'] },
+      Rogue: { w: ['dagger', 'shortsword', 'rapier', 'scimitar', 'shortbow', 'crossbow', 'fist'], a: ['light'] }
+    };
+    const ABN = { STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution', INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma' };
+    const PROF_BASE = { Persuade: 'CHA', Deceive: 'CHA', Intimidate: 'STR', Perception: 'WIS', Stealth: 'DEX', Athletics: 'STR', Survival: 'CON', Nature: 'INT', Animal: 'WIS', Thievery: 'DEX', Lore: 'INT' };
+
+    let uidN = 0;
+    const W = (name, r, icon, cat, hands) => ({ uid: 'w' + (uidN++), name: name, r: r, icon: icon, slot: 'weapon', cat: cat, hands: hands });
+    const A = (name, r, icon, slot, acat) => ({ uid: 'a' + (uidN++), name: name, r: r, icon: icon, slot: slot, acat: acat || null });
+    const C = (name, r, icon, count, belt) => ({ uid: 'c' + (uidN++), name: name, r: r, icon: icon, slot: 'cons', belt: belt !== false, count: count });
+
+    const CH = [
+      { name: '[Hero name]', sub: 'Human Fighter (Tactician) · Lv [late]', cls: 'Fighter', human: true, initial: 'H', color: '#E9C46A', hp: 0.62,
+        ab: { STR: 5, DEX: 2, CON: 4, INT: 1, WIS: 2, CHA: 3 }, prof: ['Persuade'] },
+      { name: 'Fluffy', sub: 'Cat Wizard (Blaster) · Lv [late]', cls: 'Wizard', initial: 'F', color: '#C9B3E6', hp: 0.4,
+        ab: { STR: 1, DEX: 3, CON: 2, INT: 5, WIS: 3, CHA: 1 }, prof: ['Persuade', 'Lore'] },
+      { name: 'Chelmsford', sub: 'Dragonborn Cleric (Order of Good) · Lv [late]', cls: 'Cleric', initial: 'C', color: '#8EC3F2', hp: 0.9,
+        ab: { STR: 3, DEX: 1, CON: 4, INT: 2, WIS: 5, CHA: 3 }, prof: ['Persuade', 'Athletics'] },
+      { name: 'Mel', sub: 'Wood Elf Rogue (Con Artist) · Lv [late]', cls: 'Rogue', initial: 'M', color: '#F4B6A8', hp: 0.5, injured: true,
+        ab: { STR: 1, DEX: 5, CON: 2, INT: 2, WIS: 2, CHA: 4 }, prof: ['Deceive', 'Thievery'] }
+    ];
+    const INIT_EQ = [
+      { gear: { helmet: A('Heavy helm', 'R', 'helmet', 'helmet', 'heavy'), armor: A('Heavy armor', 'L', 'armor', 'armor', 'heavy'), gloves: A('Gloves', 'R', 'gloves', 'gloves'), leggings: A('Leggings', 'R', 'leggings', 'leggings'), amulet: A('Amulet', 'L', 'amulet', 'amulet'), ring1: A('Ring', 'R', 'ring', 'ring'), ring2: A('Ring', 'R', 'ring', 'ring'), boots: A('Boots', 'C', 'boots', 'boots') },
+        sets: [{ main: W('Longsword', 'L', 'sword', 'longsword', 'v'), off: A('Shield', 'R', 'shield', 'weapon', 'shield') }, { main: W('Greatsword', 'R', 'sword', 'greatsword', 2), off: null }],
+        belt: [C('Potion', 'R', 'potion'), C('Throwable', 'C', 'bomb')] },
+      { gear: { helmet: null, armor: null, gloves: null, leggings: null, amulet: A('Amulet', 'R', 'amulet', 'amulet'), ring1: A('Ring', 'C', 'ring', 'ring'), ring2: null, boots: null },
+        sets: [{ main: W('Staff', 'C', 'staff', 'staff', 'v'), off: null }, { main: W('Wand', 'R', 'wand', 'wand', 1), off: null }],
+        belt: [C('Potion', 'C', 'potion'), null] },
+      { gear: { helmet: A('Medium helm', 'C', 'helmet', 'helmet', 'medium'), armor: A('Medium armor', 'C', 'armor', 'armor', 'medium'), gloves: null, leggings: A('Leggings', 'C', 'leggings', 'leggings'), amulet: A('Amulet', 'C', 'amulet', 'amulet'), ring1: null, ring2: null, boots: A('Boots', 'C', 'boots', 'boots') },
+        sets: [{ main: W('Mace', 'C', 'mace', 'mace', 1), off: A('Shield', 'C', 'shield', 'weapon', 'shield') }, { main: W('Warhammer', 'C', 'hammer', 'warhammer', 2), off: null }],
+        belt: [C('Potion', 'C', 'potion'), C('Potion', 'C', 'potion')] },
+      { gear: { helmet: null, armor: A('Light armor', 'C', 'armor', 'armor', 'light'), gloves: A('Gloves', 'R', 'gloves', 'gloves'), leggings: A('Leggings', 'C', 'leggings', 'leggings'), amulet: null, ring1: A('Ring', 'C', 'ring', 'ring'), ring2: null, boots: A('Boots', 'R', 'boots', 'boots') },
+        sets: [{ main: W('Dagger', 'R', 'dagger', 'dagger', 1), off: W('Dagger', 'C', 'dagger', 'dagger', 1) }, { main: W('Shortbow', 'C', 'bow', 'shortbow', 2), off: null }],
+        belt: [C('Potion', 'C', 'potion'), null] }
+    ];
+    const INIT_INV = {
+      gear: [W('Shortbow', 'C', 'bow', 'shortbow', 2), W('Dagger', 'R', 'dagger', 'dagger', 1), W('Battleaxe', 'C', 'axe', 'battleaxe', 'v'),
+        A('Light armor', 'C', 'armor', 'armor', 'light'), A('Light helm', 'C', 'helmet', 'helmet', 'light'), A('Shield', 'C', 'shield', 'weapon', 'shield'),
+        A('Ring', 'R', 'ring', 'ring'), W('Spear', 'L', 'spear', 'spear', 'v')],
+      cons: [C('Potion', 'C', 'potion', 4), C('Throwable', 'C', 'bomb', 2), C('Camp kit', 'C', 'tent', 1, false)]
+    };
+    const NEW_AT_START = ['Ring', 'Spear'];
+
+    const st = this.state || {};
+    const ci = st.ci ?? 0;
+    const setIdx = st.set ?? 0;
+    const tab = st.tab ?? 'gear';
+    const eq = st.eq || INIT_EQ;
+    const inv = st.inv || INIT_INV;
+    const seen = st.seen || [];
+    const isNew = (it) => NEW_AT_START.indexOf(it.name) >= 0 && it.uid && seen.indexOf(it.uid) < 0 && !it.moved;
+    const hold = st.hold || null;
+    const filter = st.filter || null;
+    const ch = CH[ci];
+    const me = eq[ci];
+    const set = me.sets[setIdx];
+
+    const SLOT_LABEL = { helmet: 'Helmet', armor: 'Armor', gloves: 'Gloves', leggings: 'Leggings', amulet: 'Amulet', ring1: 'Ring', ring2: 'Ring', boots: 'Boots', main: 'Main hand', off: 'Off hand', belt0: 'Belt', belt1: 'Belt' };
+    const SLOT_ICON = { helmet: 'helmet', armor: 'armor', gloves: 'gloves', leggings: 'leggings', amulet: 'amulet', ring1: 'ring', ring2: 'ring', boots: 'boots', main: 'sword', off: 'shield', belt0: 'potion', belt1: 'potion' };
+    const kindOf = (id) => ({ main: 'main', off: 'off', belt0: 'belt', belt1: 'belt', ring1: 'ring', ring2: 'ring' }[id] || id);
+    const getSlot = (E, c, s, id) => {
+      const m = E[c];
+      if (id === 'main' || id === 'off') return m.sets[s][id];
+      if (id === 'belt0' || id === 'belt1') return m.belt[id === 'belt0' ? 0 : 1];
+      return m.gear[id];
+    };
+    const setSlot = (E, c, s, id, it) => {
+      const m = E[c];
+      if (id === 'main' || id === 'off') m.sets[s][id] = it;
+      else if (id === 'belt0' || id === 'belt1') m.belt[id === 'belt0' ? 0 : 1] = it;
+      else m.gear[id] = it;
+    };
+    const titleCase = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+
+    // Can this item go in this slot? null: wrong kind of slot (not lit); { ok:false, why }: right slot, but not for this character (red cross)
+    const fit = (it, id) => {
+      if (!it) return null;
+      const k = kindOf(id);
+      let type;
+      if (k === 'main') type = it.slot === 'weapon' && it.acat !== 'shield';
+      else if (k === 'off') type = it.slot === 'weapon' && it.hands !== 2;
+      else if (k === 'belt') type = it.slot === 'cons' && it.belt;
+      else type = it.slot === k;
+      if (!type) return null;
+      let why = null;
+      if (!ch.human) {
+        const L = CLASS[ch.cls];
+        if (it.acat === 'shield') { if (L.a.indexOf('shield') < 0) why = ch.cls + 's can\'t use shields'; }
+        else if (it.slot === 'weapon') { if (L.w !== 'all' && L.w.indexOf(it.cat) < 0) why = ch.cls + 's can\'t use ' + PLURAL[it.cat]; }
+        else if (it.acat && L.a.indexOf(it.acat) < 0) why = L.a.length ? ch.cls + 's can\'t wear ' + it.acat + ' armor' : ch.cls + 's wear no armor';
+      }
+      if (!why && k === 'off' && set.main && set.main.hands === 2) why = 'Two-handed weapon equipped';
+      return { ok: !why, why: why };
+    };
+    // A slot this character can never fill (e.g. a Wizard's armor)
+    const lockNote = (id) => {
+      if (id === 'off' && set.main && set.main.hands === 2) return 'Two-handed weapon equipped';
+      if (id === 'armor' && !ch.human && CLASS[ch.cls].a.length === 0) return ch.cls + 's wear no armor';
+      return null;
+    };
+
+    const findInv = (I, uid) => {
+      for (const t of ['gear', 'cons']) { const i = I[t].findIndex((x) => x.uid === uid); if (i >= 0) return { t: t, i: i, it: I[t][i] }; }
+      return null;
+    };
+    const holdItem = !hold ? null : (hold.kind === 'inv' ? (findInv(inv, hold.uid) || {}).it || null : getSlot(eq, ci, setIdx, hold.id));
+
+    const clone = (x) => JSON.parse(JSON.stringify(x));
+    const toInv = (I, it) => {
+      if (it.slot === 'cons') {
+        const s = I.cons.find((x) => x.name === it.name && x.r === it.r);
+        if (s) s.count += 1; else I.cons.push(Object.assign({}, it, { count: 1 }));
+      } else I.gear.push(Object.assign({}, it, { moved: true }));
+    };
+
+    // Screen-space helpers for the flights (the artboard may be zoomed on the canvas)
+    const local = (r) => {
+      const root = this._root; if (!root) return null;
+      const R = root.getBoundingClientRect(); const sc = R.width / 844 || 1;
+      return { x: (r.left - R.left) / sc, y: (r.top - R.top) / sc, w: r.width / sc, h: r.height / sc };
+    };
+    const rectOf = (sel) => { const root = this._root; const el = root && root.querySelector(sel); return el ? local(el.getBoundingClientRect()) : null; };
+    const fly = (it, from, to) => (from && to ? {
+      rim: T.rim[it.r], face: T.face[it.r], ink: T.ink[it.r], icon: ICON[it.icon],
+      fx: from.x + (from.w - 46) / 2, fy: from.y + (from.h - 53) / 2, tx: to.x + (to.w - 46) / 2, ty: to.y + (to.h - 53) / 2
+    } : null);
+    const launch = (patch, flies, landIds) => {
+      const k = (st.landK || 0) + 1;
+      this.setState(Object.assign(patch, { fly: flies.filter(Boolean), flyGo: false, landK: k, landIds: landIds, hold: null, why: null, drag: null, hover: null }));
+      setTimeout(() => this.setState({ flyGo: true }), 30);
+      setTimeout(() => this.setState({ fly: null }), 520);
+    };
+
+    // Put the held (or dragged) item into a slot
+    const place = (src, id, animate) => {
+      const E = clone(eq); const I = clone(inv);
+      const invRect = rectOf('[data-drop="inv"]');
+      const toRect = animate ? rectOf('[data-drop="' + id + '"]') : null;
+      const flies = [];
+      let it;
+      if (src.kind === 'inv') {
+        const f = findInv(I, src.uid); if (!f) return;
+        it = f.it;
+        const fromRect = animate ? rectOf('[data-item="' + it.uid + '"]') : null;
+        if (it.slot === 'cons' && it.count > 1) { it.count -= 1; it = Object.assign({}, it, { uid: it.uid + 'b' + Date.now(), count: undefined }); }
+        else I[f.t].splice(f.i, 1);
+        if (animate) flies.push(fly(it, fromRect, toRect));
+        const old = getSlot(E, ci, setIdx, id);
+        if (old) { toInv(I, old); flies.push(fly(old, toRect || rectOf('[data-drop="' + id + '"]'), invRect)); }
+      } else {
+        it = getSlot(E, ci, setIdx, src.id);
+        const fromRect = rectOf('[data-drop="' + src.id + '"]');
+        if (animate) flies.push(fly(it, fromRect, toRect));
+        const old = getSlot(E, ci, setIdx, id);
+        setSlot(E, ci, setIdx, src.id, null);
+        if (old) {
+          const back = fit(old, src.id);
+          if (back && back.ok) setSlot(E, ci, setIdx, src.id, old);
+          else { toInv(I, old); flies.push(fly(old, rectOf('[data-drop="' + id + '"]'), invRect)); }
+        }
+      }
+      setSlot(E, ci, setIdx, id, it);
+      // A two-handed weapon empties the off hand
+      if (id === 'main' && it.hands === 2) {
+        const off = getSlot(E, ci, setIdx, 'off');
+        if (off) { setSlot(E, ci, setIdx, 'off', null); toInv(I, off); flies.push(fly(off, rectOf('[data-drop="off"]'), invRect)); }
+      }
+      const seenNext = it.uid ? seen.concat([it.uid]) : seen;
+      launch({ eq: E, inv: I, filter: null, seen: seenNext, landAnim: animate }, flies, [id]);
+    };
+    const unequip = (id, animate) => {
+      const E = clone(eq); const I = clone(inv);
+      const it = getSlot(E, ci, setIdx, id); if (!it) return;
+      setSlot(E, ci, setIdx, id, null); toInv(I, it);
+      const flies = animate ? [fly(it, rectOf('[data-drop="' + id + '"]'), rectOf('[data-drop="inv"]'))] : [];
+      launch({ eq: E, inv: I, tab: it.slot === 'cons' ? 'cons' : 'gear', landAnim: animate }, flies, []);
+    };
+    const sayWhy = (why) => {
+      const k = (st.whyK || 0) + 1;
+      this.setState({ why: why, whyK: k });
+      setTimeout(() => { if ((this.state || {}).whyK === k) this.setState({ why: null }); }, 2200);
+    };
+
+    // A tap (no drag) on an item or slot
+    const tap = (src) => {
+      if (src.kind === 'slot') {
+        const here = getSlot(eq, ci, setIdx, src.id);
+        if (hold && !(hold.kind === 'slot' && hold.id === src.id)) {
+          const f = fit(holdItem, src.id);
+          if (f && f.ok) return place(hold, src.id, true);
+          if (f && !f.ok) return sayWhy(f.why);
+        }
+        if (hold && hold.kind === 'slot' && hold.id === src.id) return this.setState({ hold: null, why: null });
+        if (here) return this.setState({ hold: src, filter: null, why: null, hover: null, abPin: null });
+        const lock = lockNote(src.id);
+        if (lock) return sayWhy(lock);
+        const k = kindOf(src.id);
+        return this.setState({ filter: filter === src.id ? null : src.id, hold: null, why: null, abPin: null, tab: k === 'belt' ? 'cons' : 'gear' });
+      }
+      const f0 = findInv(inv, src.uid); if (!f0) return;
+      if (hold && hold.kind === 'inv' && hold.uid === src.uid) return this.setState({ hold: null, why: null });
+      if (filter) { const f = fit(f0.it, filter); if (f && f.ok) return place(src, filter, true); if (f && !f.ok) return sayWhy(f.why); }
+      this.setState({ hold: src, why: null, hover: null, abPin: null, seen: seen.concat([src.uid]) });
+    };
+    const down = (src) => (e) => {
+      this._root = e.currentTarget.closest('[data-root]');
+      this._drag = { src: src, x: e.clientX, y: e.clientY, moved: false };
+    };
+    const dropUnder = (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const d = el && el.closest ? el.closest('[data-drop]') : null;
+      return d ? d.getAttribute('data-drop') : null;
+    };
+
+    // Slots
+    const landK = st.landK || 0;
+    const landIds = st.landIds || [];
+    const mkSlot = (id) => {
+      const it = getSlot(eq, ci, setIdx, id);
+      const lock = it ? null : lockNote(id);
+      const isHeld = hold && hold.kind === 'slot' && hold.id === id;
+      const f = holdItem && !isHeld ? fit(holdItem, id) : null;
+      const lit = (f && f.ok) || filter === id;
+      const anim = landIds.indexOf(id) >= 0 && it ? 'land' + (landK % 2) + ' 0.32s ease-out ' + (st.landAnim ? '0.38s' : '0s') + ' both' : 'none';
+      return {
+        id: id,
+        icon: ICON[it ? it.icon : (lock ? 'lock' : SLOT_ICON[id])],
+        rim: isHeld ? T.sel : (it ? T.rim[it.r] : T.emptyRim),
+        inset: isHeld ? '5px' : '3px',
+        face: it ? T.face[it.r] : T.emptyFace,
+        ink: it ? T.ink[it.r] : T.emptyInk,
+        pips: it ? (it.r === 'L' ? [{ c: T.ink.L }, { c: T.ink.L }] : it.r === 'R' ? [{ c: T.ink.R }] : []) : [],
+        glowOp: lit ? '1' : '0', glowAnim: lit ? 'glow 1.2s ease-in-out infinite' : 'none',
+        cross: !!(f && !f.ok), dim: f && !f.ok ? '0.5' : '1',
+        lift: isHeld ? 'translateY(-4px)' : 'none', anim: anim,
+        aria: SLOT_LABEL[id] + ': ' + (it ? it.name + ', ' + RAR[it.r] : (lock ? lock : 'empty')) + (lit ? ', fits' : '') + (f && !f.ok ? ', ' + f.why : ''),
+        down: down({ kind: 'slot', id: id }),
+        hover: () => { if (!this._drag) this.setState({ hover: 'slot:' + id }); }
+      };
+    };
+    const zig = (ids) => ids.map((id, i) => Object.assign(mkSlot(id), { ml: i % 2 ? '23px' : '0px', mt: i ? '-9px' : '0px' }));
+    const leftSlots = zig(['helmet', 'armor', 'gloves', 'leggings']);
+    const rightSlots = zig(['amulet', 'ring1', 'ring2', 'boots']);
+    const bottomSlots = ['main', 'off', 'belt0', 'belt1'].map((id) => Object.assign(mkSlot(id), { gapBefore: id === 'belt0' }));
+
+    // Inventory
+    const list = (tab === 'gear' ? inv.gear : inv.cons).filter((x) => !filter || fit(x, filter));
+    const holdFromInv = hold && hold.kind === 'inv' ? hold.uid : null;
+    const items = list.map((x) => {
+      const f = filter ? fit(x, filter) : null;
+      const on = holdFromInv === x.uid;
+      return {
+        uid: x.uid, icon: ICON[x.icon], rim: on ? T.sel : T.rim[x.r], inset: on ? '5px' : '3px',
+        face: T.face[x.r], ink: T.ink[x.r], dim: f && !f.ok ? '0.45' : '1', lift: on ? 'translateY(-4px)' : 'none',
+        pips: x.r === 'L' ? [{ c: T.ink.L }, { c: T.ink.L }] : x.r === 'R' ? [{ c: T.ink.R }] : [],
+        isNew: isNew(x), hasCount: !!x.count && x.slot === 'cons', count: x.count ? String(x.count) : '',
+        anim: x.moved && st.fly ? 'land' + (landK % 2) + ' 0.3s ease-out 0.4s both' : 'none',
+        aria: x.name + ', ' + RAR[x.r] + (x.count ? ', ' + x.count + ' carried' : '') + (isNew(x) ? ', new' : ''),
+        down: down({ kind: 'inv', uid: x.uid }),
+        hover: () => { if (!this._drag) this.setState({ hover: 'inv:' + x.uid, seen: seen.indexOf(x.uid) < 0 ? seen.concat([x.uid]) : seen }); }
+      };
+    });
+    const rows = [];
+    let idx = 0, r = 0;
+    while (idx < items.length) {
+      const n = r % 2 ? 5 : 6;
+      rows.push({ items: items.slice(idx, idx + n), indent: r % 2 ? '24px' : '0px', mt: r ? '-9px' : '0px' });
+      idx += n; r += 1;
+    }
+    const rowOf = (uid) => { const i = items.findIndex((x) => x.uid === uid); return i < 0 ? 0 : (i < 6 ? 0 : i < 11 ? 1 : 2); };
+    const tabs = [{ key: 'gear', label: 'Gear' }, { key: 'cons', label: 'Consumables' }].map((t) => ({
+      label: t.label, on: tab === t.key ? 'true' : 'false',
+      bg: tab === t.key ? '#24302C' : '#E6DCC8', ink: tab === t.key ? '#F6EEDF' : '#4A4034',
+      dot: tab !== t.key && inv[t.key].some(isNew),
+      pick: () => this.setState({ tab: t.key, filter: null, hover: null })
+    }));
+
+    // Details pop-up, placed beside what it describes
+    const hv = st.hover || (st.abPin ? 'ab:' + st.abPin : null);
+    let pop = null;
+    const clampTop = (y) => Math.max(66, Math.min(y, 170));
+    const itemPop = (it, tag) => ({
+      tag: tag + ' · ' + RAR[it.r], name: it.name + (it.count && it.slot === 'cons' ? ' ×' + it.count : ''), rim: T.rim[it.r], tagInk: T.tagInk[it.r],
+      desc: DESC[it.name] || (it.acat && it.acat !== 'shield' ? titleCase(it.acat) + ' armor' + (it.slot === 'armor' ? '.' : ' piece.') : (it.slot === 'ring' || it.slot === 'amulet' ? 'Trinket.' : (it.slot !== 'weapon' ? 'No armor category.' : ''))),
+      cards: (CARDS[it.name] || []).map((n) => ({ n: n, bg: '#24302C' })), stats: true
+    });
+    if (hv && !st.drag && !(hold && ((hold.kind === 'slot' && hv === 'slot:' + hold.id) || (hold.kind === 'inv' && hv === 'inv:' + hold.uid)))) {
+      const [kind, key] = [hv.slice(0, hv.indexOf(':')), hv.slice(hv.indexOf(':') + 1)];
+      if (kind === 'slot') {
+        const it = getSlot(eq, ci, setIdx, key);
+        const lock = it ? null : lockNote(key);
+        if (it || lock) {
+          pop = it ? itemPop(it, SLOT_LABEL[key]) : { tag: SLOT_LABEL[key], name: 'Empty', rim: T.emptyRim, tagInk: '#5A5040', desc: lock, cards: [], stats: false };
+          const li = ['helmet', 'armor', 'gloves', 'leggings'].indexOf(key);
+          const ri = ['amulet', 'ring1', 'ring2', 'boots'].indexOf(key);
+          if (li >= 0) Object.assign(pop, { left: 186, top: clampTop(110 + li * 44) });
+          else if (ri >= 0) Object.assign(pop, { left: 160, top: clampTop(110 + ri * 44) });
+          else Object.assign(pop, { left: key === 'main' || key === 'off' ? 150 : 230, bottom: 80 });
+        }
+      } else if (kind === 'inv') {
+        const f = findInv(inv, key);
+        if (f) pop = Object.assign(itemPop(f.it, f.t === 'gear' ? 'Inventory' : 'Consumable'), { left: 254, top: clampTop(170 + rowOf(key) * 42) });
+      } else if (kind === 'ab') {
+        const ks = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+        const profs = ch.prof.filter((p) => PROF_BASE[p] === key);
+        pop = {
+          tag: 'Ability', name: ABN[key], rim: '#BFAE8E', tagInk: '#5A5040',
+          desc: profs.length ? 'Proficient in:' : 'No proficiencies.',
+          cards: profs.map((p) => ({ n: p + ' +1', bg: '#2E6B3A' })), stats: false,
+          left: Math.max(96, Math.min(102 + ks.indexOf(key) * 120 + 59 - 110, 844 - 18 - 220)), top: 112
+        };
+      }
+    }
+    const popOut = pop ? {
+      show: true, tag: pop.tag, name: pop.name, rim: pop.rim, tagInk: pop.tagInk, desc: pop.desc || '', hasDesc: !!pop.desc,
+      cards: pop.cards, hasCards: pop.cards.length > 0, hasStats: !!pop.stats,
+      left: pop.left + 'px', top: pop.top != null ? pop.top + 'px' : 'auto', bottom: pop.bottom != null ? pop.bottom + 'px' : 'auto'
+    } : { show: false, tag: '', name: '', rim: '#BFAE8E', tagInk: '#5A5040', desc: '', hasDesc: false, cards: [], hasCards: false, hasStats: false, left: '0px', top: '0px', bottom: 'auto' };
+
+    // The stand-in mini wears what's equipped (all but rings and the amulet)
+    const g = me.gear;
+    const ARMC = { light: '#B08A62', medium: '#8E9AA0', heavy: '#66737D' };
+    const mini = {
+      skin: ch.color, body: g.armor ? ARMC[g.armor.acat] : '#D9CBB2', legs: g.leggings ? '#7B6A55' : '#C7B79C',
+      helm: g.helmet ? (ARMC[g.helmet.acat] || '#8E9AA0') : '#8E9AA0', helmOp: g.helmet ? '1' : '0',
+      bootsOp: g.boots ? '1' : '0', glovesOp: g.gloves ? '1' : '0',
+      mainIcon: set.main ? ICON[set.main.icon] : '', mainOp: set.main ? '1' : '0',
+      offIcon: set.off ? ICON[set.off.icon] : '', offOp: set.off ? '1' : '0',
+      aria: ch.name + ' mini wearing ' + ['helmet', 'armor', 'gloves', 'leggings', 'boots'].filter((k) => g[k]).map((k) => g[k].name).concat([set.main, set.off].filter(Boolean).map((x) => x.name)).join(', ')
+    };
+
+    const abilities = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map((k, n) => {
+      const v = ch.ab[k];
+      const ml = v * 13 + (v - 1) * 3 <= 52 ? '3px' : ((52 - v * 13) / (v - 1)).toFixed(2) + 'px';
+      const open = st.abPin === k;
+      return {
+        k: k, v: v, divider: n > 0, open: open ? 'true' : 'false', bg: open ? '#E6DCC8' : 'transparent',
+        coins: Array.from({ length: v }, (_, i) => ({ ml: i ? ml : '0px' })),
+        aria: ABN[k] + ' ' + v,
+        pin: () => this.setState({ abPin: st.abPin === k ? null : k, hold: null, filter: null }),
+        hover: () => { if (!this._drag) this.setState({ hover: 'ab:' + k }); }
+      };
+    });
+
+    const party = CH.map((p, i) => ({
+      initial: p.initial, face: p.color, on: i === ci ? 'true' : 'false', injured: !!p.injured,
+      rim: i === ci ? T.sel : '#BFAE8E', inset: i === ci ? '4px' : '3px',
+      hpW: Math.round(p.hp * 100) + '%',
+      aria: p.name + ': ' + Math.round(p.hp * 100) + '% HP' + (p.injured ? ', injured' : ''),
+      pick: () => this.setState({ ci: i, set: 0, hold: null, filter: null, hover: null, abPin: null, why: null })
+    }));
+
+    const flies = (st.fly || []).map((f) => ({
+      rim: f.rim, face: f.face, ink: f.ink, icon: f.icon,
+      left: (st.flyGo ? f.tx : f.fx).toFixed(0) + 'px', top: (st.flyGo ? f.ty : f.fy).toFixed(0) + 'px',
+      tr: st.flyGo ? 'left 0.42s cubic-bezier(.5,0,.3,1), top 0.42s cubic-bezier(.5,.4,.3,1)' : 'none'
+    }));
+    const drag = st.drag || null;
+    const gItem = drag ? holdItem : null;
+
+    return {
+      c: { name: ch.name, sub: ch.sub, abilities: abilities },
+      party: party, leftSlots: leftSlots, rightSlots: rightSlots, bottomSlots: bottomSlots, mini: mini,
+      setLabel: 'set ' + (setIdx + 1), setShort: 'Set ' + (setIdx + 1),
+      swapSet: () => this.setState({ set: setIdx === 0 ? 1 : 0, hold: null, filter: null, hover: null }),
+      inv: {
+        rows: rows, tabs: tabs, empty: items.length === 0,
+        hasFilter: !!filter, filterLabel: filter ? 'Fits ' + SLOT_LABEL[filter].toLowerCase() : '',
+        clearFilter: () => this.setState({ filter: null }),
+        outline: hold && hold.kind === 'slot' ? '3px dashed #B5532F' : 'none'
+      },
+      held: {
+        show: !!(st.why || holdItem), text: st.why || (holdItem ? holdItem.name : ''),
+        bg: st.why ? '#8E3B2E' : '#24302C', anim: st.why ? 'shake 0.3s ease-out' : 'none',
+        cancel: () => this.setState({ hold: null, why: null })
+      },
+      pop: popOut, flies: flies,
+      ghost: drag && gItem ? { show: true, left: (drag.x - 23).toFixed(0) + 'px', top: (drag.y - 30).toFixed(0) + 'px', face: T.face[gItem.r], ink: T.ink[gItem.r], icon: ICON[gItem.icon] } : { show: false, left: '0px', top: '0px', face: '#FCF7EE', ink: '#33403B', icon: '' },
+      unhover: () => { if (st.hover) this.setState({ hover: null }); },
+      dragMove: (e) => {
+        const d = this._drag; if (!d) return;
+        if (!d.moved && Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) {
+          const has = d.src.kind === 'inv' || getSlot(eq, ci, setIdx, d.src.id);
+          if (!has) return;
+          d.moved = true;
+        }
+        if (!d.moved) return;
+        const R = e.currentTarget.getBoundingClientRect(); const sc = R.width / 844 || 1;
+        this.setState({ drag: { x: (e.clientX - R.left) / sc, y: (e.clientY - R.top) / sc }, hold: d.src, hover: null, filter: d.src.kind === 'slot' ? null : filter });
+      },
+      dragEnd: (e) => {
+        const d = this._drag; this._drag = null;
+        if (!d) {
+          if (e.target.closest && e.target.closest('button')) return;
+          this._root = e.currentTarget;
+          if (hold && hold.kind === 'slot' && e.target.closest && e.target.closest('[data-drop="inv"]')) return unequip(hold.id, true);
+          if (hold || st.abPin || st.why) this.setState({ hold: null, abPin: null, why: null });
+          return;
+        }
+        if (!d.moved) return tap(d.src);
+        const to = dropUnder(e);
+        this.setState({ drag: null });
+        if (to === 'inv') { if (d.src.kind === 'slot') return unequip(d.src.id, false); return this.setState({ hold: null }); }
+        if (to && !(d.src.kind === 'slot' && d.src.id === to)) {
+          const f = fit(holdItem, to);
+          if (f && f.ok) return place(d.src, to, false);
+          if (f && !f.ok) { this.setState({ hold: null }); return sayWhy(f.why); }
+        }
+        this.setState({ hold: null });
+      },
+      dragCancel: () => { if (this._drag) { this._drag = null; this.setState({ drag: null, hold: null }); } }
+    };
+  }
+}
+</script>
+</body>
+</html>

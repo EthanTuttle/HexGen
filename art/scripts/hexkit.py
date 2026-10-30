@@ -28,6 +28,10 @@ PALETTE = {
     "farmland": "#DCC562",
     "river": "#86BEDB",
     "village": "#E6C590",
+    "hills": "#BFAE8E",
+    "swamp": "#7F9A6E",
+    "desert": "#EDD49A",
+    "ruins": "#B3ADA4",
     "soil_light": "#8A6446",
     "soil_dark": "#6B4C35",
     # props
@@ -57,6 +61,48 @@ PALETTE = {
     "stone_blue": "#8E959B",
     "stone_brown": "#9C8B78",
     "flower": "#F2D46B",
+    # hills, desert, swamp, ruins
+    "hill_grass": "#A3C47A",
+    "cliff": "#A89F8E",
+    "sand": "#F3DFAC",
+    "cracked": "#D8BB7E",
+    "scrub": "#9C9A5C",
+    "cactus": "#6E9A5A",
+    "bog_water": "#5F7F6C",
+    "mud": "#7A7152",
+    "hummock": "#6F8E5C",
+    "deadwood": "#7C6E5E",
+    # tier 1 region variants
+    "deep_forest": "#466F47",
+    "pine_deep": "#2F5734",
+    "hide": "#8A6A4E",
+    "hide_light": "#C9B79C",
+    "flower_pink": "#E9A3B8",
+    "flower_white": "#F4F1E8",
+    "flower_blue": "#9DB4E0",
+    "highland_grass": "#9FB07E",
+    "heather": "#9C6FA0",
+    "hay": "#E3C45E",
+    "stubble": "#D9C27A",
+    "sail": "#EFE6D2",
+    "timber": "#5E4532",
+    "awning_a": "#C8553D",
+    "awning_b": "#F2E8D5",
+    "crate": "#A7825A",
+    "fruit": "#D9822B",
+    "sandbar": "#E3D3A8",
+    "bog": "#6B8462",
+    "bog_dark": "#4A6457",
+    "toadstool": "#F0C24E",
+    "poison_purple": "#8E4FA6",
+    "poison_yellow": "#E6D23F",
+    "spiky": "#4F6B3A",
+    "wasteland": "#E2CFA2",
+    "sandstone": "#D6B484",
+    "bone": "#F1EBDD",
+    "pit": "#6B5038",
+    "canvas": "#E9DFC8",
+    "lantern": "#F6D36B",
     "slot": "#F6EFE4",
     "backdrop": "#CFE4F2",
     # combat cells
@@ -65,7 +111,7 @@ PALETTE = {
     "cell_grass_c": "#88B575",
 }
 
-TERRAINS = ["plains", "forest", "farmland", "river", "village"]
+TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
 
 def srgb_to_linear(c):
@@ -159,6 +205,7 @@ class Piece:
         self.name = name
         self.bm = bmesh.new()
         self.mats = []
+        self.surface = set()  # open surfaces built facing up; finish() leaves their normals alone
 
     def _slot(self, mat_name):
         if mat_name not in self.mats:
@@ -211,6 +258,21 @@ class Piece:
         r = bmesh.ops.create_cube(self.bm, size=1.0, matrix=m)
         self._paint(r["verts"], mat_name)
 
+    def log(self, at, radius, length, mat_name, spin=0.0, z=None, segments=8):
+        """A cylinder lying on its side along direction `spin` (toppled columns)."""
+        z = radius if z is None else z
+        m = (Matrix.Translation(at + Vector((0, 0, z))) @ Matrix.Rotation(spin, 4, "Z")
+             @ Matrix.Rotation(math.pi / 2, 4, "Y"))
+        r = bmesh.ops.create_cone(self.bm, cap_ends=True, cap_tris=False, segments=segments,
+                                  radius1=radius, radius2=radius, depth=length, matrix=m)
+        self._paint(r["verts"], mat_name)
+
+    def box_rot(self, at, size, mat_name, rot):
+        """A box centred on `at`, turned by the 3x3 or 4x4 matrix `rot` (sails, ladders, tilted stones)."""
+        m = Matrix.Translation(at) @ rot.to_4x4() @ Matrix.Diagonal((*size, 1))
+        r = bmesh.ops.create_cube(self.bm, size=1.0, matrix=m)
+        self._paint(r["verts"], mat_name)
+
     def gable_roof(self, at, w, d, h, mat_name, z, spin=0.0):
         """A triangular prism roof, ridge along the house's length (w)."""
         rot = Matrix.Rotation(spin, 4, "Z")
@@ -223,7 +285,7 @@ class Piece:
             self.bm.faces.new(f).material_index = idx
 
     def finish(self, collection, location=(0, 0, 0)):
-        bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
+        bmesh.ops.recalc_face_normals(self.bm, faces=[f for f in self.bm.faces if f not in self.surface])
         mesh = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(mesh)
         self.bm.free()

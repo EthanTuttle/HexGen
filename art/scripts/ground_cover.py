@@ -21,7 +21,13 @@ CELL = 0.55
 BLEND = 1.6
 
 # Share of cells that get a prop, per terrain (placeholders, tune by eye).
-DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0}
+DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
+           "hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
+           # tier 1 region variants
+           "deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
+           "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3}
+WATER = {"river", "delta"}
+FLOWERS = ["flower", "flower_pink", "flower_white", "flower_blue"]
 
 R = wt.R
 A = wt.A
@@ -94,6 +100,11 @@ def scatter(terrains, water_shapes):
                 if any(wt.length(wt.sub(p, s)) < 0.45 for c in shores for s in c):
                     continue
             k = hash01(ix, iy, 2)
+            if terrains[(q, r)] == "meadows":
+                # Wildflower drifts: a slow world-space wave decides where flowers crowd out the grass.
+                drift = 0.5 + 0.5 * math.sin(x / 3.1 + 0.4) * math.sin(y / 2.6 + x / 5.0)
+                out.append(("flower" if k < 0.15 + 0.75 * drift else "tuft", x, y, (ix, iy)))
+                continue
             out.append(("tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", x, y, (ix, iy)))
     return out
 
@@ -104,9 +115,9 @@ def add_ground_cover(piece, terrains):
 
     water_shapes = {}
     for (q, r), t in terrains.items():
-        if t == "river":
-            mask = [terrains.get((q + dq, r + dr)) == "river" for dq, dr in NEIGHBOURS]
-            outlines, shores, _, _ = wt.tile_water(mask, f"{q},{r}")
+        if t in WATER:
+            near = [terrains.get((q + dq, r + dr)) for dq, dr in NEIGHBOURS]
+            outlines, shores, _, _ = wt.tile_water([n in WATER for n in near], f"{q},{r}", wt.edge_widths(t, near))
             water_shapes[(q, r)] = (outlines, shores)
     for kind, x, y, (ix, iy) in scatter(terrains, water_shapes):
         rng = random.Random(hash01(ix, iy, 4))
@@ -115,6 +126,9 @@ def add_ground_cover(piece, terrains):
             piece.cone(at, rng.uniform(0.12, 0.2), rng.uniform(0.2, 0.35), "grass_ink", segments=4,
                        spin=rng.uniform(0, 1))
         elif kind == "flower":
-            piece.box(at, (0.08, 0.08, 0.12), "flower", spin=rng.uniform(0, 1))
+            # One colour per drift: the same slow wave picks it, so colours come in patches.
+            hue = FLOWERS[int((math.sin(x / 4.7) + math.sin(y / 3.9 + 1.0) + 2) * 1.999) % 4] \
+                if terrains.get(tile_at(x, y)) == "meadows" else "flower"
+            piece.box(at, (0.08, 0.08, 0.12), hue, spin=rng.uniform(0, 1))
         else:
             piece.blob(at, rng.uniform(0.07, 0.12), "rock", squash=0.6)

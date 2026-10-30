@@ -73,6 +73,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Classes & combat**
 
+- [ ] New: each companion's ability scores and gear at each stage of the game (mockups use placeholders)
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
 - [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
 - [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
@@ -158,15 +159,23 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Night building in multiplayer~~ (settled Oct 23: each player's own controllable party's sight range)
 - [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
 - [ ] Godot on iPhone: check the prototype's frame rate on the iPhone 15 Pro (see Multiplayer & tech)
+- [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
+- [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
+- [x] ~~Region variant art: tier 1 looks~~ (settled Oct 30: one look per terrain; see Presentation → Art direction → Region variant looks)
+- [ ] Tier 2 and class variant looks (see Presentation → Open questions)
+- [ ] Terrain motion pass, later in Godot: trees sway, sand drifts, like the water (see Presentation → Open questions)
 - [x] ~~Engine prototype: which terrains the test tiles cover~~ (settled Oct 29: plains, forest, farmland, river/lake, village; see Multiplayer & tech → Engine prototype)
 
 **Presentation**
 
 - [ ] Final palette and fonts for the "Game pieces" UI style
-- [ ] Rarity cue that doesn't rely on colour alone
-- [ ] What a short tap on a gear hex does on mobile
-- [ ] New: maximum ability score (the gear screen's ability panel fits 3 coins per line, up to about 9 before it runs out of height)
+- [ ] Rarity cue that doesn't rely on colour alone (proposed in character & gear v11: 1 dot for Rare, 2 for Legendary)
+- [ ] What a short tap on a gear hex does on mobile (proposed in character & gear v11: it picks the item up)
+- [ ] New: maximum ability score (from v10 the gear screen's abilities strip keeps coins on one line, so they get hard to count past about 6)
 - [ ] New: feedback on character & gear v8d, then confirm it as final
+- [ ] New: the Action cards and Weapon mastery screens copy the gear screen's top bar with its party switcher; now that gear v10 moved the party to a left tray, do they follow?
+- [ ] New: feedback on character & gear v11 (Claude's all-in proposal: tap or drag to equip with lit and crossed slots, flights, new-item dots, pop-up by its item, a stand-in mini, proficiencies, gold, rarity pips); v10 did the party tray and one-line coins
+- [x] ~~Character subtitles~~ (settled Oct 30, 2026: "Race Class (Subclass) · Lv", no "Hero" or "Companion"; see Presentation → Screen text)
 - [ ] New: combat screen: where the acting character's name shows
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [ ] New: exact backdrop colours per time of day, and the size of the rift's lilac shift
@@ -187,7 +196,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: armour fitting test, then decide whether all worn gear still shows on minis
 - [x] ~~Hero creation: builds per race, colours~~ (settled Oct 30: 3 builds per race, swatches per race)
 - [ ] New: hero creation: final heads and hairstyles per race, and each race's swatches
-- [ ] New: character creator screen: layout and step order
+- [ ] New: character creator screen: pick a layout from v1a–v1c (guided steps, painting table, origin board)
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3

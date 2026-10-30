@@ -15,6 +15,8 @@ from mathutils import Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 import ground_cover as gc  # noqa: E402
+import sand  # noqa: E402
+import variants as vr  # noqa: E402
 import water as wt  # noqa: E402
 
 # Pointy-top axial (q, r) -> terrain. Two forests touch, a river runs into a lake, villages join.
@@ -30,6 +32,21 @@ MAP = {
     (0, -1): "river",
 }
 
+# Every terrain, keeping the banned pairs apart (design/02 Map & exploration.md -> Placement): a hills range,
+# desert by the river, a swamp beside the forest, ruins between hills and plains.
+TERRAIN_MAP = {
+    (-1, -2): "hills", (0, -2): "hills", (1, -2): "hills", (2, -2): "plains", (3, -2): "desert", (4, -2): "desert",
+    (-1, -1): "forest", (0, -1): "hills", (1, -1): "ruins", (2, -1): "plains", (3, -1): "desert",
+    (-2, 0): "forest", (-1, 0): "forest", (0, 0): "plains", (1, 0): "ruins", (2, 0): "river",
+    (-2, 1): "swamp", (-1, 1): "swamp", (0, 1): "river", (1, 1): "river", (2, 1): "plains",
+    (-3, 2): "swamp", (-2, 2): "swamp", (-1, 2): "river", (0, 2): "village", (1, 2): "farmland",
+    (3, 0): "hills",  # a lone hills tile, for its own peak
+}
+
+# The same map with every region finished: each tile shows its terrain's tier 1 variant.
+TIER1 = {"forest": "deep_forest", "plains": "meadows", "hills": "highlands", "farmland": "windmill_country",
+         "village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "excavation"}
+VARIANT_MAP = {k: TIER1[t] for k, t in TERRAIN_MAP.items()}
 
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
@@ -37,6 +54,8 @@ BORDERED = {"farmland", "village"}
 
 
 def linked(a, b):
+    """Joined for edge pieces: the same terrain (a region variant counts as its terrain), or linked terrains."""
+    a, b = vr.terrain_of(a), vr.terrain_of(b) if b else b
     return a == b or frozenset((a, b)) in LINKED
 
 
@@ -56,28 +75,54 @@ def place(templates, name, col, at, angle=0.0):
     obj.location = at
     obj.rotation_euler.z = angle
     col.objects.link(obj)
+    return obj
 
 
-def build_map(templates, animated=False):
+def build_map(templates, animated=False, tiles=None):
     """Places the test map. With animated=True, water tiles get banks and dressing only and are
     returned as (q, r, position, mask) so the animation can build moving water and bobbing boats."""
+    MAP = tiles or globals()["MAP"]
     water_tiles = []
     col = hk.new_collection("map")
-    for (q, r), terrain in MAP.items():
+    for (q, r), name in MAP.items():
+        # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
+        # edge pieces are picked by its terrain.
+        terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
-        place(templates, f"base_{terrain}", col, at)
+        place(templates, f"base_{name}", col, at)
         if terrain == "river":
             # Water is drawn per tile from its own water neighbours, the way the engines will.
-            mask = [MAP.get((q + dq, r + dr)) == "river" for dq, dr in hk.NEIGHBOURS]
+            near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
+            mask = [vr.terrain_of(n) == "river" if n else False for n in near]
             p = hk.Piece(f"water_{q}_{r}")
-            wt.add_water(p, mask, f"{q},{r}", plates=not animated, boats=not animated)
+            wt.add_water(p, mask, f"{q},{r}", plates=not animated, boats=not animated,
+                         widths=wt.edge_widths(name, near), delta=name == "delta")
             p.finish(col, at)
             water_tiles.append((q, r, at, mask))
             continue
-        place(templates, f"{terrain}_centre", col, at)
-        joined = [linked(terrain, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
+        centre = "centre"
+        if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
+            centre = "centre_mill"  # windmills stand on about half the tiles (placeholder rule)
+        place(templates, f"{name}_{centre}", col, at)
+        if terrain == "desert":
+            # The sand is shaped in world space, the way the engines will.
+            p = hk.Piece(f"sand_{q}_{r}")
+            sand.add_sand(p, MAP, q, r)
+            p.finish(col, at)
+        joined = [linked(name, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
+        if terrain == "hills":
+            # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
+            # meet; otherwise half on each edge shared with one other hills tile.
+            triple = [joined[i] and joined[(i + 1) % 6] for i in range(6)]  # corner i: between edges i and i + 1
+            if not any(joined):
+                place(templates, f"{name}_peak", col, at)
+            for i in range(6):
+                if triple[i]:
+                    place(templates, f"{name}_mountain_corner", col, at, math.radians(60 * i))
+                elif joined[i] and not triple[(i - 1) % 6]:
+                    place(templates, f"{name}_mountain_edge", col, at, math.radians(60 * i))
         for i in range(6):
-            place(templates, f"{terrain}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
+            place(templates, f"{name}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
                 if not joined[(i + 1) % 6]:
@@ -163,9 +208,24 @@ def build_board(templates, radius=4):
 
 if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
+    # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
+    args = [a for a in args if not a.startswith("--")]
     tiles = args[0] if args else latest("tiles", "tiles")
     cells = args[1] if len(args) > 1 else latest("combat", "combat_cells")
+    if "variants" in flags:
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=VARIANT_MAP)
+        stage(Vector((4, -1, 0)), 82, 45)
+        render("variants")
+        sys.exit(0)
+    if "terrains" in flags:
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=TERRAIN_MAP)
+        stage(Vector((4, -1, 0)), 82, 45)
+        render("terrains")
+        sys.exit(0)
     hk.empty_scene()
     build_map(load_templates(tiles))
     stage(Vector((2, -2, 0)), 74, 45)

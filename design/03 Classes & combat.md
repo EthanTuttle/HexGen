@@ -598,6 +598,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] **New (Oct 27, 2026, race review: all seven launch races done):** Fluffy's cat race also done; still open: the cat race's name; race lore for every race; amounts for metal golem damage reduction, Regrowth, Hearthfire and breath weapon damage; how NPCs and rivals react to a player Hayes (see [World & story](01 World & story.md))
 - [ ] **New (Oct 27, 2026):** how much faster wood elves walk on the hex map; the shield dwarf's extra HP per level (with the HP rules); the elven spell list (spell pass)
 - [ ] **New (Oct 27, 2026):** heads targets at higher levels: score increases alone take a main score from 3 to 5 by level 16, so a 3-heads check is 50% there. How much should gear and proficiency add, and when do targets rise? (See the pass chances table in Coin checks)
+- [ ] **New (Oct 30, 2026):** each companion's ability scores and gear at each stage of the game (mockups use placeholders, e.g. Mel's in character & gear v9)
 - [ ] Set spells for each tiefling bloodline (Hayes, Conleys, Keegans), to be assigned after the spell pass
 - [ ] Big spell pass: define the spells, then assign them to tiefling bloodlines, high elf choices and casters
 - [ ] Spell balance pass: Retell, Requiem, Charge!, Holy Defender god spells, and caster vs martial scaling
