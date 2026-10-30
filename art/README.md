@@ -7,7 +7,7 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 | `scripts/` | Blender Python that builds the first drafts, exports and renders previews; `water.py` is the reference water drawing for the engines |
 | `tiles/` | Map tile kit, `tiles_vN.blend` |
 | `combat/` | Combat cell kit, `combat_cells_vN.blend` |
-| `minis/` | Minis (worked on in its own session) |
+| `minis/` | Minis (worked on in its own session); `minis/standins/` holds the low-poly stand-ins |
 | `export/` | `.glb` files the engines import; always the latest version |
 | `preview/` | Rendered test views, `*_vN.png` |
 
@@ -23,8 +23,14 @@ Blender -b --factory-startup --python art/scripts/build_combat_cells.py
 # Export a kit for the engines (writes art/export/tiles.glb or combat_cells.glb)
 Blender -b art/tiles/tiles_v1.blend --python art/scripts/export_gltf.py
 
+Blender -b --factory-startup --python art/scripts/build_standin_minis.py
+Blender -b art/minis/standins/standin_minis_v1.blend --python art/scripts/export_gltf.py
+
 # Preview renders of a small map and a combat board, from the latest versions
 Blender -b --factory-startup --python art/scripts/render_preview.py
+
+# Stand-in minis: a line-up, on the combat board, and as a party on a map tile
+Blender -b --factory-startup --python art/scripts/render_standin_minis.py
 
 # A 6-second video of the map with moving water (add -- --still for one frame)
 Blender -b --factory-startup --python art/scripts/render_animation.py
@@ -48,6 +54,7 @@ Blender -b --factory-startup --python art/scripts/render_animation.py
 - **How the engines assemble a tile:** place the base and the centre. For each edge i (0 = +X, counting anticlockwise in 60° steps), place `edge_same` if the neighbour there has the same terrain, otherwise `edge_other`, rotated by 60° × i. Then, for a terrain with a corner piece, for each corner i (between edge i and edge i + 1), place the corner rotated by 60° × i if both of those neighbours have the same terrain. A chain of river tiles stays a narrow river; a clump opens into a lake. Axial neighbour offsets per edge are in `scripts/hexkit.py` (`NEIGHBOURS`), and `scripts/render_preview.py` does exactly this.
 - **Combat cell:** flat-top, spaced 1.0 across the flats, drawn at 0.94 so a thin gap shows. A radius-4 board (61 cells) has a pointy-top outline the size of one map tile. Pieces: `cell_grass_a/b/c`, `cell_tree` (doesn't block), `cell_rock` (blocks).
 - **Minis:** about 1.3 tall, on a base that fills one combat cell.
+- **Stand-in minis** (`standin_minis_vN.blend`, exported as `export/standin_minis.glb`): super low-poly blockouts (70–290 triangles each) so the engines can test size and movement before the real minis exist. Each stands on a flat-top wooden hex base 0.9 across the flats and 0.08 tall, with a coloured ring and a notch on its front edge; the pivot is the base centre at ground level. They face −Y in Blender, which exports as +Z (glTF front, Unity forward, Godot `MODEL_FRONT`). Pieces: `standin_base` (no figure), `standin_hero` (1.3, sword raised), `standin_chelmsford` (1.3, snout, horns, tail, mace and shield), `standin_small` (1.0, halfling or small elf), `standin_fluffy` (the cat on all fours, about 0.6) and `standin_enemy` (1.3, spear, red ring). Only the 1.3 height comes from the docs; the other heights and the ring colours are test guesses.
 
 Terrains: plains, forest, farmland, river (river/lake) and village. Colours are the mockup placeholders, set in one table (`PALETTE` in `scripts/hexkit.py`).
 
