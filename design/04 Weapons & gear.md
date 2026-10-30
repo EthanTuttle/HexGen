@@ -33,7 +33,7 @@ Leader bards also gain medium armor and polearms (see [Classes & combat](03 Clas
 
 ## Starting gear
 
-Each class chooses from the most basic weapons and armor in its own categories. The player picks each piece in the character creator: main hand, offhand and armour, one by one (decided Oct 30, 2026). **Humans** (Versatile) can pick from every basic weapon and armour, not just their class's (decided Oct 30, 2026; the trait: [Classes & combat](03 Classes & combat.md) → Races). Background starter items: see [World & story](01 World & story.md) → Backgrounds.
+Each class chooses from the most basic weapons and armor in its own categories. The player picks each piece in the character creator: main hand, offhand and armour, one by one (decided Oct 30, 2026). **One weapon set** (decided Oct 30, 2026): a new hero picks a single set; the second set starts empty and fills from loot. **Humans** (Versatile) can pick from every basic weapon and armour, not just their class's (decided Oct 30, 2026; the trait: [Classes & combat](03 Classes & combat.md) → Races). Background starter items: see [World & story](01 World & story.md) → Backgrounds.
 
 ## Weapon rules
 
