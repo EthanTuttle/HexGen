@@ -118,7 +118,7 @@ Races: Human, Elf, Dwarf, Halfling, Golem (an animatronic of stone, wood or meta
 | Halfling | A small, cheerful folk whose luck turns up right when it's needed. |
 | Golem | A crafted being of stone, wood or metal, woken to a will of its own. |
 | Dragonborn | A towering, scaled folk with a dragon's breath and a dragon's pride. |
-| Tiefling | A flame-touched people who carry an old god's blood and the world's suspicion. |
+| Tiefling | A flame-touched folk with an old god's blood and the world's suspicion. (shortened Oct 30, 2026 to fit one line on its banner) |
 
 **Sub-type blurbs** (chosen Oct 30, 2026 by Ethan, one at a time)
 

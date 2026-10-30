@@ -180,7 +180,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [x] ~~Exact backdrop colours per time of day~~ (settled Oct 30: the Godot prototype's light, revisit in playtesting; see Presentation → Art direction)
 - [ ] New: the size of the rift's lilac shift
-- [ ] Touch: long-press on HUD controls with no details design (decide one by one), and phones' screen edges and minimum text size (see Presentation → Open questions)
+- [ ] Touch: long-press on HUD controls with no details design (decide one by one), and a minimum text size on phones (see Presentation → Open questions; screen edges settled Oct 30: the UI shifts away from the Dynamic Island)
 - [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
 - [ ] New: which way water flows (prototype placeholder: toward the bottom of the screen)
 - [ ] New: farm and village border variants for terrain variants (stacked stone, block walls; wooden fence is the default)
@@ -205,7 +205,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator: feedback on v6~~ (approved Oct 30)
 - [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30: v7a)
 - [x] ~~Character creator sub-type selector~~ (settled Oct 30: v8a hex tokens)
-- [ ] New: character creator: feedback on v9, then Background
+- [x] ~~Character creator narrow banner names~~ (settled Oct 30: v11a)
+- [ ] New: character creator Background step
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
