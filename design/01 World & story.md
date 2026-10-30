@@ -81,6 +81,17 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 | Folk Hero | Inn | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
 | Noble | Farm (estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
 
+- **Background blurbs** (chosen Oct 30, 2026 by Ethan; present tense, since the hero still holds that role when the story starts; shown on the character creator's background step: [Presentation](07%20Presentation.md) → Character creator screen):
+
+| Background | Blurb |
+| --- | --- |
+| Soldier | A sworn guard who keeps watch from the tower walls, night after night. |
+| Acolyte | A church servant who hears their god most clearly in their dreams. |
+| Criminal | A town scoundrel who lives by sharp wits and other people's pockets. |
+| Sage | A tower-raised sage who would trade anything for one more rare book. |
+| Folk Hero | A local favourite who's everyone's first call when trouble comes to the inn. |
+| Noble | A young noble learning to carry the family name and all it demands. |
+
 - **Proficiency lists** (decided Oct 30, 2026): the hero picks 1 starting proficiency from their background's 3 (rules: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies).
 - Starting hexes are Story cards: special versions of these locations, not the standard landmarks.
 - Starting gear: see [Weapons & gear](04 Weapons & gear.md) → Starting gear. Each background may also add a unique starter item (to be decided).
