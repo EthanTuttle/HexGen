@@ -314,7 +314,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; latest v13, the Background step with named starting places): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; Background step v13; latest v14a–v14d, Scores and Skills): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
 
 - **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
 - **v1, three layouts to compare:**
@@ -337,6 +337,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Narrow banner names** (v11, Oct 30, 2026): when a banner is picked the others narrow to 50px, and "Dragonborn" ran past its cloth. **v11a** writes narrow banners' names top to bottom down the cloth, so any length fits (on the class, god and race steps). **v11b** widens narrow banners to 60px with 10px names, but the picked banner loses 70px, so longer blurbs wrap again. The Tiefling blurb was shortened to fit one line (both versions).
 - **v11a chosen** (Oct 30, 2026): narrow banners always write their names top to bottom. Not picked: v11b's wider narrow banners.
 - **Background step as banners** (v12, Oct 30, 2026; Ethan: it should focus on where they come from): six banners in their background terrain's colour (from the starting deck: Soldier ruins, Acolyte hills, Criminal river/lake, Sage desert, Folk Hero forest, Noble farmland). The picked one's crest is a large starting-place hex tile, a stand-in for the starting hex's art, then the name, its blurb ([World & story](01 World & story.md) → Backgrounds) and "Starting place" with its name. **v13** (Oct 30, 2026): each starting place has its own name ([World & story](01 World & story.md) → Backgrounds: Dunfaire Tower, East Rime Chapel, Monto Town, Sternbrunn Spire, The Oak & Lantern, Weizenhof Estate) and its own icon (the Sage's is a wizard tower, the Noble's a manor). No terrain cards, starting quest or proficiencies here: the proficiency pick stays in the Skills step.
+- **Scores and Skills, four ways** (v14, Oct 30, 2026; rules: [Classes & combat](03 Classes & combat.md) → Ability scores, Skills): **v14a, picks on the banners:** no Scores or Skills steps; tap 2 boost badges on the Race banner and 1 main score on the Class banner (a "+1" tag marks each), and the class and background proficiency choices hang from those banners' tips ("Pick 1 proficiency"). **v14b, ability stones:** a wooden board of six ability hexes with coins; tap a +1 token in the tray (Race ×2, Class ×1), then a glowing stone (dots under each stone show which tokens may go there; tap a placed +1 to take it back); the Skills step shows the stones again, each proficiency hanging under its base ability (background picks sand, class picks orange). **v14c, ability banners:** one banner per ability (placeholder colours) with value and coins; the +1 tokens sit between Back and Next and pin onto banners; Skills shortens the banners and hangs proficiencies under them. **v14d, one Training step:** Scores and Skills merge into one banner with the abilities on top, the +1 picks, then the proficiency picks as icon hexes with their base ability; a "rank 2" tag shows if both proficiency picks match. Proficiency icons are placeholders.
+- **Fix in v14** (Oct 30, 2026): since v9 the class and god banners had lost their weapons, armour and stitched divider (those values only had defaults for races); v14a–v14d restore them.
 - Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
@@ -380,7 +382,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Terrain colours and icons | Exploration, after-combat | Final terrain colours and icons (Open questions below) |
 | Reveal pacing (one reward every 0.55 s; about 2 s for a Legendary's flip) | After-combat v5b–v7 | Reveal pacing (Open questions below) |
 | [Legendary item], [Item description] | After-combat v6–v7 | Specific gear items ([Weapons & gear](04 Weapons & gear.md) → Open questions) |
-| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v5; the banner colours and race emblems (v4a–v12); starting-place art (v12–v13) | Icons (Open questions below) |
+| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v5; the banner colours and race emblems (v4a–v12); starting-place art (v12–v14d); proficiency icons and ability banner colours (v14) | Icons (Open questions below) |
 | Training ×[1] (trainings left this visit) | Weapon mastery v1a–v5c | Training counts (progression pass: [Cards & progression](05 Cards & progression.md) → Open questions) |
 | Node type icons (new card, upgrade, passive) | Weapon mastery v1–v5 | Icons (Open questions below) |
 | The Lady of the Lake's lines and the option lines (v1 only: written from v2); "[<companion>'s chime-in line]" (v1–v7 only: v8 uses the written lines); the Lady's [Portrait] | Social encounter v1–v8 | Chime-in lines: [World & story](01 World & story.md) → Companion chime-in lines; the portrait: art pass |
@@ -400,8 +402,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | [Fluffy's / Chelmsford's / Mel's bar line], [Hero toast line] | Town v2e–v7 | Inn banter ([characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions); the toast is written as an intent choice with a narration beat |
 | Tap thresholds: 8 px of movement, 350 ms | Social v9, town v4 | Playtest |
 | Night at the inn pacing (about 2.3 s of night) | Town v2d–v3 | Playtest |
-| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v13 | Final heads, hairstyles and swatches (Open questions below) |
-| [Bard proficiency] | Character creator v1a–v13 | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
+| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v14d | Final heads, hairstyles and swatches (Open questions below) |
+| [Bard proficiency] | Character creator v1a–v14d | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -489,7 +491,8 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30, 2026: v7a, sub-types in the banner)
 - [x] ~~Character creator sub-type selector~~ (settled Oct 30, 2026: v8a, hex tokens; polished in v9)
 - [x] ~~Character creator narrow banner names~~ (settled Oct 30, 2026: v11a, vertical)
-- [ ] **New:** character creator: feedback on v13's Background step, then Scores and Skills
+- [x] ~~Character creator: feedback on v13's Background step~~ (approved Oct 30, 2026)
+- [ ] **New:** character creator Scores and Skills: on the banners (v14a), ability stones (v14b), ability banners (v14c) or one Training step (v14d)
 - [ ] **New:** starting-place art for each background's banner (v12 draws a hex tile with an icon as a stand-in)
 - [ ] **New:** names for the racial passives that have none in the docs (v8 working names: Moves faster, Naturally more health, Extra weapon coin, Damage reduction, Bloodline spell), and passive icons
 - [ ] **New:** race emblems and banner colours (v7 placeholders)
