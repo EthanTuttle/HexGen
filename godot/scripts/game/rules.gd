@@ -27,6 +27,9 @@ const TAP_MS := 350
 ## PLACEHOLDER (Apple's guideline, from the touch brief; not in the docs): the smallest tap target. Controls
 ## drawn smaller keep their look and get a bigger hit area.
 const FINGER := 44.0
+## PLACEHOLDER (DOCS: a fixed step, size for playtesting): how far the nav button's rotate buttons (and Q / E)
+## turn the view. Twisting and right-dragging rotate freely, with no snapping (DOCS).
+const ROTATE_STEP := 60.0
 
 # --- Map (design/02 Map & exploration.md) ------------------------------------
 

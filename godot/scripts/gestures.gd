@@ -19,7 +19,7 @@ signal hover_end
 signal drag(relative: Vector2)          # one pointer moving, past the tap distance
 signal pinch(factor: float)             # two fingers: < 1 closer (zoom in), > 1 apart
 signal twist(radians: float)            # two fingers: change in angle, anticlockwise on screen positive
-signal twist_end                        # two-finger gesture over: snap the rotation
+signal twist_end                        # the two-finger gesture is over
 signal gui_long_press(control: Control, pos: Vector2)
 
 const MOUSE := -100                     # pointer id of the left mouse button

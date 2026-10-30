@@ -2,8 +2,8 @@ class_name CameraRig
 extends Node3D
 ## The tilted, rotatable camera of the map and combat screens (design/07 Presentation.md ->
 ## Camera and controls): one finger or a mouse drag pans, two fingers pinch to zoom and twist to rotate, the
-## wheel zooms, a right-drag rotates; rotation snaps to the nearest 60 degree step on release.
-## Keys: Q / E rotate 60 degrees, + / - zoom, F frames.
+## wheel zooms, a right-drag rotates. Rotation is free, with no snapping (DOCS, Oct 30, 2026).
+## Keys: Q / E rotate by Rules.ROTATE_STEP, + / - zoom, F frames.
 ## Any pan, zoom or rotate by the player sets `player_moved` (the player's camera wins: following the
 ## party or centring on whoever acts stops until the game clears it).
 
@@ -25,7 +25,6 @@ signal player_moved_camera
 var camera := Camera3D.new()
 var gestures := Gestures.new()
 var player_moved := false
-var _twisting := false
 var _rotating := false
 var _tween: Tween
 
@@ -41,12 +40,7 @@ func _ready() -> void:
 	gestures.pinch.connect(func(f: float): _zoom(1.0 / f); _player())
 	gestures.twist.connect(func(a: float):
 		yaw_deg -= rad_to_deg(a)   # the board turns with the fingers (screen angles run clockwise; a higher yaw turns the board anticlockwise)
-		_twisting = true
 		_player())
-	gestures.twist_end.connect(func():
-		if _twisting:
-			_twisting = false
-			ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0))
 	_apply()
 
 
@@ -107,8 +101,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_RIGHT:
 			_rotating = mb.pressed
-			if not mb.pressed:
-				ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0)
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom(0.9)
 			_player()
@@ -130,10 +122,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		match (event as InputEventKey).keycode:
 			KEY_Q:
 				_player()
-				ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0 + 60.0)
+				ease_to(target, distance, yaw_deg + Rules.ROTATE_STEP)
 			KEY_E:
 				_player()
-				ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0 - 60.0)
+				ease_to(target, distance, yaw_deg - Rules.ROTATE_STEP)
 			KEY_EQUAL, KEY_KP_ADD:
 				_zoom(0.8)
 				_player()
@@ -142,7 +134,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_player()
 			KEY_F:
 				if not home.is_empty():
-					ease_to(home.target, home.distance, roundf(yaw_deg / 60.0) * 60.0)
+					ease_to(home.target, home.distance, yaw_deg)
 
 
 func _zoom(f: float) -> void:

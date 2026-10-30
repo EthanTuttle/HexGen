@@ -155,9 +155,9 @@ func _cam(which: String) -> void:
 		"zoom_out":
 			rig._zoom(1.33)
 		"rot_l":
-			rig.ease_to(rig.target, rig.distance, roundf(rig.yaw_deg / 60.0) * 60.0 + 60.0)
+			rig.ease_to(rig.target, rig.distance, rig.yaw_deg + Rules.ROTATE_STEP)
 		"rot_r":
-			rig.ease_to(rig.target, rig.distance, roundf(rig.yaw_deg / 60.0) * 60.0 - 60.0)
+			rig.ease_to(rig.target, rig.distance, rig.yaw_deg - Rules.ROTATE_STEP)
 		"center":
 			if not fight.current.is_empty():
 				rig.ease_to(fight.global_position + fight.current.mini.position, rig.distance, rig.yaw_deg)

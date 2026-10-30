@@ -609,9 +609,9 @@ func camera_button(which: String) -> void:
 		"zoom_out":
 			rig._zoom(1.25)
 		"rot_l":
-			rig.ease_to(rig.target, rig.distance, roundf(rig.yaw_deg / 60.0) * 60.0 + 60.0)
+			rig.ease_to(rig.target, rig.distance, rig.yaw_deg + Rules.ROTATE_STEP)
 		"rot_r":
-			rig.ease_to(rig.target, rig.distance, roundf(rig.yaw_deg / 60.0) * 60.0 - 60.0)
+			rig.ease_to(rig.target, rig.distance, rig.yaw_deg - Rules.ROTATE_STEP)
 		"center":
 			rig.player_moved = false   # the centre button gives the camera back to the game
 			rig.ease_to(party_node.position, rig.distance, rig.yaw_deg)

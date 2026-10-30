@@ -28,7 +28,7 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | Rest the mouse on a hex (or long-press it on touch) | Its details: terrain, region and cluster progress, the variant once finished, any encounter |
 | Click the start hex while standing on it | Rest at camp: heal, +8 hours, discard down to 7, reshuffle the discard pile |
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
-| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate in 60° steps, frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
+| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E and the nav buttons turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
 
 Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (Stealth, group). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
 
@@ -60,11 +60,13 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 | --- | --- |
 | One finger drag on the board | Pan (the ground under the finger follows it) |
 | Two fingers apart / together | Zoom |
-| Two fingers turning | Rotate; snaps to the nearest 60° when the fingers lift |
+| Two fingers turning | Rotate, freely: nothing snaps when the fingers lift (as with a right-drag) |
 | Tap | What a click does: hold a card, place it, pick a hex to walk to, act in combat |
 | Long-press on the board | A map hex's details (as hovering does with a mouse); on a combat token, a foe's name, HP and what it does, or an ally's HP, AP and status |
 | Long-press on a HUD control | Its details: what hovering shows on PC (the control's tooltip text) in the same pop-up. Letting go doesn't press it |
 | Drag a card out of the hand | It rides just above the finger; let go over a lit slot to place it, anywhere else to put it back |
+
+**Rotation is free** (docs, Oct 30, 2026): twisting and right-dragging turn the view by exactly as much as the fingers or the mouse, with no snap. The nav button's rotate buttons and Q / E turn it by `Rules.ROTATE_STEP` (60°, placeholder).
 
 **Thresholds** (`scripts/game/rules.gd`, all placeholders): a tap moves less than **8 pt** and lets go within **350 ms**; moving 8 pt or more makes it a drag; a press held still past **350 ms** is a long-press, and it opens the details right then (the docs give one time, so a still press that can no longer be a tap becomes a long-press). A mouse resting still for 350 ms shows the same pop-up. The smallest tap target is **44 pt** (`Rules.FINGER`). The layout's units are about 1 pt on an iPhone (844 × 390 against the iPhone 15 Pro's 852 × 393 pt in landscape).
 
@@ -88,7 +90,7 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 
   The grown areas of neighbouring hand cards and portraits overlap by 2–3 pt; the one drawn on top wins.
 
-**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (21 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex, a card and a foe, the release after a long-press, pinch, twist and its snap, pan, the nav centre, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines).
+**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (21 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex, a card and a foe, the release after a long-press, pinch, a free twist, pan, the nav centre, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines).
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 -- --touch           # play with the mouse as a finger, phone-sized
@@ -333,8 +335,8 @@ v10's own hill grass material adds one surface to each hills piece (about 80 obj
 | Tab | Switch between the map board and the combat board |
 | Left-drag | Pan |
 | Wheel, trackpad pinch, + / − | Zoom |
-| Right-drag | Rotate; snaps to the nearest 60° on release |
-| Q / E | Rotate 60° |
+| Right-drag | Rotate, freely |
+| Q / E | Rotate by a fixed step (60°, placeholder) |
 | F | Frame the board again |
 | T | Start or stop the day clock (a whole day in 90 s) |
 | [ / ] | Clock back or on by an hour |

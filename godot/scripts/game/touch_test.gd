@@ -258,13 +258,12 @@ func _run() -> void:
 	check(game.rig.player_moved, "the pinch counts as the player's camera")
 	await two_finger(Vector2(380, 200), 110, 50, 0.0)
 
-	# 7. Twist to rotate, snapping to 60 degrees on release.
+	# 7. Twist to rotate: free, nothing snaps when the fingers lift (DOCS).
 	say("Twist to rotate")
 	var y0: float = game.rig.yaw_deg
 	await two_finger(Vector2(380, 200), 70, 70, deg_to_rad(40))
 	await _wait(0.7)
-	var snapped := absf(fmod(game.rig.yaw_deg, 60.0)) < 0.5 or absf(fmod(game.rig.yaw_deg, 60.0)) > 59.5
-	check(snapped and game.rig.yaw_deg - y0 > 30, "a 40° anticlockwise twist turns the board anticlockwise and snaps to 60° (%.0f° -> %.0f°)" % [y0, game.rig.yaw_deg])
+	check(absf(game.rig.yaw_deg - y0 - 40.0) < 2.0, "a 40° anticlockwise twist turns the board 40° anticlockwise, no snap (%.0f° -> %.0f°)" % [y0, game.rig.yaw_deg])
 	await shot("twist")
 
 	# 8. One finger pans; it never taps.
