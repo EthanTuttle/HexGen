@@ -316,7 +316,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; Background step v13; Scores and Skills v14a–v14d, v15a chosen; plain background from v16; Gear step v17a / v17b; unique weapon icons in v18a / v18b; v18c pick, see details, choose; v19a–v19c bigger hexes): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners, v5c's heraldry, v7a's in-banner sub-types and v8a's hex tokens chosen; v11a's vertical names chosen; Background step v13; Scores and Skills v14a–v14d, v15a chosen; plain background from v16; Gear step v17a / v17b; unique weapon icons in v18a / v18b; v18c pick, see details, choose; v19c's 5 per row chosen; v20 gear flies to the hero card): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
 
 - **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
 - **v1, three layouts to compare:**
@@ -351,7 +351,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
   - **v17b, weapons as their cards:** each choice is a tile drawn with the combat cards it brings (the weapon colour band, AP hex, name and effect), with its hands and any modifier (Reach, Backstab, Long Range, Point Blank) as a blue chip. Weapons are grouped (blades, axes and hammers, polearms, staves and wands, bows, fist weapons) and the list scrolls.
   - **Pick, see details, choose** (Ethan, Oct 30, 2026: v18c, combining v17a/v18a and v17b; pending feedback): the Gear step uses the select, see details, Choose pattern used on the feat and skills steps. v18a's item hexes sit on the left. Tapping one only shows it (blue rim) in a details pane on the right: the slot, the weapon's icon and name, its hands, any modifier (blue chip, with its text below) and the action cards it gives, drawn as combat cards, then Choose (or "Chosen"). The chosen item gets a tick. Nothing moves on by itself, so the player can browse every option; v17a's jump to the next slot after a pick was jarring. Next walks through the empty slots first ("Next: Offhand", "Next: Armour"), then moves on to Look. Back and Next sit in the details pane, as on the feat step.
   - **Back steps through the slots** (Ethan, Oct 30, 2026; from v19): on the Gear step, Back goes to the previous gear slot (Armour → Offhand → Main hand, skipping a crossed-out offhand), the mirror of Next. Only on Main hand does it go back to the Skills step.
-  - **Bigger gear hexes** (v19, Oct 30, 2026; pending a pick): v19a has 3 per row, v19b 4 and v19c 5, against v18c's 6. The list scrolls for classes with many weapons (a Fighter's 21 take 7, 6 or 5 rows).
+  - **Bigger gear hexes: 5 per row** (chosen Oct 30, 2026: v19c, over v19a's 3 and v19b's 4; v18c's 6 was too small). They match the size of the slots on the hero card. The list scrolls for classes with many weapons (a Fighter's 21 take 5 rows).
+  - **Chosen gear flies to the hero card** (v20, Oct 30, 2026; pending feedback): Choose flies the item's hex from the grid into its slot on the hero card, with a gold glow, and the slot's icon pops in as it lands, as when equipping on the character and gear screen (v11's flights). Empty hand and No armour just fill the slot.
 - Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
@@ -434,7 +435,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
-| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; Background v13; Scores and Skills v15a chosen; plain background from v16; latest: v19a–v19c, the Gear step with 3, 4 or 5 hexes per row) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
+| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; Background v13; Scores and Skills v15a chosen; plain background from v16; latest: v20, chosen gear flies to the hero card) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -506,7 +507,8 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator narrow banner names~~ (settled Oct 30, 2026: v11a, vertical)
 - [x] ~~Character creator: feedback on v13's Background step~~ (approved Oct 30, 2026)
 - [x] ~~Character creator Scores and Skills~~ (settled Oct 30, 2026: v15a, level-up tiles and the feat-style list; v14a's banners out)
-- [ ] **New:** character creator Gear step hex size: 3 (v19a), 4 (v19b) or 5 (v19c) per row, on v18c's pick, see details, choose
+- [x] ~~Character creator Gear step hex size~~ (settled Oct 30, 2026: v19c, 5 per row)
+- [ ] **New:** feedback on character creator v20 (chosen gear flies into its slot on the hero card)
 - [ ] **New:** starting-place art for each background's banner (v12 draws a hex tile with an icon as a stand-in)
 - [ ] **New:** names for the racial passives that have none in the docs (v8 working names: Moves faster, Naturally more health, Extra weapon coin, Damage reduction, Bloodline spell), and passive icons
 - [ ] **New:** race emblems and banner colours (v7 placeholders)
