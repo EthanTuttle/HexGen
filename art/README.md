@@ -4,7 +4,7 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 
 | Folder | What's in it |
 | --- | --- |
-| `scripts/` | Blender Python that builds the first drafts, exports and renders previews; `water.py` is the reference water drawing for the engines |
+| `scripts/` | Blender Python that builds the first drafts, exports and renders previews; `water.py` and `ground_cover.py` are references the engines copy |
 | `tiles/` | Map tile kit, `tiles_vN.blend` |
 | `combat/` | Combat cell kit, `combat_cells_vN.blend` |
 | `minis/` | Minis (worked on in its own session); `minis/standins/` holds the low-poly stand-ins |
@@ -64,5 +64,8 @@ Terrains: plains, forest, farmland, river (river/lake) and village. Colours are 
 - **tiles_v2:** narrow river channels from a small pond, a corner piece that opens clumps into lakes, villages on cobblestone with garden strips at their borders.
 
 - **Water (from map_preview_v4):** drawn per tile by `scripts/water.py`, the reference both engines copy. A tile's river curves, lake shore or pond depend only on which of its six neighbours are water, plus a seed per tile (rules: `design/07 Presentation.md` → Art direction → Water flows freely). Shape code is plain Python (no Blender) so it ports line by line to GDScript or C#; only `add_water()` uses Blender. The river pieces in `tiles_v2.blend` (`river_centre`, `river_edge_*`, `river_corner`) are no longer used; a river tile is just `base_river` plus the drawn water. The ripple, sparkle, foam and depth are left to the engines' water shader.
+
+- **tiles_v3:** grass tufts and flowers taken out of the plains pieces (now engine ground cover, see below); trees no longer leave bare lines along the borders between a tile's pieces.
+- **Ground cover (from map_preview_v5):** scattered by `scripts/ground_cover.py` across the whole map from one world-space pattern: one jittered candidate point per 0.55 m cell, kept if a hash of the cell is below the terrain's density, which fades toward the neighbour's density within 1.6 m of a tile edge. Points in water or on a river bank are skipped. Densities per terrain are placeholders at the top of the file.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).

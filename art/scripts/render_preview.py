@@ -14,6 +14,7 @@ import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
+import ground_cover as gc  # noqa: E402
 import water as wt  # noqa: E402
 
 # Pointy-top axial (q, r) -> terrain. Two forests touch, a river runs into a lake, villages join.
@@ -68,6 +69,10 @@ def build_map(templates, animated=False):
         for i, (dq, dr) in enumerate(hk.NEIGHBOURS):
             same = MAP.get((q + dq, r + dr)) == terrain
             place(templates, f"{terrain}_edge_{'same' if same else 'other'}", col, at, math.radians(60 * i))
+    # Small ground cover across the whole map, the way the engines will scatter it.
+    p = hk.Piece("ground_cover")
+    gc.add_ground_cover(p, MAP)
+    p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP)
     for q, r in slots:

@@ -116,12 +116,16 @@ def in_centre(p, margin=0.0):
     return all(p.dot(edge_normal(i)) <= INNER * TILE_APOTHEM - margin for i in range(6))
 
 
-def in_edge_wedge(p, x0=None, x1=None, margin=0.0):
-    """Inside edge 0's wedge (facing +X), between depths x0 and x1 along the edge normal."""
+def in_edge_wedge(p, x0=None, x1=None, margin=0.0, inner=None, side=None):
+    """Inside edge 0's wedge (facing +X), between depths x0 and x1 along the edge normal.
+    margin keeps clear of the far end (x1); inner and side (default: margin) keep clear of the centre
+    piece and of the neighbouring wedges. Pass 0 for those to avoid bare lines between pieces."""
     x0 = INNER * TILE_APOTHEM if x0 is None else x0
     x1 = TILE_APOTHEM if x1 is None else x1
-    return (x0 + margin <= p.x <= x1 - margin
-            and abs(p.y) <= p.x * math.tan(math.radians(30)) - margin / math.cos(math.radians(30)))
+    inner = margin if inner is None else inner
+    side = margin if side is None else side
+    return (x0 + inner <= p.x <= x1 - margin
+            and abs(p.y) <= p.x * math.tan(math.radians(30)) - side / math.cos(math.radians(30)))
 
 
 def scatter(rng, inside, count, min_dist, bounds, tries=400):

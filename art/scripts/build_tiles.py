@@ -96,22 +96,19 @@ def fence(p, x, half):
 # --- Terrain pieces ----------------------------------------------------------
 
 def plains(p, rng, kind):
-    inside, bounds = (hk.in_centre, hk.CENTRE_BOUNDS) if kind == "centre" else (hk.in_edge_wedge, hk.WEDGE_BOUNDS)
-    for at in hk.scatter(rng, lambda q: inside(q, margin=0.2), 6, 0.6, bounds):
-        tuft(p, rng, at)
-    for at in hk.scatter(rng, lambda q: inside(q, margin=0.3), 4, 0.8, bounds):
-        p.box(at, (0.08, 0.08, 0.12), "flower", spin=rng.uniform(0, 1))
+    # Grass tufts and flowers are ground cover, scattered by the engine across the whole map
+    # (reference: ground_cover.py), so plains pieces only hold bigger props.
     if kind == "centre":
         p.blob(Vector((0.4, -0.6, 0)), 0.3, "rock", squash=0.6)
 
 
 def forest(p, rng, kind):
     if kind == "centre":
-        pts = hk.scatter(rng, lambda q: hk.in_centre(q, margin=0.3), 7, 0.85, hk.CENTRE_BOUNDS)
+        pts = hk.scatter(rng, lambda q: hk.in_centre(q), 7, 0.85, hk.CENTRE_BOUNDS)
     elif kind == "same":  # trees run right up to the edge, so two forests read as one wood
-        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.15), 9, 0.8, hk.WEDGE_BOUNDS)
+        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.15, inner=0, side=0), 9, 0.8, hk.WEDGE_BOUNDS)
     else:  # a thinner fringe that stops short of the edge
-        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x1=X0 + 0.55 * (X1 - X0), margin=0.25),
+        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x1=X0 + 0.55 * (X1 - X0), margin=0.25, inner=0, side=0),
                          3, 0.9, hk.WEDGE_BOUNDS)
     for at in pts:
         tree(p, rng, at)
