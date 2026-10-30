@@ -302,7 +302,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; latest v2a–v2c, the class step): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen; latest v3, its spacing fixed): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
 
 - **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
 - **v1, three layouts to compare:**
@@ -312,6 +312,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Guided steps chosen** (Oct 30, 2026: v1a, over v1b's painting table and v1c's origin board), taking cues from the level-up screen. Each step is reworked one at a time, starting with Class.
 - **God is its own step** (chosen Oct 30, 2026): a God pip appears right after Class for Clerics only, as Spells appears only for casters, so the class step's space isn't held for one class. The God step shows the 8 gods as named icon hexes, and the picked god's domain, its free spell as an action card, and its +2 terrain cards for the starting deck.
 - **The class step shows** (chosen Oct 30, 2026) the picked class's blurb ([Classes & combat](03 Classes & combat.md) → Class blurbs), its 3 main scores, the weapon and armour categories it can use, and its level-1 kit drawn as action cards (martials' level-1 card; casters' 2 spell slots as dashed outlines, plus a god's spell slot for Clerics). Starting terrains are no longer shown here. **v2, three ways to lay it out:** **v2a** bigger class hexes on top with the details in a card below; **v2b** a full-height class list with the details on the right and Back and Next inside them (like level-up v9b); **v2c** six class cards showing main scores and the level-1 card, where tapping one opens the level-up style pop-up over the mini with Choose.
+- **Class step: v2a chosen** (Oct 30, 2026, over v2b's list and v2c's cards). **v3 fixes its spacing** (content ran past the details card and the panel): the panel's title row is gone, since the highlighted pip already names the step (the title stays for screen readers); class and god hexes are a little smaller; the name and blurb sit on top with the blurb on one line; the main scores, weapons and armour sit on the left with the level-1 kit on the right, the card beside its effect text; casters show only their dashed spell slots, with no line repeating them.
 - Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
@@ -355,7 +356,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Terrain colours and icons | Exploration, after-combat | Final terrain colours and icons (Open questions below) |
 | Reveal pacing (one reward every 0.55 s; about 2 s for a Legendary's flip) | After-combat v5b–v7 | Reveal pacing (Open questions below) |
 | [Legendary item], [Item description] | After-combat v6–v7 | Specific gear items ([Weapons & gear](04 Weapons & gear.md) → Open questions) |
-| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v2 | Icons (Open questions below) |
+| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v3 | Icons (Open questions below) |
 | Training ×[1] (trainings left this visit) | Weapon mastery v1a–v5c | Training counts (progression pass: [Cards & progression](05 Cards & progression.md) → Open questions) |
 | Node type icons (new card, upgrade, passive) | Weapon mastery v1–v5 | Icons (Open questions below) |
 | The Lady of the Lake's lines and the option lines (v1 only: written from v2); "[<companion>'s chime-in line]" (v1–v7 only: v8 uses the written lines); the Lady's [Portrait] | Social encounter v1–v8 | Chime-in lines: [World & story](01 World & story.md) → Companion chime-in lines; the portrait: art pass |
@@ -375,8 +376,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | [Fluffy's / Chelmsford's / Mel's bar line], [Hero toast line] | Town v2e–v7 | Inn banter ([characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions); the toast is written as an intent choice with a narration beat |
 | Tap thresholds: 8 px of movement, 350 ms | Social v9, town v4 | Playtest |
 | Night at the inn pacing (about 2.3 s of night) | Town v2d–v3 | Playtest |
-| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v2c | Final heads, hairstyles and swatches (Open questions below) |
-| [Bard proficiency] | Character creator v1a–v2c | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
+| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v3 | Final heads, hairstyles and swatches (Open questions below) |
+| [Bard proficiency] | Character creator v1a–v3 | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -394,7 +395,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
-| Character creator | In progress (v1a guided steps chosen; latest: v2a–v2c, the class step three ways with God as its own step) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
+| Character creator | In progress (v1a guided steps and v2a class step chosen; latest: v3, the class step's spacing fixed) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -449,7 +450,8 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Hero creation: how many builds per race and which colours~~ (settled Oct 30, 2026: 3 per race, swatches per race; see Hero appearance at character creation)
 - [ ] **New:** hero creation: final number of heads and hairstyles per race (mockups use 4 and 6), and each race's colour swatches
 - [x] ~~Character creator screen: pick a layout from v1a–v1c~~ (settled Oct 30, 2026: v1a, guided steps)
-- [ ] **New:** character creator class step: v2a (tiles + details below), v2b (list + details right) or v2c (cards + pop-up)
+- [x] ~~Character creator class step: v2a, v2b or v2c~~ (settled Oct 30, 2026: v2a; spacing fixed in v3)
+- [ ] **New:** character creator: feedback on v3's class and God steps, then the Race step
 - [x] ~~AI minis: how fused AI output becomes modular gear~~ (Oct 29, 2026: AI makes parts, not finished minis; see Art direction)
 - [ ] **New:** AI minis: whether the results reach the Reference 3 detail target, or the target changes
 - [ ] **New:** mini style standards: turn the Chelmsford choices into a checklist for other minis once his turnaround (minis v3) is approved
