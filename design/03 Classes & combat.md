@@ -108,6 +108,18 @@ Races: Human, Elf, Dwarf, Halfling, Golem (an animatronic of stone, wood or meta
 | Fluffy's cat race (companion only; race name: open) | — | A fey creature who chose to be a cat (lore: [World & story](01 World & story.md) → NPC homes and stories). **Cat Reflexes** (decided Oct 27, 2026; replaced the "harder to hit" sketch): takes half damage from area attacks and spells, and none when it passes the save. Racial card: **Claw Swipe** (1 AP, once per turn): a melee scratch, a DEX attack flip, that makes the foe bleed; usable whatever he's holding. No race feat (decided Oct 27, 2026) |
 | Tiefling | By bloodline | Gains a free spell every 7 levels like high elves (7, 14 …), but set by bloodline rather than chosen, and cast with CHA whatever the class (decided Oct 27, 2026). Tiefling types are the flame god's bloodlines, each one face of Egan's flame (lore: [World & story](01 World & story.md) → Pantheon). Each bloodline has its own racial card (decided Oct 27, 2026): **Hayes, destruction: Burn It Down** (2 AP): fire bursts on every adjacent hex, allies included; DEX save. **Conley, rebirth: From the Ashes** (passive, once per day cycle): the first time you'd be downed, you get back up at low HP instead. **Keegan, the hearth: Hearthfire** (2 AP, concentration): warm ground around you; allies inside heal a little each turn. All three bloodlines are playable, Hayes included |
 
+**Race blurbs** (chosen Oct 30, 2026 by Ethan from drafts in the class blurb style; shown on the character creator's race step: [Presentation](07 Presentation.md) → Character creator screen. The Tiefling's says "an old god's blood" rather than naming Egan, since people don't know why tieflings are shunned and few remember Egan. Sub-type blurbs: in progress)
+
+| Race | Blurb |
+| --- | --- |
+| Human | A widespread folk whose ambition carries them to every corner of the world. |
+| Elf | A patient, keen-eyed people who measure their lives in centuries. |
+| Dwarf | A stout, stubborn folk of clan halls, forges and mountain stone. |
+| Halfling | A small, cheerful folk whose luck turns up right when it's needed. |
+| Golem | A crafted being of stone, wood or metal, woken to a will of its own. |
+| Dragonborn | A towering, scaled folk with a dragon's breath and a dragon's pride. |
+| Tiefling | A flame-touched people who carry an old god's blood and the world's suspicion. |
+
 Race flags (accepted for now): a wood elf with the Speedy feat gets +2 hexes per Move, which may double their speed depending on hexes per Move; Duck Behind does the same swap as part of the Tactician's Reposition; with any 2 boosts and any gear, Humans are the all-rounder (accepted Oct 27, 2026: other races win through stronger traits). To check: Regrowth heals every turn for free, close to Holy Sanctum and Overgrowth (3 AP spells); Hearthfire is another steady-heal zone (with Sanguine Circle, Holy Sanctum and Overgrowth); From the Ashes stacks with the Hard to Kill feat (two saves from being downed per fight); Cat Reflexes makes Fluffy nearly safe from friendly area fire, his own Blaster spells included (kept on purpose, Oct 27, 2026).
 
 **Racial ability-score boosts** (each race boosts 3 scores, Humans any; the player picks 2 of them for +1 each: see Ability scores → Starting scores. Being rebalanced race by race, Oct 27, 2026: before the review CON was boosted by 5 of 7 races and INT and WIS by only 2 each)
