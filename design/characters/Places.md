@@ -16,7 +16,7 @@ Decided with Ethan, Oct 30, 2026.
 
 ## Towns
 
-**Town names** (decided Oct 30, 2026): built from parts that lean on the town type (e.g. fortified: "-hold", market: "-market", slums: "-end"). The player can still rename a town ([Map & exploration](../02%20Map%20%26%20exploration.md) → Exploration and terrain). The parts lists: not written yet.
+**Town names** (decided Oct 30, 2026): roots as in [World & story](../01%20World%20%26%20story.md) → Naming; built from parts that lean on the town type (e.g. fortified: "-hold", market: "-market", slums: "-end"). The player can still rename a town ([Map & exploration](../02%20Map%20%26%20exploration.md) → Exploration and terrain). The parts lists: not written yet.
 
 **Slots** (decided Oct 30, 2026)
 

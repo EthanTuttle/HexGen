@@ -4,6 +4,18 @@ Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 
 Lore, the pantheon, enemy types, the main story, background paths and their NPCs, and all quest content.
 
+## Naming
+
+Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic, German and Dutch** roots for a shared flavour, but no name has to be built from them. Plain English, invented names and a few classical names are all fine where they suit.
+
+- **Loose mapping:** Irish and Gaelic sounds lean toward the countryside, folk, humans, halflings, elves and the tiefling fire bloodlines; German sounds lean toward dwarves, golems, forges, strongholds and towns; Dutch sounds lean toward the lowlands: rivers and lakes, farmland, dikes, ports and merchant towns. A lean, not a law.
+- **Keep names sayable:** use anglicised spellings rather than native ones (Dunfaire, not Dún Faire); a new player should say a name right on the first try (no silent letters, umlauts or vowel clusters like "ao"); people's names are short (1–3 syllables).
+- **Handy word parts** (optional): Irish/Gaelic dun (fort), kil (church), bally (town), glen (valley), ard (high), knock (hill), derry (oak), inver (river mouth), more (big), beg (small); German -hof (farm), -berg (mountain), -brunn (well), -wald (forest), -feld (field), -stein (stone), -bach (stream), -heim (home); Dutch -ingen (people of), -dam (dam), -dyke (dike), -wick (district), -drecht (ford), -hoven (farms), -veld (field), -haven (harbour), -kerk (church), -horst (wooded rise), Hoog-/Nieuw-/Oud- (high/new/old). Anglicise the tricky Dutch spellings: ij becomes y or i (-dijk to -dyke, -wijk to -wick), and avoid ui and sch-.
+- **Examples:** Dunfaire (dún "fort" + faire "watch"), Sternbrunn (Stern "star" + Brunnen "well"), Weizenhof (Weizen "wheat" + Hof "farmstead"); The Oak & Lantern stays plain English. A happy accident: Egan, Hayes and Keegan all come from the Irish Aodh, "fire", fitting the flame god and his bloodlines.
+- **Gods are an exception** (decided Oct 30, 2026): their names come from an older, mixed tongue, so all nine stay (Aurora, Selene, Morin, Toyoko, Adam, Canto, Eve, Tod, Egan). A rooted redraft was tried and compared (Grianne, Mona, Arva, Doan, Keol, Carra) and not taken.
+- **Gronogon** (kept, Oct 30, 2026): the convergence city, Dutch-rooted (it echoes Groningen). Briefly renamed Konigsberg the same day, then restored when Dutch joined the roots. King Grel keeps his name.
+- Town names: [characters → Places](characters/Places.md).
+
 ## Magic and the gods (lore)
 
 - Magic is manifested through souls and the force of will behind them.
@@ -74,15 +86,26 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 | Background | Starting hex | Starting gear | Starting quest | Proficiency list (pick 1) |
 | --- | --- | --- | --- | --- |
-| Soldier | Guard tower | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers | Athletics, Intimidate, Perception |
-| Acolyte | Church | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion | Lore, Nature, Survival |
-| Criminal | Town | TBD | Steals an artifact important to the cast-out god: a key to the god's prison | Thievery, Stealth, Deceive |
-| Sage | Wizard tower | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) | Lore, Nature, Perception |
-| Folk Hero | Inn | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
-| Noble | Farm (estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
+| Soldier | Dunfaire Tower (guard tower) | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers | Athletics, Intimidate, Perception |
+| Acolyte | East Rime Chapel (church) | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion | Lore, Nature, Survival |
+| Criminal | Monto Town (town) | TBD | Steals an artifact important to the cast-out god: a key to the god's prison | Thievery, Stealth, Deceive |
+| Sage | Sternbrunn Spire (wizard tower) | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) | Lore, Nature, Perception |
+| Folk Hero | The Oak & Lantern (inn) | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
+| Noble | Weizenhof Estate (the family estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
+
+- **Background blurbs** (chosen Oct 30, 2026 by Ethan; present tense, since the hero still holds that role when the story starts; shown on the character creator's background step: [Presentation](07%20Presentation.md) → Character creator screen):
+
+| Background | Blurb |
+| --- | --- |
+| Soldier | A sworn guard who keeps watch from the tower walls, night after night. |
+| Acolyte | A church servant who hears their god most clearly in their dreams. |
+| Criminal | A town scoundrel who lives by sharp wits and other people's pockets. |
+| Sage | A tower-raised sage who would trade anything for one more rare book. |
+| Folk Hero | A local favourite who's everyone's first call when trouble comes to the inn. |
+| Noble | A young noble learning to carry the family name and all it demands. |
 
 - **Proficiency lists** (decided Oct 30, 2026): the hero picks 1 starting proficiency from their background's 3 (rules: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies).
-- Starting hexes are Story cards: special versions of these locations, not the standard landmarks.
+- Starting hexes are Story cards: special versions of these locations, not the standard landmarks. Each has its own name (named Oct 30, 2026; roots: see Naming).
 - Starting gear: see [Weapons & gear](04 Weapons & gear.md) → Starting gear. Each background may also add a unique starter item (to be decided).
 
 ## Background paths
