@@ -23,10 +23,12 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | --- | --- |
 | Click a card in the Hand column | Hold it: the slots it can take light up cream with the terrain's icon (red with a cross where a neighbour clashes). Cancel in the banner, the card again, or Esc lets go |
 | Click a lit slot | Place the held card |
-| Click a placed hex | Walk the party there along placed hexes, one hex at a time |
+| Drag a card from the hand onto a lit slot | Place it; let go anywhere else and it goes back to the hand |
+| Click a placed hex, then click it again | The first click shows the path and the walk time; the second walks the party there, one hex at a time. Clicking another hex picks that one instead |
+| Rest the mouse on a hex (or long-press it on touch) | Its details: terrain, region and cluster progress, the variant once finished, any encounter |
 | Click the start hex while standing on it | Rest at camp: heal, +8 hours, discard down to 7, reshuffle the discard pile |
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
-| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate in 60° steps, frame) |
+| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate in 60° steps, frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
 
 Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (Stealth, group). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
 
@@ -49,6 +51,73 @@ swift godot/tools/png_to_mp4.swift /tmp/variants godot/screens/variants_movie.mp
 ```
 
 The demo uses the same calls a player's clicks make, and plays simply. One exception: if no encounter has spawned by the time the hand runs low, it adds one and says so on screen. `--seed=N` changes the shuffle and the coin flips; the default is seed 1. `--demo=variants` stages its hand (5 forest, then 5 hills, then 5 plains, said on screen) so three regions finish in a row; placement still follows the rules.
+
+## Touch controls (for the iPhone)
+
+The rules are in `design/07 Presentation.md` → Camera and controls, and Exploration screen → Placing and Walking. Everything works the same with a mouse; touch adds:
+
+| Gesture | Does |
+| --- | --- |
+| One finger drag on the board | Pan (the ground under the finger follows it) |
+| Two fingers apart / together | Zoom |
+| Two fingers turning | Rotate; snaps to the nearest 60° when the fingers lift |
+| Tap | What a click does: hold a card, place it, pick a hex to walk to, act in combat |
+| Long-press on the board | A map hex's details (as hovering does with a mouse); on a combat token, a foe's name, HP and what it does, or an ally's HP, AP and status |
+| Long-press on a HUD control | Its details: what hovering shows on PC (the control's tooltip text) in the same pop-up. Letting go doesn't press it |
+| Drag a card out of the hand | It rides just above the finger; let go over a lit slot to place it, anywhere else to put it back |
+
+**Thresholds** (`scripts/game/rules.gd`, all placeholders): a tap moves less than **8 pt** and lets go within **350 ms**; moving 8 pt or more makes it a drag; a press held still past **350 ms** is a long-press, and it opens the details right then (the docs give one time, so a still press that can no longer be a tap becomes a long-press). A mouse resting still for 350 ms shows the same pop-up. The smallest tap target is **44 pt** (`Rules.FINGER`). The layout's units are about 1 pt on an iPhone (844 × 390 against the iPhone 15 Pro's 852 × 393 pt in landscape).
+
+**How it's built:**
+
+- `scripts/gestures.gd` reads `InputEventScreenTouch` / `InputEventScreenDrag` straight, and treats the left mouse button as one more finger. It turns them into tap, drag, long-press, pinch, twist and hover. It lives on the camera rig, which pans, zooms and turns from it; the map (`game.gd`) and combat (`fight.gd`) take the taps and long-presses.
+- **Gestures don't fight:** a second finger cancels any tap, hold or pan in progress, and the finger left behind does nothing until both have lifted, so a pinch never places, walks or acts. A press that moves 8 pt is a drag and can no longer tap, on the board and on every HUD button (`UI.is_tap`).
+- **No double fire:** Godot's mouse-from-touch emulation stays on, because the HUD's buttons need it. The board ignores the emulated mouse events (device −1) and reads the touches only. A long-press on a HUD control swallows the release, so it doesn't also press the control.
+- **The player's camera wins:** any pan, pinch, twist, wheel, right-drag, key or nav zoom/rotate sets `CameraRig.player_moved`. While it's set, the camera doesn't follow the walking party or centre on whoever acts in combat. It clears at the next walk on the map, at the start of each allies' turn in combat, and when the nav button's centre is pressed.
+- **Finger-sized targets:** controls drawn smaller than 44 pt keep their look and get a 44 × 44 hit area (`UI.finger_rect`, used by `HexShape`, `TagButton`, the landmark pin, combat's End hex, hotbar and All actions cards, and the `UI.FingerButton` text buttons). The ones that needed it, from the touch test's audit:
+
+  | Control | Drawn | Where |
+  | --- | --- | --- |
+  | Hand cards | 40 × 46 | Map |
+  | Quests, equipment, nav and its five camera buttons | 40 × 46 | Map |
+  | Party portraits | 38 × 44 | Map and combat tray |
+  | Combat's camera buttons | 40 × 46 | Combat |
+  | End phase hex | 38 × 47 | Combat |
+  | Landmark pin | 22 × 24 | Map |
+  | Encounter pop-up's Fight button | 40 tall | Map |
+
+  The grown areas of neighbouring hand cards and portraits overlap by 2–3 pt; the one drawn on top wins.
+
+**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (21 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex, a card and a foe, the release after a long-press, pinch, twist and its snap, pan, the nav centre, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines).
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 -- --touch           # play with the mouse as a finger, phone-sized
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 -- --touchtest --quit # the scripted touch test
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 --write-movie /tmp/touch/frame.png --fixed-fps 30 -- --touchtest --quit
+swift godot/tools/png_to_mp4.swift /tmp/touch godot/screens/touch_movie.mp4 30
+```
+
+`screens/touch_movie.mp4` is that test recorded in a phone-sized window (852 × 393 pt at 2×), with the fingers drawn as circles and a caption naming each gesture (the test's overlay, not game UI). `screens/touch_01_…png` to `touch_06_…png` are stills: a drag-placed card, the hex pop-up, a card's details, after a twist, the walk preview, a foe's details.
+
+**Where the mockup layout doesn't fit a phone:**
+
+- **Safe areas.** The mockups run edge to edge. On an iPhone 15 Pro in landscape, the Dynamic Island takes about 59 pt on one side and the home indicator about 21 pt at the bottom. The party tray (left edge), the hand column (right edge), and the combat hotbar and after-combat buttons (bottom edge, the hotbar reaches 378 of 393 pt) sit in those strips.
+- **Small text.** Several labels are 9–11 pt: landmark region names (9), pop-up lines and the walk label (10–11), card names on the hotbar (11). They're legible on the Mac at 2× but small on a phone held at arm's length.
+- **Crowding from the grown hit areas.** Hand cards are 6 pt apart and portraits sit edge to edge, so their 44 pt hit areas overlap a little.
+- **The details panel in combat** takes the right fifth of the screen (170 pt), which leaves the board narrow on a phone; the board pop-up opens over it near the right edge.
+
+**Not in the docs (for Ethan to decide; the prototype's choice is in brackets):**
+
+1. **Long-press timing.** The docs give one time (350 ms) for "not a tap". Should a long-press need a longer hold? [it fires the moment a still press passes 350 ms]
+2. **What counts as "the next action"** that hands the camera back after the player moves it. [the next walk on the map; the start of each allies' turn in combat. Picking another ally in the same turn doesn't recentre]
+3. **Two fingers moving together:** pan as well as zoom and turn? [no: two fingers only zoom and turn]
+4. **Dragging a card onto a red slot** (one next to a banned terrain): say why, as tapping it does? [it goes back to the hand silently]
+5. **Where a dragged card drops:** under the card or under the finger? [the card rides 34 pt above the finger, so the finger doesn't hide it, and drops on the slot under the card]
+6. **The walk preview's look and what clears it.** [no mockup yet: a dotted line of cream dots to the hex and a dark "2 hexes · 2 min" label over it; holding a card, tapping empty space or the party's own hex clears it]
+7. **Resting** has no mockup and isn't a walk. Two taps for it too? [one tap on the camp hex while the party stands on it, as before]
+8. **Long-press on HUD controls that have no details design** (hand cards, the nav and camera buttons, party portraits): what should they show? [their PC hover text in the board pop-up]
+9. **Long-press on an empty slot** (an unplaced hex): anything? [nothing]
+10. **Hover delay on PC** for the board pop-up. [the same 350 ms]
 
 ## Screens next to the mockups
 

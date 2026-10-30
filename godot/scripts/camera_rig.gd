@@ -1,8 +1,11 @@
 class_name CameraRig
 extends Node3D
 ## The tilted, rotatable camera of the map and combat screens (design/07 Presentation.md ->
-## Camera and controls): mouse drag pans, the wheel zooms, a right-drag rotates and snaps to the
-## nearest 60 degree step on release. Keys: Q / E rotate 60 degrees, + / - zoom, F frames.
+## Camera and controls): one finger or a mouse drag pans, two fingers pinch to zoom and twist to rotate, the
+## wheel zooms, a right-drag rotates; rotation snaps to the nearest 60 degree step on release.
+## Keys: Q / E rotate 60 degrees, + / - zoom, F frames.
+## Any pan, zoom or rotate by the player sets `player_moved` (the player's camera wins: following the
+## party or centring on whoever acts stops until the game clears it).
 
 @export var pitch_deg := 50.0             # tilt; the mockups' camera is about 50 degrees
 @export var distance := 60.0
@@ -17,8 +20,12 @@ var focus := Vector2(422, 195)
 var yaw_deg := 0.0                        # 0 = looking north, from the south
 var home := {}
 
+signal player_moved_camera
+
 var camera := Camera3D.new()
-var _dragging := false
+var gestures := Gestures.new()
+var player_moved := false
+var _twisting := false
 var _rotating := false
 var _tween: Tween
 
@@ -29,7 +36,36 @@ func _ready() -> void:
 	camera.near = 0.1
 	camera.far = 600.0
 	add_child(camera)
+	add_child(gestures)
+	gestures.drag.connect(_pan)
+	gestures.pinch.connect(func(f: float): _zoom(1.0 / f); _player())
+	gestures.twist.connect(func(a: float):
+		yaw_deg -= rad_to_deg(a)   # the board turns with the fingers (screen angles run clockwise; a higher yaw turns the board anticlockwise)
+		_twisting = true
+		_player())
+	gestures.twist_end.connect(func():
+		if _twisting:
+			_twisting = false
+			ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0))
 	_apply()
+
+
+func _player() -> void:
+	if _tween and _tween.is_running():
+		_tween.kill()   # the player's move wins over any easing in progress
+	if not player_moved:
+		player_moved = true
+		player_moved_camera.emit()
+
+
+## A drag on the board pans it, so the ground under the pointer follows it.
+func _pan(relative: Vector2) -> void:
+	var k := 2.0 * distance * tan(deg_to_rad(camera.fov) * 0.5) / 844.0   # metres per layout unit at the target
+	var yaw := deg_to_rad(yaw_deg)
+	var right := Vector3(cos(yaw), 0, sin(yaw))
+	var forward := Vector3(sin(yaw), 0, -cos(yaw))
+	target -= right * relative.x * k - forward * relative.y * k / sin(deg_to_rad(pitch_deg))
+	_player()
 
 
 func frame(at: Vector3, dist: float, pitch: float, yaw := 0.0) -> void:
@@ -69,40 +105,41 @@ func _apply() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
-		if mb.button_index == MOUSE_BUTTON_LEFT:
-			_dragging = mb.pressed
-		elif mb.button_index == MOUSE_BUTTON_RIGHT:
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
 			_rotating = mb.pressed
 			if not mb.pressed:
 				ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0)
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom(0.9)
+			_player()
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom(1.0 / 0.9)
+			_player()
 	elif event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
-		if _dragging:
-			var scale := distance * 0.0012
-			var yaw := deg_to_rad(yaw_deg)
-			var right := Vector3(cos(yaw), 0, sin(yaw))
-			var forward := Vector3(sin(yaw), 0, -cos(yaw))
-			target -= right * mm.relative.x * scale - forward * mm.relative.y * scale
-		elif _rotating:
+		if _rotating:
 			yaw_deg -= mm.relative.x * 0.3
+			_player()
 	elif event is InputEventMagnifyGesture:
 		_zoom(1.0 / (event as InputEventMagnifyGesture).factor)
+		_player()
 	elif event is InputEventPanGesture:
 		_zoom(1.0 + (event as InputEventPanGesture).delta.y * 0.05)
+		_player()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match (event as InputEventKey).keycode:
 			KEY_Q:
+				_player()
 				ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0 + 60.0)
 			KEY_E:
+				_player()
 				ease_to(target, distance, roundf(yaw_deg / 60.0) * 60.0 - 60.0)
 			KEY_EQUAL, KEY_KP_ADD:
 				_zoom(0.8)
+				_player()
 			KEY_MINUS, KEY_KP_SUBTRACT:
 				_zoom(1.25)
+				_player()
 			KEY_F:
 				if not home.is_empty():
 					ease_to(home.target, home.distance, roundf(yaw_deg / 60.0) * 60.0)

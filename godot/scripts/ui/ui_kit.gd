@@ -132,6 +132,38 @@ static func icon_rect(name: String, col: Color, size: float, stroke := 2.2, fill
 
 
 ## Pointy-top hexagon points in a w x h box (CSS: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)).
+## A Button whose hit area is at least a finger (its look stays as drawn).
+class FingerButton extends Button:
+	func _has_point(point: Vector2) -> bool:
+		return UI.finger_rect(size).has_point(point)
+
+
+## The hit area of a control drawn at `size`: grown to at least a finger (Rules.FINGER) each way, centred, so
+## small mockup controls keep their look but are easy to tap (design: everything tappable at least 44 pt).
+static func finger_rect(size: Vector2) -> Rect2:
+	var s := size.max(Vector2(Rules.FINGER, Rules.FINGER))
+	return Rect2((size - s) * 0.5, s)
+
+
+## Tap check for the HUD's own controls: call with each left-button event; true on a release that is a tap.
+## A press that moved past the tap distance is a drag and never presses. On touch (emulated mouse events)
+## a press held past the tap time is a long-press, which opens details instead (Gestures).
+static func is_tap(c: Control, e: InputEvent) -> bool:
+	if not (e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT):
+		return false
+	var mb := e as InputEventMouseButton
+	if mb.pressed:
+		c.set_meta("press", [mb.position, Time.get_ticks_msec()])
+		return false
+	if not c.has_meta("press"):
+		return false
+	var p: Array = c.get_meta("press")
+	c.remove_meta("press")
+	if mb.position.distance_to(p[0]) >= Rules.TAP_PIXELS or not c._has_point(mb.position):
+		return false
+	return mb.device != InputEvent.DEVICE_ID_EMULATION or Time.get_ticks_msec() - int(p[1]) < Rules.TAP_MS
+
+
 static func hex_points(r: Rect2) -> PackedVector2Array:
 	var p := r.position
 	var w := r.size.x

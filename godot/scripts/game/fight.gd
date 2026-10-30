@@ -34,8 +34,7 @@ var _overlays: Array[Node3D] = []
 var _hex_mesh: Mesh
 var _disc_mesh: Mesh
 var _mats := {}
-var _press := Vector2.ZERO
-var _press_ms := 0
+var _wired := false
 
 
 func _ready() -> void:
@@ -62,6 +61,7 @@ func _ready() -> void:
 func run(g: Game, terrain: String, tile: Vector2i, foes: int) -> bool:
 	game = g
 	rng = g.rng
+	_wire()
 	active = true
 	units.clear()
 	result = {}
@@ -85,6 +85,7 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int) -> bool:
 	if hud == null:
 		hud = CombatHud.new(self)
 		game.ui.add_child(hud)
+		game.popup.move_to_front()
 	hud.visible = true
 	game.rig.frame(position, 22.0, 52.0)
 	game.rig.focus = Vector2(368, 150)
@@ -302,6 +303,7 @@ func _start_allies() -> void:
 			u.defending = false      # Defend lasts until your next turn
 			u.poison = false
 	current = {}
+	game.rig.player_moved = false   # a new turn: the camera centres on whoever acts again
 	for u in units:
 		if u.ally and not u.down:
 			select(u)
@@ -320,7 +322,8 @@ func select(u: Dictionary) -> void:
 	result = {}
 	self_done = ""
 	moved = 0
-	game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
+	if not game.rig.player_moved:   # the player's camera wins until the next turn (DOCS)
+		game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
 	refresh()
 
 
@@ -363,7 +366,8 @@ func _move(u: Dictionary, path: Array) -> void:
 	moved = path.size()
 	refresh()
 	await board.step_along(u.mini, path)
-	game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
+	if not game.rig.player_moved:
+		game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
 	busy = false
 	refresh()
 
@@ -570,12 +574,48 @@ func _enemy_phase() -> void:
 
 # --- Input --------------------------------------------------------------------------
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not active:
+## Board gestures (Gestures, on the camera rig): a tap acts on a cell; a long-press, or a resting mouse,
+## shows a token's details (DOCS: Camera and controls -> Long-press on the board).
+func _wire() -> void:
+	if _wired:
 		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_press = event.position
-			_press_ms = Time.get_ticks_msec()
-		elif event.position.distance_to(_press) < Game.TAP_PIXELS and Time.get_ticks_msec() - _press_ms < Game.TAP_MS:
-			click_cell(cell_at(game.ground_point(event.position) - Vector2(position.x, -position.z)))
+	_wired = true
+	var g := game.rig.gestures
+	g.tap.connect(func(pos: Vector2):
+		if active:
+			game.popup.visible = false
+			click_cell(_cell_under(pos)))
+	g.long_press.connect(func(pos: Vector2):
+		if active:
+			_details(pos))
+	g.hover.connect(func(pos: Vector2):
+		if active:
+			_details(pos))
+
+
+func _cell_under(pos: Vector2) -> Vector2i:
+	return cell_at(game.ground_point(pos) - Vector2(position.x, -position.z))
+
+
+## An enemy's name, HP and what it does; an ally's HP, AP and status.
+func _details(pos: Vector2) -> void:
+	var u := unit_at(_cell_under(pos))
+	if u.is_empty():
+		game.popup.visible = false
+		return
+	var lines := ["HP %d / %d%s" % [maxi(u.hp, 0), u.max_hp, " · down" if u.down else ""]]
+	if u.ally:
+		lines[0] += " · AP %d%s" % [u.ap, " + %d bonus" % u.bonus if u.bonus > 0 else ""] if phase == "allies" else ""
+		var status := []
+		if u.defending:
+			status.append("Defending")
+		if u.blessed:
+			status.append("Blessed (+1 coin)")
+		if u.poison:
+			status.append("Poison Blade")
+		lines.append("Status: " + (", ".join(status) if not status.is_empty() else "ready"))
+	else:
+		# PLACEHOLDER enemy behaviour, as the loop plays it (no enemy AI in the docs yet).
+		lines.append("%s %d · spear" % [u.ability, u.score])
+		lines.append("Walks to the nearest ally and attacks")
+	game.popup.show_at(pos, u.name, lines)

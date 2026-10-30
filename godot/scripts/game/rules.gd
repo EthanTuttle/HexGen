@@ -18,6 +18,16 @@ const STARTING_HAND := 7                 # PLACEHOLDER: the docs don't say how m
 const DRAW_EASY_FIGHT := 3               # DOCS: an easy fight or tier 1 region draws 3
 const DRAW_TIER2_REGION := 5             # DOCS: a tough fight, quest or tier 2 region draws 5
 
+# --- Touch and pointer (design/07 Presentation.md -> Camera and controls) ------------
+
+## PLACEHOLDER (the docs' mockup thresholds): a press that moves less than this and lets go within this time
+## is a tap; moving further is a drag; holding still past the time is a long-press (details).
+const TAP_PIXELS := 8.0                  # in the 844 x 390 layout's units, about 1 pt on an iPhone
+const TAP_MS := 350
+## PLACEHOLDER (Apple's guideline, from the touch brief; not in the docs): the smallest tap target. Controls
+## drawn smaller keep their look and get a bigger hit area.
+const FINGER := 44.0
+
 # --- Map (design/02 Map & exploration.md) ------------------------------------
 
 const START_TILE := Vector2i(0, 0)

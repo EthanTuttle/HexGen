@@ -137,7 +137,7 @@ func _build_banner() -> void:
 	_banner_text = UI.label("", "n800", 13)
 	_banner_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	h.add_child(_banner_text)
-	_banner_cancel = Button.new()
+	_banner_cancel = UI.FingerButton.new()
 	_banner_cancel.text = "Cancel"
 	_banner_cancel.custom_minimum_size = Vector2(0, 30)
 	_banner_cancel.add_theme_font_override("font", UI.font("n900"))
@@ -281,6 +281,7 @@ func _refresh_hand() -> void:
 		h.clickable = true
 		h.tooltip_text = Rules.NAMES[t] + (", held: tap a lit hex to place" if on else ", tap to hold")
 		h.pressed.connect(game.hold.bind(i))
+		h.gui_input.connect(_card_press.bind(i))
 		_hand_grid.add_child(h)
 	var over := hand.size() > Rules.HAND_LIMIT
 	_hand_count.text = "%d / %d" % [hand.size(), Rules.HAND_LIMIT]
@@ -290,6 +291,69 @@ func _refresh_hand() -> void:
 			+ (" Over the limit: discard down to 7 at your next rest." if over else "")
 	_deck_n.with_text(str(game.deck.draw_pile.size()), 12, UI.CREAM)
 	_discard_n.with_text(str(game.deck.discard.size()), 12, UI.CREAM)
+
+
+# --- Dragging a card onto the board (DOCS: Exploration screen -> Placing) ----------
+# A card dragged from the hand follows the finger (drawn a little above it, so the finger doesn't hide it) and
+# drops onto the slot under it when let go over a lit one; anywhere else it goes back to the hand.
+
+const DRAG_LIFT := Vector2(0, -34)   # PLACEHOLDER: how far above the finger the dragged card rides
+var _drag := {}
+
+
+func _card_press(e: InputEvent, i: int) -> void:
+	if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and e.pressed:
+		_drag = {i = i, start = (e as InputEventMouseButton).global_position, ghost = null}
+
+
+func _input(e: InputEvent) -> void:
+	if _drag.is_empty():
+		return
+	if e is InputEventMouseMotion:
+		var p := (e as InputEventMouseMotion).position
+		if _drag.ghost == null and p.distance_to(_drag.start) >= Rules.TAP_PIXELS and _drag.i < game.deck.hand.size():
+			if game.held != _drag.i:
+				game.hold(_drag.i)
+			var t: String = game.deck.hand[_drag.i]
+			var g := HexShape.make(40, 46, UI.ORANGE, UI.terrain_bg(t)).with_icon("t_" + t, UI.terrain_ink(t), 20)
+			g.with_shadow(UI.ORANGE_EDGE, 6)
+			g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(g)
+			_drag.ghost = g
+		if _drag.ghost:
+			var g: Control = _drag.ghost
+			g.position = p + DRAG_LIFT - g.size * 0.5
+	elif e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+		var g = _drag.ghost
+		_drag = {}
+		if g == null:
+			return   # a tap: the card's own press handles it
+		var at: Vector2 = (g as Control).position + (g as Control).size * 0.5
+		g.queue_free()
+		var t := game.ground_tile(at)
+		if game.held >= 0 and not _over_panel(at) and game.why_not(t, game.held_terrain()) == "":
+			game.try_place(t)
+		else:
+			game.hold(-1)   # back to the hand
+		get_viewport().set_input_as_handled()
+
+
+## True if p is over one of the HUD's panels (the hand, the tray, the clock...), not the open board.
+func _over_panel(p: Vector2) -> bool:
+	for n in find_children("*", "Control", true, false):
+		var c := n as Control
+		if c.mouse_filter == Control.MOUSE_FILTER_STOP and c.is_visible_in_tree() and c.get_global_rect().has_point(p) \
+				and c.size.x < get_viewport_rect().size.x * 0.9:
+			return true
+	for n in find_children("*", "PanelContainer", true, false):
+		var c := n as Control
+		if c.is_visible_in_tree() and c.get_global_rect().has_point(p) and c.size.x < get_viewport_rect().size.x * 0.9:
+			return true
+	return false
+
+
+func dragging() -> bool:
+	return not _drag.is_empty() and _drag.ghost != null
 
 
 # --- Encounter pop-up ------------------------------------------------------------
@@ -367,7 +431,7 @@ func encounter_open() -> bool:
 
 
 func _pill_button(t: String, sub: String, bg: Color, ink: Color) -> Button:
-	var b := Button.new()
+	var b := UI.FingerButton.new()
 	b.text = t + ("\n" + sub if sub != "" else "")
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.custom_minimum_size.y = 40
@@ -461,6 +525,14 @@ func _make_mark(m: Dictionary) -> Control:
 			p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			p.tooltip_text = m.get("aria", "")
 			return p
+		"walk":
+			var p := UI.panel(UI.DARK, 12, UI.DARK_EDGE, 3, Vector4(9, 0, 9, 0))
+			p.custom_minimum_size = Vector2(0, 24)
+			var l := UI.label(m.text, "n900", 11, UI.CREAM)
+			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			p.add_child(l)
+			p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			return p
 		"encounter":
 			var p := UI.panel(UI.RED, 12, UI.RED_EDGE, 3, Vector4(7, 0, 7, 0))
 			p.custom_minimum_size = Vector2(28, 24)
@@ -519,6 +591,9 @@ class _Pin extends Control:
 		draw_texture_rect(UI.icon("landmark", Color("#5E4C30"), 12, 2.6), Rect2(c - Vector2(6, 6), Vector2(12, 12)), false)
 
 	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+		if UI.is_tap(self, e):
 			clicked.emit()
 			accept_event()
+
+	func _has_point(point: Vector2) -> bool:
+		return UI.finger_rect(size).has_point(point)

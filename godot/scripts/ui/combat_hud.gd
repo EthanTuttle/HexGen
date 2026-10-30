@@ -120,9 +120,12 @@ class _EndHex extends Control:
 		draw_string(f, Vector2(19 - w * 0.5, 32), "End", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.WHITE_WARM)
 
 	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+		if UI.is_tap(self, e):
 			pressed.emit()
 			accept_event()
+
+	func _has_point(point: Vector2) -> bool:
+		return UI.finger_rect(size).has_point(point)
 
 
 # --- Camera buttons (left 96, top 14) --------------------------------------------
@@ -142,6 +145,10 @@ func _build_cam() -> void:
 
 func _cam(which: String) -> void:
 	var rig := fight.game.rig
+	if which == "center":
+		rig.player_moved = false   # the centre button gives the camera back to the game
+	else:
+		rig._player()
 	match which:
 		"zoom_in":
 			rig._zoom(0.75)
@@ -290,7 +297,7 @@ func _build_hotbar() -> void:
 	_hotbar.add_theme_constant_override("separation", 6)
 	_hotbar.alignment = BoxContainer.ALIGNMENT_END
 	row.add_child(_hotbar)
-	var all := Button.new()
+	var all := UI.FingerButton.new()
 	all.text = "All actions"
 	all.icon = UI.icon("grid", UI.CREAM, 22, 2)
 	all.expand_icon = false
@@ -388,9 +395,12 @@ class _HotCard extends Control:
 			draw_string(f, r.position + Vector2(37 - w * 0.5, text_y + i * 12), parts[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.INK)
 
 	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+		if UI.is_tap(self, e):
 			pressed.emit()
 			accept_event()
+
+	func _has_point(point: Vector2) -> bool:
+		return UI.finger_rect(size).has_point(point)
 
 
 ## A card in the All actions list (48 tall): AP hex, icon, name and source.
@@ -426,9 +436,12 @@ class _AllCard extends Control:
 		draw_string(UI.font("n700"), Vector2(64, 37), src.label + note, HORIZONTAL_ALIGNMENT_LEFT, size.x - 70, 11, UI.INK_SOFT)
 
 	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+		if UI.is_tap(self, e):
 			pressed.emit()
 			accept_event()
+
+	func _has_point(point: Vector2) -> bool:
+		return UI.finger_rect(size).has_point(point)
 
 
 # --- All actions (left 90, top 12, 524 x 262) ---------------------------------------
@@ -499,7 +512,7 @@ func _build_confirm() -> void:
 	v.add_child(_confirm_rows)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
-	var keep := Button.new()
+	var keep := UI.FingerButton.new()
 	keep.text = "Keep playing"
 	keep.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	keep.custom_minimum_size.y = 44

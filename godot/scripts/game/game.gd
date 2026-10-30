@@ -10,8 +10,6 @@ extends Node3D
 ## click a placed tile to walk there. Camera: drag, wheel, right-drag, Q/E, F, or the nav button.
 
 const COMBAT_AT := Vector2(1000, 0)   # the combat board lives away from the map
-const TAP_PIXELS := 8.0               # PLACEHOLDER from the docs' mockups: a press that barely moves ...
-const TAP_MS := 350                   # ... and lets go quickly is a tap, not a drag
 ## DOCS: the backdrop per time of day (from Explore v8b; chosen Oct 30, 2026, revisit in playtesting):
 ## design/07 Presentation.md -> Art direction -> Time of day -> The light.
 const SKY := {"night": "#A9AECB", "dawn": "#F4DCCB", "midday": "#D9E7EC", "dusk": "#EDCFD7"}
@@ -40,8 +38,6 @@ var ui := CanvasLayer.new()
 var hud: ExploreHud
 var after: AfterCombat
 
-var _press_pos := Vector2.ZERO
-var _press_ms := 0
 var _encounter_tile := Vector2i.ZERO
 var _open_pin = null
 var _reveal_pin = null
@@ -49,6 +45,10 @@ var _reveal_until := 0.0
 var _slot_mats := {}
 var _slot_marks: Array[Node3D] = []
 var _sky := Color(0, 0, 0, 0)
+var popup := BoardPopup.new()         # long-press / hover details
+var picked = null                     # the hex a first tap picked to walk to (Vector2i), or null
+var _path_marks: Array[Node3D] = []
+var _follow: Tween                    # the camera following the walking party
 
 
 func _ready() -> void:
@@ -95,8 +95,14 @@ func _ready() -> void:
 	after = AfterCombat.new()
 	after.visible = false
 	ui.add_child(after)
+	ui.add_child(popup)
+	_connect_gestures()
 	_refresh()
-	if Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--demo")):
+	if "--touchtest" in OS.get_cmdline_user_args():
+		var tt := TouchTest.new()
+		tt.game = self
+		add_child(tt)
+	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--demo")):
 		var demo := Demo.new()
 		demo.game = self
 		add_child(demo)
@@ -167,6 +173,7 @@ func hold(i: int) -> void:
 	if busy:
 		return
 	held = -1 if (held == i or i < 0) else i
+	pick(null)
 	_refresh()
 
 
@@ -390,6 +397,11 @@ func markers() -> Array:
 				aria = "Cluster goal: grow this %s to %d+ hexes" % [Rules.NAMES[land(t)].to_lower(), goal]})
 	for t: Vector2i in encounters:
 		out.append({key = "enc%s" % t, kind = "encounter", text = "", world = _tile_top(t)})
+	if picked != null:
+		# The first tap's walk: how far and how long (DOCS: Walking; the time is on the day clock).
+		var n := path_to(picked).size()
+		out.append({key = "walk%s" % picked, kind = "walk", world = _tile_top(picked), lift = 40,
+				text = "%d hex%s · %d min" % [n, "" if n == 1 else "es", roundi(n * Rules.STEP_MINUTES)]})
 	for g in regions:
 		var lt: Vector2i = g.landmark_tile
 		var open: bool = _open_pin == lt or _reveal_pin == lt
@@ -461,6 +473,8 @@ func walk_to(goal: Vector2i) -> void:
 		return
 	busy = true
 	held = -1
+	pick(null)
+	rig.player_moved = false   # a new walk is a new action: the camera follows again
 	_refresh()
 	for step in path:
 		var to := Hex.to3(Hex.tile_position(step.x, step.y) + Minis.PARTY_OFFSET)
@@ -468,7 +482,9 @@ func walk_to(goal: Vector2i) -> void:
 		var tw := create_tween().set_parallel()
 		tw.tween_property(party_node, "rotation:y", party_node.rotation.y + wrapf(atan2(d.x, d.z) - party_node.rotation.y, -PI, PI), 0.15)
 		tw.tween_property(party_node, "position", to, Rules.STEP_SECONDS).set_trans(Tween.TRANS_SINE)
-		tw.tween_property(rig, "target", to, Rules.STEP_SECONDS)
+		if not rig.player_moved:
+			_follow = create_tween()
+			_follow.tween_property(rig, "target", to, Rules.STEP_SECONDS)
 		# A small bob per step, so the minis read as walking pieces (PLACEHOLDER: how minis move is open in the docs).
 		for mini in party_node.get_children():
 			var body: Node3D = mini.get_node("body")
@@ -511,6 +527,8 @@ func choose_fight() -> void:
 
 func start_fight(t: Vector2i) -> void:
 	busy = true
+	pick(null)
+	popup.visible = false
 	_encounter_tile = t
 	map.visible = false
 	party_node.visible = false
@@ -583,6 +601,8 @@ func rest() -> void:
 # --- Camera buttons (nav) ------------------------------------------------------
 
 func camera_button(which: String) -> void:
+	if which != "center":
+		rig._player()   # the player's camera wins (DOCS: Camera and controls)
 	match which:
 		"zoom_in":
 			rig._zoom(0.8)
@@ -593,6 +613,7 @@ func camera_button(which: String) -> void:
 		"rot_r":
 			rig.ease_to(rig.target, rig.distance, roundf(rig.yaw_deg / 60.0) * 60.0 - 60.0)
 		"center":
+			rig.player_moved = false   # the centre button gives the camera back to the game
 			rig.ease_to(party_node.position, rig.distance, rig.yaw_deg)
 
 
@@ -603,12 +624,99 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		hold(-1)
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_press_pos = event.position
-			_press_ms = Time.get_ticks_msec()
-		elif event.position.distance_to(_press_pos) < TAP_PIXELS and Time.get_ticks_msec() - _press_ms < TAP_MS:
-			tap(ground_tile(event.position))
+
+
+## Board gestures (Gestures, on the camera rig): a tap picks, a long-press or a resting mouse shows details,
+## any pan, pinch or twist closes the pop-up.
+func _connect_gestures() -> void:
+	var g := rig.gestures
+	g.tap.connect(func(pos: Vector2):
+		popup.visible = false
+		if not fight.active and not after.visible:
+			tap(ground_tile(pos)))
+	g.long_press.connect(func(pos: Vector2):
+		if not fight.active and not after.visible:
+			_details(pos))
+	g.hover.connect(func(pos: Vector2):
+		if not fight.active and not after.visible and not hud.encounter_open():
+			_details(pos))
+	g.hover_end.connect(func(): popup.visible = false)
+	g.drag.connect(func(_r): popup.visible = false)
+	g.pinch.connect(func(_f): popup.visible = false)
+	g.gui_long_press.connect(func(c: Control, pos: Vector2):
+		# A HUD control's details: what hover shows on PC (its tooltip text), first part as the title.
+		var parts := Array(c.tooltip_text.split(","))
+		popup.show_at(pos, parts[0], parts.slice(1).map(func(x): return str(x).strip_edges())))
+	rig.player_moved_camera.connect(func():
+		if _follow:
+			_follow.kill())
+
+
+## The map hex pop-up (DOCS: Camera and controls -> Long-press on the board): its terrain, its region and
+## progress toward the cluster goal, the region's variant once finished; an encounter on it, if any.
+func _details(pos: Vector2) -> void:
+	var t := ground_tile(pos)
+	if not map.terrains.has(t):
+		popup.visible = false
+		return
+	var lines := []
+	var title: String
+	if t == Rules.START_TILE:
+		title = "Starting hex"
+		lines.append("Camp (stand-in): rest here")
+	elif finished.has(t):
+		var g: Dictionary = regions[finished[t]]
+		title = Rules.NAMES[g.terrain]
+		lines.append("Region: %s, finished (%d hexes)" % [g.name, g.tiles.size()])
+		lines.append("Variant: %s" % (Rules.REGION_NAMES[g.terrain][0] if g.tier == 1 else "[tier 2 variant]"))
+		lines.append("Landmark: %s" % g.landmark)
+	else:
+		var terrain := land(t)
+		title = Rules.NAMES[terrain]
+		var goal := _goal_for(terrain)
+		lines.append("Cluster: %d / %d hexes to a region" % [cluster(t).size(), goal])
+	if encounters.has(t):
+		lines.append("Encounter: [Enemy group], %d foes" % _foes_at(t))
+	popup.show_at(pos, title, lines)
+
+
+func _foes_at(t: Vector2i) -> int:
+	var distance := Rules.hex_distance(t, Rules.START_TILE)
+	return mini(Rules.ENEMIES_BASE + distance / Rules.ENEMIES_PER_DISTANCE, Rules.ENEMIES_MAX)
+
+
+## Walking is two taps (DOCS: Exploration screen -> Walking): the first shows the path and how long the
+## walk takes, the same hex again walks, another hex picks that one instead. null clears the pick.
+func pick(t) -> void:
+	for m in _path_marks:
+		m.queue_free()
+	_path_marks.clear()
+	picked = t
+	if t == null:
+		return
+	var path := path_to(t)
+	if path.is_empty():
+		picked = null
+		return
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = true          # drawn over trees and houses, so the whole path shows
+	mat.albedo_color = Color("#FCF7EE")
+	var dot := SphereMesh.new()
+	dot.radius = 0.2   # PLACEHOLDER look: no mockup shows the path yet
+	dot.height = 0.08
+	dot.material = mat
+	var prev := Hex.tile_position(party_tile.x, party_tile.y)
+	for step in path:
+		var at := Hex.tile_position(step.x, step.y)
+		for k in 3:   # three dots per step, from the last hex to this one
+			var mi := MeshInstance3D.new()
+			mi.mesh = dot
+			mi.position = Hex.to3(prev.lerp(at, (k + 1) / 3.0), 0.3)
+			mi.scale = Vector3.ONE * (1.6 if k == 2 and step == path[-1] else 1.0)
+			add_child(mi)
+			_path_marks.append(mi)
+		prev = at
 
 
 func ground_point(screen: Vector2) -> Vector2:
@@ -635,6 +743,15 @@ func tap(t: Vector2i) -> void:
 			try_place(t)
 	elif map.terrains.has(t):
 		if t == party_tile and t == Rules.START_TILE:
+			pick(null)
 			rest()
-		else:
+		elif t == party_tile:
+			pick(null)
+		elif picked == t:
 			walk_to(t)
+		else:
+			pick(t)
+			_refresh()
+	else:
+		pick(null)
+		_refresh()

@@ -56,6 +56,10 @@ func _draw() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if not disabled and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+	if UI.is_tap(self, event) and not disabled:
 		pressed.emit()
 		accept_event()
+
+
+func _has_point(point: Vector2) -> bool:
+	return UI.finger_rect(size).has_point(point)
