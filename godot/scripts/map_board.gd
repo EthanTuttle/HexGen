@@ -53,7 +53,6 @@ var _slot_mat: Material
 var _still_water: StandardMaterial3D
 var _glow: StandardMaterial3D
 var _mist_mat: ShaderMaterial
-var _hill_mat: ShaderMaterial
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
 
@@ -143,8 +142,6 @@ func _setup() -> void:
 	_slot_mesh = p.mesh()
 	_slot_mat = Piece.material()
 	_setup_materials()
-	_hill_mat.set_shader_parameter("terrain_map", _ground_tex)
-	_hill_mat.set_shader_parameter("blend_width", BLEND_WIDTH)
 
 
 ## Engine-side looks the art leaves to us: still water for the swamp's pools (PLACEHOLDER: a glossy
@@ -158,16 +155,12 @@ func _setup_materials() -> void:
 	_glow.emission_enabled = true
 	_glow.emission = Hex.colour("toadstool")
 	_glow.emission_energy_multiplier = 0.0
-	_hill_mat = ShaderMaterial.new()
-	_hill_mat.shader = load("res://shaders/hill_ground.gdshader")
-	_hill_mat.set_shader_parameter("grass_a", _linear(Hex.colour("hill_grass")))
-	_hill_mat.set_shader_parameter("grass_b", _linear(Hex.colour("highland_grass")))
-	for piece: String in _kit:
-		var mesh: Mesh = _kit[piece]
+	for mesh: Mesh in _kit.values():
 		for k in mesh.get_surface_count():
 			var name := Kit.material_name(mesh, k)
-			if name == "kit" and (piece.begins_with("hills_") or piece.begins_with("highlands_")):
-				mesh.surface_set_material(k, _hill_mat)   # hill grass fades into the neighbours (engine side)
+			if name in ["hill_grass", "highland_grass"]:
+				# tiles v10: the hills pieces' ground (they cover the base slab) fades like the base slabs' tops
+				mesh.surface_set_material(k, _ground)
 				continue
 			if name in ["bog_water", "bog_dark"]:
 				var m := _still_water.duplicate() as StandardMaterial3D
@@ -182,11 +175,6 @@ func _setup_materials() -> void:
 				m.albedo_color = Color.WHITE
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
-
-
-static func _linear(c: Color) -> Vector3:
-	var l := c.srgb_to_linear()
-	return Vector3(l.r, l.g, l.b)
 
 
 ## A bog tile's low mist: two flat layers of drifting haze (PLACEHOLDER heights and look; three layers at

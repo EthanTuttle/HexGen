@@ -1,4 +1,4 @@
-// The ground colour fade shared by the base slabs (ground.gdshader) and the hills' grass (hill_ground.gdshader).
+// The ground colour fade of the base slabs and the hills pieces' grass (ground.gdshader).
 // Needs: uniform sampler2D terrain_map, uniform float blend_width.
 const float R = 4.5;
 const float A = 3.8971143;  // R * sqrt(3) / 2

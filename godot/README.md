@@ -5,7 +5,7 @@ The Godot prototype, which grew out of the Godot half of the engine prototype ([
 The prototype has two parts:
 
 - **The playable loop** (`scenes/main.tscn`, the default scene): place map cards, walk the party, fight on the tile's combat board, and go back to the map with the hand refilled. Its screens are built from the mockups: exploration v8b, combat v14 and after combat v7.
-- **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on, plus every terrain and every tier 1 region variant (tiles v9; see Terrains and region variants).
+- **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on, plus every terrain and every tier 1 region variant (tiles v10; see Terrains and region variants).
 
 ## Playing the loop
 
@@ -170,14 +170,14 @@ For Ethan to decide:
 10. **The screens the loop needed but no mockup covers:** a defeat screen, resting at camp, and the After combat buttons when nobody levels up.
 11. **Who picks the cards to discard at rest** (presumably the player, but the screen for it isn't designed).
 
-## Terrains and region variants (tiles v9)
+## Terrains and region variants (tiles v10)
 
 All nine terrains and the nine tier 1 region variants from `art/export/tiles.glb`, built by the same rules as `render_preview.py`'s `build_map`. Side by side with the previews (preview left, Godot right):
 
 | Map | Preview | Godot | Side by side |
 | --- | --- | --- | --- |
-| Every terrain (`TERRAIN_MAP`) | `art/preview/terrains_v4.png` | `screens/terrains.png` | `screens/compare/terrains_preview_vs_godot.png` |
-| Every region finished (`VARIANT_MAP`) | `art/preview/variants_v2.png` | `screens/variants.png` | `screens/compare/variants_preview_vs_godot.png` |
+| Every terrain (`TERRAIN_MAP`) | `art/preview/terrains_v5.png` | `screens/terrains.png` | `screens/compare/terrains_preview_vs_godot.png` |
+| Every region finished (`VARIANT_MAP`) | `art/preview/variants_v3.png` | `screens/variants.png` | `screens/compare/variants_preview_vs_godot.png` |
 | The same at night (toadstools glow, mist) | none | `screens/variants_night.png` | |
 
 ```bash
@@ -211,21 +211,20 @@ What's ported, and from where:
 - **The water moves** and has the water shader's foam and depth, as on the old test map; the previews' water is flat.
 - **Swamp and bog pools shine** (the placeholder still-water material); the previews' are matte.
 - **Mist and the night glow** are only in Godot (the previews have neither).
-- **The sand is smooth-shaded** (see Engine changes after the review), so its swells look softer than the preview's flat-shaded ones.
-- **Hill grass fades into the neighbours** like every other ground; in the previews a hills tile is a hard hexagon of grass.
+- **Hill grass fades into the neighbours** like every other ground (tiles v10 gives it its own `hill_grass` / `highland_grass` material, which gets the base slabs' ground shader); in the previews a hills tile is a hard hexagon of grass.
 - Everything else (every piece, peak, mountain, pool, street, cactus, column, flower, boat and island) lands where the preview puts it, because the hashes and Python's random numbers are ported exactly.
 
 **What was hard:** nothing new in kind. `sand.py`'s props use Blender helpers that `piece.gd` didn't have yet (`log`, `box_rot`) and Python's `random.choice`, so `py_random.gd` gained `getrandbits` and `randbelow`. The delta's island spots use Python's `round()`, which rounds halves to even, so `water.gd` has `py_round`. A finished region rebuilds its tiles and every neighbour (edge pieces, sand fades, mountains and ground cover all depend on neighbours), and the delta redraws all the water.
 
-**Performance** (this Mac, 1600 × 1000 window, Forward+, whole map in view, `--perf`), tiles v8 against v9:
+**Performance** (this Mac, 1600 × 1000 window, Forward+, whole map in view, `--perf`), tiles v8 → v9 → v10:
 
-| Map | Objects v8 → v9 | Draw calls v8 → v9 | Triangles in view v8 → v9 | Build | Frame |
+| Map | Objects | Draw calls | Triangles in view | Build | Frame |
 | --- | --- | --- | --- | --- | --- |
 | Old test map | 662 | 255 | 55,000 | 0.7 s (includes loading the kit) | 120 fps (the display's cap) |
-| Every terrain | 1,355 → 631 | 413 → 249 | 165,000 → 116,000 | 0.47 s → 0.46 s | 120 fps |
-| Every region finished | 2,010 → 712 | 629 → 285 | 240,000 → 196,000 | 0.51 s → 0.52 s | 120 fps |
+| Every terrain | 1,355 → 631 → 713 | 413 → 249 → 266 | 165,000 → 116,000 → 116,000 | 0.47 s → 0.46 s → 0.49 s | 120 fps |
+| Every region finished | 2,010 → 712 → 793 | 629 → 285 → 301 | 240,000 → 196,000 → 188,000 | 0.51 s → 0.52 s → 0.54 s | 120 fps |
 
-v9 more than halves the objects and draw calls; the map with every variant now costs about what the old five-terrain test map did per tile. The frame rate sits at the display's cap either way, so the gain will show on phones, not here. In the loop, placing a tile rebuilds it and its neighbours in 5–90 ms, and a region of 5 changing to its variant takes 20–170 ms, inside the transition's sink, so it doesn't show as a hitch.
+v10's own hill grass material adds one surface to each hills piece (about 80 objects and 16 draw calls on these maps); the denser wasteland ruins cost little. v9 more than halved the objects and draw calls; the map with every variant now costs about what the old five-terrain test map did per tile. The frame rate sits at the display's cap either way, so the gain will show on phones, not here. In the loop, placing a tile rebuilds it and its neighbours in 5–90 ms, and a region of 5 changing to its variant takes 20–170 ms, inside the transition's sink, so it doesn't show as a hitch.
 
 **Review from the game camera** (round 2): `screens/review/` holds every part of both maps from the loop's 50° camera, nearer than the overview, at dawn, midday, dusk and night, with the loop's backdrop colours (`-- --map=terrains|variants --review`). `sheet_<map>_<west|centre|east|south>.png` puts the four times of day on one sheet: dawn top left, midday top right, dusk bottom left, night bottom right.
 
@@ -233,22 +232,21 @@ v9 more than halves the objects and draw calls; the map with every variant now c
 
 | What read badly | Change |
 | --- | --- |
-| Hills and highlands were a hard hexagon of grass against their neighbours: the mound covers the whole tile, so the base slab's fade never showed | `shaders/hill_ground.gdshader`: the pieces' grass faces (found by their vertex colour, `hill_grass` or `highland_grass`) take the same faded ground colour as the base slabs (`shaders/ground_blend.gdshaderinc`, shared with `ground.gdshader`) |
+| Hills and highlands were a hard hexagon of grass against their neighbours: the mound covers the whole tile, so the base slab's fade never showed | Round 2 matched the grass by vertex colour; since tiles v10 the `hill_grass` / `highland_grass` surfaces get the base slabs' ground shader by material name (`shaders/ground_blend.gdshaderinc`) |
 | v9's coarser sand grid showed stair-steps along the crests | Smooth normals from the height function (`sand.gd`); also fixed a missing ring of sand triangles round each desert tile's centre |
 | The bog mist hid the bog at dawn and dusk | Two layers at 0.15 and 0.35 m and 0.2 strength (was three, 0.3) |
 | Dawn and dusk turned the land olive and brown, and the desert orange | The placeholder sun colours softened (dawn #FFD2A8 → #FFE2C8, dusk #FFC0A8 → #FFD8CC); still placeholders |
+| (round 3) Deep forest and other dense shade went near-black at dawn and dusk | Ambient light is lifted when the sun is low: 0.7 at dawn and dusk, 0.55 mid-morning and afternoon, 0.5 at midday and night (placeholder, a 7th column in `time_of_day.gd`'s keys) |
 | Water outshone the land at night | The water shader dims its colour and reflections with the night (`night` uniform, set from the light like the toadstool glow) |
 
-**For the art (round 2, most important first; nothing changed in `art/`):**
+**Round 3 review (tiles v10):** v10 fixed every round 2 item it took on. Hills blend, the deep forest reads at all four times of day (with the ambient lift above), the dig pits read as holes with ladders, the wasteland reads as buried ruins, market town roofs no longer cut into each other, and the sails show. Round 2's list is answered in v10 except the mountains, which stay as Ethan chose.
 
-1. **Mark ground faces on the hills and highlands pieces.** The engine now fades their grass by matching its vertex colour, which breaks if the colour changes or another prop uses it. A vertex attribute (say alpha 0 on ground faces) or an own material (`hill_ground`, like `bog_water`) would make it exact. The same mark would let any later terrain whose pieces cover the base fade too.
-2. **Deep forest reads as a black mass at dawn, dusk and night** (`sheet_variants_west.png`). `pine_deep` (#2F5734) is close to black under low light, and the tight packing shades it further. A lighter `pine_deep`, or a few small clearings showing the ground, would keep it readable while staying darker than the forest.
-3. **Highlands and hills groups grow two or three big mountains side by side.** A 5-tile highlands region in the loop shows three large peaks crowded together (`variants_02_highlands.png`), which dominates the game camera. One mountain per group, or smaller edge mountains when a corner mountain is nearby, would read better.
-4. **The excavation's pits read as brown mounds and the tents as domes** (`sheet_variants_centre.png`), so it doesn't read as digging and sits close to the plain ruins. Pits sunk below the ground (a dark disc with a spoil heap beside it) would fix it.
-5. **The wasteland looks sparse and flat** from the game camera: its buried ruins and bones are small and few, so it reads as pale sand rather than "sandstone columns, broken statues and wall tops poking out of the sand". Bigger and more frequent ruins in `sand.py`'s wasteland props.
-6. **Market town houses touch, and some roofs cut into each other** (`sheet_variants_south.png`). A little more spacing.
-7. **Windmill sails are thin lines** from the game camera and almost vanish at dusk. Wider sails.
-8. **Optional:** smooth-shade the sand in the previews too (the engine does now), so previews and game match.
+**For the art (round 3, most important first; nothing changed in `art/`):**
+
+1. **Give the lanterns their own material** (`lantern`, like `toadstool`). The excavation's lanterns are the one light source on the map that doesn't glow at night, and since v9 they're vertex colours in the shared `kit` material, so the engine can't find them. The same would serve any later window or lamp.
+2. **The deep forest's clearing doesn't show** from the game camera: the pines round it are taller than it is wide, so it's hidden at every angle tried. A wider clearing, or shorter pines at its rim.
+3. **The excavation still leans on the ruins**: from the game camera it's mostly the ruins' walls with two pits. The tents and tables of finds are small and pale; bigger, warmer-coloured tents (or a scaffold over a pit) would make "a dig" read first.
+4. **Mountains:** your call with Ethan; a 5-tile highlands region still shows three peaks side by side (`variants_02_highlands.png`).
 
 ## Look tests
 
@@ -316,9 +314,9 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 | `screens/map_dawn.png`, `map_dusk.png`, `map_night.png` | The map at other times of day (placeholder colours) |
 | `screens/water_movie.mp4` | 8 s of moving water, framed like `art/preview/water_anim_v3.mp4` |
 | `screens/combat_movie.mp4` | 10 s of attacks on the combat board |
-| `screens/loop_movie.mp4` | One full loop, played by the demo (54 s): placing cards, walking to an encounter, the fight, the win and the cards it draws, then building again until the hand runs out (with the 45-card placeholder deck it no longer finishes a region; the variants movie shows that). Recorded with tiles v8 |
+| `screens/loop_movie.mp4` | One full loop, played by the demo (54 s): placing cards, walking to an encounter, the fight, the win and the cards it draws, then building again until the hand runs out (with the 45-card placeholder deck it no longer finishes a region; the variants movie shows that). Recorded with tiles v10 |
 | `screens/loop_01_…png` … `loop_15_…png` | Stills of the same loop, one per screen state |
-| `screens/terrains.png`, `variants.png`, `variants_night.png` | Every terrain, and every region finished, framed like `art/preview/terrains_v4.png` and `variants_v2.png` |
+| `screens/terrains.png`, `variants.png`, `variants_night.png` | Every terrain, and every region finished, framed like `art/preview/terrains_v5.png` and `variants_v3.png` |
 | `screens/variants_movie.mp4`, `variants_01_…png` … `variants_04_all.png` | Regions finishing in the loop and changing to their variants |
 | `screens/compare/*.png` | Each loop screen under its mockup artboard (see Screens next to the mockups) |
 

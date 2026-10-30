@@ -110,19 +110,22 @@ static func add_surface(p: Piece, terrains: Dictionary, t: Vector2i, col: Color)
 static func props(terrains: Dictionary, t: Vector2i) -> Array:
 	var c := Hex.tile_position(t.x, t.y)
 	var out := []
-	for ix in range(int(floor((c.x - Water.A) / PROP_CELL)), int(ceil((c.x + Water.A) / PROP_CELL))):
-		for iy in range(int(floor((c.y - Water.R) / PROP_CELL)), int(ceil((c.y + Water.R) / PROP_CELL))):
-			var x := (ix + GroundCover.hash01(ix, iy, 10)) * PROP_CELL
-			var y := (iy + GroundCover.hash01(ix, iy, 11)) * PROP_CELL
-			if GroundCover.tile_at(Vector2(x, y)) != t or GroundCover.hash01(ix, iy, 12) > 0.45:
+	var waste: bool = terrains[t] == "wasteland"
+	var cell := 1.8 if waste else PROP_CELL   # the wasteland's ruins and bones are denser
+	var keep := 0.6 if waste else 0.45
+	for ix in range(int(floor((c.x - Water.A) / cell)), int(ceil((c.x + Water.A) / cell))):
+		for iy in range(int(floor((c.y - Water.R) / cell)), int(ceil((c.y + Water.R) / cell))):
+			var x := (ix + GroundCover.hash01(ix, iy, 10)) * cell
+			var y := (iy + GroundCover.hash01(ix, iy, 11)) * cell
+			if GroundCover.tile_at(Vector2(x, y)) != t or GroundCover.hash01(ix, iy, 12) > keep:
 				continue
 			if fade(terrains, t, x, y) < 0.8:
 				continue
 			var k := GroundCover.hash01(ix, iy, 13)
 			var kind: String
-			if terrains[t] == "wasteland":
-				kind = ("cracked" if flats(x, y) < 0.05 and k < 0.45 else "column" if k < 0.3 else
-						"wall" if k < 0.45 else "statue" if k < 0.55 else "bones" if k < 0.75 else "deadtree")
+			if waste:
+				kind = ("cracked" if flats(x, y) < 0.05 and k < 0.3 else "column" if k < 0.35 else
+						"wall" if k < 0.55 else "statue" if k < 0.67 else "bones" if k < 0.82 else "deadtree")
 			else:
 				kind = "cactus" if k < 0.5 else "rock" if k < 0.8 else "bush"
 			out.append([kind, x - c.x, y - c.y, surface_z(terrains, t, x, y), Vector2i(ix, iy)])
@@ -174,18 +177,23 @@ static func _wasteland_prop(p: Piece, rng: PyRandom, kind: String, at: Vector3) 
 			# lifted with the sand under it, so the patch shows
 			p.prism(Water.circle(Vector2(at.x, at.y), rng.uniform(0.7, 1.1), rng, 0.25), at.z, at.z + 0.045,
 					Hex.colour("cracked"))
-		"column":  # a sandstone column, standing or broken off
-			p.cylinder(at, 0.2, [0.5, 0.9, 1.4][rng.randbelow(3)], stone, 8, -0.25)
-			if rng.random() < 0.5:
-				p.log(at + along * 0.7, 0.18, 0.9, stone, spin, 0.05)
-		"wall":  # the top of a buried wall
-			for k in 3:
-				var hgt := rng.uniform(0.3, 0.55)
-				p.box(at + along * ((k - 1) * 0.42), Vector3(0.4, 0.3, hgt), stone, -0.2, spin + rng.uniform(-0.05, 0.05))
-		"statue":  # a toppled statue: a body on its side and a head beside it
-			p.box_rot(at + Vector3(0, 0, 0.12), Vector3(0.9, 0.38, 0.32), stone,
+		"column":  # a sandstone column with its capital, standing or broken off, often a fallen drum
+			var h: float = [0.9, 1.5, 2.1][rng.randbelow(3)]
+			p.cylinder(at, 0.28, h, stone, 8, -0.3)
+			if h > 1.0:
+				p.box(at, Vector3(0.7, 0.7, 0.18), stone, h - 0.3, spin)
+			if rng.random() < 0.6:
+				p.log(at + along * 0.95, 0.26, 1.2, stone, spin, 0.1)
+		"wall":  # the top of a buried wall, stepped where it has crumbled
+			var top := rng.uniform(0.6, 1.0)
+			for k in 5:
+				top = maxf(0.25, top + rng.uniform(-0.25, 0.2))
+				p.box(at + along * ((k - 2) * 0.5), Vector3(0.48, 0.38, top), stone, -0.25, spin + rng.uniform(-0.05, 0.05))
+		"statue":  # a toppled statue: a body on its side, a plinth and a head beside it
+			p.box(at - along * 0.9, Vector3(0.6, 0.6, 0.45), stone, -0.15, spin)
+			p.box_rot(at + Vector3(0, 0, 0.18), Vector3(1.3, 0.52, 0.45), stone,
 					Basis(Vector3(0, 0, 1), spin) * Basis(Vector3(1, 0, 0), 0.25))
-			p.blob(at + along * 0.75, 0.2, stone, 0.05)
+			p.blob(at + along * 1.0, 0.3, stone, 0.12)
 		"bones":  # a spine with ribs and a skull
 			p.log(at, 0.035, 1.0, bone, spin, 0.04)
 			var side := Vector3(-along.y, along.x, 0)

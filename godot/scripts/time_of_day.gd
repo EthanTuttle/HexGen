@@ -16,17 +16,18 @@ var environment: Environment
 var keys: Array = KEYS        # the game swaps in the mockups' backdrop colours
 var sun: DirectionalLight3D
 
-# hour, backdrop (sRGB), sun colour, sun energy, sun elevation (deg), sun travel azimuth (deg)
+# hour, backdrop (sRGB), sun colour, sun energy, sun elevation (deg), sun travel azimuth (deg), ambient energy
+# (ambient is lifted when the sun is low, so the shade side of dense pieces like the deep forest isn't black)
 const KEYS := [
-	[0.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],    # night: moonlight
-	[4.5, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],
-	[6.5, "#F6D5C0", "#FFE2C8", 1.1, 24.0, -30.0],   # dawn: soft peach (sun softened: #FFD2A8 turned the land olive)
-	[9.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 0.0],
-	[12.0, "#CFE4F2", "#FFFFFF", 1.18, 37.7, 28.4],   # midday: the preview backdrop and sun
-	[15.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 60.0],
-	[18.0, "#F1C6CF", "#FFD8CC", 1.1, 24.0, 90.0],   # dusk: rose (sun softened: #FFC0A8 turned the land brown)
-	[20.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],
-	[24.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],
+	[0.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],    # night: moonlight
+	[4.5, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],
+	[6.5, "#F6D5C0", "#FFE2C8", 1.1, 24.0, -30.0, 0.7],   # dawn: soft peach (sun softened: #FFD2A8 turned the land olive)
+	[9.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 0.0, 0.55],
+	[12.0, "#CFE4F2", "#FFFFFF", 1.18, 37.7, 28.4, 0.5],   # midday: the preview backdrop and sun
+	[15.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 60.0, 0.55],
+	[18.0, "#F1C6CF", "#FFD8CC", 1.1, 24.0, 90.0, 0.7],   # dusk: rose (sun softened: #FFC0A8 turned the land brown)
+	[20.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],
+	[24.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],
 ]
 
 
@@ -47,7 +48,7 @@ func apply() -> void:
 	environment.background_color = backdrop
 	# The backdrop also lights the scene, softer (Blender world: strength 0.5 off camera).
 	environment.ambient_light_color = backdrop
-	environment.ambient_light_energy = 0.5
+	environment.ambient_light_energy = lerpf(a[6], b[6], t)
 	sun.light_color = Color.html(a[2]).lerp(Color.html(b[2]), t)
 	sun.light_energy = lerpf(a[3], b[3], t)
 	var el := deg_to_rad(lerpf(a[4], b[4], t))
