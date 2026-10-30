@@ -56,7 +56,7 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 - Development machine: a Windows PC.
 - iPhone builds: made on a **used Mac**, connected to the iPhone by cable.
 - Mobile playtesting: on an iPhone, with an iPhone build **weekly** once development is underway. Day-to-day UI and touch checks use the editor's phone-size preview.
-- Engine: chosen after a prototype (below).
+- Engine: **Godot** (chosen Oct 29, 2026, after the prototype below).
 
 **Engine prototype**
 
@@ -75,6 +75,7 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
   - Minis on the board, including the attack hop and recoil
   - The "Game pieces" UI and the card hand
 - Judge on PC first. Put both builds on the iPhone only if the result is close, as a tie-break.
+- **Result (Oct 29, 2026): Godot.** Look tests 1–3 were built in both engines on PC (the UI test wasn't built in either). Both matched the Blender references closely; Godot was chosen because it built much faster and with more attention to detail: it worked through the soft shadows thoroughly and blended the ground colour cleanly where forest and other tiles meet, including at three-terrain corners, where Unity left faint hex lines. All future builds are in Godot. **Next (Oct 29, 2026):** the Godot prototype grows into a simple playable **exploration and combat loop** (place map cards, walk the party, fight on the tile's combat board, back to the map), which brings walking the hero into scope. It stays on its own branch for now. The Godot prototype is on branch `claude/godot-prototype-0a3fde` (`godot/`, with its README); the Unity one stays unmerged on `claude/unity-prototype-f1e02a` as a proof of concept. Not yet checked: iPhone performance (the water shader is likely too heavy for phones as it stands).
 
 **Risk flag: judging on look alone.** Most of the look comes from the art itself (models, textures, lighting), and both engines can reach a stylised look. Using the same hand-made tiles in both keeps the comparison fair. Where the engines differ most is shaders and lighting, so the edge-blending and backdrop tests carry the most weight.
 
@@ -97,7 +98,8 @@ Engine comparison as of Oct 2026 (checked against public info; re-check pricing 
 - [ ] Placement: simultaneous placement in multiplayer
 - [ ] **New:** shared party inventory in multiplayer (see [Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold). Do guests use the host's shared inventory, and what does a leaving guest take: only their hero's equipped gear, or also items they picked up?
 - [x] ~~Night building in multiplayer~~ (settled Oct 23, 2026: each player builds within their own controllable party's sight range; see [Map & exploration](02 Map & exploration.md) → Day and night)
-- [ ] **New:** engine choice. Settled (Oct 24): Godot vs Unity prototype of card placement plus a small fight, judged on look, on PC first, with an iPhone tie-break if close; Ethan makes the tiles and a blockout mini; all four look tests. Oct 29: the prototypes rebuild the exploration and combat mockup screens; art made in Blender; test tiles are plains, forest, farmland, river/lake and village
+- [x] ~~Engine choice~~ (settled Oct 29, 2026: **Godot**, after building look tests 1–3 in Godot and Unity; see Engine prototype → Result)
+- [ ] **New:** Godot on iPhone: check the prototype's frame rate on the iPhone 15 Pro (the water shader may need a lighter phone version)
 - [x] ~~iOS build route from Windows~~ (settled Oct 24: a used Mac)
 - [x] ~~How often to make iPhone builds~~ (settled Oct 24: weekly once development is underway)
 - [ ] **New:** Android: test it too later, or ship iOS first?
