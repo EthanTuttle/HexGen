@@ -6,7 +6,7 @@
 // - darker water away from the shore
 shader_type spatial;
 
-uniform vec3 shallow = vec3(0.36, 0.70, 0.86);  // linear colours, as in the Blender nodes
+uniform vec3 shallow = vec3(0.27, 0.56, 0.76);  // linear; Blender: (0.36, 0.70, 0.86), which read icy on narrow rivers
 uniform vec3 deep = vec3(0.13, 0.42, 0.66);
 uniform vec3 foam_colour = vec3(0.94, 0.97, 1.0);
 uniform float period = 2.0;
@@ -91,9 +91,9 @@ void fragment() {
 	vec3 col = mix(shallow, deep, smoothstep(0.2, 2.2, depth));
 
 	// Foam: a rim at the bank that breathes and frays with the ripples.
-	float edge = 0.05 + sin(TIME * 1.6) * 0.03 + wave * 0.12;
+	float edge = 0.05 + sin(TIME * 1.6) * 0.03 + wave * 0.06;  // fray 0.06 (Blender 0.12): a thinner rim
 	float foam = depth < edge ? 1.0 : 0.0;
-	col = mix(col, foam_colour, foam * 0.75);
+	col = mix(col, foam_colour, foam * 0.55);  // 0.55 (Blender 0.75): the rim read as ice at game distance
 
 	// Sparkle: 3D Voronoi cells (scale 2.6) drifting with the flow, sliced at the water's height.
 	vec3 drift = vec3(pos - flow * TIME, world_pos.y) * 2.6;

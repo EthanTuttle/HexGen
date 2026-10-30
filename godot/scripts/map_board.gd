@@ -51,7 +51,8 @@ var _slots_node: Node3D
 var _slot_mesh: Mesh
 var _slot_mat: Material
 var _still_water: StandardMaterial3D
-var _glow: StandardMaterial3D
+var _glow: StandardMaterial3D          # toadstools
+var _lamp: StandardMaterial3D          # lanterns (tiles v12)
 var _mist_mat: ShaderMaterial
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
@@ -145,7 +146,7 @@ func _setup() -> void:
 
 
 ## Engine-side looks the art leaves to us: still water for the swamp's pools (PLACEHOLDER: a glossy
-## material, not a shader), toadstools that glow at night, and the bog's mist material.
+## material, not a shader), toadstools and lanterns that glow at night, and the bog's mist material.
 func _setup_materials() -> void:
 	_still_water = StandardMaterial3D.new()
 	_still_water.roughness = 0.12
@@ -155,6 +156,9 @@ func _setup_materials() -> void:
 	_glow.emission_enabled = true
 	_glow.emission = Hex.colour("toadstool")
 	_glow.emission_energy_multiplier = 0.0
+	_lamp = _glow.duplicate() as StandardMaterial3D
+	_lamp.albedo_color = Hex.colour("lantern")
+	_lamp.emission = Hex.colour("lantern")
 	for mesh: Mesh in _kit.values():
 		for k in mesh.get_surface_count():
 			var name := Kit.material_name(mesh, k)
@@ -168,6 +172,8 @@ func _setup_materials() -> void:
 				mesh.surface_set_material(k, m)
 			elif name == "toadstool":
 				mesh.surface_set_material(k, _glow)
+			elif name == "lantern":
+				mesh.surface_set_material(k, _lamp)
 			elif name == "kit":
 				# tiles v9: one shared material, the colours in the vertex colours (glTF COLOR_0, linear)
 				var m := mesh.surface_get_material(k) as BaseMaterial3D
@@ -395,6 +401,7 @@ func _process(delta: float) -> void:
 		# Toadstools glow as the light fades (PLACEHOLDER strength): 0 at midday, full at night.
 		var night := clampf((1.18 - time_of_day.sun.light_energy) / (1.18 - 0.35), 0.0, 1.0)
 		_glow.emission_energy_multiplier = 2.5 * night
+		_lamp.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: lit a little by day, bright at night
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 	var s := _time
 	for k in boats.size():

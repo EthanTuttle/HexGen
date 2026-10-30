@@ -26,14 +26,15 @@ const PALETTE := {
 	"stone_tan": "#B8A88E", "stone_blue": "#8E959B", "stone_brown": "#9C8B78", "flower": "#F2D46B",
 	"hill_grass": "#A3C47A", "cliff": "#A89F8E", "sand": "#F3DFAC", "cracked": "#D8BB7E", "scrub": "#9C9A5C",
 	"cactus": "#6E9A5A", "bog_water": "#5F7F6C", "mud": "#7A7152", "hummock": "#6F8E5C", "deadwood": "#7C6E5E",
-	"deep_forest": "#466F47", "pine_deep": "#2F5734", "hide": "#8A6A4E", "hide_light": "#C9B79C",
+	"deep_forest": "#466F47", "pine_deep": "#3A6A41", "hide": "#8A6A4E", "hide_light": "#C9B79C",
 	"flower_pink": "#E9A3B8", "flower_white": "#F4F1E8", "flower_blue": "#9DB4E0", "highland_grass": "#9FB07E",
 	"heather": "#9C6FA0", "hay": "#E3C45E", "stubble": "#D9C27A", "sail": "#EFE6D2", "timber": "#5E4532",
 	"awning_a": "#C8553D", "awning_b": "#F2E8D5", "crate": "#A7825A", "fruit": "#D9822B", "sandbar": "#E3D3A8",
 	"bog": "#6B8462", "bog_dark": "#4A6457", "toadstool": "#F0C24E", "poison_purple": "#8E4FA6",
 	"poison_yellow": "#E6D23F", "spiky": "#4F6B3A", "wasteland": "#E2CFA2", "sandstone": "#D6B484",
-	"bone": "#F1EBDD", "pit": "#6B5038", "canvas": "#E9DFC8", "lantern": "#F6D36B", "slot": "#F6EFE4",
-	"backdrop": "#CFE4F2", "cell_grass_a": "#8DBB7A", "cell_grass_b": "#96C283", "cell_grass_c": "#88B575",
+	"bone": "#F1EBDD", "pit": "#6B5038", "pit_dark": "#3A2B20", "canvas": "#E2B98A", "lantern": "#F6D36B",
+	"rope": "#C9B58A", "slot": "#F6EFE4", "backdrop": "#CFE4F2", "cell_grass_a": "#8DBB7A",
+	"cell_grass_b": "#96C283", "cell_grass_c": "#88B575",
 }
 
 
