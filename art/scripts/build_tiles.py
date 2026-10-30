@@ -18,6 +18,7 @@ import bmesh  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
+import water as wt  # noqa: E402
 
 TAN30 = math.tan(math.radians(30))
 X0 = hk.INNER * hk.TILE_APOTHEM
@@ -36,7 +37,7 @@ def centre_outline(scale=1.0):
 
 
 # Ground colour under each terrain's props; water sits on grass so its banks show.
-GROUND = {"river": "plains", "village": "cobble", "farmland": "plains"}
+GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "plains"}
 
 
 def base(terrain, col):
@@ -269,10 +270,328 @@ def village(p, rng, kind):
     edge_border(p, rng)
 
 
+# --- Hills -------------------------------------------------------------------
+# A hills tile is a heightfield over the whole hex, cut into the usual centre piece and six edge wedges.
+# Heights depend only on the depth d along a wedge's edge normal and on s, how far across the wedge's
+# half-width a point is, so the pieces meet without gaps however the engine turns them:
+#   - the centre is a mound, H0 high where it meets the wedges;
+#   - an "other" wedge slopes from H0 down to the ground at the tile edge, so corners and edges facing other
+#     terrain sit at ground level;
+#   - a "same" wedge adds a ridge that reaches HE at the middle of the edge, where it meets the neighbour's.
+# Styles: "raised" keeps smooth slopes; "terraced" snaps the same heights into ledges with cliff faces.
+H0, HPEAK, HE = 1.0, 1.6, 0.7
+TERRACE = 0.4
+HILL_STYLES = {"raised": "hills", "terraced": "hills_terraced"}  # style -> piece name prefix
+GRID = {"raised": (24, 24), "terraced": (60, 64)}  # samples across a sector of the whole tile: depth, side to side
+# (terraces need the fine grid so their cliff edges don't zigzag)
+SLOPE0 = -2 * (HPEAK - H0) / X0 * (X1 - X0) / H0  # the wedges leave the mound at its own slope
+
+
+def smooth(a, b, x):
+    t = min(1.0, max(0.0, (x - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+
+
+def hill_height(d, s, kind, style):
+    """Ground height at depth d and side share s (0 on the wedge's middle line, 1 on its sides)."""
+    if d <= X0:
+        h = H0 + (HPEAK - H0) * (1 - (d / X0) ** 2)
+    else:
+        t = (d - X0) / (X1 - X0)
+        t += 0.6 * s * s * t * (1 - t)  # drop sooner toward the corners, so the hill reads round, not hexagonal
+        h = H0 * (2 * t ** 3 - 3 * t ** 2 + 1 + SLOPE0 * (t ** 3 - 2 * t ** 2 + t))
+        if kind == "same":
+            h += HE * smooth(0, 1, t) * (1 - smooth(0.3, 0.95, s))
+    if style == "terraced":
+        k, f = divmod(h, TERRACE)
+        h = TERRACE * (k + smooth(0.7, 1.0, f / TERRACE))
+    return h
+
+
+def height_at(at, kind, style):
+    """hill_height for a point in edge 0's wedge (or the centre)."""
+    d = max(at.dot(hk.edge_normal(i)) for i in range(6))
+    if d <= X0 or kind == "centre":
+        return hill_height(d, 0, "centre", style)
+    return hill_height(at.x, abs(at.y) / (at.x * TAN30), kind, style)
+
+
+def hill_surface(p, sectors, d0, d1, kind, style):
+    """Triangulated ground over the given sectors between depths d0 and d1, faces painted grass or cliff."""
+    bm = p.bm
+    ND, NV = GRID[style]
+    nd = max(2, round(ND * (d1 - d0) / X1))
+    grass, cliff = p._slot("hill_grass"), p._slot("cliff")
+    middle = bm.verts.new((0, 0, hill_height(0, 0, kind, style) + 0.01)) if d0 == 0 else None
+    for i in sectors:
+        n = hk.edge_normal(i)
+        t = Vector((-n.y, n.x, 0))
+        grid = []
+        for a in range(nd + 1):
+            d = d0 + (d1 - d0) * a / nd
+            if d == 0:
+                grid.append([middle] * (NV + 1))
+                continue
+            row = []
+            for b in range(NV + 1):
+                v = -1 + 2 * b / NV
+                q = n * d + t * (v * d * TAN30)
+                q.z = hill_height(d, abs(v), kind, style) + 0.01
+                row.append(bm.verts.new(q))
+            grid.append(row)
+        for a in range(nd):
+            for b in range(NV):
+                for tri in ((grid[a][b], grid[a + 1][b], grid[a + 1][b + 1]),
+                            (grid[a][b], grid[a + 1][b + 1], grid[a][b + 1])):
+                    if len(set(tri)) < 3:
+                        continue
+                    f = bm.faces.new(tri)
+                    f.normal_update()
+                    f.material_index = cliff if f.normal.z < (0.8 if style == "terraced" else 0.6) else grass
+                    p.surface.add(f)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
+
+
+def crag(p, rng, style):
+    """The rocky peak on top of the mound, built from z = 0 at the mound's top so the engine can scale it."""
+    top = hill_height(0, 0, "centre", style)
+    for x, y, r, h in ((0, 0, 0.75, 1.4), (0.6, -0.35, 0.45, 0.85), (-0.5, -0.4, 0.4, 0.65)):
+        at = Vector((x, y, 0))
+        z = hill_height(max(at.dot(hk.edge_normal(i)) for i in range(6)), 0, "centre", style) - top
+        p.cone(at, r, h, rng.choice(["rock", "rock_dark", "rock_light"]), segments=5, z=z - 0.1,
+               spin=rng.uniform(0, 1))
+
+
+def hills(p, rng, kind, style="raised"):
+    if kind == "peak":
+        crag(p, rng, style)
+        return
+    if kind == "centre":
+        hill_surface(p, range(6), 0, X0, kind, style)
+        pts = hk.scatter(rng, lambda q: hk.in_centre(q, 0.2) and q.length > 1.1, 3, 0.6, hk.CENTRE_BOUNDS)
+    else:
+        hill_surface(p, [0], X0, X1, kind, style)
+        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 4, 0.8, hk.WEDGE_BOUNDS)
+    for at in pts:
+        at.z = height_at(at, kind, style)
+        if kind != "centre" and rng.random() < 0.25:
+            tree(p, rng, at)
+        else:
+            p.blob(at, rng.uniform(0.18, 0.32), rng.choice(["rock", "rock_dark"]), squash=0.7)
+
+
+# --- Desert ------------------------------------------------------------------
+
+def dune(p, path, heights, widths):
+    """A sand ridge along path: heights[k] at the crest, widths[k] = (windward, lee) to either side."""
+    bm, sand = p.bm, p._slot("sand")
+    rows = []
+    for k, c in enumerate(path):
+        ahead, back = path[min(k + 1, len(path) - 1)], path[max(k - 1, 0)]
+        tdir = (ahead - back).normalized()
+        n = Vector((-tdir.y, tdir.x, 0))
+        wind, lee = widths[k]
+        rows.append([bm.verts.new(c - n * lee + Vector((0, 0, 0.005))),
+                     bm.verts.new(c + Vector((0, 0, heights[k]))),
+                     bm.verts.new(c + n * wind + Vector((0, 0, 0.005)))])
+    for a, b in zip(rows, rows[1:]):
+        for quad in ((a[0], b[0], b[1], a[1]), (a[1], b[1], b[2], a[2])):
+            f = bm.faces.new(quad)
+            f.material_index = sand
+            p.surface.add(f)
+
+
+def dune_arc(p, rng, a, b, bend, top, n=12):
+    """A free-standing crescent dune from a to b, tapering at both ends."""
+    side = Vector((-(b - a).y, (b - a).x, 0)).normalized()
+    path, heights, widths = [], [], []
+    for k in range(n + 1):
+        u = k / n
+        path.append(a.lerp(b, u) + side * (bend * math.sin(math.pi * u)))
+        lift = math.sin(math.pi * u) ** 0.7
+        heights.append(top * lift)
+        widths.append((0.25 + 0.65 * lift, 0.15 + 0.3 * lift))
+    dune(p, path, heights, widths)
+
+
+def cactus(p, rng, at):
+    h = rng.uniform(0.8, 1.25)
+    p.cylinder(at, 0.12, h, "cactus", segments=6)
+    p.blob(at, 0.12, "cactus", z=h, squash=0.8)
+    for side in (-1, 1):
+        if rng.random() < 0.7:
+            z0 = rng.uniform(0.3, 0.55) * h
+            p.box(at + Vector((side * 0.17, 0, 0)), (0.2, 0.12, 0.11), "cactus", z=z0)
+            p.cylinder(at + Vector((side * 0.27, 0, 0)), 0.075, rng.uniform(0.3, 0.45), "cactus", z=z0)
+
+
+def desert(p, rng, kind):
+    """Dunes that run on across joined desert tiles; scrub and cracked earth on edges facing other terrain."""
+    if kind == "centre":
+        dune_arc(p, rng, Vector((-1.5, -0.2, 0)), Vector((0.6, 1.2, 0)), 0.35, 0.5)
+        dune_arc(p, rng, Vector((-0.3, -1.4, 0)), Vector((1.4, -0.4, 0)), -0.25, 0.35)
+        cactus(p, rng, Vector((0.9, 0.3, 0)))
+        p.blob(Vector((-0.7, -1.0, 0)), 0.22, "rock_light", squash=0.6)
+        return
+    if kind == "same":
+        # Straight into the edge's middle, square on and evenly sided there, so it carries on next door.
+        path, heights, widths = [], [], []
+        for k in range(15):
+            u = k / 14
+            path.append(Vector((X0 + 0.1 + (X1 - X0 - 0.1) * u, 0.45 * math.sin(math.pi * u) ** 2, 0)))
+            lift = smooth(0, 0.45, u)
+            heights.append(0.42 * lift)
+            even = smooth(0.6, 1.0, u)
+            widths.append(((0.25 + 0.6 * lift) * (1 - even) + 0.6 * even,
+                           (0.15 + 0.3 * lift) * (1 - even) + 0.6 * even))
+        dune(p, path, heights, widths)
+        if rng.random() < 0.5:
+            cactus(p, rng, Vector((X0 + 1.0, -1.1, 0)))
+        return
+    # other: dry scrub and cracked earth, fading out toward the neighbour
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 0.4 * (X1 - X0), margin=0.6),
+                         2, 1.4, hk.WEDGE_BOUNDS):  # patches of baked, cracked hardpan
+        p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), rng.uniform(0.4, 0.6), rng, 0.25)],
+               0.012, "cracked")
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.25), 7, 0.5, hk.WEDGE_BOUNDS):
+        if rng.random() < 0.75:
+            p.blob(at, rng.uniform(0.14, 0.24), "scrub", squash=0.7)
+        else:
+            p.blob(at, rng.uniform(0.1, 0.16), "rock_light", squash=0.6)
+
+
+# --- Swamp -------------------------------------------------------------------
+
+def pool_plates(p, outline, rim):
+    """Murky water with a mud rim; outline and rim are anticlockwise point lists."""
+    p.flat(rim, 0.012, "mud")
+    p.flat(outline, 0.022, "bog_water")
+
+
+def round_pool(p, rng, centre, radius):
+    pts = wt.circle((centre.x, centre.y), radius, rng, 0.15)
+    p.flat([centre + (Vector((x, y, 0)) - centre) * ((radius + 0.18) / radius) for x, y in pts], 0.012, "mud")
+    p.flat([Vector((x, y, 0)) for x, y in pts], 0.022, "bog_water")
+    return pts
+
+
+def edge_pool(p, rng, half=1.0, depth=1.3):
+    """Half a pool on the edge's middle; the joined neighbour draws the other half."""
+    wobble = [0] + [rng.uniform(-0.1, 0.1) for _ in range(11)] + [0]
+
+    def outline(grow):
+        pts = [Vector((X1 - (depth + grow) * math.cos(th) * (1 + w), (half + grow) * math.sin(th) * (1 + w), 0))
+               for th, w in ((-math.pi / 2 + math.pi * k / 12, wobble[k]) for k in range(13))]
+        return pts[::-1]
+    p.flat(outline(0.18), 0.012, "mud")
+    p.flat(outline(0.0), 0.022, "bog_water")
+    return [(v.x, v.y) for v in outline(0.0)]
+
+
+def swamp_dressing(p, rng, pools, inside, bounds, hummocks, trees):
+    """Reeds and lilies round the pools, grassy hummocks and dead trees on the mud between them."""
+    for pts in pools:
+        for k in rng.sample(range(len(pts)), min(len(pts), 4)):
+            x, y = pts[k]
+            for j in range(3):
+                p.cone(Vector((x + rng.uniform(-0.12, 0.12), y + rng.uniform(-0.12, 0.12), 0)), 0.035,
+                       rng.uniform(0.45, 0.7), "reed", segments=4)
+        cx, cy = sum(x for x, _ in pts) / len(pts), sum(y for _, y in pts) / len(pts)
+        for _ in range(2):
+            at = Vector((cx, cy, 0)).lerp(Vector((*pts[rng.randrange(len(pts))], 0)), rng.uniform(0.3, 0.7))
+            p.flat([at + Vector((c.x, c.y, 0)) for c in hk.hex_corners(0.14, pointy=True)][::-1], 0.03, "lily")
+    clear = lambda q: inside(q) and not any(wt.point_in(o, (q.x, q.y)) for o in pools)  # noqa: E731
+    for at in hk.scatter(rng, clear, hummocks + trees, 0.7, bounds):
+        if trees > 0:
+            trees -= 1
+            h = rng.uniform(1.3, 1.8)
+            p.cone(at, 0.13, h, "deadwood", segments=5)
+            for z in rng.sample([0.55, 0.75, 0.95], 2):
+                ang = rng.uniform(0, 2 * math.pi)
+                p.log(at + Vector((math.cos(ang), math.sin(ang), 0)) * 0.2, 0.035, 0.4, "deadwood", spin=ang,
+                      z=z * h * 0.8, segments=4)
+        else:
+            p.blob(at, rng.uniform(0.3, 0.5), "hummock", squash=0.35)
+            for _ in range(3):
+                p.cone(at + Vector((rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), 0)), 0.1, 0.3, "grass_ink",
+                       segments=4, z=0.08, spin=rng.uniform(0, 1))
+
+
+def swamp(p, rng, kind):
+    """Murky pools between grassy hummocks; a pool on the edge's middle runs on into joined swamp."""
+    if kind == "centre":
+        pools = [round_pool(p, rng, Vector((-0.45, 0.35, 0)), 0.75), round_pool(p, rng, Vector((0.8, -0.7, 0)), 0.4)]
+        swamp_dressing(p, rng, pools, lambda q: hk.in_centre(q, 0.2), hk.CENTRE_BOUNDS, 3, 1)
+        return
+    if kind == "same":
+        pools = [edge_pool(p, rng)]
+        swamp_dressing(p, rng, pools, lambda q: hk.in_edge_wedge(q, margin=0.3), hk.WEDGE_BOUNDS, 2, 0)
+        return
+    pools = [round_pool(p, rng, Vector((X0 + 0.9, rng.uniform(-0.4, 0.4), 0)), 0.38)] if rng.random() < 0.7 else []
+    swamp_dressing(p, rng, pools, lambda q: hk.in_edge_wedge(q, margin=0.35), hk.WEDGE_BOUNDS, 2, 1)
+
+
+# --- Ruins -------------------------------------------------------------------
+
+RUIN_STONES = ["ruins", "rock_light", "stone_tan"]
+
+
+def broken_wall(p, rng, a, b):
+    """A wall of stone blocks with a ragged top and gaps where it has fallen."""
+    d = b - a
+    length, ang = d.length, math.atan2(d.y, d.x)
+    t, top = 0.0, rng.uniform(0.3, 0.8)
+    while t < length - 1e-3:
+        w = min(rng.uniform(0.28, 0.45), length - t)
+        top = max(0.0, min(1.1, top + rng.uniform(-0.35, 0.3)))
+        z = 0.0
+        while z < top:
+            h = rng.uniform(0.18, 0.26)
+            p.box(a + d * ((t + w / 2) / length), (w - 0.03, 0.26, h - 0.01), rng.choice(RUIN_STONES), z=z,
+                  spin=ang + rng.uniform(-0.05, 0.05))
+            z += h
+        if top < 0.15 and rng.random() < 0.6:  # a fallen block beside the gap
+            off = Vector((-math.sin(ang), math.cos(ang), 0)) * rng.choice((-0.35, 0.35))
+            p.box(a + d * ((t + w / 2) / length) + off, (0.3, 0.22, 0.18), rng.choice(RUIN_STONES),
+                  spin=rng.uniform(0, 1))
+        t += w
+
+
+def paving(p, rng, centres, missing=0.25):
+    for at in centres:
+        if rng.random() >= missing:
+            p.box(at, (0.46, 0.46, 0.04), rng.choice(["rock_light", "ruins"]), spin=rng.uniform(-0.04, 0.04))
+
+
+def ruins(p, rng, kind):
+    """Crumbled stone on grass: a paved square with column stumps; streets lined with broken walls run on
+    into joined ruins; rubble where ruins meet other terrain."""
+    if kind == "centre":
+        paving(p, rng, [Vector((x * 0.5, y * 0.5, 0)) for x in range(-3, 4) for y in range(-3, 4)
+                        if math.hypot(x, y) * 0.5 < 1.3])
+        for k in range(4):
+            ang = math.radians(45 + 90 * k)
+            at = Vector((math.cos(ang), math.sin(ang), 0)) * 1.3
+            p.box(at, (0.42, 0.42, 0.12), "ruins")
+            p.cylinder(at, 0.16, rng.choice([0.35, 0.6, 1.0, 1.5]), "rock_light", segments=8, z=0.12)
+        p.log(Vector((-0.2, -1.55, 0)), 0.15, 1.1, "rock_light", spin=0.3)
+        return
+    if kind == "same":
+        paving(p, rng, [Vector((X1 - 0.25 - 0.5 * k, y, 0)) for k in range(5) for y in (-0.25, 0.25)])
+        for y in (-1.0, 1.0):
+            if rng.random() < 0.8:
+                broken_wall(p, rng, Vector((X0 + 0.35, y, 0)), Vector((X1 - 0.05, y, 0)))
+        return
+    broken_wall(p, rng, Vector((X0 + 1.1, -0.9, 0)), Vector((X0 + 1.1, 0.5, 0)))
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 3, 0.6, hk.WEDGE_BOUNDS):
+        p.box(at, (0.28, 0.22, 0.18), rng.choice(RUIN_STONES), spin=rng.uniform(0, 1))
+
+
 # Terrains with a corner piece, placed where both neighbours at a corner share the terrain.
 CORNERS = {"river"}
 
-BUILDERS = {"plains": plains, "forest": forest, "farmland": farmland, "river": river, "village": village}
+BUILDERS = {"plains": plains, "forest": forest, "farmland": farmland, "river": river, "village": village,
+            "hills": hills, "swamp": swamp, "desert": desert, "ruins": ruins}
 
 
 def build():
@@ -281,11 +600,14 @@ def build():
         col = hk.new_collection(terrain)
         base(terrain, col)
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
-        for kind in kinds:
-            name = f"{terrain}_{kind}" if kind in ("centre", "corner") else f"{terrain}_edge_{kind}"
-            p = hk.Piece(name)
-            BUILDERS[terrain](p, hk.seeded(name), kind)
-            p.finish(col)
+        # Hills come in two styles to compare, with a peak piece the engine scales by joined neighbours.
+        styles = HILL_STYLES.items() if terrain == "hills" else [(None, terrain)]
+        for style, prefix in styles:
+            for kind in kinds + (("peak",) if style else ()):
+                name = f"{prefix}_{kind}" if kind in ("centre", "corner", "peak") else f"{prefix}_edge_{kind}"
+                p = hk.Piece(name)
+                BUILDERS[terrain](p, hk.seeded(name), kind, **({"style": style} if style else {}))
+                p.finish(col)
     col = hk.new_collection("borders")
     for name, side in (("border_join_l", 1), ("border_join_r", -1)):
         p = hk.Piece(name)

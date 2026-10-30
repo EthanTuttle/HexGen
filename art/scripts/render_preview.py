@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
+import build_tiles as bt  # noqa: E402
 import hexkit as hk  # noqa: E402
 import ground_cover as gc  # noqa: E402
 import water as wt  # noqa: E402
@@ -30,6 +31,15 @@ MAP = {
     (0, -1): "river",
 }
 
+# Every terrain, keeping the banned pairs apart (design/02 Map & exploration.md -> Placement): a hills range,
+# desert by the river, a swamp beside the forest, ruins between hills and plains.
+TERRAIN_MAP = {
+    (-1, -2): "hills", (0, -2): "hills", (1, -2): "hills", (2, -2): "plains", (3, -2): "desert", (4, -2): "desert",
+    (-1, -1): "forest", (0, -1): "hills", (1, -1): "ruins", (2, -1): "plains", (3, -1): "desert",
+    (-2, 0): "forest", (-1, 0): "forest", (0, 0): "plains", (1, 0): "ruins", (2, 0): "river",
+    (-2, 1): "swamp", (-1, 1): "swamp", (0, 1): "river", (1, 1): "river", (2, 1): "plains",
+    (-3, 2): "swamp", (-2, 2): "swamp", (-1, 2): "river", (0, 2): "village", (1, 2): "farmland",
+}
 
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
@@ -56,11 +66,14 @@ def place(templates, name, col, at, angle=0.0):
     obj.location = at
     obj.rotation_euler.z = angle
     col.objects.link(obj)
+    return obj
 
 
-def build_map(templates, animated=False):
+def build_map(templates, animated=False, tiles=None, hills="raised"):
     """Places the test map. With animated=True, water tiles get banks and dressing only and are
-    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats."""
+    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats.
+    hills picks the hills style to show ("raised" or "terraced")."""
+    MAP = tiles or globals()["MAP"]
     water_tiles = []
     col = hk.new_collection("map")
     for (q, r), terrain in MAP.items():
@@ -74,10 +87,15 @@ def build_map(templates, animated=False):
             p.finish(col, at)
             water_tiles.append((q, r, at, mask))
             continue
-        place(templates, f"{terrain}_centre", col, at)
+        prefix = bt.HILL_STYLES[hills] if terrain == "hills" else terrain
+        place(templates, f"{prefix}_centre", col, at)
         joined = [linked(terrain, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
+        if terrain == "hills":
+            # The peak grows with the range: taller the more hills tiles touch this one (placeholder rule).
+            peak = place(templates, f"{prefix}_peak", col, at + Vector((0, 0, bt.hill_height(0, 0, "centre", hills))))
+            peak.scale.z = 0.75 + 0.125 * sum(joined)
         for i in range(6):
-            place(templates, f"{terrain}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
+            place(templates, f"{prefix}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
                 if not joined[(i + 1) % 6]:
@@ -163,9 +181,19 @@ def build_board(templates, radius=4):
 
 if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
+    # --terrains renders TERRAIN_MAP (every terrain) instead, with --hills=raised or --hills=terraced.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
+    args = [a for a in args if not a.startswith("--")]
     tiles = args[0] if args else latest("tiles", "tiles")
     cells = args[1] if len(args) > 1 else latest("combat", "combat_cells")
+    if "terrains" in flags:
+        style = flags.get("hills") or "raised"
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=TERRAIN_MAP, hills=style)
+        stage(Vector((4, -1, 0)), 82, 45)
+        render(f"terrains_{style}")
+        sys.exit(0)
     hk.empty_scene()
     build_map(load_templates(tiles))
     stage(Vector((2, -2, 0)), 74, 45)

@@ -28,6 +28,10 @@ PALETTE = {
     "farmland": "#DCC562",
     "river": "#86BEDB",
     "village": "#E6C590",
+    "hills": "#BFAE8E",
+    "swamp": "#7F9A6E",
+    "desert": "#EDD49A",
+    "ruins": "#B3ADA4",
     "soil_light": "#8A6446",
     "soil_dark": "#6B4C35",
     # props
@@ -57,6 +61,17 @@ PALETTE = {
     "stone_blue": "#8E959B",
     "stone_brown": "#9C8B78",
     "flower": "#F2D46B",
+    # hills, desert, swamp, ruins
+    "hill_grass": "#A3C47A",
+    "cliff": "#A89F8E",
+    "sand": "#F3DFAC",
+    "cracked": "#D8BB7E",
+    "scrub": "#9C9A5C",
+    "cactus": "#6E9A5A",
+    "bog_water": "#5F7F6C",
+    "mud": "#7A7152",
+    "hummock": "#6F8E5C",
+    "deadwood": "#7C6E5E",
     "slot": "#F6EFE4",
     "backdrop": "#CFE4F2",
     # combat cells
@@ -65,7 +80,7 @@ PALETTE = {
     "cell_grass_c": "#88B575",
 }
 
-TERRAINS = ["plains", "forest", "farmland", "river", "village"]
+TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
 
 def srgb_to_linear(c):
@@ -159,6 +174,7 @@ class Piece:
         self.name = name
         self.bm = bmesh.new()
         self.mats = []
+        self.surface = set()  # open surfaces built facing up; finish() leaves their normals alone
 
     def _slot(self, mat_name):
         if mat_name not in self.mats:
@@ -211,6 +227,15 @@ class Piece:
         r = bmesh.ops.create_cube(self.bm, size=1.0, matrix=m)
         self._paint(r["verts"], mat_name)
 
+    def log(self, at, radius, length, mat_name, spin=0.0, z=None, segments=8):
+        """A cylinder lying on its side along direction `spin` (toppled columns)."""
+        z = radius if z is None else z
+        m = (Matrix.Translation(at + Vector((0, 0, z))) @ Matrix.Rotation(spin, 4, "Z")
+             @ Matrix.Rotation(math.pi / 2, 4, "Y"))
+        r = bmesh.ops.create_cone(self.bm, cap_ends=True, cap_tris=False, segments=segments,
+                                  radius1=radius, radius2=radius, depth=length, matrix=m)
+        self._paint(r["verts"], mat_name)
+
     def gable_roof(self, at, w, d, h, mat_name, z, spin=0.0):
         """A triangular prism roof, ridge along the house's length (w)."""
         rot = Matrix.Rotation(spin, 4, "Z")
@@ -223,7 +248,7 @@ class Piece:
             self.bm.faces.new(f).material_index = idx
 
     def finish(self, collection, location=(0, 0, 0)):
-        bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
+        bmesh.ops.recalc_face_normals(self.bm, faces=[f for f in self.bm.faces if f not in self.surface])
         mesh = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(mesh)
         self.bm.free()

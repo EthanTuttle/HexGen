@@ -21,7 +21,8 @@ CELL = 0.55
 BLEND = 1.6
 
 # Share of cells that get a prop, per terrain (placeholders, tune by eye).
-DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0}
+DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
+           "hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4}  # hills and swamp pieces hold their own
 
 R = wt.R
 A = wt.A
