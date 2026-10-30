@@ -64,7 +64,7 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 - Scope: **card placement plus a small fight.** Draw a hand, place hex tiles following terrain pairing, then run a tiny hex-grid fight with a coin flip. Walking the hero between hexes is out of scope.
 - Screens: each prototype rebuilds the **exploration and combat screens from the mockups** (chosen Oct 29, 2026), not placeholder UI. Other screens (after-combat, level-up, town and so on) wait for the chosen engine. Mockups: [Presentation](07 Presentation.md) → Screen mockups.
 - Deciding factor: **look**, meaning which engine gets closer to the Dorfromantik-like art style (see [Presentation](07 Presentation.md) → Art direction).
-- Art: **Ethan makes a few tiles himself, plus a simple blockout mini on a wooden hex base**. Both prototypes use the same files. Tool (chosen Oct 29, 2026): **Blender**, exporting glTF for both engines. The blockout mini may start as an AI image-to-3D draft made from the Chelmsford turnaround (Minis canvas, v3b), then cleaned up in Blender; check the service's licence before using its output.
+- Art: **Ethan makes a few tiles himself, plus a simple blockout mini on a wooden hex base**. Both prototypes use the same files. Tool (chosen Oct 29, 2026): **Blender**, exporting glTF for both engines. The mini starts as an AI image-to-3D model cleaned up in Blender, the same route as final minis ([Presentation](07 Presentation.md) → Art direction).
 - Look tests, all four in both engines (each is described in [Presentation](07 Presentation.md)):
   - Hex edge blending into continuous regions
   - Lighting and the pastel backdrop shifting with time of day

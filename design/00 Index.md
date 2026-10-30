@@ -24,7 +24,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 | Brief | For |
 | --- | --- |
-| [Chelmsford mini brief](briefs/Chelmsford mini brief.md) | A 3D artist sculpting Chelmsford's mini |
+| [Chelmsford mini brief](briefs/Chelmsford mini brief.md) | Superseded Oct 29, 2026 (minis now made with AI image-to-3D); kept for reference |
 
 ## Conventions
 
@@ -171,6 +171,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~The exact offhand arm variants for mini poses~~ (settled: shield and second weapon; see Presentation → Pose library)
 - [ ] New: fit category-free worn gear to Fluffy's cat skeleton
 - [ ] New: body types to build for minis
+- [ ] New: AI minis: which service after the Meshy vs Tripo test, and its licence
+- [ ] New: AI minis: how fused AI output becomes modular gear on the posing skeleton
+- [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3
 - [ ] New: action cards screen from combat: which backdrop?

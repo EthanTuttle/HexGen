@@ -2,6 +2,8 @@
 
 Last updated Oct 21, 2026 · @Ethan · Part of the [Index](../00 Index.md)
 
+> **Superseded (Oct 29, 2026):** minis are now made with AI image-to-3D and cleaned up in Blender instead of by a 3D artist ([Presentation](../07 Presentation.md) → Art direction). Kept for reference: its notes on pose, gear, attach points and the base still apply to the cleanup.
+
 What we need sculpted, and what's already decided. Everything here comes from the design docs; items still open are marked **Open** and must be agreed before or during sculpting. Rules live in the linked docs; this brief only gathers them.
 
 ## The game in one paragraph
