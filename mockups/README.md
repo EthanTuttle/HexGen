@@ -21,3 +21,4 @@ The files need the Design canvas runtime to render, so they won't open on their 
 | `action-cards` | HexGen · Action Cards (working) | https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu |
 | `social-encounter` | HexGen · Social encounter (working) | https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC |
 | `town` | HexGen · Town (working) | https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2 |
+| `character-creator` | HexGen · Character creator (working) | https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3 |

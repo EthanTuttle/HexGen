@@ -282,7 +282,14 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (not mocked yet, Oct 30, 2026): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction. Layout: open.
+**Character creator screen** (in progress, v1a–v1c, Oct 30, 2026): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+
+- **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
+- **v1, three layouts to compare:**
+  - **v1a, guided steps:** one step per screen (Class, Race, Background, Scores, Skills, Gear, Spells for casters, Look, Name), with hex pips along the top that tick off and let you jump back. The mini is on the left and the picks are on a cream panel on the right, with Back and Next.
+  - **v1b, painting table:** the mini stands on a wooden worktable. A tray on the left has four tabs in any order (Who, Look, Kit, Skills) that tick off when done, paint pots on the right hold the colour swatches, a turn button flips the mini, and a wooden name plate sits under it.
+  - **v1c, origin board:** class, ancestry and background are hex tiles placed around the mini's own hex, the way map cards are placed. A hand of options shows for each slot: tap one to see it, then tap the glowing slot to place it. Cleric gods and race sub-types come as follow-up cards for the same slot. Once all three are down, tapping a tile opens its details on the right (Class: +1 score, gear, spells; Ancestry: +1 scores, look, pronouns; Background: proficiencies; the mini: scores and a summary), and a name bar and Begin replace the hand.
+- Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
 
@@ -343,6 +350,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | [Fluffy's / Chelmsford's / Mel's bar line], [Hero toast line] | Town v2e–v7 | Inn banter ([characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions); the toast is written as an intent choice with a narration beat |
 | Tap thresholds: 8 px of movement, 350 ms | Social v9, town v4 | Playtest |
 | Night at the inn pacing (about 2.3 s of night) | Town v2d–v3 | Playtest |
+| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v1c | Final heads, hairstyles and swatches (Open questions below) |
+| [Bard proficiency] | Character creator v1a–v1c | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -360,6 +369,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
+| Character creator | In progress (v1a guided steps, v1b painting table, v1c origin board) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -409,7 +419,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** AI minis: armour fitting test (one armour piece on two body types), then decide whether all worn gear still shows
 - [x] ~~Hero creation: how many builds per race and which colours~~ (settled Oct 30, 2026: 3 per race, swatches per race; see Hero appearance at character creation)
 - [ ] **New:** hero creation: final number of heads and hairstyles per race (mockups use 4 and 6), and each race's colour swatches
-- [ ] **New:** character creator screen: layout and step order
+- [ ] **New:** character creator screen: pick a layout from v1a–v1c (guided steps, painting table, origin board)
 - [x] ~~AI minis: how fused AI output becomes modular gear~~ (Oct 29, 2026: AI makes parts, not finished minis; see Art direction)
 - [ ] **New:** AI minis: whether the results reach the Reference 3 detail target, or the target changes
 - [ ] **New:** mini style standards: turn the Chelmsford choices into a checklist for other minis once his turnaround (minis v3) is approved
