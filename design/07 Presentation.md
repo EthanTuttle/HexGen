@@ -354,6 +354,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
   - **Bigger gear hexes: 5 per row** (chosen Oct 30, 2026: v19c, over v19a's 3 and v19b's 4; v18c's 6 was too small). They match the size of the slots on the hero card. The list scrolls for classes with many weapons (a Fighter's 21 take 5 rows).
   - **Chosen gear flies to the hero card** (v20, approved Oct 30, 2026; the Gear step is done): Choose flies the item's hex from the grid into its slot on the hero card, with a gold glow, and the slot's icon pops in as it lands, as when equipping on the character and gear screen (v11's flights). Empty hand and No armour just fill the slot.
 - **Look step** (decisions Oct 30, 2026; not mocked yet): **centre stage throughout**: the mini rises in large in the middle of the screen and stays there for the whole step, with the option groups on both sides. It breaks from the level-up look for this one moment. The mini stands on its **wooden six-sided base, with the background's starting-place tile shown faintly behind it** as a backdrop. **Pronouns stay in Look.** **No randomise button**: players build the look piece by piece (Goal above: no ready-made hero).
+  - **Turn only** (Ethan, Oct 30, 2026): turn buttons under the mini spin it (front, right side, back, left side); the camera doesn't zoom in. The starting place's name sits under the view name.
+  - **v21, two ways to split the options** (Oct 30, 2026; pending a pick; on v20). **v21a, body left and colours right:** the left panel has build, pronouns (an orange dot until picked, since Next needs them), head and hairstyle; the right panel has every colour row (skin, scales or material; hair; eyes; cloth). **v21b, tabs:** the left panel has Body / Head / Hair tabs (no Hair tab for races without hair) with bigger head and hairstyle hexes, and the right panel shows only that tab's colours (Body: skin or scales and cloth; Head: eyes; Hair: hair colour). Back sits at the foot of the left panel and Next at the foot of the right. Heads, hairstyles and the stand-in mini are still placeholders.
 - Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
@@ -436,7 +438,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
-| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; Background v13; Scores and Skills v15a chosen; plain background from v16; Gear step done in v20) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
+| Character creator | In progress (v1a guided steps, v4a banners, v5c heraldry, v7a sub-types and v8a hex tokens chosen; v11a vertical names chosen; Background v13; Scores and Skills v15a chosen; plain background from v16; Gear step done in v20; latest: v21a / v21b, the Look step) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -510,6 +512,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator Scores and Skills~~ (settled Oct 30, 2026: v15a, level-up tiles and the feat-style list; v14a's banners out)
 - [x] ~~Character creator Gear step hex size~~ (settled Oct 30, 2026: v19c, 5 per row)
 - [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: the Gear step is done)
+- [ ] **New:** character creator Look step: body left and colours right (v21a) or tabs with their colours (v21b)
 - [ ] **New:** starting-place art for each background's banner (v12 draws a hex tile with an icon as a stand-in)
 - [ ] **New:** names for the racial passives that have none in the docs (v8 working names: Moves faster, Naturally more health, Extra weapon coin, Damage reduction, Bloodline spell), and passive icons
 - [ ] **New:** race emblems and banner colours (v7 placeholders)
