@@ -172,7 +172,10 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~The exact offhand arm variants for mini poses~~ (settled: shield and second weapon; see Presentation → Pose library)
 - [ ] New: fit category-free worn gear to Fluffy's cat skeleton
 - [ ] New: body types to build for minis
-- [x] ~~AI minis: which orthographic set feeds the test~~ (v5c, the 3D-render look)
+- [x] ~~AI minis: which orthographic set feeds the test~~ (replaced by ChatGPT renders of each visual description)
+- [ ] New: visual descriptions for the other characters (companions first)
+- [ ] New: Chelmsford's render v1 has his tail on the wrong side and no base ring; regenerate or accept
+- [ ] New: ChatGPT image output: commercial-use terms
 - [ ] New: AI minis: whether true scale (1.3 tall on a 1.0 base) reads too small on the base
 - [ ] New: AI minis: which service after the Meshy vs Tripo test, and its licence
 - [ ] New: AI minis: how fused AI output becomes modular gear on the posing skeleton
