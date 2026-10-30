@@ -133,6 +133,20 @@ swift godot/tools/png_to_mp4.swift /tmp/touch godot/screens/touch_movie.mp4 30
 | Long-press on HUD controls with no details design | Open: Ethan decides each one | PLACEHOLDER: their PC hover text. The controls: hand cards; party portraits (map and combat tray); Quests, equipment, the nav button and its five camera buttons; combat's camera buttons and End hex; the landmark pin; and also the combat hotbar and All actions cards (a tap already opens the details panel), the Rest card, Edit hotbar, and the after-combat drawn-card hexes |
 | Phone edges | Open, except: hide the home indicator while playing | `project.godot` sets iOS `hide_home_indicator` and `suppress_ui_gesture` (system edge gestures deferred), both on (they're Godot 4.7's defaults, set explicitly), and locks the phone to landscape either way round (`handheld/orientation` sensor landscape). The Dynamic Island side and text sizes stay as they are |
 
+## iOS Simulator (in progress)
+
+`godot/tools/ios_sim.sh` builds and runs the prototype in an iPhone Simulator in one go: it exports the Xcode project from Godot, builds it for the Simulator with `xcodebuild -sdk iphonesimulator -arch arm64` (no code signing), boots the newest available iPhone 15 Pro or later, installs and launches the app with `xcrun simctl`, and saves a screenshot to `build/ios/shots/` (the `build/` folder isn't committed).
+
+```bash
+sudo xcodebuild -runFirstLaunch          # once per Mac: Xcode's first-launch setup (asks for the password)
+xcodebuild -downloadPlatform iOS         # once: an iOS Simulator runtime (several GB)
+godot/tools/ios_sim.sh                   # export, build, boot, install, launch, screenshot
+```
+
+- **Export preset** (`godot/export_presets.cfg`, "iOS Simulator"): iPhone only, landscape (from `project.godot`: sensor landscape), bundle ID `com.hexgen.prototype` (placeholder), Xcode project only. **Team ID:** Godot 4.7.2 won't export an iOS project with an empty Team ID, so the preset has a dummy `0000000000`; the Simulator build passes `CODE_SIGNING_ALLOWED=NO` and never uses it. A real team is only needed for a phone.
+- **Texture compression:** iOS exports need ETC2/ASTC, so `project.godot` now imports textures with it too (`textures/vram_compression/import_etc2_astc`); the Mac build is unchanged.
+- **Status (Oct 30, 2026):** the Xcode project exports (`build/ios/HexGen.xcodeproj`). Building and running is blocked on this Mac's Xcode setup: `xcodebuild -checkFirstLaunchStatus` says the first-launch setup hasn't run (every `simctl` call starts it and waits for an administrator password), and no iOS Simulator runtime is installed. Both need Ethan (the first two commands above). Not yet known: whether Forward+ runs in the Simulator, the real Dynamic Island insets, and how the Simulator's touches behave.
+
 ## Screens next to the mockups
 
 Each image in `screens/compare/` has the mockup artboard on top and the Godot screen below. The mockups were rendered from `mockups/*.dc.html` with the Design canvas runtime in headless Chrome; states other than an artboard's first view were set by starting a copy of the artboard in that state (for example a held card or an open pop-up).

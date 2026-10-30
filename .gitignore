@@ -10,3 +10,6 @@
 .claude/settings.local.json
 __pycache__/
 *.blend1
+
+# iOS Simulator builds (godot/tools/ios_sim.sh)
+/build/
