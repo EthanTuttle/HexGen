@@ -101,6 +101,8 @@ func _ready() -> void:
 	safe.add_child(popup)
 	_connect_gestures()
 	_refresh()
+	if PhoneCheck.wanted():
+		add_child(PhoneCheck.new())
 	if "--touchtest" in OS.get_cmdline_user_args():
 		var tt := TouchTest.new()
 		tt.game = self
