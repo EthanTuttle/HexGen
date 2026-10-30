@@ -1,10 +1,12 @@
 #!/bin/zsh
 # Builds the prototype for the iOS Simulator and runs it there, from the repo root:
-#   godot/tools/ios_sim.sh [device name]        (default: the newest available iPhone 15 Pro or later)
+#   godot/tools/ios_sim.sh [device name]        (default: "iPhone 15 Pro (HexGen)" if made, else the newest iPhone Pro)
 # Steps: export the Xcode project from Godot (preset "iOS Simulator" in godot/export_presets.cfg), build it for the
 # Simulator (arm64, no signing), boot a Simulator, install, launch, and save a screenshot to build/ios/shots/.
 # Needs Xcode with its first-launch setup done (sudo xcodebuild -runFirstLaunch) and an iOS Simulator runtime
 # (xcodebuild -downloadPlatform iOS). The Simulator runs on the Mac's GPU: its frame rate says nothing about a phone.
+# Known blocker: Godot 4.7.2's official iOS templates hold only an x86_64 Simulator library, so step 2 fails to link
+# for arm64 until the template is rebuilt for arm64 (see the README).
 set -e
 cd "$(dirname "$0")/../.."
 GODOT=/Applications/Godot.app/Contents/MacOS/Godot
@@ -24,7 +26,8 @@ echo "built $APP"
 echo "== 3. Boot a Simulator"
 DEVICE="${1:-}"
 if [ -z "$DEVICE" ]; then
-	DEVICE=$(xcrun simctl list devices available | grep -E "iPhone (1[5-9]|2[0-9]) Pro" | tail -1 | sed -E 's/^ *(.*) \(([0-9A-F-]+)\).*/\2/')
+	DEVICE=$( (xcrun simctl list devices available | grep -F "iPhone 15 Pro (HexGen)"; \
+		xcrun simctl list devices available | grep -E "iPhone (1[5-9]|2[0-9]) Pro \(") | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
 fi
 echo "device $DEVICE"
 xcrun simctl boot "$DEVICE" 2>/dev/null || true
