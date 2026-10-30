@@ -383,6 +383,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** exact backdrop colours for each time of day, and how far the rift's lilac shift goes by the final chapter
 - [ ] **New:** whether the mini's base rim colour marks the character or the side (ally/enemy)
 - [ ] **New:** exploration v9: the party as a cluster of true-scale minis instead of one token; combat v15: flat-top cells (both chosen Oct 29, 2026)
+- [ ] **New:** which way water flows. The prototype's placeholder: toward the bottom of the screen in the map's starting orientation, so both tiles on an edge agree; it makes springs sources and lakes downstream. Alternatives: from springs toward lakes, or from higher terrain (hills) downhill
 - [ ] **New:** minis painted, unpainted resin (like Reference 3), or mixed (e.g. party painted, enemies unpainted)
 - [ ] **New:** Fluffy's own skeleton still needs the category-free worn gear anyone can wear (some helmets, leggings, boots and gloves: [Weapons & gear](04 Weapons & gear.md) → Equipment) fitted to his cat body
 - [x] ~~The exact offhand arm variants~~: shield and second weapon only; an empty hand keeps the base pose (see **Pose library**)

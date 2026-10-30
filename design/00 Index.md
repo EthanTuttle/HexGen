@@ -168,6 +168,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [ ] New: exact backdrop colours per time of day, and the size of the rift's lilac shift
 - [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
+- [ ] New: which way water flows (prototype placeholder: toward the bottom of the screen)
 - [ ] New: minis painted, unpainted or mixed
 - [x] ~~The exact offhand arm variants for mini poses~~ (settled: shield and second weapon; see Presentation → Pose library)
 - [ ] New: fit category-free worn gear to Fluffy's cat skeleton

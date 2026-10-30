@@ -121,9 +121,10 @@ def circle(centre, radius, rng, wobble, n=20):
 def tile_water(water, seed):
     """Water outlines (anticlockwise point lists) and shore curves for one tile.
 
-    Returns (outlines, shores, kind). Outlines may overlap; draw them all as water.
-    Shores are the curves along land (not along tile edges), used for banks and dressing.
+    Returns (outlines, shores, kind, ends). Outlines may overlap; draw them all as water.
+    Shores are the curves along land (not along tile edges), used for banks, dressing and flow.
     kind is "pond", "spring", "river" or "lake".
+    ends[k] is (edge the shore starts on, edge it ends on) for shores[k]; None means it starts or ends at a pond.
     """
     rng = random.Random(seed)
     sway_angle = rng.uniform(0, 2 * math.pi)
@@ -131,7 +132,7 @@ def tile_water(water, seed):
 
     if not any(water):
         ring = circle((0, 0), 1.7, rng, 0.12)
-        return [ring], [ring + ring[:1]], "pond"
+        return [ring], [ring + ring[:1]], "pond", [(None, None)]
 
     spans = [(i, edge_interval(water, i)) for i in range(6)]
     spans = [(i, iv) for i, iv in spans if iv]
@@ -146,7 +147,7 @@ def tile_water(water, seed):
         bank_b = shore(add(pond_at, mul((normal(i)[1], -normal(i)[0]), 0.7)), i, q, i, sway, rng, 0)
         channel = [edge_point(i, t0), edge_point(i, t1)] + bank_a[1:] + bank_b[:-1]
         pond = circle(add(pond_at, sway), 1.3, rng, 0.12)
-        return [channel, pond], [bank_a, bank_b, pond + pond[:1]], "spring"
+        return [channel, pond], [bank_a, bank_b, pond + pond[:1]], "spring", [(i, None), (None, i), (None, None)]
 
     # Walk round the edge, merging stretches that meet at a water corner.
     runs = []
@@ -163,9 +164,9 @@ def tile_water(water, seed):
         runs[0]["pts"] = last["pts"] + runs[0]["pts"][1:]
         runs[0].update(start_edge=last["start_edge"], start_t=last["start_t"])
     if len(runs) == 1 and len(spans) == 6 and all(iv == (0.0, 1.0) for _, iv in spans):
-        return [[corner(i) for i in range(6)]], [], "lake"
+        return [[corner(i) for i in range(6)]], [], "lake", []
 
-    outline, shores = [], []
+    outline, shores, ends = [], [], []
     for k, run in enumerate(runs):
         nxt = runs[(k + 1) % len(runs)]
         outline += run["pts"]
@@ -173,7 +174,36 @@ def tile_water(water, seed):
                       sway if not lake else mul(sway, 0.4), rng, WOBBLE if lake else 0)
         outline += curve[1:-1]
         shores.append(curve)
-    return [outline], shores, "lake" if lake else "river"
+        ends.append((run["end_edge"], nxt["start_edge"]))
+    return [outline], shores, "lake" if lake else "river", ends
+
+
+# --- 3. Flow -------------------------------------------------------------------
+
+def downhill(q, r):
+    """Placeholder flow rule: water flows toward higher values, i.e. down the screen (toward +r, then -q).
+    Both tiles on an edge compare the same two numbers, so they always agree on which way it flows."""
+    return r - 0.3 * q
+
+
+def flow_signs(ends, inflow):
+    """+1 if water runs along a shore curve in its own direction, -1 if against it, 0 if still.
+    inflow[e] is True when water enters the tile through edge e (from a lower neighbour)."""
+    signs = []
+    for a, b in ends:
+        if a is None and b is None:
+            signs.append(0)
+        elif b is None:                      # into a pond
+            signs.append(1 if inflow[a] else -1)
+        elif a is None:                      # out of a pond
+            signs.append(-1 if inflow[b] else 1)
+        elif inflow[a] and not inflow[b]:
+            signs.append(1)
+        elif inflow[b] and not inflow[a]:
+            signs.append(-1)
+        else:
+            signs.append(0)
+    return signs
 
 
 def point_in(poly, p):
@@ -232,20 +262,23 @@ def dressing(outlines, shores, kind, seed):
 
 # --- Blender: turn the shapes into a piece -----------------------------------
 
-def add_water(piece, water, seed):
-    """Adds one tile's water, banks and dressing to a hexkit.Piece."""
+def add_water(piece, water, seed, plates=True, boats=True):
+    """Adds one tile's water, banks and dressing to a hexkit.Piece.
+    plates=False leaves out the flat water (an animated render builds its own); boats=False leaves out
+    the boats, so they can be separate objects that bob. Returns the boat positions."""
     from mathutils import Vector
 
     def v(p):
         return Vector((p[0], p[1], 0))
 
-    outlines, shores, kind = tile_water(water, seed)
+    outlines, shores, kind, _ = tile_water(water, seed)
     for curve in shores:
         for quad in bank_strip(curve, 0.22):
             piece.flat([v(p) for p in quad], 0.025, "bank")
-    for poly in outlines:
-        piece.flat([v(p) for p in poly], 0.03, "water")
-    reeds, rocks, lilies, jetties, boats = dressing(outlines, shores, kind, seed)
+    if plates:
+        for poly in outlines:
+            piece.flat([v(p) for p in poly], 0.03, "water")
+    reeds, rocks, lilies, jetties, boat_spots = dressing(outlines, shores, kind, seed)
     rng = random.Random(f"{seed}-props")
     for p in reeds:
         for _ in range(3):
@@ -261,7 +294,12 @@ def add_water(piece, water, seed):
         for s in (-1, 1):
             post = add(tip, mul((math.cos(ang), math.sin(ang)), 0.6 * s))
             piece.cylinder(v(post), 0.05, 0.2, "trunk")
-    for p, ang in boats:
-        piece.box(v(p), (0.9, 0.36, 0.14), "trunk", z=0.03, spin=ang)
-        piece.box(v(p), (0.5, 0.26, 0.06), "boat", z=0.17, spin=ang)
-    return kind
+    if boats:
+        for p, ang in boat_spots:
+            add_boat(piece, v(p), ang)
+    return boat_spots
+
+
+def add_boat(piece, at, ang):
+    piece.box(at, (0.9, 0.36, 0.14), "trunk", z=0.03, spin=ang)
+    piece.box(at, (0.5, 0.26, 0.06), "boat", z=0.17, spin=ang)

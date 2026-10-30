@@ -48,7 +48,10 @@ def place(templates, name, col, at, angle=0.0):
     col.objects.link(obj)
 
 
-def build_map(templates):
+def build_map(templates, animated=False):
+    """Places the test map. With animated=True, water tiles get banks and dressing only and are
+    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats."""
+    water_tiles = []
     col = hk.new_collection("map")
     for (q, r), terrain in MAP.items():
         at = hk.tile_position(q, r)
@@ -57,8 +60,9 @@ def build_map(templates):
             # Water is drawn per tile from its own water neighbours, the way the engines will.
             mask = [MAP.get((q + dq, r + dr)) == "river" for dq, dr in hk.NEIGHBOURS]
             p = hk.Piece(f"water_{q}_{r}")
-            wt.add_water(p, mask, f"{q},{r}")
+            wt.add_water(p, mask, f"{q},{r}", plates=not animated, boats=not animated)
             p.finish(col, at)
+            water_tiles.append((q, r, at, mask))
             continue
         place(templates, f"{terrain}_centre", col, at)
         for i, (dq, dr) in enumerate(hk.NEIGHBOURS):
@@ -70,6 +74,7 @@ def build_map(templates):
         p = hk.Piece("slot")
         p.flat([c for c in hk.hex_corners(hk.TILE_RADIUS * 0.94, pointy=True)][::-1], 0.02, "slot")
         p.finish(col, hk.tile_position(q, r) - Vector((0, 0, 0.3)))
+    return water_tiles
 
 
 def stage(target, distance, elevation_deg, lens=50):

@@ -25,6 +25,9 @@ Blender -b art/tiles/tiles_v1.blend --python art/scripts/export_gltf.py
 
 # Preview renders of a small map and a combat board, from the latest versions
 Blender -b --factory-startup --python art/scripts/render_preview.py
+
+# A 6-second video of the map with moving water (add -- --still for one frame)
+Blender -b --factory-startup --python art/scripts/render_animation.py
 ```
 
 ## Refining a kit by hand
