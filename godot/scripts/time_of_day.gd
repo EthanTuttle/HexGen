@@ -13,6 +13,7 @@ extends Node
 @export var day_seconds := 90.0           # a whole day per this many seconds while running (test speed)
 
 var environment: Environment
+var keys: Array = KEYS        # the game swaps in the mockups' backdrop colours
 var sun: DirectionalLight3D
 
 # hour, backdrop (sRGB), sun colour, sun energy, sun elevation (deg), sun travel azimuth (deg)
@@ -37,10 +38,10 @@ func _process(delta: float) -> void:
 
 func apply() -> void:
 	var k := 0
-	while k < KEYS.size() - 2 and KEYS[k + 1][0] <= hour:
+	while k < keys.size() - 2 and keys[k + 1][0] <= hour:
 		k += 1
-	var a: Array = KEYS[k]
-	var b: Array = KEYS[k + 1]
+	var a: Array = keys[k]
+	var b: Array = keys[k + 1]
 	var t := smoothstep(0.0, 1.0, (hour - a[0]) / maxf(b[0] - a[0], 0.001))
 	var backdrop := Color.html(a[1]).lerp(Color.html(b[1]), t)
 	environment.background_color = backdrop

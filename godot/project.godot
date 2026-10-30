@@ -9,8 +9,12 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [display]
 
-window/size/viewport_width=1600
-window/size/viewport_height=1000
+window/size/viewport_width=844
+window/size/viewport_height=390
+window/size/window_width_override=1688
+window/size/window_height_override=780
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 

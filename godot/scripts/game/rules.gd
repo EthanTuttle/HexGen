@@ -7,9 +7,10 @@ extends RefCounted
 
 # --- Deck and hand (design/05 Cards & progression.md) ------------------------
 
-## DOCS: a Ranger's class terrains (forest 5, plains 5) plus the Noble background's farmland 5 = 15 cards.
-## PLACEHOLDER: picking Ranger + Noble; it's the one combo whose terrains all have prototype art.
-const STARTING_DECK := {"forest": 5, "plains": 5, "farmland": 5}
+## DOCS: the deck is 5 cards of each class terrain plus 5 of the background's: a Fighter (the mockups' hero)
+## has plains and desert, a Noble farmland.
+## PLACEHOLDER: there's no desert art yet, so forest stands in for the Fighter's 5 desert cards.
+const STARTING_DECK := {"plains": 5, "forest": 5, "farmland": 5}
 const HAND_LIMIT := 7                    # DOCS: checked only at rest
 const STARTING_HAND := 7                 # PLACEHOLDER: the docs don't say how many cards the campaign starts with
 const DRAW_EASY_FIGHT := 3               # DOCS: an easy fight or tier 1 region draws 3
@@ -29,16 +30,18 @@ const GOAL_SHOWS_AT := 2                 # PLACEHOLDER: "when a placed tile grow
 const SIGHT_RANGE := 2                   # DOCS: night building only within sight 2 of the party
 const MAP_LIMIT := 28                    # PLACEHOLDER: the endless map is capped by the ground-colour lookup texture
 
-# --- Day clock (design/02 -> Day and night) -----------------------------------
+# --- Day clock (design/02 -> Day and night; numbers as in Explore v8b) ------------
 
-const DAY_SECONDS := 1800.0              # DOCS: about 30 real minutes per in-game day
-const NIGHT_FROM := 20.0                 # DOCS: night is about 10 of the 30 minutes (8 of 24 hours) ...
-const NIGHT_TO := 4.0                    # PLACEHOLDER: ... which hours they are
-const PLACE_MINUTES := 10.0              # PLACEHOLDER: "placing a card costs a little real time on the day clock"
-const WALK_MINUTES := {"forest": 45.0}   # PLACEHOLDER: slower terrain takes longer; per-terrain speeds aren't tuned
-const WALK_MINUTES_DEFAULT := 30.0       # PLACEHOLDER
+## The clock counts real minutes through a 30-minute day (DOCS: about 30 real minutes a day, night about 10).
+const DAY_MINUTES := 30.0
+const NIGHT_AT := 20.0                   # DOCS: night is the last 10 minutes
+const DAWN_UNTIL := 5.0                  # PLACEHOLDER (Explore v8b): dawn, midday and dusk boundaries
+const MIDDAY_UNTIL := 15.0
+const START_MINUTE := 6.0                # PLACEHOLDER: the campaign starts early in the midday phase
+const PLACE_MINUTES := 0.5               # PLACEHOLDER (Explore v8b): "placing a card costs a little real time"
+const STEP_MINUTES := 1.0                # PLACEHOLDER (Explore v8b): walking one hex
 const STEP_SECONDS := 0.45               # PLACEHOLDER: how long one hex step takes on screen
-const REST_HOURS := 8.0                  # DOCS: resting fast-forwards 8 in-game hours
+const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game hours (8/24 of a 30-minute day)
 
 # --- Encounters (design/02 -> Hex contents and encounters) --------------------
 
@@ -52,19 +55,33 @@ const AP := 3                            # DOCS
 const HEADS_TO_HIT := 1                  # DOCS: at low levels the target is mostly 1
 const MOVE_HEXES := 2                    # PLACEHOLDER: the combat mockups' 2-hex Move; the docs don't set it
 const DEFEND_REDUCTION := 1              # PLACEHOLDER: defend/brace exists but has no number
-const MARK_BONUS := 2                    # PLACEHOLDER: Hunter's Mark's "extra damage"
-const SNEAK_PASS_SHARE := 0.5            # PLACEHOLDER: a Stealth group check passes if half the party gets 1+ heads
+## PLACEHOLDER (Explore v8b's text): Sneak past is a group check where everyone flips one coin and 1 heads passes.
+const SNEAK_COINS_EACH := 1
 
-## PLACEHOLDER stats. The docs set scores 1-3 at level 1 and that scores give coins and decide damage,
-## but not HP or how damage follows from a score; damage = the attack's score here.
-## Companions have only the basic actions for now (their own cards aren't wired up).
+## The party and their cards as in the combat mockup (Combat v14): [Hero name] the Fighter (longsword and
+## shield), Fluffy (wizard, staff), Chelmsford (cleric, mace and shield) and Mel (rogue, dagger), with the
+## mockup's scores (coins). PLACEHOLDER: HP; the docs set scores but not HP or damage.
 const PARTY := [
-	{"name": "Hero", "mini": "standin_hero", "ability": "DEX", "score": 3, "hp": 12, "cards": ["hunters_mark"]},
-	{"name": "Chelmsford", "mini": "standin_chelmsford", "ability": "STR", "score": 3, "hp": 14, "cards": []},
-	{"name": "Halfling", "mini": "standin_small", "ability": "DEX", "score": 2, "hp": 8, "cards": []},
-	{"name": "Fluffy", "mini": "standin_fluffy", "ability": "DEX", "score": 2, "hp": 6, "cards": []},
+	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "score": 3, "hp": 12,
+		"weapon": "longsword", "hot": ["move", "attack", "parry", "shield_bash", "second_wind", "action_surge"],
+		"cards": ["move", "attack", "defend", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
+	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "score": 3, "hp": 8,
+		"weapon": "staff", "hot": ["move", "attack", "firebolt", "frost_ray", "trip", "ward"],
+		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
+	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "score": 2, "hp": 14,
+		"weapon": "mace", "hot": ["move", "attack", "sacred_flame", "bless", "bonebreaker", "block"],
+		"cards": ["move", "attack", "defend", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
+	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "score": 3, "hp": 8,
+		"weapon": "dagger", "hot": ["move", "attack", "backstab", "throw", "sneak_attack", "poison_blade"],
+		"cards": ["move", "attack", "defend", "use_item", "backstab", "throw", "sneak_attack", "poison_blade"]},
 ]
-const ENEMY := {"name": "Cultist", "mini": "standin_enemy", "ability": "STR", "score": 2, "hp": 6}
+const ENEMY := {"name": "[Enemy %s]", "mini": "standin_enemy", "ability": "STR", "score": 2, "hp": 6}
+const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's save flips 2 coins, 1 heads saves
+const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
+const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
+const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
+const POISON_BONUS := 1                  # PLACEHOLDER: Poison Blade's extra damage per hit this turn
+const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn
 const ENEMIES_BASE := 2                  # PLACEHOLDER: foes per fight ...
 const ENEMIES_PER_DISTANCE := 3          # ... plus one per this many hexes from the start (enemies scale with distance: DOCS)
 const ENEMIES_MAX := 4
@@ -74,6 +91,14 @@ const BOARD_ROCKS := {"forest": 2, "plains": 3, "farmland": 1, "village": 2, "ri
 ## PLACEHOLDER: after a won fight, downed allies get back up at 1 HP; after a wipe the party wakes at camp at 1 HP
 ## (the docs' companion injuries aren't modelled).
 const REVIVE_HP := 1
+
+## The first (tier 1) region of each terrain and its landmark, as the exploration mockup names them
+## (examples from the docs and mockup placeholders); later regions show the mockup's placeholders.
+const REGION_NAMES := {
+	"plains": ["Rolling meadows", "Nomad Camp"], "forest": ["Deep, old forest", "Hidden Shrine"],
+	"farmland": ["Windmill country", "Great Windmill"], "village": ["Market town", "Trading House"],
+	"river": ["River delta", "River Port"],
+}
 
 const NAMES := {"forest": "Forest", "plains": "Plains", "farmland": "Farmland", "village": "Village", "river": "River/lake"}
 
@@ -90,5 +115,22 @@ static func hex_distance(a: Vector2i, b: Vector2i) -> int:
 	return (absi(d.x) + absi(d.y) + absi(d.x + d.y)) / 2
 
 
-static func is_night(hour: float) -> bool:
-	return hour >= NIGHT_FROM or hour < NIGHT_TO
+static func is_night(minute: float) -> bool:
+	return minute >= NIGHT_AT
+
+
+static func phase_name(minute: float) -> String:
+	if minute >= NIGHT_AT:
+		return "Night"
+	return "Dawn" if minute < DAWN_UNTIL else ("Midday" if minute < MIDDAY_UNTIL else "Dusk")
+
+
+## The lighting hour (TimeOfDay) for a clock minute, so each phase gets its own light and backdrop.
+static func light_hour(minute: float) -> float:
+	if minute < DAWN_UNTIL:
+		return remap(minute, 0, DAWN_UNTIL, 5.5, 8.0)
+	if minute < MIDDAY_UNTIL:
+		return remap(minute, DAWN_UNTIL, MIDDAY_UNTIL, 8.0, 16.5)
+	if minute < NIGHT_AT:
+		return remap(minute, MIDDAY_UNTIL, NIGHT_AT, 16.5, 19.5)
+	return fmod(remap(minute, NIGHT_AT, DAY_MINUTES, 19.5, 29.5), 24.0)

@@ -1,49 +1,39 @@
 class_name Fight
 extends Node3D
 ## A small turn-based fight on the encounter tile's radius-4 combat board
-## (design/03 Classes & combat.md -> Turns, AP and health; Combat; Coin checks).
-## Turns go side by side: all allies act in any order, then all enemies. Every character has 3 AP.
-## Basic actions cost 1 AP: Move and Attack repeat, Defend once per turn. The hero also has the
-## Ranger's level-1 card Hunter's Mark (1 AP, once per turn, one mark at a time).
-## Controls: click a portrait or ally to act with them, pick an action, click a cell or foe; End ends
-## the allies' phase.
+## (design/03 Classes & combat.md -> Turns, AP and health; Combat; Coin checks). The screen and its flow
+## follow Combat v14 (mockups/combat/Combat-v14-AllyTargets.dc.html): pick a character in the party tray
+## (or on the board), pick a card on the hotbar, tap a target, then press Flip coins / Cast / Use.
+## Turns go side by side: all allies act in any order, then all foes. 3 AP each, up to 6 with bonus AP.
 
 signal finished(won: bool)
 
 const PARTY_CELLS := [Vector2i(0, 2), Vector2i(-1, 3), Vector2i(1, 2), Vector2i(0, 3)]   # PLACEHOLDER line-up
 const ENEMY_CELLS := [Vector2i(0, -3), Vector2i(1, -3), Vector2i(-1, -2), Vector2i(2, -3)]
-const ACTIONS := {
-	"move": {"label": "Move", "ap": 1, "use": "Repeatable", "text": "Step up to %d hexes. Rocks and other minis block; trees don't." % Rules.MOVE_HEXES},
-	"attack": {"label": "Attack", "ap": 1, "use": "Repeatable", "text": "Basic attack on an adjacent foe."},
-	"defend": {"label": "Defend", "ap": 1, "use": "Once per turn", "text": "Brace: take %d less damage per hit until your next turn." % Rules.DEFEND_REDUCTION},
-	"hunters_mark": {"label": "Hunter's Mark", "ap": 1, "use": "Once per turn", "text": "Mark a foe: it takes %d extra damage from you for the fight. One mark at a time." % Rules.MARK_BONUS},
-}
+const LABELS := ["A", "B", "C", "D"]
 
 var active := false
 var game: Game
 var rng: RandomNumberGenerator
 var board := CombatBoard.new()
 var units: Array[Dictionary] = []
-var current: Dictionary = {}
-var action := ""
-var phase := "Allies"
+var current: Dictionary = {}     # the ally acting
+var sel := "attack"              # the picked card
+var target: Dictionary = {}      # picked foe
+var ally_target: Dictionary = {} # picked ally (for ally cards)
+var result: Dictionary = {}      # last flip / cast: {coins, title, sub, good}
+var self_done := ""              # a self card just used
+var moved := 0                   # hexes moved by the last Move
+var phase := "allies"
 var rocks: Array = []
-var _busy := false
-var _log := ""
+var trees: Array = []
+var busy := false
+var hud: CombatHud
 
-var ui := CanvasLayer.new()
-var phase_label := Label.new()
-var end_button := Button.new()
-var portraits := VBoxContainer.new()
-var hotbar := HBoxContainer.new()
-var details := Label.new()
-var confirm := PanelContainer.new()
-var confirm_text := Label.new()
 var _overlays: Array[Node3D] = []
 var _hex_mesh: Mesh
-var _mat_reach: StandardMaterial3D
-var _mat_foe: StandardMaterial3D
-var _mat_current: StandardMaterial3D
+var _disc_mesh: Mesh
+var _mats := {}
 var _press := Vector2.ZERO
 var _press_ms := 0
 
@@ -51,23 +41,21 @@ var _press_ms := 0
 func _ready() -> void:
 	add_child(board)
 	var p := Piece.new()
-	var hexagon := Hex.hex_corners(Hex.CELL_RADIUS * 0.86, false)
+	var hexagon := Hex.hex_corners(Hex.CELL_RADIUS * 0.94, false)
 	hexagon.reverse()
 	p.flat(hexagon, 0.02, Color.WHITE)
 	_hex_mesh = p.mesh()
-	_mat_reach = _overlay_mat(Color(0.75, 0.95, 0.6, 0.55))     # PLACEHOLDER UI colours
-	_mat_foe = _overlay_mat(Color(1.0, 0.8, 0.2, 0.6))
-	_mat_current = _overlay_mat(Color(1.0, 1.0, 1.0, 0.6))
-	_build_ui()
-	ui.visible = false
-
-
-static func _overlay_mat(c: Color) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = c
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	return m
+	var d := Piece.new()
+	d.cylinder(Vector3.ZERO, 0.62, 0.02, Color.WHITE, 24)
+	_disc_mesh = d.mesh()
+	# Combat v14 colours: active ally rim, foes in reach (gold), the target (orange), allies in reach
+	# (light green circle), the ally target (dark green), hexes a Move can reach.
+	for k in [["active", "#FCF7EE"], ["reach", "#F2C14E"], ["target", "#B5532F"], ["ally", "#A8DC8C"],
+			["ally_target", "#2E8A47"], ["move", "#D3EBC1"], ["move_tree", "#86B97E"]]:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = Color(k[1])
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_mats[k[0]] = m
 
 
 ## Runs one fight to the end. Returns true if the party won.
@@ -75,266 +63,115 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int) -> bool:
 	game = g
 	rng = g.rng
 	active = true
-	_log = ""
 	units.clear()
+	result = {}
 	# The board grows out of the map tile: its terrain sets the trees and rocks (PLACEHOLDER counts).
 	var free: Array = CombatBoard.cells().filter(func(c): return not (c in PARTY_CELLS or c in ENEMY_CELLS))
 	var local := RandomNumberGenerator.new()
 	local.seed = hash("%d,%d" % [tile.x, tile.y])
-	var trees := []
+	trees = []
 	rocks = []
 	for k in Rules.BOARD_TREES.get(terrain, 0) + Rules.BOARD_ROCKS.get(terrain, 0):
 		var c = free.pop_at(local.randi_range(0, free.size() - 1))
 		(trees if k < Rules.BOARD_TREES.get(terrain, 0) else rocks).append(c)
 	board.setup(trees, rocks)
 	for i in game.party.size():
-		var m: Dictionary = game.party[i]
-		_add_unit(m, PARTY_CELLS[i], true)
+		_add_unit(game.party[i], PARTY_CELLS[i], true, "")
 	for i in foes:
 		var e: Dictionary = Rules.ENEMY.duplicate()
 		e.max_hp = e.hp
-		e.name = "%s %d" % [e.name, i + 1]
-		_add_unit(e, ENEMY_CELLS[i], false)
-	ui.visible = true
+		e.name = e.name % LABELS[i]
+		_add_unit(e, ENEMY_CELLS[i], false, LABELS[i])
+	if hud == null:
+		hud = CombatHud.new(self)
+		game.ui.add_child(hud)
+	hud.visible = true
+	game.rig.frame(position, 22.0, 52.0)
+	game.rig.focus = Vector2(368, 150)
 	_start_allies()
 	var won: bool = await finished
-	# HP carries back to the map.
 	for u in units:
 		if u.ally:
 			u.member.hp = maxi(u.hp, 0)
-	ui.visible = false
+	hud.visible = false
 	_clear_overlays()
+	game.rig.focus = Vector2(378, 200)
 	active = false
 	return won
 
 
-func _add_unit(m: Dictionary, c: Vector2i, ally: bool) -> void:
+func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String) -> void:
 	var mini := board.add_mini(m.mini, c, Vector2(0, -1) if ally else Vector2(0, 1))
-	var u := {name = m.name, mini = mini, cell = c, hp = m.hp, max_hp = m.max_hp, score = m.score,
-			ability = m.ability, ally = ally, down = m.hp <= 0, ap = 0, defending = false, used = {},
-			cards = m.get("cards", []), mark = null, member = m}
-	var l := Label3D.new()
-	l.font_size = 32
-	l.pixel_size = 0.007
-	l.outline_size = 10
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = true
-	l.position = Vector3(0, 1.75, 0)
-	l.modulate = Color(0.15, 0.3, 0.1) if ally else Color(0.7, 0.1, 0.05)
-	mini.add_child(l)
-	u.label = l
+	var u := {name = m.name, initial = m.get("initial", label), color = m.get("color", "#8E3B2E"), mini = mini,
+			cell = c, hp = m.hp, max_hp = m.max_hp, score = m.score, ability = m.ability, ally = ally,
+			down = m.hp <= 0, ap = 0, bonus = 0, defending = false, used = {}, used_fight = {},
+			blessed = false, poison = false, weapon = m.get("weapon", "spear"),
+			hot = m.get("hot", []), cards = m.get("cards", []), member = m}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
-	_update_label(u)
 
 
-func _update_label(u: Dictionary) -> void:
-	u.label.text = "%s%d/%d" % ["MARKED  " if _is_marked(u) else "", maxi(u.hp, 0), u.max_hp] if not u.down else "down"
+func allies() -> Array:
+	return units.filter(func(u): return u.ally)
 
 
-func _is_marked(u: Dictionary) -> bool:
-	for a in units:
-		if a.ally and a.mark == u:
-			return true
-	return false
+func foes_of(u: Dictionary) -> Array:
+	return units.filter(func(o): return o.ally != u.ally and not o.down)
 
 
-# --- UI ----------------------------------------------------------------------
-
-func _build_ui() -> void:
-	add_child(ui)
-	var theme := Theme.new()
-	theme.default_font_size = 17
-	theme.set_color("font_color", "Label", Color(0.2, 0.17, 0.13))
-	var root := Control.new()
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.theme = theme
-	ui.add_child(root)
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	# Party tray (left): phase and End on top, then a portrait per character with HP and AP.
-	var tray := PanelContainer.new()
-	tray.position = Vector2(16, 16)
-	tray.add_theme_stylebox_override("panel", Game._box(Color(0.55, 0.4, 0.28, 0.95), 10))
-	root.add_child(tray)
-	var tv := VBoxContainer.new()
-	tv.add_theme_constant_override("separation", 8)
-	tray.add_child(tv)
-	phase_label.add_theme_color_override("font_color", Color(1, 0.97, 0.9))
-	tv.add_child(phase_label)
-	end_button.text = "End phase"
-	end_button.pressed.connect(end_phase)
-	tv.add_child(end_button)
-	tv.add_child(portraits)
-
-	# Hotbar (bottom).
-	hotbar.add_theme_constant_override("separation", 10)
-	root.add_child(hotbar)
-	hotbar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 16)
-	hotbar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	hotbar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-
-	# Details panel (right).
-	var right := PanelContainer.new()
-	right.add_theme_stylebox_override("panel", Game._box(Color(0.98, 0.95, 0.88, 0.95), 14))
-	root.add_child(right)
-	right.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	right.offset_left = -330
-	right.offset_right = -16
-	right.offset_top = 16
-	right.offset_bottom = -16
-	var rv := VBoxContainer.new()
-	right.add_child(rv)
-	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	details.custom_minimum_size.x = 280
-	details.add_theme_font_size_override("font_size", 16)
-	rv.add_child(details)
-
-	# End phase confirmation when allies still have AP (DOCS: Combat screen).
-	confirm.set_anchors_preset(Control.PRESET_CENTER)
-	confirm.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	confirm.grow_vertical = Control.GROW_DIRECTION_BOTH
-	confirm.add_theme_stylebox_override("panel", Game._box(Color(0.98, 0.95, 0.88, 0.97), 18))
-	var cv := VBoxContainer.new()
-	cv.add_theme_constant_override("separation", 12)
-	confirm.add_child(cv)
-	confirm_text.add_theme_color_override("font_color", Color(0.2, 0.17, 0.13))
-	cv.add_child(confirm_text)
-	var cb := HBoxContainer.new()
-	cb.alignment = BoxContainer.ALIGNMENT_CENTER
-	cb.add_theme_constant_override("separation", 12)
-	cv.add_child(cb)
-	var keep := Button.new()
-	keep.text = "Keep playing"
-	keep.pressed.connect(func(): confirm.visible = false)
-	cb.add_child(keep)
-	var end := Button.new()
-	end.text = "End phase"
-	end.pressed.connect(func():
-		confirm.visible = false
-		_enemy_phase())
-	cb.add_child(end)
-	confirm.visible = false
-	root.add_child(confirm)
-	confirm.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+func card(id := "") -> Dictionary:
+	return Cards.get_card(sel if id == "" else id, current.get("weapon", ""))
 
 
-func _refresh() -> void:
-	phase_label.text = phase
-	end_button.disabled = _busy or phase != "Allies"
-	for c in portraits.get_children():
-		portraits.remove_child(c)
-		c.queue_free()
-	for u in units:
-		if not u.ally:
-			continue
-		var b := Button.new()
-		var pips := "●".repeat(u.ap) + "○".repeat(maxi(Rules.AP - u.ap, 0))
-		b.text = "%s\nHP %d/%d   AP %s%s" % [u.name, maxi(u.hp, 0), u.max_hp, pips, "   (down)" if u.down else ""]
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(230, 0)
-		b.disabled = u.down or _busy or phase != "Allies"
-		if u == current:
-			b.add_theme_stylebox_override("normal", Game._box(Color(1, 0.93, 0.7), 8))
-			b.add_theme_stylebox_override("disabled", Game._box(Color(1, 0.93, 0.7), 8))
-			b.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
-			b.add_theme_color_override("font_disabled_color", Color(0.2, 0.15, 0.1))
-		b.pressed.connect(select.bind(u))
-		portraits.add_child(b)
-	for c in hotbar.get_children():
-		hotbar.remove_child(c)
-		c.queue_free()
-	if not current.is_empty():
-		for key in ["move", "attack", "defend"] + Array(current.cards):
-			var a: Dictionary = ACTIONS[key]
-			var b := Button.new()
-			b.text = "%s\n%d AP" % [a.label, a.ap]
-			b.custom_minimum_size = Vector2(120, 64)
-			b.disabled = _busy or phase != "Allies" or not _can_use(current, key)
-			if key == action:
-				b.add_theme_stylebox_override("normal", Game._box(Color(1, 0.75, 0.4), 8))
-			b.pressed.connect(choose.bind(key))
-			hotbar.add_child(b)
-	_show_details()
-	_show_overlays()
+# --- Rules for using a card --------------------------------------------------------
+
+func ap_left(u: Dictionary) -> int:
+	return u.ap + u.bonus
 
 
-func _show_details() -> void:
-	var s := ""
-	if not current.is_empty() and action != "":
-		var a: Dictionary = ACTIONS[action]
-		s += "%s · %d AP · %s\n%s\n" % [a.label, a.ap, a.use, a.text]
-		if action == "attack":
-			s += "\nFlip: %d coins · %s · needs %d heads\nDamage on a hit: %d%s\n" % [current.score, current.ability,
-					Rules.HEADS_TO_HIT, current.score, " (+%d on your mark)" % Rules.MARK_BONUS if current.mark else ""]
-		s += "\nPick a target on the board.\n" if action in ["move", "attack", "hunters_mark"] else ""
-	elif not current.is_empty():
-		s += "%s · %d AP left\nPick an action.\n" % [current.name, current.ap]
-	s += "\n" + _log
-	details.text = s
+func spent(u: Dictionary, c: Dictionary) -> bool:
+	return (c.limit == "turn" and u.used.has(c.id)) or (c.limit == "fight" and u.used_fight.has(c.id))
 
 
-func _can_use(u: Dictionary, key: String) -> bool:
-	if u.down or u.ap < ACTIONS[key].ap:
-		return false
-	if ACTIONS[key].use == "Once per turn" and u.used.has(key):
-		return false
-	return true
+## Why u can't use card c right now, or "" (Combat v14's notes under the button).
+func cant_use(u: Dictionary, c: Dictionary) -> String:
+	if c.ap < 0:
+		return "AP cost not set yet"
+	if spent(u, c):
+		return "Once per fight: already used" if c.limit == "fight" else "Once per turn: already used"
+	if ap_left(u) < c.ap:
+		return "Not enough AP"
+	if c.get("effect", "") == "item":
+		return "No consumable equipped"    # PLACEHOLDER: no consumables in the loop yet
+	return ""
 
 
-func log_line(text: String) -> void:
-	_log = text + "\n" + _log
-	var lines := _log.split("\n")
-	if lines.size() > 14:
-		_log = "\n".join(lines.slice(0, 14))
+func in_reach(u: Dictionary, foe: Dictionary, c: Dictionary) -> bool:
+	return c.kind in ["attack", "save"] and not foe.down and not foe.ally and Rules.hex_distance(u.cell, foe.cell) <= c.get("range", 1)
 
 
-# --- Overlays ----------------------------------------------------------------
-
-func _clear_overlays() -> void:
-	for o in _overlays:
-		o.queue_free()
-	_overlays.clear()
+func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
+	return c.kind == "ally" and a.ally and not a.down and Rules.hex_distance(u.cell, a.cell) <= c.get("range", 1)
 
 
-func _overlay(c: Vector2i, mat: Material) -> void:
-	var mi := MeshInstance3D.new()
-	mi.mesh = _hex_mesh
-	mi.material_override = mat
-	mi.position = Hex.to3(Hex.cell_position(c.x, c.y), 0.005)
-	board.add_child(mi)
-	_overlays.append(mi)
+func _pay(u: Dictionary, c: Dictionary) -> void:
+	var from_bonus := mini(u.bonus, c.ap)     # bonus AP is spent first (DOCS)
+	u.bonus -= from_bonus
+	u.ap -= c.ap - from_bonus
+	if c.limit == "turn":
+		u.used[c.id] = true
+	elif c.limit == "fight":
+		u.used_fight[c.id] = true
 
 
-func _show_overlays() -> void:
-	_clear_overlays()
-	if current.is_empty() or phase != "Allies" or _busy:
-		return
-	_overlay(current.cell, _mat_current)
-	if action == "move":
-		for c in reachable(current).keys():
-			_overlay(c, _mat_reach)
-	elif action == "attack":
-		for u in foes_of(current):
-			if Rules.hex_distance(u.cell, current.cell) == 1:
-				_overlay(u.cell, _mat_foe)
-	elif action == "hunters_mark":
-		for u in foes_of(current):
-			_overlay(u.cell, _mat_foe)
-
-
-# --- Board helpers -------------------------------------------------------------
+# --- Board helpers -----------------------------------------------------------------
 
 func unit_at(c: Vector2i) -> Dictionary:
 	for u in units:
 		if u.cell == c and not (not u.ally and u.down):
 			return u
 	return {}
-
-
-func foes_of(u: Dictionary) -> Array:
-	return units.filter(func(o): return o.ally != u.ally and not o.down)
 
 
 func _open(c: Vector2i) -> bool:
@@ -378,14 +215,13 @@ func reachable(u: Dictionary) -> Dictionary:
 	return out
 
 
-## Shortest open path from u to any cell next to target (for the foes' moves).
-func path_next_to(u: Dictionary, target: Dictionary) -> Array:
+func path_next_to(u: Dictionary, goal: Dictionary) -> Array:
 	var came := {u.cell: u.cell}
 	var todo: Array = [u.cell]
 	var end = null
 	while not todo.is_empty():
 		var c: Vector2i = todo.pop_front()
-		if Rules.hex_distance(c, target.cell) == 1:
+		if Rules.hex_distance(c, goal.cell) == 1:
 			end = c
 			break
 		for n in Hex.NEIGHBOURS:
@@ -416,142 +252,266 @@ static func cell_at(p: Vector2) -> Vector2i:
 	return Vector2i(int(rq), int(rr))
 
 
-# --- The allies' phase -------------------------------------------------------
+# --- Overlays on the board --------------------------------------------------------
+
+func _clear_overlays() -> void:
+	for o in _overlays:
+		o.queue_free()
+	_overlays.clear()
+
+
+func _overlay(c: Vector2i, mat: String, disc := false) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = _disc_mesh if disc else _hex_mesh
+	mi.material_override = _mats[mat]
+	mi.position = Hex.to3(Hex.cell_position(c.x, c.y), 0.004 if not disc else 0.012)
+	board.add_child(mi)
+	_overlays.append(mi)
+
+
+func _show_overlays() -> void:
+	_clear_overlays()
+	if current.is_empty() or phase != "allies":
+		return
+	var c := card()
+	if c.kind == "move" and not busy and ap_left(current) >= 1:
+		for cell in reachable(current).keys():
+			_overlay(cell, "move_tree" if cell in trees else "move")
+	_overlay(current.cell, "active")
+	for u in units:
+		if in_reach(current, u, c):
+			_overlay(u.cell, "target" if u == target else "reach")
+		if ally_in_reach(current, u, c):
+			_overlay(u.cell, "ally_target" if u == ally_target else "ally", true)
+
+
+func refresh() -> void:
+	_show_overlays()
+	hud.refresh()
+
+
+# --- The allies' phase -------------------------------------------------------------
 
 func _start_allies() -> void:
-	phase = "Allies"
+	phase = "allies"
 	for u in units:
 		if u.ally:
 			u.ap = 0 if u.down else Rules.AP
+			u.bonus = 0
 			u.used = {}
 			u.defending = false      # Defend lasts until your next turn
+			u.poison = false
 	current = {}
 	for u in units:
 		if u.ally and not u.down:
-			current = u
+			select(u)
 			break
-	action = ""
-	_refresh()
+	refresh()
 
 
+## Make u the acting character (portrait or token); the camera pans to them (DOCS: Combat screen -> Camera).
 func select(u: Dictionary) -> void:
-	if _busy or u.down or not u.ally or phase != "Allies":
+	if busy or u.down or not u.ally or phase != "allies":
 		return
 	current = u
-	action = ""
-	game.rig.ease_to(board.global_position + u.mini.position * 0.5, game.rig.distance, game.rig.yaw_deg)
-	_refresh()
+	sel = "attack"
+	target = {}
+	ally_target = {}
+	result = {}
+	self_done = ""
+	moved = 0
+	game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
+	refresh()
 
 
-func choose(key: String) -> void:
-	if _busy or current.is_empty() or not _can_use(current, key):
+func pick_card(id: String) -> void:
+	if busy or current.is_empty():
 		return
-	action = key
-	if key == "defend":
-		current.ap -= 1
-		current.used["defend"] = true
-		current.defending = true
-		log_line("%s braces (Defend)." % current.name)
-		action = ""
-	_refresh()
+	sel = id
+	result = {}
+	self_done = ""
+	ally_target = {}
+	moved = 0
+	if not target.is_empty() and not in_reach(current, target, card()):
+		target = {}
+	refresh()
 
 
 func click_cell(c: Vector2i) -> void:
-	if _busy or phase != "Allies":
+	if busy or phase != "allies" or current.is_empty():
 		return
 	var u := unit_at(c)
-	if action == "move" and reachable(current).has(c):
-		_busy = true
-		current.ap -= 1
-		var path: Array = reachable(current)[c]
-		_refresh()
-		current.cell = c
-		await board.step_along(current.mini, path)
-		_busy = false
-		if current.ap < 1:
-			action = ""
-		_refresh()
-	elif action == "attack" and not u.is_empty() and not u.ally and Rules.hex_distance(c, current.cell) == 1:
-		current.ap -= 1
-		await _attack(current, u)
-		if not active:
-			return
-		if current.is_empty() or not _can_use(current, "attack"):
-			action = ""
-		_refresh()
-	elif action == "hunters_mark" and not u.is_empty() and not u.ally:
-		current.ap -= 1
-		current.used["hunters_mark"] = true
-		var old = current.mark
-		current.mark = u
-		if old:
-			_update_label(old)
-		_update_label(u)
-		log_line("%s marks %s (Hunter's Mark)." % [current.name, u.name])
-		action = ""
-		_refresh()
+	var k := card()
+	if not u.is_empty() and in_reach(current, u, k):
+		target = u
+		result = {}
+		refresh()
+	elif not u.is_empty() and ally_in_reach(current, u, k):
+		ally_target = u
+		result = {}
+		refresh()
 	elif not u.is_empty() and u.ally:
 		select(u)
+	elif k.kind == "move" and reachable(current).has(c) and cant_use(current, k) == "":
+		await _move(current, reachable(current)[c])
 
 
-func end_phase() -> void:
-	if _busy or phase != "Allies":
+func _move(u: Dictionary, path: Array) -> void:
+	busy = true
+	_pay(u, card("move"))
+	u.cell = path[-1]
+	moved = path.size()
+	refresh()
+	await board.step_along(u.mini, path)
+	game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
+	busy = false
+	refresh()
+
+
+## The panel's main button: Flip coins (attacks), Cast (saves and ally spells) or Use (self cards).
+func press_button() -> void:
+	if busy or current.is_empty():
 		return
-	var left := PackedStringArray()
-	for u in units:
-		if u.ally and not u.down and u.ap > 0:
-			left.append("%s: %d AP" % [u.name, u.ap])
-	if left.is_empty():
-		_enemy_phase()
-	else:
-		confirm_text.text = "Some allies still have AP:\n" + "\n".join(left)
-		confirm.visible = true
+	var k := card()
+	if cant_use(current, k) != "":
+		return
+	match k.kind:
+		"attack":
+			if target.is_empty():
+				return
+			_pay(current, k)
+			await _attack(current, target, k)
+		"save":
+			if target.is_empty():
+				return
+			_pay(current, k)
+			await _save_spell(current, target, k)
+		"ally":
+			if ally_target.is_empty():
+				return
+			_pay(current, k)
+			_ally_spell(current, ally_target, k)
+		"self":
+			_pay(current, k)
+			_use_self(current, k)
+	if active:
+		refresh()
 
 
-# --- Attacks -------------------------------------------------------------------
-
-## Weapon attacks flip coins to hit (DOCS): coins = the attack's ability score, 1 heads hits.
-## PLACEHOLDER: damage = that score, +2 on the attacker's mark, -1 if the target defends.
-func _attack(a: Dictionary, t: Dictionary) -> void:
-	_busy = true
-	_refresh()
-	var coins := Coins.flip(rng, a.score)
-	var hit := Coins.heads(coins) >= Rules.HEADS_TO_HIT
+## Weapon attacks and attack spells flip the attacker's coins to hit (DOCS). Bless adds a coin.
+## PLACEHOLDER damage: the attack's score; +2 for Sneak Attack on a flanked foe; +1 per hit under
+## Poison Blade; -1 if the target defends.
+func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	busy = true
+	refresh()
+	var n: int = a.score + (1 if a.blessed else 0)
+	a.blessed = false
+	var coins := Coins.flip(rng, n)
+	var heads := Coins.heads(coins)
+	var hit := heads >= Rules.HEADS_TO_HIT
 	var dmg := 0
 	if hit:
-		dmg = a.score + (Rules.MARK_BONUS if a.mark == t else 0) - (Rules.DEFEND_REDUCTION if t.defending else 0)
+		dmg = a.score
+		if k.get("effect", "") == "sneak" and _flanked(a, t):
+			dmg += Rules.SNEAK_BONUS
+		if a.poison:
+			dmg += Rules.POISON_BONUS
+		if t.defending:
+			dmg -= Rules.DEFEND_REDUCTION
 		dmg = maxi(dmg, 0)
-	log_line("%s attacks %s: %d coins (%s) %s → %s" % [a.name, t.name, a.score, a.ability, Coins.text(coins),
-			"hit, %d damage" % dmg if hit else "miss"])
-	_show_details()
+	if a.ally:
+		result = {coins = coins, title = "Hit!" if hit else "Miss", good = hit,
+				sub = "%d heads (needs %d). %s" % [heads, Rules.HEADS_TO_HIT, "Damage: %d [placeholder, set by %s]" % [dmg, a.ability] if hit else "No damage."]}
+		hud.refresh()
 	await board.attack(a.mini, t.mini, hit)
-	_float(t.mini, "-%d" % dmg if hit else "miss", Color(0.8, 0.1, 0.05) if hit else Color(0.3, 0.3, 0.3))
+	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
-		t.hp -= dmg
-		if t.hp <= 0:
-			t.down = true
-			log_line("%s is down." % t.name)
-			await board.fall(t.mini)
-	_update_label(t)
-	_busy = false
+		await _hurt(t, dmg)
+	busy = false
 	_check_end()
 
 
-func _float(mini: Node3D, text: String, col: Color) -> void:
-	var l := Label3D.new()
-	l.text = text
-	l.font_size = 48
-	l.pixel_size = 0.007
-	l.outline_size = 12
-	l.modulate = col
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = true
-	l.position = mini.position + Vector3(0, 2.1, 0)
-	board.add_child(l)
-	var tw := create_tween().set_parallel()
-	tw.tween_property(l, "position:y", l.position.y + 0.8, 1.0)
-	tw.tween_property(l, "modulate:a", 0.0, 1.0).set_delay(0.4)
-	tw.chain().tween_callback(l.queue_free)
+func _flanked(a: Dictionary, t: Dictionary) -> bool:
+	for u in units:
+		if u != a and u.ally == a.ally and not u.down and Rules.hex_distance(u.cell, t.cell) == 1:
+			return true
+	return false
+
+
+## Save spells (Sacred Flame): the foe flips to save; a save halves the damage and ignores riders (DOCS).
+func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	busy = true
+	refresh()
+	var coins := Coins.flip(rng, Rules.ENEMY_SAVE_COINS)
+	var heads := Coins.heads(coins)
+	var saved := heads >= 1
+	var dmg: int = Rules.SPELL_DAMAGE / 2 if saved else Rules.SPELL_DAMAGE
+	result = {coins = coins, title = "Saved: half damage" if saved else "Failed save!", good = not saved,
+			sub = "%s flipped %d heads (needs 1 to save). %s" % [t.name, heads, "Riders are ignored. Damage: %d" % dmg if saved else "Full damage: %d [placeholder, set by WIS]" % dmg]}
+	hud.refresh()
+	await board.attack(a.mini, t.mini, true)
+	hud.float_text(t, "-%d" % dmg, true)
+	await _hurt(t, dmg)
+	busy = false
+	_check_end()
+
+
+func _ally_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	if k.effect == "heal":
+		var before: int = t.hp
+		t.hp = mini(t.max_hp, t.hp + Rules.HEAL)
+		result = {coins = [], title = "Healed", good = true, sub = "%s heals %d HP. [amount set by WIS; placeholder]" % [t.name, t.hp - before]}
+		hud.float_text(t, "+%d" % (t.hp - before), false, true)
+	else:
+		t.blessed = true
+		result = {coins = [], title = "Blessed", good = true, sub = "%s flips an extra coin on their next check." % t.name}
+
+
+func _use_self(a: Dictionary, k: Dictionary) -> void:
+	self_done = k.id
+	match k.get("effect", ""):
+		"surge":
+			# +3 bonus AP, but never more than 6 AP in a turn; the rest is lost (DOCS).
+			a.bonus += maxi(0, mini(3, Rules.AP_CAP - ap_left(a)))
+		"heal":
+			var before: int = a.hp
+			a.hp = mini(a.max_hp, a.hp + Rules.HEAL)
+			hud.float_text(a, "+%d" % (a.hp - before), false, true)
+		"poison":
+			a.poison = true
+		"defend":
+			a.defending = true
+
+
+func self_message(id: String) -> String:
+	return {"action_surge": "+3 bonus AP this turn. Bonus AP is spent first and lost at the end of the turn.",
+		"second_wind": "Healed %d HP. [amount not set; placeholder]" % Rules.HEAL,
+		"poison_blade": "Hits this turn poison (+%d damage each; placeholder)." % Rules.POISON_BONUS,
+		"defend": "Bracing: %d less damage per hit until your next turn. [placeholder]" % Rules.DEFEND_REDUCTION}.get(id, "")
+
+
+func _hurt(t: Dictionary, dmg: int) -> void:
+	t.hp -= dmg
+	if t.hp <= 0 and not t.down:
+		t.down = true
+		if t == target:
+			target = {}
+		await board.fall(t.mini)
+
+
+func end_phase() -> void:
+	if busy or phase != "allies":
+		return
+	var left := allies().filter(func(u): return not u.down and ap_left(u) > 0)
+	if left.is_empty():
+		_enemy_phase()
+	else:
+		hud.show_confirm(left)
+
+
+func confirm_end() -> void:
+	hud.hide_confirm()
+	_enemy_phase()
 
 
 func _check_end() -> void:
@@ -560,30 +520,31 @@ func _check_end() -> void:
 	var allies_up := units.any(func(u): return u.ally and not u.down)
 	var foes_up := units.any(func(u): return not u.ally and not u.down)
 	if not foes_up or not allies_up:
-		_busy = true
-		phase = "Victory" if not foes_up else "Defeat"
-		current = {}
-		_refresh()
-		await get_tree().create_timer(1.2).timeout
-		_busy = false
+		busy = true
+		phase = "over"
+		refresh()
+		await get_tree().create_timer(1.0).timeout
+		busy = false
 		finished.emit(not foes_up)
 
 
-# --- The enemies' phase ------------------------------------------------------
+# --- The enemies' phase -------------------------------------------------------------
 
 ## PLACEHOLDER foe behaviour: each foe walks toward the nearest standing ally and attacks while it has AP.
 func _enemy_phase() -> void:
-	phase = "Enemies"
-	current = {}
-	action = ""
-	_busy = true
-	_refresh()
+	phase = "enemies"
+	busy = true
+	target = {}
+	ally_target = {}
+	result = {}
+	refresh()
+	await get_tree().create_timer(0.5).timeout
 	for e in units.duplicate():
-		if e.ally or e.down:
+		if e.ally or e.down or not active or phase != "enemies":
 			continue
 		e.defending = false
 		e.ap = Rules.AP
-		while e.ap > 0 and active and phase == "Enemies":
+		while e.ap > 0 and active and phase == "enemies":
 			var targets := foes_of(e)
 			if targets.is_empty():
 				break
@@ -591,8 +552,8 @@ func _enemy_phase() -> void:
 			var t: Dictionary = targets[0]
 			if Rules.hex_distance(t.cell, e.cell) == 1:
 				e.ap -= 1
-				await _attack(e, t)
-				_busy = true
+				await _attack(e, t, Cards.get_card("attack", "spear"))
+				busy = true
 			else:
 				var path := path_next_to(e, t)
 				if path.is_empty():
@@ -602,12 +563,12 @@ func _enemy_phase() -> void:
 				e.cell = path[-1]
 				await board.step_along(e.mini, path)
 		await get_tree().create_timer(0.25).timeout
-	_busy = false
-	if active and phase == "Enemies":
+	busy = false
+	if active and phase == "enemies":
 		_start_allies()
 
 
-# --- Input -------------------------------------------------------------------
+# --- Input --------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
@@ -618,6 +579,3 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_ms = Time.get_ticks_msec()
 		elif event.position.distance_to(_press) < Game.TAP_PIXELS and Time.get_ticks_msec() - _press_ms < Game.TAP_MS:
 			click_cell(cell_at(game.ground_point(event.position) - Vector2(position.x, -position.z)))
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		action = ""
-		_refresh()

@@ -11,6 +11,9 @@ extends Node3D
 @export var lens_mm := 50.0               # Blender's preview camera: 50 mm lens on a 36 mm sensor
 
 var target := Vector3.ZERO
+## Where the target sits on screen, in the 844 x 390 UI layout (the mockups centre the action in the open
+## area between the panels, not in the middle of the screen).
+var focus := Vector2(422, 195)
 var yaw_deg := 0.0                        # 0 = looking north, from the south
 var home := {}
 
@@ -57,6 +60,10 @@ func _apply() -> void:
 	var flat := distance * cos(el)
 	camera.position = target + Vector3(-sin(yaw) * flat, distance * sin(el), cos(yaw) * flat)
 	camera.look_at(target, Vector3.UP)
+	# Shift the view so the target lands on `focus` (pixels of the 844-wide layout -> metres at the target).
+	var k := 2.0 * distance * tan(deg_to_rad(camera.fov) * 0.5) / 844.0
+	camera.h_offset = (422.0 - focus.x) * k
+	camera.v_offset = -(195.0 - focus.y) * k
 
 
 func _unhandled_input(event: InputEvent) -> void:
