@@ -41,7 +41,7 @@ Blender -b --factory-startup --python art/scripts/render_preview.py
   - `base_<terrain>`: the slab, with its ground on top at z = 0 and soil sides down to −0.6. The top is subdivided so the engine's shader can fade the ground colour toward a neighbour's.
   - `<terrain>_centre`: the middle of the tile, inside an inner hexagon reaching 45% of the way to each edge.
   - `<terrain>_edge_same` and `<terrain>_edge_other`: the wedge between the centre and edge 0, which faces +X.
-  - `river_corner` (river only): water filling the corner between edge 0 and edge 1.
+  - `river_corner` (tiles_v2 only): water filling the corner between edge 0 and edge 1. Superseded: water will be drawn by the engines (see Versions).
 - **How the engines assemble a tile:** place the base and the centre. For each edge i (0 = +X, counting anticlockwise in 60° steps), place `edge_same` if the neighbour there has the same terrain, otherwise `edge_other`, rotated by 60° × i. Then, for a terrain with a corner piece, for each corner i (between edge i and edge i + 1), place the corner rotated by 60° × i if both of those neighbours have the same terrain. A chain of river tiles stays a narrow river; a clump opens into a lake. Axial neighbour offsets per edge are in `scripts/hexkit.py` (`NEIGHBOURS`), and `scripts/render_preview.py` does exactly this.
 - **Combat cell:** flat-top, spaced 1.0 across the flats, drawn at 0.94 so a thin gap shows. A radius-4 board (61 cells) has a pointy-top outline the size of one map tile. Pieces: `cell_grass_a/b/c`, `cell_tree` (doesn't block), `cell_rock` (blocks).
 - **Minis:** about 1.3 tall, on a base that fills one combat cell.
@@ -52,5 +52,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village. Colours are 
 
 - **tiles_v1:** the first draft; rivers as wide as a tile edge, villages on sand.
 - **tiles_v2:** narrow river channels from a small pond, a corner piece that opens clumps into lakes, villages on cobblestone with garden strips at their borders.
+
+- **Next:** water moves to the engines. Each engine draws a water tile's river curves, lake shore or pond from its own water neighbours (rules: `design/07 Presentation.md` → Art direction → Water flows freely). The art kit keeps only the river tile's grass base plus bank dressing and boats. A Python version of the water drawing will live in `scripts/` as the reference both engines copy.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).
