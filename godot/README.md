@@ -5,7 +5,7 @@ The Godot prototype, which grew out of the Godot half of the engine prototype ([
 The prototype has two parts:
 
 - **The playable loop** (`scenes/main.tscn`, the default scene): place map cards, walk the party, fight on the tile's combat board, and go back to the map with the hand refilled. Its screens are built from the mockups: exploration v8b, combat v14 and after combat v7.
-- **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on, plus every terrain and every tier 1 region variant (tiles v12; see Terrains and region variants).
+- **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on, plus every terrain and every tier 1 region variant (tiles v13; see Terrains and region variants).
 
 ## Playing the loop
 
@@ -170,14 +170,14 @@ For Ethan to decide:
 10. **The screens the loop needed but no mockup covers:** a defeat screen, resting at camp, and the After combat buttons when nobody levels up.
 11. **Who picks the cards to discard at rest** (presumably the player, but the screen for it isn't designed).
 
-## Terrains and region variants (tiles v12)
+## Terrains and region variants (tiles v13)
 
 All nine terrains and the nine tier 1 region variants from `art/export/tiles.glb`, built by the same rules as `render_preview.py`'s `build_map`. Side by side with the previews (preview left, Godot right):
 
 | Map | Preview | Godot | Side by side |
 | --- | --- | --- | --- |
-| Every terrain (`TERRAIN_MAP`) | `art/preview/terrains_v7.png` | `screens/terrains.png` | `screens/compare/terrains_preview_vs_godot.png` |
-| Every region finished (`VARIANT_MAP`) | `art/preview/variants_v5.png` | `screens/variants.png` | `screens/compare/variants_preview_vs_godot.png` |
+| Every terrain (`TERRAIN_MAP`) | `art/preview/terrains_v8.png` | `screens/terrains.png` | `screens/compare/terrains_preview_vs_godot.png` |
+| Every region finished (`VARIANT_MAP`) | `art/preview/variants_v6.png` | `screens/variants.png` | `screens/compare/variants_preview_vs_godot.png` |
 | The same at night (toadstools glow, mist) | none | `screens/variants_night.png` | |
 
 ```bash
@@ -249,7 +249,7 @@ v10's own hill grass material adds one surface to each hills piece (about 80 obj
 
 **For the art (round 4): down to small things.**
 
-1. **Ground cover reads as speckle.** On plains and meadows the dark `grass_ink` tufts (#4F7A33) on light grass make every open tile look dotted from the game camera; it's the most visible thing across the review sheets. A tuft colour nearer the grass, or fewer tufts, would calm it.
+1. ~~**Ground cover reads as speckle.**~~ Done in tiles v13 (`grass_ink` #7FA95A, also in `hex.gd` for the engine-built ground cover). On plains and meadows the dark `grass_ink` tufts (#4F7A33) on light grass make every open tile look dotted from the game camera; it's the most visible thing across the review sheets. A tuft colour nearer the grass, or fewer tufts, would calm it.
 2. **The bog mist turns beige at dawn and dusk** because it takes the warm light. It's my placeholder, not art; noted here because it's the one variant that still looks muddy at those times.
 
 **The biggest thing that still keeps the map from looking finished: the light at dawn, dusk and night.** Midday matches the previews and looks right; the other three are placeholder colours (open question in `design/07 Presentation.md`), and they still wash the whole map olive at dawn, brown-pink at dusk and flat blue-grey at night. Picking real time-of-day colours (sun, ambient, backdrop) is the next step that would change every screen. After that comes motion: only the water moves (the terrain motion pass is an open item in the docs).
@@ -322,7 +322,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 | `screens/combat_movie.mp4` | 10 s of attacks on the combat board |
 | `screens/loop_movie.mp4` | One full loop, played by the demo (54 s): placing cards, walking to an encounter, the fight, the win and the cards it draws, then building again until the hand runs out (with the 45-card placeholder deck it no longer finishes a region; the variants movie shows that). Recorded with tiles v12 |
 | `screens/loop_01_…png` … `loop_15_…png` | Stills of the same loop, one per screen state |
-| `screens/terrains.png`, `variants.png`, `variants_night.png` | Every terrain, and every region finished, framed like `art/preview/terrains_v7.png` and `variants_v5.png` |
+| `screens/terrains.png`, `variants.png`, `variants_night.png` | Every terrain, and every region finished, framed like `art/preview/terrains_v8.png` and `variants_v6.png` |
 | `screens/variants_movie.mp4`, `variants_01_…png` … `variants_04_all.png` | Regions finishing in the loop and changing to their variants |
 | `screens/compare/*.png` | Each loop screen under its mockup artboard (see Screens next to the mockups) |
 

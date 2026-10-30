@@ -18,7 +18,7 @@ const NEIGHBOURS := [Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1), Vector2i(
 const PALETTE := {
 	"plains": "#A8CF7E", "forest": "#5E8F5A", "farmland": "#DCC562", "river": "#86BEDB", "village": "#E6C590",
 	"hills": "#BFAE8E", "swamp": "#7F9A6E", "desert": "#EDD49A", "ruins": "#B3ADA4", "soil_light": "#8A6446",
-	"soil_dark": "#6B4C35", "grass_ink": "#4F7A33", "leaf": "#4E8049", "leaf_dark": "#3B6A3A",
+	"soil_dark": "#6B4C35", "grass_ink": "#7FA95A", "leaf": "#4E8049", "leaf_dark": "#3B6A3A",
 	"trunk": "#7A5236", "field_a": "#DCC562", "field_b": "#C9A94A", "field_c": "#9DBF5E", "hedge": "#4F7A33",
 	"water": "#86BEDB", "bank": "#C9B58A", "reed": "#6E8F3E", "lily": "#5E9E4E", "boat": "#E9DCC0",
 	"wall": "#EFE2C6", "roof": "#B5523B", "road": "#CDB58A", "cobble": "#BCB2A4", "cobble_dark": "#A69C8E",
