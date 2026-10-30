@@ -174,7 +174,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: maximum ability score (from v10 the gear screen's abilities strip keeps coins on one line, so they get hard to count past about 6)
 - [ ] New: feedback on character & gear v8d, then confirm it as final
 - [ ] New: the Action cards and Weapon mastery screens copy the gear screen's top bar with its party switcher; now that gear v10 moved the party to a left tray, do they follow?
-- [ ] New: character & gear after v11 feedback (Oct 30: glowing slots, proficiencies on tap and new-item dots kept; held-item banner dropped; picking up an equipped item filters to replacements): where passives go, where a crossed slot's reason shows, and a reorganisation for the wasted space
+- [ ] New: character & gear v12: pick a layout (v12a buttons under the party, or v12c character column); who owns a passive (one character or the whole party); where a crossed slot's reason shows (v12 tries a pop-up beside the slot)
 - [x] ~~Character subtitles~~ (settled Oct 30, 2026: "Race Class (Subclass) · Lv", no "Hero" or "Companion"; see Presentation → Screen text)
 - [ ] New: combat screen: where the acting character's name shows
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
