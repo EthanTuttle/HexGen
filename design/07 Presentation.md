@@ -407,6 +407,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** whether the mini's base rim colour marks the character or the side (ally/enemy)
 - [ ] **New:** exploration v9: the party as a cluster of true-scale minis instead of one token; combat v15: flat-top cells (both chosen Oct 29, 2026)
 - [ ] **New:** terrain variants with other farm and village borders: stacked flat-stone walls and block stone walls were tried (Oct 29, 2026) and kept for later variants; wooden fences are the default
+- [ ] **New:** terrain motion pass (later, in Godot, once the terrains are done; added Oct 30, 2026): give the other terrains motion the way the water has it, e.g. trees swaying and sand drifting. What moves on each terrain, and how much: open
 - [ ] **New:** which way water flows. The prototype's placeholder: toward the bottom of the screen in the map's starting orientation, so both tiles on an edge agree; it makes springs sources and lakes downstream. Alternatives: from springs toward lakes, or from higher terrain (hills) downhill
 - [ ] **New:** minis painted, unpainted resin (like Reference 3), or mixed (e.g. party painted, enemies unpainted)
 - [ ] **New:** Fluffy's own skeleton still needs the category-free worn gear anyone can wear (some helmets, leggings, boots and gloves: [Weapons & gear](04 Weapons & gear.md) → Equipment) fitted to his cat body

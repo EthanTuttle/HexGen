@@ -160,7 +160,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
 - [ ] Godot on iPhone: check the prototype's frame rate on the iPhone 15 Pro (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
-- [ ] Desert dunes: rolling sand swells or wind ripples? (see Multiplayer & tech → Open questions)
+- [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
+- [ ] Terrain motion pass, later in Godot: trees sway, sand drifts, like the water (see Presentation → Open questions)
 - [x] ~~Engine prototype: which terrains the test tiles cover~~ (settled Oct 29: plains, forest, farmland, river/lake, village; see Multiplayer & tech → Engine prototype)
 
 **Presentation**

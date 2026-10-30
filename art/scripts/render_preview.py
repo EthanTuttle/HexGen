@@ -70,10 +70,9 @@ def place(templates, name, col, at, angle=0.0):
     return obj
 
 
-def build_map(templates, animated=False, tiles=None, desert="swells"):
+def build_map(templates, animated=False, tiles=None):
     """Places the test map. With animated=True, water tiles get banks and dressing only and are
-    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats.
-    desert picks the sand style (sand.STYLES)."""
+    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats."""
     MAP = tiles or globals()["MAP"]
     water_tiles = []
     col = hk.new_collection("map")
@@ -92,7 +91,7 @@ def build_map(templates, animated=False, tiles=None, desert="swells"):
         if terrain == "desert":
             # The sand is shaped in world space, the way the engines will.
             p = hk.Piece(f"sand_{q}_{r}")
-            sand.add_sand(p, MAP, q, r, desert)
+            sand.add_sand(p, MAP, q, r)
             p.finish(col, at)
         joined = [linked(terrain, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
         if terrain == "hills":
@@ -193,7 +192,7 @@ def build_board(templates, radius=4):
 
 if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
-    # --terrains renders TERRAIN_MAP (every terrain) instead, with --desert=swells or --desert=ripples.
+    # --terrains renders TERRAIN_MAP (every terrain) instead.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -201,10 +200,9 @@ if __name__ == "__main__":
     cells = args[1] if len(args) > 1 else latest("combat", "combat_cells")
     if "terrains" in flags:
         hk.empty_scene()
-        style = flags.get("desert") or "swells"
-        build_map(load_templates(tiles), tiles=TERRAIN_MAP, desert=style)
+        build_map(load_templates(tiles), tiles=TERRAIN_MAP)
         stage(Vector((4, -1, 0)), 82, 45)
-        render(f"terrains_{style}")
+        render("terrains")
         sys.exit(0)
     hk.empty_scene()
     build_map(load_templates(tiles))

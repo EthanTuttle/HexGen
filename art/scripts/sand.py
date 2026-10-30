@@ -2,7 +2,7 @@
 
 Desert dunes aren't tile pieces. Like ground cover, the engine shapes the sand from one world-space pattern,
 so dunes carry on across joined desert tiles and every dune on the map lines up with one wind direction:
-1. height(x, y) is a pattern of crests running across the wind: long soft swells, or small wind ripples.
+1. height(x, y) is a pattern of long, soft swells whose crests run across the wind.
 2. It fades to flat within FADE metres of any edge that faces a non-desert tile (or empty space), measured
    in world space, so both tiles agree along a shared edge and at corners.
 3. Each desert tile gets a surface mesh sampled on a grid that lines up with its neighbours' along every
@@ -16,10 +16,9 @@ import math
 import ground_cover as gc
 import water as wt
 
-STYLES = ("swells", "ripples")
 WIND = math.radians(25)    # the wind blows along this direction; crests run across it
 FADE = (0.3, 2.2)          # flat within 0.3 m of a non-desert edge, full height from 2.2 m
-GRID = {"swells": (28, 32), "ripples": (44, 50)}  # samples across one sixth of a tile: depth, side to side
+ND, NV = 28, 32            # grid samples across one sixth of a tile: depth, side to side
 PROP_CELL = 2.4
 
 
@@ -31,15 +30,11 @@ def profile(phase, windward):
     return 0.5 + 0.5 * math.cos(math.pi * (f - windward) / (1 - windward))
 
 
-def height(x, y, style):
+def height(x, y):
     u = x * math.cos(WIND) + y * math.sin(WIND)     # along the wind
     w = -x * math.sin(WIND) + y * math.cos(WIND)    # across it
-    if style == "swells":
-        phase = u / 6.5 + 0.25 * math.sin(w / 7.0 + 0.5) + 0.15 * math.sin(w / 3.1)
-        return 0.55 * (0.75 + 0.25 * math.sin(w / 5.3)) * profile(phase, 0.7)
-    # ripples: small parallel ridges that bend slowly, over a very low swell
-    phase = u / 0.85 + 0.4 * math.sin(w / 4.0) + 0.2 * math.sin(u / 9.0)
-    return 0.09 * profile(phase, 0.75) + 0.12 * profile(u / 9.0 + 0.2 * math.sin(w / 6.0), 0.6)
+    phase = u / 6.5 + 0.25 * math.sin(w / 7.0 + 0.5) + 0.15 * math.sin(w / 3.1)
+    return 0.55 * (0.75 + 0.25 * math.sin(w / 5.3)) * profile(phase, 0.7)
 
 
 def seg_dist(p, a, b):
@@ -59,17 +54,16 @@ def fade(terrains, q, r, x, y):
     return t * t * (3 - 2 * t)
 
 
-def surface_z(terrains, q, r, x, y, style):
-    return height(x, y, style) * fade(terrains, q, r, x, y)
+def surface_z(terrains, q, r, x, y):
+    return height(x, y) * fade(terrains, q, r, x, y)
 
 
-def tile_surface(terrains, q, r, style):
+def tile_surface(terrains, q, r):
     """(verts, tris) for desert tile (q, r): verts are tile-local (x, y, z), tris index them anticlockwise.
     Each sixth of the tile is a grid between the centre and one edge; edge samples sit where the
     neighbour's do, so joined tiles share their border exactly."""
     cx, cy = gc.tile_centre(q, r)
-    ND, NV = GRID[style]
-    verts, tris = [(0.0, 0.0, surface_z(terrains, q, r, cx, cy, style))], []
+    verts, tris = [(0.0, 0.0, surface_z(terrains, q, r, cx, cy))], []
     for i in range(6):
         n = wt.normal(i)
         t = (-n[1], n[0])
@@ -83,7 +77,7 @@ def tile_surface(terrains, q, r, style):
             for b in range(NV + 1):
                 v = -1 + 2 * b / NV
                 x, y = wt.add(wt.mul(n, d), wt.mul(t, v * d * math.tan(math.radians(30))))
-                verts.append((x, y, surface_z(terrains, q, r, cx + x, cy + y, style)))
+                verts.append((x, y, surface_z(terrains, q, r, cx + x, cy + y)))
                 row.append(len(verts) - 1)
             rows.append(row)
         for a in range(ND):
@@ -95,7 +89,7 @@ def tile_surface(terrains, q, r, style):
     return verts, tris
 
 
-def props(terrains, q, r, style):
+def props(terrains, q, r):
     """(kind, x, y, z, cell) of cacti, rocks and bushes on desert tile (q, r), tile-local, from a world hash."""
     cx, cy = gc.tile_centre(q, r)
     out = []
@@ -109,11 +103,11 @@ def props(terrains, q, r, style):
                 continue
             k = gc.hash01(ix, iy, 13)
             kind = "cactus" if k < 0.5 else "rock" if k < 0.8 else "bush"
-            out.append((kind, x - cx, y - cy, surface_z(terrains, q, r, x, y, style), (ix, iy)))
+            out.append((kind, x - cx, y - cy, surface_z(terrains, q, r, x, y), (ix, iy)))
     return out
 
 
-def add_sand(piece, terrains, q, r, style):
+def add_sand(piece, terrains, q, r):
     """Builds desert tile (q, r)'s sand and props into a hexkit.Piece placed at the tile's centre."""
     import random
 
@@ -121,7 +115,7 @@ def add_sand(piece, terrains, q, r, style):
 
     import build_tiles as bt
 
-    verts, tris = tile_surface(terrains, q, r, style)
+    verts, tris = tile_surface(terrains, q, r)
     bm = piece.bm
     vs = [bm.verts.new((x, y, z + 0.01)) for x, y, z in verts]
     ground = piece._slot("desert")
@@ -129,7 +123,7 @@ def add_sand(piece, terrains, q, r, style):
         f = bm.faces.new([vs[k] for k in tri])
         f.material_index = ground
         piece.surface.add(f)
-    for kind, x, y, z, (ix, iy) in props(terrains, q, r, style):
+    for kind, x, y, z, (ix, iy) in props(terrains, q, r):
         rng = random.Random(gc.hash01(ix, iy, 14))
         at = Vector((x, y, z - 0.03))
         if kind == "cactus":
