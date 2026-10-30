@@ -223,18 +223,23 @@ def water_material():
     L.new(foamed.outputs["Result"], bsdf.inputs["Base Color"])
 
     # Sparkle: the brightest specks of the fine ripples glow, away from the foam.
-    # Sparkle: the water is split into small random cells drifting with the flow. About 1 cell in 5 can
-    # glint, each with its own pace (one blink every 5-8 s) and phase, and a blink lasts about a quarter second.
+    # Sparkle: the water is split into small random cells drifting with the flow. About 1 cell in 3 can
+    # glint, each with its own pace (one blink every 3.5-6 s) and phase, and a blink lasts about 0.4 s.
     drift = vec("SUBTRACT", pos, vec("SCALE", flow.outputs["Vector"], scale=time))
-    cells = node("ShaderNodeTexVoronoi", Scale=2.2)
+    cells = node("ShaderNodeTexVoronoi", Scale=2.6)
     L.new(drift, cells.inputs["Vector"])
-    rand = node("ShaderNodeSeparateColor")
-    L.new(cells.outputs["Color"], rand.inputs["Color"])
-    can = math_("GREATER_THAN", rand.outputs[0], 0.8)
-    pace = math_("DIVIDE", 6.283, math_("ADD", 5.0, math_("MULTIPLY", rand.outputs[1], 3.0)))
-    wave_t = math_("SINE", math_("ADD", math_("MULTIPLY", time, pace), math_("MULTIPLY", rand.outputs[2], 6.283)))
-    blink = math_("MAXIMUM", math_("DIVIDE", math_("SUBTRACT", wave_t, 0.985), 0.015), 0.0)
-    dot_ = math_("LESS_THAN", cells.outputs["Distance"], 0.07)
+    # Three independent random numbers per cell (hash of the cell's position with a different W each).
+    def cell_random(w):
+        n = node("ShaderNodeTexWhiteNoise")
+        n.noise_dimensions = "4D"
+        n.inputs["W"].default_value = w
+        L.new(cells.outputs["Position"], n.inputs["Vector"])
+        return n.outputs["Value"]
+    can = math_("GREATER_THAN", cell_random(1.0), 0.65)
+    pace = math_("DIVIDE", 6.283, math_("ADD", 3.5, math_("MULTIPLY", cell_random(2.0), 2.5)))
+    wave_t = math_("SINE", math_("ADD", math_("MULTIPLY", time, pace), math_("MULTIPLY", cell_random(3.0), 6.283)))
+    blink = math_("MAXIMUM", math_("DIVIDE", math_("SUBTRACT", wave_t, 0.96), 0.04), 0.0)
+    dot_ = math_("LESS_THAN", cells.outputs["Distance"], 0.22)
     spark = math_("MULTIPLY", math_("MULTIPLY", can, blink),
                   math_("MULTIPLY", dot_, math_("GREATER_THAN", depth.outputs["Fac"], 0.35)))
     L.new(math_("MULTIPLY", spark, 2.5), bsdf.inputs["Emission Strength"])
@@ -287,8 +292,9 @@ if __name__ == "__main__":
     while os.path.exists(os.path.join(out, f"water_anim_v{n}.mp4")):
         n += 1
     path = os.path.join(out, f"water_anim_v{n}.mp4")
-    if "--still" in sys.argv:  # one frame, for checking the look quickly
-        scene.frame_set(FPS)
+    stills = [a for a in sys.argv if a.startswith("--still")]
+    if stills:  # one frame, for checking the look quickly (--still, or --still=FRAME)
+        scene.frame_set(int(stills[0].split("=")[1]) if "=" in stills[0] else FPS)
         scene.render.filepath = path.replace(".mp4", "_still.png")
         bpy.ops.render.render(write_still=True)
         print("RENDERED", scene.render.filepath)
