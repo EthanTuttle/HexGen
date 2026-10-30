@@ -37,8 +37,9 @@ def pine(p, rng, at, h, mat):
 
 def deep_forest(p, rng, kind):
     """Dark pine stands: tall pines packed tight, a darker green, little light reaching the ground."""
-    if kind == "centre":
-        pts = hk.scatter(rng, lambda q: hk.in_centre(q), 11, 0.6, hk.CENTRE_BOUNDS)
+    if kind == "centre":  # a small clearing lets the ground show, so the wood still reads in low light
+        clearing = Vector((0.45, -0.35, 0))
+        pts = hk.scatter(rng, lambda q: hk.in_centre(q) and (q - clearing).length > 0.75, 9, 0.6, hk.CENTRE_BOUNDS)
     elif kind == "same":
         pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.1, inner=0, side=0), 15, 0.6, hk.WEDGE_BOUNDS)
     else:
@@ -140,8 +141,8 @@ def windmill(p, rng, at, spin):
     for k in range(4):  # four sails in the plane facing out, turned 45 degrees
         a = math.radians(45 + 90 * k)
         rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(a, 3, "X")
-        p.box_rot(hub + rot @ Vector((0.04, 0, 0.72)), (0.03, 0.26, 1.2), "sail", rot)
-        p.box_rot(hub + rot @ Vector((0.05, 0, 0.72)), (0.03, 0.04, 1.32), "trunk", rot)
+        p.box_rot(hub + rot @ Vector((0.04, 0.1, 0.78)), (0.03, 0.46, 1.25), "sail", rot)  # wide enough to read
+        p.box_rot(hub + rot @ Vector((0.05, 0, 0.78)), (0.04, 0.06, 1.4), "trunk", rot)
 
 
 def grain_cart(p, rng, at, spin):
@@ -201,23 +202,24 @@ def market_town(p, rng, kind):
     """Stalls with striped awnings in the streets and square; taller timber-framed townhouses packed close."""
     if kind == "centre":
         bt.cobbles(p, rng, lambda q: hk.in_centre(q, margin=0.2) and q.length > 0.9, hk.CENTRE_BOUNDS, 14)
-        for ang in (20, 140, 260):  # stalls round the square
+        for ang in (90, 210, 330):  # stalls round the square
             a = math.radians(ang)
             stall(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.6, a + math.pi / 2)
-        for at, spin in ((Vector((-1.15, 1.0, 0)), 0.3), (Vector((1.25, 0.55, 0)), -0.5),
-                         (Vector((-0.1, -1.45, 0)), 1.4)):
-            townhouse(p, rng, at, spin)
+        for ang in (30, 150, 270):  # houses between the edge pieces' houses, which sit near the edge axes
+            a = math.radians(ang)
+            townhouse(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 1.25, a + math.pi / 2)
         return
     if kind == "same":
         bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.15) and abs(q.y) < 0.5, hk.WEDGE_BOUNDS, 8)
-        townhouse(p, rng, Vector((X0 + 0.9, 1.05, 0)), 0.0)
+        # Kept clear of the houses on the neighbouring edges' pieces, so roofs don't cut into each other.
+        townhouse(p, rng, Vector((X0 + 0.7, 0.85, 0)), 0.0)
         townhouse(p, rng, Vector((X1 - 0.75, -1.2, 0)), 0.0)
         stall(p, rng, Vector((X0 + 0.9, -0.8, 0)), 0.0)
         return
     garden = X0 + 0.6 * (X1 - X0)
     p.flat(bt.band(garden, X1), 0.015, "plains")
     bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
-    townhouse(p, rng, Vector((X0 + 0.55, 0.35, 0)), math.radians(90))
+    townhouse(p, rng, Vector((X0 + 0.7, 0.3, 0)), math.radians(90))
     for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=bt.BORDER_X - 0.25, margin=0.2),
                          3, 0.5, hk.WEDGE_BOUNDS):
         p.blob(at, 0.22, "hedge", squash=0.8)
@@ -288,14 +290,15 @@ def wasteland(p, rng, kind):
 # --- Ruins: excavation ----------------------------------------------------------------------
 
 def dig_pit(p, rng, at):
-    """An open pit with a ladder sticking out and a spoil heap beside it."""
-    p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), 0.55, rng, 0.12)], 0.05, "pit")
+    """An open pit: a dark hole inside a rim of dug earth, a ladder sticking out, a low spoil heap beside it."""
+    p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), 0.7, rng, 0.1)], 0.05, "pit")
+    p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), 0.52, rng, 0.1)], 0.055, "pit_dark")
     tilt = Matrix.Rotation(rng.uniform(0, 2 * math.pi), 3, "Z") @ Matrix.Rotation(0.35, 3, "Y")
     for s in (-1, 1):
         p.box_rot(at + tilt @ Vector((0, s * 0.14, 0.45)), (0.04, 0.04, 1.1), "trunk", tilt)
     for k in range(4):
         p.box_rot(at + tilt @ Vector((0, 0, 0.1 + 0.22 * k)), (0.03, 0.28, 0.03), "trunk", tilt)
-    p.blob(at + Vector((0.75, 0.3, 0)), 0.38, "pit", squash=0.45)
+    p.blob(at + Vector((0.95, 0.35, 0)), 0.3, "pit", squash=0.3)
 
 
 def tent(p, rng, at, spin):
@@ -342,7 +345,7 @@ def excavation(p, rng, kind):
     else:
         if rng.random() < 0.25:
             tent(p, rng, Vector((X0 + 0.9, 0.9, 0)), 1.2)
-        p.blob(Vector((X0 + 0.6, -0.5, 0)), 0.32, "pit", squash=0.45)
+        p.blob(Vector((X0 + 0.6, -0.5, 0)), 0.26, "pit", squash=0.3)
         lantern(p, Vector((X0 + 1.5, -0.2, 0)))
 
 

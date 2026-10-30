@@ -74,7 +74,7 @@ PALETTE = {
     "deadwood": "#7C6E5E",
     # tier 1 region variants
     "deep_forest": "#466F47",
-    "pine_deep": "#2F5734",
+    "pine_deep": "#3A6A41",
     "hide": "#8A6A4E",
     "hide_light": "#C9B79C",
     "flower_pink": "#E9A3B8",
@@ -101,6 +101,7 @@ PALETTE = {
     "sandstone": "#D6B484",
     "bone": "#F1EBDD",
     "pit": "#6B5038",
+    "pit_dark": "#3A2B20",
     "canvas": "#E9DFC8",
     "lantern": "#F6D36B",
     "slot": "#F6EFE4",
@@ -113,7 +114,9 @@ PALETTE = {
 
 # Surfaces the engines treat specially keep their own material; everything else on a piece shares one "kit"
 # material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool"}
+# hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
+# them toward the neighbours' ground colours like the base slabs' tops.
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "hill_grass", "highland_grass"}
 
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
@@ -224,6 +227,7 @@ class Piece:
         self.bm = bmesh.new()
         self.mats = []
         self.surface = set()  # open surfaces built facing up; finish() leaves their normals alone
+        self.smooth = set()   # faces to shade smooth (the sand); everything else stays faceted
 
     def _slot(self, mat_name):
         if mat_name not in self.mats:
@@ -306,6 +310,8 @@ class Piece:
         """merge: one shared "kit" material with the colours in vertex colours (see OWN_MATERIAL).
         merge=False keeps one material per colour (the base slabs, whose top the engine recolours)."""
         bmesh.ops.recalc_face_normals(self.bm, faces=[f for f in self.bm.faces if f not in self.surface])
+        self.bm.faces.index_update()
+        smooth = {f.index for f in self.smooth if f.is_valid}
         mesh = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(mesh)
         self.bm.free()
@@ -323,7 +329,7 @@ class Piece:
         for m in self.mats:
             mesh.materials.append(material(m))
         for poly in mesh.polygons:
-            poly.use_smooth = False
+            poly.use_smooth = poly.index in smooth
         obj = bpy.data.objects.new(self.name, mesh)
         obj.location = location
         collection.objects.link(obj)
