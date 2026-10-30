@@ -5,6 +5,7 @@ How HexGen's characters are written (set up Oct 28, 2026, after the first bar li
 - **This guide:** the rules for dialogue and narration, the line types, the tells to avoid, how we write, and the voice sheet template.
 - **One file per companion:** [Fluffy](Fluffy.md), [Chelmsford](Chelmsford.md), [Mel](Mel.md), [Grant Augustus](Grant%20Augustus.md), [Kris Huntington](Kris%20Huntington.md), [Timothy](Timothy.md), [Dolmund](Dolmund.md), [Lilian](Lilian.md), [Frim](Frim.md), [Grimhold](Grimhold.md), [Leo Conley](Leo%20Conley.md), [Reginald](Reginald.md). Each holds their voice sheet, then every line they say, grouped by where it's said.
 - **[Pairs](Pairs.md):** inn banter between two companions. A line that belongs to two characters is written there, once.
+- **[Places](Places.md):** what gets said in generated places (towns first), written per moment slot and per place type (Oct 30, 2026).
 - **Story NPCs** get a file when they have enough lines. Until then their lines stay with their scene in [World & story](../01%20World%20%26%20story.md) (e.g. The Lady of the Lake).
 - Bios, homes and personal quests stay in [World & story](../01%20World%20%26%20story.md) → NPC homes and stories; proficiencies in World & story → Companion proficiencies.
 
@@ -26,6 +27,7 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 ## Line types
 
 - **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
+- **Place lines** (decided Oct 30, 2026): generated places such as towns get lines per moment slot (arrive, shop: buy, inn: rest…), 3 per slot per place type, from generic keepers and narration: [Places](Places.md).
 - **Inn banter** (decided Oct 28, 2026; how it shows: [Presentation](../07%20Presentation.md) → Town screen): a night at an inn's bar is where the party's personality shows. Companions talk to each other in **pair banter**, short written exchanges for particular pairs ([Pairs](Pairs.md)), with one **fallback bar line** per companion (in their file) for pairs that have no exchange. **Which pairs:** the six path pairs first (the two companions each background brings), then cross-path pairs that clash or click; lines can't lean on shared history, since outside their own path the two meet separately. The night ends with **the toast as a choice**: the hero picks an intent option and a narration beat answers it, with no companion line.
 
 | Toast | Narration |

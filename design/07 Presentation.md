@@ -300,11 +300,11 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | The sword pull scene's "[Scene text: …]" lines and [Sword name] (v2–v5 only: social v6 uses the written narration and Excalibur) | Social encounter v2–v5 | Settled (World & story → The sword pull scene) |
 | Three numbered generic enemy tokens beside the Lady when her fight starts (they're water spirits: World & story → The Lady of the Lake); the blessing and curse pop-ups' "+[coins]" / "−[coins]" in v3–v5 (v6 shows +2 / −2) | Social encounter v3–v6 | Enemy roster ([World & story](01 World & story.md) → Open questions) |
 | [Opening quest], [Quest step]; the debug list's [Side quest 1–4], [Curse] and [Passive name] | Exploration v7–v8, social v4–v5 | The opening quest's name and steps ([World & story](01 World & story.md) → Main story outline); the debug entries only fill the lists |
-| [Town name], [Town greeting]; the town shown as a Market town; the square's layout | Town v1–v3 | Town names and lines ([Map & exploration](02 Map & exploration.md) → Open questions) |
+| [Town name], [Town greeting]; the town shown as a Market town; the square's layout | Town v1–v3 | Town names (parts per town type) and lines (the greeting is now the Arrive narration beat): [characters → Places](characters/Places.md) |
 | [gold], [price], +[gold] | Town v1–v2 | Gold prices ([Weapons & gear](04 Weapons & gear.md) → Open questions) |
 | The shop's stock (gear and consumables copied from the gear screen) | Town v1–v3 | What shops stock ([Map & exploration](02 Map & exploration.md) → Open questions) |
 | [Quest giver], [Quest name], [Quest goal], [Reward]; three quests on the board | Town v1–v2 | Quest board quests ([Map & exploration](02 Map & exploration.md) → Open questions) |
-| [Shopkeeper], [Innkeeper] and their lines | Town v2–v3 | Town NPCs (Open questions below) |
+| [Shopkeeper], [Innkeeper] and their lines | Town v2–v3 | Generic by town type, no names (Oct 30, 2026); their lines per slot: [characters → Places](characters/Places.md) |
 | [Inn extra] | Town v2d | Which services an inn offers besides resting (Open questions below) |
 | [Townsperson], [Townsfolk line], [Rumour] | Town v3c | Town NPCs (Open questions below) |
 | [Fluffy's / Chelmsford's / Mel's bar line], [Hero toast line] | Town v2e–v7 | Inn banter ([characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions); the toast is written as an intent choice with a narration beat |
@@ -409,5 +409,5 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** feedback on social v9 and town v4 (the camera in scenes)
 - [x] ~~Wheel zoom and right-drag rotate on the map and in combat too?~~ (settled Oct 28, 2026: yes, one set of camera controls for every hex screen)
 - [x] ~~Where the opened camera buttons go~~ (settled Oct 28, 2026: v6c, the nav button between Quests and equipment, with the fan; standard for every hex screen)
-- [ ] **New:** town NPCs: are shopkeepers, innkeepers and townsfolk named characters with lines, or generic? Do townsfolk give rumours, and what can a rumour lead to? And which services an inn offers besides resting ([Inn extra]; [Cards & progression](05 Cards & progression.md) → the Inn landmark lists rest buffs and healing)
+- [ ] **New:** town NPCs (shopkeepers and innkeepers settled Oct 30, 2026: generic by town type, with lines per slot in [characters → Places](characters/Places.md)): do townsfolk exist outside v3c and give rumours, and what can a rumour lead to? And which services an inn offers besides resting ([Inn extra]; [Cards & progression](05 Cards & progression.md) → the Inn landmark lists rest buffs and healing)
 - [x] ~~Inn banter: how it works~~ (settled Oct 28, 2026: pair banter with a fallback line each; the toast is an intent choice. Lines: [World & story](01 World & story.md) → Open questions)

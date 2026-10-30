@@ -53,7 +53,7 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 - There is no resource gathering, except when a quest asks for it.
 - Common terrain types: plains/grassland, forest, hills/mountains, swamp/marsh, village, river/lake, desert, farmland and ruins (farmland and ruins added Oct 24, 2026). (Tundra/snow is not a placeable terrain.)
 - Terrain affects tactical combat (e.g. cover, movement on the grid).
-- Villages are locations with NPCs, side quests and traders. When placed, a village gets an auto-generated name the player can rename and its contents are rolled like other terrain cards.
+- Villages are locations with NPCs, side quests and traders. When placed, a village gets an auto-generated name the player can rename and its contents are rolled like other terrain cards. Names are built from parts that lean on the town type (decided Oct 30, 2026; parts and town lines: [characters → Places](characters/Places.md)).
 
 ### Obstacles
 
@@ -191,4 +191,4 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [ ] **New (balance flag):** since multi-hex cards ignore pairing, multi-hex terrain cards become a way to bridge banned pairings (e.g. desert next to forest). Fine as a feature, or limit how many multi-hex terrain cards exist?
 - [x] ~~Teleportation rune vs "no fast travel"~~ (settled Oct 23, 2026: the "no fast travel, the party walks" rule is dropped)
 - [x] ~~Night building in multiplayer~~ (settled Oct 23, 2026: each player builds within their own controllable party's sight range)
-- [ ] **New:** towns: their names and greeting lines, what their shops stock, and which quests their quest boards offer and how many (the town mockup shows placeholders)
+- [ ] **New:** towns: what their shops stock, and which quests their quest boards offer and how many (the town mockup shows placeholders). Names and lines are written per slot in [characters → Places](characters/Places.md) (Oct 30, 2026)
