@@ -281,7 +281,8 @@ func _build_tile(t: Vector2i) -> void:
 
 ## Collision for the ground the party walks on (PartyWalker.ground raycasts it): the hills pieces' grass
 ## (their `hill_grass` / `highland_grass` surfaces, not their trees or rocks), whole peaks, mountains and ridges,
-## and the desert's sand. Everything else is flat at height 0.
+## and the desert's sand. Everything else is flat at height 0. Peaks, mountains and ridges are marked, so the
+## party's route goes round them.
 static var _shapes := {}
 
 
@@ -315,6 +316,7 @@ func _add_ground_collision(node: Node3D) -> void:
 		var body := StaticBody3D.new()
 		var cs := CollisionShape3D.new()
 		cs.shape = _shapes[key]
+		body.set_meta("mountain", whole and n != "sand")   # the party walks round these (PartyWalker.blocked)
 		body.add_child(cs)
 		mi.add_child(body)
 

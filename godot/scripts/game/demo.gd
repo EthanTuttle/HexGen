@@ -21,6 +21,8 @@ func _ready() -> void:
 		_variants.call_deferred()
 	elif "--demo=walk" in OS.get_cmdline_user_args():
 		_walk.call_deferred()
+	elif "--demo=round" in OS.get_cmdline_user_args():
+		_round.call_deferred()
 	else:
 		_run.call_deferred()
 
@@ -66,6 +68,68 @@ func _walk() -> void:
 	print("DEMO DONE")
 	if shots or "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
+
+
+## Walking round the mountains (How the party moves: round peaks and mountains, not over them): a staged
+## strip with a lone hill, then a group of four hills tiles (mountains on their shared edges and corners).
+## The party walks onto the lone hill and stands there, then on across the group. Prints how much of each
+## route still touches a mountain (should be none).
+func _round() -> void:
+	_prefix = "round"
+	var strip := {Vector2i(1, 0): "plains", Vector2i(2, 0): "hills", Vector2i(3, 0): "plains",
+		Vector2i(4, 0): "hills", Vector2i(5, 0): "hills", Vector2i(4, 1): "hills", Vector2i(3, 1): "hills",
+		Vector2i(6, 0): "plains", Vector2i(1, -1): "plains", Vector2i(2, -1): "plains", Vector2i(0, 1): "plains",
+		Vector2i(5, -1): "plains", Vector2i(6, -1): "plains"}
+	game.map.retile(strip)
+	for t in strip:
+		game.order[t] = game.order.size()
+	game.toast("(demo) Staged map: a lone hill, then joined hills.", true)
+	await _wait(1.0)
+	var k := 0
+	for goal in [Vector2i(2, 0), Vector2i(6, 0)]:
+		game.rig.frame(game.party_node.centre(), 30.0, 50.0)
+		await _wait(1.5)
+		await _shot("before_%d_%d" % [goal.x, goal.y])
+		game.walk_to(goal)
+		await _wait(0.2)
+		var walker := game.party_node
+		var touching := 0
+		for p in walker._path:
+			if walker._on_mountain(p):
+				touching += 1
+		print("ROUTE to %s: %d points, %d on a mountain, %.1f m" % [goal, walker._path.size(), touching, walker._len[-1]])
+		if shots:
+			_trace(walker._path)
+		while game.busy:
+			await _wait(0.1)
+			k += 1
+			if k % 12 == 0:
+				await _shot("step%02d" % (k / 12))
+		await _wait(3.0)
+		await _shot("arrived_%d_%d" % [goal.x, goal.y])
+	# From above, with both routes traced (red dots, stills only: a test aid, not a look).
+	game.rig.frame(Hex.to3(Hex.tile_position(3, 0)), 75.0, 89.0)
+	await _wait(1.0)
+	await _shot("routes_from_above")
+	print("DEMO DONE")
+	if shots or "--quit" in OS.get_cmdline_user_args():
+		get_tree().quit()
+
+
+func _trace(path: PackedVector2Array) -> void:
+	var dot := SphereMesh.new()
+	dot.radius = 0.06
+	dot.height = 0.12
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color.RED
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = true
+	dot.material = mat
+	for k in range(0, path.size(), 2):
+		var mi := MeshInstance3D.new()
+		mi.mesh = dot
+		mi.position = Hex.to3(path[k], game.party_node.ground(path[k]) + 0.1)
+		game.map.add_child(mi)
 
 
 ## The variants recording: three regions finish one after another, the camera on each.

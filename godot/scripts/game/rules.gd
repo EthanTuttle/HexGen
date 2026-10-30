@@ -78,6 +78,9 @@ const IDLE_LOOK_DEG := 55.0
 const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover bends away
 const WADE_DEPTH := 0.07                 # m a mini sinks in a ford
 const FOOTPRINT_SECONDS := 14.0          # how long a footprint stays in the sand
+# DOCS: the route goes round peaks, mountains and ridges, staying on the hills' grass.
+const MOUNTAIN_CLEARANCE := 0.45         # m a mini keeps from a peak, mountain or ridge
+const ROUTE_GRID := 0.25                 # m between the points the detour is searched on (not a look)
 const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game hours (8/24 of a 30-minute day)
 
 # --- Encounters (design/02 -> Hex contents and encounters) --------------------

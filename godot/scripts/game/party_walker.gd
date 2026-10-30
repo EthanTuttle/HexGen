@@ -5,7 +5,8 @@ extends Node3D
 ## wiggled along the table. The hero leads along a curved route that bends through each hex (through the
 ## middle of each edge it crosses) and eases in and out; the companions follow the hero's trail a beat behind
 ## each, so the group stretches when the hero speeds up and bunches when it slows. Everyone faces a little way
-## ahead on the route, so they turn before a corner. They follow the ground's height (hills, mountains, sand),
+## ahead on the route, so they turn before a corner. The route goes round peaks, mountains and ridges, so on
+## hills the party stays on the grass. They follow the ground's height (the hills' grass, sand),
 ## slow in swamp and forest, sink a little and splash in fords, kick up dust and leave footprints in sand, and
 ## the grass bends away from them. On stopping they settle with a wobble, spread back into their loose cluster
 ## and look around; while they stand, one now and then looks somewhere else. Numbers: Rules (all placeholders).
@@ -28,6 +29,9 @@ var _end_facing := 0.0
 var _tile := Vector2i.ZERO
 var _idle_in := 6.0
 var _footprints: Array[MeshInstance3D] = []
+var _entered := {}                      # tiles the hero has stepped onto this walk (a detour can cross back)
+var _blocked := {}                      # grid point -> on or too near a mountain (this walk's detours)
+const JOIN := 5                         # route samples (about 1.2 m) either side of a blocked stretch
 
 ## The hero's spot relative to the cluster's centre, and the cluster's spot on its tile (Minis.PARTY_OFFSET).
 static var HERO_CELL := Vector2.ZERO
@@ -61,10 +65,12 @@ func centre() -> Vector3:
 ## Stands the cluster on a tile at once (start of play, back at camp after a wipe).
 func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 	_tile = tile
-	facing = angle
+	_blocked.clear()
+	var spot := _stand_spot(tile, angle)
+	facing = spot[1]
 	walking = false
 	for m in members:
-		var p := anchor(tile) + _turned(m.offset, angle)
+		var p: Vector2 = spot[0] + _turned(m.offset, facing)
 		m.node.position = Hex.to3(p, ground(p))
 		m.node.rotation.y = yaw_of(angle)
 		m.yaw = m.node.rotation.y
@@ -80,7 +86,7 @@ func walk(tiles: Array[Vector2i]) -> void:
 	_t = 0.0
 	_trail = [Vector2(0, 0)]
 	_start_facing = facing
-	_end_facing = _angle_at(_len[-1])
+	_entered = {_tile: true}
 	walking = true
 	while walking:
 		await get_tree().process_frame
@@ -93,6 +99,7 @@ func walk(tiles: Array[Vector2i]) -> void:
 # --- The route ----------------------------------------------------------------------
 
 func _build_path(tiles: Array[Vector2i]) -> void:
+	_blocked.clear()
 	var hero: Vector3 = members[0].node.position
 	var pts := PackedVector2Array([Vector2(hero.x, -hero.z)])
 	var here := Hex.tile_position(_tile.x, _tile.y)
@@ -101,12 +108,188 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 		var mid := (here + next) * 0.5          # the middle of the edge it crosses
 		_quad(pts, here, mid)                   # bends through the hex it's in
 		here = next
-	var goal := anchor(tiles[-1])
-	_quad(pts, here, goal)
+	var spot := _stand_spot(tiles[-1], (anchor(tiles[-1]) - here).angle())
+	_quad(pts, here, spot[0])
+	_end_facing = spot[1]
+	var allowed := {_tile: true}
+	for t in tiles:
+		allowed[t] = true
+	_set_path(_round_mountains(pts, allowed))
+
+
+func _set_path(pts: PackedVector2Array) -> void:
 	_path = pts
 	_len = PackedFloat32Array([0.0])
 	for k in range(1, pts.size()):
 		_len.append(_len[-1] + pts[k].distance_to(pts[k - 1]))
+
+
+# --- Round the mountains ------------------------------------------------------------------
+# DOCS: the party walks round peaks and mountains rather than over them; on hills it stays on the grass. The
+# curved route above bends through each hex's middle and the middle of each edge, which is just where the hills
+# put a lone tile's peak and the mountains between joined tiles. Wherever the curve runs onto one (or too near
+# it), that stretch is searched again on a fine grid within the route's own tiles, and the way round it is
+# straightened and smoothed. Where there's no way round, the curve is kept.
+
+## Whether a plan point is on a peak, mountain or ridge, or within the clearance of one.
+func blocked(p: Vector2) -> bool:
+	if _on_mountain(p):
+		return true
+	for k in 8:
+		if _on_mountain(p + Vector2.from_angle(k * TAU / 8.0) * Rules.MOUNTAIN_CLEARANCE):
+			return true
+	return false
+
+
+func _on_mountain(p: Vector2) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(Hex.to3(p, 40.0), Hex.to3(p, -2.0))
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return not hit.is_empty() and (hit.collider as Object).get_meta("mountain", false)
+
+
+func _grid_blocked(c: Vector2i) -> bool:
+	if not _blocked.has(c):
+		_blocked[c] = blocked(Vector2(c) * Rules.ROUTE_GRID)
+	return _blocked[c]
+
+
+func _round_mountains(pts: PackedVector2Array, allowed: Dictionary) -> PackedVector2Array:
+	# The blocked stretches, each widened a little either side so the way round joins the curve smoothly.
+	var spans := []
+	var k := 0
+	while k < pts.size():
+		if not blocked(pts[k]):
+			k += 1
+			continue
+		var j := k
+		while j < pts.size() and blocked(pts[j]):
+			j += 1
+		var a := maxi(0, k - JOIN)
+		var b := mini(pts.size() - 1, j - 1 + JOIN)
+		while b < pts.size() - 1 and blocked(pts[b]):
+			b += 1
+		if not spans.is_empty() and a <= spans[-1][1]:
+			spans[-1][1] = b
+		else:
+			spans.append([a, b])
+		k = b + 1
+	if spans.is_empty():
+		return pts
+	var out := PackedVector2Array()
+	var at := 0
+	for span in spans:
+		out.append_array(pts.slice(at, span[0] + 1))
+		var way := PackedVector2Array()
+		if not blocked(pts[span[0]]) and not blocked(pts[span[1]]):
+			way = _search(pts[span[0]], pts[span[1]], allowed)
+		# No way round (or the ends themselves are blocked): keep the curve.
+		out.append_array(_smooth(way) if way.size() >= 2 else pts.slice(span[0] + 1, span[1] + 1))
+		at = span[1] + 1
+	out.append_array(pts.slice(at))
+	return out
+
+
+## The shortest way between two clear points on the grid, staying in the route's tiles and off the mountains.
+func _search(from: Vector2, to: Vector2, allowed: Dictionary) -> PackedVector2Array:
+	var g := Rules.ROUTE_GRID
+	var a := Vector2i((from / g).round())
+	var b := Vector2i((to / g).round())
+	var open := {a: (Vector2(b - a)).length()}
+	var cost := {a: 0.0}
+	var came := {}
+	var steps := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+		Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	var budget := 20000
+	while not open.is_empty() and budget > 0:
+		budget -= 1
+		var c: Vector2i = open.keys()[0]
+		for k in open:
+			if open[k] < open[c]:
+				c = k
+		open.erase(c)
+		if c == b:
+			if not came.has(c):
+				return PackedVector2Array([from, to])
+			var way := PackedVector2Array([to])
+			while came.has(c):
+				c = came[c]
+				way.append(Vector2(c) * g)
+			way[-1] = from
+			way.reverse()
+			return way
+		for d: Vector2i in steps:
+			var n := c + d
+			if n != b and (not allowed.has(GroundCover.tile_at(Vector2(n) * g)) or _grid_blocked(n)):
+				continue
+			var nc: float = cost[c] + Vector2(d).length()
+			if nc < cost.get(n, INF):
+				cost[n] = nc
+				came[n] = c
+				open[n] = nc + Vector2(b - n).length()
+	return PackedVector2Array()
+
+
+## Takes the grid's zig-zag out of a way round: keeps only the corners it needs (each straight run clear of the
+## mountains), then rounds those corners off.
+func _smooth(way: PackedVector2Array) -> PackedVector2Array:
+	var keep := PackedVector2Array([way[0]])
+	var i := 0
+	while i < way.size() - 1:
+		var j := way.size() - 1
+		while j > i + 1 and not _clear(way[i], way[j]):
+			j -= 1
+		keep.append(way[j])
+		i = j
+	for pass_ in 3:   # Chaikin: cut each corner a quarter of the way in, keeping the ends
+		var cut := PackedVector2Array([keep[0]])
+		for k in keep.size() - 1:
+			if k > 0:
+				cut.append(keep[k].lerp(keep[k + 1], 0.25))
+			if k < keep.size() - 2:
+				cut.append(keep[k].lerp(keep[k + 1], 0.75))
+		cut.append(keep[-1])
+		keep = cut
+	# Fill it in, so the route stays densely sampled like the curves.
+	var dense := PackedVector2Array([keep[0]])
+	for k in range(1, keep.size()):
+		var n := maxi(1, ceili(keep[k - 1].distance_to(keep[k]) / 0.15))
+		for u in range(1, n + 1):
+			dense.append(keep[k - 1].lerp(keep[k], float(u) / n))
+	return dense.slice(1)   # the first point is already on the route
+
+
+func _clear(a: Vector2, b: Vector2) -> bool:
+	var n := maxi(1, ceili(a.distance_to(b) / (Rules.ROUTE_GRID * 0.5)))
+	for k in range(1, n):
+		var p := a.lerp(b, float(k) / n)
+		if _grid_blocked(Vector2i((p / Rules.ROUTE_GRID).round())):
+			return false
+	return true
+
+
+## Where the cluster stands on a tile: the usual spot (anchor), facing `angle`, if everyone's place there is
+## clear of the mountains; else the nearest spot on the tile that is, facing away from the tile's middle.
+## Returns [hero's spot, facing].
+func _stand_spot(tile: Vector2i, angle: float) -> Array:
+	var centre := Hex.tile_position(tile.x, tile.y)
+	var spot := anchor(tile)
+	if _cluster_clear(tile, spot, angle):
+		return [spot, angle]
+	for ring in range(1, 8):
+		for k in 12:
+			var p := centre + Vector2.from_angle(k * TAU / 12.0 + ring * 0.4) * ring * 0.5
+			var f := (p - centre).angle()
+			if _cluster_clear(tile, p, f):
+				return [p, f]
+	return [spot, angle]
+
+
+func _cluster_clear(tile: Vector2i, spot: Vector2, face: float) -> bool:
+	for m in members:
+		var p: Vector2 = spot + _turned(m.offset, face)
+		if GroundCover.tile_at(p) != tile or blocked(p):
+			return false
+	return true
 
 
 ## Adds a quadratic curve from the route's last point to `to`, pulled toward `control`.
@@ -169,7 +352,9 @@ func _step(delta: float) -> void:
 		var t := GroundCover.tile_at(_point_at(_s))
 		if t != _tile and map.terrains.has(t):
 			_tile = t
-			entered.emit(t)
+			if not _entered.has(t):
+				_entered[t] = true
+				entered.emit(t)
 	_trail.append(Vector2(_t, _s))
 	var done := true
 	for i in members.size():
