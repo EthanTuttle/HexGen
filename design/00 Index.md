@@ -88,7 +88,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Race details (breath weapon damage, high elf and tiefling spell lists; bonus sizes and breath weapon rules settled Oct 27)
 - [ ] New (Oct 27): race review done for all seven races; Fluffy's cat race done too; still open: the cat race's name, race lore, amounts (wood elf map speed, shield dwarf HP, metal golem damage reduction, Regrowth, Hearthfire), Regrowth and Hearthfire vs healing spells, From the Ashes + Hard to Kill stacking
 - [ ] New (Oct 27): heads targets vs coin growth (a main score goes 3 → 5 by level 16 from score increases alone)
-- [ ] Tiefling bloodline spells
+- [ ] Tiefling bloodline and elven spells for levels 7+ (level 1 set Oct 30: see Classes & combat → Racial spells)
 - [ ] Big spell pass
 - [ ] Spell balance pass (Retell, Requiem, Charge!, Holy Defender god spells, caster vs martial scaling)
 - [ ] Playtest: caster vs martial card count gap
@@ -180,6 +180,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [x] ~~Exact backdrop colours per time of day~~ (settled Oct 30: the Godot prototype's light, revisit in playtesting; see Presentation → Art direction)
 - [ ] New: the size of the rift's lilac shift
+- [ ] Touch: long-press on HUD controls with no details design (decide one by one), and phones' screen edges and minimum text size (see Presentation → Open questions)
 - [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
 - [ ] New: which way water flows (prototype placeholder: toward the bottom of the screen)
 - [ ] New: farm and village border variants for terrain variants (stacked stone, block walls; wooden fence is the default)
@@ -203,7 +204,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator banner details~~ (settled Oct 30: v5c heraldry; card details in v6)
 - [x] ~~Character creator: feedback on v6~~ (approved Oct 30)
 - [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30: v7a)
-- [ ] New: character creator sub-type selector: v8a hex tokens or v8b cloth tabs
+- [x] ~~Character creator sub-type selector~~ (settled Oct 30: v8a hex tokens)
+- [ ] New: character creator: feedback on v9, then Background
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
