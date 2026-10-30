@@ -61,7 +61,7 @@ def base(terrain, col, ground=None):
             bm.faces.new((v[1], v[0], v[3], v[2])).material_index = p._slot(mat)
     bm.faces.new([bm.verts.new((c.x, c.y, hk.SOIL_BOTTOM)) for c in corners]).material_index = p._slot("soil_dark")
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
-    return p.finish(col)
+    return p.finish(col, merge=False)
 
 
 # --- Props -------------------------------------------------------------------
@@ -290,7 +290,7 @@ def village(p, rng, kind):
 #     terrain sit at ground level;
 #   - a "same" wedge adds a ridge that reaches HE at the middle of the edge, where it meets the neighbour's.
 H0, HPEAK, HE = 1.0, 1.6, 0.7
-ND, NV = 24, 24  # samples across a sector of the whole tile: depth, side to side
+ND, NV = 16, 14  # samples across a sector of the whole tile: depth, side to side (kept light for phones)
 SLOPE0 = -2 * (HPEAK - H0) / X0 * (X1 - X0) / H0  # the wedges leave the mound at its own slope
 
 
@@ -612,11 +612,11 @@ def build():
             p = hk.Piece(name)
             BUILDERS[terrain](p, hk.seeded(name), kind)
             p.finish(col)
-    # Tier 1 region variants (variants.py): the same pieces under the variant's name.
+    # Tier 1 region variants (variants.py): the same pieces under the variant's name. They use their terrain's
+    # base; the engine recolours its top with the variant's ground colour (variants.VARIANTS).
     import variants
     for variant, (terrain, builder, ground, extras) in variants.VARIANTS.items():
         col = hk.new_collection(variant)
-        base(variant, col, ground)
         for kind in ("centre", "same", "other") + extras:
             name = f"{variant}_{kind}" if kind not in ("same", "other") else f"{variant}_edge_{kind}"
             p = hk.Piece(name)

@@ -174,7 +174,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: maximum ability score (from v10 the gear screen's abilities strip keeps coins on one line, so they get hard to count past about 6)
 - [ ] New: feedback on character & gear v8d, then confirm it as final
 - [ ] New: the Action cards and Weapon mastery screens copy the gear screen's top bar with its party switcher; now that gear v10 moved the party to a left tray, do they follow?
-- [ ] New: feedback on character & gear v11 (Claude's all-in proposal: tap or drag to equip with lit and crossed slots, flights, new-item dots, pop-up by its item, a stand-in mini, proficiencies, gold, rarity pips); v10 did the party tray and one-line coins
+- [ ] New: character & gear v12: pick a layout (v12a buttons under the party, or v12c character column); who owns a passive (one character or the whole party); where a crossed slot's reason shows (v12 tries a pop-up beside the slot)
 - [x] ~~Character subtitles~~ (settled Oct 30, 2026: "Race Class (Subclass) · Lv", no "Hero" or "Companion"; see Presentation → Screen text)
 - [ ] New: combat screen: where the acting character's name shows
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
@@ -196,7 +196,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: armour fitting test, then decide whether all worn gear still shows on minis
 - [x] ~~Hero creation: builds per race, colours~~ (settled Oct 30: 3 builds per race, swatches per race)
 - [ ] New: hero creation: final heads and hairstyles per race, and each race's swatches
-- [ ] New: character creator screen: pick a layout from v1a–v1c (guided steps, painting table, origin board)
+- [x] ~~Character creator screen: pick a layout~~ (settled Oct 30: v1a, guided steps)
+- [x] ~~Character creator class step~~ (settled Oct 30: v2a; spacing fixed in v3)
+- [ ] New: character creator: feedback on v3, then the Race step
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3

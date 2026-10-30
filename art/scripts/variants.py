@@ -53,18 +53,20 @@ def deep_forest(p, rng, kind):
 
 def grazer(p, rng, at, spin):
     """A small low-poly horse or deer, head down to graze or up."""
+    # Chunky proportions so it still reads as an animal from the map camera: a deep body on longer legs,
+    # a raised neck and a big head.
     hide = rng.choice(["hide", "hide", "hide_light"])
-    body = (0.7, 0.26, 0.26)
-    p.box(at, body, hide, z=0.32, spin=spin)
-    for dx in (-0.26, 0.26):
-        for dy in (-0.08, 0.08):
-            p.box(at + turn(Vector((dx, dy, 0)), spin), (0.06, 0.06, 0.34), hide, spin=spin)
-    grazing = rng.random() < 0.5
-    neck = at + turn(Vector((0.38, 0, 0)), spin)
-    p.box_rot(neck + Vector((0, 0, 0.5 if not grazing else 0.36)), (0.12, 0.11, 0.32), hide,
-              Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.5 if not grazing else 2.3, 3, "Y"))
-    head = at + turn(Vector((0.5 if not grazing else 0.52, 0, 0)), spin)
-    p.box(head, (0.24, 0.11, 0.11), hide, z=0.66 if not grazing else 0.14, spin=spin)
+    p.box(at, (0.56, 0.26, 0.28), hide, z=0.4, spin=spin)
+    for dx in (-0.2, 0.2):
+        for dy in (-0.085, 0.085):
+            p.box(at + turn(Vector((dx, dy, 0)), spin), (0.075, 0.075, 0.42), hide, spin=spin)
+    grazing = rng.random() < 0.35
+    tilt = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.45 if not grazing else 2.2, 3, "Y")
+    neck = at + turn(Vector((0.3, 0, 0)), spin) + Vector((0, 0, 0.6 if not grazing else 0.45))
+    p.box_rot(neck, (0.13, 0.13, 0.34), hide, tilt)
+    head = at + turn(Vector((0.42 if not grazing else 0.5, 0, 0)), spin)
+    p.box(head, (0.28, 0.15, 0.15), hide, z=0.78 if not grazing else 0.2, spin=spin)
+    p.box(at + turn(Vector((-0.3, 0, 0)), spin), (0.05, 0.05, 0.22), "trunk", z=0.42, spin=spin)  # tail
 
 
 def meadows(p, rng, kind):
