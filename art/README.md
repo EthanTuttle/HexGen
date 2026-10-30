@@ -4,7 +4,7 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 
 | Folder | What's in it |
 | --- | --- |
-| `scripts/` | Blender Python that builds the first drafts, exports and renders previews |
+| `scripts/` | Blender Python that builds the first drafts, exports and renders previews; `water.py` is the reference water drawing for the engines |
 | `tiles/` | Map tile kit, `tiles_vN.blend` |
 | `combat/` | Combat cell kit, `combat_cells_vN.blend` |
 | `minis/` | Minis (worked on in its own session) |
@@ -53,6 +53,6 @@ Terrains: plains, forest, farmland, river (river/lake) and village. Colours are 
 - **tiles_v1:** the first draft; rivers as wide as a tile edge, villages on sand.
 - **tiles_v2:** narrow river channels from a small pond, a corner piece that opens clumps into lakes, villages on cobblestone with garden strips at their borders.
 
-- **Next:** water moves to the engines. Each engine draws a water tile's river curves, lake shore or pond from its own water neighbours (rules: `design/07 Presentation.md` → Art direction → Water flows freely). The art kit keeps only the river tile's grass base plus bank dressing and boats. A Python version of the water drawing will live in `scripts/` as the reference both engines copy.
+- **Water (from map_preview_v4):** drawn per tile by `scripts/water.py`, the reference both engines copy. A tile's river curves, lake shore or pond depend only on which of its six neighbours are water, plus a seed per tile (rules: `design/07 Presentation.md` → Art direction → Water flows freely). Shape code is plain Python (no Blender) so it ports line by line to GDScript or C#; only `add_water()` uses Blender. The river pieces in `tiles_v2.blend` (`river_centre`, `river_edge_*`, `river_corner`) are no longer used; a river tile is just `base_river` plus the drawn water. The ripple, sparkle, foam and depth are left to the engines' water shader.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).
