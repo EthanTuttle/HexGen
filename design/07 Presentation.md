@@ -313,7 +313,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - Coins are shown as 3D coin flips.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
-**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners and v5c's heraldry chosen; latest v6, the hanging card opens its details): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
+**Character creator screen** (in progress: v1a's guided steps chosen Oct 30, 2026; class step v2a chosen, spacing fixed in v3; v4a's full-screen banners and v5c's heraldry chosen; latest v7a–v7c, the Race step): where a new hero is made, at a new campaign and for a guest joining with their own hero ([Multiplayer & tech](06 Multiplayer & tech.md) → Multiplayer). What it must offer: [Classes & combat](03 Classes & combat.md) → Hero creation; appearance: Hero appearance at character creation under Art direction.
 
 - **Goal** (Ethan, Oct 30, 2026): players take their time and get attached to their hero, so there's **no ready-made hero** to start from. The mini stays large on screen the whole time and changes with every pick (build, head, hair, colours and gear).
 - **v1, three layouts to compare:**
@@ -328,6 +328,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **v4, what holds the space before Look:** **v4a, full-screen choices:** Class and God are hanging banners across the whole screen, coloured by the class's quest terrain or the god's terrain (placeholder colours); each shows its blurb, and the picked one widens to reveal its facts and level-1 kit while the rest narrow to their emblems. **v4b, the legend:** a parchment page on the left, "The legend of [Hero name]", writes an entry for each pick (class and blurb, god and domain, race and trait, background and starting place, then scores, proficiencies, gear and spells); the class card on the right drops the blurb, since the legend shows it. In both, the mini rises in at Look (v4b in the legend's place).
 - **v4a's full-screen banners chosen** (Oct 30, 2026, over v4b's legend). Its white details card sat oddly inside a banner, so **v5 puts the details on the cloth itself**, three ways: **v5a, stitched:** text straight on the banner, a stitched line under the name, main scores as small hex badges, facts on the left and the level-1 kit on the right of a stitched seam; **v5b, patches:** each fact (main scores, armour, weapons, level-1 kit) is a sewn-on patch in a shade of the banner with a stitched edge; **v5c, heraldry:** a centred crest (emblem, name, blurb), a stitched divider, score badges beside weapons and armour, and the level-1 card hanging from the banner's tip like a charm, with no effect text. Text on the cloth is dark on light banners and cream on dark ones.
 - **v5c's heraldry chosen** (Oct 30, 2026, over v5a and v5b): the emblem on top, straight into the class blurb, keeps the theme focused. **Card details** (v6): the hanging level-1 card, and a god's free spell, can be tapped (hovered on PC, as everywhere) to open a pop-up above it in the level-up pop-up style: what it does, its AP and any use limit (e.g. "Once per fight"). Tapping it again or the X closes it. Casters' spell slots stay plain until the Spells step.
+- **Race step as banners** (v7, Oct 30, 2026): seven race banners, each with the race blurb ([Classes & combat](03 Classes & combat.md) → Race blurbs) and, when picked, its boosts as score badges, its trait, and the racial card if it has one (tap for details, as on the class step; From the Ashes shows "Passive"). Race emblems and banner colours are placeholders. **Three ways to pick a sub-type** (blurbs: Classes & combat → Sub-type blurbs): **v7a** a row of sub-type pills under the blurb inside the race banner (dragon types in their colours), and picking one swaps in its name, blurb and trait; **v7b** its own step after Race, a Sub-type, Dragon type or Bloodline pip (skipped for Humans and Halflings) with banners of its own; **v7c** a rod of small pennants across the race banner's foot, the picked one dropping lower and glowing, with the racial card hanging from the same rod. To make room for buttons inside a banner, a banner is now a cloth with its own tap area rather than one big button.
 - Not mocked yet: the screens before (a main menu or new-campaign screen) and after (the starting hex), so Back and Begin don't link anywhere.
 
 ## Screen mockups
@@ -371,7 +372,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Terrain colours and icons | Exploration, after-combat | Final terrain colours and icons (Open questions below) |
 | Reveal pacing (one reward every 0.55 s; about 2 s for a Legendary's flip) | After-combat v5b–v7 | Reveal pacing (Open questions below) |
 | [Legendary item], [Item description] | After-combat v6–v7 | Specific gear items ([Weapons & gear](04 Weapons & gear.md) → Open questions) |
-| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v5; the banner colours (v4a–v6) | Icons (Open questions below) |
+| Subclass, card, spell and feat icons; class and god icons | Level-up v2–v9; character creator v1–v5; the banner colours and race emblems (v4a–v7c) | Icons (Open questions below) |
 | Training ×[1] (trainings left this visit) | Weapon mastery v1a–v5c | Training counts (progression pass: [Cards & progression](05 Cards & progression.md) → Open questions) |
 | Node type icons (new card, upgrade, passive) | Weapon mastery v1–v5 | Icons (Open questions below) |
 | The Lady of the Lake's lines and the option lines (v1 only: written from v2); "[<companion>'s chime-in line]" (v1–v7 only: v8 uses the written lines); the Lady's [Portrait] | Social encounter v1–v8 | Chime-in lines: [World & story](01 World & story.md) → Companion chime-in lines; the portrait: art pass |
@@ -391,8 +392,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | [Fluffy's / Chelmsford's / Mel's bar line], [Hero toast line] | Town v2e–v7 | Inn banter ([characters → Writing guide](characters/00%20Writing%20guide.md) → Open questions); the toast is written as an intent choice with a narration beat |
 | Tap thresholds: 8 px of movement, 350 ms | Social v9, town v4 | Playtest |
 | Night at the inn pacing (about 2.3 s of night) | Town v2d–v3 | Playtest |
-| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v6 | Final heads, hairstyles and swatches (Open questions below) |
-| [Bard proficiency] | Character creator v1a–v6 | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
+| Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v7c | Final heads, hairstyles and swatches (Open questions below) |
+| [Bard proficiency] | Character creator v1a–v7c | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
@@ -410,7 +411,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
 | Action cards | In progress (latest: v3, linked flow with gear and combat; an AP-updated copy lives in the Combat canvas as v12) | — | — | [HexGen · Action Cards (working)](https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu) |
 | Town | In progress (v1a way in, v2a shop, v2e inn, v1's quest board and v3a's town square chosen; v4 adds the camera; v5a–v5c compare where the opened camera buttons go; v6c's nav button between Quests and equipment chosen as standard; latest: v7, dots top left and the rest card centred) | — | — | [HexGen · Town (working)](https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2) |
-| Character creator | In progress (v1a guided steps, v4a banners and v5c heraldry chosen; latest: v6, the hanging card opens its details) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
+| Character creator | In progress (v1a guided steps, v4a banners and v5c heraldry chosen; latest: v7a–v7c, the Race step with three ways to pick a sub-type) | — | — | [HexGen · Character creator (working)](https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3) |
 
 ## Camera and controls
 
@@ -469,7 +470,9 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator class step: v2a, v2b or v2c~~ (settled Oct 30, 2026: v2a; spacing fixed in v3)
 - [x] ~~Character creator: v4a or v4b~~ (settled Oct 30, 2026: v4a, full-screen banners)
 - [x] ~~Character creator banners: v5a, v5b or v5c~~ (settled Oct 30, 2026: v5c, heraldry; the hanging card opens its details in v6)
-- [ ] **New:** character creator: feedback on v6, then the Race step as banners
+- [x] ~~Character creator: feedback on v6~~ (approved Oct 30, 2026)
+- [ ] **New:** character creator Race step: sub-types in the banner (v7a), as their own step (v7b) or as pennants (v7c)
+- [ ] **New:** race emblems and banner colours (v7 placeholders)
 - [ ] **New:** character creator finale after naming (chosen as a moment, not designed yet)
 - [x] ~~AI minis: how fused AI output becomes modular gear~~ (Oct 29, 2026: AI makes parts, not finished minis; see Art direction)
 - [ ] **New:** AI minis: whether the results reach the Reference 3 detail target, or the target changes
