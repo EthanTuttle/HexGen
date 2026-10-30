@@ -79,7 +79,7 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 - **Minis instead of tokens.** The exploration mockup shows one "H" token; the docs (Oct 29) say the whole party walks as minis in a loose cluster, so the four stand-in minis walk. In combat, the mockup's flat tokens stand in for 3D minis (docs, combat v13), so the stand-ins are used, with each one's letter and HP bar floating above it (A, B, C… for foes, as on the tokens).
 - **Rings on the board.** The acting ally's cream rim, gold for foes in reach, orange for the target, green circles for allies in reach and the reachable Move hexes are drawn as coloured cells under the minis.
 - **The enemies' phase.** The mockup shows a modal card ("Enemies' phase · [Enemy actions play out on the board] · Back to allies' phase"). Here the foes really act on the board, so a pill at the top says "Enemies' phase" and the allies' phase comes back by itself when they're done.
-- **Backdrop.** The map uses the mockup's backdrop colours per phase (dawn, midday, dusk, night). Combat keeps the colour the fight started with (docs: combat pauses the clock), so it's usually the midday blue, not the combat mockup's fixed pink.
+- **Backdrop.** The map uses the mockup's backdrop colours per phase (dawn, midday, dusk, night), now the chosen look (`design/07 Presentation.md` → Art direction → Time of day). Combat keeps the colour the fight started with (docs: combat pauses the clock), so it's usually the midday blue, not the combat mockup's fixed pink.
 - **Mockup-only parts left out:** the Debug tab (the docs say it's not part of the game), and on After combat the Debug Replay button and the loot (no loot in the loop).
 - **Non-working buttons, kept so the screens read like the mockups:** Quests, the character and gear button, the party portraits on the map (they'd open the gear screen), Use item (no consumables), the weapon cards whose AP cost isn't set (Parry, Block, Shield Bash, Trip, Ward, Bonebreaker, Backstab, Throw: "?" and greyed, as in the mockup), and Edit hotbar (the Action cards screen isn't built). Each says so when clicked.
 - **After combat's button.** The mockup shows "Later" and "Level up now" because its party levels up; there's no XP in the loop, so the panel shows the mockup's "+[XP] XP" and "Party level [level]" placeholders and one **Back to map** button in the Level up now style.
@@ -148,7 +148,6 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | After a wipe | Everyone wakes at camp at 1 HP; companion injuries not modelled | The docs give injuries but not their size |
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
-| Backdrop colours | The exploration mockup's: dawn #F4DCCB, midday #D9E7EC, dusk #EDCFD7, night #A9AECB | The exact colours are an open question |
 | Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
 | Landmarks | A pin and a name; no landmark model | No landmark art or pools wired up |
 | Cluster badge shows from | 2 tiles | The mockup's number for "a few hexes" |
@@ -239,8 +238,8 @@ v10's own hill grass material adds one surface to each hills piece (about 80 obj
 | Hills and highlands were a hard hexagon of grass against their neighbours: the mound covers the whole tile, so the base slab's fade never showed | Round 2 matched the grass by vertex colour; since tiles v10 the `hill_grass` / `highland_grass` surfaces get the base slabs' ground shader by material name (`shaders/ground_blend.gdshaderinc`) |
 | v9's coarser sand grid showed stair-steps along the crests | Smooth normals from the height function (`sand.gd`); also fixed a missing ring of sand triangles round each desert tile's centre |
 | The bog mist hid the bog at dawn and dusk | Two layers at 0.15 and 0.35 m and 0.2 strength (was three, 0.3) |
-| Dawn and dusk turned the land olive and brown, and the desert orange | The placeholder sun colours softened (dawn #FFD2A8 → #FFE2C8, dusk #FFC0A8 → #FFD8CC); still placeholders |
-| (round 3) Deep forest and other dense shade went near-black at dawn and dusk | Ambient light is lifted when the sun is low: 0.7 at dawn and dusk, 0.55 mid-morning and afternoon, 0.5 at midday and night (placeholder, a 7th column in `time_of_day.gd`'s keys) |
+| Dawn and dusk turned the land olive and brown, and the desert orange | The sun colours softened (dawn #FFD2A8 → #FFE2C8, dusk #FFC0A8 → #FFD8CC); now the chosen look (see below) |
+| (round 3) Deep forest and other dense shade went near-black at dawn and dusk | Ambient light is lifted when the sun is low: 0.7 at dawn and dusk, 0.55 mid-morning and afternoon, 0.5 at midday and night (a 7th column in `time_of_day.gd`'s keys; now the chosen look) |
 | (round 4) Water looked icy at game distance: the shallow colour was near-white on narrow rivers and the foam rim was wide | Shallow colour (0.36, 0.70, 0.86) → (0.27, 0.56, 0.76) (linear), foam 0.75 → 0.55 and its fray 0.12 → 0.06 m (`water.gdshader`; by eye) |
 | (round 4) Props looked pasted on the ground: nothing darkens where a house, wall or tree meets it | Screen-space ambient occlusion on (`stage.gd`: radius 0.6, intensity 1.6, by eye) |
 | Water outshone the land at night | The water shader dims its colour and reflections with the night (`night` uniform, set from the light like the toadstool glow) |
@@ -252,7 +251,7 @@ v10's own hill grass material adds one surface to each hills piece (about 80 obj
 1. ~~**Ground cover reads as speckle.**~~ Done in tiles v13 (`grass_ink` #7FA95A, also in `hex.gd` for the engine-built ground cover). On plains and meadows the dark `grass_ink` tufts (#4F7A33) on light grass make every open tile look dotted from the game camera; it's the most visible thing across the review sheets. A tuft colour nearer the grass, or fewer tufts, would calm it.
 2. **The bog mist turns beige at dawn and dusk** because it takes the warm light. It's my placeholder, not art; noted here because it's the one variant that still looks muddy at those times.
 
-**The biggest thing that still keeps the map from looking finished: the light at dawn, dusk and night.** Midday matches the previews and looks right; the other three are placeholder colours (open question in `design/07 Presentation.md`), and they still wash the whole map olive at dawn, brown-pink at dusk and flat blue-grey at night. Picking real time-of-day colours (sun, ambient, backdrop) is the next step that would change every screen. After that comes motion: only the water moves (the terrain motion pass is an open item in the docs).
+**The biggest thing that still kept the map from looking finished was the light at dawn, dusk and night.** Ethan has since approved the prototype's light as the chosen look (revisit in playtesting): `design/07 Presentation.md` → Art direction → Time of day. The next gap is motion: only the water moves (the terrain motion pass is an open item in the docs).
 
 ## Look tests
 
@@ -317,7 +316,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 | `screens/water_closeup.png` | The lake and river mouth up close |
 | `screens/combat_board.png` | The combat board, framed and lined up like `art/preview/standin_combat_v1.png` |
 | `screens/party_closeup.png` | The party on a plains tile, framed like `art/preview/standin_map_v1.png` |
-| `screens/map_dawn.png`, `map_dusk.png`, `map_night.png` | The map at other times of day (placeholder colours) |
+| `screens/map_dawn.png`, `map_dusk.png`, `map_night.png` | The map at other times of day (the look tests' backdrops; the light is the chosen one) |
 | `screens/water_movie.mp4` | 8 s of moving water, framed like `art/preview/water_anim_v3.mp4` |
 | `screens/combat_movie.mp4` | 10 s of attacks on the combat board |
 | `screens/loop_movie.mp4` | One full loop, played by the demo (54 s): placing cards, walking to an encounter, the fight, the win and the cards it draws, then building again until the hand runs out (with the 45-card placeholder deck it no longer finishes a region; the variants movie shows that). Recorded with tiles v12 |
@@ -342,7 +341,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 - **Noise textures:** Blender's Noise, Voronoi and White Noise textures are replaced by shader code with the same scales, octaves and thresholds, so ripples and sparkles follow the same rules but not the same exact pattern.
 - **Water tuning by eye:** with Blender's numbers the ripples barely showed and the shore glared white. The bump is raised from 0.7 to 2.0, and the reflectance is halved (Blender lights reflections with the backdrop at half strength, Godot at full).
 - **Water triangles:** Godot has no constrained Delaunay, so the water mesh triangulates all points and drops triangles whose centre falls outside the shore.
-- **Times of day other than midday are placeholders:** the docs give the idea (peach dawn, pale sky-blue midday, rose dusk, darker cooler night) but the exact colours are an open question (`design/07 Presentation.md`). Midday is the previews' `#CFE4F2` with the previews' sun; the dawn, dusk and night colours, sun angles and light colours in `time_of_day.gd` are guesses for the look test, there to be replaced.
+- **Time of day:** the sun colour, strength and height, the ambient light and the loop's backdrops are the chosen look (Oct 30, 2026, revisit in playtesting): `design/07 Presentation.md` → Art direction → Time of day. Midday is the previews' `#CFE4F2` with the previews' sun. The look tests keep their own backdrop colours; the loop uses `Game.SKY`.
 - **Hop and recoil numbers** (0.35 m hop, 16° tilt, timings) and the attack order are placeholders; the docs only say the attacker hops and the target recoils.
 - **Look test 4** is now covered by the loop's screens (see Screens next to the mockups). Look tests 1–3 run at their old 1600 × 1000 framing with `--resolution 1600x1000`.
 

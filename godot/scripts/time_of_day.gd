@@ -3,9 +3,10 @@ extends Node
 ## The pastel backdrop and the light drift with the day clock (look test 2;
 ## design/07 Presentation.md -> Art direction: soft peach at dawn, pale sky-blue at midday,
 ## rose at dusk, a darker, cooler pastel at night).
-## Every colour and angle below except midday is a PLACEHOLDER: the exact colours per time of day
-## are an open question in the docs. Midday matches the Blender previews (backdrop #CFE4F2, the
-## preview sun), so the screenshots line up with art/preview.
+## DOCS: the sun colour, strength, height and ambient light below are the chosen look (Oct 30, 2026;
+## revisit in playtesting): design/07 Presentation.md -> Art direction -> Time of day -> The light.
+## Midday matches the Blender previews (backdrop #CFE4F2, the preview sun). The backdrops here are the
+## look tests'; the loop uses its own (Game.SKY).
 ## Keys: T starts or stops the clock, [ and ] step an hour.
 
 @export var hour := 12.0
@@ -21,11 +22,11 @@ var sun: DirectionalLight3D
 const KEYS := [
 	[0.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],    # night: moonlight
 	[4.5, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],
-	[6.5, "#F6D5C0", "#FFE2C8", 1.1, 24.0, -30.0, 0.7],   # dawn: soft peach (sun softened: #FFD2A8 turned the land olive)
+	[6.5, "#F6D5C0", "#FFE2C8", 1.1, 24.0, -30.0, 0.7],   # dawn: soft peach
 	[9.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 0.0, 0.55],
 	[12.0, "#CFE4F2", "#FFFFFF", 1.18, 37.7, 28.4, 0.5],   # midday: the preview backdrop and sun
 	[15.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 60.0, 0.55],
-	[18.0, "#F1C6CF", "#FFD8CC", 1.1, 24.0, 90.0, 0.7],   # dusk: rose (sun softened: #FFC0A8 turned the land brown)
+	[18.0, "#F1C6CF", "#FFD8CC", 1.1, 24.0, 90.0, 0.7],   # dusk: rose
 	[20.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],
 	[24.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4, 0.5],
 ]

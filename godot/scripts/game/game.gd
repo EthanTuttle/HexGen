@@ -12,7 +12,8 @@ extends Node3D
 const COMBAT_AT := Vector2(1000, 0)   # the combat board lives away from the map
 const TAP_PIXELS := 8.0               # PLACEHOLDER from the docs' mockups: a press that barely moves ...
 const TAP_MS := 350                   # ... and lets go quickly is a tap, not a drag
-## The mockup's backdrop colours per time of day (Explore v8b; the exact colours are open in the docs).
+## DOCS: the backdrop per time of day (from Explore v8b; chosen Oct 30, 2026, revisit in playtesting):
+## design/07 Presentation.md -> Art direction -> Time of day -> The light.
 const SKY := {"night": "#A9AECB", "dawn": "#F4DCCB", "midday": "#D9E7EC", "dusk": "#EDCFD7"}
 
 var rng := RandomNumberGenerator.new()
