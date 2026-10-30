@@ -179,7 +179,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: ChatGPT image output: commercial-use terms
 - [ ] New: AI minis: whether true scale (1.3 tall on a 1.0 base) reads too small on the base
 - [ ] New: AI minis: which service after the Meshy vs Tripo test, and its licence
-- [ ] New: AI minis: how fused AI output becomes modular gear on the posing skeleton
+- [x] ~~AI minis: how fused AI output becomes modular gear~~ (AI makes parts, not finished minis)
+- [ ] New: armour fitting test, then decide whether all worn gear still shows on minis
+- [ ] New: hero creation: builds per race, colours, heads and hairstyles per race
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3
