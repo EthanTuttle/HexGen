@@ -202,7 +202,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator: v4a or v4b~~ (settled Oct 30: v4a, full-screen banners)
 - [x] ~~Character creator banner details~~ (settled Oct 30: v5c heraldry; card details in v6)
 - [x] ~~Character creator: feedback on v6~~ (approved Oct 30)
-- [ ] New: character creator Race step: sub-types v7a (in the banner), v7b (own step) or v7c (pennants)
+- [x] ~~Character creator Race step: v7a, v7b or v7c~~ (settled Oct 30: v7a)
+- [ ] New: character creator sub-type selector: v8a hex tokens or v8b cloth tabs
+- [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
