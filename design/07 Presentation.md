@@ -42,6 +42,10 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
     **Fluffy** (approved Oct 29, 2026)
 
     > **Fluffy** looks like a cat, though he's really a fey creature who chose to be one. He has **long, smoky-grey fur**, a thick ruff around his neck, a big plumed tail and **copper-orange eyes**. He stands **on all four paws**, chin up, with a **slim wizard's wand held crosswise in his mouth**. A **short deep-red royal cape** with **white ermine trim** hangs over his shoulders. His eyes are half-lidded and he looks **thoroughly unimpressed** with everyone. He stands on a **flat wooden six-sided base** like a board-game piece.
+
+    **Mel** (approved Oct 29, 2026)
+
+    > **Mel** is a **small, wiry wood elf girl of about sixteen**, with **olive skin**, pointed ears, **green eyes** and a **long dark braid**. She wears **ragged, patched street clothes**: a loose tunic, worn trousers and scuffed boots. Around her neck is **one keepsake from her burned village**, a **woven wood-elf scarf in autumn rust-orange**. She **crouches low**, light on her feet, holding a **dagger in a reverse grip, half-hidden behind her**. She wears a **sly grin**, as if she's already working her next con, but her eyes show a little nervousness. She stands on a **flat wooden six-sided base** like a board-game piece.
 - Adopted: floating quest markers over tiles, like Dorfromantik's numbered badges. They mark quest targets (where an active quest wants the player to go) and give the quest's normal rewards when completed. They also show cluster goals (see [Map & exploration](02 Map & exploration.md) → Clustered regions).
 - Not adopted: railway tracks and trains.
 
