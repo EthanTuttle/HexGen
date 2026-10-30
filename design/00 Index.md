@@ -196,7 +196,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: armour fitting test, then decide whether all worn gear still shows on minis
 - [x] ~~Hero creation: builds per race, colours~~ (settled Oct 30: 3 builds per race, swatches per race)
 - [ ] New: hero creation: final heads and hairstyles per race, and each race's swatches
-- [ ] New: character creator screen: pick a layout from v1a–v1c (guided steps, painting table, origin board)
+- [x] ~~Character creator screen: pick a layout~~ (settled Oct 30: v1a, guided steps)
+- [ ] New: character creator class step: v2a, v2b or v2c
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3

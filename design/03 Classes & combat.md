@@ -44,6 +44,17 @@ The hero is defined by class, race/ancestry and background. All three use custom
 | Ranger | Hunter (big game, big damage), Shifter (melee focus, beast abilities), Companion (beast friend), Elementalist (infuses elemental damage in attacks) |
 | Bard | Narrator, Musician, Dancer, Leader |
 
+**Class blurbs** (chosen Oct 30, 2026 by Ethan from drafts in the subclass blurb style; shown on the character creator's class step: [Presentation](07 Presentation.md) → Character creator screen. The Cleric's "champion" echoes the Holy Defender's "righteous champion", kept on purpose)
+
+| Class | Blurb |
+| --- | --- |
+| Fighter | A tireless combatant who wins through skill, steel and sheer nerve. |
+| Rogue | A nimble opportunist who lives by cunning, stealth and a sharp blade. |
+| Wizard | A studious arcanist who bends the world through hard-won knowledge. |
+| Cleric | A faithful champion whose prayers mend friends and break foes. |
+| Ranger | A hardy outlander who is most at home far from any road. |
+| Bard | A travelling entertainer who wins hearts, fights and arguments alike. |
+
 **Subclass blurbs** (written Oct 26, 2026: Ethan wrote the Fighter ones, the rest follow his pattern and he approved them. Shown in the level-up screen's subclass pop-up; style: [Presentation](07 Presentation.md) → Screen text)
 
 | Class | Subclass | Blurb |
