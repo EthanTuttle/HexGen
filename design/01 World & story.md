@@ -6,7 +6,14 @@ Lore, the pantheon, enemy types, the main story, background paths and their NPCs
 
 ## Naming
 
-Decided Oct 30, 2026. Place and character names draw on **Irish, Gaelic and German** roots, so new names can be built from those languages (e.g. Dunfaire: Gaelic/Irish dún "fort" + faire "watch"; Sternbrunn: German Stern "star" + Brunnen "well"; Weizenhof: German Weizen "wheat" + Hof "farmstead"). Plain English names are fine too where they suit (e.g. The Oak & Lantern, a common folk's inn). Town names: [characters → Places](characters/Places.md).
+Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic and German** roots for a shared flavour, but no name has to be built from them. Plain English, invented names and a few classical names are all fine where they suit.
+
+- **Loose mapping:** Irish and Gaelic sounds lean toward the countryside, folk, humans, halflings, elves and the tiefling fire bloodlines; German sounds lean toward dwarves, golems, forges, strongholds and towns. A lean, not a law.
+- **Keep names sayable:** use anglicised spellings rather than native ones (Dunfaire, not Dún Faire); a new player should say a name right on the first try (no silent letters, umlauts or vowel clusters like "ao"); people's names are short (1–3 syllables).
+- **Handy word parts** (optional): Irish/Gaelic dun (fort), kil (church), bally (town), glen (valley), ard (high), knock (hill), derry (oak), inver (river mouth), more (big), beg (small); German -hof (farm), -berg (mountain), -brunn (well), -wald (forest), -feld (field), -stein (stone), -bach (stream), -heim (home).
+- **Examples:** Dunfaire (dún "fort" + faire "watch"), Sternbrunn (Stern "star" + Brunnen "well"), Weizenhof (Weizen "wheat" + Hof "farmstead"); The Oak & Lantern stays plain English. A happy accident: Egan, Hayes and Keegan all come from the Irish Aodh, "fire", fitting the flame god and his bloodlines.
+- **Under review** (Oct 30, 2026): a redraft of the gods (only Morin, Tod and Egan fit the roots now; the gods may stay an exception), and of Gronogon and King Grel. Compared with the current names before anything changes.
+- Town names: [characters → Places](characters/Places.md).
 
 ## Magic and the gods (lore)
 
