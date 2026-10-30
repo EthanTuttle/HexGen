@@ -73,6 +73,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Classes & combat**
 
+- [ ] New: each companion's ability scores and gear at each stage of the game (mockups use placeholders)
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
 - [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
 - [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
@@ -169,6 +170,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] What a short tap on a gear hex does on mobile
 - [ ] New: maximum ability score (the gear screen's ability panel fits 3 coins per line, up to about 9 before it runs out of height)
 - [ ] New: feedback on character & gear v8d, then confirm it as final
+- [ ] New: character & gear v9 next steps (party tray with HP, new-item dots, equip animations, pop-up by its item, one-line coins, drag to equip, a mini in the model hex)
+- [x] ~~Character subtitles~~ (settled Oct 30, 2026: "Race Class (Subclass) · Lv", no "Hero" or "Companion"; see Presentation → Screen text)
 - [ ] New: combat screen: where the acting character's name shows
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [ ] New: exact backdrop colours per time of day, and the size of the rift's lilac shift
