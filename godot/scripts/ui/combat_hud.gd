@@ -170,7 +170,7 @@ func _build_details() -> void:
 	p.custom_minimum_size = Vector2(170, 366)
 	p.size = Vector2(170, 366)
 	p.clip_contents = true
-	UI.at(p, 656, 12)
+	UI.at_right(p, 656, 12)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	_details.add_theme_constant_override("separation", 6)
@@ -598,7 +598,7 @@ func _process(_delta: float) -> void:
 			_bar_nodes[key] = node
 		var world: Vector3 = u.mini.global_position + Vector3(0, 1.75, 0)
 		node.visible = not (u.down and not u.ally) and not cam.is_position_behind(world)
-		node.position = cam.unproject_position(world) - Vector2(node.size.x * 0.5, node.size.y)
+		node.global_position = cam.unproject_position(world) - Vector2(node.size.x * 0.5, node.size.y)  # screen coordinates
 		var bar: Bar = node.get_meta("bar")
 		bar.value = float(maxi(u.hp, 0)) / u.max_hp
 	for key in _bar_nodes.keys():
@@ -631,7 +631,7 @@ func float_text(u: Dictionary, text: String, hurt: bool, heal := false) -> void:
 	add_child(l)
 	var cam := fight.game.rig.camera
 	var p := cam.unproject_position(u.mini.global_position + Vector3(0, 2.2, 0))
-	l.position = p - Vector2(20, 10)
+	l.global_position = p - Vector2(20, 10)
 	var tw := create_tween().set_parallel()
 	tw.tween_property(l, "position:y", l.position.y - 24, 1.0)
 	tw.tween_property(l, "modulate:a", 0.0, 0.6).set_delay(0.5)

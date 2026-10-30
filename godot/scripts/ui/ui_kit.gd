@@ -159,7 +159,8 @@ static func is_tap(c: Control, e: InputEvent) -> bool:
 		return false
 	var p: Array = c.get_meta("press")
 	c.remove_meta("press")
-	if mb.position.distance_to(p[0]) >= Rules.TAP_PIXELS or not c._has_point(mb.position):
+	var inside: bool = c._has_point(mb.position) if c.has_method("_has_point") else Rect2(Vector2.ZERO, c.size).has_point(mb.position)
+	if mb.position.distance_to(p[0]) >= Rules.TAP_PIXELS or not inside:
 		return false
 	return mb.device != InputEvent.DEVICE_ID_EMULATION or Time.get_ticks_msec() - int(p[1]) < Rules.TAP_MS
 
@@ -192,4 +193,17 @@ static func terrain_ink(t: String) -> Color:
 ## Places a control at a fixed spot in the 844 x 390 layout.
 static func at(c: Control, x: float, y: float) -> Control:
 	c.position = Vector2(x, y)
+	return c
+
+
+## The same, for a panel on the right of the mockup: it keeps its distance from the right edge, so it moves in
+## with the safe area (SafeArea) and with screens wider than 844.
+static func at_right(c: Control, x: float, y: float) -> Control:
+	var w := maxf(c.size.x, c.custom_minimum_size.x)
+	c.anchor_left = 1.0
+	c.anchor_right = 1.0
+	c.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	c.offset_left = x - 844.0
+	c.offset_right = x - 844.0 + w
+	c.offset_top = y
 	return c

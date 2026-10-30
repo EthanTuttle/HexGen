@@ -35,6 +35,7 @@ var real_time := 0.0
 var fights_won := 0
 
 var ui := CanvasLayer.new()
+var safe := SafeArea.new()            # the HUD's root: kept out of the Dynamic Island's strip
 var hud: ExploreHud
 var after: AfterCombat
 
@@ -90,12 +91,13 @@ func _ready() -> void:
 	_make_slot_materials()
 
 	add_child(ui)
+	ui.add_child(safe)
 	hud = ExploreHud.new(self)
-	ui.add_child(hud)
+	safe.add_child(hud)
 	after = AfterCombat.new()
 	after.visible = false
-	ui.add_child(after)
-	ui.add_child(popup)
+	safe.add_child(after)
+	safe.add_child(popup)
 	_connect_gestures()
 	_refresh()
 	if "--touchtest" in OS.get_cmdline_user_args():
@@ -474,7 +476,7 @@ func walk_to(goal: Vector2i) -> void:
 	busy = true
 	held = -1
 	pick(null)
-	rig.player_moved = false   # a new walk is a new action: the camera follows again
+	rig.player_moved = false   # PLACEHOLDER (what "the next action" is isn't decided): a new walk follows again
 	_refresh()
 	for step in path:
 		var to := Hex.to3(Hex.tile_position(step.x, step.y) + Minis.PARTY_OFFSET)
@@ -584,8 +586,8 @@ func start_fight(t: Vector2i) -> void:
 # --- Rest --------------------------------------------------------------------
 
 ## Resting at camp (DOCS: Camps and rest): heal, +8 hours, discard down to 7, reshuffle the discard
-## pile into the deck. Draws nothing. PLACEHOLDER: the camp is the start hex; tapping it while the party
-## stands there rests (no rest button in the mockups).
+## pile into the deck. Draws nothing. DOCS (Resting): the Rest action card along the bottom, shown while the
+## party stands on a camp. PLACEHOLDER: the camp is the start hex.
 func rest() -> void:
 	if busy or party_tile != Rules.START_TILE:
 		return
@@ -742,10 +744,7 @@ func tap(t: Vector2i) -> void:
 		elif map.slot_nodes.has(t):
 			try_place(t)
 	elif map.terrains.has(t):
-		if t == party_tile and t == Rules.START_TILE:
-			pick(null)
-			rest()
-		elif t == party_tile:
+		if t == party_tile:
 			pick(null)
 		elif picked == t:
 			walk_to(t)

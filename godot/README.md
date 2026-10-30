@@ -26,7 +26,7 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | Drag a card from the hand onto a lit slot | Place it; let go anywhere else and it goes back to the hand |
 | Click a placed hex, then click it again | The first click shows the path and the walk time; the second walks the party there, one hex at a time. Clicking another hex picks that one instead |
 | Rest the mouse on a hex (or long-press it on touch) | Its details: terrain, region and cluster progress, the variant once finished, any encounter |
-| Click the start hex while standing on it | Rest at camp: heal, +8 hours, discard down to 7, reshuffle the discard pile |
+| The **Rest** card along the bottom (shown while the party stands on the camp) | Rest at camp: heal, +8 hours, discard down to 7, reshuffle the discard pile |
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
 | Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E and the nav buttons turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
 
@@ -63,7 +63,7 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 | Two fingers turning | Rotate, freely: nothing snaps when the fingers lift (as with a right-drag) |
 | Tap | What a click does: hold a card, place it, pick a hex to walk to, act in combat |
 | Long-press on the board | A map hex's details (as hovering does with a mouse); on a combat token, a foe's name, HP and what it does, or an ally's HP, AP and status |
-| Long-press on a HUD control | Its details: what hovering shows on PC (the control's tooltip text) in the same pop-up. Letting go doesn't press it |
+| Long-press on a HUD control | For now, what hovering shows on PC (the control's tooltip text) in the same pop-up (placeholder: see below). Letting go doesn't press it |
 | Drag a card out of the hand | It rides just above the finger; let go over a lit slot to place it, anywhere else to put it back |
 
 **Rotation is free** (docs, Oct 30, 2026): twisting and right-dragging turn the view by exactly as much as the fingers or the mouse, with no snap. The nav button's rotate buttons and Q / E turn it by `Rules.ROTATE_STEP` (60°, placeholder).
@@ -90,7 +90,7 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 
   The grown areas of neighbouring hand cards and portraits overlap by 2–3 pt; the one drawn on top wins.
 
-**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (21 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex, a card and a foe, the release after a long-press, pinch, a free twist, pan, the nav centre, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines).
+**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (23 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex, a card and a foe, the release after a long-press, pinch, a free twist, pan, the nav centre, the Rest card, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines).
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 -- --touch           # play with the mouse as a finger, phone-sized
@@ -99,7 +99,7 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 swift godot/tools/png_to_mp4.swift /tmp/touch godot/screens/touch_movie.mp4 30
 ```
 
-`screens/touch_movie.mp4` is that test recorded in a phone-sized window (852 × 393 pt at 2×), with the fingers drawn as circles and a caption naming each gesture (the test's overlay, not game UI). `screens/touch_01_…png` to `touch_06_…png` are stills: a drag-placed card, the hex pop-up, a card's details, after a twist, the walk preview, a foe's details.
+`screens/touch_movie_small.mp4` is a small copy for phones (640 wide, 18 MB, made with macOS `avconvert --preset Preset640x480`). `screens/touch_movie.mp4` is that test recorded in a phone-sized window (852 × 393 pt at 2×), with the fingers drawn as circles and a caption naming each gesture (the test's overlay, not game UI). `screens/touch_01_…png` to `touch_06_…png` are stills: a drag-placed card, the hex pop-up, a card's details, after a twist, the walk preview, a foe's details.
 
 **Where the mockup layout doesn't fit a phone:**
 
@@ -108,18 +108,30 @@ swift godot/tools/png_to_mp4.swift /tmp/touch godot/screens/touch_movie.mp4 30
 - **Crowding from the grown hit areas.** Hand cards are 6 pt apart and portraits sit edge to edge, so their 44 pt hit areas overlap a little.
 - **The details panel in combat** takes the right fifth of the screen (170 pt), which leaves the board narrow on a phone; the board pop-up opens over it near the right edge.
 
-**Not in the docs (for Ethan to decide; the prototype's choice is in brackets):**
+**Phone screen edges** (docs: Camera and controls → Phone screen edges): the board and backdrop fill the whole screen, behind the Dynamic Island too; the HUD (trays, hand, hotbar, buttons, pop-ups) keeps out of the island's strip. All HUD screens sit inside `SafeArea` (`scripts/ui/safe_area.gd`), whose left or right edge moves in by the safe-area inset (`DisplayServer.get_display_safe_area()` against the screen size; only left and right, since the home bar is hidden). It re-reads the inset every half second, because turning the phone round swaps the island's side without changing the size. Panels on the right of the mockups (the clock and the hand on the map, the details panel in combat) are anchored to the right edge (`UI.at_right`), so they move in too; things drawn on the board (cluster badges, HP bars, the dragged card) use screen coordinates and don't move. `-- --safe=left|right` fakes the iPhone 15 Pro's 59 pt inset on the Mac.
 
-1. **Long-press timing.** The docs give one time (350 ms) for "not a tap". Should a long-press need a longer hold? [it fires the moment a still press passes 350 ms]
-2. **What counts as "the next action"** that hands the camera back after the player moves it. [the next walk on the map; the start of each allies' turn in combat. Picking another ally in the same turn doesn't recentre]
-3. **Two fingers moving together:** pan as well as zoom and turn? [no: two fingers only zoom and turn]
-4. **Dragging a card onto a red slot** (one next to a banned terrain): say why, as tapping it does? [it goes back to the hand silently]
-5. **Where a dragged card drops:** under the card or under the finger? [the card rides 34 pt above the finger, so the finger doesn't hide it, and drops on the slot under the card]
-6. **The walk preview's look and what clears it.** [no mockup yet: a dotted line of cream dots to the hex and a dark "2 hexes · 2 min" label over it; holding a card, tapping empty space or the party's own hex clears it]
-7. **Resting** has no mockup and isn't a walk. Two taps for it too? [one tap on the camp hex while the party stands on it, as before]
-8. **Long-press on HUD controls that have no details design** (hand cards, the nav and camera buttons, party portraits): what should they show? [their PC hover text in the board pop-up]
-9. **Long-press on an empty slot** (an unplaced hex): anything? [nothing]
-10. **Hover delay on PC** for the board pop-up. [the same 350 ms]
+| Island side | Map | Combat |
+| --- | --- | --- |
+| Left | `screens/safe_left_05_rest.png` | `screens/safe_left_07_long_press_foe.png` |
+| Right | `screens/safe_right_05_rest.png` | `screens/safe_right_07_long_press_foe.png` |
+
+(`safe_<side>_01…07` are the touch test's stills with that inset.) **What doesn't fit:** in combat with the island on the right, the details panel moves 59 pt left and overlaps the end of the hotbar (All actions and the last card): the combat mockup uses the whole 844 pt width, so something has to shrink or move, which is for Ethan. The map fits on both sides. The dim layers behind pop-ups (the encounter pop-up, End phase, after combat) stop at the safe edge, so the island's strip isn't dimmed.
+
+**Ethan's answers (Oct 30, 2026; `design/07 Presentation.md`):**
+
+| Question | Answer | Here |
+| --- | --- | --- |
+| Long-press timing | Fires as soon as a still press passes 350 ms | As built |
+| Two fingers | Zoom and turn only, never pan | As built |
+| Dragging a card onto a red slot | Goes back to the hand without a message | As built |
+| Walk preview | Keep the cream dotted line and the "2 hexes · 2 min" label for now | As built |
+| Long-press on an empty slot | Nothing | As built |
+| Resting | A **Rest** action card along the bottom while the party stands on a camp; tapping the camp hex no longer rests | Built: the combat hotbar card's look with no AP hex, centred under the open board; its tent icon and brown band are placeholders |
+| What counts as "the next action" that hands the camera back | Not decided | PLACEHOLDER: the next walk; the start of each allies' turn |
+| Where a dragged card drops | Not decided | PLACEHOLDER: the card rides 34 pt above the finger and drops on the slot under the card |
+| Hover delay on PC | Not decided | PLACEHOLDER: 350 ms |
+| Long-press on HUD controls with no details design | Open: Ethan decides each one | PLACEHOLDER: their PC hover text. The controls: hand cards; party portraits (map and combat tray); Quests, equipment, the nav button and its five camera buttons; combat's camera buttons and End hex; the landmark pin; and also the combat hotbar and All actions cards (a tap already opens the details panel), the Rest card, Edit hotbar, and the after-combat drawn-card hexes |
+| Phone edges | Open, except: hide the home indicator while playing | `project.godot` sets iOS `hide_home_indicator` and `suppress_ui_gesture` (system edge gestures deferred), both on (they're Godot 4.7's defaults, set explicitly), and locks the phone to landscape either way round (`handheld/orientation` sensor landscape). The Dynamic Island side and text sizes stay as they are |
 
 ## Screens next to the mockups
 
@@ -155,7 +167,7 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 - **Non-working buttons, kept so the screens read like the mockups:** Quests, the character and gear button, the party portraits on the map (they'd open the gear screen), Use item (no consumables), the weapon cards whose AP cost isn't set (Parry, Block, Shield Bash, Trip, Ward, Bonebreaker, Backstab, Throw: "?" and greyed, as in the mockup), and Edit hotbar (the Action cards screen isn't built). Each says so when clicked.
 - **After combat's button.** The mockup shows "Later" and "Level up now" because its party levels up; there's no XP in the loop, so the panel shows the mockup's "+[XP] XP" and "Party level [level]" placeholders and one **Back to map** button in the Level up now style.
 - **Defeat** has no mockup. It uses the After combat panel with "Defeat", the dropped cards in place of rewards, and **Back to camp**.
-- **Rest** has no mockup either: tapping the start hex while standing on it rests.
+- **Rest** has no mockup either: the docs ask for a Rest action card along the bottom while the party stands on a camp, so it borrows the combat hotbar card's look.
 - **Fog of war at night** (docs: tiles beyond sight are fogged) isn't drawn on the 3D tiles; out-of-sight slots fade and can't take cards, and the camera can't zoom all the way out.
 - **Smaller differences:** Godot draws the mockup's hard "box-shadow" edges as a 1 px soft shadow; the hotbar card names wrap slightly differently; the hand column grows a third row when the hand has 7 cards (the mockup shows 6).
 

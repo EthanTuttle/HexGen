@@ -84,7 +84,7 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int) -> bool:
 		_add_unit(e, ENEMY_CELLS[i], false, LABELS[i])
 	if hud == null:
 		hud = CombatHud.new(self)
-		game.ui.add_child(hud)
+		game.safe.add_child(hud)
 		game.popup.move_to_front()
 	hud.visible = true
 	game.rig.frame(position, 22.0, 52.0)
@@ -303,7 +303,7 @@ func _start_allies() -> void:
 			u.defending = false      # Defend lasts until your next turn
 			u.poison = false
 	current = {}
-	game.rig.player_moved = false   # a new turn: the camera centres on whoever acts again
+	game.rig.player_moved = false   # PLACEHOLDER ("the next action" isn't decided): a new turn centres again
 	for u in units:
 		if u.ally and not u.down:
 			select(u)

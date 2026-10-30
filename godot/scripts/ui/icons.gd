@@ -21,6 +21,7 @@ const PATHS := {
 	"parry": "M4 20L16 8 M20 20L8 8 M14 4h6v6 M10 4H4v6",
 	"shield": "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",
 	"bash": "M11 4l6 2.5v5c0 4-2.8 6.5-6 7.5-3.2-1-6-3.5-6-7.5v-5z M19 4l2-2 M20 9h3 M19 14l2 2",
+	"camp": "M3 20 12 5l9 15z M12 5v15 M9 20l3-5 3 5",   # PLACEHOLDER: no camp icon in the mockups yet
 	"heart": "M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z M12 9v5 M9.5 11.5h5",
 	"bolt": "M13 2L5 14h6l-1 8 8-12h-6z",
 	"staff": "M6 21L15 8 M15 8a3.5 3.5 0 1 1 3-5",

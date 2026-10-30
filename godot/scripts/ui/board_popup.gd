@@ -35,10 +35,11 @@ func show_at(at: Vector2, title: String, lines: Array) -> void:
 	reset_size()
 	await get_tree().process_frame
 	reset_size()
-	var screen := get_viewport().get_visible_rect().size
+	# Within the HUD's safe area (its parent), in screen coordinates.
+	var area := (get_parent() as Control).get_global_rect() if get_parent() is Control else get_viewport().get_visible_rect()
 	var p := at + Vector2(14, -size.y - 14)   # up and right of the finger, so the finger doesn't cover it
-	if p.y < 6:
+	if p.y < area.position.y + 6:
 		p.y = at.y + 18
-	p.x = clampf(p.x, 6, screen.x - size.x - 6)
-	p.y = clampf(p.y, 6, screen.y - size.y - 6)
-	position = p
+	p.x = clampf(p.x, area.position.x + 6, area.end.x - size.x - 6)
+	p.y = clampf(p.y, area.position.y + 6, area.end.y - size.y - 6)
+	global_position = p

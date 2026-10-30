@@ -10,7 +10,9 @@ extends Node
 ## HUD never get here: its controls take them first.
 ##
 ## It also gives HUD controls long-press details on touch: a still hold on a control with tooltip text opens
-## that text in a pop-up (what hover shows on PC), and the release doesn't press the control.
+## that text in a pop-up (what hover shows on PC), and the release doesn't press the control. PLACEHOLDER:
+## what each control's long-press shows is open in the docs (Ethan decides one by one).
+## The mouse's hover pop-up waits Rules.TAP_MS (PLACEHOLDER: the hover delay isn't decided).
 
 signal tap(pos: Vector2)
 signal long_press(pos: Vector2)

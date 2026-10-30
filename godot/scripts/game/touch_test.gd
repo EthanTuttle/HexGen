@@ -11,6 +11,7 @@ extends Node
 
 var game: Game
 var shots := false
+var prefix := "touch"       # `--shotname=x` names the stills x_NN_….png
 var fails := 0
 var _n := 0
 var _fingers := {}          # finger index -> position, for the overlay
@@ -20,6 +21,9 @@ var _overlay := _Overlay.new()
 
 func _ready() -> void:
 	shots = "--shots" in OS.get_cmdline_user_args()
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--shotname="):
+			prefix = a.split("=")[1]
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	add_child(layer)
@@ -167,7 +171,7 @@ func shot(name: String) -> void:
 		return
 	await RenderingServer.frame_post_draw
 	var dir := ProjectSettings.globalize_path("res://screens")
-	game.get_viewport().get_texture().get_image().save_png(dir.path_join("touch_%02d_%s.png" % [_n, name]))
+	game.get_viewport().get_texture().get_image().save_png(dir.path_join("%s_%02d_%s.png" % [prefix, _n, name]))
 
 
 func say(text: String) -> void:
@@ -282,7 +286,15 @@ func _run() -> void:
 	check(not game.rig.player_moved, "the nav button's centre gives the camera back to the game")
 	await tap(control("Camera"))
 
-	# 10. Two-tap walk to an encounter, then fight it by touch.
+	# 10. The Rest card shows while the party stands on the camp; tapping it rests.
+	say("Tap Rest")
+	var minute0: float = game.minute
+	await tap(control("Rest"))
+	await _wait(0.5)
+	check(game.minute > minute0 + 5.0, "the Rest card rests (minute %.1f -> %.1f)" % [minute0, game.minute])
+	await shot("rest")
+
+	# 11. Two-tap walk to an encounter, then fight it by touch.
 	if game.encounters.is_empty():
 		var tiles: Array = game.map.terrains.keys().filter(func(t): return t != game.party_tile and t != Rules.START_TILE)
 		game.add_encounter(tiles[-1], false)
@@ -300,6 +312,8 @@ func _run() -> void:
 	await tap(tile_screen(goal))
 	await _wait(0.2)
 	check(game.busy, "tapping the same hex again walks")
+	await _wait(0.3)
+	check(not game.hud._rest.visible, "the Rest card hides once the party leaves the camp")
 	while not game.hud.encounter_open():
 		await _wait(0.1)
 	await _wait(0.5)
@@ -327,11 +341,11 @@ func _fight() -> void:
 	var long_pressed := false
 	audit("combat")
 	var guard := 0
-	while f.active and guard < 40:
-		guard += 1
+	while f.active and guard < 30:   # allies' turns played (the foes' turns don't count)
 		if f.phase != "allies" or f.busy:
 			await _wait(0.2)
 			continue
+		guard += 1
 		for u in f.allies():
 			if not f.active or f.phase != "allies":
 				break

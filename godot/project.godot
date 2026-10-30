@@ -15,9 +15,16 @@ window/size/window_width_override=1688
 window/size/window_height_override=780
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=4
+window/ios/hide_home_indicator=true
+window/ios/suppress_ui_gesture=true
 
 [rendering]
 
 anti_aliasing/quality/msaa_3d=2
 lights_and_shadows/directional_shadow/size=8192
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=4
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true

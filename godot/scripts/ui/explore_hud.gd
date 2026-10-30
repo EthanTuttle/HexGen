@@ -48,6 +48,7 @@ func _ready() -> void:
 	_build_toast()
 	_build_clock()
 	_build_hand()
+	_build_rest()
 	_build_encounter()
 
 
@@ -193,7 +194,7 @@ func hide_toast() -> void:
 func _build_clock() -> void:
 	var p := UI.panel(UI.CREAM, 16, UI.CREAM_EDGE, 4, Vector4(8, 6, 8, 6))
 	p.custom_minimum_size.x = 152
-	UI.at(p, 680, 12)
+	UI.at_right(p, 680, 12)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 8)
 	h.add_child(_clock_dial)
@@ -220,7 +221,7 @@ func _build_hand() -> void:
 	p.custom_minimum_size = Vector2(152, 294)
 	p.size = Vector2(152, 294)
 	p.clip_contents = true
-	UI.at(p, 680, 84)
+	UI.at_right(p, 680, 84)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	var head := HBoxContainer.new()
@@ -293,11 +294,57 @@ func _refresh_hand() -> void:
 	_discard_n.with_text(str(game.deck.discard.size()), 12, UI.CREAM)
 
 
+# --- Rest action card (DOCS: Exploration screen -> Resting) ------------------------
+# Along the bottom, like the combat hotbar's cards and the scenes' option cards; centred under the open board.
+
+var _rest: Control
+
+
+func _build_rest() -> void:
+	_rest = _RestCard.new()
+	_rest.tooltip_text = "Rest, heal, 8 hours pass, discard down to 7, reshuffle"
+	_rest.pressed.connect(game.rest)
+	UI.at(_rest, 378 - 37, 390 - 92 - 6)
+	add_child(_rest)
+
+
+class _RestCard extends Control:
+	signal pressed
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(74, 92)
+		size = custom_minimum_size
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+	func _draw() -> void:
+		# The combat hotbar card's look (Combat v14), with no AP hex: the map has no AP.
+		var r := Rect2(Vector2(0, 8), Vector2(74, 84))
+		var band := Color("#8A6446")   # PLACEHOLDER band colour (the camp's brown)
+		draw_style_box(UI.box(UI.HEX_SHADOW, 10), Rect2(r.position + Vector2(0, 4), r.size))
+		var face := UI.box(UI.CREAM_LIGHT, 10)
+		face.border_color = band
+		face.set_border_width_all(2)
+		draw_style_box(face, r)
+		draw_rect(Rect2(r.position + Vector2(2.5, 2.5), Vector2(69, 6)), band)
+		draw_texture_rect(UI.icon("camp", Color("#5E4C30"), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
+		var f := UI.font("n900")
+		draw_string(f, r.position + Vector2(37 - f.get_string_size("Rest", 0, -1, 11).x * 0.5, 60), "Rest",
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.INK)
+
+	func _gui_input(e: InputEvent) -> void:
+		if UI.is_tap(self, e):
+			pressed.emit()
+			accept_event()
+
+
 # --- Dragging a card onto the board (DOCS: Exploration screen -> Placing) ----------
 # A card dragged from the hand follows the finger (drawn a little above it, so the finger doesn't hide it) and
 # drops onto the slot under it when let go over a lit one; anywhere else it goes back to the hand.
 
-const DRAG_LIFT := Vector2(0, -34)   # PLACEHOLDER: how far above the finger the dragged card rides
+## PLACEHOLDER (where a dragged card drops isn't decided): it rides this far above the finger and drops on
+## the slot under the card, not under the finger.
+const DRAG_LIFT := Vector2(0, -34)
 var _drag := {}
 
 
@@ -322,13 +369,13 @@ func _input(e: InputEvent) -> void:
 			_drag.ghost = g
 		if _drag.ghost:
 			var g: Control = _drag.ghost
-			g.position = p + DRAG_LIFT - g.size * 0.5
+			g.global_position = p + DRAG_LIFT - g.size * 0.5
 	elif e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 		var g = _drag.ghost
 		_drag = {}
 		if g == null:
 			return   # a tap: the card's own press handles it
-		var at: Vector2 = (g as Control).position + (g as Control).size * 0.5
+		var at: Vector2 = (g as Control).global_position + (g as Control).size * 0.5
 		g.queue_free()
 		var t := game.ground_tile(at)
 		if game.held >= 0 and not _over_panel(at) and game.why_not(t, game.held_terrain()) == "":
@@ -451,6 +498,8 @@ func _pill_button(t: String, sub: String, bg: Color, ink: Color) -> Button:
 func refresh() -> void:
 	_refresh_tray()
 	_refresh_hand()
+	# The Rest card shows while the party stands on a camp (DOCS: Exploration screen -> Resting).
+	_rest.visible = game.party_tile == Rules.START_TILE and not game.busy
 	var held := game.held_terrain()
 	if held != "":
 		_banner_text.text = "Place %s · tap a lit hex" % Rules.NAMES[held]
@@ -506,7 +555,7 @@ func _place_marks() -> void:
 		var world: Vector3 = m.world
 		node.visible = not cam.is_position_behind(world)
 		var p := cam.unproject_position(world)
-		node.position = p - Vector2(node.size.x * 0.5, node.size.y) - Vector2(0, m.get("lift", 26))
+		node.global_position = p - Vector2(node.size.x * 0.5, node.size.y) - Vector2(0, m.get("lift", 26))  # on the board, so screen coordinates
 	for key in _mark_nodes.keys():
 		if not want.has(key):
 			_mark_nodes[key].queue_free()
