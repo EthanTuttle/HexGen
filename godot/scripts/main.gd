@@ -1,9 +1,10 @@
 extends Node3D
+## The look tests (scenes/look_tests.tscn); the playable loop is scenes/main.tscn (scripts/game/game.gd).
 ## Godot half of the engine prototype: the look tests (design/06 Multiplayer & tech.md -> Engine prototype).
 ## Tab switches between the map board and the combat board.
 ##
-## Screenshots: godot --path godot -- --shots          (writes godot/screens/*.png and quits)
-## Movie:       godot --path godot --write-movie out.png --fixed-fps 30 --quit-after 240 -- --view=water
+## Screenshots: godot --path godot scenes/look_tests.tscn -- --shots         (writes godot/screens/*.png and quits)
+## Movie:       godot --path godot --write-movie out.png --fixed-fps 30 --quit-after 240 scenes/look_tests.tscn -- --view=water
 
 # Framings of the Blender previews (render_preview.stage: target, distance, elevation).
 var VIEWS := {
@@ -18,34 +19,14 @@ const COMBAT_AT := Vector2(1000, 0)   # the combat board lives away from the map
 var map := MapBoard.new()
 var combat := CombatBoard.new()
 var rig := CameraRig.new()
-var clock := TimeOfDay.new()
+var clock: TimeOfDay
 var hud := Label.new()
 var mode := "map"
 var _look_yaw := 0.0
 
 
 func _ready() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
-	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	var we := WorldEnvironment.new()
-	we.environment = env
-	add_child(we)
-
-	var sun := DirectionalLight3D.new()
-	sun.name = "sun"
-	sun.shadow_enabled = true
-	sun.light_angular_distance = 0.0      # see README: soft (PCSS) shadows gave grain here
-	sun.directional_shadow_max_distance = 140.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.shadow_blur = 1.5
-	add_child(sun)
-	clock.environment = env
-	clock.sun = sun
-	add_child(clock)
-	clock.apply()
+	clock = Stage.create(self)
 
 	map.name = "map"
 	add_child(map)
@@ -88,7 +69,7 @@ func show_view(view: String) -> void:
 	mode = "combat" if view == "combat" else "map"
 	map.visible = mode == "map"
 	combat.visible = mode == "combat"
-	combat.auto_play = mode == "combat"
+	combat.auto_play = mode == "combat"   # look test: attacks play by themselves
 	var v: Array = VIEWS[view]
 	var at: Vector2 = v[0] + (COMBAT_AT if mode == "combat" else Vector2.ZERO)
 	rig.frame(Hex.to3(at), v[1], v[2], _look_yaw if view == "look" else 0.0)

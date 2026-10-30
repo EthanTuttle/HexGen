@@ -32,28 +32,49 @@ const RECOIL_TIME := 0.07
 const SETTLE_TIME := 0.35
 
 var minis: Array[Node3D] = []
-var auto_play := true
+var auto_play := false
 var _bout := 0
 var _timer := 1.0
 var _busy := false
 
 
+var _cells: Node3D
+
+
+## The look-test board: render_preview.py's trees and rocks and render_standin_minis.py's line-up.
 func build() -> void:
-	var kit := Kit.meshes("res://art/combat_cells.glb")
-	var cells := Node3D.new()
-	cells.name = "cells"
-	add_child(cells)
-	for q in range(-RADIUS, RADIUS + 1):
-		for r in range(maxi(-RADIUS, -q - RADIUS), mini(RADIUS, -q + RADIUS) + 1):
-			var c := Vector2i(q, r)
-			var name := "cell_tree" if c in TREES else "cell_rock" if c in ROCKS else "cell_grass_" + "abc"[posmod(q - r, 3)]
-			Kit.place(cells, kit, name, Hex.cell_position(q, r))
+	setup(TREES, ROCKS)
 	for m in LINEUP:
 		var c: Vector2i = m[1]
-		var facing := Vector2(0, 1) if m[0] == "standin_enemy" else Vector2(0, -1)
-		var mini := Minis.make(m[0], Hex.cell_position(c.x, c.y), facing)
-		add_child(mini)
-		minis.append(mini)
+		minis.append(add_mini(m[0], c, Vector2(0, 1) if m[0] == "standin_enemy" else Vector2(0, -1)))
+
+
+## Lays out the 61 cells with the given trees and rocks (clears any earlier board).
+func setup(trees: Array, rocks: Array) -> void:
+	for child in get_children():
+		child.free()
+	minis.clear()
+	var kit := Kit.meshes("res://art/combat_cells.glb")
+	_cells = Node3D.new()
+	_cells.name = "cells"
+	add_child(_cells)
+	for c in cells():
+		var name := "cell_tree" if c in trees else "cell_rock" if c in rocks else "cell_grass_" + "abc"[posmod(c.x - c.y, 3)]
+		Kit.place(_cells, kit, name, Hex.cell_position(c.x, c.y))
+
+
+static func cells() -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for q in range(-RADIUS, RADIUS + 1):
+		for r in range(maxi(-RADIUS, -q - RADIUS), mini(RADIUS, -q + RADIUS) + 1):
+			out.append(Vector2i(q, r))
+	return out
+
+
+func add_mini(name: String, c: Vector2i, facing: Vector2) -> Node3D:
+	var mini := Minis.make(name, Hex.cell_position(c.x, c.y), facing)
+	add_child(mini)
+	return mini
 
 
 func _process(delta: float) -> void:
@@ -78,7 +99,8 @@ func play_next() -> void:
 
 
 ## The attacker hops toward the target; on landing the target recoils (tips away and slides back), then settles.
-func attack(attacker: Node3D, target: Node3D) -> void:
+## hit = false: the target doesn't recoil (a miss). Can be awaited.
+func attack(attacker: Node3D, target: Node3D, hit := true) -> void:
 	_busy = true
 	var body := attacker.get_node("body") as Node3D
 	var tbody := target.get_node("body") as Node3D
@@ -93,11 +115,33 @@ func attack(attacker: Node3D, target: Node3D) -> void:
 	var lean := Vector3(0, HOP_HEIGHT, HOP_LEAN)
 	tw.tween_property(body, "position", lean, HOP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(body, "position", Vector3.ZERO, HOP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.tween_callback(func(): _recoil(target, tbody, to_target))
-	tw.tween_interval(SETTLE_TIME + 0.4)
+	if hit:
+		tw.tween_callback(func(): _recoil(target, tbody, to_target))
+	tw.tween_interval(SETTLE_TIME + 0.15)
 	tw.tween_callback(func():
 		_busy = false
 		_timer = 1.2)
+	await tw.finished
+
+
+## Slides a mini hex by hex along a path of cells, turning to face each step.
+func step_along(mini: Node3D, path: Array) -> void:
+	for c: Vector2i in path:
+		var to := Hex.to3(Hex.cell_position(c.x, c.y))
+		var d := to - mini.position
+		var tw := create_tween()
+		if d.length() > 0.01:
+			tw.tween_property(mini, "rotation:y", mini.rotation.y + wrapf(atan2(d.x, d.z) - mini.rotation.y, -PI, PI), 0.08)
+		tw.tween_property(mini, "position", to, 0.18).set_trans(Tween.TRANS_SINE)
+		await tw.finished
+
+
+## A downed mini tips over and stays down.
+func fall(mini: Node3D) -> void:
+	var body := mini.get_node("body") as Node3D
+	var tw := create_tween()
+	tw.tween_property(body, "quaternion", Quaternion(Vector3.RIGHT, deg_to_rad(-80)), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tw.finished
 
 
 func _recoil(target: Node3D, tbody: Node3D, dir: Vector3) -> void:

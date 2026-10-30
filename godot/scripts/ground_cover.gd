@@ -59,20 +59,27 @@ static func scatter(terrains: Dictionary, water_shapes: Dictionary) -> Array:
 	for ix in range(int(floor((x0 - A) / CELL)), int(ceil((x1 + A) / CELL))):
 		for iy in range(int(floor((y0 - R) / CELL)), int(ceil((y1 + R) / CELL))):
 			var p := Vector2((ix + hash01(ix, iy, 0)) * CELL, (iy + hash01(ix, iy, 1)) * CELL)
-			var dens := density(terrains, p)
-			if hash01(ix, iy, 3) >= dens:
-				continue
-			var t := tile_at(p)
-			if water_shapes.has(t):
-				var local := p - Hex.tile_position(t.x, t.y)
-				var w: Dictionary = water_shapes[t]
-				if w.outlines.any(func(o): return Water.point_in(o, local)):
-					continue
-				if _near_shore(local, w.shores, 0.45):
-					continue
-			var k := hash01(ix, iy, 2)
-			out.append(["tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", p, Vector2i(ix, iy)])
+			var item := _keep(terrains, water_shapes, ix, iy, p)
+			if not item.is_empty():
+				out.append(item)
 	return out
+
+
+## [kind, point, cell] if cell (ix, iy) gets a prop, else [].
+static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: int, p: Vector2) -> Array:
+	var dens := density(terrains, p)
+	if hash01(ix, iy, 3) >= dens:
+		return []
+	var t := tile_at(p)
+	if water_shapes.has(t):
+		var local := p - Hex.tile_position(t.x, t.y)
+		var w: Dictionary = water_shapes[t]
+		if w.outlines.any(func(o): return Water.point_in(o, local)):
+			return []
+		if _near_shore(local, w.shores, 0.45):
+			return []
+	var k := hash01(ix, iy, 2)
+	return ["tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", p, Vector2i(ix, iy)]
 
 
 static func _near_shore(p: Vector2, shores: Array, d: float) -> bool:
@@ -83,10 +90,30 @@ static func _near_shore(p: Vector2, shores: Array, d: float) -> bool:
 	return false
 
 
+## The ground cover of one tile: the cells of the world-space pattern whose point lands in it.
+## Gives the same props as the whole-map scatter, so tiles can be rebuilt one at a time.
+static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i) -> MeshInstance3D:
+	var c := Hex.tile_position(t.x, t.y)
+	var items := []
+	for ix in range(int(floor((c.x - A) / CELL)), int(ceil((c.x + A) / CELL))):
+		for iy in range(int(floor((c.y - R) / CELL)), int(ceil((c.y + R) / CELL))):
+			var p := Vector2((ix + hash01(ix, iy, 0)) * CELL, (iy + hash01(ix, iy, 1)) * CELL)
+			if tile_at(p) != t:
+				continue
+			var item := _keep(terrains, water_shapes, ix, iy, p)
+			if not item.is_empty():
+				items.append(item)
+	return _build(items)
+
+
 static func build(terrains: Dictionary, water_shapes: Dictionary) -> MeshInstance3D:
+	return _build(scatter(terrains, water_shapes))
+
+
+static func _build(items: Array) -> MeshInstance3D:
 	var piece := Piece.new()
 	var ink := Hex.colour("grass_ink"); var flower := Hex.colour("flower"); var rock := Hex.colour("rock")
-	for item in scatter(terrains, water_shapes):
+	for item in items:
 		var cell: Vector2i = item[2]
 		var rng := PyRandom.new(hash01(cell.x, cell.y, 4))
 		var at := Vector3(item[1].x, item[1].y, 0)

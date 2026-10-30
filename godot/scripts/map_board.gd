@@ -21,67 +21,132 @@ const RIVER_SPEED := 0.6
 const LAKE_SPEED := 0.15
 const GRID := 0.35
 
+var terrains := {}         # (q, r) -> terrain of every placed tile
 var water_shapes := {}     # (q, r) -> Water.tile_water() result
 var boats: Array[Node3D] = []
+var slot_nodes := {}       # (q, r) -> MeshInstance3D of each empty slot touching land
+
+var _kit: Dictionary
+var _ground: ShaderMaterial
+var _ground_img: Image
+var _ground_tex: ImageTexture
+var _tile_nodes := {}
+var _water_node: Node3D
+var _slots_node: Node3D
+var _slot_mesh: Mesh
+var _slot_mat: Material
 
 
 static func linked(a, b) -> bool:
 	return a == b or (a in BORDERED and b in BORDERED)
 
 
-func build() -> void:
-	var kit := Kit.meshes("res://art/tiles.glb")
-	var ground := _ground_material(kit)
-	var tiles := Node3D.new()
-	tiles.name = "tiles"
-	add_child(tiles)
-	for t: Vector2i in MAP:
-		var terrain: String = MAP[t]
-		var at := Hex.tile_position(t.x, t.y)
-		var base := Kit.place(tiles, kit, "base_" + terrain, at)
-		base.name = "base_%d_%d" % [t.x, t.y]
-		base.set_surface_override_material(0, ground)
-		if terrain == "river":
-			var mask := []
-			for n in Hex.NEIGHBOURS:
-				mask.append(MAP.get(t + n) == "river")
-			water_shapes[t] = Water.tile_water(mask, "%d,%d" % [t.x, t.y])
-			continue
-		Kit.place(tiles, kit, terrain + "_centre", at)
-		var joined := []
-		for n in Hex.NEIGHBOURS:
-			joined.append(linked(terrain, MAP.get(t + n)))
-		for i in 6:
-			var angle := deg_to_rad(60.0 * i)
-			Kit.place(tiles, kit, terrain + ("_edge_same" if joined[i] else "_edge_other"), at, angle)
-			# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-			if terrain in BORDERED and joined[i]:
-				if not joined[(i + 1) % 6]:
-					Kit.place(tiles, kit, "border_join_l", at, angle)
-				if not joined[posmod(i - 1, 6)]:
-					Kit.place(tiles, kit, "border_join_r", at, angle)
-	_build_water()
-	add_child(GroundCover.build(MAP, water_shapes))
+## Builds a whole map at once (the look-test map).
+func build(map := MAP) -> void:
+	_setup()
+	terrains = map.duplicate()
+	for t: Vector2i in terrains:
+		_set_ground(t)
+	_update_water()
+	for t: Vector2i in terrains:
+		_build_tile(t)
 	_build_slots()
+
+
+## Places one tile and rebuilds what it touches: its neighbours' edge pieces, water, ground cover, slots.
+func place(t: Vector2i, terrain: String) -> void:
+	if _kit.is_empty():
+		_setup()
+	terrains[t] = terrain
+	_set_ground(t)
+	var water_changed := terrain == "river"
+	for n in Hex.NEIGHBOURS:
+		if terrains.get(t + n) == "river":
+			water_changed = true
+	if water_changed:
+		_update_water()
+	_build_tile(t)
+	for n in Hex.NEIGHBOURS:
+		if terrains.has(t + n):
+			_build_tile(t + n)
+	_build_slots()
+
+
+func _setup() -> void:
+	_kit = Kit.meshes("res://art/tiles.glb")
+	_ground_img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	_ground_img.fill(Color(0, 0, 0, 0))
+	_ground_tex = ImageTexture.create_from_image(_ground_img)
+	_ground = ShaderMaterial.new()
+	_ground.shader = load("res://shaders/ground.gdshader")
+	_ground.set_shader_parameter("terrain_map", _ground_tex)
+	_ground.set_shader_parameter("blend_width", BLEND_WIDTH)
+	var p := Piece.new()
+	var hexagon := Hex.hex_corners(Hex.R * 0.94, true)
+	hexagon.reverse()
+	p.offset = Vector3(0, 0, -0.3)
+	p.flat(hexagon, 0.02, Hex.colour("slot"))
+	_slot_mesh = p.mesh()
+	_slot_mat = Piece.material()
 
 
 ## Ground colour per tile in a small lookup texture; the shader fades it toward the neighbours.
 ## The colour of each terrain is the top material of its base slab in the kit.
-func _ground_material(kit: Dictionary) -> ShaderMaterial:
-	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	for t: Vector2i in MAP:
-		var top := (kit["base_" + MAP[t]] as Mesh).surface_get_material(0) as BaseMaterial3D
-		var c := top.albedo_color
-		img.set_pixel(t.x + 32, t.y + 32, Color(c.r, c.g, c.b, 1))
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/ground.gdshader")
-	mat.set_shader_parameter("terrain_map", ImageTexture.create_from_image(img))
-	mat.set_shader_parameter("blend_width", BLEND_WIDTH)
-	return mat
+func _set_ground(t: Vector2i) -> void:
+	var top := (_kit["base_" + terrains[t]] as Mesh).surface_get_material(0) as BaseMaterial3D
+	var c := top.albedo_color
+	_ground_img.set_pixel(t.x + 32, t.y + 32, Color(c.r, c.g, c.b, 1))
+	_ground_tex.update(_ground_img)
+
+
+func _build_tile(t: Vector2i) -> void:
+	if _tile_nodes.has(t):
+		_tile_nodes[t].free()
+	var node := Node3D.new()
+	node.name = "tile_%d_%d" % [t.x, t.y]
+	add_child(node)
+	_tile_nodes[t] = node
+	var terrain: String = terrains[t]
+	var at := Hex.tile_position(t.x, t.y)
+	var base := Kit.place(node, _kit, "base_" + terrain, at)
+	base.set_surface_override_material(0, _ground)
+	node.add_child(GroundCover.build_tile(terrains, water_shapes, t))
+	if terrain == "river":
+		return
+	Kit.place(node, _kit, terrain + "_centre", at)
+	var joined := []
+	for n in Hex.NEIGHBOURS:
+		joined.append(linked(terrain, terrains.get(t + n)))
+	for i in 6:
+		var angle := deg_to_rad(60.0 * i)
+		Kit.place(node, _kit, terrain + ("_edge_same" if joined[i] else "_edge_other"), at, angle)
+		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
+		if terrain in BORDERED and joined[i]:
+			if not joined[(i + 1) % 6]:
+				Kit.place(node, _kit, "border_join_l", at, angle)
+			if not joined[posmod(i - 1, 6)]:
+				Kit.place(node, _kit, "border_join_r", at, angle)
 
 
 # --- Water -------------------------------------------------------------------
+
+func _update_water() -> void:
+	water_shapes.clear()
+	for t: Vector2i in terrains:
+		if terrains[t] == "river":
+			var mask := []
+			for n in Hex.NEIGHBOURS:
+				mask.append(terrains.get(t + n) == "river")
+			water_shapes[t] = Water.tile_water(mask, "%d,%d" % [t.x, t.y])
+	if _water_node:
+		_water_node.free()
+	boats.clear()
+	_water_node = Node3D.new()
+	_water_node.name = "water"
+	add_child(_water_node)
+	if not water_shapes.is_empty():
+		_build_water()
+
 
 func _build_water() -> void:
 	var dressing := Piece.new()
@@ -114,12 +179,12 @@ func _build_water() -> void:
 			for quad in Water.bank_strip(curve, 0.22):
 				dressing.flat(quad, 0.025, bank)
 		_add_dressing(dressing, w, seed, at)
-	add_child(dressing.instance("water_dressing"))
+	_water_node.add_child(dressing.instance("water_dressing"))
 	var mi := MeshInstance3D.new()
-	mi.name = "water"
+	mi.name = "water_surface"
 	mi.mesh = _water_mesh(outlines, shores)
 	mi.material_override = load("res://shaders/water.tres")
-	add_child(mi)
+	_water_node.add_child(mi)
 
 
 func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
@@ -152,7 +217,7 @@ func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
 		boat.name = "boat"
 		boat.position = Hex.to3(at + b[0])
 		boat.add_child(piece.instance("hull"))
-		add_child(boat)
+		_water_node.add_child(boat)
 		boats.append(boat)
 
 
@@ -244,17 +309,20 @@ static func _depth_flow(p: Vector2, shores: Array) -> Vector3:
 	return Vector3(minf(best, 10.0), f.x, -f.y)
 
 
+## Pale empty slots around the land, one node each so the game can light them up.
 func _build_slots() -> void:
-	var p := Piece.new()
-	var hexagon := Hex.hex_corners(Hex.R * 0.94, true)
-	hexagon.reverse()
-	var slots := {}
-	for t: Vector2i in MAP:
+	if _slots_node:
+		_slots_node.free()
+	slot_nodes.clear()
+	_slots_node = Node3D.new()
+	_slots_node.name = "slots"
+	add_child(_slots_node)
+	for t: Vector2i in terrains:
 		for n in Hex.NEIGHBOURS:
-			if not MAP.has(t + n):
-				slots[t + n] = true
-	for t: Vector2i in slots:
-		var at := Hex.tile_position(t.x, t.y)
-		p.offset = Vector3(at.x, at.y, -0.3)
-		p.flat(hexagon, 0.02, Hex.colour("slot"))
-	add_child(p.instance("slots"))
+			var s: Vector2i = t + n
+			if not terrains.has(s) and not slot_nodes.has(s):
+				var mi := MeshInstance3D.new()
+				mi.mesh = _slot_mesh
+				mi.position = Hex.to3(Hex.tile_position(s.x, s.y))
+				_slots_node.add_child(mi)
+				slot_nodes[s] = mi
