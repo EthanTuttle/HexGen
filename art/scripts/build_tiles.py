@@ -36,7 +36,7 @@ def centre_outline(scale=1.0):
 
 
 # Ground colour under each terrain's props; water sits on grass so its banks show.
-GROUND = {"river": "plains"}
+GROUND = {"river": "plains", "village": "cobble"}
 
 
 def base(terrain, col):
@@ -136,39 +136,65 @@ def farmland(p, rng, kind):
         p.box(Vector((x, 0, 0)), (0.22, 2 * x * TAN30 - 0.5, 0.35), "hedge")
 
 
+RIVER_HALF = 0.75   # half the width of a river channel
+BANK = 0.22         # bank strip beside the water
+
+
 def river(p, rng, kind):
+    """Narrow channels from a small pond in the middle. Lakes come from river_corner (below)."""
     if kind == "centre":
-        p.flat(centre_outline(), 0.03, "water")
+        p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.2 + BANK, pointy=True)][::-1], 0.02, "bank")
+        p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.2, pointy=True)][::-1], 0.03, "water")
         return
-    if kind == "same":  # water runs to the edge: a chain reads as a river, a clump as a lake
-        p.flat(band(X0, X1), 0.03, "water")
+    if kind == "same":  # a channel runs to the edge and meets the neighbour's
+        for side in (-1, 1):
+            y0, y1 = sorted((side * RIVER_HALF, side * (RIVER_HALF + BANK)))
+            p.flat([Vector((0.6, y0, 0)), Vector((X1, y0, 0)), Vector((X1, y1, 0)), Vector((0.6, y1, 0))], 0.02, "bank")
+        p.flat([Vector((0.6, -RIVER_HALF, 0)), Vector((X1, -RIVER_HALF, 0)),
+                Vector((X1, RIVER_HALF, 0)), Vector((0.6, RIVER_HALF, 0))], 0.03, "water")
         return
-    stop = X0 + 0.6 * (X1 - X0)  # water stops at a bank
-    p.flat(band(X0, stop), 0.03, "water")
-    p.flat(band(stop, stop + 0.35), 0.05, "bank")
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=stop + 0.5, margin=0.2), 3, 0.5, hk.WEDGE_BOUNDS):
+    if kind == "corner":  # both neighbours at this corner are water: fill between them, so clumps become lakes
+        a = hk.TILE_APOTHEM
+        corner = hk.hex_corners(hk.TILE_RADIUS, pointy=True)[1]  # between edge 0 and edge 1
+        p.flat([Vector((0, 0, 0)), Vector((a, 0, 0)), Vector((corner.x, corner.y, 0)),
+                Vector((a * 0.5, a * math.sin(math.radians(60)), 0))], 0.03, "water")
+        return
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 4, 0.6, hk.WEDGE_BOUNDS):
         tuft(p, rng, at)
 
 
+def cobbles(p, rng, inside, bounds, count):
+    """Scattered darker paving stones on the cobbled ground."""
+    for at in hk.scatter(rng, inside, count, 0.42, bounds):
+        stone = hk.hex_corners(rng.uniform(0.14, 0.2), pointy=True)
+        p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], 0.015, "cobble_dark")
+
+
 def village(p, rng, kind):
+    """Cobbled ground; streets and houses run on into neighbouring villages, gardens close off the rest."""
     if kind == "centre":
-        p.flat(centre_outline(0.55), 0.02, "road")  # a small square
+        cobbles(p, rng, lambda q: hk.in_centre(q, margin=0.2) and q.length > 0.9, hk.CENTRE_BOUNDS, 14)
         p.cylinder(Vector((0, 0, 0)), 0.3, 0.45, "rock", segments=8)  # well
         for at, spin in ((Vector((-0.9, 0.9, 0)), 0.3), (Vector((0.95, 0.6, 0)), -0.5), (Vector((-0.2, -1.2, 0)), 1.4)):
             house(p, rng, at, spin)
         return
-    if kind == "same":  # the street and houses continue, so villages grow into towns
-        p.flat([Vector((X0, -0.35, 0)), Vector((X1, -0.35, 0)),
-                Vector((X1, 0.35, 0)), Vector((X0, 0.35, 0))], 0.02, "road")
+    if kind == "same":
+        cobbles(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.15) and abs(q.y) < 0.5, hk.WEDGE_BOUNDS, 8)
         house(p, rng, Vector((X0 + 0.9, 1.0, 0)), 0.0)
         house(p, rng, Vector((X1 - 0.8, -1.2, 0)), 0.0)
         return
-    # a garden and fence where the village ends
-    house(p, rng, Vector((X0 + 0.7, 0.4, 0)), math.radians(90))
-    fence(p, X0 + 0.82 * (X1 - X0), 1.1)
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 1.4, margin=0.3), 3, 0.5, hk.WEDGE_BOUNDS):
+    # a strip of garden and a fence where the village ends
+    garden = X0 + 0.6 * (X1 - X0)
+    p.flat(band(garden, X1), 0.015, "plains")
+    cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
+    house(p, rng, Vector((X0 + 0.55, 0.35, 0)), math.radians(90))
+    fence(p, garden + 0.1, garden * TAN30 - 0.25)
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.4, margin=0.3), 3, 0.5, hk.WEDGE_BOUNDS):
         p.blob(at, 0.22, "hedge", squash=0.8)
 
+
+# Terrains with a corner piece, placed where both neighbours at a corner share the terrain.
+CORNERS = {"river"}
 
 BUILDERS = {"plains": plains, "forest": forest, "farmland": farmland, "river": river, "village": village}
 
@@ -178,8 +204,9 @@ def build():
     for terrain in hk.TERRAINS:
         col = hk.new_collection(terrain)
         base(terrain, col)
-        for kind in ("centre", "same", "other"):
-            name = f"{terrain}_{kind}" if kind == "centre" else f"{terrain}_edge_{kind}"
+        kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
+        for kind in kinds:
+            name = f"{terrain}_{kind}" if kind in ("centre", "corner") else f"{terrain}_edge_{kind}"
             p = hk.Piece(name)
             BUILDERS[terrain](p, hk.seeded(name), kind)
             p.finish(col)

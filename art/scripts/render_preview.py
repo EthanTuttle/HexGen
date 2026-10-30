@@ -18,10 +18,12 @@ import hexkit as hk  # noqa: E402
 # Pointy-top axial (q, r) -> terrain. Two forests touch, a river runs into a lake, villages join.
 MAP = {
     (0, 0): "forest", (1, -1): "forest", (1, 0): "forest",
-    (0, -1): "plains", (0, 1): "plains", (-2, 0): "plains",
-    (-1, 0): "village", (-1, 1): "village", (-1, -1): "village",
+    (0, -1): "plains", (0, 1): "plains",
+    (-1, 0): "village", (-1, -1): "village", (-2, 0): "village",
     (2, -1): "farmland", (2, -2): "farmland", (1, -2): "farmland", (0, -2): "farmland",
-    (2, 0): "river", (1, 1): "river", (0, 2): "river", (-1, 2): "river", (-2, 2): "river", (-2, 1): "river",
+    # a lake (four touching tiles) with a river running out of it
+    (-2, 1): "river", (-2, 2): "river", (-1, 1): "river", (-1, 2): "river",
+    (0, 2): "river", (1, 1): "river", (2, 0): "river",
 }
 
 
@@ -52,6 +54,12 @@ def build_map(templates):
         for i, (dq, dr) in enumerate(hk.NEIGHBOURS):
             same = MAP.get((q + dq, r + dr)) == terrain
             place(templates, f"{terrain}_edge_{'same' if same else 'other'}", col, at, math.radians(60 * i))
+        # Corner pieces (rivers): where the neighbours across edge i and edge i+1 both match.
+        if f"{terrain}_corner" in templates:
+            for i in range(6):
+                pair = [hk.NEIGHBOURS[i], hk.NEIGHBOURS[(i + 1) % 6]]
+                if all(MAP.get((q + dq, r + dr)) == terrain for dq, dr in pair):
+                    place(templates, f"{terrain}_corner", col, at, math.radians(60 * i))
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP)
     for q, r in slots:

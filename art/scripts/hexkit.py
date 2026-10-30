@@ -44,6 +44,8 @@ PALETTE = {
     "wall": "#EFE2C6",
     "roof": "#B5523B",
     "road": "#CDB58A",
+    "cobble": "#BCB2A4",
+    "cobble_dark": "#A69C8E",
     "fence": "#8A6446",
     "rock": "#A9A39A",
     "flower": "#F2D46B",
