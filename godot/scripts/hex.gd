@@ -16,12 +16,24 @@ const INNER := 0.45
 const NEIGHBOURS := [Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(-1, 1), Vector2i(0, 1)]
 
 const PALETTE := {
-	"plains": "#A8CF7E", "forest": "#5E8F5A", "farmland": "#DCC562", "river": "#86BEDB",
-	"village": "#E6C590", "soil_light": "#8A6446", "soil_dark": "#6B4C35",
-	"grass_ink": "#4F7A33", "leaf": "#4E8049", "leaf_dark": "#3B6A3A", "trunk": "#7A5236",
+	"plains": "#A8CF7E", "forest": "#5E8F5A", "farmland": "#DCC562", "river": "#86BEDB", "village": "#E6C590",
+	"hills": "#BFAE8E", "swamp": "#7F9A6E", "desert": "#EDD49A", "ruins": "#B3ADA4", "soil_light": "#8A6446",
+	"soil_dark": "#6B4C35", "grass_ink": "#4F7A33", "leaf": "#4E8049", "leaf_dark": "#3B6A3A",
+	"trunk": "#7A5236", "field_a": "#DCC562", "field_b": "#C9A94A", "field_c": "#9DBF5E", "hedge": "#4F7A33",
 	"water": "#86BEDB", "bank": "#C9B58A", "reed": "#6E8F3E", "lily": "#5E9E4E", "boat": "#E9DCC0",
-	"cobble": "#BCB2A4", "fence": "#8A6446", "rock": "#A9A39A", "flower": "#F2D46B",
-	"slot": "#F6EFE4", "backdrop": "#CFE4F2",
+	"wall": "#EFE2C6", "roof": "#B5523B", "road": "#CDB58A", "cobble": "#BCB2A4", "cobble_dark": "#A69C8E",
+	"fence": "#8A6446", "rock": "#A9A39A", "rock_dark": "#8F897F", "rock_light": "#BEB8AE",
+	"stone_tan": "#B8A88E", "stone_blue": "#8E959B", "stone_brown": "#9C8B78", "flower": "#F2D46B",
+	"hill_grass": "#A3C47A", "cliff": "#A89F8E", "sand": "#F3DFAC", "cracked": "#D8BB7E", "scrub": "#9C9A5C",
+	"cactus": "#6E9A5A", "bog_water": "#5F7F6C", "mud": "#7A7152", "hummock": "#6F8E5C", "deadwood": "#7C6E5E",
+	"deep_forest": "#466F47", "pine_deep": "#2F5734", "hide": "#8A6A4E", "hide_light": "#C9B79C",
+	"flower_pink": "#E9A3B8", "flower_white": "#F4F1E8", "flower_blue": "#9DB4E0", "highland_grass": "#9FB07E",
+	"heather": "#9C6FA0", "hay": "#E3C45E", "stubble": "#D9C27A", "sail": "#EFE6D2", "timber": "#5E4532",
+	"awning_a": "#C8553D", "awning_b": "#F2E8D5", "crate": "#A7825A", "fruit": "#D9822B", "sandbar": "#E3D3A8",
+	"bog": "#6B8462", "bog_dark": "#4A6457", "toadstool": "#F0C24E", "poison_purple": "#8E4FA6",
+	"poison_yellow": "#E6D23F", "spiky": "#4F6B3A", "wasteland": "#E2CFA2", "sandstone": "#D6B484",
+	"bone": "#F1EBDD", "pit": "#6B5038", "canvas": "#E9DFC8", "lantern": "#F6D36B", "slot": "#F6EFE4",
+	"backdrop": "#CFE4F2", "cell_grass_a": "#8DBB7A", "cell_grass_b": "#96C283", "cell_grass_c": "#88B575",
 }
 
 

@@ -9,8 +9,10 @@ extends RefCounted
 
 ## DOCS: the deck is 5 cards of each class terrain plus 5 of the background's: a Fighter (the mockups' hero)
 ## has plains and desert, a Noble farmland.
-## PLACEHOLDER: there's no desert art yet, so forest stands in for the Fighter's 5 desert cards.
-const STARTING_DECK := {"plains": 5, "forest": 5, "farmland": 5}
+## PLACEHOLDER: 5 of each of the other six terrains are added, so every terrain's tier 1 region variant can be
+## reached in play (45 cards instead of the docs' 15). The banned pairs still apply.
+const STARTING_DECK := {"plains": 5, "desert": 5, "farmland": 5,
+	"forest": 5, "village": 5, "river": 5, "hills": 5, "swamp": 5, "ruins": 5}
 const HAND_LIMIT := 7                    # DOCS: checked only at rest
 const STARTING_HAND := 7                 # PLACEHOLDER: the docs don't say how many cards the campaign starts with
 const DRAW_EASY_FIGHT := 3               # DOCS: an easy fight or tier 1 region draws 3
@@ -22,7 +24,7 @@ const START_TILE := Vector2i(0, 0)
 ## PLACEHOLDER: the Noble's starting hex is a Story card (a farm estate) with no art yet, so a farmland tile
 ## stands in. It also stands in for the party's camp (no camp kits yet). It doesn't count toward regions.
 const START_TERRAIN := "farmland"
-## DOCS: banned neighbours. None of the prototype's five terrains is in a banned pair, so these never fire here.
+## DOCS: banned neighbours (design/02 Map & exploration.md -> Placement).
 const BANNED := [["desert", "swamp"], ["desert", "forest"], ["swamp", "hills"], ["farmland", "desert"], ["farmland", "swamp"]]
 const REGION_TIER1 := 5                  # DOCS: a terrain's first region needs 5+ hexes
 const REGION_TIER2 := 7                  # DOCS: later regions of that terrain need 7+
@@ -86,8 +88,10 @@ const ENEMIES_BASE := 2                  # PLACEHOLDER: foes per fight ...
 const ENEMIES_PER_DISTANCE := 3          # ... plus one per this many hexes from the start (enemies scale with distance: DOCS)
 const ENEMIES_MAX := 4
 ## PLACEHOLDER: how the board's cells follow the map tile's terrain.
-const BOARD_TREES := {"forest": 12, "plains": 2, "farmland": 0, "village": 0, "river": 1}
-const BOARD_ROCKS := {"forest": 2, "plains": 3, "farmland": 1, "village": 2, "river": 3}
+const BOARD_TREES := {"forest": 12, "plains": 2, "farmland": 0, "village": 0, "river": 1,
+	"hills": 1, "swamp": 4, "desert": 0, "ruins": 0}
+const BOARD_ROCKS := {"forest": 2, "plains": 3, "farmland": 1, "village": 2, "river": 3,
+	"hills": 6, "swamp": 1, "desert": 4, "ruins": 6}
 ## PLACEHOLDER: after a won fight, downed allies get back up at 1 HP; after a wipe the party wakes at camp at 1 HP
 ## (the docs' companion injuries aren't modelled).
 const REVIVE_HP := 1
@@ -98,9 +102,12 @@ const REGION_NAMES := {
 	"plains": ["Rolling meadows", "Nomad Camp"], "forest": ["Deep, old forest", "Hidden Shrine"],
 	"farmland": ["Windmill country", "Great Windmill"], "village": ["Market town", "Trading House"],
 	"river": ["River delta", "River Port"],
+	"hills": ["Highlands", "Clan Hall"], "swamp": ["Bog/fen", "Witch's Hut"],
+	"desert": ["Dunes/wasteland", "Sandstone Sphinx"], "ruins": ["Excavation", "Dig Site"],
 }
 
-const NAMES := {"forest": "Forest", "plains": "Plains", "farmland": "Farmland", "village": "Village", "river": "River/lake"}
+const NAMES := {"forest": "Forest", "plains": "Plains", "farmland": "Farmland", "village": "Village", "river": "River/lake",
+	"hills": "Hills", "swamp": "Swamp", "desert": "Desert", "ruins": "Ruins"}
 
 
 static func banned(a: String, b: String) -> bool:

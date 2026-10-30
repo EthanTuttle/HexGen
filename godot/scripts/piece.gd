@@ -129,6 +129,38 @@ func box(at: Vector3, size: Vector3, col: Color, z := 0.0, spin := 0.0) -> void:
 		poly([pts[f[0]], pts[f[1]], pts[f[2]], pts[f[3]]], col)
 
 
+## A cylinder lying on its side along direction `spin` (toppled columns), its axis at height z.
+func log(at: Vector3, radius: float, length: float, col: Color, spin := 0.0, z := -1.0, segments := 8) -> void:
+	var h := radius if z < 0.0 else z
+	var along := Vector3(cos(spin), sin(spin), 0)
+	var side := Vector3(-sin(spin), cos(spin), 0)
+	var c := at + Vector3(0, 0, h)
+	var a := []; var b := []
+	for k in segments:
+		var t := TAU * k / segments
+		var off := side * (radius * cos(t)) + Vector3(0, 0, radius * sin(t))
+		a.append(c - along * (length / 2) + off)
+		b.append(c + along * (length / 2) + off)
+	var ra := a.duplicate()
+	ra.reverse()
+	poly(b, col)
+	poly(ra, col)
+	for k in segments:
+		var j := (k + 1) % segments
+		poly([a[k], a[j], b[j], b[k]], col)
+
+
+## A box centred on `at`, turned by `rot` (a basis in plan coordinates: x east, y north, z up).
+func box_rot(at: Vector3, size: Vector3, col: Color, rot: Basis) -> void:
+	var pts := []
+	for k in 8:
+		var l := Vector3((0.5 if k & 1 else -0.5) * size.x, (0.5 if k & 2 else -0.5) * size.y,
+				(0.5 if k & 4 else -0.5) * size.z)
+		pts.append(at + rot * l)
+	for f in [[0, 2, 3, 1], [4, 5, 7, 6], [0, 1, 5, 4], [2, 6, 7, 3], [0, 4, 6, 2], [1, 3, 7, 5]]:
+		poly([pts[f[0]], pts[f[1]], pts[f[2]], pts[f[3]]], col)
+
+
 func is_empty() -> bool:
 	return _empty
 

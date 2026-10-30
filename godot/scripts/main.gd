@@ -4,6 +4,8 @@ extends Node3D
 ## Tab switches between the map board and the combat board.
 ##
 ## Screenshots: godot --path godot scenes/look_tests.tscn -- --shots         (writes godot/screens/*.png and quits)
+## Every terrain, and every region finished (render_preview.py -- --terrains / -- --variants):
+##              godot --path godot --resolution 1600x1000 scenes/look_tests.tscn -- --map=terrains --shots --only=terrains
 ## Movie:       godot --path godot --write-movie out.png --fixed-fps 30 --quit-after 240 scenes/look_tests.tscn -- --view=water
 
 # Framings of the Blender previews (render_preview.stage: target, distance, elevation).
@@ -12,6 +14,7 @@ var VIEWS := {
 	"water": [Vector2(-3.5, -10.5), 20.0, 40.0],
 	"water_anim": [Vector2(5, -5), 46.0, 42.0],   # render_animation.py framing
 	"combat": [Vector2(0, -0.4), 20.0, 48.0],
+	"terrains": [Vector2(4, -1), 82.0, 45.0],   # render_preview --terrains / --variants framing
 	"party": [Vector2(3.897 + 0.6, -6.75 - 0.9), 22.0, 45.0],   # standin_map framing, on tile (0, 1)
 }
 const COMBAT_AT := Vector2(1000, 0)   # the combat board lives away from the map
@@ -29,9 +32,23 @@ func _ready() -> void:
 	clock = Stage.create(self)
 
 	map.name = "map"
+	map.time_of_day = clock
 	add_child(map)
-	map.build()
-	map.add_child(Minis.party(Hex.tile_position(0, 1)))
+	var which := "test"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--map="):
+			which = a.split("=")[1]
+	var t0 := Time.get_ticks_msec()
+	if which == "terrains":
+		map.build(MapBoard.TERRAIN_MAP)
+	elif which == "variants":
+		map.build(MapBoard.variant_map())
+	else:
+		map.build()
+		map.add_child(Minis.party(Hex.tile_position(0, 1)))
+	if "--perf" in OS.get_cmdline_user_args():
+		print("PERF build %s map: %d tiles in %d ms" % [which, map.terrains.size(), Time.get_ticks_msec() - t0])
+		_perf.call_deferred()
 
 	combat.name = "combat"
 	combat.position = Hex.to3(COMBAT_AT)
@@ -65,6 +82,23 @@ func _ready() -> void:
 		hud.visible = not ("--nohud" in args)
 
 
+## Prints the frame cost of the current view after it settles (`-- --perf`).
+func _perf() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	for _f in 240:   # let shaders compile and the camera settle
+		await get_tree().process_frame
+	var rs := RenderingServer
+	var info := [rs.get_rendering_info(rs.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+		rs.get_rendering_info(rs.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+		rs.get_rendering_info(rs.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)]
+	var t0 := Time.get_ticks_usec()
+	for _f in 300:
+		await get_tree().process_frame
+	var ms := (Time.get_ticks_usec() - t0) / 300000.0
+	print("PERF draw calls %d, primitives %d, objects %d; %.1f ms a frame (%.0f fps, vsync off)" % [
+		info[0], info[1], info[2], ms, 1000.0 / ms])
+
+
 func show_view(view: String) -> void:
 	mode = "combat" if view == "combat" else "map"
 	map.visible = mode == "map"
@@ -95,6 +129,7 @@ func _shots() -> void:
 		["map_board", "map", 12.0], ["water_closeup", "water", 12.0], ["combat_board", "combat", 12.0],
 		["party_closeup", "party", 12.0],
 		["look", "look", 12.0], ["map_dawn", "map", 6.5], ["map_dusk", "map", 18.0], ["map_night", "map", 22.0],
+		["terrains", "terrains", 12.0], ["variants", "terrains", 12.0], ["variants_night", "terrains", 22.0],
 	]
 	var only := ""
 	for a in OS.get_cmdline_user_args():

@@ -5,7 +5,7 @@ The Godot prototype, which grew out of the Godot half of the engine prototype ([
 The prototype has two parts:
 
 - **The playable loop** (`scenes/main.tscn`, the default scene): place map cards, walk the party, fight on the tile's combat board, and go back to the map with the hand refilled. Its screens are built from the mockups: exploration v8b, combat v14 and after combat v7.
-- **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on.
+- **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on, plus every terrain and every tier 1 region variant (tiles v8; see Terrains and region variants).
 
 ## Playing the loop
 
@@ -28,7 +28,7 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
 | Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate in 60° steps, frame) |
 
-Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (Stealth, group). The dark number badges are cluster goals (hexes still needed); a finished region gets a cream rim and a landmark pin.
+Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (Stealth, group). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
 
 **In a fight** (combat v14): click a portrait in the tray (or an ally on the board) to act with them, pick a card on the hotbar, then tap a target and press **Flip coins** (attacks), **Cast** (spells) or **Use** (self cards). Move lights the hexes you can reach; tap one. **All actions** lists every card. **End** hands the turn to the foes, and asks first if anyone still has AP. The camera buttons are the column beside the tray.
 
@@ -41,9 +41,14 @@ Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight
 /Applications/Godot.app/Contents/MacOS/Godot --path godot -- --demo --shots          # also saves screens/loop_*.png
 /Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1266x585 --write-movie /tmp/loop/frame.png --fixed-fps 20 -- --demo --quit
 swift godot/tools/png_to_mp4.swift /tmp/loop godot/screens/loop_movie.mp4 20
+
+# Regions finishing and turning into their variants (screens/variants_*.png, variants_movie.mp4)
+/Applications/Godot.app/Contents/MacOS/Godot --path godot -- --demo=variants --shots
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1266x585 --write-movie /tmp/variants/frame.png --fixed-fps 30 -- --demo=variants --quit
+swift godot/tools/png_to_mp4.swift /tmp/variants godot/screens/variants_movie.mp4 30
 ```
 
-The demo uses the same calls a player's clicks make, and plays simply. One exception: if no encounter has spawned by the time the hand runs low, it adds one and says so on screen. `--seed=N` changes the shuffle and the coin flips; the default is seed 1.
+The demo uses the same calls a player's clicks make, and plays simply. One exception: if no encounter has spawned by the time the hand runs low, it adds one and says so on screen. `--seed=N` changes the shuffle and the coin flips; the default is seed 1. `--demo=variants` stages its hand (5 forest, then 5 hills, then 5 plains, said on screen) so three regions finish in a row; placement still follows the rules.
 
 ## Screens next to the mockups
 
@@ -54,7 +59,7 @@ Each image in `screens/compare/` has the mockup artboard on top and the Godot sc
 | Map, nothing held | Explore v8b | `compare/explore_start.png` |
 | Holding a card: lit slots, banner with Cancel | Explore v8b | `compare/explore_holding.png` |
 | Encounter pop-up | Explore v8b | `compare/explore_encounter.png` |
-| Region finished: rim, landmark pin with its name, toast, cluster badge | Explore v8b | `compare/explore_region.png` |
+| Region finished: landmark pin with its name, toast (the mockup's cream rim is replaced by the variant's tiles, as the docs now say; Godot side from the variants demo) | Explore v8b | `compare/explore_region.png` |
 | Attack picked, target chosen, ready to flip | Combat v14 | `compare/combat_target.png` |
 | Coins flipped | Combat v14 | `compare/combat_coins.png` |
 | Ally spell: allies in reach, ally target | Combat v14 (ally targets) | `compare/combat_ally_target.png` |
@@ -64,7 +69,7 @@ Each image in `screens/compare/` has the mockup artboard on top and the Godot sc
 | Action Surge: bonus AP pips | Combat v14 | `compare/combat_bonus_ap.png` |
 | After combat | After combat v7 | `compare/after_combat.png` |
 
-`screens/loop_movie.mp4` is one whole loop (49 s), and `screens/loop_01_…png` to `loop_15_…png` are full-size stills of it.
+`screens/loop_movie.mp4` is one whole loop, and `screens/loop_01_…png` to `loop_15_…png` are full-size stills of it. `screens/variants_movie.mp4` shows regions finishing and changing to their variants.
 
 ## Where the screens differ from the mockups
 
@@ -87,17 +92,18 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 
 | Rule | Doc | How it plays here |
 | --- | --- | --- |
-| Starting deck | 05 → Starting decks | Fighter (plains 5, desert 5) + Noble (farmland 5), with forest standing in for desert |
+| Starting deck | 05 → Starting decks | Fighter (plains 5, desert 5) + Noble (farmland 5), plus 5 of each other terrain (placeholder, so every variant can be reached) |
 | Hand limit 7, checked only at rest | 05 → Deck and hand | Draws can push the hand past 7; the count turns red; Rest discards down |
 | Placing never draws | 05 → Core loop | |
 | Draws: easy fight or tier 1 region 3, tier 2 region 5 | 05 → Core loop | |
 | Empty deck: draws from rewards are lost | 05 → Core loop | |
 | Rest reshuffles the discard pile, enforces the limit, draws nothing | 05 → Deck and hand; 02 → Camps and rest | Also heals and adds 8 hours |
 | A card goes next to placed land | 02 → Placement | Lit slots |
-| Banned terrain pairs | 02 → Placement | In the code, with the red cross and the reason, but none of the five prototype terrains is in a banned pair, so it never shows |
+| Banned terrain pairs | 02 → Placement | Red slot with a cross and the reason (desert–swamp, desert–forest, swamp–hills, farmland–desert, farmland–swamp) |
 | Night building only within the party's sight (2) | 02 → Day and night | |
 | Day clock: 30 real minutes a day, the last 10 night; pauses in combat; placing and walking cost a little time | 02 → Day and night; 07 → Exploration screen (sun/moon dial) | |
-| Clusters: tier 1 region 5+, tier 2 7+, goals as minimums; adding to a finished region expands it; the goal badge counts down on the newest tile | 02 → Clustered regions; 07 → Exploration screen | A finished region gets a cream rim, a landmark pin and its name for a few seconds |
+| Clusters: tier 1 region 5+, tier 2 7+, goals as minimums; adding to a finished region expands it; the goal badge counts down on the newest tile | 02 → Clustered regions; 07 → Exploration screen | A finished region gets a landmark pin and its name for a few seconds |
+| A terrain's first finished region becomes its tier 1 variant; tiles added later join it; no rim, the variant keeps blending into the land around it | 02 → Region tiers; 07 → Exploration screen (cluster goals), Art direction → Region variant looks | Tiles swap to the variant's pieces with a short transition. Tier 2 regions keep their terrain's look (no tier 2 art yet) |
 | Encounters spawn per region, show on their hex, despawn after ~15 minutes | 02 → Hex contents and encounters | |
 | Walking along placed hexes, one step at a time, camera follows, minis face the way they walk | 07 → Exploration screen | |
 | Encounter pop-up: Fight, or Sneak past (Stealth group check); an avoided encounter stays | 07 → Exploration screen; 03 → Checks outside combat | |
@@ -121,7 +127,8 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Placeholder | Value here | Why it's needed |
 | --- | --- | --- |
 | Hero class and background | Fighter (the combat mockup's hero) + Noble | The mockups show a Fighter with Second Wind and Action Surge |
-| Desert cards | Forest stands in for the Fighter's 5 desert cards | No desert art yet |
+| Starting deck | The docs' 15 (plains, desert, farmland) plus 5 each of forest, village, river, hills, swamp and ruins: 45 cards | So every terrain's tier 1 variant can be reached in play |
+| Region transition | A wave from the tile that finished the region: each tile sinks flat (0.22 s), swaps to the variant, springs back up with a small overshoot (0.45 s), 0.09 s apart; water redraws at the swap | No rule for how the change looks |
 | Starting hand | 7 cards | The docs don't say how many cards the campaign starts with |
 | Starting hex | A farmland tile, not counted in regions | The Noble's farm estate is a Story card with no art |
 | Camp | The start hex | No camp kits or inns yet; rest and retreat need somewhere |
@@ -134,7 +141,7 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Move | 2 hexes per Move | The combat mockup's placeholder |
 | Card ranges | Melee 1; spells 5 | The combat mockup's numbers |
 | Foes | 2, plus 1 per 3 hexes from the start, at most 4; they walk to the nearest ally and attack | No encounter tables or enemy AI yet |
-| Combat board from the tile | Forest 12 trees and 2 rocks, plains 2 and 3, farmland 0 and 1 | Terrain affects the grid, but how isn't set |
+| Combat board from the tile | Forest 12 trees and 2 rocks, plains 2 and 3, farmland 0 and 1, hills 1 and 6, swamp 4 and 1, desert 0 and 4, ruins 0 and 6 | Terrain affects the grid, but how isn't set |
 | Encounter spawning | 40% per placement, in the placed tile's cluster, at most 1 active per cluster | Rates and caps aren't set |
 | Sneak past | Everyone flips one coin; 1 heads passes (the exploration mockup's text); a fail starts the fight | The group-check rule isn't set |
 | After a won fight | Downed allies get up at 1 HP; HP otherwise carries over | Not set |
@@ -142,7 +149,7 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
 | Backdrop colours | The exploration mockup's: dawn #F4DCCB, midday #D9E7EC, dusk #EDCFD7, night #A9AECB | The exact colours are an open question |
-| Region and landmark names | The mockup's: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Windmill country / Great Windmill… | Examples from the docs and mockup placeholders |
+| Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
 | Landmarks | A pin and a name; no landmark model | No landmark art or pools wired up |
 | Cluster badge shows from | 2 tiles | The mockup's number for "a few hexes" |
 | Combat line-up | Party on the south side, foes on the north | Not set |
@@ -153,7 +160,7 @@ For Ethan to decide:
 
 1. **The hand can run dry with no way to refill it.** Cards come only from finishing regions, fights, quests and story beats, and resting draws nothing. If the hand is empty and no encounter is on the map, the player is stuck: they can't place anything, so no new encounter spawns (if encounters only roll when tiles are placed, which the docs don't say). When do already-placed tiles roll for encounters: over time, or on placement?
 2. **Retreating to "the most recent camp" before the player has a camp.** Camps need a camp kit bought in a town. Is the starting hex a camp, or where does an early wipe send the party?
-3. **The hero's class vs the starting deck.** The combat mockup's hero is a Fighter, whose deck needs desert, which has no art yet. Should the prototype keep the Fighter (with forest standing in), or use a class whose terrains all have art (Ranger)?
+3. **A wider deck makes regions rare.** With all nine terrains in a 45-card deck, a hand of 7 seldom holds 5 of one terrain, so the loop's own demo no longer finishes a region before its hand runs out (the variants demo stages its hand for that reason). The docs' 15-card deck of three terrains finishes regions easily. Once the prototype goes back to a docs deck, only the hero's terrains will show their variants.
 4. **Starting hand size**, and whether the starting hex (a Story card) counts toward its terrain's region.
 5. **HP after a fight:** do downed allies get up afterwards, and with how much HP? Does HP carry from fight to fight until a rest?
 6. **Sneak past:** the exploration mockup says "everyone flips; needs 1 heads". Does one heads among the whole party really pass, and what does a fail cost?
@@ -162,6 +169,68 @@ For Ethan to decide:
 9. **How a tile's terrain shapes its combat board** (trees, rocks).
 10. **The screens the loop needed but no mockup covers:** a defeat screen, resting at camp, and the After combat buttons when nobody levels up.
 11. **Who picks the cards to discard at rest** (presumably the player, but the screen for it isn't designed).
+
+## Terrains and region variants (tiles v8)
+
+All nine terrains and the nine tier 1 region variants from `art/export/tiles.glb`, built by the same rules as `render_preview.py`'s `build_map`. Side by side with the previews (preview left, Godot right):
+
+| Map | Preview | Godot | Side by side |
+| --- | --- | --- | --- |
+| Every terrain (`TERRAIN_MAP`) | `art/preview/terrains_v3.png` | `screens/terrains.png` | `screens/compare/terrains_preview_vs_godot.png` |
+| Every region finished (`VARIANT_MAP`) | `art/preview/variants_v1.png` | `screens/variants.png` | `screens/compare/variants_preview_vs_godot.png` |
+| The same at night (toadstools glow, mist) | none | `screens/variants_night.png` | |
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1600x1000 scenes/look_tests.tscn -- --map=terrains --view=terrains
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1600x1000 scenes/look_tests.tscn -- --map=variants --view=terrains
+# screenshots: add --shots --only=terrains (with --map=terrains) or --only=variants,variants_night (with --map=variants)
+# timings and draw calls: add --perf
+```
+
+What's ported, and from where:
+
+| Part | Where | From |
+| --- | --- | --- |
+| Hills mountains: a lone tile's peak, a third of one mountain on each corner shared by three hills tiles, half of one on an edge shared by two | `map_board.gd` `_build_tile` | `render_preview.build_map` |
+| Swamp pools across joined edges, ruins streets across joined edges | the kit's `edge_same` pieces, nothing extra | |
+| Desert sand: world-space swells, flat near other terrain, cacti, rocks and bushes; the wasteland's lower swells, cracked flats, buried columns, walls, statues, bones and dead trees | `scripts/sand.gd` | `sand.py` (and `build_tiles.cactus`), line by line, with the same hashes and random numbers |
+| Variant pieces: `base_<variant>`, `<variant>_centre`, edges picked by the terrain (a variant next to its plain terrain counts as joined) | `scripts/variants.gd`, `map_board.gd` | `variants.py`, `render_preview.linked` |
+| Windmills on about half the windmill country tiles | `map_board.gd` | the preview's rule, `hash01(q, r, 7) < 0.5` |
+| Meadows' wildflower drifts, one colour per drift | `ground_cover.gd` | `ground_cover.py` |
+| The delta: wider water only where both tiles are delta, islands, more boats, a jetty with crates | `water.gd` (`edge_widths`, `delta_dressing`), `map_board.gd` | `water.py` |
+| Still water in the swamp and bog pools | `map_board.gd` | engine side; PLACEHOLDER: a glossy material on the kit's `bog_water` / `bog_dark` surfaces, not a shader |
+| The bog's low mist | `shaders/mist.gdshader` | engine side (the art leaves it to us); PLACEHOLDER look: three flat layers of drifting haze, 0.2–0.64 m up |
+| Toadstools glowing at night | `map_board.gd` | engine side; PLACEHOLDER: the kit's `toadstool` surfaces get an emissive material that brightens as the sun fades |
+
+**In the loop**, a finished tier 1 region's tiles swap to the variant (see the rules table), and tiles placed into it later swap too. The rim is gone. `screens/variants_movie.mp4` shows three regions finishing (deep forest, highlands, meadows), and `screens/variants_01_deep_forest.png` … `variants_04_all.png` are stills.
+
+**What differs from the previews:**
+
+- **Ground colours fade across borders** (the look-test shader); the previews have hard edges. Variant ground colours (the bog's dark green, the highlands' grey-green, the wasteland's pale sand) fade into their neighbours the same way, which is what the docs ask ("keeps blending into the land around it").
+- **The water moves** and has the water shader's foam and depth, as on the old test map; the previews' water is flat.
+- **Swamp and bog pools shine** (the placeholder still-water material); the previews' are matte.
+- **Mist and the night glow** are only in Godot (the previews have neither).
+- **Wasteland cracked flats** sit 1.5 cm above the sand. In `sand.py` they're a plate from 0 to 1.2 cm, so where the sand isn't quite flat they sink under it; lifting them keeps every patch visible.
+- Everything else (every piece, peak, mountain, pool, street, cactus, column, flower, boat and island) lands where the preview puts it, because the hashes and Python's random numbers are ported exactly.
+
+**What was hard:** nothing new in kind. `sand.py`'s props use Blender helpers that `piece.gd` didn't have yet (`log`, `box_rot`) and Python's `random.choice`, so `py_random.gd` gained `getrandbits` and `randbelow`. The delta's island spots use Python's `round()`, which rounds halves to even, so `water.gd` has `py_round`. A finished region rebuilds its tiles and every neighbour (edge pieces, sand fades, mountains and ground cover all depend on neighbours), and the delta redraws all the water.
+
+**Performance** (this Mac, 1600 × 1000 window, Forward+, whole map in view, `--perf`):
+
+| Map | Tiles | Build | Objects | Draw calls | Triangles in view | Frame |
+| --- | --- | --- | --- | --- | --- | --- |
+| Old test map | 20 | 0.7 s (includes loading the kit) | 662 | 255 | 55,000 | 120 fps (the display's cap) |
+| Every terrain | 27 | 0.47 s | 1,355 | 413 | 165,000 | 120 fps |
+| Every region finished | 27 | 0.51 s | 2,010 | 629 | 240,000 | 120 fps |
+
+In the loop, placing a tile rebuilds it and its neighbours in 5–90 ms (a desert or hills neighbour costs the most), and a region of 5 changing to its variant takes 20–170 ms, inside the transition's sink, so it doesn't show as a hitch. Building in GDScript is fine on PC; on phones the sand and ground cover may want caching or a native port.
+
+**For the art (suggestions, nothing changed in `art/`):**
+
+1. **One material per piece.** Each colour is its own material in the kit, so each colour on a piece is its own draw call: a bog tile is about 87 surfaces, a market town tile 74, a highlands tile 44, a plains tile 4. The all-variants map is 2,010 objects and 629 draw calls (Godot already groups some), against 255 for the old five-terrain test map. A shared material with the colour in the vertex colours (or a small palette texture) would make each piece one draw call. Keep the surfaces the engine treats specially as their own materials (water plates `bog_water` / `bog_dark`, `toadstool`), or mark them with a vertex attribute.
+2. **Sand grid density.** `sand.py`'s 28 × 32 grid per sixth is about 10,700 triangles per desert tile. The swells are 6.5 m long, so half that grid in each direction would probably hold their shape. Worth checking for mobile.
+3. **Hills and highlands centres** are the heaviest pieces (3,084 and 3,444 triangles; a highlands tile is about 9,500). Fine on PC; worth a lighter version for mobile.
+4. **Variant bases** are copies of their terrain's base with another top colour. The engine only reads the top colour, so the kit could keep one base per terrain and list variant ground colours in a table (they're in `variants.VARIANTS` already).
 
 ## Look tests
 
@@ -192,7 +261,7 @@ Screenshots and recordings (they open a window; headless can't render):
 swift godot/tools/png_to_mp4.swift /tmp/frames godot/screens/water_movie.mp4 30
 ```
 
-Other arguments after `--`: `--view=map|water|water_anim|combat|party`, `--hour=6.5`, `--look=x,y,distance,pitch[,yaw]` for any framing (plan coordinates).
+Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|water_anim|combat|party|terrains`, `--perf`, `--hour=6.5`, `--look=x,y,distance,pitch[,yaw]` for any framing (plan coordinates).
 
 ## Art
 
@@ -205,7 +274,10 @@ Other arguments after `--`: `--view=map|water|water_anim|combat|party`, `--hour=
 | The loop | `scripts/game/` | `game.gd` (map, hand, placing, regions, encounters, walking, rest, defeat), `fight.gd` (turns, cards, coin checks, foes), `cards.gd` (the combat mockup's cards), `deck.gd`, `coins.gd`, `rules.gd` (every number and placeholder), `demo.gd` |
 | The screens | `scripts/ui/` | `explore_hud.gd`, `combat_hud.gd`, `after_combat.gd`, built from the mockups; `ui_kit.gd` (colours, fonts, boxes), `hex_shape.gd`, `tag_button.gd`, `coin_view.gd`, `bar.gd`, `clock_dial.gd`; `icons.gd` holds the mockups' SVG icon paths |
 | Fonts | `fonts/` | Lilita One and Nunito, as in the mockups (SIL Open Font License, licence files beside them) |
-| Map board | `scripts/map_board.gd` | `MAP` from `render_preview.py`, assembled by the same rules: base and centre, `edge_same` / `edge_other` per neighbour, farms and villages linked, `border_join_l` / `_r` |
+| Map board | `scripts/map_board.gd` | `MAP`, `TERRAIN_MAP` and `VARIANT_MAP` from `render_preview.py`, assembled by the same rules: base and centre, `edge_same` / `edge_other` per neighbour, farms and villages linked, `border_join_l` / `_r`, hills mountains, variant pieces; `retile()` swaps tiles and rebuilds their neighbours |
+| Desert sand | `scripts/sand.gd` | `sand.py` |
+| Region variants | `scripts/variants.gd` | Each terrain's tier 1 variant and `terrain_of()` |
+| Bog mist | `shaders/mist.gdshader` | Placeholder look |
 | Water shapes | `scripts/water.gd` | `water.py` line by line: edge stretches, shores, springs, ponds, lakes, banks, reeds, rocks, lilies, jetties, boats |
 | Same random numbers | `scripts/py_random.gd` | Python's `random.Random` (Mersenne Twister with SHA-512 string seeding and float-hash seeding), so every seeded curve and prop comes out identical to Blender's |
 | Ground cover | `scripts/ground_cover.gd` | `ground_cover.py`: the same world-space hash grid, densities and edge fade, built into one mesh |
@@ -226,8 +298,10 @@ Other arguments after `--`: `--view=map|water|water_anim|combat|party`, `--hour=
 | `screens/map_dawn.png`, `map_dusk.png`, `map_night.png` | The map at other times of day (placeholder colours) |
 | `screens/water_movie.mp4` | 8 s of moving water, framed like `art/preview/water_anim_v3.mp4` |
 | `screens/combat_movie.mp4` | 10 s of attacks on the combat board |
-| `screens/loop_movie.mp4` | One full loop, played by the demo (49 s): placing cards, walking to an encounter, the fight, the win and the cards it draws, then building again until a region finishes |
+| `screens/loop_movie.mp4` | One full loop, played by the demo (54 s): placing cards, walking to an encounter, the fight, the win and the cards it draws, then building again until the hand runs out (with the 45-card placeholder deck it no longer finishes a region; the variants movie shows that) |
 | `screens/loop_01_…png` … `loop_15_…png` | Stills of the same loop, one per screen state |
+| `screens/terrains.png`, `variants.png`, `variants_night.png` | Every terrain, and every region finished, framed like `art/preview/terrains_v3.png` and `variants_v1.png` |
+| `screens/variants_movie.mp4`, `variants_01_…png` … `variants_04_all.png` | Regions finishing in the loop and changing to their variants |
 | `screens/compare/*.png` | Each loop screen under its mockup artboard (see Screens next to the mockups) |
 
 ## What matches the references

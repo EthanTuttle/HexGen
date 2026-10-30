@@ -3,6 +3,8 @@ extends Node
 ## Plays one full loop by itself, through the same calls a player's clicks make, for recordings and
 ## screenshots: place cards (finishing a region), walk to an encounter, fight it, see the result, return
 ## with the hand refilled. Run with `-- --demo` (add `--shots` to save screens/loop_*.png).
+## `-- --demo=variants` instead records regions finishing and turning into their tier 1 variants: it stages
+## the hand (5 forest, then 5 hills, then 5 plains) and says so on screen; placement still follows the rules.
 ## It's a test driver, not game AI: it plays simply and never cheats the rules, except that if no
 ## encounter has spawned once the hand runs low it adds one so the loop can go on (said on screen).
 
@@ -10,11 +12,60 @@ var game: Game
 var shots := false
 var _n := 0
 var _taken := {}
+var _prefix := "loop"
 
 
 func _ready() -> void:
 	shots = "--shots" in OS.get_cmdline_user_args()
-	_run.call_deferred()
+	if "--demo=variants" in OS.get_cmdline_user_args():
+		_variants.call_deferred()
+	else:
+		_run.call_deferred()
+
+
+## Places one card from the hand (the best slot for it), waiting out any region transition first.
+func _place(i: int, pause: float) -> void:
+	while game.busy:
+		await _wait(0.1)
+	game.hold(i)
+	await _wait(pause)
+	game.try_place(_best_slot(game.deck.hand[i]))
+	await _wait(pause)
+	while game.busy:
+		await _wait(0.1)
+
+
+## The variants recording: three regions finish one after another, the camera on each.
+func _variants() -> void:
+	_prefix = "variants"
+	game.toast("(demo) Staged hand: 5 forest, then 5 hills, then 5 plains.", true)
+	await _wait(1.0)
+	for terrain in ["forest", "hills", "plains"]:
+		game.deck.hand.clear()
+		for k in 5:
+			game.deck.hand.append(terrain)
+		game._refresh()
+		var placed: Array[Vector2i] = []
+		while game.deck.hand.has(terrain):
+			var before: Dictionary = game.map.terrains.duplicate()
+			if placed.size() == 1:
+				# frame where this cluster grows
+				game.rig.ease_to(Hex.to3(Hex.tile_position(placed[0].x, placed[0].y)), 48.0, game.rig.yaw_deg)
+			await _place(game.deck.hand.find(terrain), 0.35)
+			for t: Vector2i in game.map.terrains:
+				if not before.has(t):
+					placed.append(t)
+		await _wait(0.4)
+		while game.busy:
+			await _wait(0.1)
+		await _wait(1.6)
+		await _shot(Variants.TIER1[terrain])
+	game.rig.ease_to(Hex.to3(Vector2.ZERO), 84.0, game.rig.yaw_deg)
+	await _wait(2.5)
+	await _shot("all")
+	print("DEMO DONE")
+	if shots or "--quit" in OS.get_cmdline_user_args():
+		get_tree().quit()
 
 
 func _wait(s: float) -> void:
@@ -31,8 +82,8 @@ func _shot(name: String) -> void:
 		return
 	await RenderingServer.frame_post_draw
 	var dir := ProjectSettings.globalize_path("res://screens")
-	game.get_viewport().get_texture().get_image().save_png(dir.path_join("loop_%02d_%s.png" % [_n, name]))
-	print("SAVED loop_%02d_%s" % [_n, name])
+	game.get_viewport().get_texture().get_image().save_png(dir.path_join("%s_%02d_%s.png" % [_prefix, _n, name]))
+	print("SAVED %s_%02d_%s" % [_prefix, _n, name])
 
 
 func _run() -> void:
@@ -42,6 +93,8 @@ func _run() -> void:
 	var first := true
 	while not game.deck.hand.is_empty():
 		var i := _pick_card()
+		while game.busy:
+			await _wait(0.1)
 		game.hold(i)
 		await _wait(0.6)
 		if first:
@@ -49,6 +102,8 @@ func _run() -> void:
 			first = false
 		game.try_place(_best_slot(game.deck.hand[i]))
 		await _wait(0.7)
+		while game.busy:
+			await _wait(0.1)
 		if not game.regions.is_empty() and not _taken.has("explore_region"):
 			await _wait(0.5)
 			await _shot("explore_region")
@@ -80,12 +135,8 @@ func _run() -> void:
 	# 4. Build again with the refilled hand, until a region finishes or the hand runs out.
 	var regions := game.regions.size()
 	while not game.deck.hand.is_empty() and game.regions.size() == regions:
-		var i := _pick_card()
-		game.hold(i)
-		await _wait(0.5)
-		game.try_place(_best_slot(game.deck.hand[i]))
-		await _wait(0.6)
-	# Frame the newest region so its cream rim and landmark pin are in view.
+		await _place(_pick_card(), 0.5)
+	# Frame the newest region so its variant tiles and landmark pin are in view.
 	if game.regions.size() > 0:
 		var g: Dictionary = game.regions[-1]
 		var c := Vector2.ZERO
@@ -230,7 +281,7 @@ func _pick_card() -> int:
 	var best_count := -1
 	for i in game.deck.hand.size():
 		var t := game.deck.hand[i]
-		var count := game.map.terrains.values().count(t)
+		var count := game.map.terrains.keys().filter(func(c): return game.land(c) == t).size()
 		if count > best_count:
 			best = i
 			best_count = count
@@ -246,7 +297,7 @@ func _best_slot(terrain: String) -> Vector2i:
 			continue
 		var same := 0
 		for n in Hex.NEIGHBOURS:
-			if game.map.terrains.get(s + n) == terrain and s + n != Rules.START_TILE:
+			if game.land(s + n) == terrain and s + n != Rules.START_TILE:
 				same += 1
 		var v := same * 10.0 - Rules.hex_distance(s, Rules.START_TILE)
 		if v > score:

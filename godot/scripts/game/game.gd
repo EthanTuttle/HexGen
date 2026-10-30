@@ -47,7 +47,6 @@ var _reveal_pin = null
 var _reveal_until := 0.0
 var _slot_mats := {}
 var _slot_marks: Array[Node3D] = []
-var _rims := Node3D.new()
 var _sky := Color(0, 0, 0, 0)
 
 
@@ -61,11 +60,10 @@ func _ready() -> void:
 	clock.running = false
 	clock.keys = _sky_keys()
 
+	map.time_of_day = clock
 	add_child(map)
 	map.place(Rules.START_TILE, Rules.START_TERRAIN)
 	order[Rules.START_TILE] = 0
-	_rims.name = "region_rims"
-	add_child(_rims)
 
 	for m in Rules.PARTY:
 		var member: Dictionary = m.duplicate(true)
@@ -97,7 +95,7 @@ func _ready() -> void:
 	after.visible = false
 	ui.add_child(after)
 	_refresh()
-	if "--demo" in OS.get_cmdline_user_args():
+	if Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--demo")):
 		var demo := Demo.new()
 		demo.game = self
 		add_child(demo)
@@ -182,8 +180,8 @@ func why_not(t: Vector2i, terrain: String) -> String:
 	if Rules.is_night(minute) and Rules.hex_distance(t, party_tile) > Rules.SIGHT_RANGE:
 		return "Night: you can only build within sight of the party (%d hexes)." % Rules.SIGHT_RANGE
 	for n in Hex.NEIGHBOURS:
-		var other = map.terrains.get(t + n)
-		if other != null and Rules.banned(terrain, other):
+		var other := land(t + n)
+		if other != "" and Rules.banned(terrain, other):
 			return "%s can't go next to %s." % [Rules.NAMES[terrain], Rules.NAMES.get(other, other)]
 	return ""
 
@@ -264,9 +262,14 @@ func try_place(t: Vector2i) -> bool:
 	return true
 
 
+## The terrain of tile t ("" if empty). A finished region's tiles show its variant, but count as the terrain.
+func land(t: Vector2i) -> String:
+	return Variants.terrain_of(map.terrains.get(t))
+
+
 ## Connected tiles of one terrain (the starting hex is a Story card and joins none).
 func cluster(t: Vector2i) -> Array[Vector2i]:
-	var terrain = map.terrains.get(t)
+	var terrain := land(t)
 	var seen := {t: true}
 	var todo: Array[Vector2i] = [t]
 	var out: Array[Vector2i] = []
@@ -275,7 +278,7 @@ func cluster(t: Vector2i) -> Array[Vector2i]:
 		out.append(c)
 		for n in Hex.NEIGHBOURS:
 			var m: Vector2i = c + n
-			if not seen.has(m) and m != Rules.START_TILE and map.terrains.get(m) == terrain:
+			if not seen.has(m) and m != Rules.START_TILE and land(m) == terrain:
 				seen[m] = true
 				todo.append(m)
 	return out
@@ -297,7 +300,7 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		for c in tiles:
 			finished[c] = joined
 		regions[joined].tiles = tiles
-		_rim(t)
+		_transform(tiles, regions[joined], t)
 		toast("%s added to %s." % [Rules.NAMES[terrain], regions[joined].name])
 		return
 	var goal := _goal_for(terrain)
@@ -312,7 +315,7 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 	regions.append(region)
 	for c in tiles:
 		finished[c] = regions.size() - 1
-		_rim(c)
+	_transform(tiles, region, t)
 	var draw := Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION
 	var got := deck.draw(draw)
 	var lost := draw - got.size()
@@ -324,19 +327,40 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 			" Hand %d/7: keep building; you discard down to 7 when you rest." % deck.hand.size() if over > 0 else ""])
 
 
-## A finished region's tiles get a cream rim (Explore v8b; DOCS: Exploration screen -> Cluster goals).
-func _rim(t: Vector2i) -> void:
-	var p := Piece.new()
-	var outer := Hex.hex_corners(Hex.R - 0.05, true)
-	var inner := Hex.hex_corners(Hex.R - 0.4, true)
-	var at := Hex.tile_position(t.x, t.y)
-	p.offset = Vector3(at.x, at.y, 0)
-	var cream := Color("#FCF7EE")
-	for i in 6:
-		var j := (i + 1) % 6
-		p.prism(PackedVector2Array([outer[j], outer[i], inner[i], inner[j]]), 0.0, 0.07, cream)
-	var mi := p.instance("rim_%d_%d" % [t.x, t.y])
-	_rims.add_child(mi)
+## A finished region's tiles change to its variant's look (DOCS: Exploration screen -> Cluster goals; no rim).
+## Only tier 1 has art: a tier 2 region keeps its terrain's look for now.
+## PLACEHOLDER transition: a wave spreading from the tile that finished it; each tile sinks flat into the
+## ground (0.22 s), swaps to the variant's pieces, then springs back up with a small overshoot (0.45 s).
+func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> void:
+	if region.tier != 1:
+		return
+	var variant: String = Variants.TIER1[region.terrain]
+	var todo := tiles.filter(func(c): return map.terrains[c] != variant)
+	if todo.is_empty():
+		return
+	todo.sort_custom(func(a, b): return Rules.hex_distance(a, from) < Rules.hex_distance(b, from))
+	busy = true
+	const SINK := 0.22
+	const STEP := 0.09
+	for k in todo.size():
+		var node := map.tile_node(todo[k])
+		var tw := node.create_tween()
+		tw.tween_interval(k * STEP)
+		tw.tween_property(node, "scale:y", 0.04, SINK).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await get_tree().create_timer((todo.size() - 1) * STEP + SINK).timeout
+	var changes := {}
+	for c in todo:
+		changes[c] = variant
+	map.retile(changes)
+	for k in todo.size():
+		var node := map.tile_node(todo[k])
+		node.scale.y = 0.04
+		var tw := node.create_tween()
+		tw.tween_interval(k * STEP * 0.6)
+		tw.tween_property(node, "scale:y", 1.0, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer((todo.size() - 1) * STEP * 0.6 + 0.45).timeout
+	busy = false
+	_refresh()
 
 
 func toggle_pin(tile: Vector2i) -> void:
@@ -360,9 +384,9 @@ func markers() -> Array:
 		for c in cl:
 			if order.get(c, 0) > order.get(newest, 0):
 				newest = c
-		var goal := _goal_for(map.terrains[t])
+		var goal := _goal_for(land(t))
 		out.append({key = "goal%s" % newest, kind = "goal", text = str(goal - cl.size()), world = _tile_top(newest),
-				aria = "Cluster goal: grow this %s to %d+ hexes" % [Rules.NAMES[map.terrains[t]].to_lower(), goal]})
+				aria = "Cluster goal: grow this %s to %d+ hexes" % [Rules.NAMES[land(t)].to_lower(), goal]})
 	for t: Vector2i in encounters:
 		out.append({key = "enc%s" % t, kind = "encounter", text = "", world = _tile_top(t)})
 	for g in regions:
@@ -455,7 +479,7 @@ func walk_to(goal: Vector2i) -> void:
 		_advance(Rules.STEP_MINUTES)
 		if encounters.has(step):
 			_encounter_tile = step
-			hud.show_encounter(Rules.NAMES[map.terrains[step]], "ask", [])
+			hud.show_encounter(Rules.NAMES[land(step)], "ask", [])
 			return
 	busy = false
 	_refresh()
@@ -468,7 +492,7 @@ func choose_sneak() -> void:
 	for m in party:
 		coins.append_array(Coins.flip(rng, Rules.SNEAK_COINS_EACH))
 	var ok := Coins.heads(coins) >= 1
-	hud.show_encounter(Rules.NAMES[map.terrains[_encounter_tile]], "passed" if ok else "spotted", coins)
+	hud.show_encounter(Rules.NAMES[land(_encounter_tile)], "passed" if ok else "spotted", coins)
 
 
 func choose_carry_on() -> void:
@@ -489,14 +513,13 @@ func start_fight(t: Vector2i) -> void:
 	_encounter_tile = t
 	map.visible = false
 	party_node.visible = false
-	_rims.visible = false
 	for m in _slot_marks:
 		m.visible = false
 	hud.visible = false
 	fight.visible = true
 	var distance := Rules.hex_distance(t, Rules.START_TILE)
 	var foes := mini(Rules.ENEMIES_BASE + distance / Rules.ENEMIES_PER_DISTANCE, Rules.ENEMIES_MAX)
-	var won: bool = await fight.run(self, map.terrains[t], t, foes)
+	var won: bool = await fight.run(self, land(t), t, foes)
 	var downed := {}
 	for m in party:
 		downed[m.name] = m.hp <= 0
@@ -526,7 +549,6 @@ func start_fight(t: Vector2i) -> void:
 	after.visible = false
 	fight.visible = false
 	map.visible = true
-	_rims.visible = true
 	if not won:
 		party_tile = Rules.START_TILE
 	party_node.position = Hex.to3(Hex.tile_position(party_tile.x, party_tile.y) + Minis.PARTY_OFFSET)

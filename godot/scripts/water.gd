@@ -7,6 +7,7 @@ extends RefCounted
 const R := 4.5
 const A := R * sqrt(3.0) / 2.0
 const RIVER_WIDTH := 1.5
+const DELTA_WIDTH := 2.6        # river delta (tier 1 river variant): wider, with sandy islands
 const LAKE_MARGIN := 0.25
 const MEANDER := 0.9
 const WOBBLE := 0.18
@@ -40,13 +41,14 @@ static func clamp_inside(p: Vector2, inset := 0.01) -> Vector2:
 # --- 1. Water along each edge ------------------------------------------------
 
 ## [t0, t1] of edge i that is water, or an empty array.
-static func edge_interval(water: Array, i: int) -> Array:
+## widths[i] is the river's width where it crosses edge i (both tiles on an edge pass the same width).
+static func edge_interval(water: Array, i: int, widths: Array = []) -> Array:
 	if not water[i]:
 		return []
 	var start_tri: bool = water[posmod(i - 1, 6)]
 	var end_tri: bool = water[(i + 1) % 6]
 	if not (start_tri or end_tri):
-		var half := RIVER_WIDTH / R / 2.0
+		var half: float = (widths[i] if not widths.is_empty() else RIVER_WIDTH) / R / 2.0
 		return [0.5 - half, 0.5 + half]
 	return [0.0 if start_tri else LAKE_MARGIN, 1.0 if end_tri else 1.0 - LAKE_MARGIN]
 
@@ -112,7 +114,16 @@ static func _closed(ring: PackedVector2Array) -> PackedVector2Array:
 ## Water outlines and shore curves for one tile, as a Dictionary:
 ## outlines (Array of PackedVector2Array), shores (same), kind ("pond", "spring", "river", "lake"),
 ## ends (Array of [start edge, end edge], -1 for a pond end).
-static func tile_water(water: Array, seed: String) -> Dictionary:
+## River width at each edge: a delta's width only where both tiles are delta, so the two always agree.
+## own and neighbours[i] are terrain or variant names (or null).
+static func edge_widths(own: String, neighbours: Array) -> Array:
+	var out := []
+	for n in neighbours:
+		out.append(DELTA_WIDTH if own == "delta" and n == "delta" else RIVER_WIDTH)
+	return out
+
+
+static func tile_water(water: Array, seed: String, widths: Array = []) -> Dictionary:
 	var rng := PyRandom.new(seed)
 	var sway_angle := rng.uniform(0, TAU)
 	var sway := Vector2(cos(sway_angle), sin(sway_angle)) * (rng.uniform(0.4, 1.0) * MEANDER)
@@ -123,7 +134,7 @@ static func tile_water(water: Array, seed: String) -> Dictionary:
 
 	var spans := []
 	for i in 6:
-		var iv := edge_interval(water, i)
+		var iv := edge_interval(water, i, widths)
 		if not iv.is_empty():
 			spans.append([i, iv])
 	var lake := is_lake(water)
@@ -283,3 +294,68 @@ static func _clear_of_shores(p: Vector2, shores: Array) -> bool:
 			if (p - c[k]).length() <= 1.0:
 				return false
 	return true
+
+
+## Python's round(): halves go to the even neighbour.
+static func py_round(x: float) -> int:
+	var f := floorf(x)
+	var d := x - f
+	if d > 0.5 or (d == 0.5 and int(f) % 2 != 0):
+		return int(f) + 1
+	return int(f)
+
+
+## River delta extras: sandy islands splitting the channel, and a busier waterway (more boats, a jetty with
+## cargo crates). Returns {islands = outlines, boats = [point, angle], jetties = [point, angle]}.
+static func delta_dressing(outlines: Array, shores: Array, kind: String, seed: String) -> Dictionary:
+	var rng := PyRandom.new(seed + "-delta")
+	var islands := []; var boats := []; var jetties := []
+	if kind == "river" and shores.size() == 2:
+		# The channel's middle line, halfway between its two banks.
+		var a: PackedVector2Array = shores[0]
+		var b: PackedVector2Array = shores[1].duplicate()
+		b.reverse()
+		var mid := PackedVector2Array()
+		for k in mini(a.size(), b.size()):
+			mid.append((a[k] + b[k]) * 0.5)
+		var n := mid.size() - 1
+		for k in [py_round(n * 0.3), py_round(n * 0.7)]:
+			var tan := mid[k + 1] - mid[k - 1]
+			var ang := atan2(tan.y, tan.x)
+			var long_ := rng.uniform(1.1, 1.5)
+			var wide := rng.uniform(0.32, 0.45)
+			var island := PackedVector2Array()
+			for j in 14:
+				var t := TAU * j / 14
+				island.append(mid[k] + Vector2(cos(ang) * long_ * cos(t) - sin(ang) * wide * sin(t),
+						sin(ang) * long_ * cos(t) + cos(ang) * wide * sin(t)))
+			islands.append(island)
+		for k in [py_round(n * 0.12), py_round(n * 0.5)]:  # boats in the side channels and below the islands
+			var tan := mid[k + 1] - mid[k - 1]
+			var l := tan.length()
+			var side := Vector2(-tan.y, tan.x) * (0.55 / (l if l != 0.0 else 1.0)) if k == py_round(n * 0.5) else Vector2.ZERO
+			boats.append([mid[k] + side, atan2(tan.y, tan.x)])
+		var k := n / 2
+		var tan := a[k + 1] - a[k - 1]
+		var l := tan.length()
+		var inward := Vector2(-tan.y, tan.x) / (l if l != 0.0 else 1.0)
+		jetties.append([a[k], atan2(inward.y, inward.x)])
+	elif kind == "lake" and not outlines.is_empty():
+		var poly: PackedVector2Array = outlines[0]
+		for _t in 80:
+			if islands.size() >= 2:
+				break
+			var p := Vector2(rng.uniform(-A, A), rng.uniform(-R, R))
+			if not point_in(poly, p):
+				continue
+			var clear := true
+			for c: PackedVector2Array in shores:
+				for j in range(0, c.size(), 2):
+					if (p - c[j]).length() <= 1.3:
+						clear = false
+			for isl: PackedVector2Array in islands:
+				if (p - isl[0]).length() <= 2.0:
+					clear = false
+			if clear:
+				islands.append(circle(p, rng.uniform(0.45, 0.7), rng, 0.2))
+	return {islands = islands, boats = boats, jetties = jetties}

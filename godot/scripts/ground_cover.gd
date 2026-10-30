@@ -6,7 +6,12 @@ extends RefCounted
 const CELL := 0.55
 const BLEND := 1.6
 ## Share of cells that get a prop, per terrain (placeholders from ground_cover.py).
-const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0}
+const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
+	"hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
+	# tier 1 region variants
+	"deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
+	"delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3}
+const FLOWERS := ["flower", "flower_pink", "flower_white", "flower_blue"]
 
 const R := Water.R
 const A := Water.A
@@ -79,6 +84,10 @@ static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: i
 		if _near_shore(local, w.shores, 0.45):
 			return []
 	var k := hash01(ix, iy, 2)
+	if terrains[t] == "meadows":
+		# Wildflower drifts: a slow world-space wave decides where flowers crowd out the grass.
+		var drift := 0.5 + 0.5 * sin(p.x / 3.1 + 0.4) * sin(p.y / 2.6 + p.x / 5.0)
+		return ["flower" if k < 0.15 + 0.75 * drift else "tuft", p, Vector2i(ix, iy), true]
 	return ["tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", p, Vector2i(ix, iy)]
 
 
@@ -112,7 +121,7 @@ static func build(terrains: Dictionary, water_shapes: Dictionary) -> MeshInstanc
 
 static func _build(items: Array) -> MeshInstance3D:
 	var piece := Piece.new()
-	var ink := Hex.colour("grass_ink"); var flower := Hex.colour("flower"); var rock := Hex.colour("rock")
+	var ink := Hex.colour("grass_ink"); var rock := Hex.colour("rock")
 	for item in items:
 		var cell: Vector2i = item[2]
 		var rng := PyRandom.new(hash01(cell.x, cell.y, 4))
@@ -123,7 +132,12 @@ static func _build(items: Array) -> MeshInstance3D:
 				var height := rng.uniform(0.2, 0.35)
 				piece.cone(at, radius, height, ink, 4, 0.0, rng.uniform(0, 1))
 			"flower":
-				piece.box(at, Vector3(0.08, 0.08, 0.12), flower, 0.0, rng.uniform(0, 1))
+				# Meadows: one colour per drift; the same slow wave picks it, so colours come in patches.
+				var hue := "flower"
+				if item.size() > 3:
+					var p: Vector2 = item[1]
+					hue = FLOWERS[posmod(int((sin(p.x / 4.7) + sin(p.y / 3.9 + 1.0) + 2) * 1.999), 4)]
+				piece.box(at, Vector3(0.08, 0.08, 0.12), Hex.colour(hue), 0.0, rng.uniform(0, 1))
 			_:
 				piece.blob(at, rng.uniform(0.07, 0.12), rock, 0.0, 0.6)
 	return piece.instance("ground_cover")

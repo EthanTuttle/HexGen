@@ -1,7 +1,8 @@
 class_name MapBoard
 extends Node3D
-## The test map from art/scripts/render_preview.py (MAP), assembled by the same rules: edge wedges
-## same/other, farm-village linking, border joins; water drawn per tile; ground cover scattered.
+## A map assembled by art/scripts/render_preview.py's rules (build_map): edge wedges same/other,
+## farm-village linking, border joins, hills mountains; water drawn per tile; desert sand shaped in
+## world space; ground cover scattered. A tile's name is a terrain or a region variant (Variants).
 
 ## Pointy-top axial (q, r) -> terrain. Copied from render_preview.py.
 const MAP := {
@@ -12,6 +13,20 @@ const MAP := {
 	Vector2i(-2, 1): "river", Vector2i(-2, 2): "river", Vector2i(-1, 1): "river", Vector2i(-1, 2): "river",
 	Vector2i(0, 2): "river", Vector2i(1, 1): "river", Vector2i(2, 0): "river", Vector2i(3, 0): "river",
 	Vector2i(0, -1): "river",
+}
+## render_preview.TERRAIN_MAP: every terrain, keeping the banned pairs apart.
+const TERRAIN_MAP := {
+	Vector2i(-1, -2): "hills", Vector2i(0, -2): "hills", Vector2i(1, -2): "hills", Vector2i(2, -2): "plains",
+	Vector2i(3, -2): "desert", Vector2i(4, -2): "desert",
+	Vector2i(-1, -1): "forest", Vector2i(0, -1): "hills", Vector2i(1, -1): "ruins", Vector2i(2, -1): "plains",
+	Vector2i(3, -1): "desert",
+	Vector2i(-2, 0): "forest", Vector2i(-1, 0): "forest", Vector2i(0, 0): "plains", Vector2i(1, 0): "ruins",
+	Vector2i(2, 0): "river",
+	Vector2i(-2, 1): "swamp", Vector2i(-1, 1): "swamp", Vector2i(0, 1): "river", Vector2i(1, 1): "river",
+	Vector2i(2, 1): "plains",
+	Vector2i(-3, 2): "swamp", Vector2i(-2, 2): "swamp", Vector2i(-1, 2): "river", Vector2i(0, 2): "village",
+	Vector2i(1, 2): "farmland",
+	Vector2i(3, 0): "hills",  # a lone hills tile, for its own peak
 }
 const BORDERED := ["farmland", "village"]
 const BLEND_WIDTH := 1.6   # ground colour fade width; no doc value yet, matches ground cover's BLEND
@@ -35,10 +50,26 @@ var _water_node: Node3D
 var _slots_node: Node3D
 var _slot_mesh: Mesh
 var _slot_mat: Material
+var _still_water: StandardMaterial3D
+var _glow: StandardMaterial3D
+var _mist_mat: ShaderMaterial
+## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
+var time_of_day: TimeOfDay
 
 
+## render_preview.VARIANT_MAP: the terrains map with every region finished.
+static func variant_map() -> Dictionary:
+	var out := {}
+	for t: Vector2i in TERRAIN_MAP:
+		out[t] = Variants.TIER1[TERRAIN_MAP[t]]
+	return out
+
+
+## Joined for edge pieces: the same terrain (a region variant counts as its terrain), or linked terrains.
 static func linked(a, b) -> bool:
-	return a == b or (a in BORDERED and b in BORDERED)
+	var ta := Variants.terrain_of(a)
+	var tb := Variants.terrain_of(b)
+	return tb != "" and (ta == tb or (ta in BORDERED and tb in BORDERED))
 
 
 ## Builds a whole map at once (the look-test map).
@@ -57,19 +88,41 @@ func build(map := MAP) -> void:
 func place(t: Vector2i, terrain: String) -> void:
 	if _kit.is_empty():
 		_setup()
-	terrains[t] = terrain
-	_set_ground(t)
-	var water_changed := terrain == "river"
-	for n in Hex.NEIGHBOURS:
-		if terrains.get(t + n) == "river":
+	retile({t: terrain})
+
+
+## Sets several tiles at once (placing, or a finished region turning into its variant) and rebuilds what
+## they touch: their neighbours' edge pieces, sand and mountains, water, ground cover, slots.
+func retile(changes: Dictionary) -> void:
+	if _kit.is_empty():
+		_setup()
+	var t0 := Time.get_ticks_usec()
+	var water_changed := false
+	var touched := {}
+	for t: Vector2i in changes:
+		terrains[t] = changes[t]
+		_set_ground(t)
+		touched[t] = true
+		if Variants.is_water(changes[t]):
 			water_changed = true
+		for n in Hex.NEIGHBOURS:
+			if terrains.has(t + n):
+				touched[t + n] = true
+				if Variants.is_water(terrains[t + n]):
+					water_changed = true
 	if water_changed:
 		_update_water()
-	_build_tile(t)
-	for n in Hex.NEIGHBOURS:
-		if terrains.has(t + n):
-			_build_tile(t + n)
+	for t: Vector2i in touched:
+		_build_tile(t)
 	_build_slots()
+	if "--perf" in OS.get_cmdline_user_args():
+		print("PERF retile %d tile(s), %d rebuilt%s: %d ms" % [changes.size(), touched.size(),
+				", water redrawn" if water_changed else "", (Time.get_ticks_usec() - t0) / 1000])
+
+
+## The node holding tile t's pieces (for transitions).
+func tile_node(t: Vector2i) -> Node3D:
+	return _tile_nodes.get(t)
 
 
 func _setup() -> void:
@@ -88,6 +141,49 @@ func _setup() -> void:
 	p.flat(hexagon, 0.02, Hex.colour("slot"))
 	_slot_mesh = p.mesh()
 	_slot_mat = Piece.material()
+	_setup_materials()
+
+
+## Engine-side looks the art leaves to us: still water for the swamp's pools (PLACEHOLDER: a glossy
+## material, not a shader), toadstools that glow at night, and the bog's mist material.
+func _setup_materials() -> void:
+	_still_water = StandardMaterial3D.new()
+	_still_water.roughness = 0.12
+	_still_water.metallic_specular = 0.9
+	_glow = StandardMaterial3D.new()
+	_glow.albedo_color = Hex.colour("toadstool")
+	_glow.emission_enabled = true
+	_glow.emission = Hex.colour("toadstool")
+	_glow.emission_energy_multiplier = 0.0
+	for mesh: Mesh in _kit.values():
+		for k in mesh.get_surface_count():
+			var name := Kit.material_name(mesh, k)
+			if name in ["bog_water", "bog_dark"]:
+				var m := _still_water.duplicate() as StandardMaterial3D
+				m.albedo_color = (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
+				mesh.surface_set_material(k, m)
+			elif name == "toadstool":
+				mesh.surface_set_material(k, _glow)
+	_mist_mat = ShaderMaterial.new()
+	_mist_mat.shader = load("res://shaders/mist.gdshader")
+
+
+## A bog tile's low mist: three flat layers of drifting haze (PLACEHOLDER heights and look).
+func _mist(at: Vector2) -> Node3D:
+	var node := Node3D.new()
+	node.name = "mist"
+	for k in 3:
+		var mi := MeshInstance3D.new()
+		var quad := PlaneMesh.new()
+		quad.size = Vector2(9.5, 10.5)
+		mi.mesh = quad
+		var m := _mist_mat.duplicate() as ShaderMaterial
+		m.set_shader_parameter("layer", float(k))
+		mi.material_override = m
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.position = Hex.to3(at, 0.2 + 0.22 * k)
+		node.add_child(mi)
+	return node
 
 
 ## Ground colour per tile in a small lookup texture; the shader fades it toward the neighbours.
@@ -106,20 +202,43 @@ func _build_tile(t: Vector2i) -> void:
 	node.name = "tile_%d_%d" % [t.x, t.y]
 	add_child(node)
 	_tile_nodes[t] = node
-	var terrain: String = terrains[t]
+	# name is a terrain or a region variant; the variant's pieces carry its name, and edge pieces are
+	# picked by its terrain.
+	var name: String = terrains[t]
+	var terrain := Variants.terrain_of(name)
 	var at := Hex.tile_position(t.x, t.y)
-	var base := Kit.place(node, _kit, "base_" + terrain, at)
+	var base := Kit.place(node, _kit, "base_" + name, at)
 	base.set_surface_override_material(0, _ground)
 	node.add_child(GroundCover.build_tile(terrains, water_shapes, t))
 	if terrain == "river":
 		return
-	Kit.place(node, _kit, terrain + "_centre", at)
+	var centre := "_centre"
+	if _kit.has(name + "_centre_mill") and GroundCover.hash01(t.x, t.y, 7) < 0.5:
+		centre = "_centre_mill"  # windmills stand on about half the tiles (the preview's placeholder rule)
+	Kit.place(node, _kit, name + centre, at)
+	if terrain == "desert":
+		node.add_child(Sand.build_tile(terrains, t))
+	if name == "bog":
+		node.add_child(_mist(at))
 	var joined := []
 	for n in Hex.NEIGHBOURS:
-		joined.append(linked(terrain, terrains.get(t + n)))
+		joined.append(linked(name, terrains.get(t + n)))
+	if terrain == "hills":
+		# One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
+		# meet; otherwise half on each edge shared with one other hills tile.
+		var triple := []
+		for i in 6:
+			triple.append(joined[i] and joined[(i + 1) % 6])   # corner i: between edges i and i + 1
+		if not joined.has(true):
+			Kit.place(node, _kit, name + "_peak", at)
+		for i in 6:
+			if triple[i]:
+				Kit.place(node, _kit, name + "_mountain_corner", at, deg_to_rad(60.0 * i))
+			elif joined[i] and not triple[posmod(i - 1, 6)]:
+				Kit.place(node, _kit, name + "_mountain_edge", at, deg_to_rad(60.0 * i))
 	for i in 6:
 		var angle := deg_to_rad(60.0 * i)
-		Kit.place(node, _kit, terrain + ("_edge_same" if joined[i] else "_edge_other"), at, angle)
+		Kit.place(node, _kit, name + ("_edge_same" if joined[i] else "_edge_other"), at, angle)
 		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
 		if terrain in BORDERED and joined[i]:
 			if not joined[(i + 1) % 6]:
@@ -133,11 +252,15 @@ func _build_tile(t: Vector2i) -> void:
 func _update_water() -> void:
 	water_shapes.clear()
 	for t: Vector2i in terrains:
-		if terrains[t] == "river":
+		if Variants.is_water(terrains[t]):
+			var near := []
 			var mask := []
 			for n in Hex.NEIGHBOURS:
-				mask.append(terrains.get(t + n) == "river")
-			water_shapes[t] = Water.tile_water(mask, "%d,%d" % [t.x, t.y])
+				near.append(terrains.get(t + n))
+				mask.append(Variants.is_water(near[-1]))
+			var w := Water.tile_water(mask, "%d,%d" % [t.x, t.y], Water.edge_widths(terrains[t], near))
+			w.delta = terrains[t] == "delta"
+			water_shapes[t] = w
 	if _water_node:
 		_water_node.free()
 	boats.clear()
@@ -207,8 +330,26 @@ func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
 		for s in [-1, 1]:
 			var post: Vector2 = tip + dir * (0.6 * s)
 			p.cylinder(Vector3(post.x, post.y, 0), 0.05, 0.2, Hex.colour("trunk"))
+	var boat_spots: Array = d.boats
+	if w.get("delta", false):
+		# The river delta's islands, boats, jetty and crates (water.add_water(..., delta=True)).
+		var dd := Water.delta_dressing(w.outlines, w.shores, w.kind, seed)
+		boat_spots = boat_spots + dd.boats
+		for poly: PackedVector2Array in dd.islands:
+			p.flat(poly, 0.036, Hex.colour("sandbar"))
+			for k in range(0, poly.size(), 5):
+				var q := (poly[k] + poly[0]) * 0.5
+				p.cone(Vector3(q.x, q.y, 0), 0.05, rng.uniform(0.35, 0.55), Hex.colour("reed"), 4, 0.03)
+		for j in dd.jetties:
+			var ang: float = j[1]
+			var dir := Vector2(cos(ang), sin(ang))
+			var tip: Vector2 = j[0] + dir * 0.5
+			p.box(Vector3(tip.x, tip.y, 0), Vector3(1.2, 0.45, 0.06), Hex.colour("trunk"), 0.12, ang)
+			for s in [-1, 1]:  # cargo crates on the bank beside it
+				var crate: Vector2 = j[0] - (dir * 0.45 + Vector2(-dir.y, dir.x) * (0.45 * s))
+				p.box(Vector3(crate.x, crate.y, 0), Vector3(0.3, 0.3, 0.28), Hex.colour("crate"), 0.0, ang + 0.2 * s)
 	# Boats are their own nodes so they can bob (render_animation.bob_boats).
-	for b in d.boats:
+	for b in boat_spots:
 		var piece := Piece.new()
 		var ang: float = b[1]
 		piece.box(Vector3.ZERO, Vector3(0.9, 0.36, 0.14), Hex.colour("trunk"), 0.03, ang)
@@ -226,6 +367,10 @@ var _time := 0.0
 
 func _process(delta: float) -> void:
 	_time += delta   # engine time, so movie recordings at a fixed frame rate stay in step
+	if time_of_day and _glow and time_of_day.sun:
+		# Toadstools glow as the light fades (PLACEHOLDER strength): 0 at midday, full at night.
+		var night := clampf((1.18 - time_of_day.sun.light_energy) / (1.18 - 0.35), 0.0, 1.0)
+		_glow.emission_energy_multiplier = 2.5 * night
 	var s := _time
 	for k in boats.size():
 		boats[k].position.y = 0.03 * sin(TAU * s / 2.0 + k)

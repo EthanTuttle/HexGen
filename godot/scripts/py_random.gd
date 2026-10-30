@@ -43,6 +43,22 @@ func uniform(a: float, b: float) -> float:
 	return a + (b - a) * random()
 
 
+## random.getrandbits(k) for k <= 32.
+func getrandbits(k: int) -> int:
+	return _genrand() >> (32 - k)
+
+
+## random._randbelow(n), so choice(seq) is seq[randbelow(seq.size())].
+func randbelow(n: int) -> int:
+	var k := 0
+	while (n >> k) > 0:
+		k += 1
+	var r := getrandbits(k)
+	while r >= n:
+		r = getrandbits(k)
+	return r
+
+
 # --- Seeding -----------------------------------------------------------------
 
 func _seed_from_bytes(bytes: PackedByteArray) -> void:

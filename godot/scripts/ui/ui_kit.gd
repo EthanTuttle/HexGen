@@ -35,6 +35,10 @@ const TERRAIN := {
 	"farmland": {"bg": "#DCC562", "ink": "#6E5410"},
 	"village": {"bg": "#E6C590", "ink": "#7A4A22"},
 	"river": {"bg": "#86BEDB", "ink": "#245A7E"},
+	"hills": {"bg": "#BFAE8E", "ink": "#5E4C30"},
+	"swamp": {"bg": "#7F9A6E", "ink": "#2E4626"},
+	"desert": {"bg": "#EDD49A", "ink": "#8A6A2A"},
+	"ruins": {"bg": "#B3ADA4", "ink": "#4E4840"},
 	"start": {"bg": "#F3E6C8", "ink": "#9A4A12"},
 }
 
