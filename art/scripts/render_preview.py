@@ -31,6 +31,15 @@ MAP = {
 }
 
 
+# Farms and villages count as joined: the farm track meets the village street, with no border between them.
+LINKED = {frozenset(("farmland", "village"))}
+BORDERED = {"farmland", "village"}
+
+
+def linked(a, b):
+    return a == b or frozenset((a, b)) in LINKED
+
+
 def latest(folder, stem):
     files = glob.glob(os.path.join(hk.ART, folder, f"{stem}_v*.blend"))
     return max(files, key=lambda f: int(re.search(r"_v(\d+)\.blend$", f).group(1)))
@@ -66,9 +75,15 @@ def build_map(templates, animated=False):
             water_tiles.append((q, r, at, mask))
             continue
         place(templates, f"{terrain}_centre", col, at)
-        for i, (dq, dr) in enumerate(hk.NEIGHBOURS):
-            same = MAP.get((q + dq, r + dr)) == terrain
-            place(templates, f"{terrain}_edge_{'same' if same else 'other'}", col, at, math.radians(60 * i))
+        joined = [linked(terrain, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
+        for i in range(6):
+            place(templates, f"{terrain}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
+            # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
+            if terrain in BORDERED and joined[i] and "border_join_l" in templates:
+                if not joined[(i + 1) % 6]:
+                    place(templates, "border_join_l", col, at, math.radians(60 * i))
+                if not joined[(i - 1) % 6]:
+                    place(templates, "border_join_r", col, at, math.radians(60 * i))
     # Small ground cover across the whole map, the way the engines will scatter it.
     p = hk.Piece("ground_cover")
     gc.add_ground_cover(p, MAP)

@@ -36,7 +36,7 @@ def centre_outline(scale=1.0):
 
 
 # Ground colour under each terrain's props; water sits on grass so its banks show.
-GROUND = {"river": "plains", "village": "cobble"}
+GROUND = {"river": "plains", "village": "cobble", "farmland": "plains"}
 
 
 def base(terrain, col):
@@ -85,14 +85,6 @@ def house(p, rng, at, spin):
     p.gable_roof(at, w + 0.15, d + 0.2, 0.6, "roof", z=h, spin=spin)
 
 
-def fence(p, x, half):
-    n = 7
-    for i in range(n):
-        y = -half + 2 * half * i / (n - 1)
-        p.box(Vector((x, y, 0)), (0.07, 0.07, 0.4), "fence")
-    p.box(Vector((x, 0, 0)), (0.04, 2 * half, 0.05), "fence", z=0.28)
-
-
 # --- Terrain pieces ----------------------------------------------------------
 
 def plains(p, rng, kind):
@@ -114,23 +106,109 @@ def forest(p, rng, kind):
         tree(p, rng, at)
 
 
+# Plot grid on a farm tile: (columns, rows), plot size and the path between plots.
+FARM_GRID = {(2, 2): (2.2, 1.9, 0.3), (3, 2): (1.75, 1.6, 0.3)}
+FARM_LAYOUT = (2, 2)
+FARM_SPIN = math.radians(30)  # rows run parallel to the tile's slanted sides
+
+# Borders around farms and villages: one style for both, at one depth, so they join up.
+BORDER_STYLE = "fence"         # "fence", "wall" or "stacked"
+BORDER_X = X0 + 0.88 * (X1 - X0)
+BORDERED = {"farmland", "village"}
+
+
+def turned(x, y):
+    c, s_ = math.cos(FARM_SPIN), math.sin(FARM_SPIN)
+    return Vector((x * c - y * s_, x * s_ + y * c, 0))
+
+
+def wheat_plot(p, rng, cx, cy, w, h, crop):
+    """One plot: brown soil with raised rows of a crop running along its width."""
+    p.flat([turned(cx - w / 2, cy - h / 2), turned(cx + w / 2, cy - h / 2),
+            turned(cx + w / 2, cy + h / 2), turned(cx - w / 2, cy + h / 2)], 0.04, "soil_light")
+    rows = max(3, int(h / 0.28))
+    tall = 0.16 if crop != "field_c" else 0.08  # young green crop sits lower
+    for k in range(rows):
+        y = cy - h / 2 + (k + 0.5) * h / rows
+        p.box(turned(cx, y), (w - 0.14, h / rows * 0.62, tall), crop, z=0.04, spin=FARM_SPIN)
+
+
+def border_line(p, rng, a, b):
+    """A stretch of border from a to b in the current BORDER_STYLE."""
+    d = b - a
+    length, ang = d.length, math.atan2(d.y, d.x)
+    if BORDER_STYLE == "stacked":  # dry-stone: many thin courses of long flat slabs, capped with wider flat stones
+        shades = ["rock", "rock_dark", "rock_light", "stone_tan", "stone_blue", "stone_brown"]
+        z = 0.0
+        for course in range(10):
+            height = rng.uniform(0.04, 0.06)
+            t = -rng.uniform(0.0, 0.25)
+            while t < length - 1e-3:
+                w = rng.uniform(0.2, 0.5)
+                t0, t1 = max(t, 0.0), min(t + w, length)
+                if t1 - t0 > 0.05:
+                    p.box(a + d * ((t0 + t1) / 2 / length), (t1 - t0 - 0.015, 0.26 + rng.uniform(-0.06, 0.06),
+                          height - 0.006), rng.choice(shades), z=z, spin=ang + rng.uniform(-0.03, 0.03))
+                t += w
+            z += height
+        t = 0.0
+        while t < length - 1e-3:  # cap: wider flat slabs
+            w = min(rng.uniform(0.35, 0.6), length - t)
+            p.box(a + d * ((t + w / 2) / length), (w - 0.02, 0.28, 0.04), rng.choice(shades), z=z,
+                  spin=ang + rng.uniform(-0.04, 0.04))
+            t += w
+    elif BORDER_STYLE == "wall":  # a row of uneven grey blocks
+        t = 0.0
+        while t < length - 1e-3:
+            w = min(rng.uniform(0.25, 0.45), length - t)
+            p.box(a + d * ((t + w / 2) / length), (w - 0.03, 0.22, rng.uniform(0.2, 0.28)), "rock",
+                  spin=ang + rng.uniform(-0.05, 0.05))
+            t += w
+    else:  # wooden posts and two rails
+        n = max(1, round(length / 0.6))
+        for k in range(n + 1):
+            p.box(a + d * (k / n), (0.07, 0.07, 0.42), "fence")
+        for z in (0.16, 0.32):
+            p.box(a + d * 0.5, (length, 0.04, 0.04), "fence", z=z, spin=ang)
+
+
+def edge_border(p, rng):
+    """Border along edge 0, corner to corner, so borders on neighbouring edges meet."""
+    h = BORDER_X * TAN30
+    border_line(p, rng, Vector((BORDER_X, -h, 0)), Vector((BORDER_X, h, 0)))
+
+
+def border_join(p, rng, side):
+    """Where edge 0 is joined (same or linked terrain) but the next edge (side=+1: edge 1, -1: edge 5) has a
+    border: carry that border out to edge 0, where it meets the matching join on the tile next door."""
+    y = side * BORDER_X * TAN30
+    border_line(p, rng, Vector((BORDER_X, y, 0)), Vector((X1, y, 0)))
+
+
 def farmland(p, rng, kind):
-    colours = ["field_a", "field_b", "field_c"]
+    """A neat grid of wheat plots with dirt paths; tracks join neighbouring farms, hedges close off the rest."""
     if kind == "centre":
-        outline = centre_outline()
-        for i in range(6):  # patchwork: six slices of the inner hexagon
-            tri = [Vector((0, 0, 0)), outline[i], outline[(i + 1) % 6]]
-            p.flat(tri, 0.04 + 0.01 * (i % 2), colours[i % 3])
+        cols, rows = FARM_LAYOUT
+        w, h, gap = FARM_GRID[FARM_LAYOUT]
+        total_w, total_h = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
+        pad = gap
+        p.flat([turned(-total_w / 2 - pad, -total_h / 2 - pad), turned(total_w / 2 + pad, -total_h / 2 - pad),
+                turned(total_w / 2 + pad, total_h / 2 + pad), turned(-total_w / 2 - pad, total_h / 2 + pad)],
+               0.015, "road")
+        crops = ["field_a", "field_b"] * (cols * rows)
+        young = rng.randrange(cols * rows)
+        for i in range(cols):
+            for j in range(rows):
+                cx = -total_w / 2 + w / 2 + i * (w + gap)
+                cy = -total_h / 2 + h / 2 + j * (h + gap)
+                crop = "field_c" if i * rows + j == young else crops[(i + j + rng.randrange(2)) % 2]
+                wheat_plot(p, rng, cx, cy, w, h, crop)
         return
-    end = X1 if kind == "same" else X0 + 0.78 * (X1 - X0)
-    n = 4 if kind == "same" else 3
-    for i in range(n):  # strips parallel to the edge
-        u0 = X0 + (end - X0) * i / n + 0.03
-        u1 = X0 + (end - X0) * (i + 1) / n - 0.03
-        p.flat(band(u0, u1, inset=0.05), 0.04 + 0.01 * (i % 2), colours[(i + rng.randrange(3)) % 3])
-    if kind == "other":  # a hedge closes the field off
-        x = X0 + 0.88 * (X1 - X0)
-        p.box(Vector((x, 0, 0)), (0.22, 2 * x * TAN30 - 0.5, 0.35), "hedge")
+    if kind == "same":  # a dirt track runs on to the neighbouring farm
+        p.flat([Vector((X0, -0.22, 0)), Vector((X1, -0.22, 0)), Vector((X1, 0.22, 0)), Vector((X0, 0.22, 0))],
+               0.012, "road")
+        return
+    edge_border(p, rng)
 
 
 RIVER_HALF = 0.75   # half the width of a river channel
@@ -180,14 +258,15 @@ def village(p, rng, kind):
         house(p, rng, Vector((X0 + 0.9, 1.0, 0)), 0.0)
         house(p, rng, Vector((X1 - 0.8, -1.2, 0)), 0.0)
         return
-    # a strip of garden and a fence where the village ends
+    # a strip of garden inside the village's border
     garden = X0 + 0.6 * (X1 - X0)
     p.flat(band(garden, X1), 0.015, "plains")
     cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
     house(p, rng, Vector((X0 + 0.55, 0.35, 0)), math.radians(90))
-    fence(p, garden + 0.1, garden * TAN30 - 0.25)
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.4, margin=0.3), 3, 0.5, hk.WEDGE_BOUNDS):
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=BORDER_X - 0.25, margin=0.2),
+                         3, 0.5, hk.WEDGE_BOUNDS):
         p.blob(at, 0.22, "hedge", squash=0.8)
+    edge_border(p, rng)
 
 
 # Terrains with a corner piece, placed where both neighbours at a corner share the terrain.
@@ -207,6 +286,11 @@ def build():
             p = hk.Piece(name)
             BUILDERS[terrain](p, hk.seeded(name), kind)
             p.finish(col)
+    col = hk.new_collection("borders")
+    for name, side in (("border_join_l", 1), ("border_join_r", -1)):
+        p = hk.Piece(name)
+        border_join(p, hk.seeded(name), side)
+        p.finish(col)
     path = hk.next_version(os.path.join(hk.ART, "tiles"), "tiles")
     import bpy
     bpy.ops.wm.save_as_mainfile(filepath=path)
