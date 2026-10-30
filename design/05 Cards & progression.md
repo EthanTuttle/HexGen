@@ -9,7 +9,7 @@ Map card types, the deck and hand, how the hand refills, deck shaping, levels an
 Decided Oct 23–24, 2026 (the rarity rethink). The old Common/Rare/Legendary map card tiers are retired. Once placing became Dorfromantik-style mass building, Rare cards felt like just more landmarks, since regions already create locations on their own. Now regions make every landmark, and the deck holds only terrain.
 
 - **Terrain cards:** the only cards in the deck and hand. Each is one Common terrain type (see [Map & exploration](02 Map & exploration.md) → Exploration and terrain). Some have multi-hex footprints (see [Map & exploration](02 Map & exploration.md) → Placement). Corrupted versions can enter the deck (see [Map & exploration](02 Map & exploration.md) → Corruption).
-- **Story cards:** found through the main quest line. They never go to the hand: the story places them at fixed locations, so players have to travel to reach them. Starting hexes and all story locations (e.g. Gronogon, the cultist dungeon, the second wizard tower, the highest peak, the prison dungeon) are Story cards. (How the story places them: [Map & exploration](02 Map & exploration.md) → Placement.)
+- **Story cards:** found through the main quest line. They never go to the hand: the story places them at fixed locations, so players have to travel to reach them. Starting hexes and all story locations (e.g. Konigsberg, the cultist dungeon, the second wizard tower, the highest peak, the prison dungeon) are Story cards. (How the story places them: [Map & exploration](02 Map & exploration.md) → Placement.)
 - **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into a landmark rolled from its region variant's pool (see [Map & exploration](02 Map & exploration.md) → Clustered regions). The former Rare cards now live in those pools (see Landmark list).
 - **Legendaries** are mostly the locations of rare tier 3 region variants, which a quest can guarantee; the Sword in the Stone is placed by a quest (see Landmark list and [Map & exploration](02 Map & exploration.md) → Tier 3 variants). How each quest starts: see [World & story](01 World & story.md) → Quests.
 - Gear still has rarity tiers (see [Weapons & gear](04 Weapons & gear.md) → Equipment).
@@ -249,7 +249,7 @@ Region locations per variant: see [Map & exploration](02 Map & exploration.md) �
 | --- | --- | --- |
 | Lady of the Lake | The water maiden who starts the Sword in the Stone quest | Location of the enchanted lake (river/lake tier 3) |
 | Sword in the stone | Excalibur, a legendary sword ([World & story](01 World & story.md) → The sword pull scene) | Placed by the Lady of the Lake's quest |
-| Named cities | Cities with names, separate from the Story-tier city Gronogon. E.g. Hoboken, a merchant town with all sorts of shops and high-level gear to buy | Location of the great city (village tier 3); a Trading House quest guarantees it |
+| Named cities | Cities with names, separate from the Story-tier city Konigsberg. E.g. Hoboken, a merchant town with all sorts of shops and high-level gear to buy | Location of the great city (village tier 3); a Trading House quest guarantees it |
 | The Circus | The circus | Location of the fairgrounds (plains tier 3); a Farm landmark quest guarantees it |
 | Legendary dwarf forge | Epic side quest that rewards an epic forged weapon | Location of the dwarven hold (hills tier 3); a Clan Hall quest guarantees it |
 | Ancient library | An ancient library | Location of the buried city (desert tier 3) |

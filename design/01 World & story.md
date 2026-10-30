@@ -12,7 +12,8 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - **Keep names sayable:** use anglicised spellings rather than native ones (Dunfaire, not Dún Faire); a new player should say a name right on the first try (no silent letters, umlauts or vowel clusters like "ao"); people's names are short (1–3 syllables).
 - **Handy word parts** (optional): Irish/Gaelic dun (fort), kil (church), bally (town), glen (valley), ard (high), knock (hill), derry (oak), inver (river mouth), more (big), beg (small); German -hof (farm), -berg (mountain), -brunn (well), -wald (forest), -feld (field), -stein (stone), -bach (stream), -heim (home).
 - **Examples:** Dunfaire (dún "fort" + faire "watch"), Sternbrunn (Stern "star" + Brunnen "well"), Weizenhof (Weizen "wheat" + Hof "farmstead"); The Oak & Lantern stays plain English. A happy accident: Egan, Hayes and Keegan all come from the Irish Aodh, "fire", fitting the flame god and his bloodlines.
-- **Under review** (Oct 30, 2026): a redraft of the gods (only Morin, Tod and Egan fit the roots now; the gods may stay an exception), and of Gronogon and King Grel. Compared with the current names before anything changes.
+- **Gods are an exception** (decided Oct 30, 2026): their names come from an older, mixed tongue, so all nine stay (Aurora, Selene, Morin, Toyoko, Adam, Canto, Eve, Tod, Egan). A rooted redraft was tried and compared (Grianne, Mona, Arva, Doan, Keol, Carra) and not taken.
+- **Konigsberg** (renamed Oct 30, 2026, from Gronogon): the convergence city, German "king's mountain". It echoes a real historical city, which is fine. King Grel keeps his name.
 - Town names: [characters → Places](characters/Places.md).
 
 ## Magic and the gods (lore)
@@ -112,7 +113,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - Each background path follows the Hero's Journey and has its own mentor, who dies or leaves partway through, as in the Hero's Journey; how it happens varies per path.
 - Each path offers 2 NPC companions to recruit, leaving the third companion slot open on purpose for NPCs from other paths. After the paths converge, the player can meet the NPCs from the other paths at their home locations.
 - Every path NPC has a unique personality and role.
-- All routes converge on Gronogon, a named city Story card.
+- All routes converge on Konigsberg, a named city Story card.
 - Each path's companions are balanced around the classes most likely to take that background, but any class can take any background.
 - Each companion has a default subclass (listed in its cast table), which the player can change when it unlocks at level 5.
 - NPC companions' restriction, which keeps their power level distinct from the hero's: they get no class or subclass quests. Their NPC-related personal quests are their power-up instead.
@@ -124,14 +125,14 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - Commander (Soldier): a true believer, secretly a cultist all along.
 - Tower master (Sage): the teleport went wrong and the tower is trapped in the rift; a late-game reunion.
 - Parent (Noble): the estate falls to curses after they stay behind, and the parent is lost.
-- Dream voice (Acolyte): the rift is draining the gods' reach; all eight are weakening, and the Acolyte is the first to notice when their god goes silent at Gronogon. This is story only: cleric and Holy Defender power works normally in play.
+- Dream voice (Acolyte): the rift is draining the gods' reach; all eight are weakening, and the Acolyte is the first to notice when their god goes silent at Konigsberg. This is story only: cleric and Holy Defender power works normally in play.
 - The client (Criminal): the cult's high priest. Like a cleric's bond, he is helping Egan the most, so Egan grants him the most power, which is what makes him the avatar.
 
 **Folk Hero path cast**
 
 | NPC | Role | Personality / notes |
 | --- | --- | --- |
-| The innkeeper | Mentor | An old friend of the hero; mentors in an "oh, you know about this, right?" way. Killed by cultists right before convergence, which sends the Folk Hero to Gronogon to learn why a banned religion is on the rise. |
+| The innkeeper | Mentor | An old friend of the hero; mentors in an "oh, you know about this, right?" way. Killed by cultists right before convergence, which sends the Folk Hero to Konigsberg to learn why a banned religion is on the rise. |
 | Fluffy (the cat) | Companion: wizard (Blaster), special race | Snooty; insists his real name is King Alexander the All Conquering Legend and He Who Rules, but no one calls him that |
 | Chelmsford | Companion: cleric (Order of Good), blue (lightning) dragonborn | A British chap whose mother the hero saved years ago; swears loyalty to the hero |
 
@@ -139,7 +140,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 
 | NPC | Role | Personality / notes |
 | --- | --- | --- |
-| The tower's commander | Mentor | Revealed as a traitor. While the hero is away tracking the attackers, he lets more cultists into the guard tower and they kill most of the guards. He did not expect the hero to return alive. After killing him, the Soldier travels to Gronogon. |
+| The tower's commander | Mentor | Revealed as a traitor. While the hero is away tracking the attackers, he lets more cultists into the guard tower and they kill most of the guards. He did not expect the hero to return alive. After killing him, the Soldier travels to Konigsberg. |
 | Mel | Companion: rogue (Con Artist), wood elf | A small elf girl, lost and scared, who tries to steal food from the hero |
 | Grant Augustus | Companion: bard (Narrator), human | Enraptured by the hero; decides to follow them and sing their praises |
 
@@ -147,7 +148,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 
 | NPC | Role | Personality / notes |
 | --- | --- | --- |
-| Dream voice (the Acolyte's own god, chosen by the player) | Mentor | Appears in the hero's dreams and speaks in their mind, telling them to follow a trail to a cultist dungeon (a Story card), then to go to Gronogon. There the voice is cut off by the rift and stops appearing; the reason stays unexplained to the player until later. |
+| Dream voice (the Acolyte's own god, chosen by the player) | Mentor | Appears in the hero's dreams and speaks in their mind, telling them to follow a trail to a cultist dungeon (a Story card), then to go to Konigsberg. There the voice is cut off by the rift and stops appearing; the reason stays unexplained to the player until later. |
 | Kris Huntington | Companion: ranger (Hunter), wood golem | Wears animal pelts, has an Austrian accent; her mind is always on the next hunt |
 | Timothy | Companion: bard (Musician), halfling | From the Acolyte's church choir; timid, except when he gets to singing |
 
@@ -175,16 +176,16 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 | Leo Conley | Companion: ranger (Companion subclass, wolf companion), tiefling of the Conley bloodline | Australian accent; not a big fan of people. Met at the first hex, then helps the Noble fight off cultists. |
 | Reginald | Companion: wizard (Ritualist), human | The Noble's butler, the oldest member of the estate and long trusted by the family. Starts in the party with the Noble; plays a subservient role. |
 
-**Routes to convergence (Gronogon)**
+**Routes to convergence (Konigsberg)**
 
 | Path | Route |
 | --- | --- |
-| Soldier | Guard tower attacked by cultists → returns to find the commander has betrayed the tower → kills him → travels to Gronogon |
-| Acolyte | Church → follows the dream voice to a cultist dungeon (Story card) → told to go to Gronogon, where the rift cuts the voice off |
-| Criminal | Steals the key → the client consumes it, opening the rift, and teleports away → the hero is arrested and taken to Gronogon, where they are offered freedom if they track down the cultists and stop the plot |
-| Sage | Tower teleported away → tome hunt leads to a second wizard tower (Story card) → travels to Gronogon looking for traces of the master's tower; the tower may connect to a safehouse there (à la Howl's Moving Castle), which the hero finds abandoned |
-| Folk Hero | Rescues the cat → cultists kill the innkeeper → goes to Gronogon to learn why a banned religion is on the rise |
-| Noble | Investigates corrupted hexes disrupting merchant lines → traveling merchant Story card → instructed to go to Gronogon to alert the nobility to a rise in curses, and is roped into the main plot there |
+| Soldier | Guard tower attacked by cultists → returns to find the commander has betrayed the tower → kills him → travels to Konigsberg |
+| Acolyte | Church → follows the dream voice to a cultist dungeon (Story card) → told to go to Konigsberg, where the rift cuts the voice off |
+| Criminal | Steals the key → the client consumes it, opening the rift, and teleports away → the hero is arrested and taken to Konigsberg, where they are offered freedom if they track down the cultists and stop the plot |
+| Sage | Tower teleported away → tome hunt leads to a second wizard tower (Story card) → travels to Konigsberg looking for traces of the master's tower; the tower may connect to a safehouse there (à la Howl's Moving Castle), which the hero finds abandoned |
+| Folk Hero | Rescues the cat → cultists kill the innkeeper → goes to Konigsberg to learn why a banned religion is on the rise |
+| Noble | Investigates corrupted hexes disrupting merchant lines → traveling merchant Story card → instructed to go to Konigsberg to alert the nobility to a rise in curses, and is roped into the main plot there |
 
 **Companion proficiencies** (decided Oct 28, 2026: 2 each, hand-picked to fit who they are; rule: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies)
 
@@ -229,10 +230,10 @@ Heroes from other paths find each path NPC at one home location, grown by a regi
 - King Grel: a wise scholar-king who keeps the realm's histories.
 - Elf hermit: elves live long, and he fought when the eight gods cast Egan out, which is why he remembers the god and knows where the prison lies.
 
-## Shared main story (after Gronogon)
+## Shared main story (after Konigsberg)
 
-- All six paths converge on Gronogon. On arrival, every hero meets (or is met by) the king, King Grel, who asks or charges them to investigate the cultist plot. From there the main story plays out mostly the same for every background, with slight variances in how the hero responds to certain situations depending on their background.
-- (The old Dungeon card reward on reaching Gronogon was dropped on Oct 24, 2026, since dungeons are now region landmarks.)
+- All six paths converge on Konigsberg. On arrival, every hero meets (or is met by) the king, King Grel, who asks or charges them to investigate the cultist plot. From there the main story plays out mostly the same for every background, with slight variances in how the hero responds to certain situations depending on their background.
+- (The old Dungeon card reward on reaching Konigsberg was dropped on Oct 24, 2026, since dungeons are now region landmarks.)
 - King Grel is a trustworthy ally.
 - Background variances appear as different dialogue lines, extra dialogue options, and different NPC reactions (how dialogue is written: see [characters → Writing guide](characters/00%20Writing%20guide.md)).
 - First lead: climb the highest peak in the region (a Story card) to study the rift. The climb includes a cultist ambush, a hermit/NPC, and a low-level eldritch horror. On the mountain they learn the prison is a certain dungeon: the hermit, an elf who remembers the god, tells the hero where it is, and the prison dungeon is placed on the board as a fixed location.
@@ -384,7 +385,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 - [x] ~~The Lady's deed, her fight, what happens after, and the old kings~~ (settled Oct 28, 2026: Sir Bedivere, a chimera's lair placed far away, water spirits beside her, she sinks into the lake for good if beaten, the old kings left vague; see The Lady of the Lake). Still open: the chimera and the water spirits in the enemy roster (stats, cards)
 - [x] ~~How many coins the blessing adds and the curse takes away~~ (settled Oct 28, 2026: +2 and −2; see The sword pull scene)
 - [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)
-- [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
+- [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Konigsberg
 - [ ] Background unique starter item for each background (idea parked)
 - [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)
 - [ ] Enemy roster and bosses (including the named Hayes rivals)
