@@ -22,6 +22,7 @@ static func place(parent: Node3D, kit: Dictionary, name: String, at: Vector2, an
 		return null   # some edge pieces are empty (e.g. plains wedges) and export no mesh
 	var mi := MeshInstance3D.new()
 	mi.name = name
+	mi.set_meta("piece", name)   # the node's own name gets a suffix when a tile holds the same piece twice
 	mi.mesh = kit[name]
 	mi.position = Hex.to3(at)
 	mi.rotation.y = angle

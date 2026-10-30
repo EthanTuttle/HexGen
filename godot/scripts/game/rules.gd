@@ -69,7 +69,7 @@ const LOOK_AHEAD := 1.3                  # m ahead on the path a mini faces, so 
 const TURN_RATE := 7.0                   # how fast a mini turns toward that (1/s)
 const WADDLE_STRIDE := 1.1               # m per side-to-side rock (one rock left and right is two strides)
 const WADDLE_DEG := 9.0                  # how far a mini rocks onto each side at full speed
-const WADDLE_BOB := 0.035                # m it lifts as it rocks
+const WADDLE_BOB := 0.012                # m it lifts as it rocks, on top of tipping up off its low edge
 const SETTLE_DEG := 6.0                  # the wobble on stopping
 const SETTLE_SECONDS := 0.9
 const LOOK_AROUND_DEG := 35.0            # on arrival, each looks this far aside and back
@@ -79,8 +79,14 @@ const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover
 const WADE_DEPTH := 0.07                 # m a mini sinks in a ford
 const FOOTPRINT_SECONDS := 14.0          # how long a footprint stays in the sand
 # DOCS: the route goes round peaks, mountains and ridges, staying on the hills' grass.
-const MOUNTAIN_CLEARANCE := 0.45         # m a mini keeps from a peak, mountain or ridge
+const MOUNTAIN_CLEARANCE := 0.7          # m the route keeps from a peak, mountain or ridge (a base is 0.52 m to its corners)
 const ROUTE_GRID := 0.25                 # m between the points the detour is searched on (not a look)
+# DOCS: each mini's base tilts to lie flat on the slope, like a real mini on a sloped board, never cutting in.
+const BASE_MARGIN := 0.04                # m past a base's rim that the ground is felt for (its tilt and height)
+const MAX_TILT_DEG := 28.0               # the steepest a base tilts
+const TILT_RATE := 12.0                  # how fast a base settles onto a new slope (1/s), so facet edges don't jitter
+const HEIGHT_RATE := 14.0                # how fast a mini sinks to lower ground (1/s); it never trails below ground
+const SQUEEZE_RATE := 2.5                # how fast a companion pushed in toward the route by a mountain spreads back out (1/s)
 const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game hours (8/24 of a 30-minute day)
 
 # --- Encounters (design/02 -> Hex contents and encounters) --------------------

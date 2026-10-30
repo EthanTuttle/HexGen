@@ -291,7 +291,7 @@ func _add_ground_collision(node: Node3D) -> void:
 		if not c is MeshInstance3D:
 			continue
 		var mi := c as MeshInstance3D
-		var n := String(mi.name)
+		var n: String = mi.get_meta("piece", String(mi.name))   # not the node name: repeats are renamed
 		var whole := n == "sand" or "_peak" in n or "_mountain_" in n or "_ridge_" in n
 		if not whole and not (n.begins_with("hills_") or n.begins_with("highlands_")):
 			continue

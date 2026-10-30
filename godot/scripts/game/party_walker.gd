@@ -6,7 +6,9 @@ extends Node3D
 ## middle of each edge it crosses) and eases in and out; the companions follow the hero's trail a beat behind
 ## each, so the group stretches when the hero speeds up and bunches when it slows. Everyone faces a little way
 ## ahead on the route, so they turn before a corner. The route goes round peaks, mountains and ridges, so on
-## hills the party stays on the grass. They follow the ground's height (the hills' grass, sand),
+## hills the party stays on the grass, and a companion walking beside the route is pushed in toward it rather
+## than cut into a mountain's flank. They follow the ground's height (the hills' grass, sand), each base tilted
+## to lie flat on the slope like a real mini on a sloped board, so no part of a base sinks into the ground,
 ## slow in swamp and forest, sink a little and splash in fords, kick up dust and leave footprints in sand, and
 ## the grass bends away from them. On stopping they settle with a wobble, spread back into their loose cluster
 ## and look around; while they stand, one now and then looks somewhere else. Numbers: Rules (all placeholders).
@@ -15,7 +17,7 @@ extends Node3D
 signal entered(tile: Vector2i)          # the hero stepped onto a new hex
 
 var map: MapBoard
-var members: Array[Dictionary] = []     # {node, body, offset, phase, side, yaw}
+var members: Array[Dictionary] = []     # {node, tilt, body, radius, offset, phase, side, yaw, up, squeeze}
 var walking := false
 var facing := -PI / 2                   # the cluster's facing (plan angle) while standing; south to start
 
@@ -45,10 +47,18 @@ func setup(board: MapBoard, tile: Vector2i) -> void:
 		var c: Vector2i = m[1]
 		var node := Minis.make(m[0], Vector2.ZERO, Vector2(0, -1))
 		add_child(node)
+		# Between the mini's spot (which turns it) and its body (which waddles): the tilt onto the slope.
+		var body: MeshInstance3D = node.get_node("body")
+		var tilt := Node3D.new()
+		tilt.name = "tilt"
+		node.add_child(tilt)
+		body.reparent(tilt, false)
+		var box := body.mesh.get_aabb()
 		# The standing cluster faces south; offsets are relative to the hero, in that frame.
-		members.append({node = node, body = node.get_node("body"),
+		members.append({node = node, tilt = tilt, body = body,
+				radius = maxf(box.size.x, box.size.z) * 0.5,   # the base's corners (it fills a combat cell)
 				offset = (Hex.cell_position(c.x, c.y) - HERO_CELL) * Rules.STAND_SPREAD,
-				phase = 0.0, side = 1.0, yaw = 0.0})
+				phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0})
 	place_at(tile)
 
 
@@ -71,11 +81,12 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 	walking = false
 	for m in members:
 		var p: Vector2 = spot[0] + _turned(m.offset, facing)
-		m.node.position = Hex.to3(p, ground(p))
 		m.node.rotation.y = yaw_of(angle)
 		m.yaw = m.node.rotation.y
-		m.body.rotation = Vector3.ZERO
-		m.body.position = Vector3.ZERO
+		m.up = Vector3.UP
+		m.squeeze = 1.0
+		_stand_on(m, p, _feel(m, p), 1.0, true)
+		_rock(m, 0.0, 0.0)
 
 
 ## Walks the route through these tiles (each a neighbour of the last; the first a neighbour of where the party
@@ -135,8 +146,8 @@ func _set_path(pts: PackedVector2Array) -> void:
 func blocked(p: Vector2) -> bool:
 	if _on_mountain(p):
 		return true
-	for k in 8:
-		if _on_mountain(p + Vector2.from_angle(k * TAU / 8.0) * Rules.MOUNTAIN_CLEARANCE):
+	for k in 12:
+		if _on_mountain(p + Vector2.from_angle(k * TAU / 12.0) * Rules.MOUNTAIN_CLEARANCE):
 			return true
 	return false
 
@@ -337,6 +348,8 @@ func _process(delta: float) -> void:
 		_step(delta)
 	else:
 		_idle(delta)
+		for m in members:   # they turn to look around while standing
+			_tilt(m)
 	_grass()
 
 
@@ -376,23 +389,33 @@ func _place_member(m: Dictionary, s: float, total: float, delta: float) -> void:
 	var off := _turned(m.offset, frame)
 	var across := Vector2.from_angle(tangent + PI / 2)
 	var walking_off := across * off.dot(across) * Rules.WALK_SPREAD
-	var p := _point_at(s) + off.lerp(walking_off, w_start * w_end)
+	var side := off.lerp(walking_off, w_start * w_end)
 	var old: Vector3 = m.node.position
-	var y := ground(p)
-	var wet := in_water(p)
-	if wet:
-		y -= Rules.WADE_DEPTH
-	m.node.position = Hex.to3(p, lerpf(old.y, y, minf(1.0, delta * 14.0)))
 	# Facing: a little way ahead on the route, so it turns before a corner.
 	var want := yaw_of(lerp_angle(_angle_at(minf(s + Rules.LOOK_AHEAD, total)), _end_facing, 1.0 - w_end))
 	m.node.rotation.y = lerp_angle(m.node.rotation.y, want, minf(1.0, delta * Rules.TURN_RATE))
+	# Its own spot must be clear of the mountains (the route's clearance is measured from the route line, and a
+	# companion walks beside it): pushed in toward the route as far as it takes, spreading back out slowly.
+	var squeeze := minf(1.0, m.squeeze + delta * Rules.SQUEEZE_RATE)
+	var p := _point_at(s) + side * squeeze
+	var felt := _feel(m, p)
+	if felt.mountain and squeeze > m.squeeze:
+		squeeze = m.squeeze
+		p = _point_at(s) + side * squeeze
+		felt = _feel(m, p)
+	while felt.mountain and squeeze > 0.0:
+		squeeze = maxf(0.0, squeeze - 0.25)
+		p = _point_at(s) + side * squeeze
+		felt = _feel(m, p)
+	m.squeeze = squeeze
+	var wet := in_water(p)
+	_stand_on(m, p, felt, delta, false, Rules.WADE_DEPTH if wet else 0.0)
 	# The waddle: rock side to side with the distance slid; each rock is a footstep.
 	var moved := Vector2(old.x, old.z).distance_to(Vector2(m.node.position.x, m.node.position.z))
 	var speed := clampf(moved / maxf(delta, 1e-4) / Rules.WALK_SPEED, 0.0, 1.0)
 	m.phase += moved / Rules.WADDLE_STRIDE * PI
 	var rock := sin(m.phase)
-	m.body.rotation.z = deg_to_rad(Rules.WADDLE_DEG) * rock * speed
-	m.body.position.y = Rules.WADDLE_BOB * absf(rock) * speed
+	_rock(m, deg_to_rad(Rules.WADDLE_DEG) * rock * speed, Rules.WADDLE_BOB * absf(rock) * speed)
 	if signf(rock) != m.side and moved > 0.0:
 		m.side = signf(rock)
 		_footstep(m, p, wet)
@@ -407,6 +430,81 @@ func ground(p: Vector2) -> float:
 	var q := PhysicsRayQueryParameters3D.create(Hex.to3(p, 40.0), Hex.to3(p, -2.0))
 	var hit := space.intersect_ray(q)
 	return maxf(0.0, (hit.position as Vector3).y) if not hit.is_empty() else 0.0
+
+
+## Feels the ground under a mini's base at `p`, as it faces now: the height just past each corner of its hex
+## and the middle of each side, and under its centre (as world offsets from the centre), and whether any of
+## them is on a mountain.
+func _feel(m: Dictionary, p: Vector2) -> Dictionary:
+	var space := get_world_3d().direct_space_state
+	var node: Node3D = m.node
+	var turn := node.rotation.y   # the base's local x axis as a plan angle
+	var at := PackedVector3Array()
+	var on := false
+	for k in 13:
+		var r: float = (m.radius if k % 2 == 1 else m.radius * 0.866) + Rules.BASE_MARGIN
+		var o := Vector2.ZERO if k == 0 else Vector2.from_angle(turn + (k - 1) * TAU / 12.0) * r
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Hex.to3(p + o, 40.0), Hex.to3(p + o, -2.0)))
+		var y := 0.0
+		if not hit.is_empty():
+			y = maxf(0.0, (hit.position as Vector3).y)
+			on = on or (hit.collider as Object).get_meta("mountain", false)
+		at.append(Vector3(o.x, y, -o.y))
+	return {at = at, mountain = on}
+
+
+## Sets a mini on the ground it felt: its base tilts toward the slope through those points (eased by `k`, so it
+## doesn't jitter on facet edges), then sits as low as it can with none of them above the tilted base. It sinks
+## to lower ground eased, but never trails below the ground. `sink` lowers it on purpose (wading).
+func _stand_on(m: Dictionary, p: Vector2, felt: Dictionary, k: float, snap := false, sink := 0.0) -> void:
+	var at: PackedVector3Array = felt.at
+	# The slope: a plane fitted through the points (least squares; they ring the centre symmetrically).
+	var sxx := 0.0
+	var szz := 0.0
+	var sxz := 0.0
+	var sxy := 0.0
+	var szy := 0.0
+	for q in at:
+		sxx += q.x * q.x
+		szz += q.z * q.z
+		sxz += q.x * q.z
+		sxy += q.x * q.y
+		szy += q.z * q.y
+	var det := sxx * szz - sxz * sxz
+	var bx := (sxy * szz - szy * sxz) / det
+	var bz := (szy * sxx - sxy * sxz) / det
+	var want := Vector3(-bx, 1.0, -bz).normalized()
+	var most := deg_to_rad(Rules.MAX_TILT_DEG)
+	if want.angle_to(Vector3.UP) > most:
+		want = Vector3.UP.slerp(want, most / want.angle_to(Vector3.UP))
+	var up: Vector3 = want if snap else (m.up as Vector3).slerp(want, minf(1.0, k * Rules.TILT_RATE)).normalized()
+	m.up = up
+	var y := -INF
+	for q in at:   # the tilted base's height over each point, so none of them is above it
+		y = maxf(y, q.y + (up.x * q.x + up.z * q.z) / up.y)
+	y -= sink
+	var old: Vector3 = m.node.position
+	if not snap:
+		y = maxf(y, lerpf(old.y, y, minf(1.0, k * Rules.HEIGHT_RATE)))
+	m.node.position = Hex.to3(p, y)
+	_tilt(m)
+
+
+## Keeps the base's tilt on the slope however the mini turns (the tilt sits inside its turn).
+func _tilt(m: Dictionary) -> void:
+	var node: Node3D = m.node
+	var tilt: Node3D = m.tilt
+	tilt.basis = node.basis.inverse() * Basis(Quaternion(Vector3.UP, m.up)) * node.basis
+
+
+## Rocks a mini's body by `angle` onto one side, tipping on that side's edge of its base (like a piece
+## wiggled on the table), so the low edge stays on the ground; `lift` raises it a little more.
+func _rock(m: Dictionary, angle: float, lift: float) -> void:
+	var body: Node3D = m.body
+	var pivot := Vector3(-signf(angle) * m.radius, 0, 0)
+	var turn := Basis(Vector3.BACK, angle)
+	body.basis = turn
+	body.position = pivot - turn * pivot + Vector3(0, lift, 0)
 
 
 func in_water(p: Vector2) -> bool:
@@ -437,12 +535,12 @@ func _arrive() -> void:
 		var body: Node3D = m.body
 		var s := deg_to_rad(Rules.SETTLE_DEG)
 		var k := Rules.SETTLE_SECONDS / 4.0
+		var settle := func(a: float) -> void: _rock(m, a, 0.0)
 		var tw := create_tween()
-		tw.tween_property(body, "rotation:z", s * m.side, k)
-		tw.tween_property(body, "rotation:z", -s * 0.55 * m.side, k)
-		tw.tween_property(body, "rotation:z", s * 0.25 * m.side, k)
-		tw.tween_property(body, "rotation:z", 0.0, k)
-		tw.parallel().tween_property(body, "position:y", 0.0, k)
+		tw.tween_method(settle, body.rotation.z, s * m.side, k)
+		tw.tween_method(settle, s * m.side, -s * 0.55 * m.side, k)
+		tw.tween_method(settle, -s * 0.55 * m.side, s * 0.25 * m.side, k)
+		tw.tween_method(settle, s * 0.25 * m.side, 0.0, k)
 		# Then a look around: aside, the other way, back.
 		var node: Node3D = m.node
 		m.yaw = node.rotation.y

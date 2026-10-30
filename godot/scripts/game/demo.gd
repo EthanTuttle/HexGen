@@ -23,6 +23,8 @@ func _ready() -> void:
 		_walk.call_deferred()
 	elif "--demo=round" in OS.get_cmdline_user_args():
 		_round.call_deferred()
+	elif "--demo=hill" in OS.get_cmdline_user_args():
+		_hill.call_deferred()
 	else:
 		_run.call_deferred()
 
@@ -97,20 +99,82 @@ func _round() -> void:
 		for p in walker._path:
 			if walker._on_mountain(p):
 				touching += 1
-		print("ROUTE to %s: %d points, %d on a mountain, %.1f m" % [goal, walker._path.size(), touching, walker._len[-1]])
+		var near := 0
+		for p in walker._path:
+			if walker.blocked(p):
+				near += 1
+		print("ROUTE to %s: %d points, %d on a mountain, %d within clearance, %.1f m" % [goal, walker._path.size(), touching, near, walker._len[-1]])
 		if shots:
 			_trace(walker._path)
+		var probe := _probe()
 		while game.busy:
 			await _wait(0.1)
 			k += 1
 			if k % 12 == 0:
 				await _shot("step%02d" % (k / 12))
 		await _wait(3.0)
+		probe.call(false)
 		await _shot("arrived_%d_%d" % [goal.x, goal.y])
 	# From above, with both routes traced (red dots, stills only: a test aid, not a look).
 	game.rig.frame(Hex.to3(Hex.tile_position(3, 0)), 75.0, 89.0)
 	await _wait(1.0)
 	await _shot("routes_from_above")
+	print("DEMO DONE")
+	if shots or "--quit" in OS.get_cmdline_user_args():
+		get_tree().quit()
+
+
+## Measures, every frame until called with false, how far any mini's base rim (tilted and waddling) dips below
+## the ground and how often a mini's own spot is on a mountain; prints both when stopped.
+func _probe() -> Callable:
+	var walker := game.party_node
+	var worst := [0.0, 0, 0]   # deepest dip (m), frames with a mini on a mountain, frames
+	var tick := func() -> void:
+		worst[2] += 1
+		for m in walker.members:
+			var body: Node3D = m.body
+			var on := false
+			for k in 12:   # the hex base's corners and the middles of its sides
+				var r: float = m.radius if k % 2 == 0 else m.radius * 0.866
+				var rim: Vector3 = body.global_transform * (Vector3.RIGHT.rotated(Vector3.UP, k * TAU / 12.0) * r)
+				var plan := Vector2(rim.x, -rim.z)
+				if not walker.in_water(plan):
+					worst[0] = maxf(worst[0], walker.ground(plan) - rim.y)
+				on = on or walker._on_mountain(plan)
+			if on:
+				worst[1] += 1
+	get_tree().process_frame.connect(tick)
+	return func(_go: bool) -> void:
+		get_tree().process_frame.disconnect(tick)
+		print("BASES: deepest rim below ground %.3f m; a base on a mountain in %d of %d frames"
+				% [worst[0], worst[1], worst[2]])
+
+
+## The close-up of the party crossing a hill (each base tilted flat on the slope): the walk demo's staged strip,
+## from the camp over the lone hill to the plains beyond, with the camera low and close.
+func _hill() -> void:
+	_prefix = "hill"
+	var strip := {Vector2i(1, 0): "plains", Vector2i(1, -1): "plains", Vector2i(0, 1): "plains",
+		Vector2i(2, 0): "hills", Vector2i(3, 0): "plains", Vector2i(3, -1): "plains", Vector2i(2, 1): "plains",
+		Vector2i(2, -1): "plains", Vector2i(4, 0): "plains"}
+	game.map.retile(strip)
+	for t in strip:
+		game.order[t] = game.order.size()
+	game.toast("(demo) Staged map: a lone hill.", true)
+	game.rig.frame(game.party_node.centre(), 13.0, 30.0, -60.0)
+	await _wait(1.5)
+	await _shot("start")
+	var probe := _probe()
+	game.walk_to(Vector2i(3, 0))
+	var k := 0
+	while game.busy:
+		await _wait(0.1)
+		k += 1
+		if k % 10 == 0:
+			await _shot("step%02d" % (k / 10))
+	await _wait(4.0)
+	probe.call(false)
+	await _shot("arrived")
 	print("DEMO DONE")
 	if shots or "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
