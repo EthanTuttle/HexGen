@@ -198,7 +198,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: hero creation: final heads and hairstyles per race, and each race's swatches
 - [x] ~~Character creator screen: pick a layout~~ (settled Oct 30: v1a, guided steps)
 - [x] ~~Character creator class step~~ (settled Oct 30: v2a; spacing fixed in v3)
-- [ ] New: character creator: feedback on v3, then the Race step
+- [ ] New: character creator: v4a (full-screen choices) or v4b (the legend); then the Race step
+- [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target
 - [ ] New: how enchantments and special or Legendary items look on minis
 - [ ] New: feedback on action cards v3
