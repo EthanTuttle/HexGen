@@ -424,38 +424,6 @@ def hills(p, rng, kind):
 
 # --- Desert ------------------------------------------------------------------
 
-def dune(p, path, heights, widths):
-    """A sand ridge along path: heights[k] at the crest, widths[k] = (windward, lee) to either side."""
-    bm, sand = p.bm, p._slot("sand")
-    rows = []
-    for k, c in enumerate(path):
-        ahead, back = path[min(k + 1, len(path) - 1)], path[max(k - 1, 0)]
-        tdir = (ahead - back).normalized()
-        n = Vector((-tdir.y, tdir.x, 0))
-        wind, lee = widths[k]
-        rows.append([bm.verts.new(c - n * lee + Vector((0, 0, 0.005))),
-                     bm.verts.new(c + Vector((0, 0, heights[k]))),
-                     bm.verts.new(c + n * wind + Vector((0, 0, 0.005)))])
-    for a, b in zip(rows, rows[1:]):
-        for quad in ((a[0], b[0], b[1], a[1]), (a[1], b[1], b[2], a[2])):
-            f = bm.faces.new(quad)
-            f.material_index = sand
-            p.surface.add(f)
-
-
-def dune_arc(p, rng, a, b, bend, top, n=12):
-    """A free-standing crescent dune from a to b, tapering at both ends."""
-    side = Vector((-(b - a).y, (b - a).x, 0)).normalized()
-    path, heights, widths = [], [], []
-    for k in range(n + 1):
-        u = k / n
-        path.append(a.lerp(b, u) + side * (bend * math.sin(math.pi * u)))
-        lift = math.sin(math.pi * u) ** 0.7
-        heights.append(top * lift)
-        widths.append((0.25 + 0.65 * lift, 0.15 + 0.3 * lift))
-    dune(p, path, heights, widths)
-
-
 def cactus(p, rng, at):
     h = rng.uniform(0.8, 1.25)
     p.cylinder(at, 0.12, h, "cactus", segments=6)
@@ -468,34 +436,17 @@ def cactus(p, rng, at):
 
 
 def desert(p, rng, kind):
-    """Dunes that run on across joined desert tiles; scrub and cracked earth on edges facing other terrain."""
-    if kind == "centre":
-        dune_arc(p, rng, Vector((-1.5, -0.2, 0)), Vector((0.6, 1.2, 0)), 0.35, 0.5)
-        dune_arc(p, rng, Vector((-0.3, -1.4, 0)), Vector((1.4, -0.4, 0)), -0.25, 0.35)
-        cactus(p, rng, Vector((0.9, 0.3, 0)))
-        p.blob(Vector((-0.7, -1.0, 0)), 0.22, "rock_light", squash=0.6)
+    """The sand and its dunes are shaped by the engine in world space (reference: sand.py), so the pieces only
+    add dry scrub and cracked earth along edges facing other terrain, where the sand lies flat."""
+    if kind != "other":
         return
-    if kind == "same":
-        # Straight into the edge's middle, square on and evenly sided there, so it carries on next door.
-        path, heights, widths = [], [], []
-        for k in range(15):
-            u = k / 14
-            path.append(Vector((X0 + 0.1 + (X1 - X0 - 0.1) * u, 0.45 * math.sin(math.pi * u) ** 2, 0)))
-            lift = smooth(0, 0.45, u)
-            heights.append(0.42 * lift)
-            even = smooth(0.6, 1.0, u)
-            widths.append(((0.25 + 0.6 * lift) * (1 - even) + 0.6 * even,
-                           (0.15 + 0.3 * lift) * (1 - even) + 0.6 * even))
-        dune(p, path, heights, widths)
-        if rng.random() < 0.5:
-            cactus(p, rng, Vector((X0 + 1.0, -1.1, 0)))
-        return
-    # other: dry scrub and cracked earth, fading out toward the neighbour
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 0.4 * (X1 - X0), margin=0.6),
-                         2, 1.4, hk.WEDGE_BOUNDS):  # patches of baked, cracked hardpan
-        p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), rng.uniform(0.4, 0.6), rng, 0.25)],
+    near = X1 - 0.9  # inside sand.py's flat strip along the edge
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=near, margin=0.35, inner=0), 2, 1.3,
+                         hk.WEDGE_BOUNDS):  # patches of baked, cracked hardpan
+        p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), rng.uniform(0.3, 0.45), rng, 0.25)],
                0.012, "cracked")
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.25), 7, 0.5, hk.WEDGE_BOUNDS):
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=near, margin=0.15, inner=0), 6, 0.45,
+                         hk.WEDGE_BOUNDS):
         if rng.random() < 0.75:
             p.blob(at, rng.uniform(0.14, 0.24), "scrub", squash=0.7)
         else:
