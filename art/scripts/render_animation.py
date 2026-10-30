@@ -5,7 +5,7 @@ Writes art/preview/water_anim_vN.mp4 (never overwrites).
 
 What moves (rules: design/07 Presentation.md -> Art direction -> Water flows freely):
 - ripples flow along rivers (a two-phase flow-map scroll) and drift slowly on lakes and ponds
-- sparkle: small bright glints riding on the ripples
+- sparkle: rare, brief glints, each on its own random clock (never in step with each other)
 - a foam rim at the shore that breathes in and out, and darker water away from the shore
 - boats bob gently
 
@@ -168,9 +168,13 @@ def water_material():
 
     # Flow map: two copies of the ripple scroll along the flow, each restarting every 2 s, cross-faded
     # so the restart never shows.
+    # Each spot's cycle is offset by a slow noise, so the restarts never line up across the water.
     period = 2.0
-    ph0 = math_("FRACT", math_("DIVIDE", time, period))
-    ph1 = math_("FRACT", math_("ADD", math_("DIVIDE", time, period), 0.5))
+    offset = node("ShaderNodeTexNoise", Scale=0.25, Detail=0.0)
+    L.new(pos, offset.inputs["Vector"])
+    cycle = math_("ADD", math_("DIVIDE", time, period), math_("MULTIPLY", offset.outputs["Fac"], 3.0))
+    ph0 = math_("FRACT", cycle)
+    ph1 = math_("FRACT", math_("ADD", cycle, 0.5))
     p0 = vec("SUBTRACT", pos, vec("SCALE", flow.outputs["Vector"], scale=math_("MULTIPLY", ph0, period)))
     p1 = vec("ADD", vec("SUBTRACT", pos, vec("SCALE", flow.outputs["Vector"], scale=math_("MULTIPLY", ph1, period))),
              node("ShaderNodeCombineXYZ", X=3.7, Y=1.9, Z=0).outputs[0])
@@ -191,7 +195,6 @@ def water_material():
         return mix.outputs["Result"]
 
     wave = flowing(0.9, 3.0)
-    glint = flowing(3.5, 1.0)
 
     # Bump from the ripples catches the sun: moving highlights.
     bump = node("ShaderNodeBump", Strength=0.7, Distance=0.08)
@@ -220,8 +223,21 @@ def water_material():
     L.new(foamed.outputs["Result"], bsdf.inputs["Base Color"])
 
     # Sparkle: the brightest specks of the fine ripples glow, away from the foam.
-    spark = math_("MULTIPLY", math_("GREATER_THAN", glint, 0.68), math_("GREATER_THAN", depth.outputs["Fac"], 0.35))
-    L.new(spark, bsdf.inputs["Emission Strength"])
+    # Sparkle: the water is split into small random cells drifting with the flow. About 1 cell in 5 can
+    # glint, each with its own pace (one blink every 5-8 s) and phase, and a blink lasts about a quarter second.
+    drift = vec("SUBTRACT", pos, vec("SCALE", flow.outputs["Vector"], scale=time))
+    cells = node("ShaderNodeTexVoronoi", Scale=2.2)
+    L.new(drift, cells.inputs["Vector"])
+    rand = node("ShaderNodeSeparateColor")
+    L.new(cells.outputs["Color"], rand.inputs["Color"])
+    can = math_("GREATER_THAN", rand.outputs[0], 0.8)
+    pace = math_("DIVIDE", 6.283, math_("ADD", 5.0, math_("MULTIPLY", rand.outputs[1], 3.0)))
+    wave_t = math_("SINE", math_("ADD", math_("MULTIPLY", time, pace), math_("MULTIPLY", rand.outputs[2], 6.283)))
+    blink = math_("MAXIMUM", math_("DIVIDE", math_("SUBTRACT", wave_t, 0.985), 0.015), 0.0)
+    dot_ = math_("LESS_THAN", cells.outputs["Distance"], 0.07)
+    spark = math_("MULTIPLY", math_("MULTIPLY", can, blink),
+                  math_("MULTIPLY", dot_, math_("GREATER_THAN", depth.outputs["Fac"], 0.35)))
+    L.new(math_("MULTIPLY", spark, 2.5), bsdf.inputs["Emission Strength"])
     bsdf.inputs["Emission Color"].default_value = (1, 1, 1, 1)
     bsdf.inputs["Roughness"].default_value = 0.18
     return mat
