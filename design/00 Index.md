@@ -167,12 +167,12 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **Presentation**
 
 - [ ] Final palette and fonts for the "Game pieces" UI style
-- [ ] Rarity cue that doesn't rely on colour alone
-- [ ] What a short tap on a gear hex does on mobile
+- [ ] Rarity cue that doesn't rely on colour alone (proposed in character & gear v11: 1 dot for Rare, 2 for Legendary)
+- [ ] What a short tap on a gear hex does on mobile (proposed in character & gear v11: it picks the item up)
 - [ ] New: maximum ability score (from v10 the gear screen's abilities strip keeps coins on one line, so they get hard to count past about 6)
 - [ ] New: feedback on character & gear v8d, then confirm it as final
 - [ ] New: the Action cards and Weapon mastery screens copy the gear screen's top bar with its party switcher; now that gear v10 moved the party to a left tray, do they follow?
-- [ ] New: character & gear next steps (new-item dots, equip animations, pop-up by its item, drag to equip, a mini in the model hex); v10 did the party tray and one-line coins
+- [ ] New: feedback on character & gear v11 (Claude's all-in proposal: tap or drag to equip with lit and crossed slots, flights, new-item dots, pop-up by its item, a stand-in mini, proficiencies, gold, rarity pips); v10 did the party tray and one-line coins
 - [x] ~~Character subtitles~~ (settled Oct 30, 2026: "Race Class (Subclass) · Lv", no "Hero" or "Companion"; see Presentation → Screen text)
 - [ ] New: combat screen: where the acting character's name shows
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
