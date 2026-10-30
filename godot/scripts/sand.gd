@@ -7,8 +7,8 @@ extends RefCounted
 
 const WIND := deg_to_rad(25.0)   # the wind blows along this direction; crests run across it
 const FADE := Vector2(0.3, 2.2)  # flat within 0.3 m of a non-desert edge, full height from 2.2 m
-const ND := 28                   # grid samples across one sixth of a tile: depth
-const NV := 32                   # side to side
+const ND := 14                   # grid samples across one sixth of a tile: depth
+const NV := 16                   # side to side (swells are 6.5 m long)
 const PROP_CELL := 2.4
 const DESERTS := ["desert", "wasteland"]  # the desert terrain and its variants
 
@@ -61,31 +61,49 @@ static func surface_z(terrains: Dictionary, t: Vector2i, x: float, y: float) -> 
 	return height(x, y, terrains[t]) * fade(terrains, t, x, y)
 
 
-## The sand surface of desert tile t, tile-local, into piece p. Each sixth of the tile is a grid between
+## The sand's normal at world point (x, y), from the slope of the surface (plan coordinates).
+static func _normal(terrains: Dictionary, t: Vector2i, x: float, y: float) -> Vector3:
+	const E := 0.08
+	var dx := surface_z(terrains, t, x + E, y) - surface_z(terrains, t, x - E, y)
+	var dy := surface_z(terrains, t, x, y + E) - surface_z(terrains, t, x, y - E)
+	return Vector3(-dx, -dy, 2 * E).normalized()
+
+
+## The sand surface of desert tile t, tile-local, into piece p.
+## Engine change: smooth normals. tiles v9's coarser grid (14 x 16) showed as stair-steps along the
+## crests with flat shading; normals from the height function keep the swells soft at any grid size. Each sixth of the tile is a grid between
 ## the centre and one edge; edge samples sit where the neighbour's do, so joined tiles share their border.
 static func add_surface(p: Piece, terrains: Dictionary, t: Vector2i, col: Color) -> void:
 	var c := Hex.tile_position(t.x, t.y)
 	var centre := Vector3(0, 0, surface_z(terrains, t, c.x, c.y) + 0.01)
+	var centre_n := _normal(terrains, t, c.x, c.y)
 	for i in 6:
 		var n := Water.normal(i)
 		var tn := Vector2(-n.y, n.x)
 		var rows := []
+		var normals := []
 		for a in ND + 1:
 			var row := []
+			var nrow := []
 			for b in NV + 1:
 				if a == 0:
 					row.append(centre)
+					nrow.append(centre_n)
 					continue
 				var d := Water.A * a / ND
 				var v := -1.0 + 2.0 * b / NV
 				var q := n * d + tn * (v * d * tan(deg_to_rad(30.0)))
 				row.append(Vector3(q.x, q.y, surface_z(terrains, t, c.x + q.x, c.y + q.y) + 0.01))
+				nrow.append(_normal(terrains, t, c.x + q.x, c.y + q.y))
 			rows.append(row)
+			normals.append(nrow)
 		for a in ND:
 			for b in NV:
+				p.tri_smooth(rows[a][b], rows[a + 1][b], rows[a + 1][b + 1],
+						normals[a][b], normals[a + 1][b], normals[a + 1][b + 1], col)
 				if a > 0:
-					p.tri(rows[a][b], rows[a + 1][b], rows[a + 1][b + 1], col)
-				p.tri(rows[a][b], rows[a + 1][b + 1], rows[a][b + 1], col)
+					p.tri_smooth(rows[a][b], rows[a + 1][b + 1], rows[a][b + 1],
+							normals[a][b], normals[a + 1][b + 1], normals[a][b + 1], col)
 
 
 ## [kind, local x, local y, z, cell] of the props on desert tile t, from a world hash.
@@ -153,11 +171,9 @@ static func _wasteland_prop(p: Piece, rng: PyRandom, kind: String, at: Vector3) 
 	var along := Vector3(cos(spin), sin(spin), 0)
 	match kind:
 		"cracked":
-			var ring := Water.circle(Vector2(at.x, at.y), rng.uniform(0.7, 1.1), rng, 0.25)
-			var top := []
-			for q in ring:
-				top.append(Vector3(q.x, q.y, at.z + 0.045))  # just above the sand (drawn 0.01 up)
-			p.poly(top, Hex.colour("cracked"))
+			# lifted with the sand under it, so the patch shows
+			p.prism(Water.circle(Vector2(at.x, at.y), rng.uniform(0.7, 1.1), rng, 0.25), at.z, at.z + 0.045,
+					Hex.colour("cracked"))
 		"column":  # a sandstone column, standing or broken off
 			p.cylinder(at, 0.2, [0.5, 0.9, 1.4][rng.randbelow(3)], stone, 8, -0.25)
 			if rng.random() < 0.5:

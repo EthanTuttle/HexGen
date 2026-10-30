@@ -20,11 +20,11 @@ var sun: DirectionalLight3D
 const KEYS := [
 	[0.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],    # night: moonlight
 	[4.5, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],
-	[6.5, "#F6D5C0", "#FFD2A8", 1.1, 24.0, -30.0],   # dawn: soft peach
+	[6.5, "#F6D5C0", "#FFE2C8", 1.1, 24.0, -30.0],   # dawn: soft peach (sun softened: #FFD2A8 turned the land olive)
 	[9.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 0.0],
 	[12.0, "#CFE4F2", "#FFFFFF", 1.18, 37.7, 28.4],   # midday: the preview backdrop and sun
 	[15.0, "#CFE4F2", "#FFFFFF", 1.18, 30.0, 60.0],
-	[18.0, "#F1C6CF", "#FFC0A8", 1.1, 24.0, 90.0],   # dusk: rose
+	[18.0, "#F1C6CF", "#FFD8CC", 1.1, 24.0, 90.0],   # dusk: rose (sun softened: #FFC0A8 turned the land brown)
 	[20.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],
 	[24.0, "#5F6B8F", "#AFC0E8", 0.35, 35.0, 28.4],
 ]

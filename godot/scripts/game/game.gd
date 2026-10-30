@@ -58,7 +58,7 @@ func _ready() -> void:
 	rng.seed = hash(seed_arg)
 	clock = Stage.create(self)
 	clock.running = false
-	clock.keys = _sky_keys()
+	clock.keys = sky_keys()
 
 	map.time_of_day = clock
 	add_child(map)
@@ -102,7 +102,7 @@ func _ready() -> void:
 
 
 ## TimeOfDay keys with the mockup's backdrop colours (lighting stays as in the look tests).
-func _sky_keys() -> Array:
+static func sky_keys() -> Array:
 	var keys := []
 	for k in TimeOfDay.KEYS:
 		var row: Array = k.duplicate()

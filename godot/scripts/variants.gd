@@ -7,6 +7,11 @@ extends RefCounted
 const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highlands", "farmland": "windmill_country",
 	"village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "excavation"}
 
+## Each variant's ground colour (variants.VARIANTS, third field): the engine recolours its terrain's base slab.
+const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands": "highland_grass",
+	"windmill_country": "plains", "market_town": "cobble", "delta": "plains", "bog": "bog",
+	"wasteland": "wasteland", "excavation": "plains"}
+
 static var _base := {}
 
 

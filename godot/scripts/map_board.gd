@@ -53,6 +53,7 @@ var _slot_mat: Material
 var _still_water: StandardMaterial3D
 var _glow: StandardMaterial3D
 var _mist_mat: ShaderMaterial
+var _hill_mat: ShaderMaterial
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
 
@@ -142,6 +143,8 @@ func _setup() -> void:
 	_slot_mesh = p.mesh()
 	_slot_mat = Piece.material()
 	_setup_materials()
+	_hill_mat.set_shader_parameter("terrain_map", _ground_tex)
+	_hill_mat.set_shader_parameter("blend_width", BLEND_WIDTH)
 
 
 ## Engine-side looks the art leaves to us: still water for the swamp's pools (PLACEHOLDER: a glossy
@@ -155,24 +158,43 @@ func _setup_materials() -> void:
 	_glow.emission_enabled = true
 	_glow.emission = Hex.colour("toadstool")
 	_glow.emission_energy_multiplier = 0.0
-	for mesh: Mesh in _kit.values():
+	_hill_mat = ShaderMaterial.new()
+	_hill_mat.shader = load("res://shaders/hill_ground.gdshader")
+	_hill_mat.set_shader_parameter("grass_a", _linear(Hex.colour("hill_grass")))
+	_hill_mat.set_shader_parameter("grass_b", _linear(Hex.colour("highland_grass")))
+	for piece: String in _kit:
+		var mesh: Mesh = _kit[piece]
 		for k in mesh.get_surface_count():
 			var name := Kit.material_name(mesh, k)
+			if name == "kit" and (piece.begins_with("hills_") or piece.begins_with("highlands_")):
+				mesh.surface_set_material(k, _hill_mat)   # hill grass fades into the neighbours (engine side)
+				continue
 			if name in ["bog_water", "bog_dark"]:
 				var m := _still_water.duplicate() as StandardMaterial3D
 				m.albedo_color = (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
 				mesh.surface_set_material(k, m)
 			elif name == "toadstool":
 				mesh.surface_set_material(k, _glow)
+			elif name == "kit":
+				# tiles v9: one shared material, the colours in the vertex colours (glTF COLOR_0, linear)
+				var m := mesh.surface_get_material(k) as BaseMaterial3D
+				m.vertex_color_use_as_albedo = true
+				m.albedo_color = Color.WHITE
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
 
-## A bog tile's low mist: three flat layers of drifting haze (PLACEHOLDER heights and look).
+static func _linear(c: Color) -> Vector3:
+	var l := c.srgb_to_linear()
+	return Vector3(l.r, l.g, l.b)
+
+
+## A bog tile's low mist: two flat layers of drifting haze (PLACEHOLDER heights and look; three layers at
+## 0.3 strength hid the bog at dawn and dusk).
 func _mist(at: Vector2) -> Node3D:
 	var node := Node3D.new()
 	node.name = "mist"
-	for k in 3:
+	for k in 2:
 		var mi := MeshInstance3D.new()
 		var quad := PlaneMesh.new()
 		quad.size = Vector2(9.5, 10.5)
@@ -181,7 +203,7 @@ func _mist(at: Vector2) -> Node3D:
 		m.set_shader_parameter("layer", float(k))
 		mi.material_override = m
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mi.position = Hex.to3(at, 0.2 + 0.22 * k)
+		mi.position = Hex.to3(at, 0.15 + 0.2 * k)
 		node.add_child(mi)
 	return node
 
@@ -189,8 +211,14 @@ func _mist(at: Vector2) -> Node3D:
 ## Ground colour per tile in a small lookup texture; the shader fades it toward the neighbours.
 ## The colour of each terrain is the top material of its base slab in the kit.
 func _set_ground(t: Vector2i) -> void:
-	var top := (_kit["base_" + terrains[t]] as Mesh).surface_get_material(0) as BaseMaterial3D
-	var c := top.albedo_color
+	var name: String = terrains[t]
+	var c: Color
+	if Variants.GROUND.has(name):
+		c = Hex.colour(Variants.GROUND[name])
+	elif name == "hills":
+		c = Hex.colour("hill_grass")   # the mound's grass covers the whole tile, so that's the ground to fade
+	else:
+		c = ((_kit["base_" + name] as Mesh).surface_get_material(0) as BaseMaterial3D).albedo_color
 	_ground_img.set_pixel(t.x + 32, t.y + 32, Color(c.r, c.g, c.b, 1))
 	_ground_tex.update(_ground_img)
 
@@ -207,7 +235,7 @@ func _build_tile(t: Vector2i) -> void:
 	var name: String = terrains[t]
 	var terrain := Variants.terrain_of(name)
 	var at := Hex.tile_position(t.x, t.y)
-	var base := Kit.place(node, _kit, "base_" + name, at)
+	var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
 	base.set_surface_override_material(0, _ground)
 	node.add_child(GroundCover.build_tile(terrains, water_shapes, t))
 	if terrain == "river":
@@ -371,6 +399,7 @@ func _process(delta: float) -> void:
 		# Toadstools glow as the light fades (PLACEHOLDER strength): 0 at midday, full at night.
 		var night := clampf((1.18 - time_of_day.sun.light_energy) / (1.18 - 0.35), 0.0, 1.0)
 		_glow.emission_energy_multiplier = 2.5 * night
+		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 	var s := _time
 	for k in boats.size():
 		boats[k].position.y = 0.03 * sin(TAU * s / 2.0 + k)

@@ -13,6 +13,7 @@ uniform float period = 2.0;
 uniform float bump_strength = 2.0;  // Blender: 0.7; raised by eye, its Bump node reads stronger than this port
 uniform float bump_distance = 0.08;
 uniform float sparkle_strength = 2.5;
+uniform float night = 0.0;  // 0 by day, 1 at night: set by the map so the water doesn't outshine the land
 
 varying vec3 world_pos;
 varying float depth;
@@ -115,10 +116,10 @@ void fragment() {
 	float dot_ = best < 0.22 ? 1.0 : 0.0;
 	float spark = can * blink * dot_ * (depth > 0.35 ? 1.0 : 0.0);
 
-	ALBEDO = col;
+	ALBEDO = col * mix(1.0, 0.7, night);
 	ROUGHNESS = 0.18;
 	// Blender lights reflections with the backdrop at half strength (world strength 0.5 off camera);
 	// Godot reflects the background at full strength, so the reflectance is halved to match.
-	SPECULAR = 0.25;
+	SPECULAR = 0.25 * mix(1.0, 0.4, night);
 	EMISSION = vec3(spark * sparkle_strength);
 }

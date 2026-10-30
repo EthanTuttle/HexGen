@@ -42,6 +42,16 @@ func tri(a: Vector3, b: Vector3, c: Vector3, col: Color) -> void:
 	_empty = false
 
 
+## One triangle with its own vertex normals (plan coordinates), for smooth ground like the sand.
+func tri_smooth(a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3, col: Color) -> void:
+	_st.set_color(col)
+	for k in [[a, na], [c, nc], [b, nb]]:   # clockwise for Godot's front face
+		var n: Vector3 = k[1]
+		_st.set_normal(Vector3(n.x, n.z, -n.y).normalized())
+		_st.add_vertex(_v(k[0]))
+	_empty = false
+
+
 func poly(pts: Array, col: Color) -> void:
 	for k in range(1, pts.size() - 1):
 		tri(pts[0], pts[k], pts[k + 1], col)

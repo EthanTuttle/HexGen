@@ -4,7 +4,7 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
 
 uniform vec4 tint : source_color = vec4(0.93, 0.95, 0.92, 1.0);
-uniform float strength = 0.3;
+uniform float strength = 0.2;
 uniform float layer = 0.0;
 
 varying vec3 world;

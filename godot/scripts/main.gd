@@ -26,6 +26,7 @@ var clock: TimeOfDay
 var hud := Label.new()
 var mode := "map"
 var _look_yaw := 0.0
+var which := "test"
 
 
 func _ready() -> void:
@@ -34,7 +35,7 @@ func _ready() -> void:
 	map.name = "map"
 	map.time_of_day = clock
 	add_child(map)
-	var which := "test"
+	which = "test"
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--map="):
 			which = a.split("=")[1]
@@ -74,12 +75,36 @@ func _ready() -> void:
 			_look_yaw = v[4] if v.size() > 4 else 0.0
 		elif a.begins_with("--hour="):
 			clock.hour = float(a.split("=")[1])
-	if "--shots" in args:
+	if "--review" in args:
+		hud.visible = false
+		_review.call_deferred(which)
+	elif "--shots" in args:
 		hud.visible = false
 		_shots.call_deferred()
 	else:
 		show_view(view)
 		hud.visible = not ("--nohud" in args)
+
+
+## Close-ups from the game camera (the loop's 50 degree tilt, nearer than the overview), at dawn, midday,
+## dusk and night, into screens/review/ (`-- --map=terrains|variants --review`).
+func _review(map_name: String) -> void:
+	var out := ProjectSettings.globalize_path("res://screens/review")
+	DirAccess.make_dir_recursive_absolute(out)
+	clock.keys = Game.sky_keys()   # the loop's backdrop colours, so the light is the game's
+	var frames := {"west": Vector2(-7.8, -5.5), "centre": Vector2(6.0, 1.5), "east": Vector2(19.5, 2.0),
+		"south": Vector2(10.0, -11.0)}
+	var times := {"dawn": 6.5, "midday": 12.0, "dusk": 18.0, "night": 22.0}
+	for f in frames:
+		for t in times:
+			clock.hour = times[t]
+			rig.frame(Hex.to3(frames[f]), 34.0, 50.0)
+			for _k in 12:
+				await get_tree().process_frame
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(out.path_join("%s_%s_%s.png" % [map_name, f, t]))
+	print("REVIEW DONE")
+	get_tree().quit()
 
 
 ## Prints the frame cost of the current view after it settles (`-- --perf`).
