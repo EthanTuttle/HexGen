@@ -155,7 +155,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Simultaneous placement in multiplayer
 - [ ] New: shared party inventory in multiplayer (guests' access, what a leaving guest takes)
 - [x] ~~Night building in multiplayer~~ (settled Oct 23: each player's own controllable party's sight range)
-- [ ] New: engine prototype, which terrains the test tiles cover (scope, look tests and tools settled; see Multiplayer & tech → Engine prototype)
+- [x] ~~Engine prototype: which terrains the test tiles cover~~ (settled Oct 29: plains, forest, farmland, river/lake, village; see Multiplayer & tech → Engine prototype)
 
 **Presentation**
 
@@ -167,6 +167,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: combat screen: where the acting character's name shows
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [ ] New: exact backdrop colours per time of day, and the size of the rift's lilac shift
+- [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
 - [ ] New: minis painted, unpainted or mixed
 - [x] ~~The exact offhand arm variants for mini poses~~ (settled: shield and second weapon; see Presentation → Pose library)
 - [ ] New: fit category-free worn gear to Fluffy's cat skeleton
