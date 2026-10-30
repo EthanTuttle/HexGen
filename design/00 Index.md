@@ -208,7 +208,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator narrow banner names~~ (settled Oct 30: v11a)
 - [x] ~~Character creator Scores and Skills~~ (settled Oct 30, 2026: v15a)
 - [x] ~~Character creator Gear step hexes per row~~ (settled Oct 30, 2026: v19c, 5)
-- [ ] New: feedback on character creator v20 (gear flies to the hero card)
+- [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: Gear step done)
+- [ ] New: how armour works (what it does in a fight, light vs medium vs heavy, shields): see Weapons & gear
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
 - [ ] New: AI minis: whether they reach the Reference 3 detail target

@@ -291,6 +291,7 @@ Only martials learn shield mastery; Clerics use shields without the tree.
 - [ ] Gold prices: inns, camp kits and shops
 - [ ] **New (mockup placeholder "+[gold]"):** how much gold a fight gives, and how many loot items it drops (gold sources are set; amounts aren't)
 - [ ] **New (mockup placeholder "[Item stats]"):** which stats gear items have and show in their pop-up (e.g. damage, armor, ability bonuses)
+- [ ] **New (flagged by Ethan, Oct 30, 2026):** how armour works. What armour does in a fight (e.g. damage reduction, a harder coin target to hit, extra HP), how light, medium and heavy differ (and any cost, such as movement or Stealth), and how shields stack with it. Several rules already lean on it: Piercing Shot "pierces armor", Sunder "lowers the foe's armor", Heavy Bolt "ignores armor", and the metal golem's damage reduction. The character creator's armour pick shows "[Item stats]" until this is settled
 - [ ] **New (found in the split):** the fist weapons' base category cards (Guard Up, Haymaker, Step and Strike) only appear with their mastery trees. Add them to the Weapon category cards table so the table is complete?
 - [ ] Name collisions with other cards (Trip, Brace, Smite, Holy Brand Strike, Whirlwind/Whirl): tracked in Classes & combat
 - [x] ~~Weapon set swap cost~~ (settled Oct 25, 2026: 0 AP, once per turn; see Weapon rules)
