@@ -102,8 +102,9 @@ PALETTE = {
     "bone": "#F1EBDD",
     "pit": "#6B5038",
     "pit_dark": "#3A2B20",
-    "canvas": "#E9DFC8",
+    "canvas": "#E2B98A",
     "lantern": "#F6D36B",
+    "rope": "#C9B58A",
     "slot": "#F6EFE4",
     "backdrop": "#CFE4F2",
     # combat cells
@@ -116,7 +117,8 @@ PALETTE = {
 # material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
 # hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
 # them toward the neighbours' ground colours like the base slabs' tops.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "hill_grass", "highland_grass"}
+# lantern (like toadstool) glows at night, so the engine needs to find it.
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "hill_grass", "highland_grass"}
 
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
