@@ -106,6 +106,9 @@ def highlands(p, rng, kind):
     if kind in bt.MOUNTAINS:
         bt.mountain(p, rng, kind, scale=HIGHLAND_PEAKS, grass="highland_grass")
         return
+    if kind in bt.RIDGE_KINDS:
+        bt.ridge(p, rng, kind, scale=HIGHLAND_PEAKS)
+        return
     if kind == "centre":
         bt.hill_surface(p, range(6), 0, X0, kind, grass="highland_grass", rock_slope=0.78)
         inside, bounds = (lambda q: hk.in_centre(q, 0.3) and q.length > 1.0), hk.CENTRE_BOUNDS
@@ -353,7 +356,7 @@ def excavation(p, rng, kind):
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ()),
     "meadows": ("plains", meadows, "plains", ()),
-    "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS)),
+    "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains", ("centre_mill",)),
     "market_town": ("village", market_town, "cobble", ()),
     "delta": ("river", delta, "plains", ()),

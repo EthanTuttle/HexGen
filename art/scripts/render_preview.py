@@ -120,11 +120,19 @@ def build_map(templates, animated=False, tiles=None):
             triple = [joined[i] and joined[(i + 1) % 6] for i in range(6)]  # corner i: between edges i and i + 1
             if not any(joined):
                 place(templates, f"{name}_peak", col, at)
+            parts = []
             for i in range(6):
                 if triple[i]:
-                    place(templates, f"{name}_mountain_corner", col, at, math.radians(60 * i))
+                    parts.append(("corner", i))
                 elif joined[i] and not triple[(i - 1) % 6]:
-                    place(templates, f"{name}_mountain_edge", col, at, math.radians(60 * i))
+                    parts.append(("edge", i))
+            for where, i in parts:
+                place(templates, f"{name}_mountain_{where}", col, at, math.radians(60 * i))
+            # In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
+            if len(parts) >= 2:
+                place(templates, f"{name}_ridge_knot", col, at)
+                for where, i in parts:
+                    place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
         for i in range(6):
             place(templates, f"{name}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
