@@ -359,8 +359,7 @@ func _input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		var p := (e as InputEventMouseMotion).position
 		if _drag.ghost == null and p.distance_to(_drag.start) >= Rules.TAP_PIXELS and _drag.i < game.deck.hand.size():
-			if game.held != _drag.i:
-				game.hold(_drag.i)
+			game.hold_for_drag(_drag.i)
 			var t: String = game.deck.hand[_drag.i]
 			var g := HexShape.make(40, 46, UI.ORANGE, UI.terrain_bg(t)).with_icon("t_" + t, UI.terrain_ink(t), 20)
 			g.with_shadow(UI.ORANGE_EDGE, 6)

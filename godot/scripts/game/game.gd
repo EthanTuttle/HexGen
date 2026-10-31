@@ -44,8 +44,8 @@ var _open_pin = null
 var _reveal_pin = null
 var _reveal_until := 0.0
 var _slot_mats := {}
+var _shown_minute := -1.0             # the time the light shows (day * DAY_MINUTES + minute), easing after the clock
 var _slot_marks: Array[Node3D] = []
-var _sky := Color(0, 0, 0, 0)
 var popup := BoardPopup.new()         # long-press / hover details
 var picked = null                     # the hex a first tap picked to walk to (Vector2i), or null
 var _path_marks: Array[Node3D] = []
@@ -60,6 +60,8 @@ func _ready() -> void:
 	clock = Stage.create(self)
 	clock.running = false
 	clock.keys = sky_keys()
+	clock.sun_step_hours = Rules.SUN_STEP_HOURS
+	clock.sun_blend_seconds = Rules.SUN_BLEND_SECONDS
 
 	map.time_of_day = clock
 	add_child(map)
@@ -86,10 +88,11 @@ func _ready() -> void:
 
 	add_child(rig)
 	rig.min_distance = 8.0
-	rig.max_distance = 110.0
+	rig.max_distance = Rules.DAY_MAX_ZOOM
 	rig.focus = Vector2(378, 200)       # Explore v8b: the open area left of the hand column
 	rig.frame(party_node.centre(), 58.0, 50.0)
 	_make_slot_materials()
+	_warm_up.call_deferred()
 
 	add_child(ui)
 	ui.add_child(safe)
@@ -141,17 +144,22 @@ func _process(delta: float) -> void:
 	real_time += delta
 	if not fight.active:
 		_advance(delta / 60.0)    # the day clock runs in real minutes; combat pauses it
-	clock.hour = Rules.light_hour(minute)
-	# The backdrop holds each phase's colour and eases between them (Explore v8b: a 0.8 s transition).
-	var sky := Color(SKY[Rules.phase_name(minute).to_lower()])
-	_sky = _sky.lerp(sky, minf(1.0, delta * 4.0)) if _sky.a > 0 else sky
-	clock.environment.background_color = _sky
-	clock.environment.ambient_light_color = _sky
+	# The backdrop and light follow the clock, blending smoothly between the hours (DOCS: Art direction ->
+	# Time of day -> The light; sky_keys() gives each phase's backdrop). The clock jumps when a card is placed,
+	# a hex walked or the party rests, so the light glides after it rather than jumping (seen on the phone).
+	var now := day * Rules.DAY_MINUTES + minute
+	_shown_minute = now if _shown_minute < 0.0 else lerpf(_shown_minute, now, minf(1.0, delta / Rules.LIGHT_EASE_SECONDS))
+	clock.hour = Rules.light_hour(fposmod(_shown_minute, Rules.DAY_MINUTES))
 	# The camera follows the walking party, unless the player has moved it (DOCS: the player's camera wins).
 	if party_node.walking and not rig.player_moved:
 		rig.target = rig.target.lerp(party_node.centre(), minf(1.0, delta * 4.0))
-	# At night the camera can't zoom all the way out (DOCS: Exploration screen -> Placing).
-	rig.max_distance = 60.0 if Rules.is_night(minute) else 110.0
+	# At night the camera can't zoom all the way out (DOCS: Exploration screen -> Placing). The limit eases in
+	# and out, so a zoomed-out camera glides in at nightfall instead of jumping on the next pinch.
+	var most := Rules.NIGHT_MAX_ZOOM if Rules.is_night(minute) else Rules.DAY_MAX_ZOOM
+	rig.max_distance = move_toward(rig.max_distance, most,
+			delta * (Rules.DAY_MAX_ZOOM - Rules.NIGHT_MAX_ZOOM) / Rules.ZOOM_LIMIT_SECONDS)
+	if rig.distance > rig.max_distance:
+		rig.distance = rig.max_distance
 	# Spawned encounters disappear after about 15 minutes unless a wipe made them stay (DOCS).
 	for t in encounters.keys():
 		var e: Dictionary = encounters[t]
@@ -185,6 +193,17 @@ func hold(i: int) -> void:
 	_refresh()
 
 
+## Holds card i as a drag out of the hand starts, but rebuilds the HUD and relights the slots on the next frame,
+## so the drag's first frame stays light (Ethan: an unheld card didn't drag smoothly on the phone).
+func hold_for_drag(i: int) -> void:
+	if busy or held == i:
+		return
+	held = i
+	pick(null)
+	if not get_tree().process_frame.is_connected(_refresh):
+		get_tree().process_frame.connect(_refresh, CONNECT_ONE_SHOT)
+
+
 ## Why a held card can't go on slot t, or "" if it can (DOCS: Placement).
 func why_not(t: Vector2i, terrain: String) -> String:
 	if map.terrains.has(t):
@@ -212,6 +231,29 @@ func _make_slot_materials() -> void:
 	dark.albedo_color = Color(1, 1, 1, 0.3)
 	dark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_slot_mats = {lit = lit, banned = banned, dark = dark}
+
+
+## Draws each slot material and slot icon once while loading, hidden under the board, so the renderer builds
+## their pipelines now rather than in the middle of play (the Mobile renderer stalled for over a second the
+## first time night darkened the far slots).
+func _warm_up() -> void:
+	var under := Node3D.new()
+	under.name = "warm_up"
+	add_child(under)
+	var at := Hex.tile_position(party_tile.x, party_tile.y)
+	for m: Material in _slot_mats.values():
+		var mi := MeshInstance3D.new()
+		mi.mesh = (map.slot_nodes.values()[0] as MeshInstance3D).mesh
+		mi.material_override = m
+		mi.position = Hex.to3(at, -1.0)   # under the tile: drawn (in view) but hidden by it
+		under.add_child(mi)
+	for icon in [["close", Color("#8E3B2E"), 0.8], ["t_plains", UI.terrain_ink("plains"), 0.55]]:
+		var s := _slot_icon(party_tile, icon[0], icon[1], icon[2])
+		s.reparent(under)
+		s.position.y = -1.0
+	for _f in 3:
+		await get_tree().process_frame
+	under.queue_free()
 
 
 ## Slots the held card can take light up (cream, pulsing, with the terrain's icon); slots it can't take

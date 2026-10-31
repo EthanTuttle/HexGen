@@ -17,6 +17,8 @@ var _n := 0
 var _fingers := {}          # finger index -> position, for the overlay
 var _caption := ""
 var _overlay := _Overlay.new()
+var _times = null          # frame times (ms) while measuring a gesture, or null when not
+var _last_us := 0
 
 
 func _ready() -> void:
@@ -32,6 +34,22 @@ func _ready() -> void:
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_overlay)
 	_run.call_deferred()
+
+
+func _process(_delta: float) -> void:
+	var now := Time.get_ticks_usec()
+	if _times != null and _last_us > 0:
+		_times.append((now - _last_us) / 1000.0)
+	_last_us = now
+
+
+## Prints the frame times recorded since `_times = []` (Ethan: dragging an unheld card out of the hand wasn't
+## smooth on the phone).
+func frame_report(what: String) -> void:
+	var t: Array = _times.duplicate()
+	_times = null
+	t.sort()
+	print("FRAMES %s: %d frames, median %.2f ms, worst %.2f ms" % [what, t.size(), t[t.size() / 2], t[-1]])
 
 
 # --- Injected touches -----------------------------------------------------------------
@@ -195,7 +213,26 @@ func _run() -> void:
 		var card: Control = game.hud._hand_grid.get_child(i)
 		say("Drag a card onto a lit slot")
 		var before := game.map.terrains.size()
-		await drag(card.get_global_rect().get_center(), tile_screen(slot) - game.hud.DRAG_LIFT, 0.8)
+		var target0 := game.rig.target
+		var to := tile_screen(slot) - game.hud.DRAG_LIFT
+		if k == 0:
+			# Timed (Ethan: an unheld card didn't drag smoothly): the press and the slide, then the drop.
+			check(game.held == -1, "the first dragged card isn't held beforehand")
+			var from := card.get_global_rect().get_center()
+			_times = []
+			await _touch(0, from, true)
+			for s in range(1, 33):
+				await _move(0, from.lerp(to, s / 32.0))
+			frame_report("pressing and sliding a card that wasn't held")
+			await _wait(0.1)
+			_times = []
+			await _touch(0, to, false)
+			for _f in 3:
+				await _frame()
+			frame_report("dropping it (the tile is built)")
+		else:
+			await drag(card.get_global_rect().get_center(), to, 0.8)
+		check(game.rig.target.distance_to(target0) < 0.01, "dragging a card doesn't pan the board")
 		await _wait(0.5)
 		check(game.map.terrains.get(slot) != null and game.map.terrains.size() == before + 1,
 				"drag %s from the hand onto slot %s places it" % [terrain, slot])

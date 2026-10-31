@@ -55,6 +55,12 @@ const MIDDAY_UNTIL := 15.0
 const START_MINUTE := 6.0                # PLACEHOLDER: the campaign starts early in the midday phase
 const PLACE_MINUTES := 0.5               # PLACEHOLDER (Explore v8b): "placing a card costs a little real time"
 const STEP_MINUTES := 1.0                # PLACEHOLDER (Explore v8b): walking one hex
+const DAY_MAX_ZOOM := 110.0              # PLACEHOLDER: how far out the camera can zoom by day (m)
+const NIGHT_MAX_ZOOM := 60.0             # PLACEHOLDER: and at night (DOCS: it can't zoom all the way out)
+const ZOOM_LIMIT_SECONDS := 1.5          # PLACEHOLDER: the limit eases between them over this long
+const SUN_STEP_HOURS := 0.1              # PLACEHOLDER: the sun moves in steps this many light-hours apart (a few s)
+const SUN_BLEND_SECONDS := 0.6           # PLACEHOLDER: each step blends over this long
+const LIGHT_EASE_SECONDS := 0.8          # PLACEHOLDER: the light eases after a clock jump (placing, walking, resting)
 
 # --- How the party moves (DOCS: Exploration screen -> Walking -> How the party moves; every number a
 # PLACEHOLDER, tuned by eye in the prototype) -----------------------------------------------------------

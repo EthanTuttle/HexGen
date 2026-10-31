@@ -25,6 +25,8 @@ func _ready() -> void:
 		_round.call_deferred()
 	elif "--demo=hill" in OS.get_cmdline_user_args():
 		_hill.call_deferred()
+	elif "--demo=day" in OS.get_cmdline_user_args():
+		_day.call_deferred()
 	else:
 		_run.call_deferred()
 
@@ -178,6 +180,125 @@ func _hill() -> void:
 	print("DEMO DONE")
 	if shots or "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
+
+
+## The day passing over a swamp (Ethan's phone test: shadows dancing, a hitch at nightfall, the backdrop jumping):
+## a staged swamp and forest round the camp, the camera close, and the clock run fast (`--speed=N`, clock
+## minutes per real second; default 20) from `--from=M` to `--to=M` (clock minutes; past 30 is the next day).
+## `--jumps=S` also moves the clock on by one card placement's time every S real seconds, as placing cards does.
+## Prints frame times (all frames, around nightfall and around dawn), GPU render time, how often the sun moved
+## and how fast the backdrop changed. Run it with --rendering-method mobile -- --phone for the phone's settings.
+func _day() -> void:
+	_prefix = "day"
+	var args := OS.get_cmdline_user_args()
+	var speed := 20.0
+	var from := 12.0
+	var to := 32.0
+	var jumps := 0.0
+	for a in args:
+		var v := float(a.split("=")[-1])
+		if a.begins_with("--speed="):
+			speed = v
+		elif a.begins_with("--from="):
+			from = v
+		elif a.begins_with("--to="):
+			to = v
+		elif a.begins_with("--jumps="):
+			jumps = v
+	var next_jump := jumps
+	var kinds := ["swamp", "bog", "forest", "swamp", "deep_forest", "swamp"]
+	var strip := {}
+	var k := 0
+	for q in range(-2, 3):
+		for r in range(-2, 3):
+			var t: Vector2i = game.party_tile + Vector2i(q, r)
+			if t != game.party_tile and Rules.hex_distance(t, game.party_tile) <= 2 and not game.map.terrains.has(t):
+				strip[t] = kinds[k % kinds.size()]
+				k += 1
+	game.map.retile(strip)
+	for t in strip:
+		game.order[t] = game.order.size()
+	game.toast("(demo) Staged map: swamp and forest round the camp; the clock runs fast.", true)
+	game.minute = from
+	game.rig.frame(Hex.to3(Hex.tile_position(game.party_tile.x, game.party_tile.y) + Vector2(4.0, 2.0)), 26.0, 50.0)
+	await _wait(2.0)
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	var frames := []          # [clock minute (unwrapped), frame ms, gpu ms]
+	var sun_moves := 0        # quarter seconds in which the sun's angle changed
+	var quarters := 0
+	var quarter_at := 0.0
+	var sky_jump := 0.0       # the most the backdrop changed in one frame (0-255 per channel)
+	var sky_rate := 0.0       # the most it changed over any half second
+	var skies := []           # [real s, backdrop]
+	var clock_min := from
+	var last := Time.get_ticks_usec()
+	var real := 0.0
+	var sun_z: Vector3 = game.clock.sun.basis.z
+	var sky: Color = game.clock.environment.background_color
+	var shot_every := 2.0     # clock minutes between stills
+	var next_shot := from
+	while clock_min < to:
+		var dt := get_process_delta_time()
+		game._advance(dt * (speed - 1.0) / 60.0)
+		clock_min += dt * speed / 60.0
+		if jumps > 0.0 and real >= next_jump:
+			next_jump += jumps
+			game._advance(Rules.PLACE_MINUTES)
+			clock_min += Rules.PLACE_MINUTES
+		await get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		var ms := (now - last) / 1000.0
+		last = now
+		real += ms / 1000.0
+		frames.append([clock_min, ms, RenderingServer.viewport_get_measured_render_time_gpu(vp)])
+		if real - quarter_at >= 0.25:
+			quarter_at = real
+			quarters += 1
+			var z: Vector3 = game.clock.sun.basis.z
+			if z.distance_to(sun_z) > 1e-5:   # about 0.0006 degrees
+				sun_moves += 1
+			sun_z = z
+		var c: Color = game.clock.environment.background_color
+		sky_jump = maxf(sky_jump, _col_diff(c, sky))
+		sky = c
+		skies.append([real, c])
+		while skies.size() > 2 and real - skies[0][0] > 0.5:
+			skies.pop_front()
+		sky_rate = maxf(sky_rate, _col_diff(c, skies[0][1]))
+		if shots and clock_min >= next_shot:
+			next_shot += shot_every
+			await _shot("min%04.1f" % fmod(clock_min, Rules.DAY_MINUTES))
+	_report("all", frames, func(m): return true)
+	_report("nightfall", frames, func(m): return absf(m - Rules.NIGHT_AT) < speed / 60.0 * 1.0)
+	_report("dawn", frames, func(m): return absf(m - Rules.DAY_MINUTES) < speed / 60.0 * 1.0)
+	print("SUN moved in %d of %d quarter seconds" % [sun_moves, quarters])
+	print("BACKDROP most change: %.1f in one frame, %.1f over half a second (0-255 per channel)" % [sky_jump, sky_rate])
+	print("DEMO DONE")
+	if shots or "--quit" in OS.get_cmdline_user_args():
+		get_tree().quit()
+
+
+static func _col_diff(a: Color, b: Color) -> float:
+	return maxf(absf(a.r - b.r), maxf(absf(a.g - b.g), absf(a.b - b.b))) * 255.0
+
+
+## Prints frame time and GPU time for the frames whose clock minute passes `keep`.
+static func _report(name: String, frames: Array, keep: Callable) -> void:
+	var ms := []
+	var gpu := []
+	for f in frames:
+		if keep.call(f[0]):
+			ms.append(f[1])
+			gpu.append(f[2])
+	if ms.is_empty():
+		print("FRAMES %s: none" % name)
+		return
+	ms.sort()
+	gpu.sort()
+	print("FRAMES %s: %d frames, median %.2f ms, 99th %.2f ms, worst %.2f ms; GPU median %.2f ms, worst %.2f ms" % [
+		name, ms.size(), ms[ms.size() / 2], ms[mini(ms.size() - 1, int(ms.size() * 0.99))], ms[-1],
+		gpu[gpu.size() / 2], gpu[-1]])
 
 
 func _trace(path: PackedVector2Array) -> void:
