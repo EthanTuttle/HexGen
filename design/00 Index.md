@@ -162,7 +162,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
 - [x] ~~Region variant art: tier 1 looks~~ (settled Oct 30: one look per terrain; see Presentation → Art direction → Region variant looks)
-- [ ] Tier 2 and class variant looks (see Presentation → Open questions)
+- [x] ~~Tier 2 and class variant looks~~ (settled Oct 31: see Presentation → Art direction → Region variant looks; bridges on rapids in Map & exploration → Obstacles)
 - [ ] Terrain motion pass, later in Godot: trees sway, sand drifts, like the water (see Presentation → Open questions)
 - [x] ~~Engine prototype: which terrains the test tiles cover~~ (settled Oct 29: plains, forest, farmland, river/lake, village; see Multiplayer & tech → Engine prototype)
 
