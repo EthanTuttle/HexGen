@@ -1,6 +1,6 @@
 # Mockups
 
-Source copies of the HexGen Design canvases, first taken from claude.ai on Oct 27, 2026 (checked against the live canvases on Oct 28: all match). Each folder is one canvas:
+Source copies of the Heads or Hexes Design canvases, first taken from claude.ai on Oct 27, 2026 (checked against the live canvases on Oct 28: all match). Each folder is one canvas:
 
 - `canvas.json` is the canvas index: artboard positions, titles, row headings and order.
 - each `.dc.html` file is one artboard's source.
@@ -11,14 +11,15 @@ The files need the Design canvas runtime to render, so they won't open on their 
 
 | Folder | Canvas | Live link |
 | --- | --- | --- |
-| `final-screens` | HexGen · Final screens | https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA |
-| `character-and-gear` | HexGen · Character & Gear (working) | https://claude.ai/artifact/MtzUejEunFdDF8CNsyZHWc |
-| `combat` | HexGen · Combat (working) | https://claude.ai/artifact/7rzLG7m3x3gXAG7kU9JERj |
-| `minis` | HexGen · Minis (working) | https://claude.ai/artifact/AiWD6SrHacApJxiYC7zMB5 |
-| `exploration` | HexGen · Exploration (working) | https://claude.ai/artifact/GQ6LxMzHa214Rjzcabgjr4 |
-| `rewards-and-level-up` | HexGen · Rewards & level-up (working) | https://claude.ai/artifact/UeCB1R47oqpqYZs172hNjg |
-| `weapon-mastery` | HexGen · Weapon mastery (working) | https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum |
-| `action-cards` | HexGen · Action Cards (working) | https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu |
-| `social-encounter` | HexGen · Social encounter (working) | https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC |
-| `town` | HexGen · Town (working) | https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2 |
-| `character-creator` | HexGen · Character creator (working) | https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3 |
+| `final-screens` | Heads or Hexes · Final screens | https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA |
+| `character-and-gear` | Heads or Hexes · Character & Gear (working) | https://claude.ai/artifact/MtzUejEunFdDF8CNsyZHWc |
+| `combat` | Heads or Hexes · Combat (working) | https://claude.ai/artifact/7rzLG7m3x3gXAG7kU9JERj |
+| `minis` | Heads or Hexes · Minis (working) | https://claude.ai/artifact/AiWD6SrHacApJxiYC7zMB5 |
+| `exploration` | Heads or Hexes · Exploration (working) | https://claude.ai/artifact/GQ6LxMzHa214Rjzcabgjr4 |
+| `rewards-and-level-up` | Heads or Hexes · Rewards & level-up (working) | https://claude.ai/artifact/UeCB1R47oqpqYZs172hNjg |
+| `weapon-mastery` | Heads or Hexes · Weapon mastery (working) | https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum |
+| `action-cards` | Heads or Hexes · Action Cards (working) | https://claude.ai/artifact/HNmb5JwUkZGs9isGgfVhUu |
+| `social-encounter` | Heads or Hexes · Social encounter (working) | https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC |
+| `town` | Heads or Hexes · Town (working) | https://claude.ai/artifact/MdNjQ8i3GE6cvS9rtmydB2 |
+| `character-creator` | Heads or Hexes · Character creator (working) | https://claude.ai/artifact/DggBJCX2fejZLpjKLt5Ag3 |
+| `title-and-icon` | Heads or Hexes · Title screen & app icon (working) | https://claude.ai/artifact/Y8BF1Dp9ohrGr732CHTZ2g |

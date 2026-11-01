@@ -1,4 +1,4 @@
-# HexGen — Classes & combat
+# Heads or Hexes — Classes & combat
 
 Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 

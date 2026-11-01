@@ -1,4 +1,4 @@
-# HexGen — Map & exploration
+# Heads or Hexes — Map & exploration
 
 Last updated Oct 27, 2026 · @Ethan · Part of the [Index](00 Index.md)
 

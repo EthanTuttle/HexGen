@@ -1,0 +1,208 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-01T12:00:00Z"
+ },
+ "title": "Heads or Hexes \u00b7 Title screen & app icon (working)",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 260,
+   "w": 844,
+   "h": 390,
+   "title": "Title v1a \u00b7 live diorama: a small island of placed tiles slowly turns on the pastel backdrop, which drifts through the day (dawn, midday, dusk, night) as on the map. Continue opens the latest autosave; Load opens autosaves and save slots; Join a join code; Settings top right. Tweak firstLaunch hides Continue and makes New campaign the main button. Continue and New campaign don't link yet",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v1b-LastSave.dc.html": {
+   "x": 924,
+   "y": 260,
+   "w": 844,
+   "h": 390,
+   "title": "Title v1b \u00b7 your last save: the player's own map from their latest save fills the screen, the camera drifting slowly over it, with its empty edge slots showing; the logo and menu sit on cream panels so they read over any map. The map drawn is a stand-in; a first launch would show a generic world",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v1c-Plain.dc.html": {
+   "x": 1848,
+   "y": 260,
+   "w": 844,
+   "h": 390,
+   "title": "Title v1c \u00b7 plain menu backdrop: the muted menu backdrop (as the character creator from v16), the logo big and centred, Continue on its own and the other buttons in a row under it",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v2a-HeadsOrHexes.dc.html": {
+   "x": 0,
+   "y": 1030,
+   "w": 844,
+   "h": 390,
+   "title": "Title v2a \u00b7 name: Heads or Hexes, on v1a. The coin carries \"or\"; a hex tile sits in front of Hexes",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v2b-FortunesHex.dc.html": {
+   "x": 924,
+   "y": 1030,
+   "w": 844,
+   "h": 390,
+   "title": "Title v2b \u00b7 name: Fortune's Hex, on v1a. A coin lies on a hex tile as the emblem",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Icon-v1a-Tile.dc.html": {
+   "x": 0,
+   "y": 1800,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v1a \u00b7 one painted hex tile: forest, village and a river on a tile with a wooden edge, on the dawn backdrop",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v1b-Mini.dc.html": {
+   "x": 924,
+   "y": 1800,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v1b \u00b7 a hero mini on its wooden hex base, standing on a meadow tile, on the midday backdrop. The mini is a stand-in drawing",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v1c-Coin.dc.html": {
+   "x": 1848,
+   "y": 1800,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v1c \u00b7 the flip coin mid-toss, a hex with a tree struck on its face, on dark slate so it stands out on a home screen",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Title-v3-HeadsLastSave.dc.html": {
+   "x": 0,
+   "y": 2570,
+   "w": 844,
+   "h": 390,
+   "title": "Title v3 \u00b7 Heads or Hexes and v1b chosen: the logo on v1b's last-save map. Load groups saves by hero: pick a hero on the left (most recently played first, each with subtitle and last day) to see their autosaves and save slots. Hero names, subtitles and days are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Icon-v2a-CoinFull.dc.html": {
+   "x": 0,
+   "y": 3340,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v2a \u00b7 v1c reworked: the coin faces us straight on and fills the whole icon (the slate shows only in the corners); no motion lines. A beaded ring, then a hex with a tree struck on its face",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v2b-CoinMargin.dc.html": {
+   "x": 924,
+   "y": 3340,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v2b \u00b7 the same coin a little smaller, with a slate edge all round and a soft shadow under it, for comparison with v2a",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Title-v4-FloatingLogo.dc.html": {
+   "x": 0,
+   "y": 4110,
+   "w": 844,
+   "h": 390,
+   "title": "Title v4 \u00b7 v3 with the logo floating on the map again, no cream pane: a little bigger, with a cream outline round the letters and a deeper shadow so it reads over any tiles. The menu keeps its pane",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Icon-v3a-CoinSky.dc.html": {
+   "x": 0,
+   "y": 4880,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v3a \u00b7 v2b's size; no beaded ring, the hex much bigger, a proper tiered pine tree, on the midday pastel (#D9E7EC). Home screen label shows how iOS cuts a long name",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v3b-CoinDusk.dc.html": {
+   "x": 924,
+   "y": 4880,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v3b \u00b7 the same coin on the dusk pastel (#EDCFD7)",
+   "is_interactive": false,
+   "radius": 28
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Title-v1b-LastSave.dc.html",
+  "Title-v1c-Plain.dc.html",
+  "Title-v2a-HeadsOrHexes.dc.html",
+  "Title-v2b-FortunesHex.dc.html",
+  "Icon-v1a-Tile.dc.html",
+  "Icon-v1b-Mini.dc.html",
+  "Icon-v1c-Coin.dc.html",
+  "Title-v3-HeadsLastSave.dc.html",
+  "Icon-v2a-CoinFull.dc.html",
+  "Icon-v2b-CoinMargin.dc.html",
+  "Title-v4-FloatingLogo.dc.html",
+  "Icon-v3a-CoinSky.dc.html",
+  "Icon-v3b-CoinDusk.dc.html"
+ ],
+ "notes": {
+  "v1": {
+   "x": 0,
+   "y": 0,
+   "text": "v1 \u00b7 title screen, three backdrops",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v2": {
+   "x": 0,
+   "y": 770,
+   "text": "v2 \u00b7 two new names on v1a (HexGen is v1a)",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons": {
+   "x": 0,
+   "y": 1540,
+   "text": "App icon v1 \u00b7 three ideas",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v3": {
+   "x": 0,
+   "y": 2310,
+   "text": "v3 \u00b7 Heads or Hexes on v1b, saves grouped by hero",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons2": {
+   "x": 0,
+   "y": 3080,
+   "text": "App icon v2 \u00b7 the coin, face on",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v4": {
+   "x": 0,
+   "y": 3850,
+   "text": "v4 \u00b7 the logo floating again",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons3": {
+   "x": 0,
+   "y": 4620,
+   "text": "App icon v3 \u00b7 bigger hex, a real tree, pastel backdrop",
+   "kind": "title1",
+   "maxW": 2692
+  }
+ },
+ "designSystems": []
+}
