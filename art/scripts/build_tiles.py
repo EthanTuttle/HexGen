@@ -113,9 +113,11 @@ FARM_LANE = 0.45    # half the width of the lanes the fields leave along the wed
 ROW_PITCH = 0.3     # crop rows: spacing, and the width of each row
 ROW_WIDTH = 0.21
 FARM_SPIN = math.radians(30)  # rows run parallel to the tile's slanted sides
-LOW_CROPS = {"field_c": 0.08, "withered": 0.07, "withered_dark": 0.05, "scorched": 0.02,
-             "ploughed": 0.05}  # crop row heights; the rest stand 0.16 tall
-WHEAT = ["field_a", "field_b", "field_c", "field_barley", "ploughed"]  # the plain farm's crops, picked per field
+LOW_CROPS = {"field_c": 0.08, "withered": 0.07, "withered_dark": 0.05, "scorched": 0.02}  # crop row heights; the
+# rest stand 0.16 tall
+BARE_FIELDS = {"dead_earth"}  # fields with no rows
+FIELD_SOIL = {"withered": "withered_soil", "withered_dark": "withered_soil"}  # soil under rows, if not soil_light
+WHEAT = ["field_a", "field_a", "field_b"]  # the plain farm's crops, all gold, picked per field
 
 # Borders around farms and villages: one style for both, at one depth, so they join up.
 BORDER_STYLE = "fence"         # "fence", "wall" or "stacked"
@@ -141,75 +143,90 @@ def clip_polygon(poly, inside_point, normal):
     return out
 
 
-def crop_field(p, poly, along, crop):
-    """A field: soil over convex outline poly (anticlockwise), with straight rows of crop running along direction
-    `along` from one side of the field to the other, each clipped cleanly at the field's edge."""
-    p.prism(poly, 0.0, 0.03, "soil_light")
-    along = along.normalized()
-    across = Vector((-along.y, along.x, 0))
-    lo, hi = min(q.dot(across) for q in poly), max(q.dot(across) for q in poly)
-    s_ = lo + (ROW_PITCH - ROW_WIDTH) / 2 + 0.03
-    while s_ + ROW_WIDTH < hi:
+def crop_field(p, poly, across, crop, start=0):
+    """A field over convex outline poly (anticlockwise). Its rows run straight, across = the unit direction away
+    from the lane it lies beside, and are clipped cleanly at the field's edge. Rows are counted from the lane's
+    side, at FARM_LANE + k * ROW_PITCH along across, so a centre field whose rows run along a lane lines up with
+    the wedge field beyond it and they read as one bigger field. A crop in BARE_FIELDS has no rows: bare ground.
+    start: the first k (below 0 fills the lane, where a wedge has no track)."""
+    p.prism(poly, 0.0, 0.03, crop if crop in BARE_FIELDS else FIELD_SOIL.get(crop, "soil_light"))
+    if crop in BARE_FIELDS:
+        return
+    hi = max(q.dot(across) for q in poly)
+    k = start
+    while FARM_LANE + k * ROW_PITCH < hi:
+        s_ = FARM_LANE + k * ROW_PITCH
         band = clip_polygon(poly, across * s_, across)
         band = clip_polygon(band, across * (s_ + ROW_WIDTH), -across) if len(band) >= 3 else []
         if len(band) >= 3:
             p.prism(band, 0.03, 0.03 + LOW_CROPS.get(crop, 0.16), crop)
-        s_ += ROW_PITCH
+        k += 1
 
 
-def field_wedge(p, rng, lane, crops, x1=None):
-    """A wedge's fields, rows running along its middle line: one field either side of the lane, or one across
-    the whole wedge where lane is False. x1: how far out they reach (the edge, or short of the fence).
-    crops: the crop of each field in turn."""
+def field_wedge(p, rng, lane, crops, x1=None, fill_lane=True):
+    """A wedge's fields, rows running along its middle line: one field either side of the lane, or either side of
+    the middle line with the rows running on across it where lane is False, where the field also runs in over
+    the centre's unused lane (unless fill_lane is False: a landmark's yard lies there). x1: how far out they reach (the edge, or short of the fence). crops: the crop of
+    the field on each side."""
     x1 = x1 or X1 - 0.08
 
     def slant(x):
         return x * TAN30 - 0.14
-    along = Vector((1, 0, 0))
-    if lane:
-        for sd, crop in zip((1, -1), crops):
-            poly = [Vector((X0, sd * FARM_LANE, 0)), Vector((x1, sd * FARM_LANE, 0)),
-                    Vector((x1, sd * slant(x1), 0)), Vector((X0, sd * slant(X0), 0))]
-            crop_field(p, poly if sd > 0 else poly[::-1], along, crop)
-    else:
-        crop_field(p, [Vector((X0, -slant(X0), 0)), Vector((x1, -slant(x1), 0)), Vector((x1, slant(x1), 0)),
-                       Vector((X0, slant(X0), 0))], along, crops[0])
+    y0 = FARM_LANE if lane else 0.0
+    for sd, crop in zip((1, -1), crops if len(crops) > 1 else crops * 2):
+        poly = [Vector((X0, sd * y0, 0)), Vector((x1, sd * y0, 0)), Vector((x1, sd * slant(x1), 0)),
+                Vector((X0, sd * slant(X0), 0))]
+        crop_field(p, poly if sd > 0 else poly[::-1], Vector((0, sd, 0)), crop, start=0 if lane else -2)
+        if not lane and fill_lane:
+            strip = [Vector((0.75, 0, 0)), Vector((X0, 0, 0)), Vector((X0, sd * FARM_LANE, 0)),
+                     Vector((0.75, sd * FARM_LANE, 0))]
+            crop_field(p, strip if sd > 0 else strip[::-1], Vector((0, sd, 0)), crop, start=-2)
 
 
-def field_spot(k, r=1.55):
-    """A point on the middle of the centre's field k (k counts anticlockwise from the one toward 30 degrees)."""
+def field_spot(k, r=1.62):
+    """A point on the middle line of the centre's field k (k counts anticlockwise from the one toward 30 degrees);
+    the default is where a building stands, clear of the lanes."""
     a = math.radians(30 + 60 * k)
     return Vector((math.cos(a), math.sin(a), 0)) * r
 
 
-def field_centre(p, rng, crops, bare=(), bare_mat="stubble"):
-    """The centre of a farm: a small yard in the middle and six fields between the lanes out to the six edges,
-    their rows running along one lane. crops: the crop of each field. Fields in bare are bare_mat with no rows,
-    for a building or a windmill (at field_spot). The routes are spokes along the lanes, used only where that
-    edge's wedge has a path, so nothing leads to a dead end."""
+def field_centre(p, rng, crops, yard=(1, 2), yard_mat="yard_dirt"):
+    """The centre of a farm: a small yard in the middle and six fields between the lanes out to the six edges.
+    Each field's rows run along one of its two lanes, picked by the piece's seeded rng, so it reads as one bigger
+    field with the wedge field beyond that lane, and two centre pieces have different field shapes. crops: the
+    crop of each field. The two neighbouring fields in yard and the lane between them are one bare dirt yard for
+    that tile's building and props (at field_spot, clear of the lanes), under any track that crosses it. The
+    engine turns the whole centre by a hash of the tile, so yards don't line up. The routes are spokes along the
+    lanes, used only where that edge's wedge has a path, so nothing leads to a dead end."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(0.55, pointy=True)][::-1], 0.012, "road")
     for k in range(6):
         a0, a1 = math.radians(60 * k), math.radians(60 * k + 60)
         n0, n1 = Vector((math.cos(a0), math.sin(a0), 0)), Vector((math.cos(a1), math.sin(a1), 0))
         s0, s1 = Vector((-n0.y, n0.x, 0)), Vector((n1.y, -n1.x, 0))  # toward the field, off each lane
-        poly = [(n0 + n1).normalized() * (FARM_LANE / math.sin(math.radians(30))),
-                n0 * X0 + s0 * FARM_LANE, (n0 + n1).normalized() * (hk.INNER * hk.TILE_RADIUS - 0.1),
-                n1 * X0 + s1 * FARM_LANE]
-        if k in bare:
-            p.flat(poly, 0.03, bare_mat)
-        else:
-            crop_field(p, poly, n0 if k % 2 == 0 else n1, crops[k % len(crops)])
+        mid = (n0 + n1).normalized()
+        poly = [mid * (FARM_LANE / math.sin(math.radians(30))), n0 * X0 + s0 * FARM_LANE,
+                mid * (hk.INNER * hk.TILE_RADIUS), n1 * X0 + s1 * FARM_LANE]
+        along_first = rng.random() < 0.5
+        if k not in yard:
+            crop_field(p, poly, s0 if along_first else s1, crops[k % len(crops)])
+    a0, a2 = math.radians(60 * yard[0]), math.radians(60 * yard[1] + 60)
+    n0, n2 = Vector((math.cos(a0), math.sin(a0), 0)), Vector((math.cos(a2), math.sin(a2), 0))
+    p.flat([Vector((0, 0, 0)), n0 * X0 + Vector((-n0.y, n0.x, 0)) * FARM_LANE, field_spot(yard[0], hk.INNER * hk.TILE_RADIUS),
+            field_spot(yard[1], hk.INNER * hk.TILE_RADIUS), n2 * X0 + Vector((n2.y, -n2.x, 0)) * FARM_LANE], 0.01, yard_mat)
     for i in range(6):
         a = math.radians(60 * i)
         p.spokes[i] = [Vector((math.cos(a), math.sin(a), 0)) * FARM_ROUTE_R, Vector((0, 0, 0))]
 
 
+def farmhouse(p, rng, at, spin):
+    """A small farmhouse for a plain farm's yard."""
+    p.box(at, (0.72, 0.52, 0.42), "wall", spin=spin)
+    p.gable_roof(at, 0.82, 0.66, 0.32, "roof", z=0.42, spin=spin)
+
+
 def picked(rng, crops, n):
-    """n crops for neighbouring fields, picked by the piece's seeded rng, no two together the same."""
-    out = []
-    for _ in range(n):
-        out.append(rng.choice([c for c in crops if not out or c != out[-1]]))
-    return out
+    """n crops for neighbouring fields, picked by the piece's seeded rng."""
+    return [rng.choice(crops) for _ in range(n)]
 
 
 def border_line(p, rng, a, b):
@@ -301,9 +318,15 @@ def farmland(p, rng, kind):
     """Fields fill the tile: crop rows either side of tracks that run from a small yard in the centre to the edge
     midpoints, a fence closing off the rest, with gates on some edges (fence_gates.py). The crop of each field
     is picked per piece by its seeded rng, and centre_b and edge_same_b are second versions the engine picks
-    between per tile and per edge, so a big farm group doesn't read as one field."""
+    between per tile and per edge, so tiles aren't identical. Two centre fields are a dirt yard with a small
+    farmhouse and haystacks."""
     if kind in ("centre", "centre_b"):
         field_centre(p, rng, picked(rng, WHEAT, 6))
+        farmhouse(p, rng, field_spot(1), math.pi / 2)
+        r = rng.uniform(0.22, 0.28)
+        for at in (field_spot(2, 1.5), field_spot(2, 1.5) + Vector((0.3, 0.3, 0))):
+            p.cylinder(at, r, r * 1.1, "hay", segments=8)
+            p.cone(at, r * 1.05, r * 0.9, "hay", segments=8, z=r * 1.1)
         return
     if kind in ("same", "edge_same_b"):
         track(p)

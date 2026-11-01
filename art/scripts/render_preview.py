@@ -248,6 +248,8 @@ def build_map(templates, animated=False, tiles=None):
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
             centre = "centre_mill"  # windmills stand on about half the tiles (placeholder rule)
         spin = math.radians(60 * turns.get((q, r), 0))
+        if f"{name}_centre_b" in templates:  # a farm's centre turns by a hash of the tile, so yards don't line up
+            spin = math.radians(60 * int(gc.hash01(q * 31 + 7, r * 17 + 3, 14) * 6))
         place(templates, f"{name}_{centre}", col, at, spin)
         for part, (_, hub) in vr.LANDMARK_PARTS.items():  # e.g. the Great Windmill's sails, turned with it
             if part.startswith(f"{name}_"):
@@ -289,6 +291,8 @@ def build_map(templates, animated=False, tiles=None):
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
             elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
                 edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
+            elif not joined[i] and name in vr.LANDMARKS and f"{kit}_edge_other_lm" in templates:
+                edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
