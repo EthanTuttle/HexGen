@@ -211,7 +211,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: Gear step done)
 - [ ] New: how armour works (what it does in a fight, light vs medium vs heavy, shields): see Weapons & gear
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
-- [ ] New: character creator send-off: v22a first tile or v22b banners return; and a guest's send-off
+- [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
+- [ ] New: a guest's send-off; how the send-off hands over to onboarding
 - [ ] New: names for the six starting quests
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
