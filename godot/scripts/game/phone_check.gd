@@ -106,7 +106,40 @@ func _forest_perf() -> void:
 				await get_tree().create_timer(1.5).timeout
 				await _shot_as("forest_%s_%s_b" % [time, v])
 	game.set_process(true)
+	game.minute = 10.0   # by day, for the walk
+	await _walk_to_mill(game, vp)
 	_say("FOREST PERF DONE")
+
+
+## Walks the party to the Great Windmill, measuring the walk, and logs how it stops on the narrow path.
+func _walk_to_mill(game: Game, vp: RID) -> void:
+	var lm: Vector2i = Vector2i.ZERO
+	for g in game.regions:
+		if g.variant == "windmill_country":
+			lm = g.landmark_tile
+	game.rig.frame(game.party_node.centre(), 58.0, 50.0)
+	game.walk_to(lm)
+	var m := await _measure(vp, 6.0)
+	_say("FOREST PERF walking at the opening zoom: %.1f fps, worst frame %.1f ms, draw calls %d" % [m.fps, m.worst, m.calls])
+	while game.busy:
+		await get_tree().process_frame
+	await get_tree().create_timer(Rules.SETTLE_SECONDS + 0.5).timeout
+	var graph := game.map.path_graph(lm)
+	var ms := game.party_node.members
+	var worst := 0.0
+	var closest := INF
+	for k in ms.size():
+		var a := Vector2(ms[k].node.position.x, -ms[k].node.position.z)
+		var g2 := game.map.path_graph(GroundCover.tile_at(a))
+		worst = maxf(worst, g2.distance_to_paths(a) if not g2.nodes.is_empty() else 0.0)
+		for j in k:
+			closest = minf(closest, a.distance_to(Vector2(ms[j].node.position.x, -ms[j].node.position.z)))
+	_say("FOREST PERF party at the Great Windmill %s: centres at most %.2f m off the path, %.2f m apart, on the path graph: %s" % [
+		lm, worst, closest, not graph.nodes.is_empty()])
+	var e := game.map.entrance_angle(lm)
+	game.rig.frame(game.party_node.centre(), 18.0, 40.0, -90.0 - rad_to_deg(e))
+	await get_tree().create_timer(0.6).timeout
+	await _shot_as("forest_party_line")
 
 
 ## Frames over `seconds`: average fps, the worst frame, and the render cost of the last frame.

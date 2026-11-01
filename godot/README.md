@@ -388,6 +388,19 @@ Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each fores
 - **Nightfall:** no hitch (worst frame 9.4 ms).
 - **Against the target:** well within it, with every view at the top rate. Mesh merging isn't needed, and each tile's pieces stay separate.
 
+**The bigger spawn on the same phone (Nov 1, 2026), with the forest and farm regions, a market town and a tier 0 group:** also **120 fps** in every view.
+
+| View | fps | Worst frame | Draw calls | Triangles |
+| --- | --- | --- | --- | --- |
+| Day, opening zoom | 120.0 | 8.6 ms | 635 | 281,000 |
+| Day, zoomed all the way out | 120.0 | 8.4 ms | 1,531 | 438,000 |
+| Across nightfall, clock running | 120.0 | 10.1 ms | | |
+| Night, opening zoom | 120.0 | 8.8 ms | 676 | 300,000 |
+| Night, 110 m (the game limits night to 60 m) | 120.0 | 8.9 ms | 1,590 | 467,000 |
+| Walking, opening zoom | 120.1 | 8.6 ms | 641 | |
+
+The party walked to the Great Windmill and stopped in its line: centres on the path, 1.00 m apart. `ios_device.sh` built and signed from `build/ios-cli` with no change needed.
+
 ## Farmland kit (tiles v34)
 
 Tier 0 farmland and villages with fence gates, windmill country with the Great Windmill, haunted homesteads with the Abandoned Barn, bandit-raided farms with the Militia Barn, and cider orchards with the Harvest Festival, from `art/export/tiles.glb` and `art/handoff/farmland_kit.md`. Docs: 06 → Tile build; 07 → Exploration screen → Walking, Landmark tiles.
