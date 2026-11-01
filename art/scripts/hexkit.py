@@ -161,6 +161,11 @@ PALETTE = {
     "char": "#2E2925",
     "ember": "#E0773A",
     "barn_red": "#B23B2C",
+    "barn_brown": "#86603F",
+    "barn_grey": "#8F8B82",
+    "apple": "#C9302C",
+    "orchard_grass": "#7FAE57",
+    "green": "#9CCB6E",
     "stake": "#9A7A55",
     "banner": "#C23A2E",
     "path_debug": "#E0303A",  # previews only: the path data drawn over a map

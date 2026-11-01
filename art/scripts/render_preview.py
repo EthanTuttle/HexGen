@@ -153,7 +153,8 @@ def draw_paths(col, templates):
 
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
-                for v, lm in (("haunted_homesteads", "abandonedfarmhouse"), ("raided_farms", "militiabarn"))}
+                for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
+                              ("cider_orchards", "harvestfestival"))}
 
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
@@ -453,7 +454,7 @@ if __name__ == "__main__":
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same
         # with the path data drawn, and a close-up of each landmark looking at its entrance.
         el = math.radians(40)
-        short = {"haunted_homesteads": "haunted", "raided_farms": "raided"}
+        short = {"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "cider"}
         for variant, tiles_map in FARM_T2_MAPS.items():
             lm = tiles_map[LANDMARK_AT]
             for paths in (True, False):  # the plain map last, so the close-up below is shot without the paths
