@@ -78,7 +78,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Ruins | Haunted ruins | Pale blue-green light seeping from cracks and doorways, with faint spirit wisps, stronger at night; toppled gravestones, sarcophagi and mausoleum fronts; thin mist pooling and drifting between the stones |
   | Ruins | Golem-guarded ruins | Big dormant stone golems standing or kneeling, eyes and runes faintly lit; carved runes on walls and paving pulsing amber or blue; grander, less crumbled ruins with columns, arches and stairs still standing |
 
-- **Landmark tiles** (chosen Nov 1, 2026): each variant's core location (its landmark; rule: [Map & exploration](02 Map & exploration.md) → Landmarks) is a tile with its own look, built from the variant's look, on the random tile the region picks when it finishes.
+- **Landmark tiles** (chosen Nov 1, 2026): each variant's core location (its landmark; rule: [Map & exploration](02 Map & exploration.md) → Landmarks) is a tile with its own look, built from the variant's look, on the random tile the region picks when it finishes. **The variant's other tiles play up or flow into the landmark** (Ethan, Nov 1, 2026), so the region leads the eye to it; how each variant does it is being tried in the art kits.
 
   | Variant | Core location | Look |
   | --- | --- | --- |
