@@ -16,6 +16,8 @@ import math
 import bmesh
 from mathutils import Matrix, Vector
 
+import contextlib
+
 import build_tiles as bt
 import hexkit as hk
 import water as wt
@@ -208,6 +210,28 @@ def turf_bothy(p, rng, at, spin):
     p.box(at + turn(Vector((0.25, 0, 0)), spin), (0.04, 0.2, 0.28), "mill_door", spin=spin)
 
 
+# The variants that rise inward (massif.py) sit on a lower mound, so the lift doesn't make the walking ground too steep.
+LOW_GROUND = (0.5, 0.8, 0.35)  # H0, HPEAK, HE
+
+
+@contextlib.contextmanager
+def low_ground():
+    keep = bt.H0, bt.HPEAK, bt.HE
+    bt.H0, bt.HPEAK, bt.HE = LOW_GROUND
+    try:
+        yield
+    finally:
+        bt.H0, bt.HPEAK, bt.HE = keep
+
+
+def on_low_ground(build):
+    def built(p, rng, kind):
+        with low_ground():
+            return build(p, rng, kind)
+    return built
+
+
+@on_low_ground
 def highlands(p, rng, kind):
     """Purple heather drifts, cairns and grouped bare rock on grey-green grass, no trees; taller, rockier peaks. No
     paths: open moor, so the flow to the Clan Hall is by what thickens toward it: way-cairns beside the trail edges
@@ -2396,13 +2420,14 @@ LANDMARK_CENTRES.update(oldbattlefield=old_battlefield, thunderbirdnest=thunderb
 # A hills landmark stands on its own levelled top, with no mountain or ridge on its tile: its neighbours leave it out
 # when they work out their mountains, tiles within two steps draw no ridges, and no mountain stands on a trail
 # edge (render_preview.build_map), so the range opens into a pass leading to the door.
-CLAN_TOP = 1.4  # the height of the hall's level top
+CLAN_TOP = 0.9  # the height of the hall's level top
 
 
 def clan_top(d):
     return CLAN_TOP + (bt.H0 - CLAN_TOP) * bt.smooth(1.5, X0, d)
 
 
+@on_low_ground
 def clan_hall(p, rng, kind):
     """Highlands' Clan Hall: a long timber-and-stone hall on a rocky-edged rise, under a turf roof with smoke from a
     central vent (an effect point), carved doorposts at its gable door on edge 0, clan banners either side."""
@@ -2548,6 +2573,7 @@ def print_line(p, a, b, ground):
         footprint(p, a.lerp(b, (k + 0.5) / n) + side * (1 if left else -1), spin, ground, left)
 
 
+@on_low_ground
 def snowy_peaks(p, rng, kind):
     """Snow over the whole tile, grass only in patches near edges facing other land, snow-dusted pines, ice rocks,
     frozen ponds; taller, jagged mountains. No paths: the flow to the Yeti Cave is its huge footprints along the
@@ -2592,7 +2618,7 @@ def snowy_peaks(p, rng, kind):
         frozen_pond(p, bt.on_ground(Vector((X0 + 1.0, 0.7, 0)), kind), 0.38)
 
 
-YETI_TOP = 1.3
+YETI_TOP = 0.8
 
 
 def crag(p, rng, top, mats, peak=True):
@@ -2614,6 +2640,7 @@ def rough_mouth(p, rng, mouth, mats):
         lump(p, mouth + Vector((0.12, y, z)), r, rng.choice(mats))
 
 
+@on_low_ground
 def yeti_cave(p, rng, kind):
     """Snowy peaks' Yeti Cave: a heap of jagged ice rock, a black cave mouth on edge 0 with icicles like teeth top and
     bottom, huge footprints coming out of it, gnawed bones outside."""
@@ -2661,6 +2688,7 @@ def red_shrub(p, rng, at):
         lump(p, at + Vector((x, y, 0)), r, "shrub_red", z=r * 0.6, squash=0.8)
 
 
+@on_low_ground
 def volcanic_peaks(p, rng, kind):
     """Grey ash ground on dark basalt slopes split by glowing cracks; cones with smoking craters; burnt stumps and a
     few red shrubs. No paths: the flow to the Salamander Den is the cracks themselves: on the trail edges one long
@@ -2704,9 +2732,10 @@ def volcanic_peaks(p, rng, kind):
         lava_cracks(p, rng, [V(X0 + 0.3, 0.1), V(X0 + 0.9, 0.2), V(X0 + 1.3, 0.05)], 0.1, ground)
 
 
-DEN_TOP = 1.3
+DEN_TOP = 0.8
 
 
+@on_low_ground
 def salamander_den(p, rng, kind):
     """Volcanic peaks' Salamander Den: a heap of basalt with a cave mouth on edge 0 glowing orange from within, a lava
     stream running out of it to the centre's edge, where a trail's crack carries on, and glittering ore in the walls.
@@ -2733,7 +2762,7 @@ def salamander_den(p, rng, kind):
 # Monastery heights (class variant): stone steps and switchbacks really are its look, so it has paths.
 
 SWITCHBACK = ((X0, 0.0), (X0 + 0.72, 0.5), (X0 + 1.42, -0.42), (X1, 0.0))
-LIBRARY_TOP = 1.4
+LIBRARY_TOP = 0.9
 
 
 def stone_flight(p, rng, pts, ground, w=0.44):
@@ -2790,6 +2819,7 @@ def flag_poles(p, rng, a, b, ground, h=1.2):
     bunting(p, rng, a, b, h - 0.03, sag=0.12)
 
 
+@on_low_ground
 def monastery_heights(p, rng, kind):
     """Stone steps and switchbacks with low walls climb between tiles along the trails (there's a way from every tile
     to the Library), under strings of prayer flags; neat terraced herb gardens and a few shaped pines. The flow: the
@@ -2843,6 +2873,7 @@ def monastery_heights(p, rng, kind):
         bt.outcrop(p, rng, Vector((X0 + 1.05, 0.9, 0)), kind, 0.7)
 
 
+@on_low_ground
 def library(p, rng, kind):
     """Monastery heights' Library: a tiered stone monastery with tiled roofs on a levelled rise, a walled front with a
     big gate at the top of the steps on edge 0, a bell tower in the court, prayer flags from the tower to the gate."""

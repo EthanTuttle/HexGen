@@ -1,13 +1,13 @@
-# Hills kit hand-off (tiles_v41)
+# Hills kit hand-off (tiles_v42)
 
 This kit holds tier 0 hills, highlands with the Clan Hall (tier 1), cold snowy peaks with the Yeti Cave and volcanic peaks with the Salamander Den (tier 2), and monastery heights with the Library (class variant). Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v41.blend`.
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v42.blend`.
 - **Path data and effect points:** in the glb as node extras, and in `art/export/tiles_paths.json`.
 - **Looks and flows:** `design/07 Presentation.md` → Art direction → Region variant looks and Landmark tiles.
 - **Engine rules:** `design/06 Multiplayer & tech.md` → Tile build.
 - **Build notes per piece:** `art/README.md` → Units and pieces.
-- **Previews:** `art/preview/hills_t0_v2.png`, `hills_highlands_landmark_v2.png`, `hills_clanhall_closeup_v2.png`, `hills_t2_snowy_landmark_v2.png`, `hills_t2_yeticave_closeup_v2.png`, `hills_t2_volcanic_landmark_v1.png`, `hills_t2_salamanderden_closeup_v1.png`, `hills_t2_monastery_landmark_v1.png`, `hills_t2_monastery_paths_v1.png`, `hills_t2_library_closeup_v1.png`.
+- **Previews:** `art/preview/hills_t0_v2.png`, `hills_highlands_landmark_v2.png`, `hills_clanhall_closeup_v2.png`, `hills_t2_snowy_landmark_v2.png`, `hills_t2_yeticave_closeup_v2.png`, `hills_t2_volcanic_landmark_v1.png`, `hills_t2_salamanderden_closeup_v1.png`, `hills_t2_monastery_landmark_v1.png`, `hills_t2_monastery_paths_v1.png`, `hills_t2_library_closeup_v1.png`. Those show the regions before the lift. With it, for `highlands`, `snowy`, `volcanic` and `monastery`: `hills_<variant>_7_height_v1.png` (7 tiles, landmark inward; monastery's is `_7_paths_height_v1`, with its routes drawn), `_7out_height_v1` (landmark on an outer tile), `_12_height_v1` (12 tiles), and a close-up of each landmark, such as `hills_snowy_yeticave_height_v1.png`.
 
 The trail rule, density bands and landmark turn work as in the earlier kits (`art/handoff/forest_kit.md`, `plains_kit.md`); only what's new for hills is written out here.
 
@@ -79,7 +79,7 @@ Then for each tile:
 4. **Edge mountain:** `<variant>_mountain_edge`, turned by 60° × `i`, on a ranged edge `i`, unless the corner just before it (`i - 1`) is already a corner mountain.
 5. **Ridges:** with two or more mountain parts on a tile, more than two steps from a landmark, and not on monastery heights: one `<variant>_ridge_knot` at the middle, and a `_ridge_edge` or `_ridge_corner` to each part, turned the same way. Monastery has none because they'd bury the steps; it keeps its mountains.
 
-Mountains and ridges are solid: routes go round them. Their heights:
+Mountains and ridges are solid: routes go round them. Their heights before the lift:
 
 | | Lone peak | Edge mountain | Corner mountain |
 | --- | --- | --- | --- |
@@ -88,7 +88,55 @@ Mountains and ridges are solid: routes go round them. Their heights:
 | `volcanic_peaks` | 4.35 | 3.60 | 4.57 |
 | `snowy_peaks` | 4.77 | 4.23 | 5.45 |
 
-Landmarks stay under 4.2: Yeti Cave 3.95, Salamander Den 3.95, Library 3.94, Clan Hall 4.0.
+Before the lift, landmarks top out at 3.45 (Yeti Cave, Salamander Den), 3.44 (Library) and 3.5 (Clan Hall). The height rule gives way here, as Ethan asked for height.
+
+## Rising inward: the massif lift
+
+Reference: `art/scripts/massif.py`, plain Python to copy, like `landmark_flow.py`. It applies to `highlands`, `snowy_peaks`, `volcanic_peaks` and `monastery_heights` (`massif.MASSIF`), not plain `hills`. Worked out once when the region finishes; tiles added later stay at ground level.
+
+**The rule: a height per tile corner from the step distance to the region's edge, and every vertex shifted by it.**
+
+1. **Depth:** `depths(region)`. A tile with a neighbour outside the region is 0; otherwise one more than its lowest neighbour. A 7-tile region has one tile at depth 1, and the 12-tile preview three.
+2. **Lift values:** `region_lifts(region)` gives each tile's middle and six corners. The middle lifts by `LIFT[depth]`. A corner lifts halfway between the lowest and highest of the three tiles round it, or 0 if any of the three is outside the region.
+3. **Any point:** `lift_at(tile_lift, x, y, flat)`, with x and y measured from the tile's middle along the unturned axes. Pass `flat=True` on the landmark's tile, so its centre piece stays level and its buildings don't lean.
+4. **Mountains and ridges grow too:** `tower_of(tile_lift, kind, i)` gives a factor, with `i` the piece's turn. Their vertices become `z * tower + lift`. It uses the lift at the mountain's own foot, so all parts of one mountain agree. Other pieces only add the lift.
+
+| Value | Chosen | Why |
+| --- | --- | --- |
+| `LIFT` by depth | 0.7, 2.5, 3.5, 4.1 | clearly high in the middle, and trails stay near 28°. At 1.35 times this, trails reach 33° and it looks only a little higher |
+| `TOWER` | 0.3 per unit of lift | peaks tower over the raised ground instead of just lifting with it |
+
+Heights with the lift, ground middles including the mound of 0.8:
+
+| | Height |
+| --- | --- |
+| Region's outer edge | 0, exactly |
+| Walking ground, outer tile's middle | 1.5 |
+| Walking ground, inner tile's middle | 3.3 |
+| Landmark's level top, inward | about 2.9 (buildings up to about 5.5) |
+| Landmark's level top, on an outer tile | about 1.4 (buildings up to about 4.0) |
+| Tallest point, 12 tiles | highlands 8.12, snowy 8.97, volcanic 7.98, monastery 7.46 |
+
+**Baking it (what I recommend).** When a region finishes, copy each of its tiles' piece meshes once, shift the vertices, recompute the normals, and merge a tile's pieces into one mesh per material. No new pieces and no shader change. A shader version would have to go in every material, the shadow pass and the culling bounds.
+
+Phone cost: no extra triangles and no per-frame cost, and merging should lower draw calls for these tiles. These are my estimates, not measurements:
+- **Memory:** about 4 MB for a 12-tile region (some 180,000 vertices), since its tiles no longer share meshes.
+- **Time:** a loop that size takes a noticeable fraction of a second in GDScript, so do one tile per frame or use a thread.
+
+**Everything else has to move with it:**
+- **Path data:** stays in the kit unlifted. Add `lift_at` to every point at load, and first split segments so no piece is longer than 0.5, because the lift has creases. `render_preview.lifted_line` does this. Hubs and spokes the same.
+- **Minis:** whatever samples the ground must add `lift_at`, and the route's heights must come from the lifted points.
+- **Ground cover:** add `lift_at` to its positions. These variants have density 0, but neighbours' cover fades in near the edges.
+- **Effect points:** `z * tower + lift` on mountains, `z + lift` elsewhere.
+- **Combat boards:** not worked out. A board that grows from a lifted tile has to start at the lifted height, and I haven't tried it.
+
+**Seams:** tiles share corners and lift_at is a straight line along an edge, so neighbours get the same number. I tested every shared edge of the 7- and 12-tile regions, landmark inward and outer: no mismatch, and the outer edge is exactly 0. So the soil sides at the region's edge don't move and the board looks as it did.
+
+**Edges of a region (new rule, for design/06):** every side of a massif region must end at ground level, so `linked()` in `render_preview.py` counts a massif tile as **not joined** to any tile of another variant, including plain hills and other massif variants. Both tiles use `edge_other` there, and no mountain crosses. Otherwise a plain hills wedge (0.7 high at the edge's middle) wouldn't meet a massif wedge.
+
+**Lower mound (kit change):** these four variants and their landmarks are now built on a lower mound (`variants.LOW_GROUND`: 0.5 at the centre's edge, 0.8 at the middle, 0.35 at a joined edge's middle, against 1.0, 1.6, 0.7), because the old mound alone was already 34° along a wedge's middle. Landmark tops came down to match: Clan Hall and Library 0.9, Yeti Cave and Salamander Den 0.8. Triangle counts didn't change.
+
+**Slopes:** straight along a trail, the steepest point is 27–29° on the regions I checked; minis tilt at most 28°. Off the trails, about 3–17% of the walking ground by area is over 28° by kind of piece, up to 23% on joined wedges next to an inward landmark, with the worst at about 40° near the dips at tile corners. Tier 0's mound is steeper than that.
 
 ## Monastery steps: `steps_centre` and `steps_rise`
 
@@ -97,12 +145,12 @@ These are extra pieces on top of the centre and wedges, one per trail edge, turn
 - **`monastery_heights_steps_centre`:** on an ordinary tile, a flight from the wedge's stair to the landing at the tile's middle.
 - **`monastery_heights_steps_rise`:** on the Library's tile, a flight up its rise, on every trail edge **except the entrance edge** (the one `turn()` returns), whose steps are in `library_centre` itself.
 
-Neither has path data. The route comes from these:
+Neither has path data. With the lift the stairs climb for real: they shift with the ground, slabs tilting a little, and meet exactly across tile edges. The route comes from these:
 
 | Piece | Path data |
 | --- | --- |
 | `monastery_heights_edge_trail` | the switchback (`variants.SWITCHBACK`), with real heights, from x 1.754 to the edge midpoint |
-| monastery centres | `hub` at (0, 1.6, 0), joined straight to the inner end of every wedge path on the tile |
+| monastery centres | `hub` at the middle (0, 0.8, 0), joined straight to the inner end of every wedge path on the tile |
 | `library_centre` | steps to the gate and a walk round the walls in `paths`, plus `spokes` per edge, used only where that edge has a trail. Spoke keys are in the piece's frame, so after a turn of `t` steps, spoke `i` lies on real edge `(i + t) % 6` |
 
 ## Materials of their own
@@ -142,6 +190,11 @@ Every landmark's entrance is on edge 0, and each has a line from edge 0's inner 
 - **Far ridges as walls:** in big ranges, ridges are solid, so a far tile can be hard to cross. Routing round them hasn't been tried.
 - **Monastery stairs up close:** landings and low walls are chunky and overlap a little at the bends, and some slabs sit partly sunk on slopes. They read well at map zoom.
 - **Yeti Cave's print:** the one on its rise crosses the rise's edge, so its heel tilts down the slope and catches the light a little differently.
+- **Landmark rises:** the short rim of a landmark's level top is still steep, 50–58° over about 0.25, like a step. Entrance routes cross it.
+- **Landmark on an outer tile:** it sits low on the massif's flank with peaks above it. It still reads as the focus, but doesn't feel high up.
+- **Inward landmark's entrance:** when every trail is the same length, the hash picks the facing, so the mouth can point away from the default camera, as in `hills_snowy_7_height_v1.png`.
+- **Sheared props:** props on a slope shift by a tilted plane, so a wide one (a bothy, garden terraces, stair slabs) tilts a little. Only the landmark's centre stays level.
+- **Volcanic ground:** on the lower mound less of the ground is steep enough to turn to basalt, so it's plainer ash than in `hills_t2_volcanic_landmark_v1.png`.
 - **Landmark size:** the Yeti Cave and Salamander Den are smaller than the mountains round them, by the height rule. They stand out by the black mouth and the glow, not by size.
-- **Not tested in an engine:** the range rules, `steps_*` placement, `lava`, the fades, smoke merging and routes round rock haven't been tried in Godot yet.
+- **Not tested in an engine:** the massif lift and baking, the range rules, `steps_*` placement, `lava`, the fades, smoke merging and routes round rock haven't been tried in Godot yet.
 - **Placeholder colours:** the new ground and prop colours are placeholders where design/07 doesn't name them.
