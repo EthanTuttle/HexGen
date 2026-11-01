@@ -73,7 +73,7 @@ Decided Oct 22, 2026 (replaces "some terrain, such as a ravine, is impassable wi
 - **Merging finished regions** (decided Oct 23, 2026): if one tile touches two finished regions of the same terrain, they stay separate regions, each keeping its variant and location. The new tile joins the newer region.
 - Each terrain except desert, farmland and ruins also has a class variant whose location is a class location. A class's level-5 quest guarantees its own class variant (see [Cards & progression](05 Cards & progression.md) → Class locations).
 - **Region sizes** (decided Oct 24, 2026; was "around 4"): a terrain's first region (tier 1) needs 5+ hexes; later regions of that terrain (tier 2) need 7+. Still small enough that each placement matters.
-- **Landmarks** (decided Oct 23–24, 2026): completing a region permanently converts one random tile of the region into a landmark, rolled at random from the region variant's pool. Players never place landmarks themselves. (Legendaries come from tier 3 variants instead; see below.)
+- **Landmarks** (decided Oct 23–24, 2026; changed Nov 1, 2026): completing a region permanently converts one random tile of the region into its landmark, which is always the variant's **core location** (the location listed per variant in the table below; e.g. every heartwood gets a Tree of Life). It was rolled from a pool per variant before. The landmark tile has its own look (see [Presentation](07 Presentation.md) → Landmark tiles). Players never place landmarks themselves. (Legendaries come from tier 3 variants instead; see below.)
 - **Tier 3 variants** (decided Oct 24, 2026): rare Legendary regions. A finished region can, rarely, roll a tier 3 variant and the whole region transforms. Its location is the Legendary itself, and the region also gets region-wide effects (e.g. tougher encounters, special events, better loot across its tiles).
 - **Quests as shortcuts** (decided Oct 24, 2026): players can work their way up through the tiers to reach rare regions, or find a quest that guarantees one, like the class quests guarantee class variants. Legendary quests work this way (see [World & story](01 World & story.md) → Other Legendary quests).
 - **Unlocking tier 3** (decided Oct 24, 2026): once the player has finished any tier 2 region of a terrain, later regions of that terrain can rarely roll tier 3 (about 10% per finished region, to tune in playtest). Once they've finished every tier 2 variant of that terrain, every later region of it is guaranteed to be a tier 3 variant they haven't made yet, until they've made them all (which one: rolled). After that, later regions of that terrain roll tier 2 only.
@@ -122,7 +122,7 @@ Decided Oct 24, 2026. Each is variant → its Legendary location.
 
 ### Region variants and locations
 
-Tier 1 is each terrain's intro variant; tier 2 variants are rolled for later regions. The location listed for each variant is from before the landmark pools; it is expected to sit in that variant's pool, alongside former Rare cards (full pools: open).
+Tier 1 is each terrain's intro variant; tier 2 variants are rolled for later regions. The location listed for each variant is its core location, which every finished region of that variant gets as its landmark (decided Nov 1, 2026; see Landmarks above).
 
 | Terrain | Tier 1 variant → location | Tier 2 variants → locations | Class variant (tier 2) → class location |
 | --- | --- | --- | --- |
@@ -184,7 +184,7 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [x] ~~Rare cards on the map~~ (settled Oct 24, 2026: Rare cards are no longer map cards; they are landmarks in region pools)
 - [ ] **New (placement review, Oct 23):** does a terrain card placed next to a Story card still check terrain pairing against it?
 - [ ] **New:** tier 3 variants: each god's holy-land aura (set with the temple rewards); the Mad King's decree list; shortcut quests (start and steps) for every tier 3 that lacks one
-- [ ] **New:** landmark pools per region variant (tracked in [Cards & progression](05 Cards & progression.md) → Open questions)
+- [ ] **New (Nov 1, 2026):** each variant's landmark is now its core location, so the former Rare landmarks (Pool of life, Inn, Church and the rest) have no home yet (tracked in [Cards & progression](05 Cards & progression.md) → Open questions)
 - [x] ~~Multi-hex cards: pairing and night sight~~ (settled Oct 23, 2026: they ignore pairing; one hex in sight is enough at night)
 - [x] ~~Which tile converts when a region completes~~ (settled Oct 23, 2026: random)
 - [x] ~~Can the random conversion land on a Rare tile?~~ (settled Oct 24, 2026: moot, there are no Rare tiles)
