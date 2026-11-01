@@ -524,15 +524,15 @@ def militia_barn(p, rng, kind):
 BUNTING = ["awning_a", "ribbon_blue", "hay", "ribbon_white", "banner"]
 
 
-def apple_tree(p, rng, at, h=None):
-    """A round fruit tree hung with red apples."""
-    h = h or rng.uniform(1.15, 1.35)
-    p.cylinder(at, 0.07, h * 0.45, "trunk")
-    p.blob(at, h * 0.36, rng.choice(["leaf", "leaf_dark"]), z=h * 0.72, squash=0.95)
-    for k in range(3):
+def apple_tree(p, rng, at, h=None, laden=False):
+    """A round fruit tree hung with red apples; laden ones carry more fruit."""
+    h = h or rng.uniform(0.95, 1.35)
+    p.cylinder(at, 0.065, h * 0.45, "trunk", segments=5)
+    p.blob(at, h * 0.36, rng.choice(["leaf", "leaf", "leaf_dark"]), z=h * 0.72, squash=0.95)
+    for k in range(5 if laden else 2):
         a = rng.uniform(0, 2 * math.pi)
         q = at + Vector((math.cos(a), math.sin(a), 0)) * h * 0.3
-        p.box(q, (0.07, 0.07, 0.07), "apple", z=h * rng.uniform(0.55, 0.85), spin=a)
+        p.box(q, (0.075, 0.075, 0.075), "apple", z=h * rng.uniform(0.55, 0.85), spin=a)
 
 
 def basket(p, rng, at):
@@ -551,30 +551,49 @@ def ladder(p, at, spin):
         p.box_rot(at + rot @ Vector((0, 0, 0.2 + 0.22 * k)), (0.025, 0.22, 0.025), "trunk", rot)
 
 
-def orchard_grid(p, rng, picking=False):
-    """The farm grid's four plots planted as orchards: grass under two rows of apple trees each, with a ladder
-    and baskets, and fallen fruit in the grass. picking: more baskets out, and a cart being loaded."""
-    cols, rows = bt.FARM_LAYOUT
-    w, h, gap = bt.FARM_GRID[bt.FARM_LAYOUT]
-    tw, th = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
-    p.flat([bt.turned(-tw / 2 - gap, -th / 2 - gap), bt.turned(tw / 2 + gap, -th / 2 - gap),
-            bt.turned(tw / 2 + gap, th / 2 + gap), bt.turned(-tw / 2 - gap, th / 2 + gap)], 0.015, "road")
-    for i in range(cols):
-        for j in range(rows):
-            cx, cy = -tw / 2 + w / 2 + i * (w + gap), -th / 2 + h / 2 + j * (h + gap)
-            p.flat([bt.turned(cx - w / 2, cy - h / 2), bt.turned(cx + w / 2, cy - h / 2),
-                    bt.turned(cx + w / 2, cy + h / 2), bt.turned(cx - w / 2, cy + h / 2)], 0.03, "orchard_grass")
-            for a in (-0.25, 0.25):
-                for b in (-0.27, 0.27):
-                    apple_tree(p, rng, bt.turned(cx + a * w * 1.4, cy + b * h * 1.3) + Vector((0, 0, 0.03)))
-            if (i + j) % 2 == 0:
-                ladder(p, bt.turned(cx + 0.08, cy - 0.1), bt.FARM_SPIN + 0.5)
-            basket(p, rng, bt.turned(cx, cy + 0.15) + Vector((0, 0, 0.03)))
-            if picking:
-                basket(p, rng, bt.turned(cx - 0.22, cy + 0.05) + Vector((0, 0, 0.03)))
-            for k in range(3):  # fallen fruit
-                q = bt.turned(cx + rng.uniform(-0.6, 0.6), cy + rng.uniform(-0.5, 0.5))
-                p.box(q, (0.07, 0.07, 0.06), "apple", z=0.03, spin=rng.uniform(0, 1))
+ORCHARD_ROWS = ((X0 + 0.5, (0.85,)), (X0 + 1.45, (-1.15, 1.15)))  # wedge rows: depth, trees across (staggered)
+
+
+def orchard_trees(p, rng, spots):
+    """Apple trees at spots, jittered and varied in size, about one in four laden; a ladder in one, a basket
+    and a few fallen apples under some."""
+    for k, at in enumerate(spots):
+        at = at + Vector((rng.uniform(-0.12, 0.12), rng.uniform(-0.12, 0.12), 0))
+        apple_tree(p, rng, at, laden=rng.random() < 0.25)
+        if rng.random() < 0.35:
+            p.box(at + Vector((rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), 0)), (0.075, 0.075, 0.06), "apple",
+                  spin=rng.uniform(0, 1))
+        if k == 1:
+            ladder(p, at + Vector((-0.35, 0.05, 0)), 0.0)
+        if k == 2:
+            basket(p, rng, at + Vector((-0.45, 0.1, 0)))
+
+
+def orchard_wedge(p, rng, track):
+    """A wedge of the orchard: loose rows parallel to the edge (they ring the tile), clear of the track along
+    the middle line where there is one."""
+    spots = [Vector((x, y, 0)) for x, ys in ORCHARD_ROWS for y in ys]
+    if not track:
+        spots.append(Vector((X0 + 0.95, -0.2, 0)))
+    orchard_trees(p, rng, spots)
+
+
+def orchard_centre(p, rng, picking=False):
+    """The centre of the orchard: trees between the six lanes from the middle (where the hub joins the
+    tracks), a cleared yard in the middle with a basket or two. picking: a cart being loaded and more baskets."""
+    spots = [Vector((math.cos(math.radians(30 + 120 * k)), math.sin(math.radians(30 + 120 * k)), 0)) * 1.25
+             for k in range(3)]
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(0.55, pointy=True)][::-1], 0.012, "road")  # the yard
+    for i in range(6):  # track stubs from the yard out to every wedge (where a wedge has no track, it ends at the trees)
+        a = math.radians(60 * i)
+        out, side = Vector((math.cos(a), math.sin(a), 0)), Vector((-math.sin(a), math.cos(a), 0))
+        p.flat([out * 0.4 - side * 0.22, out * X0 - side * 0.22, out * X0 + side * 0.22, out * 0.4 + side * 0.22],
+               0.012, "road")
+    orchard_trees(p, rng, spots)
+    basket(p, rng, Vector((0.3, 0.25, 0)))
+    if picking:
+        for q in ((-0.3, 0.3), (-0.2, -0.35)):
+            basket(p, rng, Vector((*q, 0)))
 
 
 def bunting(p, rng, a, b, z, sag=0.15):
@@ -594,16 +613,17 @@ def bunting(p, rng, a, b, z, sag=0.15):
 
 
 def cider_orchards(p, rng, kind):
-    """Neat rows of round fruit trees with red apples in place of the wheat plots, with ladders, baskets and
-    fallen fruit; tracks, fences and gates as on other farms."""
+    """Rows of round fruit trees with red apples filling the whole tile, spread out, with ladders, baskets and
+    fallen fruit; tracks run between tiles, with fences and gates as on other farms."""
     if kind in ("centre", "centre_near"):
-        orchard_grid(p, rng, picking=kind == "centre_near")
+        orchard_centre(p, rng, picking=kind == "centre_near")
         if kind == "centre_near":  # next to the Harvest Festival: bunting over the yard, a cart being loaded
-            grain_cart(p, rng, Vector((0.55, -0.15, 0)), 0.6)
-            p.box(Vector((0.55, -0.15, 0)), (0.5, 0.3, 0.08), "apple", z=0.47, spin=0.6)  # its load of apples
-            bunting(p, rng, Vector((-1.3, 0.75, 0)), Vector((1.3, 0.75, 0)), 1.25)
-            for x in (-1.3, 1.3):
-                p.box(Vector((x, 0.75, 0)), (0.05, 0.05, 1.3), "trunk")
+            grain_cart(p, rng, Vector((0.35, -0.3, 0)), 0.6)
+            p.box(Vector((0.35, -0.3, 0)), (0.5, 0.3, 0.08), "apple", z=0.47, spin=0.6)  # its load of apples
+            for a_deg in (90, 270):
+                a = math.radians(a_deg)
+                p.box(Vector((math.cos(a), math.sin(a), 0)) * 0.75, (0.05, 0.05, 1.4), "trunk")
+            bunting(p, rng, Vector((0, 0.75, 0)), Vector((0, -0.75, 0)), 1.35)
         p.hub = Vector((0, 0, 0))
         return
     if kind in ("edge_trail", "edge_trail_in"):  # toward the Harvest Festival: bunting along the track
@@ -614,47 +634,79 @@ def cider_orchards(p, rng, kind):
         if kind == "edge_trail":  # an apple cart heading over the edge for the festival
             grain_cart(p, rng, Vector((X0 + 1.2, -0.05, 0)), 0.0, shafts=True)
             p.box(Vector((X0 + 1.2, -0.05, 0)), (0.5, 0.3, 0.08), "apple", z=0.47)
+        orchard_wedge(p, rng, track=True)
         return
     bt.farmland(p, rng, kind)  # tracks, fences and gates as on other farms
+    orchard_wedge(p, rng, track=kind != "other")
+
+
+def striped_roof(p, at, r, h, z, segments=10, cols=("awning_a", "wall")):
+    """A pyramid roof in alternating stripes, one colour per face."""
+    top = p.bm.verts.new(at + Vector((0, 0, z + h)))
+    ring = [p.bm.verts.new(at + Vector((math.cos(2 * math.pi * k / segments) * r,
+                                        math.sin(2 * math.pi * k / segments) * r, z))) for k in range(segments)]
+    for k in range(segments):
+        p.bm.faces.new([ring[k], ring[(k + 1) % segments], top]).material_index = p._slot(cols[k % 2])
+
+
+def festival_stall(p, rng, at, spin):
+    """A big market stall: a long counter of goods under a deep striped awning."""
+    p.box(at, (1.2, 0.5, 0.45), "crate", spin=spin)
+    for dx in (-0.58, 0.58):
+        for dy in (-0.25, 0.3):
+            p.box(at + turn(Vector((dx, dy, 0)), spin), (0.05, 0.05, 1.2), "trunk", spin=spin)
+    for k in range(6):
+        p.box(at + turn(Vector((-0.55 + 0.22 * k, 0.03, 0)), spin), (0.22, 0.8, 0.04), ("awning_a", "wall")[k % 2],
+              z=1.2, spin=spin)
+    for k in range(4):
+        basket(p, rng, at + turn(Vector((-0.42 + 0.28 * k, 0, 0)), spin) + Vector((0, 0, 0.45)))
 
 
 def harvest_festival(p, rng, kind):
-    """Cider orchards' Harvest Festival: a festival green among the orchards with stalls, a maypole and long
-    tables, under bunting. Its entrance faces edge 0: a bunting arch over the approach from the centre piece's
-    edge to the green."""
+    """Cider orchards' Harvest Festival: a festival green among the orchards with a big striped festival tent,
+    a tall maypole, large stalls and long tables, under bunting. Its entrance faces edge 0: a bunting arch over
+    the approach from the centre piece's edge to the green."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], 0.012, "green")
-    # the maypole: a striped pole, a garland at the top, ribbons out to pegs round it
-    p.cylinder(Vector((0, 0, 0)), 0.06, 2.6, "wall", segments=6)
-    for k in range(4):
-        p.cylinder(Vector((0, 0, 0)), 0.065, 0.18, "banner", segments=6, z=0.3 + 0.6 * k)
-    p.cylinder(Vector((0, 0, 0)), 0.22, 0.12, "leaf", segments=8, z=2.45)
+    # the festival tent at the back: striped walls under a tall striped pyramid roof with a pennant on top
+    tent = Vector((-0.95, 0, 0))
+    p.cylinder(tent, 0.95, 1.1, "wall", segments=10)
+    for k in range(10):  # red stripes round the wall
+        a = 2 * math.pi * (k + 0.5) / 10
+        if k % 2 == 0:
+            p.box(tent + Vector((math.cos(a), math.sin(a), 0)) * 0.94, (0.04, 0.56, 1.08), "awning_a", spin=a)
+    striped_roof(p, tent, 1.15, 1.45, 1.1)
+    p.box(tent, (0.05, 0.05, 0.6), "trunk", z=2.55)
+    p.box(tent + Vector((0, 0.18, 0)), (0.02, 0.36, 0.22), "banner", z=2.9)
+    p.box(tent + Vector((0.96, 0, 0)), (0.04, 0.55, 0.85), "mill_door")  # the open front, toward the green
+    # the maypole: tall and striped, a garland near the top, six ribbons out to pegs round it
+    pole = Vector((0.5, 0, 0))
+    p.cylinder(pole, 0.08, 3.6, "wall", segments=6)
+    for k in range(6):
+        p.cylinder(pole, 0.085, 0.22, "banner", segments=6, z=0.35 + 0.55 * k)
+    p.cylinder(pole, 0.3, 0.15, "leaf", segments=8, z=3.35)
     for k in range(6):
         a = math.radians(60 * k + 30)
-        peg = Vector((math.cos(a), math.sin(a), 0)) * 0.95
-        frustum(p, Vector((0, 0, 2.45)), peg + Vector((0, 0, 0.05)), 0.02, 0.02,
+        peg = pole + Vector((math.cos(a), math.sin(a), 0)) * 0.85
+        frustum(p, pole + Vector((0, 0, 3.35)), peg + Vector((0, 0, 0.05)), 0.025, 0.025,
                 ("awning_a", "ribbon_blue", "hay", "ribbon_white", "banner", "fey_rose")[k], segments=3)
-    # stalls round the back of the green, long tables with benches either side
-    for ang in (135, 180, 225):
-        a = math.radians(ang)
-        stall(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 1.45, a + math.pi / 2)
-    for y in (0.95, -0.95):
-        p.box(Vector((0.35, y, 0)), (1.3, 0.32, 0.36), "crate")  # table
+    # big stalls either side, long tables near the entrance
+    for sd in (-1, 1):
+        festival_stall(p, rng, Vector((-0.2, sd * 1.4, 0)), 0.0 if sd > 0 else math.pi)
+        table = Vector((1.15, sd * 1.05, 0))
+        p.box(table, (1.0, 0.32, 0.36), "crate")
         for dy in (-0.28, 0.28):
-            p.box(Vector((0.35, y + dy, 0)), (1.3, 0.12, 0.2), "trunk")  # benches
-        for k in range(4):
-            basket(p, rng, Vector((-0.15 + 0.33 * k, y, 0.36)))
-    for ang in (90, 270):  # an orchard tree at each side
-        a = math.radians(ang)
-        apple_tree(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 1.7, 1.3)
+            p.box(table + Vector((0, dy, 0)), (1.0, 0.12, 0.2), "trunk")
+        for k in range(3):
+            basket(p, rng, table + Vector((-0.3 + 0.3 * k, 0, 0.36)))
     # the entrance: a bunting arch over the approach on edge 0, and the path in
     for sd in (-1, 1):
-        p.box(Vector((1.45, sd * 0.45, 0)), (0.07, 0.07, 1.5), "trunk")
-    bunting(p, rng, Vector((1.45, -0.45, 0)), Vector((1.45, 0.45, 0)), 1.5, sag=0.08)
-    p.box(Vector((1.45, 0, 0)), (0.06, 0.95, 0.06), "trunk", z=1.5)
-    p.flat([Vector((0.95, -0.25, 0)), Vector((1.6, -0.25, 0)), Vector((1.6, 0.25, 0)), Vector((0.95, 0.25, 0))],
+        p.box(Vector((1.62, sd * 0.5, 0)), (0.08, 0.08, 1.7), "trunk")
+    p.box(Vector((1.62, 0, 0)), (0.07, 1.06, 0.07), "trunk", z=1.7)
+    bunting(p, rng, Vector((1.62, -0.5, 0)), Vector((1.62, 0.5, 0)), 1.65, sag=0.1)
+    p.flat([Vector((1.3, -0.25, 0)), Vector((1.75, -0.25, 0)), Vector((1.75, 0.25, 0)), Vector((1.3, 0.25, 0))],
            0.016, "road")
-    p.paths.append([Vector((X0, 0, 0)), Vector((0.95, 0, 0))])
-    p.hub = Vector((0.95, 0, 0))  # the green is open: the other edges' tracks cross it to the entrance
+    p.paths.append([Vector((X0, 0, 0)), Vector((1.3, 0, 0))])
+    p.hub = Vector((1.3, 0, 0))  # the green is open: the other edges' tracks cross it to the entrance
 
 
 # --- Village: market town ---------------------------------------------------------
@@ -1750,7 +1802,7 @@ VARIANTS = {
     "haunted_homesteads": ("farmland", haunted_homesteads, "haunted",
                            ("edge_gate", "edge_trail", "edge_trail_in", "centre_near")),
     "raided_farms": ("farmland", raided_farms, "raided", ("edge_gate", "edge_trail", "edge_trail_in", "centre_near")),
-    "cider_orchards": ("farmland", cider_orchards, "plains", ("edge_gate", "edge_trail", "edge_trail_in", "centre_near")),
+    "cider_orchards": ("farmland", cider_orchards, "orchard_grass", ("edge_gate", "edge_trail", "edge_trail_in", "centre_near")),
     "fey_wood": ("forest", fey_wood, "fey_wood", ("edge_trail", "centre_near")),
     "dark_wood": ("forest", dark_wood, "dark_wood", ("edge_trail", "centre_near")),
     "heartwood": ("forest", heartwood, "heartwood",
