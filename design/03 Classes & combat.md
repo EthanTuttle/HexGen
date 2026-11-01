@@ -298,7 +298,7 @@ Decided Nov 1, 2026. **Bounded hit chances:** hit chances stay in about the same
 - **Hero coins:** main scores grow 3 → 4 → 5 → 6 → 7 at levels 4, 8, 12 and 16 (see Ability scores), matching the target steps.
 - **Enemies attacking heroes:** the hero's level sets the heads target: 1 from level 1, 2 from level 8, 3 from level 16.
 - **Enemy coins:** set by role (minion 2, soldier 3, elite 4, boss 5), plus 2 per distance band (near +0, mid +2, far +4).
-- **Heroes growing harder to hit:** armour tier, Rare or Legendary armour taking 1 more coin, a feat or mastery adding another −1, and damage reduction from better gear: see [Weapons & gear](04 Weapons & gear.md) → Armour.
+- **Heroes growing harder to hit:** armour tier, Rare or Legendary armour taking 1 more coin, a feat adding another −1 (Plate Master, Nimble), and damage reduction from better gear: see [Weapons & gear](04 Weapons & gear.md) → Armour.
 
 What this gives when the hero is at the stage the content is meant for (hit chance against no / light / medium / heavy armour):
 
