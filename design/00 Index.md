@@ -272,4 +272,4 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Autosaves with several heroes~~ (settled Nov 1: per hero, slots too)
 - [x] ~~What a save shows; the settings list; the join code~~ (settled Nov 1: name and level, place, save time; Audio and Accessibility, plus Multiplayer in a game; a 6-letter code shown there; 3 slots per hero)
 - [ ] New (Nov 1): what goes in each Settings section; a taken join code; removing a guest (settled Nov 1: the host switches multiplayer on and sets a lasting code on the title screen)
-- [ ] New (Nov 1): where the hosting switch goes on the title screen: v6a Multiplayer button, v6b hex by Settings, v6c row under the menu?
+- [x] ~~Where the hosting switch goes~~ (settled Nov 1: v6a, Join becomes Multiplayer; v7 steadies it)
