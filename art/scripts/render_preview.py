@@ -86,6 +86,8 @@ FLOW_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LAN
              for v, lm in (("heartwood", "treeoflife"), ("fey_wood", "feycourt"), ("dark_wood", "spidernest"),
                            ("deep_forest", "hiddenshrine"))}
 
+TRAIL_MARKER = vr.TRAIL_MARKERS[0]  # which heartwood trail marker option the previews show
+
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
 BORDERED = {"farmland", "village"}
@@ -198,6 +200,8 @@ def build_map(templates, animated=False, tiles=None):
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
             elif i in trails:  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
+                if edge not in templates:  # a trail with marker options (heartwood): the one being previewed
+                    edge = f"{kit}_edge_trail_{TRAIL_MARKER}"
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
@@ -356,9 +360,25 @@ if __name__ == "__main__":
             cam = bpy.context.scene.camera
             el = math.radians(40)
             at = hk.tile_position(*LANDMARK_AT)
-            cam.location = at + Vector((0, -17 * math.cos(el), 0.8 + 17 * math.sin(el)))
-            cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+            # looking at the entrance, which faces edge 0 (+X); the map isn't turned to the trails here
+            cam.location = at + Vector((17 * math.cos(el), 0, 0.8 + 17 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, math.pi / 2)
             render(f"closeup_{tiles_map[LANDMARK_AT]}_landmark")
+        # A close-up of a heartwood trail with each marker option, lettered a, b, c.
+        n = max(2, next_n("closeup_heartwood_trail_landmark"))  # numbered with this round's landmark previews
+        for letter, marker in zip("abc", vr.TRAIL_MARKERS):
+            TRAIL_MARKER = marker
+            hk.empty_scene()
+            build_map(load_templates(tiles), tiles=FLOW_MAPS["heartwood"])
+            stage(Vector((1.5, -1.0, 0)), 50, 50)
+            cam = bpy.context.scene.camera
+            el = math.radians(38)
+            cam.location = hk.tile_position(0, 0) + Vector((2.5, -16 * math.cos(el), 16 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+            path = os.path.join(hk.ART, "preview", f"closeup_heartwood_trail_landmark_v{n}{letter}.png")
+            bpy.context.scene.render.filepath = path
+            bpy.ops.render.render(write_still=True)
+            print("RENDERED", path)
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()
