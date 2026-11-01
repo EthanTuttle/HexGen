@@ -228,7 +228,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: once-per-fight tag: "1/fight" text (v12b) or "1" plus a swords icon (v12c)
 - [ ] New: board token plates: enemy labels vs ally initials (both can be "C")
 - [ ] New: ally cards: can casters target themselves, and what range (v14 placeholder: 5 hexes)?
-- [ ] New: exploration hand: side column (v6a) or next tile only (v6b)
+- [x] ~~Exploration hand: side column or next tile only~~ (settled Nov 1, 2026: side column)
 - [ ] New: final terrain colours and icons for map tiles; corrupted tile look
 - [x] ~~End-of-fight screen~~ (in progress as the after-combat screen; see Presentation)
 - [x] ~~Landmark names on the board~~ (settled: pin, name on tap)
