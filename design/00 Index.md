@@ -162,7 +162,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
 - [x] ~~Region variant art: tier 1 looks~~ (settled Oct 30: one look per terrain; see Presentation → Art direction → Region variant looks)
-- [ ] Tier 2 and class variant looks (see Presentation → Open questions)
+- [x] ~~Tier 2 and class variant looks~~ (settled Oct 31: see Presentation → Art direction → Region variant looks; bridges on rapids in Map & exploration → Obstacles)
 - [ ] Terrain motion pass, later in Godot: trees sway, sand drifts, like the water (see Presentation → Open questions)
 - [x] ~~Engine prototype: which terrains the test tiles cover~~ (settled Oct 29: plains, forest, farmland, river/lake, village; see Multiplayer & tech → Engine prototype)
 
@@ -180,7 +180,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Can a character ever have more than 6 AP?~~ (settled: no, 6 AP cap; see Classes & combat → Turns, AP and health)
 - [x] ~~Exact backdrop colours per time of day~~ (settled Oct 30: the Godot prototype's light, revisit in playtesting; see Presentation → Art direction)
 - [ ] New: the size of the rift's lilac shift
-- [ ] Touch: long-press on HUD controls with no details design (decide one by one), and a minimum text size on phones (see Presentation → Open questions; screen edges settled Oct 30: the UI shifts away from the Dynamic Island)
+- [x] ~~Touch: long-press on HUD controls, and a minimum text size on phones~~ (settled Oct 31: portraits show effects and the rest do nothing; 11 pt floor. Screen edges settled Oct 30: the UI shifts away from the Dynamic Island)
 - [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
 - [ ] New: which way water flows (prototype placeholder: toward the bottom of the screen)
 - [ ] New: farm and village border variants for terrain variants (stacked stone, block walls; wooden fence is the default)
