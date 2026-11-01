@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Title v5: no panes</title>
+<title>Title v8: centred Multiplayer label</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -16,7 +16,7 @@ a{color:#B5532F}a:hover{color:#7E3519}
 .w.p{filter:drop-shadow(0 4px 0 #7E3519)}
 .b{border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:38px;padding:0 20px;box-sizing:border-box;clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,13px 100%,0 50%);font-family:'Lilita One',sans-serif;font-size:16px;background:#FCF7EE;color:#33403B}
 .b:active{transform:translateY(2px)}
-.b.p{height:54px;background:#B5532F;color:#FCF7EE;font-size:20px;clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%)}
+.b.p{height:62px;background:#B5532F;color:#FCF7EE;font-size:20px;clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%)}
 .sub{font-family:Nunito,sans-serif;font-weight:800;font-size:11px;opacity:.9;margin-top:1px}
 .hb{border:none;cursor:pointer;padding:0;width:46px;height:52px;background:#FCF7EE;color:#33403B;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);display:flex;align-items:center;justify-content:center}
 .cap{font-size:10px;font-weight:900;letter-spacing:.06em;color:#5A6862;text-transform:uppercase}
@@ -41,11 +41,11 @@ a{color:#B5532F}a:hover{color:#7E3519}
   <div style="position: absolute; left: 30px; top: 22px; bottom: 22px; display: flex; flex-direction: column; justify-content: space-between">
     <div style="padding-left: 6px; animation: rise .6s ease-out both; filter: drop-shadow(0 2px 6px rgba(36,48,44,0.18))"><div role="img" aria-label="Heads or Hexes" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px"><span aria-hidden="true" style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'Lilita One', sans-serif; font-size: 41px; color: #B5532F; text-shadow: -3px 0px 0 #FCF7EE,3px 0px 0 #FCF7EE,0px -3px 0 #FCF7EE,0px 3px 0 #FCF7EE,-2px -2px 0 #FCF7EE,2px -2px 0 #FCF7EE,-2px 2px 0 #FCF7EE,2px 2px 0 #FCF7EE,-3px 2px 0 #FCF7EE,3px 2px 0 #FCF7EE,-3px 4px 0 #FCF7EE,3px 4px 0 #FCF7EE,0px 5px 0 #FCF7EE,-2px 6px 0 #FCF7EE,2px 6px 0 #FCF7EE,0px 8px 0 #FCF7EE, 0 10px 0 #7E3519, 0 12px 14px rgba(36,48,44,0.35); line-height: 1">Heads</span><span style="position: relative; display: inline-flex; width: 34px; height: 34px; border-radius: 50%; background: #E4B54C; box-shadow: 0 5px 0 #9A6A12, inset 0 0 0 3px #C9A24A; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 14px; color: #7E3519; vertical-align: middle">or</span></span><span aria-hidden="true" style="display: flex; align-items: center; gap: 6px; margin-left: 20px"><span style="position: relative; display: block; width: 28px; height: 32px; filter: drop-shadow(0 4px 0 #7E3519)"><span style="position: absolute; inset: 0; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #FCF7EE"></span><span style="position: absolute; inset: 4px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #6E9E5F; display: flex; align-items: center; justify-content: center"><svg width="60%" height="60%" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17 L12 3 L19 17 Z" fill="#4C7D47"></path><path d="M12 3 L19 17 L12 17 Z" fill="#3F6A3E"></path><rect x="10.8" y="17" width="2.4" height="4" fill="#7E5A3A"></rect></svg></span></span><span style="font-family: 'Lilita One', sans-serif; font-size: 41px; color: #B5532F; text-shadow: -3px 0px 0 #FCF7EE,3px 0px 0 #FCF7EE,0px -3px 0 #FCF7EE,0px 3px 0 #FCF7EE,-2px -2px 0 #FCF7EE,2px -2px 0 #FCF7EE,-2px 2px 0 #FCF7EE,2px 2px 0 #FCF7EE,-3px 2px 0 #FCF7EE,3px 2px 0 #FCF7EE,-3px 4px 0 #FCF7EE,3px 4px 0 #FCF7EE,0px 5px 0 #FCF7EE,-2px 6px 0 #FCF7EE,2px 6px 0 #FCF7EE,0px 8px 0 #FCF7EE, 0 10px 0 #7E3519, 0 12px 14px rgba(36,48,44,0.35); line-height: 1">Hexes</span></span></div></div>
     <div style="display: flex; flex-direction: column; gap: 10px; width: 230px; padding-left: 6px; filter: drop-shadow(0 3px 8px rgba(36,48,44,0.22))">
-    <sc-if value="{{hasSave}}" hint-placeholder-val="{{ true }}"><span class="w p" style="animation: rise .5s ease-out .15s both"><button class="b p" onClick="{{cont}}">Continue<span class="sub">[Hero name 1] · Day [N]</span></button></span></sc-if>
+    <sc-if value="{{hasSave}}" hint-placeholder-val="{{ true }}"><span class="w p" style="animation: rise .5s ease-out .15s both"><button class="b p" onClick="{{cont}}">Continue<span class="sub">[Hero name 1] · Lv [N]</span><span class="sub" style="margin-top: 0">[Region] · [Saved time]</span></button></span></sc-if>
     <span class="w {{newCls}}" style="animation: rise .5s ease-out .25s both"><button class="b {{newCls}}" onClick="{{newGame}}">New campaign</button></span>
     <div style="display: flex; gap: 10px; animation: rise .5s ease-out .35s both">
-      <span class="w" style="flex: 1"><button class="b" onClick="{{openLoad}}">Load</button></span>
-      <span class="w" style="flex: 1"><button class="b" onClick="{{openJoin}}">Join</button></span>
+      <span class="w" style="flex: 1 1 0; min-width: 0"><button class="b" onClick="{{openLoad}}">Load</button></span>
+      <span class="w" style="flex: 0 0 142px"><button class="b" onClick="{{openMp}}" aria-label="Multiplayer, hosting {{host.lab}}" style="flex-direction: row; gap: 0; padding: 0 14px">Multiplayer<span aria-hidden="true" style="flex-shrink: 0; width: {{host.dotW}}; height: 9px; margin-left: {{host.dotM}}; border-radius: 50%; background: #5E8F5A; box-shadow: 0 0 0 2px #CFE8C4; opacity: {{host.dotOp}}; transition: width .2s ease, margin-left .2s ease, opacity .2s ease"></span></button></span>
     </div></div>
   </div>
   <span class="w" style="position: absolute; top: 18px; right: 22px; z-index: 5"><button class="hb" aria-label="Settings" onClick="{{openSet}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button></span>
@@ -83,12 +83,66 @@ a{color:#B5532F}a:hover{color:#7E3519}
       </sc-if>
       <sc-if value="{{pop.join}}" hint-placeholder-val="{{ false }}">
         <div style="display: flex; flex-direction: column; gap: 10px">
-          <label for="jc" class="cap">Join code</label>
-          <div style="display: flex; gap: 10px; align-items: center">
-            <input id="jc" placeholder="[Join code]" style="flex: 1; height: 40px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 12px; font-family: Nunito, sans-serif; font-weight: 800; font-size: 15px; color: #24302C">
-            <span class="w p" style="width: 120px"><button class="b p" style="height: 40px; font-size: 16px" onClick="{{close}}">Join</button></span>
+            <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Join</span>
+            <label for="jc" class="cap">Friend's code</label>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <input id="jc" maxlength="6" placeholder="6 letters" style="flex: 1; min-width: 0; height: 38px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 10px; font-family: 'Lilita One', sans-serif; font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #24302C">
+              <span class="w p" style="width: 96px"><button class="b p" style="height: 38px; font-size: 16px" onClick="{{close}}">Join</button></span>
+            </div>
           </div>
-        </div>
+      </sc-if>
+      <sc-if value="{{pop.host}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+              <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Host</span>
+              <button role="switch" aria-checked="{{host.on}}" aria-label="Hosting" onClick="{{toggleHost}}" style="border: none; cursor: pointer; width: 64px; height: 32px; border-radius: 16px; padding: 3px; background: {{host.track}}; display: flex; justify-content: {{host.side}}; align-items: center"><span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 26px; border-radius: 13px; background: #FCF7EE; font-family: Nunito, sans-serif; font-weight: 900; font-size: 11px; color: #24302C">{{host.lab}}</span></button>
+            </div>
+            <span class="cap">Your code</span>
+            <sc-if value="{{host.editing}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 8px; align-items: center">
+                <label for="hc" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Your code</label>
+                <input id="hc" maxlength="6" placeholder="6 letters" style="width: 140px; height: 38px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 10px; font-family: 'Lilita One', sans-serif; font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #24302C">
+                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{saveCode}}">Save</button></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{host.notEditing}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 8px; align-items: center">
+                <span style="display: flex; gap: 4px"><sc-for list="{{host.letters}}" as="l" hint-placeholder-count="6"><span style="width: 24px; height: 32px; border-radius: 7px; background: #F6EEDF; box-shadow: 0 2px 0 #CDB894; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #24302C">{{l}}</span></sc-for></span>
+                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{editCode}}">Change</button></span>
+              </div>
+            </sc-if>
+            
+          </div>
+      </sc-if>
+      <sc-if value="{{pop.mp}}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px"><div style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+              <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Host</span>
+              <button role="switch" aria-checked="{{host.on}}" aria-label="Hosting" onClick="{{toggleHost}}" style="border: none; cursor: pointer; width: 64px; height: 32px; border-radius: 16px; padding: 3px; background: {{host.track}}; display: flex; justify-content: {{host.side}}; align-items: center"><span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 26px; border-radius: 13px; background: #FCF7EE; font-family: Nunito, sans-serif; font-weight: 900; font-size: 11px; color: #24302C">{{host.lab}}</span></button>
+            </div>
+            <span class="cap">Your code</span>
+            <sc-if value="{{host.editing}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 8px; align-items: center">
+                <label for="hc" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Your code</label>
+                <input id="hc" maxlength="6" placeholder="6 letters" style="width: 140px; height: 38px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 10px; font-family: 'Lilita One', sans-serif; font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #24302C">
+                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{saveCode}}">Save</button></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{host.notEditing}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 8px; align-items: center">
+                <span style="display: flex; gap: 4px"><sc-for list="{{host.letters}}" as="l" hint-placeholder-count="6"><span style="width: 24px; height: 32px; border-radius: 7px; background: #F6EEDF; box-shadow: 0 2px 0 #CDB894; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #24302C">{{l}}</span></sc-for></span>
+                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{editCode}}">Change</button></span>
+              </div>
+            </sc-if>
+            
+          </div><div style="display: flex; flex-direction: column; gap: 10px">
+            <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Join</span>
+            <label for="jc" class="cap">Friend's code</label>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <input id="jc" maxlength="6" placeholder="6 letters" style="flex: 1; min-width: 0; height: 38px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 10px; font-family: 'Lilita One', sans-serif; font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #24302C">
+              <span class="w p" style="width: 96px"><button class="b p" style="height: 38px; font-size: 16px" onClick="{{close}}">Join</button></span>
+            </div>
+          </div></div>
       </sc-if>
       <sc-if value="{{pop.set}}" hint-placeholder-val="{{ false }}">
         <div style="padding: 18px; border-radius: 10px; background: #F6EEDF; font-weight: 800; font-size: 13px; color: #5A6862; text-align: center">[Settings]</div>
@@ -100,38 +154,44 @@ a{color:#B5532F}a:hover{color:#7E3519}
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"firstLaunch":{"editor":"boolean","default":false},"$preview":{"width":844,"height":390}}'>
 class Component extends DCLogic {
-  constructor(p){ super(p); this.state = { pop: null, toast: false, hero: 0 }; }
+  constructor(p){ super(p); this.state = { pop: null, toast: false, hero: 0, host: false, editing: false, code: 'KDRWQX' }; }
   renderVals() {
     const first = this.props.firstLaunch ?? false;
     const p = this.state.pop;
-    const T = { load: 'Load', join: 'Join a game', set: 'Settings' };
+    const T = { load: 'Load', join: 'Join a game', set: 'Settings', host: 'Multiplayer', mp: 'Multiplayer' };
     const H = [
-      { n: '[Hero name 1]', sub: '[Race] [Class] · Lv [N]', c: '#3E6F8C', i: '1', day: 'Day [N] · Latest' },
-      { n: '[Hero name 2]', sub: '[Race] [Class] · Lv [N]', c: '#B5532F', i: '2', day: 'Day [N]' },
-      { n: '[Hero name 3]', sub: '[Race] [Class] · Lv [N]', c: '#5E8F5A', i: '3', day: 'Day [N]' }
+      { n: '[Hero name 1]', sub: '[Race] [Class] · Lv [N]', c: '#3E6F8C', i: '1', day: '[Saved time]' },
+      { n: '[Hero name 2]', sub: '[Race] [Class] · Lv [N]', c: '#B5532F', i: '2', day: '[Saved time]' },
+      { n: '[Hero name 3]', sub: '[Race] [Class] · Lv [N]', c: '#5E8F5A', i: '3', day: '[Saved time]' }
     ];
-    const cur = H[this.state.hero];
     const autos = [];
-    for (let i = 0; i < 10; i++) autos.push({ a: 'Day [N] · [Time]', b: i === 0 && this.state.hero === 0 ? '[Region] · Latest' : '[Region] · [Saved time]' });
+    for (let i = 0; i < 10; i++) autos.push({ a: '[Region]', b: '[Saved time]' });
     const say = (t) => { this.setState({ toast: t }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: false }), 1400); };
+    const on = this.state.host;
     return {
       hasSave: !first,
       newCls: first ? 'p' : '',
-      pop: { any: !!p, load: p === 'load', join: p === 'join', set: p === 'set', title: p ? T[p] : '', w: p === 'load' ? '640px' : '470px' },
+      pop: { any: !!p, load: p === 'load', join: p === 'join', set: p === 'set', host: p === 'host', mp: p === 'mp', title: p ? T[p] : '', w: p === 'load' ? '640px' : (p === 'mp' ? '600px' : '470px') },
       heroes: H.map((h, i) => ({ ...h, on: i === this.state.hero ? 'true' : 'false', bg: i === this.state.hero ? '#FFE9A8' : '#F6EEDF', ring: i === this.state.hero ? 'inset 0 0 0 2px #B5532F' : 'none', pick: () => this.setState({ hero: i }) })),
       autos,
       slots: [
-        { a: 'Slot 1', b: '[Region] · Day [N]', op: 1 },
-        { a: 'Slot 2', b: '[Region] · Day [N]', op: 1 },
+        { a: 'Slot 1', b: '[Region] · [Saved time]', op: 1 },
+        { a: 'Slot 2', b: '[Region] · [Saved time]', op: 1 },
         { a: 'Slot 3', b: 'Empty', op: 0.6 }
       ],
+      host: { on: on ? 'true' : 'false', isOn: on, track: on ? '#5E8F5A' : '#BFAE8E', side: on ? 'flex-end' : 'flex-start', lab: on ? 'On' : 'Off', editing: this.state.editing, notEditing: !this.state.editing, letters: this.state.code.split(''), code: this.state.code, dot: on ? '#5E8F5A' : '#BFAE8E', ring: on ? '0 0 0 3px #7FB36A' : 'none', glow: on ? 'drop-shadow(0 0 8px #9CD07F)' : 'drop-shadow(0 3px 0 #A48A62)', mpLab: on ? 'On' : '', dotOp: on ? 1 : 0, dotW: on ? '9px' : '0px', dotM: on ? '7px' : '0px', rowText: on ? 'Hosting: On · ' + this.state.code : 'Hosting: Off' },
+      toggleHost: () => this.setState({ host: !this.state.host }),
+      editCode: () => this.setState({ editing: true }),
+      saveCode: () => { const el = document.getElementById('hc'); const v = el && el.value ? el.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6) : ''; this.setState({ editing: false, code: v.length === 6 ? v : this.state.code }); },
       toast: this.state.toast,
       cont: () => say('Continue'),
       newGame: () => say('New campaign'),
       openLoad: () => this.setState({ pop: 'load', hero: 0 }),
       openJoin: () => this.setState({ pop: 'join' }),
       openSet: () => this.setState({ pop: 'set' }),
-      close: () => this.setState({ pop: null })
+      openHost: () => this.setState({ pop: 'host', editing: false }),
+      openMp: () => this.setState({ pop: 'mp', editing: false }),
+      close: () => this.setState({ pop: null, editing: false })
     };
   }
   componentWillUnmount(){ clearTimeout(this._t); }
