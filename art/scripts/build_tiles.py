@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bmesh  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 import water as wt  # noqa: E402
@@ -211,14 +211,49 @@ def farm_grid(p, rng, ripe=False, leave_out=None):
     return spare
 
 
+GATE_HALF = 0.42  # half the gap a fence gate leaves
+
+
+def track(p, x0=X0, x1=X1, half=0.22, mat="road"):
+    """A dirt track along the wedge's middle line, and its path centreline (inner end to edge midpoint)."""
+    p.flat([Vector((x0, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((x0, half, 0))], 0.012, mat)
+    p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+
+
+def farm_gate(p, rng):
+    """The fence along edge 0 with a gap in the middle and a wooden farm gate standing open in it (hinged on one
+    post and swung back inside the fence), for a track to run out through."""
+    h = BORDER_X * TAN30
+    border_line(p, rng, Vector((BORDER_X, -h, 0)), Vector((BORDER_X, -GATE_HALF, 0)))
+    border_line(p, rng, Vector((BORDER_X, GATE_HALF, 0)), Vector((BORDER_X, h, 0)))
+    for sd in (-1, 1):
+        p.box(Vector((BORDER_X, sd * GATE_HALF, 0)), (0.11, 0.11, 0.56), "trunk")
+    hinge = Vector((BORDER_X - 0.04, GATE_HALF - 0.06, 0))
+    rot = Matrix.Rotation(math.radians(-100), 3, "Z")  # swung open inward, leaning back along the fence
+    along, length = rot @ Vector((0, -1, 0)), 2 * GATE_HALF - 0.1
+    ang = math.atan2(along.y, along.x)
+    for z in (0.12, 0.24, 0.36, 0.46):  # five-bar style: rails, stiles at each end and a diagonal brace
+        p.box(hinge + along * length / 2, (length, 0.035, 0.04), "fence", z=z, spin=ang)
+    for t in (0.03, length - 0.03):
+        p.box(hinge + along * t, (0.05, 0.05, 0.42), "fence", z=0.07)
+    brace = Matrix.Rotation(ang, 3, "Z") @ Matrix.Rotation(math.atan2(0.34, length), 3, "Y")
+    p.box_rot(hinge + along * length / 2 + Vector((0, 0, 0.29)), (math.hypot(length, 0.34), 0.03, 0.035), "fence",
+              brace)
+
+
 def farmland(p, rng, kind):
-    """A neat grid of wheat plots with dirt paths; tracks join neighbouring farms, hedges close off the rest."""
+    """A neat grid of wheat plots with dirt paths; tracks join neighbouring farms, a fence closes off the rest,
+    with gates on some edges (fence_gates.py) where the track runs out through it."""
     if kind == "centre":
         farm_grid(p, rng)
+        p.hub = Vector((0, 0, 0))
         return
     if kind == "same":  # a dirt track runs on to the neighbouring farm
-        p.flat([Vector((X0, -0.22, 0)), Vector((X1, -0.22, 0)), Vector((X1, 0.22, 0)), Vector((X0, 0.22, 0))],
-               0.012, "road")
+        track(p)
+        return
+    if kind == "edge_gate":  # the fence, with a gate the track runs out through to the edge's middle
+        track(p)
+        farm_gate(p, rng)
         return
     edge_border(p, rng)
 
@@ -258,15 +293,31 @@ def cobbles(p, rng, inside, bounds, count):
 
 
 def village(p, rng, kind):
-    """Cobbled ground; streets and houses run on into neighbouring villages, gardens close off the rest."""
+    """Cobbled ground; streets and houses run on into neighbouring villages, gardens close off the rest, with
+    gates on some edges (fence_gates.py) where the street runs out through the garden."""
+    if kind == "edge_gate":  # the garden strip and fence, with a cobbled street out through a gate
+        garden = X0 + 0.6 * (X1 - X0)
+        p.flat(band(garden, X1), 0.015, "plains")
+        p.flat([Vector((garden - 0.05, -0.36, 0)), Vector((X1, -0.36, 0)), Vector((X1, 0.36, 0)),
+                Vector((garden - 0.05, 0.36, 0))], 0.02, "cobble")
+        cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15) and abs(q.y) < 0.5,
+                hk.WEDGE_BOUNDS, 4)
+        house(p, rng, Vector((X0 + 0.6, 0.95, 0)), math.radians(90))
+        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=BORDER_X - 0.25, margin=0.2)
+                             and abs(q.y) > 0.65, 2, 0.5, hk.WEDGE_BOUNDS):
+            p.blob(at, 0.22, "hedge", squash=0.8)
+        farm_gate(p, rng)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+        return
     if kind == "centre":
         cobbles(p, rng, lambda q: hk.in_centre(q, margin=0.2) and q.length > 0.9, hk.CENTRE_BOUNDS, 14)
         p.cylinder(Vector((0, 0, 0)), 0.3, 0.45, "rock", segments=8)  # well
         for at, spin in ((Vector((-0.9, 0.9, 0)), 0.3), (Vector((0.95, 0.6, 0)), -0.5), (Vector((-0.2, -1.2, 0)), 1.4)):
             house(p, rng, at, spin)
-        return
+        return  # no hub: straight lines from the middle would cross the houses (centre street lines: to do)
     if kind == "same":
         cobbles(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.15) and abs(q.y) < 0.5, hk.WEDGE_BOUNDS, 8)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])  # the street runs on along the middle line
         house(p, rng, Vector((X0 + 0.9, 1.0, 0)), 0.0)
         house(p, rng, Vector((X1 - 0.8, -1.2, 0)), 0.0)
         return
@@ -652,6 +703,7 @@ def build():
         col = hk.new_collection(terrain)
         base(terrain, col)
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
+        kinds += ("edge_gate",) if terrain in BORDERED else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"
@@ -674,6 +726,10 @@ def build():
         p = hk.Piece(f"{landmark}_centre")
         builder(p, hk.seeded(f"{landmark}_centre"), "centre")
         p.finish(col)
+    for name, (builder, at) in variants.LANDMARK_PARTS.items():  # e.g. the Great Windmill's turning sails
+        p = hk.Piece(name)
+        builder(p, hk.seeded(name))
+        p.finish(col, location=at)
     col = hk.new_collection("borders")
     for name, side in (("border_join_l", 1), ("border_join_r", -1)):
         p = hk.Piece(name)

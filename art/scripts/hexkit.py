@@ -3,6 +3,7 @@
 Units: 1 Blender unit = 1 glTF metre. Z is up; pivots sit at the centre, at ground level (z = 0).
 Rules and numbers: design/06 Multiplayer & tech.md -> Engine prototype.
 """
+import json
 import math
 import os
 import random
@@ -140,6 +141,12 @@ PALETTE = {
     "rock_wet": "#4B4D52",
     "rock_wet_dark": "#35373C",
     "cocoon": "#E6E1D6",
+    "sack": "#D9C9A1",
+    "rut": "#B39A70",
+    "mill_stone": "#D8CDB8",
+    "mill_door": "#5E4330",
+    "barn": "#A9553E",
+    "path_debug": "#E0303A",  # previews only: the path data drawn over a map
     "gate_wood": "#8E4A32",
     "iron": "#8C9196",
     "ribbon_red": "#C8553D",
@@ -269,6 +276,11 @@ WEDGE_BOUNDS = ((INNER * TILE_APOTHEM, TILE_APOTHEM), (-TILE_RADIUS / 2, TILE_RA
 CENTRE_BOUNDS = ((-INNER * TILE_APOTHEM, INNER * TILE_APOTHEM), (-INNER * TILE_RADIUS, INNER * TILE_RADIUS))
 
 
+def yup(v):
+    """A point in glTF's Y-up axes, rounded, as the engines read the glb: (x, z, -y)."""
+    return [round(v.x, 3) + 0.0, round(v.z, 3) + 0.0, round(-v.y, 3) + 0.0]  # + 0.0 turns -0.0 into 0.0
+
+
 # --- Geometry builder ------------------------------------------------------
 
 class Piece:
@@ -280,6 +292,12 @@ class Piece:
         self.mats = []
         self.surface = set()  # open surfaces built facing up; finish() leaves their normals alone
         self.smooth = set()   # faces to shade smooth (the sand); everything else stays faceted
+        # Walkable path centrelines for the engine's routing (design/07 -> Walking): polylines in the piece's own
+        # frame, and an optional hub that the engine joins to every wedge path's inner end on the same tile.
+        # finish() stores them on the object as glTF extras (Y-up, like the glb); export_gltf.py also writes them
+        # to a JSON beside the glb.
+        self.paths = []
+        self.hub = None
 
     def _slot(self, mat_name):
         if mat_name not in self.mats:
@@ -384,6 +402,10 @@ class Piece:
             poly.use_smooth = poly.index in smooth
         obj = bpy.data.objects.new(self.name, mesh)
         obj.location = location
+        if self.paths:
+            obj["paths"] = json.dumps([[yup(q) for q in line] for line in self.paths])
+        if self.hub is not None:
+            obj["path_hub"] = json.dumps(yup(self.hub))
         collection.objects.link(obj)
         return obj
 

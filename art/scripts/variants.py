@@ -165,6 +165,27 @@ def grain_cart(p, rng, at, spin):
         p.log(at + side * s * 0.24, 0.16, 0.05, "trunk", spin=spin + math.pi / 2, z=0.16)
 
 
+def sacks(p, rng, at, cols, rows, spin=0.0):
+    """Grain sacks stacked in a little pile: a row of fat sacks with a smaller row on top."""
+    for layer in range(2):
+        n = cols * rows - layer * (cols + rows - 1)
+        for k in range(max(1, n)):
+            i, j = k % cols, k // cols
+            q = at + turn(Vector(((i - (cols - 1) / 2) * 0.24 + layer * 0.12, (j - (rows - 1) / 2) * 0.2, 0)), spin)
+            p.blob(q, 0.13, "sack", z=0.1 + layer * 0.17, squash=0.75)
+
+
+def cart_road(p, rng):
+    """Windmill country's trail wedge: the farm track widened into a rutted cart road running on to the edge,
+    with a grain cart on it heading for the mill and a haystack beside it."""
+    bt.track(p, x0=X0 - 0.2, half=0.45)
+    for sd in (-1, 1):  # wheel ruts
+        p.flat([Vector((X0 - 0.2, sd * 0.24 - 0.05, 0)), Vector((X1, sd * 0.24 - 0.05, 0)),
+                Vector((X1, sd * 0.24 + 0.05, 0)), Vector((X0 - 0.2, sd * 0.24 + 0.05, 0))], 0.018, "rut")
+    grain_cart(p, rng, Vector((X0 + 1.15, 0.05, 0)), rng.uniform(-0.08, 0.08))
+    haystack(p, rng, Vector((X0 + 0.6, rng.choice((-0.9, 0.9)), 0)))
+
+
 def windmill_country(p, rng, kind):
     """Every plot ripe gold, one harvested into haystacks; windmills on some tiles; grain carts on the tracks."""
     if kind in ("centre", "centre_mill"):
@@ -172,11 +193,25 @@ def windmill_country(p, rng, kind):
         at = bt.turned(cx, cy)
         p.flat([bt.turned(cx - w / 2, cy - h / 2), bt.turned(cx + w / 2, cy - h / 2),
                 bt.turned(cx + w / 2, cy + h / 2), bt.turned(cx - w / 2, cy + h / 2)], 0.03, "stubble")
-        if kind == "centre_mill":
-            windmill(p, rng, at, bt.FARM_SPIN + math.pi / 2)
+        if kind == "centre_mill":  # in its plot's corner between the hub's lines to edges 1 and 2, clear of them
+            windmill(p, rng, Vector((0, 1.5, 0)), bt.FARM_SPIN + math.pi / 2)
         else:
             for k in range(3):
                 haystack(p, rng, at + bt.turned(rng.uniform(-0.6, 0.6), rng.uniform(-0.5, 0.5)))
+        p.hub = Vector((0, 0, 0))
+        return
+    if kind == "edge_trail":  # toward the Great Windmill: the track widens into a rutted cart road
+        cart_road(p, rng)
+        return
+    if kind == "centre_near":  # next to the Great Windmill: the harvest piled up, a cart loading
+        cx, cy, w, h = bt.farm_grid(p, rng, ripe=True, leave_out=3)
+        at = bt.turned(cx, cy)
+        p.flat([bt.turned(cx - w / 2, cy - h / 2), bt.turned(cx + w / 2, cy - h / 2),
+                bt.turned(cx + w / 2, cy + h / 2), bt.turned(cx - w / 2, cy + h / 2)], 0.03, "stubble")
+        sacks(p, rng, at + bt.turned(-0.35, 0.1), 2, 3)
+        grain_cart(p, rng, at + bt.turned(0.45, -0.1), bt.FARM_SPIN)
+        haystack(p, rng, at + bt.turned(0.1, 0.55))
+        p.hub = Vector((0, 0, 0))
         return
     bt.farmland(p, rng, kind)
     if kind == "same" and rng.random() < 0.6:
@@ -1083,7 +1118,61 @@ def spider_nest(p, rng, kind):
     face_edge0(p)
 
 
-LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest}
+MILL_HUB = Vector((0.8, 0, 3.15))  # where the Great Windmill's sails turn, in the centre piece's frame
+
+
+def great_windmill(p, rng, kind):
+    """Windmill country's Great Windmill: a tall stone tower mill with a granary barn, grain sacks stacked by its
+    door and grain carts lined up outside, on a beaten yard. Its door faces edge 0 (+X), with the cart road's
+    approach from the centre piece's edge to the door. The big sails are their own piece, greatwindmill_sails,
+    so the engine can turn them."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], 0.012, "road")  # the yard
+    p.cylinder(Vector((0, 0, 0)), 1.02, 0.3, "rock", segments=10)  # plinth
+    frustum(p, Vector((0, 0, 0.3)), Vector((0, 0, 3.35)), 0.92, 0.6, "mill_stone", segments=10)
+    p.cylinder(Vector((0, 0, 0)), 0.64, 0.12, "trunk", segments=10, z=3.3)  # the cap's wooden curb
+    p.cone(Vector((0, 0, 0)), 0.7, 0.8, "roof", segments=10, z=3.42)
+    p.box(Vector((0.7, 0, 0)), (0.22, 0.22, 0.22), "trunk", z=3.04)  # the windshaft's housing
+    p.box(Vector((0.93, 0, 0)), (0.08, 0.42, 0.7), "mill_door", z=0.3)  # the door, toward edge 0
+    for a_, z in ((0.0, 1.5), (2.1, 1.1), (-2.1, 1.9), (1.0, 2.5)):  # small windows
+        r = 0.92 - 0.32 * (z - 0.3) / 3.05 + 0.01
+        p.box(Vector((math.cos(a_) * r, math.sin(a_) * r, 0)), (0.06, 0.16, 0.22), "mill_door", z=z, spin=a_)
+    # the approach: the cart road's last stretch, from the centre piece's edge to the door
+    p.flat([Vector((0.98, -0.42, 0)), Vector((1.6, -0.42, 0)), Vector((1.6, 0.42, 0)), Vector((0.98, 0.42, 0))],
+           0.016, "road")
+    sacks(p, rng, Vector((1.12, 0.66, 0)), 2, 2, 0.3)  # by the door
+    # the granary barn, toward the back corner between edges 2 and 3
+    barn = Vector((math.cos(math.radians(150)), math.sin(math.radians(150)), 0)) * 1.7
+    p.box(barn, (1.15, 0.85, 0.8), "barn", spin=math.radians(60))
+    p.gable_roof(barn, 1.3, 1.05, 0.55, "roof", z=0.8, spin=math.radians(60))
+    p.box(barn + turn(Vector((0, -0.43, 0)), math.radians(60)), (0.4, 0.04, 0.55), "mill_door",
+          spin=math.radians(60))
+    # grain carts lined up outside, nose to tail along the approach, toward the corner between edges 5 and 0
+    for x in (0.55, 1.35, 2.15):
+        grain_cart(p, rng, Vector((x, -1.0 - 0.12 * (x > 2), 0)), 0.0)
+    # Paths: the approach on edge 0, a ring round the tower the other edges' tracks join, and spokes out to them.
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 1.35 for i in range(6)]
+    p.paths.append([Vector((X0, 0, 0)), Vector((1.0, 0, 0))])
+    p.paths.append(ring + [ring[0]])
+    for i in range(1, 6):
+        out = ring[i] / 1.35 * X0
+        p.paths.append([out, ring[i]])
+
+
+def great_windmill_sails(p, rng):
+    """The Great Windmill's four big sails, built round the hub (the piece's origin) in the YZ plane, so the
+    engine turns them about the piece's X axis."""
+    p.box(Vector((0, 0, 0)), (0.2, 0.2, 0.2), "trunk", z=-0.1)
+    for k in range(4):
+        rot = Matrix.Rotation(math.radians(45 + 90 * k), 3, "X")
+        p.box_rot(rot @ Vector((0.06, 0.16, 1.05)), (0.03, 0.7, 1.65), "sail", rot)  # the sail cloth
+        p.box_rot(rot @ Vector((0.08, 0, 0.95)), (0.05, 0.09, 1.9), "trunk", rot)  # the stock
+        for t in (0.5, 1.05, 1.6):  # bars across the frame
+            p.box_rot(rot @ Vector((0.09, 0.16, t)), (0.03, 0.74, 0.035), "trunk", rot)
+
+
+LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest, "greatwindmill": great_windmill}
+# landmarks' other pieces: name -> (builder, where the piece's origin sits in the landmark's centre frame)
+LANDMARK_PARTS = {"greatwindmill_sails": (great_windmill_sails, MILL_HUB)}
 
 
 # --- Flowing into the landmark (round 6, for Ethan to judge) ------------------------------------------------
@@ -1196,7 +1285,8 @@ VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
     "meadows": ("plains", meadows, "plains", ()),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
-    "windmill_country": ("farmland", windmill_country, "plains", ("centre_mill",)),
+    "windmill_country": ("farmland", windmill_country, "plains",
+                         ("centre_mill", "edge_gate", "edge_trail", "centre_near")),
     "market_town": ("village", market_town, "cobble", ()),
     "delta": ("river", delta, "plains", ()),
     "bog": ("swamp", bog, "bog", ()),
@@ -1215,7 +1305,7 @@ VARIANTS = {
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
 # (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
 LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
-             "spidernest": "dark_wood"}
+             "spidernest": "dark_wood", "greatwindmill": "windmill_country"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 
