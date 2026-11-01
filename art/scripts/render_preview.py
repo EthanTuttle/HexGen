@@ -48,6 +48,19 @@ TIER1 = {"forest": "deep_forest", "plains": "meadows", "hills": "highlands", "fa
          "village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "excavation"}
 VARIANT_MAP = {k: TIER1[t] for k, t in TERRAIN_MAP.items()}
 
+# Forest tier 2: plain forest in the middle, ringed by finished deep forest, fey wood, dark wood and heartwood
+# regions, so every pair of forest looks shares an edge somewhere; plains round part of it for the outer edges.
+FOREST_T2_MAP = {
+    (0, 0): "forest", (1, -2): "forest",
+    (1, 0): "deep_forest", (1, -1): "deep_forest", (2, -1): "deep_forest", (-2, 0): "deep_forest",
+    (0, -1): "fey_wood", (-1, 0): "fey_wood", (-1, -1): "fey_wood",
+    (-1, 1): "dark_wood", (-2, 1): "dark_wood", (-2, 2): "dark_wood",
+    (0, 1): "heartwood", (1, 1): "heartwood", (0, 2): "heartwood", (0, -2): "heartwood",
+    (2, 0): "plains", (2, 1): "plains", (-1, 2): "plains", (1, 2): "plains", (-3, 2): "plains", (-3, 1): "plains",
+}
+FOREST_T2_CLOSEUPS = {"fey_wood": [(0, -1), (-1, 0), (-1, -1)], "dark_wood": [(-1, 1), (-2, 1), (-2, 2)],
+                      "heartwood": [(0, 1), (1, 1), (0, 2)]}
+
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
 BORDERED = {"farmland", "village"}
@@ -220,7 +233,8 @@ def build_board(templates, radius=4):
 
 if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
-    # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished.
+    # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished;
+    # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -231,6 +245,20 @@ if __name__ == "__main__":
         build_map(load_templates(tiles), tiles=VARIANT_MAP)
         stage(Vector((4, -1, 0)), 82, 45)
         render("variants")
+        sys.exit(0)
+    if "forest-t2" in flags:
+        # The forest tier 2 map, then a close-up of each variant's region and its neighbours.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=FOREST_T2_MAP)
+        stage(Vector((-0.5, -1, 0)), 66, 45)
+        render("forest_t2")
+        cam = bpy.context.scene.camera
+        for variant, group in FOREST_T2_CLOSEUPS.items():
+            target = sum((hk.tile_position(q, r) for q, r in group), Vector()) / len(group)
+            el = math.radians(40)
+            cam.location = target + Vector((0, -24 * math.cos(el), 24 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+            render(f"closeup_{variant}")
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()
