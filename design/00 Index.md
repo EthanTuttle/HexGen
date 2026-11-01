@@ -126,7 +126,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **Cards & progression**
 
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
-- [ ] New: where the former Rare landmarks appear now that each variant's landmark is its core location (Nov 1, 2026), and Legendary odds
+- [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
+- [ ] New: Legendary odds; minor landmark odds per placed tile
 - [ ] New: landmark tile looks for every core location (forest's four done Nov 1, 2026)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
