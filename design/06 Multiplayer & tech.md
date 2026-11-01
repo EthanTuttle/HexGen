@@ -101,7 +101,9 @@ Engine comparison as of Oct 2026 (checked against public info; re-check pricing 
 - [ ] **New:** shared party inventory in multiplayer (see [Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold). Do guests use the host's shared inventory, and what does a leaving guest take: only their hero's equipped gear, or also items they picked up?
 - [x] ~~Night building in multiplayer~~ (settled Oct 23, 2026: each player builds within their own controllable party's sight range; see [Map & exploration](02 Map & exploration.md) → Day and night)
 - [x] ~~Engine choice~~ (settled Oct 29, 2026: **Godot**, after building look tests 1–3 in Godot and Unity; see Engine prototype → Result)
-- [ ] **New:** Godot on iPhone: check the prototype's frame rate on the iPhone 15 Pro (the water shader may need a lighter phone version)
+- [x] ~~Godot on iPhone: check the prototype's frame rate on the iPhone 15 Pro~~ (checked Nov 1, 2026: the forest regions hold 120 fps by day and night, zoomed in and fully out, at up to 849 draw calls)
+- **Frame-rate target** (chosen Nov 1, 2026): run at 120 fps where the phone allows and never drop below 60.
+- [ ] **New:** the minimum phone we test against (only the iPhone 15 Pro so far), and a sustained-play heat and battery check
 - [x] ~~iOS build route from Windows~~ (settled Oct 24: a used Mac)
 - [x] ~~How often to make iPhone builds~~ (settled Oct 24: weekly once development is underway)
 - [ ] **New:** Android: test it too later, or ship iOS first?
