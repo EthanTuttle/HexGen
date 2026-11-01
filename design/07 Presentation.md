@@ -75,6 +75,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Desert | Canyon | Deep winding gorges cut down into the land (unlike the badlands' mesas, which rise); cliff walls banded cream, orange and rust, with overhangs and arches; adobe cliff dwellings with ladders and dark doorways |
   | Farmland | Haunted homesteads | Grey withered crops and weeds overrunning the plots, broken fences; ragged scarecrows with crows perched and circling; boarded-up farmhouses with sagging roofs and dead trees in the yards |
   | Farmland | Bandit-raided farms | Scorched plots with a few small fires and rising smoke; charred barns and farmhouses beside intact ones; trampled crop paths with spilled sacks and broken crates |
+  | Farmland | Cider orchards | Neat rows of round fruit trees with red apples replace the wheat plots, with ladders, baskets and fallen fruit; tracks, fences and gates as on other farms (chosen Nov 1, 2026) |
   | Ruins | Haunted ruins | Pale blue-green light seeping from cracks and doorways, with faint spirit wisps, stronger at night; toppled gravestones, sarcophagi and mausoleum fronts; thin mist pooling and drifting between the stones |
   | Ruins | Golem-guarded ruins | Big dormant stone golems standing or kneeling, eyes and runes faintly lit; carved runes on walls and paving pulsing amber or blue; grander, less crumbled ruins with columns, arches and stairs still standing |
 
@@ -86,7 +87,8 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Deep, old forest | Hidden Shrine | A small mossy stone shrine with a weathered statue of Adam (god of the earth), half swallowed by roots and ivy, in a little clearing among the pines with a shaft of light falling on it |
   | Fey wood | Fey Court | A massive hollow tree with doors, windows and balconies grown into it, lit warmly from inside, with a stair of mushrooms leading up to the door |
   | Windmill country | Great Windmill | A tall tower mill in the same style as windmill country's small mills (white tower, red cap), much bigger, with big turning sails, a granary barn and grain sacks stacked by its door, and carts lined up outside; the tower stays at hill-peak height, and only the turning sails may reach above it. The farm tracks along the trails widen into a cart road with a few grain carts heading to the mill (chosen Nov 1, 2026) |
-  | Haunted homesteads | Abandoned Farmhouse | A larger two-storey farmhouse leaning badly, with one window faintly lit at night and a small family graveyard with a few stones behind it (chosen Nov 1, 2026) |
+  | Haunted homesteads | Abandoned Barn | A big haunted barn standing upright (not leaning), weathered grey, with one faint light glowing through its boards at night and a small family graveyard with a few stones beside it (chosen Nov 1, 2026; was a leaning farmhouse, which looked odd) |
+  | Cider orchards | Harvest Festival | A festival green among the orchards with stalls, a maypole and long tables (chosen Nov 1, 2026; the details are the art's first pass) |
   | Bandit-raided farms | Militia Barn | A big red barn behind a palisade of sharpened stakes, with a lookout platform on the roof and pitchforks and spears racked by the doors (chosen Nov 1, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
 
