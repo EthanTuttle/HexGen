@@ -143,12 +143,19 @@ def haystack(p, rng, at):
     p.cone(at, r * 1.05, r * 0.9, "hay", segments=8, z=r * 1.1)
 
 
-def windmill(p, rng, at, spin):
-    p.cylinder(at, 0.5, 0.3, "rock", segments=8)
-    p.cylinder(at, 0.42, 1.9, "wall", segments=8, z=0.3)
-    p.cone(at, 0.52, 0.6, "roof", segments=8, z=2.2)
+SMALL_MILL_SPOT = bt.field_spot(1, 1.66)  # in a centre_mill's yard, its plinth clear of the lanes
+
+
+def small_windmill(p, rng):
+    """Windmill country's small mill, its own piece with its origin at its foot, facing -Y (the default camera).
+    The engine places it at SMALL_MILL_SPOT turned with the centre, but doesn't turn the mill itself, so all small
+    mills face one way and the sails never show edge-on from the default camera."""
+    at, spin = Vector((0, 0, 0)), -math.pi / 2
+    p.cylinder(at, 0.38, 0.3, "rock", segments=8)
+    p.cylinder(at, 0.34, 1.9, "wall", segments=8, z=0.3)
+    p.cone(at, 0.42, 0.6, "roof", segments=8, z=2.2)
     face = turn(Vector((1, 0, 0)), spin)
-    hub = at + face * 0.5 + Vector((0, 0, 1.95))
+    hub = at + face * 0.42 + Vector((0, 0, 1.95))
     p.box_rot(hub, (0.12, 0.12, 0.12), "trunk", Matrix.Rotation(spin, 3, "Z"))
     for k in range(4):  # four sails in the plane facing out, turned 45 degrees
         a = math.radians(45 + 90 * k)
@@ -203,8 +210,7 @@ def windmill_country(p, rng, kind):
         bt.field_centre(p, rng, bt.picked(rng, RIPE, 6), yard_mat="stubble")
         spot, other = bt.field_spot(1), bt.field_spot(2, 1.5)
         if kind == "centre_mill":
-            windmill(p, rng, spot + Vector((0, 0.1, 0)), math.pi / 2)
-            haystack(p, rng, other)
+            haystack(p, rng, other)  # the mill is its own piece, small_windmill
         elif kind == "centre_near":  # next to the Great Windmill: the harvest piled up, a cart loading
             sacks(p, rng, other, 2, 2)
             grain_cart(p, rng, spot, math.pi / 2)
@@ -1708,8 +1714,9 @@ def great_windmill_sails(p, rng):
 LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest, "greatwindmill": great_windmill,
                     "abandonedbarn": abandoned_barn, "militiabarn": militia_barn,
                     "harvestfestival": harvest_festival}
-# landmarks' other pieces: name -> (builder, where the piece's origin sits in the landmark's centre frame)
-LANDMARK_PARTS = {"greatwindmill_sails": (great_windmill_sails, MILL_HUB)}
+# other separate pieces (the small mill isn't a landmark's): name -> (builder, where the piece's origin sits in the landmark's centre frame)
+LANDMARK_PARTS = {"greatwindmill_sails": (great_windmill_sails, MILL_HUB),
+                  "windmill_small": (small_windmill, Vector((0, 0, 0)))}
 
 
 # --- Flowing into the landmark (round 6, for Ethan to judge) ------------------------------------------------

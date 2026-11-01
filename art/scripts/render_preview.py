@@ -251,6 +251,8 @@ def build_map(templates, animated=False, tiles=None):
         if f"{name}_centre_b" in templates:  # a farm's centre turns by a hash of the tile, so yards don't line up
             spin = math.radians(60 * int(gc.hash01(q * 31 + 7, r * 17 + 3, 14) * 6))
         place(templates, f"{name}_{centre}", col, at, spin)
+        if centre == "centre_mill":  # the small mill goes where the turned yard is, but doesn't turn itself
+            place(templates, "windmill_small", col, at + Matrix.Rotation(spin, 3, "Z") @ vr.SMALL_MILL_SPOT)
         for part, (_, hub) in vr.LANDMARK_PARTS.items():  # e.g. the Great Windmill's sails, turned with it
             if part.startswith(f"{name}_"):
                 place(templates, part, col, at + Matrix.Rotation(spin, 3, "Z") @ hub, spin)
