@@ -39,6 +39,7 @@ const PALETTE := {
 	"fey_wood": "#5C9270", "fey_mushroom": "#B47FE6", "dark_wood": "#5B5F4F", "web": "#D6D4CF",
 	"tuft_dark_wood": "#53574A", "heartwood": "#7AA052", "window_glow": "#FFD27A",
 	# tier 2 farmland variants (hexkit.COLOURS, tiles v34)
+	"steppe": "#B4B97C", "stormy": "#8FC4A6", "mown": "#B9DE8E", "tuft_steppe": "#8E9A5C", "tuft_storm": "#62A488",
 	"haunted": "#8C937C", "raided": "#94A06A", "orchard_grass": "#7FAE57", "window_faint": "#E6D79A",
 }
 

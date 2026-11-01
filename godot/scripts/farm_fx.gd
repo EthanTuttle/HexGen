@@ -1,7 +1,8 @@
 class_name FarmFx
 extends RefCounted
-## The farmland kit's effect points as engine effects (art/handoff/farmland_kit.md -> Effect points): fire and
-## smoke on the raided farms, crows over the haunted scarecrows and the Abandoned Barn. All PLACEHOLDER looks, kept
+## The kits' effect points as engine effects (art/handoff/farmland_kit.md, plains_kit.md): fire and smoke on the
+## raided farms and the Nomad Camp, crows over the haunted scarecrows and the Abandoned Barn, faint crackling in the
+## Thunderbird Nest's charred logs. All PLACEHOLDER looks, kept
 ## light for the phone: one particle node per kind per piece (its points share it), one mesh for each flock of
 ## crows, no lights and no shadows.
 
@@ -11,6 +12,7 @@ const CROW_SPEED := 0.7     # radians a second
 static var _process_mats := {}
 static var _fire_mesh: QuadMesh
 static var _smoke_mesh: SphereMesh
+static var _ember_mesh: QuadMesh
 static var _crow_mesh: ArrayMesh
 
 
@@ -25,16 +27,20 @@ static func for_piece(piece: String, at: Vector2, turn: int) -> Node3D:
 	holder.rotation.y = deg_to_rad(60.0 * turn)
 	var fires := []
 	var smokes := []
+	var crackles := []
 	for e in fx:
 		var p := Vector3(e.at[0], e.at[1], e.at[2])
 		match e.kind:
 			"fire": fires.append(p)
 			"smoke": smokes.append(p)
 			"crows": holder.add_child(_crows(p))
+			"crackle": crackles.append(p)
 	if not fires.is_empty():
 		holder.add_child(_particles(piece + "|fire", fires, 6, 0.6, _fire(), Vector3(0, 0.9, 0), 0.25))
 	if not smokes.is_empty():
 		holder.add_child(_particles(piece + "|smoke", smokes, 4, 2.6, _smoke(), Vector3(0.06, 0.3, 0), 0.12))
+	if not crackles.is_empty():
+		holder.add_child(_particles(piece + "|crackle", crackles, 4, 0.5, _ember(), Vector3(0, 0.5, 0), 0.35))
 	return holder
 
 
@@ -87,6 +93,15 @@ static func _fire() -> Mesh:
 		_fire_mesh.size = Vector2(0.22, 0.32)
 		_fire_mesh.material = m
 	return _fire_mesh
+
+
+## A spark in the charred logs: a tiny orange billboard.
+static func _ember() -> Mesh:
+	if _ember_mesh == null:
+		_ember_mesh = QuadMesh.new()
+		_ember_mesh.size = Vector2(0.09, 0.09)
+		_ember_mesh.material = _fire().material
+	return _ember_mesh
 
 
 ## A puff of smoke: a small low-poly grey ball, see-through.

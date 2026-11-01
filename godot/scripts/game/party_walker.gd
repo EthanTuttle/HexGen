@@ -149,6 +149,23 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 				_end_facing = (way[-1] - way[-2]).angle() if way.size() > 1 else facing
 				_file_end = not graph.edge_node.is_empty()
 			continue
+		if graph.stand != null and graph.edge_node.is_empty():
+			# A landmark with an entrance but no drawn way to it (the plains' landmarks): the usual curved route to
+			# the tile, then round outside the camp or arena to the entrance and in; out the same way.
+			var door := map.entrance_angle(t)
+			var round_r := Rules.ROUND_LANDMARK
+			if k == 0:
+				_line(pts, c + Vector2.from_angle(door) * round_r)
+			else:
+				_line(pts, c + in_dir * round_r)
+			_arc(pts, c, round_r, door if last_tile else out_dir.angle())
+			if last_tile:
+				_line(pts, graph.nodes[graph.stand])
+				_end_facing = door + PI
+				_file_end = true
+			else:
+				_line(pts, c + out_dir * Hex.A)
+			continue
 		var entrance := map.entrance_angle(t)
 		if not is_nan(entrance):
 			# A landmark tile: in to its entrance ring, round it to the entrance (to stop) or to the way out, so the

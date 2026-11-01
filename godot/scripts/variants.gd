@@ -11,25 +11,31 @@ const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highland
 ## Tier 2 variants with art (DOCS: design/02 -> Region variants and locations; the class variant is in the
 ## pool too). Terrains not listed have no tier 2 art yet and keep their terrain's look.
 const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
-	"farmland": ["haunted_homesteads", "raided_farms", "cider_orchards"]}
+	"farmland": ["haunted_homesteads", "raided_farms", "cider_orchards"],
+	"plains": ["battlefield", "stormy_plains", "tourney_fields"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
 	"heartwood": ["Heartwood", "Tree of Life"], "haunted_homesteads": ["Haunted homesteads", "Abandoned Barn"],
-	"raided_farms": ["Bandit-raided farms", "Militia Barn"], "cider_orchards": ["Cider orchards", "Harvest Festival"]}
+	"raided_farms": ["Bandit-raided farms", "Militia Barn"], "cider_orchards": ["Cider orchards", "Harvest Festival"],
+	"battlefield": ["Steppe/battlefield", "Old Battlefield"], "stormy_plains": ["Stormy plains", "Thunderbird Nest"],
+	"tourney_fields": ["Tourney fields", "Training Grounds"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
 	"heartwood": "treeoflife", "windmill_country": "greatwindmill", "haunted_homesteads": "abandonedbarn",
-	"raided_farms": "militiabarn", "cider_orchards": "harvestfestival"}
+	"raided_farms": "militiabarn", "cider_orchards": "harvestfestival", "meadows": "nomadcamp",
+	"battlefield": "oldbattlefield", "stormy_plains": "thunderbirdnest", "tourney_fields": "traininggrounds"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
 	"spidernest": "dark_wood", "greatwindmill": "windmill_country", "abandonedbarn": "haunted_homesteads",
-	"militiabarn": "raided_farms", "harvestfestival": "cider_orchards"}
+	"militiabarn": "raided_farms", "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
+	"oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
-const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival"]
+const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
+	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds"]
 
 ## Where the small mill stands in a centre_mill's yard (variants.SMALL_MILL_SPOT), and the Great Windmill's sails
 ## in its centre's frame (variants.MILL_HUB): plan x, y, then height.
@@ -44,6 +50,8 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"fey_wood": "fey_wood", "dark_wood": "dark_wood", "heartwood": "heartwood",
 	"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood", "spidernest": "dark_wood",
 	"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass",
+	"battlefield": "steppe", "stormy_plains": "stormy", "tourney_fields": "mown", "nomadcamp": "plains",
+	"oldbattlefield": "steppe", "thunderbirdnest": "stormy", "traininggrounds": "mown",
 	"greatwindmill": "plains", "abandonedbarn": "haunted", "militiabarn": "raided", "harvestfestival": "orchard_grass"}
 
 static var _base := {}

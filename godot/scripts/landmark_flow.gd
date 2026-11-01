@@ -51,6 +51,11 @@ static func heads_in(tile: Vector2i, i: int, dist: Dictionary) -> bool:
 	return dist.get(tile, 0) < dist.get(tile + Hex.NEIGHBOURS[i], 0)
 
 
+## The edge of `tile` its toward step crosses: how many 60 degree steps to turn a density band piece.
+static func toward_edge(tile: Vector2i, toward: Dictionary) -> int:
+	return Hex.NEIGHBOURS.find(toward[tile] - tile)
+
+
 ## How many 60 degree steps (anticlockwise, the way edge numbers go) the landmark's centre piece turns, so its
 ## entrance on edge 0 faces the edge where the trail from the farthest tile arrives. 0 for the landmark alone.
 static func turn(landmark: Vector2i, dist: Dictionary, toward: Dictionary) -> int:

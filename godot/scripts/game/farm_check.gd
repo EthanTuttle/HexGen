@@ -117,7 +117,7 @@ func _check_centres(map: MapBoard) -> void:
 	var mills_ok := true
 	for t: Vector2i in map.terrains:
 		var name: String = map.terrains[t]
-		if not map._kit.has(name + "_centre_b"):
+		if not map._kit.has(name + "_centre_b") or Variants.terrain_of(name) != "farmland":
 			continue
 		var turn := int(GroundCover.hash01(t.x * 31 + 7, t.y * 17 + 3, 14) * 6)
 		var centre := "_centre"

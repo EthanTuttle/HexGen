@@ -20,6 +20,7 @@ for n in range(300):
     cases.append({"region": sorted(region), "landmark": lm, "turn": lf.turn(lm, dist, toward),
                   "toward": {f"{q},{r}": list(t) for (q, r), t in toward.items()}, "trails": trails, "same_b": same_b})
     # heads_in, and fence gates on a random map of terrains
+    cases[-1]["toward_edge"] = {f"{q},{r}": lf.toward_edge((q, r), toward) for q, r in toward}
     cases[-1]["heads_in"] = {f"{q},{r},{i}": lf.heads_in((q, r), i, dist) for q, r in region for i in range(6)}
     kinds = ["farmland", "village", "river", "plains", "forest"]
     terrains = {t: rnd.choice(kinds) for t in region}

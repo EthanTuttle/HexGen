@@ -29,6 +29,9 @@ func _init() -> void:
 		for key in c.heads_in:
 			var p: PackedStringArray = key.split(",")
 			ok = ok and LandmarkFlow.heads_in(Vector2i(int(p[0]), int(p[1])), int(p[2]), f.dist) == c.heads_in[key]
+		for key in c.toward_edge:
+			var p: PackedStringArray = key.split(",")
+			ok = ok and LandmarkFlow.toward_edge(Vector2i(int(p[0]), int(p[1])), f.toward) == int(c.toward_edge[key])
 		var terrains := {}
 		for row in c.terrains:
 			terrains[Vector2i(row[0], row[1])] = row[2]

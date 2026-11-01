@@ -96,6 +96,20 @@ func cone(at: Vector3, radius: float, height: float, col: Color, segments := 6, 
 		tri(b, a, at + Vector3(0, 0, z), col)
 
 
+## A thin cone from `at` to `tip`, leaning (the stormy plains' bent tufts: hexkit.spike_up).
+func spike(at: Vector3, tip: Vector3, radius: float, col: Color, segments := 4) -> void:
+	var d := (tip - at).normalized()
+	var u := d.cross(Vector3(0, 1, 0) if absf(d.y) < 0.9 else Vector3(1, 0, 0)).normalized()
+	var v := d.cross(u)
+	var ring := []
+	for k in segments:
+		var a := TAU * k / segments
+		ring.append(at + (u * cos(a) + v * sin(a)) * radius)
+	for k in segments:
+		tri(ring[k], ring[(k + 1) % segments], tip, col)
+		tri(ring[(k + 1) % segments], ring[k], at, col)
+
+
 func cylinder(at: Vector3, radius: float, height: float, col: Color, segments := 6, z := 0.0) -> void:
 	var lo := _ring(at, radius, segments, 0.0, z)
 	var hi := _ring(at, radius, segments, 0.0, z + height)

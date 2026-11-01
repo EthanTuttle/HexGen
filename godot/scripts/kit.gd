@@ -29,7 +29,7 @@ static func _path_extras(extras: Dictionary) -> Dictionary:
 	var read := func(key: String, empty):
 		return JSON.parse_string(extras[key]) if extras.has(key) else empty
 	return {paths = read.call("paths", []), hub = read.call("path_hub", null), spokes = read.call("path_spokes", {}),
-		effects = read.call("effects", [])}
+		effects = read.call("effects", []), no_cover = read.call("no_cover", [])}
 
 
 static func place(parent: Node3D, kit: Dictionary, name: String, at: Vector2, angle := 0.0) -> MeshInstance3D:

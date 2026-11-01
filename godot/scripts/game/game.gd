@@ -111,6 +111,10 @@ func _ready() -> void:
 		var fm := FarmCheck.new()
 		fm.game = self
 		add_child(fm)
+	elif "--plainscheck" in OS.get_cmdline_user_args():
+		var pc := PlainsCheck.new()
+		pc.game = self
+		add_child(pc)
 	elif "--forestcheck" in OS.get_cmdline_user_args():
 		var fc := ForestCheck.new()
 		fc.game = self
@@ -428,6 +432,10 @@ const DEBUG_FOREST := {"deep_forest": Vector2i(3, -3), "fey_wood": Vector2i(3, 0
 	"heartwood": Vector2i(-3, 3)}
 const DEBUG_FARM := {"windmill_country": Vector2i(-3, 0), "haunted_homesteads": Vector2i(0, -3),
 	"raided_farms": Vector2i(6, -3), "cider_orchards": Vector2i(-6, 3)}
+const DEBUG_PLAINS := {"meadows": Vector2i(0, 6), "battlefield": Vector2i(0, -7), "stormy_plains": Vector2i(-5, -2),
+	"tourney_fields": Vector2i(-5, 6)}   # 12 tiles each (DEBUG_PLAINS_SHAPE), so the density bands show
+const DEBUG_PLAINS_SHAPE := [Vector2i(1, -1), Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
+	Vector2i(0, -1), Vector2i(1, 1), Vector2i(0, 2), Vector2i(-1, 2), Vector2i(-2, 2), Vector2i(-2, 1)]   # its landmark first
 const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
 const DEBUG_FARMS := Vector2i(3, 3)      # tier 0: farmland in the middle and half the ring, village the other half
 
@@ -436,6 +444,17 @@ func spawn_forest_regions() -> void:
 	var wanted := DEBUG_FOREST.duplicate()
 	wanted.merge(DEBUG_FARM)
 	wanted["market_town"] = DEBUG_TOWN
+	for v: String in DEBUG_PLAINS:
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_PLAINS_SHAPE:
+			tiles.append(DEBUG_PLAINS[v] + s)
+		if tiles.any(func(x): return map.terrains.has(x)):
+			continue
+		var region := new_region("plains", tiles, v, tiles[0])
+		_set_flow(region)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
 	for v: String in wanted:
 		var c: Vector2i = wanted[v]
 		var tiles: Array[Vector2i] = [c]

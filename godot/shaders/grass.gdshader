@@ -1,6 +1,7 @@
 // Ground cover (tufts, flowers, pebbles) that bends away from the walking minis (DOCS: How the party moves ->
 // the grass parts). Each vertex is pushed away from the nearest minis by how high it stands above the ground,
-// so the tips lean and the roots stay put. Colours come from the vertex colours (Piece, sRGB).
+// so the tips lean and the roots stay put. Colours come from the vertex colours (Piece, sRGB). The stormy plains'
+// bent tufts (vertex alpha 0) also ripple in gusts running along the wind's direction, +X. PLACEHOLDER numbers.
 shader_type spatial;
 render_mode cull_disabled;
 
@@ -22,6 +23,10 @@ void vertex() {
 		}
 	}
 	float h = clamp(w.y, 0.0, 0.5);
+	if (COLOR.a < 0.5) {
+		float wave = sin(w.x * 0.5 + w.z * 0.2 - TIME * 2.4);
+		w.x += max(wave, 0.0) * h * 0.7;
+	}
 	w.xz += push * h * 1.4;
 	w.y -= length(push) * h * 0.45;
 	VERTEX = (inverse(MODEL_MATRIX) * vec4(w, 1.0)).xyz;

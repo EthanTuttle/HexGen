@@ -62,6 +62,7 @@ var flow_dist := {}                    # tile -> steps to its region's landmark
 var flow_toward := {}                  # tile -> the region neighbour one step closer
 var landmark_turns := {}               # landmark tile -> 60 degree steps its centre piece turns
 var gates := {}                        # fenced tile -> the edges that show a gate (FenceGates)
+var lightning: Lightning               # stormy plains' strikes
 var _faint: StandardMaterial3D         # the Abandoned Barn's light through its boards
 var _graphs := {}                      # tile -> its drawn paths (TilePaths), built when asked for
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
@@ -93,6 +94,8 @@ func build(map := MAP) -> void:
 	_update_water()
 	for t: Vector2i in terrains:
 		_build_tile(t)
+	for t: Vector2i in terrains:
+		_add_cover(t)
 	_build_slots()
 
 
@@ -127,6 +130,9 @@ func retile(changes: Dictionary) -> void:
 	touched.merge(_update_gates())
 	for t: Vector2i in touched:
 		_build_tile(t)
+	for t: Vector2i in touched:
+		_add_cover(t)
+	_update_lightning()
 	_build_slots()
 	if "--perf" in OS.get_cmdline_user_args():
 		print("PERF retile %d tile(s), %d rebuilt%s: %d ms" % [changes.size(), touched.size(),
@@ -178,9 +184,45 @@ func path_graph(t: Vector2i) -> TilePaths:
 	return _graphs[t]
 
 
-## Whether the edge between neighbours a and b is a landmark trail edge.
+## Whether the edge between neighbours a and b is a landmark trail edge with a drawn trail. Plains variants have
+## no trail pieces: they flow by density, so the party keeps its usual curved route there.
 func trail_edge(a: Vector2i, b: Vector2i) -> bool:
-	return flow_toward.get(a) == b or flow_toward.get(b) == a
+	if not (flow_toward.get(a) == b or flow_toward.get(b) == a):
+		return false
+	return _has_trail(terrains.get(a)) or _has_trail(terrains.get(b))
+
+
+func _has_trail(name) -> bool:
+	return name != null and (_kit.has(name + "_edge_trail") or _kit.has(Variants.wedges_of(name) + "_edge_trail"))
+
+
+## The ground cover of tile t, kept off its and its neighbours' pieces' no_cover circles (plans, world space).
+func _add_cover(t: Vector2i) -> void:
+	var clear := []
+	for c: Vector2i in [t, t + Hex.NEIGHBOURS[0], t + Hex.NEIGHBOURS[1], t + Hex.NEIGHBOURS[2], t + Hex.NEIGHBOURS[3],
+			t + Hex.NEIGHBOURS[4], t + Hex.NEIGHBOURS[5]]:
+		var node := tile_node(c)
+		if node == null:
+			continue
+		for mi in node.get_children():
+			if mi is MeshInstance3D and mi.has_meta("piece"):
+				for circle in Kit.path_data(mi.get_meta("piece")).get("no_cover", []):
+					var p := Hex.tile_position(c.x, c.y) + Vector2(circle.at[0], -circle.at[2]).rotated(mi.rotation.y)
+					clear.append([p.x, p.y, circle.r])
+	tile_node(t).add_child(GroundCover.build_tile(terrains, water_shapes, t, clear))
+
+
+func _update_lightning() -> void:
+	var stormy: Array[Vector2i] = []
+	for t: Vector2i in terrains:
+		if terrains[t] in ["stormy_plains", "thunderbirdnest"]:
+			stormy.append(t)
+	if lightning == null and not stormy.is_empty():
+		lightning = Lightning.new()
+		lightning.name = "lightning"
+		add_child(lightning)
+	if lightning:
+		lightning.tiles = stormy
 
 
 ## The plan angle a landmark tile's entrance faces (its centre piece's edge 0, turned), or NAN if t isn't one.
@@ -322,12 +364,13 @@ func _build_tile(t: Vector2i) -> void:
 	var at := Hex.tile_position(t.x, t.y)
 	var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
 	base.set_surface_override_material(0, _ground)
-	node.add_child(GroundCover.build_tile(terrains, water_shapes, t))
 	if terrain == "river":
 		return
 	var centre := "_centre"
 	if flow_dist.get(t) == 1 and _kit.has(name + "_centre_near"):
 		centre = "_centre_near"  # next to the landmark: the variant's look played up
+	elif flow_dist.get(t) == 2 and _kit.has(name + "_centre_mid"):
+		centre = "_centre_mid"   # two steps from the landmark: on the way to it
 	if centre == "_centre" and _kit.has(name + "_centre_b") and GroundCover.hash01(t.x, t.y, 13) < 0.5:
 		centre = "_centre_b"     # a second version of the centre, so a big group doesn't repeat
 	if _kit.has(name + "_centre_mill") and GroundCover.hash01(t.x, t.y, 7) < 0.5:
@@ -337,6 +380,8 @@ func _build_tile(t: Vector2i) -> void:
 	var turn: int = landmark_turns.get(t, 0)
 	if _kit.has(name + "_centre_b"):
 		turn = int(GroundCover.hash01(t.x * 31 + 7, t.y * 17 + 3, 14) * 6)
+	if centre in ["_centre_mid", "_centre_near"] and _kit.has(name + "_centre_mid"):
+		turn = LandmarkFlow.toward_edge(t, flow_toward)   # density bands lean toward the landmark
 	var spin := deg_to_rad(60.0 * turn)
 	Kit.place(node, _kit, name + centre, at, spin)
 	if centre == "_centre_mill":   # the small mill goes where the turned yard is, but doesn't turn itself

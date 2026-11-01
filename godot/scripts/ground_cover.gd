@@ -9,18 +9,26 @@ const BLEND := 1.6
 const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
 	"hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
 	# tier 1 region variants
-	"deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
+	"deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
 	"delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
 	# tier 2 and class variants
 	"fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
 	# landmark tiles
 	"treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05,
 	"greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0,
+	"nomadcamp": 0.0, "oldbattlefield": 0.03, "thunderbirdnest": 0.1, "traininggrounds": 0.0,
 	# farmland tier 2 (farm pieces hold their own, like farmland)
-	"haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0}
+	"haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0,
+	# plains tier 2 and class variant
+	"battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05}
 ## Tuft colour where it isn't the usual grass_ink; terrains in NO_FLOWERS get tufts instead of flowers.
-const TUFT := {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood"}
-const NO_FLOWERS := ["dark_wood", "spidernest"]
+const TUFT := {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
+	"oldbattlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "thunderbirdnest": "tuft_storm"}
+const NO_FLOWERS := ["dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
+	"tourney_fields", "traininggrounds"]
+## Tufts lean hard one way, +X in world space, the wind's direction. Their vertex alpha of 0 lets the gust ripple
+## (shaders/grass.gdshader) find them, with no extra material.
+const BENT := ["stormy_plains", "thunderbirdnest"]
 const FLOWERS := ["flower", "flower_pink", "flower_white", "flower_blue"]
 
 const R := Water.R
@@ -96,10 +104,13 @@ static func scatter(terrains: Dictionary, water_shapes: Dictionary) -> Array:
 
 
 ## [kind, point, cell] if cell (ix, iy) gets a prop, else [].
-static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: int, p: Vector2) -> Array:
+static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: int, p: Vector2, clear := []) -> Array:
 	var dens := density(terrains, p)
 	if hash01(ix, iy, 3) >= dens:
 		return []
+	for c in clear:   # a piece's no_cover circle: burns, yards. [x, y, radius]
+		if p.distance_squared_to(Vector2(c[0], c[1])) < c[2] * c[2]:
+			return []
 	var t := tile_at(p)
 	if water_shapes.has(t):
 		var local := p - Hex.tile_position(t.x, t.y)
@@ -112,7 +123,7 @@ static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: i
 	if terrains[t] == "meadows":
 		# Wildflower drifts: a slow world-space wave decides where flowers crowd out the grass.
 		var drift := 0.5 + 0.5 * sin(p.x / 3.1 + 0.4) * sin(p.y / 2.6 + p.x / 5.0)
-		return ["flower" if k < 0.15 + 0.75 * drift else "tuft", p, Vector2i(ix, iy), true]
+		return ["flower" if k < 0.3 + 0.85 * drift else "tuft", p, Vector2i(ix, iy), true]
 	if terrains[t] in NO_FLOWERS:
 		return ["tuft" if k < 0.85 else "pebble", p, Vector2i(ix, iy)]
 	return ["tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", p, Vector2i(ix, iy)]
@@ -144,7 +155,7 @@ static func _near_shore(p: Vector2, shores: Array, d: float) -> bool:
 
 ## The ground cover of one tile: the cells of the world-space pattern whose point lands in it.
 ## Gives the same props as the whole-map scatter, so tiles can be rebuilt one at a time.
-static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i) -> MeshInstance3D:
+static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i, clear := []) -> MeshInstance3D:
 	var c := Hex.tile_position(t.x, t.y)
 	var items := []
 	for ix in range(int(floor((c.x - A) / CELL)), int(ceil((c.x + A) / CELL))):
@@ -152,7 +163,7 @@ static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector
 			var p := Vector2((ix + hash01(ix, iy, 0)) * CELL, (iy + hash01(ix, iy, 1)) * CELL)
 			if tile_at(p) != t:
 				continue
-			var item := _keep(terrains, water_shapes, ix, iy, p)
+			var item := _keep(terrains, water_shapes, ix, iy, p, clear)
 			if not item.is_empty():
 				items.append(item)
 	return _build(items, terrains)
@@ -171,6 +182,11 @@ static func _build(items: Array, terrains: Dictionary) -> MeshInstance3D:
 		var at := Vector3(item[1].x, item[1].y, 0)
 		match item[0]:
 			"tuft":
+				if terrains.get(tile_at(item[1])) in BENT:
+					var h := rng.uniform(0.3, 0.45)
+					var bent := Color(Hex.colour(tuft_colour(terrains, item[1], hash01(cell.x, cell.y, 5))), 0.0)
+					piece.spike(at, at + Vector3(h * 0.85, h * 0.2, h * 0.6), rng.uniform(0.09, 0.13), bent)
+					continue
 				var radius := rng.uniform(0.12, 0.2)
 				var height := rng.uniform(0.2, 0.35)
 				var ink := Hex.colour(tuft_colour(terrains, item[1], hash01(cell.x, cell.y, 5)))
@@ -181,7 +197,9 @@ static func _build(items: Array, terrains: Dictionary) -> MeshInstance3D:
 				if item.size() > 3:
 					var p: Vector2 = item[1]
 					hue = FLOWERS[posmod(int((sin(p.x / 4.7) + sin(p.y / 3.9 + 1.0) + 2) * 1.999), 4)]
-				piece.box(at, Vector3(0.08, 0.08, 0.12), Hex.colour(hue), 0.0, rng.uniform(0, 1))
+				# The meadows' flowers are bigger, so the drifts read.
+				var size := Vector3(0.14, 0.14, 0.17) if item.size() > 3 else Vector3(0.08, 0.08, 0.12)
+				piece.box(at, size, Hex.colour(hue), 0.0, rng.uniform(0, 1))
 			_:
 				piece.blob(at, rng.uniform(0.07, 0.12), rock, 0.0, 0.6)
 	var mi := piece.instance("ground_cover")

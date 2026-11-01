@@ -47,14 +47,16 @@ static func build(pieces: Array, at: Vector2) -> TilePaths:
 	return g
 
 
-## Where a party stops on a piece with path data: a landmark's entrance (its first path's inner end), else the
+## Where a party stops on a piece with path data: a landmark's entrance (its approach's inner end), else the
 ## hub, else the tile's middle where the spokes meet. null if the piece has none.
 static func stand_point(piece: String, turn: int, at: Vector2):
 	var data := Kit.path_data(piece)
 	if data.is_empty() or "_edge_" in piece:
 		return null
-	if Variants.LANDMARKS.has(piece.trim_suffix("_centre")) and not data.paths.is_empty():
-		return _plan(data.paths[0][-1], turn, at)
+	if Variants.LANDMARKS.has(piece.trim_suffix("_centre")):
+		for poly in data.paths:   # the approach: the first path that isn't a closed ring
+			if poly[0] != poly[-1]:
+				return _plan(poly[-1], turn, at)
 	if data.hub != null:
 		return _plan(data.hub, turn, at)
 	for key in data.spokes:

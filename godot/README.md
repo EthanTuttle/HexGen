@@ -313,9 +313,11 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
 | Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
-| Landmarks | Forest and farmland regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
-| Tier 2 roll | Forest: fey wood, dark wood or heartwood. Farmland: haunted homesteads, bandit-raided farms or cider orchards. Evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
+| Landmarks | Forest, farmland and plains regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
+| Tier 2 roll | Forest: fey wood, dark wood or heartwood. Farmland: haunted homesteads, bandit-raided farms or cider orchards. Plains: steppe/battlefield, stormy plains or tourney fields. Evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
 | Walking on trails | A trail starts 1.2 m from a tile's centre (`TRAIL_INNER`); the party stops 2.2 m from a landmark's centre, at its entrance (`ENTRANCE_RING`) | Not in the art hand-off |
+| Plains effects | Lightning every 4–9 s on a random stormy tile, 0.16 s long (`lightning.gd`); the gust ripple's size and speed (`shaders/grass.gdshader`); crackle sparks (`farm_fx.gd`) | The docs give the effects, not their numbers |
+| Round a plains landmark | The party circles 3 m out (`Rules.ROUND_LANDMARK`), then comes in along the entrance's line | The kit's entrance paths don't join anything, so the route has to reach them on its own |
 | Farm effects | Fire, smoke and crows at the art's effect points: counts, colours, sizes, speeds (`farm_fx.gd`); the sails' speed (`Rules.SAIL_SPEED`); the barn's faint glow, 0.1 by day to 1.0 at night (`map_board.gd`) | The hand-off gives the points, not the look |
 | Stopping on farm tiles | The tile's middle where the spokes meet, a landmark's approach end, a cider orchard's hub | The docs say routes keep to paths, not where a party stops |
 | Forest effects | Fey motes, heartwood seeds and light shafts, the shrine's shaft: counts, colours, sizes, the shafts' lean (`forest_fx.gd`, `shaders/light_shaft.gdshader`) | The hand-off names the effects, not their look |
@@ -418,6 +420,18 @@ Tier 0 farmland and villages with fence gates, windmill country with the Great W
 - **A walled-off tile** (DOCS: Walking): a tile whose only neighbours are closed fences stays unreachable until the player builds another way round. A tap on it does nothing, with no message.
 
 Debug: `-- --forest` or F9 now spawns the forest regions, the four farm regions, a market town and a tier 0 farm and village group. `-- --farmcheck` (add `--shots` for `screens/farm_*.png`) checks gates, centre turn and `centre_b`, small mills, sails and effect points, and walks a party across and out of farm groups, round to a gate, and along trails to each landmark, watching every mini. `tools/flow_check.gd` now compares the gates and `heads_in` with the Python too.
+
+## Plains kit (tiles v38)
+
+Tier 0 plains, rolling meadows with the Nomad Camp, steppe/battlefield with the Old Battlefield, stormy plains with the Thunderbird Nest, and tourney fields with the Training Grounds, from `art/export/tiles.glb` and `art/handoff/plains_kit.md`. Docs: 06 → Tile build; 07 → Region variant looks, Landmark tiles.
+
+- **No trails:** plains variants flow by density. `centre_near` at distance 1 and `centre_mid` at distance 2 are turned by `LandmarkFlow.toward_edge`, so their props lean toward the landmark. Farther tiles, and tier 0 plains, use `centre` or `centre_b`, turned by hash. `MapBoard.trail_edge` is false here, so the party keeps its usual curved route.
+- **Landmarks:** turned toward the farthest tile, with their entrance on edge 0. Their kit paths don't join the neighbouring tiles, so the party circles 3 m out (outside the camp or arena), comes in along the entrance's line and stops at the approach's end, in the single-file line. It leaves the same way.
+- **Ground cover:** the new densities, bigger meadows flowers, `TUFT`, `NO_FLOWERS`, `BENT` (tufts lean +X, in one fixed direction across the region; their vertex alpha of 0 lets the gust ripple in `grass.gdshader` find them with no extra material) and `no_cover`. Ground cover now builds after all the changed tiles' pieces, and also keeps off neighbours' circles, because a circle can reach past its own tile.
+- **Effects:** the Nomad Camp's fire and smoke, the Nest's crackle (`farm_fx.gd`), and lightning (`lightning.gd`: one mesh, moved to each strike, drawn only while it shows).
+- **Bunting:** `tourney_fields_edge_other` only shows toward terrain other than plains, because plains counts as joined with its variants.
+
+Debug: `-- --forest` and F9 now also spawn a 12-tile region of each plains variant, with the landmark on the rim so all the bands show. `-- --plainscheck` (add `--shots` for `screens/plains_*.png`) checks the bands, the turns, no trail pieces, the wedges, `no_cover`, `BENT`, lightning and the walks in and out. `tools/flow_check.gd` also compares `toward_edge` with the Python.
 
 ## Terrains and region variants (tiles v13)
 
@@ -612,7 +626,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
   - Ask before deciding anything the docs don't cover, and mark stand-ins `PLACEHOLDER` in code and in Placeholders above.
   - Check every on-screen string against the Standing rule: screen text.
 - **Tests:**
-  - Run all four before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`) and `--farmcheck --shots --quit` (`FARM DONE: 0 failed`).
+  - Run all five before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`) , `--farmcheck --shots --quit` (`FARM DONE: 0 failed`) and `--plainscheck --shots --quit` (`PLAINS DONE: 0 failed`).
   - The demo once stalled after its coin shot (Nov 1) and didn't on the rerun. If it hangs, rerun it before hunting a bug.
 - **Art:** `godot/art/*.glb` link to `art/export/`. After the art changes, run `godot --headless --path godot --import` so the new pieces, and any new `class_name` scripts, load. New colours go in `Hex.PALETTE` (copied from `hexkit.COLOURS`). New variants go in `variants.gd`. New `ground_cover.py` entries go in `ground_cover.gd`.
 - **Piece picking:** follows `render_preview.build_map`, in `MapBoard._build_tile` and `_edge_piece`. Landmark trails come from `landmark_flow.gd`. Re-run `tools/flow_check.gd` whenever the Python changes.
