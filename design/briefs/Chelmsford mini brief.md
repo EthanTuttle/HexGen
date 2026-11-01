@@ -8,7 +8,7 @@ What we need sculpted, and what's already decided. Everything here comes from th
 
 ## The game in one paragraph
 
-HexGen is a card-driven, D&D-style hex-crawl RPG for PC and mobile. The world is built from hex tiles in a stylised, low-poly look inspired by Dorfromantik. Characters appear as tabletop-style miniatures standing on that board, in exploration and on a tactical hex grid in combat. (Art direction: [Presentation](../07 Presentation.md) → Art direction.)
+Heads or Hexes is a card-driven, D&D-style hex-crawl RPG for PC and mobile. The world is built from hex tiles in a stylised, low-poly look inspired by Dorfromantik. Characters appear as tabletop-style miniatures standing on that board, in exploration and on a tactical hex grid in combat. (Art direction: [Presentation](../07 Presentation.md) → Art direction.)
 
 ## Who Chelmsford is
 
@@ -65,7 +65,7 @@ Follow the mini production pipeline in [Presentation](../07 Presentation.md) →
 
 ## Reference art
 
-- Turnaround: the HexGen · Minis (working) canvas, artboards **Chelmsford v3a** (interactive, rotates in 60° steps) and **v3b** (turnaround sheet). Drawn views: front three-quarter, right side, back three-quarter; the other three are mirrors, so the mace and shield swap hands in them and are not true references.
+- Turnaround: the Heads or Hexes · Minis (working) canvas, artboards **Chelmsford v3a** (interactive, rotates in 60° steps) and **v3b** (turnaround sheet). Drawn views: front three-quarter, right side, back three-quarter; the other three are mirrors, so the mace and shield swap hands in them and are not true references.
 - Proportions and pose: artboard **v2a**.
 - Lighting in reference art: from the top left.
 

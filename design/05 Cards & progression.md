@@ -1,4 +1,4 @@
-# HexGen — Cards & progression
+# Heads or Hexes — Cards & progression
 
 Last updated Oct 27, 2026 · @Ethan · Part of the [Index](00 Index.md)
 

@@ -1,4 +1,4 @@
-# HexGen — Weapons & gear
+# Heads or Hexes — Weapons & gear
 
 Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 

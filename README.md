@@ -1,4 +1,4 @@
-# HexGen
+# Heads or Hexes
 
 A card-driven, D&D-style hex-crawl RPG for PC and mobile, in a Dorfromantik-like art style.
 
