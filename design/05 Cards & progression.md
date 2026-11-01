@@ -10,7 +10,7 @@ Decided Oct 23–24, 2026 (the rarity rethink). The old Common/Rare/Legendary ma
 
 - **Terrain cards:** the only cards in the deck and hand. Each is one Common terrain type (see [Map & exploration](02 Map & exploration.md) → Exploration and terrain). Some have multi-hex footprints (see [Map & exploration](02 Map & exploration.md) → Placement). Corrupted versions can enter the deck (see [Map & exploration](02 Map & exploration.md) → Corruption).
 - **Story cards:** found through the main quest line. They never go to the hand: the story places them at fixed locations, so players have to travel to reach them. Starting hexes and all story locations (e.g. Gronogon, the cultist dungeon, the second wizard tower, the highest peak, the prison dungeon) are Story cards. (How the story places them: [Map & exploration](02 Map & exploration.md) → Placement.)
-- **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into a landmark rolled from its region variant's pool (see [Map & exploration](02 Map & exploration.md) → Clustered regions). The former Rare cards now live in those pools (see Landmark list).
+- **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into its variant's core location (decided Nov 1, 2026; was a roll from a pool per variant; see [Map & exploration](02 Map & exploration.md) → Clustered regions). Each former Rare card is now folded in elsewhere or a minor landmark (decided Nov 1, 2026; see Landmark list).
 - **Legendaries** are mostly the locations of rare tier 3 region variants, which a quest can guarantee; the Sword in the Stone is placed by a quest (see Landmark list and [Map & exploration](02 Map & exploration.md) → Tier 3 variants). How each quest starts: see [World & story](01 World & story.md) → Quests.
 - Gear still has rarity tiers (see [Weapons & gear](04 Weapons & gear.md) → Equipment).
 
@@ -45,7 +45,7 @@ Instead of plain deck thinning (a smaller deck runs dry sooner and loses buildin
 - Level cap: 100.
 - **Working scale, not final** (noted Oct 22, 2026): the 1–100 spread leaves room between levels to add things while designing. A level condense is planned before release, and in the final game every level-up should grant something; a level with no reward feels bad. Level numbers in these docs (e.g. 5, 10, 15, 20) are placeholders for that condense.
 - Every 5 levels, a milestone offers terrain picks: the player chooses terrain cards to add to the deck permanently (changed Oct 24, 2026 from a rarity-weighted pick of 1 card from 3). How many cards and choices: open.
-- **Ability score increases at levels 8 and 16** (restored Oct 27, 2026; an Oct 26 change had replaced them with ability points on every level-up): each character gets +1 ability point, which the player places on the score they choose. Other levels give no ability points.
+- **Ability score increases at levels 4, 8, 12 and 16** (restored Oct 27, 2026 at 8 and 16; an Oct 26 change had replaced them with ability points on every level-up; 4 and 12 added Nov 1, 2026 so main scores keep pace with combat heads targets: see [Classes & combat](03 Classes & combat.md) → Hit chance scaling): each character gets +1 ability point, which the player places on the score they choose. Other levels give no ability points.
 - **General feats** at levels 4 and 12 (decided Oct 27, 2026): see General feats below.
 - Level milestones also widen sight range (see [Map & exploration](02 Map & exploration.md) → Day and night).
 - Class card unlocks by level (class action cards, spells): see [Classes & combat](03 Classes & combat.md) → Class action cards. New combat cards come only from level-ups (exceptions: [Classes & combat](03 Classes & combat.md) → Class action cards); class locations upgrade them and teach skills (decided Oct 22, 2026; see Class locations).
@@ -55,7 +55,7 @@ Instead of plain deck thinning (a smaller deck runs dry sooner and loses buildin
 
 Decided Oct 27, 2026. Feats are perks any class can pick at set levels.
 
-- **Levels:** 4 and 12 (placeholders for the level condense). Neither level grants another unlock. Feats after level 20: open.
+- **Levels:** 4 and 12 (placeholders for the level condense). Each also gives a +1 ability score increase (since Nov 1, 2026), and nothing else. Feats after level 20: open.
 - **Requirements:** total level, an ability score, race or background. Never class.
 - **Picking:** a free pick from every feat the character qualifies for. Level-12 feats need level 12, and the level-12 pick can also be any level-4 feat.
 - **What a feat can do:** mostly passive perks; a few grant an action card (new combat cards come only from level-ups, and a feat pick is a level-up). Feats build only on rules that already exist.
@@ -114,8 +114,10 @@ Decided Oct 27, 2026. Feats are perks any class can pick at set levels.
 | Expert | Raise one proficiency a rank | Level 12 |
 | Dragon Fear | Breath weapon also frightens foes it hits (WIS save) | Level 12, Dragonborn |
 | Rock Volley | Stone throw also hits a foe adjacent to the target | Level 12, stone golem |
+| Plate Master | While you wear heavy armour, attacks against you flip 1 more coin fewer (4 fewer in all; armour: [Weapons & gear](04 Weapons & gear.md) → Armour). Added Nov 1, 2026 | Level 12, CON 3+ |
+| Nimble | While you wear no armour, attacks against you flip 1 fewer coin (as hard to hit as light armour). Added Nov 1, 2026 | Level 12, DEX 3+ |
 
-Flags (accepted for now, recheck in the balance pass): Tough stacked with the shield dwarf's health makes a very tanky dwarf; Opening Strike stacks with unaware openers (Sneak Attack, Assassinate); Heavy Hitter stacks with the greatsword's Executioner node 1; Surveyor bends the "no draw order" rule on purpose; Rallying Presence is close to Heroic Tale (Narrator) and Rallying Strike (Leader); Hard to Kill is close to the Order of Good's miracle role.
+Flags (accepted for now, recheck in the balance pass): Tough stacked with the shield dwarf's health makes a very tanky dwarf; Opening Strike stacks with unaware openers (Sneak Attack, Assassinate); Heavy Hitter stacks with the greatsword's Executioner node 1; Surveyor bends the "no draw order" rule on purpose; Rallying Presence is close to Heroic Tale (Narrator) and Rallying Strike (Leader); Hard to Kill is close to the Order of Good's miracle role. Plate Master stacks with Rare armour's extra −1 (−5 in all, no cap), and only Fighters and Humans can wear heavy armour, so it does nothing for everyone else (no feat grants armour access); Nimble only matches light armour, so for light-armour classes it's a way to drop armour, not a gain (Nov 1, 2026).
 
 ## Starting decks
 
@@ -226,22 +228,22 @@ Unlock at level 10. **Reward** (decided Oct 22, 2026): a guaranteed subclass-spe
 
 Region locations per variant: see [Map & exploration](02 Map & exploration.md) → Region variants and locations.
 
-**Former Rare cards** (now landmarks in region pools since Oct 23, 2026; which variants' pools each joins: open)
+**Former Rare cards** (became landmarks in region pools on Oct 23, 2026; since Nov 1, 2026 each variant's landmark is its core location, so each was reviewed on Nov 1, 2026. Minor landmarks roll on tile placement: see [Map & exploration](02 Map & exploration.md) → Minor landmarks)
 
-| Landmark | What it is |
-| --- | --- |
-| Dungeon | A dungeon |
-| Town | Better than a village |
-| Farm | Various types: wheat farm, orchard, livestock farm |
-| Traveling merchant | A merchant on a fixed hex who leaves after a time; the hex then reverts to plains/grassland |
-| Pool of life | Healing location |
-| Teleportation rune | Teleports to other teleportation runes on the map |
-| Stronghold | Enemy base; respawns after being cleared |
-| Guard tower | Friendly military base |
-| Wizard tower | A wizard's tower |
-| Inn | Like a town and better than a village, with more resting services (heal injuries, rest buffs for the next day, rest without a camp) and quests than merchants |
-| Church | Church or other minor place of worship (part of the pantheon; see [World & story](01 World & story.md) → Pantheon) |
-| Druid enclave | A druid enclave |
+| Landmark | What it is | Where it comes from now |
+| --- | --- | --- |
+| Dungeon | A dungeon | Folded into variants: their dungeons and lairs (e.g. Spider Nest; ruins variants lean on dungeons) |
+| Town | Better than a village | Folded into villages: towns are what village regions become |
+| Farm | Various types: wheat farm, orchard, livestock farm | Folded in: farmland is a regular terrain |
+| Traveling merchant | A merchant on a fixed hex who leaves after a time; the hex then reverts to plains/grassland | Folded into encounters: the passing merchant |
+| Pool of life | Healing location | Minor landmark |
+| Teleportation rune | Teleports to other teleportation runes on the map | Minor landmark |
+| Stronghold | Enemy base; respawns after being cleared | Minor landmark |
+| Guard tower | Friendly military base | Minor landmark |
+| Wizard tower | A wizard's tower | Minor landmark |
+| Inn | Like a town and better than a village, with more resting services (heal injuries, rest buffs for the next day, rest without a camp) and quests than merchants | Both: towns have inns, and lone roadside inns roll as minor landmarks |
+| Church | Church or other minor place of worship (part of the pantheon; see [World & story](01 World & story.md) → Pantheon) | Both: towns have churches, and lone chapels roll as minor landmarks |
+| Druid enclave | A druid enclave | Minor landmark |
 
 **Legendaries** (re-set Oct 24, 2026; how each quest starts: [World & story](01 World & story.md) → Other Legendary quests)
 
@@ -266,7 +268,9 @@ All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](0
 ## Open questions
 
 - [x] ~~Rarity rethink~~ (settled Oct 23–24, 2026: see Card types, Deck and hand, Starting decks and Class locations)
-- [ ] **New:** landmark pools: which landmarks each region variant's pool holds (the variant's current location and former Rare cards)
+- [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks; see Landmark list)
+- [ ] **New (Nov 1, 2026):** minor landmark odds per placed tile ("very small chance"), and whether some lean toward certain terrains
+- [ ] **New (Nov 1, 2026):** landmark tile looks for the minor landmarks
 - [x] ~~Terrain lean for each class, background and god~~ (settled Oct 24, 2026: see Starting decks)
 - [ ] **New:** milestone terrain picks: how many cards are added, and how many choices are offered
 - [ ] **New:** class quests: what the task rewards now that the class location exists once the region is built. Also, the Rogue's Noble's manor sits oddly inside a Smugglers' bayou
@@ -277,7 +281,7 @@ All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](0
 - [ ] Full progression system, levels 1–100: what every level grants (including levels between milestones), ability score and HP growth, and card unlocks beyond level 15, and at which levels martials' weapon mastery trainings unlock (counts by level 15 are set: see Levels and milestones; general feats at 4 and 12 are set: see General feats)
 - [x] ~~Ability points per level-up~~ (settled Oct 27, 2026: no per-level points; +1 at levels 8 and 16, placed by the player: see Levels and milestones)
 - [ ] **New:** ability score increases after level 16: which levels
-- [ ] **New (Oct 27, 2026, saved for later):** rethink when ability score increases come, planned together with when enemies raise their attacks, defenses and saves. At higher heads targets checks get hard fast (pass chances: [Classes & combat](03 Classes & combat.md) → Coin checks), which pushes players to stack their main score
+- [x] ~~Rethink when ability score increases come, together with enemy attacks, defences and saves~~ (settled Nov 1, 2026: +1 at 4, 8, 12 and 16; enemy scaling in [Classes & combat](03 Classes & combat.md) → Hit chance scaling). Saves outside combat: still open there
 - [ ] **New (mockup placeholder "+[XP]"):** XP: what earns it (fights, quests, finished regions, story beats?), how much each gives, and how much each level needs
 - [ ] **New:** level condense: the real level cap, mapping today's placeholder levels onto it, and making sure every level-up grants something
 - [ ] Draw amounts: final tuning in playtest. With the hand cut to 7, draws of 3 and 5 refill a much bigger share of the hand; shrink them, or keep them so one fight still gets the player building? (Big Hand and Night Owl push on this too.)

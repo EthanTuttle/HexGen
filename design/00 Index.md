@@ -87,7 +87,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: Ranger nature cards as later level-ups, and what the Tree of Life teaches instead
 - [ ] Race details (breath weapon damage, high elf and tiefling spell lists; bonus sizes and breath weapon rules settled Oct 27)
 - [ ] New (Oct 27): race review done for all seven races; Fluffy's cat race done too; still open: the cat race's name, race lore, amounts (wood elf map speed, shield dwarf HP, metal golem damage reduction, Regrowth, Hearthfire), Regrowth and Hearthfire vs healing spells, From the Ashes + Hard to Kill stacking
-- [ ] New (Oct 27): heads targets vs coin growth (a main score goes 3 → 5 by level 16 from score increases alone)
+- [x] ~~Heads targets vs coin growth~~ (settled Nov 1: bounded hit chances; score increases at 4, 8, 12 and 16; see Classes & combat → Hit chance scaling)
+- [ ] New (Nov 1): hit chance follow-ups: where the distance bands start, check and save targets outside combat, enemy HP and damage per role and band
 - [ ] Tiefling bloodline and elven spells for levels 7+ (level 1 set Oct 30: see Classes & combat → Racial spells)
 - [ ] Big spell pass
 - [ ] Spell balance pass (Retell, Requiem, Charge!, Holy Defender god spells, caster vs martial scaling)
@@ -125,7 +126,9 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **Cards & progression**
 
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
-- [ ] New: landmark pools per region variant, and Legendary odds
+- [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
+- [ ] New: Legendary odds; minor landmark odds per placed tile
+- [ ] New: landmark tile looks for every core location (forest's four done Nov 1, 2026)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
 - [ ] New: class quests: what the task rewards; Rogue's manor in a bayou
@@ -138,7 +141,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: level condense (real cap; every level-up grants something)
 - [x] ~~Ability points per level-up~~ (settled Oct 27: no per-level points; +1 at levels 8 and 16, placed by the player)
 - [ ] New: ability score increases after level 16: which levels
-- [ ] New (Oct 27, saved for later): rethink when ability score increases come, together with when enemies raise attacks, defenses and saves (higher heads targets get hard fast and push main-score stacking)
+- [x] ~~Rethink when ability score increases come, with enemy attacks and defences~~ (settled Nov 1: +1 at 4, 8, 12 and 16; enemies by role and distance band)
+- [ ] New (Nov 1): level-up mockup for levels 4/12 (feat + ability point) needs a new version
 - [ ] New (placeholder): what earns XP, how much, and XP per level
 - [ ] New (Oct 27): general feats follow-ups: feat levels after 20, taking a feat twice, final score thresholds (a score can now start at 3, so 3+ no longer gates level-12 feats for a main score), a thin level-12 pool, breath weapon damage (Dragon Fear, Deep Breath), gold prices (Fence), proficiency rank cap (Skilled, Expert, Quick Study)
 - [ ] New: do story NPC companions have a background (for background feats)? (Fluffy's cat race gets no race feat: decided)
@@ -209,7 +213,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator Scores and Skills~~ (settled Oct 30, 2026: v15a)
 - [x] ~~Character creator Gear step hexes per row~~ (settled Oct 30, 2026: v19c, 5)
 - [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: Gear step done)
-- [ ] New: how armour works (what it does in a fight, light vs medium vs heavy, shields): see Weapons & gear
+- [x] ~~How armour works~~ (settled Nov 1: armour takes coins from attackers, light 1 / medium 2 / heavy 3, with movement, Stealth and DEX save costs; shields don't change hit chance; the 25% long shot at 0 coins. See Weapons & gear → Armour)
+- [ ] New (Nov 1): armour follow-ups: heavy's Move penalty size, categorised accessory stats, any damage reduction, easing heavy's costs; playtest heavy at level 1 (hit only on the long shot)
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
 - [ ] New: a guest's send-off

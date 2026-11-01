@@ -25,7 +25,15 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
            # tier 1 region variants
            "deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
-           "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3}
+           "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
+           # tier 2 and class variants
+           "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
+           # landmark tiles
+           "treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05}
+# Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
+# tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
+TUFT = {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood"}
+NO_FLOWERS = {"dark_wood", "spidernest"}
 WATER = {"river", "delta"}
 FLOWERS = ["flower", "flower_pink", "flower_white", "flower_blue"]
 
@@ -79,6 +87,24 @@ def density(terrains, x, y):
     return max(0.0, dens), (q, r)
 
 
+def tuft_colour(terrains, x, y, k):
+    """The tuft colour at (x, y). Within BLEND of an edge whose neighbour has another tuft colour, some tufts
+    take the neighbour's colour, from none at BLEND to half right at the edge, so the colours mix across the
+    border like the ground colour fade. k: a repeatable random number for this point."""
+    q, r = tile_at(x, y)
+    own = TUFT.get(terrains.get((q, r)), "grass_ink")
+    cx, cy = tile_centre(q, r)
+    local = (x - cx, y - cy)
+    for i, (dq, dr) in enumerate(NEIGHBOURS):
+        to_edge = A - wt.dot(local, wt.normal(i))
+        other = terrains.get((q + dq, r + dr))
+        if to_edge < BLEND and other:
+            theirs = TUFT.get(other, "grass_ink")
+            if theirs != own and k < 0.5 * (1 - to_edge / BLEND):
+                return theirs
+    return own
+
+
 def scatter(terrains, water_shapes):
     """List of (kind, x, y, cell) for the whole map. water_shapes maps (q, r) -> (outlines, shores) in tile space."""
     xs = [tile_centre(q, r)[0] for q, r in terrains]
@@ -105,6 +131,9 @@ def scatter(terrains, water_shapes):
                 drift = 0.5 + 0.5 * math.sin(x / 3.1 + 0.4) * math.sin(y / 2.6 + x / 5.0)
                 out.append(("flower" if k < 0.15 + 0.75 * drift else "tuft", x, y, (ix, iy)))
                 continue
+            if terrains[(q, r)] in NO_FLOWERS:
+                out.append(("tuft" if k < 0.85 else "pebble", x, y, (ix, iy)))
+                continue
             out.append(("tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", x, y, (ix, iy)))
     return out
 
@@ -123,7 +152,8 @@ def add_ground_cover(piece, terrains):
         rng = random.Random(hash01(ix, iy, 4))
         at = Vector((x, y, 0))
         if kind == "tuft":
-            piece.cone(at, rng.uniform(0.12, 0.2), rng.uniform(0.2, 0.35), "grass_ink", segments=4,
+            colour = tuft_colour(terrains, x, y, hash01(ix, iy, 5))
+            piece.cone(at, rng.uniform(0.12, 0.2), rng.uniform(0.2, 0.35), colour, segments=4,
                        spin=rng.uniform(0, 1))
         elif kind == "flower":
             # One colour per drift: the same slow wave picks it, so colours come in patches.

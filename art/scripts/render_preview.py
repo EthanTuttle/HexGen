@@ -15,6 +15,7 @@ from mathutils import Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 import ground_cover as gc  # noqa: E402
+import landmark_flow as lf  # noqa: E402
 import sand  # noqa: E402
 import variants as vr  # noqa: E402
 import water as wt  # noqa: E402
@@ -47,6 +48,43 @@ TERRAIN_MAP = {
 TIER1 = {"forest": "deep_forest", "plains": "meadows", "hills": "highlands", "farmland": "windmill_country",
          "village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "excavation"}
 VARIANT_MAP = {k: TIER1[t] for k, t in TERRAIN_MAP.items()}
+
+# Forest tier 2: plain forest in the middle, ringed by finished deep forest, fey wood, dark wood and heartwood
+# regions, so every pair of forest looks shares an edge somewhere; plains round part of it for the outer edges.
+FOREST_T2_MAP = {
+    (0, 0): "forest", (1, -2): "forest",
+    (1, 0): "deep_forest", (1, -1): "deep_forest", (2, -1): "deep_forest", (-2, 0): "deep_forest",
+    (0, -1): "fey_wood", (-1, 0): "fey_wood", (-1, -1): "fey_wood",
+    (-1, 1): "dark_wood", (-2, 1): "dark_wood", (-2, 2): "dark_wood",
+    (0, 1): "heartwood", (1, 1): "heartwood", (0, 2): "heartwood", (0, -2): "heartwood",
+    (2, 0): "plains", (2, 1): "plains", (-1, 2): "plains", (1, 2): "plains", (-3, 2): "plains", (-3, 1): "plains",
+}
+FOREST_T2_CLOSEUPS = {"fey_wood": [(0, -1), (-1, 0), (-1, -1)], "dark_wood": [(-1, 1), (-2, 1), (-2, 2)],
+                      "heartwood": [(0, 1), (1, 1), (0, 2)]}
+
+# The Tree of Life in a heartwood group: four heartwood neighbours (four paths), one plain forest and one
+# plains neighbour (roots ending before the edge), and a lone hills tile beyond to compare its height.
+TREEOFLIFE_MAP = {
+    (0, 0): "treeoflife",
+    (1, 0): "heartwood", (1, -1): "heartwood", (0, 1): "heartwood", (-1, 1): "heartwood", (1, 1): "heartwood",
+    (-1, 0): "forest", (0, -1): "plains", (-1, -1): "plains", (-2, 1): "plains", (-1, 2): "plains",
+    (0, 2): "plains", (2, -1): "plains", (2, -2): "hills", (2, 0): "plains", (1, -2): "plains",
+}
+
+# The forest tier 2 map with a landmark in each tier 2 group: the Hidden Shrine among deep forest, the Fey
+# Court in fey wood, the Spider Nest in dark wood (the Tree of Life has its own map above).
+LANDMARK_MAP = {**FOREST_T2_MAP, (1, -1): "hiddenshrine", (-1, 0): "feycourt", (-2, 1): "spidernest"}
+
+# Each forest variant's 7-tile region with its landmark on an outer tile, so the trails show, ringed by plains
+# and a little plain forest.
+LANDMARK_REGION = [(0, 0), (1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1)]
+LANDMARK_AT = (1, -1)
+FLOW_RING = {(2, -2): "plains", (2, -1): "plains", (2, 0): "forest", (1, 1): "plains", (0, 2): "plains",
+             (-1, 2): "plains", (-2, 2): "forest", (-2, 1): "plains", (-2, 0): "plains", (-1, -1): "forest",
+             (0, -2): "plains", (1, -2): "plains"}
+FLOW_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
+             for v, lm in (("heartwood", "treeoflife"), ("fey_wood", "feycourt"), ("dark_wood", "spidernest"),
+                           ("deep_forest", "hiddenshrine"))}
 
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
@@ -84,16 +122,34 @@ def build_map(templates, animated=False, tiles=None):
     MAP = tiles or globals()["MAP"]
     water_tiles = []
     col = hk.new_collection("map")
+    # Landmark flow (landmark_flow.py): each landmark's region is its variant's tiles joined to it. In the game
+    # the region is known; here it's the connected group of the variant's tiles round the landmark.
+    dist, toward, turns = {}, {}, {}
+    for lm_at, lm in MAP.items():
+        if lm in vr.LANDMARKS:
+            region, todo = {lm_at}, [lm_at]
+            while todo:
+                q, r = todo.pop()
+                for dq, dr in hk.NEIGHBOURS:
+                    n = (q + dq, r + dr)
+                    if n not in region and MAP.get(n) == vr.LANDMARKS[lm]:
+                        region.add(n)
+                        todo.append(n)
+            d, t = lf.flow(region, lm_at)
+            dist.update(d)
+            toward.update(t)
+            turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
         base = place(templates, f"base_{terrain}", col, at)
-        if name in vr.VARIANTS:
+        kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
+        if kit in vr.VARIANTS:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
             base.material_slots[0].link = "OBJECT"
-            base.material_slots[0].material = hk.material(vr.VARIANTS[name][2])
+            base.material_slots[0].material = hk.material(vr.VARIANTS[kit][2])
         if terrain == "river":
             # Water is drawn per tile from its own water neighbours, the way the engines will.
             near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
@@ -105,15 +161,18 @@ def build_map(templates, animated=False, tiles=None):
             water_tiles.append((q, r, at, mask))
             continue
         centre = "centre"
+        if dist.get((q, r)) == 1 and f"{name}_centre_near" in templates:
+            centre = "centre_near"  # next to the landmark: the variant's look played up
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
             centre = "centre_mill"  # windmills stand on about half the tiles (placeholder rule)
-        place(templates, f"{name}_{centre}", col, at)
+        place(templates, f"{name}_{centre}", col, at, math.radians(60 * turns.get((q, r), 0)))
         if terrain == "desert":
             # The sand is shaped in world space, the way the engines will.
             p = hk.Piece(f"sand_{q}_{r}")
             sand.add_sand(p, MAP, q, r)
             p.finish(col, at)
         joined = [linked(name, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
+        trails = lf.trail_edges((q, r), toward)
         if terrain == "hills":
             # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
             # meet; otherwise half on each edge shared with one other hills tile.
@@ -134,7 +193,15 @@ def build_map(templates, animated=False, tiles=None):
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
         for i in range(6):
-            place(templates, f"{name}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
+            edge = f"{kit}_edge_{'same' if joined[i] else 'other'}"
+            near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
+            if vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
+                edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
+            elif i in trails:  # a trail toward the landmark: the landmark's own trail piece, or its kit's
+                edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
+            elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
+                edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
+            place(templates, edge, col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
                 if not joined[(i + 1) % 6]:
@@ -194,13 +261,19 @@ def stage(target, distance, elevation_deg, lens=50):
     scene.collection.objects.link(sun)
 
 
+def next_n(stem):
+    out = os.path.join(hk.ART, "preview")
+    n = 1
+    while glob.glob(os.path.join(out, f"{stem}_v{n}.png")) + glob.glob(os.path.join(out, f"{stem}_v{n}[a-z].png")):
+        n += 1
+    return n
+
+
 def render(stem):
+    """Renders to preview/<stem>_vN.png, N the first version not taken (counting lettered options too)."""
     out = os.path.join(hk.ART, "preview")
     os.makedirs(out, exist_ok=True)
-    n = 1
-    while os.path.exists(os.path.join(out, f"{stem}_v{n}.png")):
-        n += 1
-    path = os.path.join(out, f"{stem}_v{n}.png")
+    path = os.path.join(out, f"{stem}_v{next_n(stem)}.png")
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
     print("RENDERED", path)
@@ -220,7 +293,10 @@ def build_board(templates, radius=4):
 
 if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
-    # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished.
+    # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished;
+    # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant; --treeoflife renders
+    # TREEOFLIFE_MAP and a close-up of the Tree of Life; --landmarks a close-up of the Hidden Shrine,
+    # the Fey Court and the Spider Nest; --flow each forest variant's region flowing into its landmark.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -231,6 +307,64 @@ if __name__ == "__main__":
         build_map(load_templates(tiles), tiles=VARIANT_MAP)
         stage(Vector((4, -1, 0)), 82, 45)
         render("variants")
+        sys.exit(0)
+    if "forest-t2" in flags:
+        # The forest tier 2 map, then a close-up of each variant's region and its neighbours.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=FOREST_T2_MAP)
+        stage(Vector((-0.5, -1, 0)), 66, 45)
+        render("forest_t2")
+        cam = bpy.context.scene.camera
+        for variant, group in FOREST_T2_CLOSEUPS.items():
+            target = sum((hk.tile_position(q, r) for q, r in group), Vector()) / len(group)
+            el = math.radians(40)
+            cam.location = target + Vector((0, -24 * math.cos(el), 24 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+            render(f"closeup_{variant}")
+        sys.exit(0)
+    if "treeoflife" in flags:
+        # The Tree of Life landmark in a heartwood group, then a close-up of it.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=TREEOFLIFE_MAP)
+        stage(Vector((0.5, -0.5, 0)), 52, 45)
+        render("treeoflife")
+        cam = bpy.context.scene.camera
+        el = math.radians(38)
+        cam.location = Vector((0, 0, 0.8)) + Vector((0, -20 * math.cos(el), 20 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+        render("closeup_treeoflife")
+        sys.exit(0)
+    if "landmarks" in flags:
+        # A close-up of each landmark on LANDMARK_MAP, in its own variant's group.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=LANDMARK_MAP)
+        stage(Vector((-0.5, -1, 0)), 66, 45)
+        cam = bpy.context.scene.camera
+        el = math.radians(40)
+        for (q, r), name in LANDMARK_MAP.items():
+            if name in vr.LANDMARKS:
+                cam.location = hk.tile_position(q, r) + Vector((0, -15 * math.cos(el), 0.6 + 15 * math.sin(el)))
+                cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+                render(f"closeup_{name}")
+        sys.exit(0)
+    if "flow" in flags:
+        # Each forest variant's region flowing into its landmark, then a close-up of the landmark.
+        for variant, tiles_map in FLOW_MAPS.items():
+            hk.empty_scene()
+            build_map(load_templates(tiles), tiles=tiles_map)
+            stage(Vector((1.5, -1.0, 0)), 50, 50)
+            render(f"{variant}_landmark")
+            cam = bpy.context.scene.camera
+            el = math.radians(40)
+            at = hk.tile_position(*LANDMARK_AT)
+            # looking at the entrance, which the landmark turns to face its longest trail
+            region = [t for t, n in tiles_map.items() if n in (variant, tiles_map[LANDMARK_AT])]
+            d, t = lf.flow(set(region), LANDMARK_AT)
+            a = math.radians(60 * lf.turn(LANDMARK_AT, d, t))
+            cam.location = at + Vector((17 * math.cos(el) * math.cos(a), 17 * math.cos(el) * math.sin(a),
+                                        0.8 + 17 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+            render(f"closeup_{tiles_map[LANDMARK_AT]}_landmark")
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()

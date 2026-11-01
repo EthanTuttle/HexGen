@@ -105,6 +105,46 @@ PALETTE = {
     "canvas": "#E2B98A",
     "lantern": "#F6D36B",
     "rope": "#C9B58A",
+    # tier 2 forest variants (placeholders)
+    "fey_wood": "#5C9270",
+    "fey_teal": "#4FA6A0",
+    "fey_violet": "#8F7BC6",
+    "fey_rose": "#DB8FAA",
+    "fey_mushroom": "#B47FE6",
+    "fey_stem": "#E4DCCB",
+    "dark_wood": "#5B5F4F",
+    "bark_grey": "#57534E",
+    "bark_black": "#2B2926",
+    "bark_dark": "#403D39",
+    "web": "#D6D4CF",
+    "tuft_dark_wood": "#53574A",
+    "bramble": "#6A3E34",
+    "bramble_leaf": "#3F4A2F",
+    "carcass": "#8C5E4B",
+    "heartwood": "#7AA052",
+    "moss": "#6B9440",
+    "leaf_gold": "#8FAE3A",
+    "leaf_green": "#5E9A36",
+    "leaf_green_dark": "#467C30",
+    "trunk_old": "#6E4A33",
+    "stone_moss": "#7D8873",
+    "path_earth": "#A88A64",
+    "drag_scrape": "#7A6A57",
+    "stone_statue": "#9DA394",
+    "ivy": "#3E6B37",
+    "fey_bark": "#9C8A96",
+    "fey_door": "#5E4A5E",
+    "window_glow": "#FFD27A",
+    "rock_cave": "#6E6A64",
+    "cave_dark": "#141210",
+    "rock_wet": "#4B4D52",
+    "rock_wet_dark": "#35373C",
+    "cocoon": "#E6E1D6",
+    "gate_wood": "#8E4A32",
+    "iron": "#8C9196",
+    "ribbon_red": "#C8553D",
+    "ribbon_white": "#F2E8D5",
+    "ribbon_blue": "#5F86C2",
     "slot": "#F6EFE4",
     "backdrop": "#CFE4F2",
     # combat cells
@@ -117,8 +157,13 @@ PALETTE = {
 # material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
 # hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
 # them toward the neighbours' ground colours like the base slabs' tops.
-# lantern (like toadstool) glows at night, so the engine needs to find it.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "hill_grass", "highland_grass"}
+# lantern, toadstool, fey_mushroom (the fey wood's fairy rings) and window_glow (the Fey Court's windows) glow at
+# night, so the engine needs to find them.
+# web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow",
+                "hill_grass", "highland_grass"}
+
+WEB_ALPHA = 0.3
 
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
@@ -154,6 +199,11 @@ def material(name):
     bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
     bsdf.inputs["Roughness"].default_value = 0.9
     mat.diffuse_color = (*rgb, 1.0)
+    if name == "web":
+        bsdf.inputs["Alpha"].default_value = WEB_ALPHA
+        mat.surface_render_method = "BLENDED"
+        mat.use_backface_culling = False
+        mat.diffuse_color = (*rgb, WEB_ALPHA)
     return mat
 
 
