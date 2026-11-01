@@ -6,7 +6,8 @@ along every edge whose neighbour isn't farm or village (an empty slot too). Gate
 edges:
 1. Each tile ranks its own fence edges by hash01(q * 6 + i, r, 11) and takes the first one, or the first two
    on about a third of tiles (hash01(q, r, 12) < 0.35).
-2. A taken edge shows a gate only while the land beyond it is walkable: a placed tile that isn't water. Until
+2. A taken edge shows a gate only while the land beyond it is walkable: any placed land except rivers and
+   lakes (design/06 -> Tile build). Until
    then it stays fence, and the gate appears when walkable land is placed there.
 3. If a whole group has no gate on walkable land, its fence edge facing walkable land with the lowest edge
    hash gets one, so every fenced group has a way out.
@@ -20,7 +21,7 @@ import ground_cover as gc
 
 NEIGHBOURS = gc.NEIGHBOURS
 FENCED = {"farmland", "village"}  # terrains inside the fence (their variants count as them)
-UNWALKABLE = {"river"}  # placeholder: water; no gate opens onto it
+UNWALKABLE = {"river"}  # water: rivers and lakes (a lake is a clump of river tiles; the delta is a river variant)
 
 
 def fence_gates(terrains):

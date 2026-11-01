@@ -247,6 +247,8 @@ def build_map(templates, animated=False, tiles=None):
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
             elif i in trails:  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
+                if lf.heads_in((q, r), i, dist) and f"{kit}_edge_trail_in" in templates:
+                    edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
             elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
                 edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
@@ -347,7 +349,8 @@ if __name__ == "__main__":
     # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant; --treeoflife renders
     # TREEOFLIFE_MAP and a close-up of the Tree of Life; --landmarks a close-up of the Hidden Shrine,
     # the Fey Court and the Spider Nest; --flow each forest variant's region flowing into its landmark;
-    # --farmland the farm gates, the path data and the windmill country region with the Great Windmill.
+    # --farmland the farm gates, the path data and the windmill country region with the Great Windmill;
+    # --markettown-gates the farm map with market towns, to show their gates.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -416,6 +419,23 @@ if __name__ == "__main__":
                                         0.8 + 17 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
             render(f"closeup_{tiles_map[LANDMARK_AT]}_landmark")
+        sys.exit(0)
+    if "markettown-gates" in flags:
+        # The farm map with its villages finished as market towns, to show their gates.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles={k: ("market_town" if v == "village" else v) for k, v in FARM_MAP.items()})
+        stage(Vector((0.5, -0.8, 0)), 50, 50)
+        render("farmland_markettown_gates")
+        tiles_map = {k: ("market_town" if v == "village" else v) for k, v in FARM_MAP.items()}
+        g = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})
+        t, edges = next((t, e) for t, e in sorted(g.items()) if e and tiles_map[t] == "market_town")
+        a = math.radians(60 * edges[0])
+        el = math.radians(40)
+        at = hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3
+        cam = bpy.context.scene.camera
+        cam.location = at + Vector((-8 * math.cos(el) * math.cos(a), -8 * math.cos(el) * math.sin(a), 8 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, a - math.pi / 2)
+        render("farmland_markettown_gate_closeup")
         sys.exit(0)
     if "farmland" in flags:
         # Farmland: the farm and village group with its gates, the same with the path data drawn over it, the

@@ -157,12 +157,16 @@ def windmill(p, rng, at, spin):
         p.box_rot(hub + rot @ Vector((0.05, 0, 0.78)), (0.04, 0.06, 1.4), "trunk", rot)
 
 
-def grain_cart(p, rng, at, spin):
+def grain_cart(p, rng, at, spin, shafts=False):
+    """A two-wheeled cart piled with grain. shafts: a pair of shafts out in front (toward spin), so it reads
+    as heading that way."""
     p.box(at, (0.7, 0.42, 0.22), "crate", z=0.22, spin=spin)
     p.box(at, (0.6, 0.34, 0.12), "hay", z=0.44, spin=spin)
     side = turn(Vector((0, 1, 0)), spin)
     for s in (-1, 1):
         p.log(at + side * s * 0.24, 0.16, 0.05, "trunk", spin=spin + math.pi / 2, z=0.16)
+        if shafts:
+            p.box(at + turn(Vector((0.6, s * 0.15, 0)), spin), (0.55, 0.035, 0.035), "trunk", z=0.22, spin=spin)
 
 
 def sacks(p, rng, at, cols, rows, spin=0.0):
@@ -175,15 +179,18 @@ def sacks(p, rng, at, cols, rows, spin=0.0):
             p.blob(q, 0.13, "sack", z=0.1 + layer * 0.17, squash=0.75)
 
 
-def cart_road(p, rng):
-    """Windmill country's trail wedge: the farm track widened into a rutted cart road running on to the edge,
-    with a grain cart on it heading for the mill and a haystack beside it."""
+def cart_road(p, rng, heading_in):
+    """Windmill country's trail wedges: the farm track widened into a rutted cart road running on to the edge.
+    There are two: edge_trail on the tile farther from the mill, with one grain cart on it heading out over the
+    edge toward the mill, and edge_trail_in on the tile closer to it, with no cart, so each trail edge has one
+    cart, facing the mill. A haystack stands beside the road."""
     bt.track(p, x0=X0 - 0.2, half=0.45)
     for sd in (-1, 1):  # wheel ruts
         p.flat([Vector((X0 - 0.2, sd * 0.24 - 0.05, 0)), Vector((X1, sd * 0.24 - 0.05, 0)),
                 Vector((X1, sd * 0.24 + 0.05, 0)), Vector((X0 - 0.2, sd * 0.24 + 0.05, 0))], 0.018, "rut")
-    grain_cart(p, rng, Vector((X0 + 1.15, 0.05, 0)), rng.uniform(-0.08, 0.08))
-    haystack(p, rng, Vector((X0 + 0.6, rng.choice((-0.9, 0.9)), 0)))
+    if not heading_in:
+        grain_cart(p, rng, Vector((X0 + 1.1, 0.05, 0)), rng.uniform(-0.06, 0.06), shafts=True)
+    haystack(p, rng, Vector((X0 + (0.6 if heading_in else 1.6), rng.choice((-0.9, 0.9)), 0)))
 
 
 def windmill_country(p, rng, kind):
@@ -200,8 +207,8 @@ def windmill_country(p, rng, kind):
                 haystack(p, rng, at + bt.turned(rng.uniform(-0.6, 0.6), rng.uniform(-0.5, 0.5)))
         p.hub = Vector((0, 0, 0))
         return
-    if kind == "edge_trail":  # toward the Great Windmill: the track widens into a rutted cart road
-        cart_road(p, rng)
+    if kind in ("edge_trail", "edge_trail_in"):  # toward the Great Windmill: the track widens into a cart road
+        cart_road(p, rng, kind == "edge_trail_in")
         return
     if kind == "centre_near":  # next to the Great Windmill: the harvest piled up, a cart loading
         cx, cy, w, h = bt.farm_grid(p, rng, ripe=True, leave_out=3)
@@ -262,8 +269,22 @@ def market_town(p, rng, kind):
         townhouse(p, rng, Vector((X0 + 0.7, 0.85, 0)), 0.0)
         townhouse(p, rng, Vector((X1 - 0.75, -1.2, 0)), 0.0)
         stall(p, rng, Vector((X0 + 0.9, -0.8, 0)), 0.0)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])  # the street runs on along the middle line
         return
     garden = X0 + 0.6 * (X1 - X0)
+    if kind == "edge_gate":  # the garden strip and fence, with a cobbled street out through a gate
+        p.flat(bt.band(garden, X1), 0.015, "plains")
+        p.flat([Vector((garden - 0.05, -0.36, 0)), Vector((X1, -0.36, 0)), Vector((X1, 0.36, 0)),
+                Vector((garden - 0.05, 0.36, 0))], 0.02, "cobble")
+        bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15) and abs(q.y) < 0.5,
+                   hk.WEDGE_BOUNDS, 4)
+        townhouse(p, rng, Vector((X0 + 0.7, 0.95, 0)), math.radians(90))
+        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=bt.BORDER_X - 0.25, margin=0.2)
+                             and abs(q.y) > 0.65, 2, 0.5, hk.WEDGE_BOUNDS):
+            p.blob(at, 0.22, "hedge", squash=0.8)
+        bt.farm_gate(p, rng)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+        return
     p.flat(bt.band(garden, X1), 0.015, "plains")
     bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
     townhouse(p, rng, Vector((X0 + 0.7, 0.3, 0)), math.radians(90))
@@ -1123,7 +1144,7 @@ MILL_HUB = Vector((0.8, 0, 3.15))  # where the Great Windmill's sails turn, in t
 
 def great_windmill(p, rng, kind):
     """Windmill country's Great Windmill: a tall stone tower mill with a granary barn, grain sacks stacked by its
-    door and grain carts lined up outside, on a beaten yard. Its door faces edge 0 (+X), with the cart road's
+    door and a grain cart waiting outside, on a beaten yard. Its door faces edge 0 (+X), with the cart road's
     approach from the centre piece's edge to the door. The big sails are their own piece, greatwindmill_sails,
     so the engine can turn them."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], 0.012, "road")  # the yard
@@ -1146,9 +1167,8 @@ def great_windmill(p, rng, kind):
     p.gable_roof(barn, 1.3, 1.05, 0.55, "roof", z=0.8, spin=math.radians(60))
     p.box(barn + turn(Vector((0, -0.43, 0)), math.radians(60)), (0.4, 0.04, 0.55), "mill_door",
           spin=math.radians(60))
-    # grain carts lined up outside, nose to tail along the approach, toward the corner between edges 5 and 0
-    for x in (0.55, 1.35, 2.15):
-        grain_cart(p, rng, Vector((x, -1.0 - 0.12 * (x > 2), 0)), 0.0)
+    # a grain cart waiting outside, toward the corner between edges 5 and 0
+    grain_cart(p, rng, Vector((1.05, -1.0, 0)), math.pi, shafts=True)
     # Paths: the approach on edge 0, a ring round the tower the other edges' tracks join, and spokes out to them.
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 1.35 for i in range(6)]
     p.paths.append([Vector((X0, 0, 0)), Vector((1.0, 0, 0))])
@@ -1286,8 +1306,8 @@ VARIANTS = {
     "meadows": ("plains", meadows, "plains", ()),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains",
-                         ("centre_mill", "edge_gate", "edge_trail", "centre_near")),
-    "market_town": ("village", market_town, "cobble", ()),
+                         ("centre_mill", "edge_gate", "edge_trail", "edge_trail_in", "centre_near")),
+    "market_town": ("village", market_town, "cobble", ("edge_gate",)),
     "delta": ("river", delta, "plains", ()),
     "bog": ("swamp", bog, "bog", ()),
     "wasteland": ("desert", wasteland, "wasteland", ()),
