@@ -425,7 +425,7 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		dmg = maxi(dmg, 0)
 	if a.ally:
 		result = {coins = coins, title = "Hit!" if hit else "Miss", good = hit,
-				sub = "%d heads (needs %d). %s" % [heads, Rules.HEADS_TO_HIT, "Damage: %d [placeholder, set by %s]" % [dmg, a.ability] if hit else "No damage."]}
+				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
 		hud.refresh()
 	await board.attack(a.mini, t.mini, hit)
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
@@ -451,7 +451,7 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	var saved := heads >= 1
 	var dmg: int = Rules.SPELL_DAMAGE / 2 if saved else Rules.SPELL_DAMAGE
 	result = {coins = coins, title = "Saved: half damage" if saved else "Failed save!", good = not saved,
-			sub = "%s flipped %d heads (needs 1 to save). %s" % [t.name, heads, "Riders are ignored. Damage: %d" % dmg if saved else "Full damage: %d [placeholder, set by WIS]" % dmg]}
+			sub = "Damage: %d [placeholder]" % dmg}   # the coins show the heads
 	hud.refresh()
 	await board.attack(a.mini, t.mini, true)
 	hud.float_text(t, "-%d" % dmg, true)

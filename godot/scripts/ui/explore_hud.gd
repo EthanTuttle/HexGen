@@ -20,7 +20,6 @@ var _clock_title: Label
 var _clock_sub: Label
 var _hand_count: Label
 var _hand_grid := Control.new()
-var _hand_note: Label
 var _deck_n: HexShape
 var _discard_n: HexShape
 var _enc_layer: ColorRect
@@ -93,13 +92,13 @@ func _build_buttons() -> void:
 	quests.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	quests.clickable = true
 	quests.accessibility_name = "Quests"
-	quests.pressed.connect(func(): game.toast("The quest log isn't in this prototype yet.", false))
+	quests.pressed.connect(func(): game.toast("Not in the prototype yet", false))
 	col.add_child(quests)
 	_nav_row.add_theme_constant_override("separation", 6)
 	var gear := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("gear", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 	gear.clickable = true
 	gear.accessibility_name = "Character and gear"
-	gear.pressed.connect(func(): game.toast("The character and gear screen isn't in this prototype yet.", false))
+	gear.pressed.connect(func(): game.toast("Not in the prototype yet", false))
 	_nav_row.add_child(gear)
 	_nav = HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("nav", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 	_nav.clickable = true
@@ -236,10 +235,6 @@ func _build_hand() -> void:
 	_hand_grid.custom_minimum_size = Vector2(132, 104)
 	_hand_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(_hand_grid)
-	_hand_note = UI.label("", "n800", 12, UI.INK_SOFT, 0, 1.3)
-	_hand_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hand_note.custom_minimum_size = Vector2(132, 32)
-	v.add_child(_hand_note)
 	var fill := Control.new()
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(fill)
@@ -288,9 +283,6 @@ func _refresh_hand() -> void:
 	var over := hand.size() > Rules.HAND_LIMIT
 	_hand_count.text = "%d / %d" % [hand.size(), Rules.HAND_LIMIT]
 	_hand_count.add_theme_color_override("font_color", UI.RED if over else UI.INK_SOFT)
-	var held := game.held_terrain()
-	_hand_note.text = ("%s held. Lit hexes can take it; red ones clash with a neighbour." % Rules.NAMES[held] if held != "" else "Tap a card to hold it.") \
-			+ (" Over the limit: discard down to 7 at your next rest." if over else "")
 	_deck_n.with_text(str(game.deck.draw_pile.size()), 12, UI.CREAM)
 	_discard_n.with_text(str(game.deck.discard.size()), 12, UI.CREAM)
 
@@ -440,10 +432,11 @@ func _build_encounter() -> void:
 ## stage: "ask", "passed" or "spotted"
 func show_encounter(where: String, stage: String, coins: Array) -> void:
 	_enc_where.text = ("Encounter · " + where).to_upper()
+	# The coin check line (DOCS: UI -> Screen text keeps it), then just the result.
 	_enc_text.text = {
-		"ask": "Foes block the way. Fight them, or try to slip past with a Stealth group check (everyone flips; needs 1 heads).",
-		"passed": "You slipped past. The encounter stays on the map until it despawns.",
-		"spotted": "Spotted! The fight is on."}[stage]
+		"ask": "%d coins · Stealth · needs %d heads" % [game.party.size() * Rules.SNEAK_COINS_EACH, Rules.HEADS_TO_HIT],
+		"passed": "Slipped past",
+		"spotted": "Spotted!"}[stage]
 	for c in _enc_coins.get_children():
 		_enc_coins.remove_child(c)
 		c.queue_free()
@@ -501,15 +494,10 @@ func refresh() -> void:
 	# The Rest card shows while the party stands on a camp (DOCS: Exploration screen -> Resting).
 	_rest.visible = game.party_tile == Rules.START_TILE and not game.busy
 	var held := game.held_terrain()
+	# The banner shows only while a card is held, and names it (DOCS: UI -> Screen text).
+	_banner.visible = held != ""
 	if held != "":
-		_banner_text.text = "Place %s · tap a lit hex" % Rules.NAMES[held]
-		_banner_cancel.get_parent().visible = true
-	elif not game.deck.hand.is_empty():
-		_banner_text.text = "Pick a card to build, or tap a hex to walk"
-		_banner_cancel.get_parent().visible = false
-	else:
-		_banner_text.text = "Hand empty: tap a hex to walk and find a fight"
-		_banner_cancel.get_parent().visible = false
+		_banner_text.text = "Place %s" % Rules.NAMES[held]
 	_banner.reset_size()
 
 

@@ -7,6 +7,17 @@ The prototype has two parts:
 - **The playable loop** (`scenes/main.tscn`, the default scene): place map cards, walk the party, fight on the tile's combat board, and go back to the map with the hand refilled. Its screens are built from the mockups: exploration v8b, combat v14 and after combat v7.
 - **The look tests** (`scenes/look_tests.tscn`): the fixed test map, water, camera, backdrop and attack tweens that Godot was picked on, plus every terrain and every tier 1 region variant (tiles v13; see Terrains and region variants).
 
+## Standing rule: screen text
+
+Before adding or keeping any sentence on screen, check it against `design/07 Presentation.md` → UI → Screen text. When in doubt, leave it out.
+
+- **No hints for standard input.** Tap, drag, hover and long-press are taught in onboarding.
+- **Don't restate what a visual already shows** (lit hexes, gold rings, AP pips, the clock dial, HP bars, counts).
+- **Panels get a short title, then values and icons.**
+- **Only two kinds of sentence stay:** one that explains an icon ("Once per fight: stays used until the next fight"), and a helper prompt that stops a mistake ("Unspent AP is lost when the phase ends").
+- **Toasts** only give the short reason for an action that failed (e.g. a slot that clashes), plus prototype-only "Not in the prototype yet".
+- **Checks** show the docs' coin line ("3 coins · DEX · needs 1 heads") and the result, not the rule behind it.
+
 ## Playing the loop
 
 Open `godot/project.godot` in Godot 4.7 and press Play, or from the repo root:
@@ -234,6 +245,7 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 - **Mockup-only parts left out:** the Debug tab (the docs say it's not part of the game), and on After combat the Debug Replay button and the loot (no loot in the loop).
 - **Non-working buttons, kept so the screens read like the mockups:** Quests, the character and gear button, the party portraits on the map (they'd open the gear screen), Use item (no consumables), the weapon cards whose AP cost isn't set (Parry, Block, Shield Bash, Trip, Ward, Bonebreaker, Backstab, Throw: "?" and greyed, as in the mockup), and Edit hotbar (the Action cards screen isn't built). Each says so when clicked.
 - **After combat's button.** The mockup shows "Later" and "Level up now" because its party levels up; there's no XP in the loop, so the panel shows the mockup's "+[XP] XP" and "Party level [level]" placeholders and one **Back to map** button in the Level up now style.
+- **Screen text pass (Nov 1, 2026; Standing rule above).** Cut: the idle banner (it shows only while a card is held, as "Place Forest"), the hand note, the night toast, combat's target prompts, Move rule and AP lines, "The foes act on the board", "Spells that help an ally always work", the save rule line, after combat's "deck is empty" and "win this fight" notes, the defeat toast, and the region toast's draw and hand-limit notes. Trimmed: checks to the coin line ("3 coins · STR · needs 1 heads"; a save shows "Save: 2 coins · DEX · needs 1 heads"; results to "Damage: N [placeholder]"), the Sneak pop-up to its coin line and "Slipped past" / "Spotted!", the End pop-up to "Unspent AP is lost when the phase ends", and the prototype toasts to "Not in the prototype yet".
 - **Defeat** has no mockup. It uses the After combat panel with "Defeat", the dropped cards in place of rewards, and **Back to camp**.
 - **Rest** has no mockup either: the docs ask for a Rest action card along the bottom while the party stands on a camp, so it borrows the combat hotbar card's look.
 - **Fog of war at night** (docs: tiles beyond sight are fogged) isn't drawn on the 3D tiles; out-of-sight slots fade and can't take cards, and the camera can't zoom all the way out.

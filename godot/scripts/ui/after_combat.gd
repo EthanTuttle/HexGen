@@ -144,8 +144,6 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array) -> Control:
 		p.add_child(hx)
 		_reveal.append(hx)
 	if won:
-		if cards.is_empty():
-			p.add_child(UI.at(UI.label("The deck is empty: no cards drawn. Rest to reshuffle.", "n800", 12, UI.INK_SOFT), 14, 60))
 		var gold := UI.panel(UI.DARK, 26, Color(0, 0, 0, 0), 0, Vector4(8, 0, 16, 0))
 		gold.custom_minimum_size.y = 52
 		var gh := HBoxContainer.new()
@@ -163,9 +161,6 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array) -> Control:
 		UI.at(gold, 10, 137 + (80 if cards.size() > 4 else 0))
 		p.add_child(gold)
 		_reveal.append(gold)
-	else:
-		var note := UI.label("Win this fight to get them back.", "n800", 12, UI.INK_SOFT)
-		p.add_child(UI.at(note, 14, 130))
 	return p
 
 

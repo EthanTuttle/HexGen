@@ -195,7 +195,6 @@ func _refresh_details() -> void:
 		c.queue_free()
 	if fight.phase == "enemies":
 		_details.add_child(_wrap(UI.label("Enemies' phase", "lilita", 20)))
-		_details.add_child(_wrap(UI.label("The foes act on the board.", "n700", 12, UI.INK_SOFT)))
 		return
 	if fight.phase == "over" or fight.current.is_empty():
 		return
@@ -224,11 +223,9 @@ func _refresh_details() -> void:
 
 	var targeting: bool = k.kind in ["attack", "save", "ally"]
 	var has_target: bool = not (fight.ally_target if k.kind == "ally" else fight.target).is_empty()
-	if k.kind == "move":
-		var line := "No AP left to move." if fight.ap_left(u) < 1 else ("Moved %d %s. Tap a lit hex to move again." % [fight.moved, "hex" if fight.moved == 1 else "hexes"] if fight.moved > 0 else "Tap a lit hex to move there.")
-		_details.add_child(_wrap(UI.label(line, "n800", 13)))
-		_details.add_child(_wrap(UI.label("Each Move costs 1 AP and can be repeated. Rocks and other tokens block; trees don't. Distance shown: 2 hexes [placeholder, not set yet].", "n700", 12, UI.INK_SOFT)))
-	elif targeting and not fight.result.is_empty():
+	# Screen text (DOCS: UI -> Screen text): no Move rule sentence and no "pick a target" prompts; the lit
+	# hexes, gold rings and AP pips show them. A check shows only the coin line.
+	if targeting and not fight.result.is_empty():
 		var coins := HBoxContainer.new()
 		coins.add_theme_constant_override("separation", 6)
 		for h in fight.result.coins:
@@ -236,7 +233,8 @@ func _refresh_details() -> void:
 		if not fight.result.coins.is_empty():
 			_details.add_child(coins)
 		_details.add_child(_wrap(UI.label(fight.result.title, "lilita", 22, Color("#2E7A3E") if fight.result.good else UI.RED)))
-		_details.add_child(_wrap(UI.label(fight.result.sub, "n700", 12, UI.INK_SOFT)))
+		if fight.result.sub != "":
+			_details.add_child(_wrap(UI.label(fight.result.sub, "n700", 12, UI.INK_SOFT)))
 	elif targeting and has_target:
 		var t: Dictionary = fight.ally_target if k.kind == "ally" else fight.target
 		var row := HBoxContainer.new()
@@ -249,16 +247,11 @@ func _refresh_details() -> void:
 		_details.add_child(row)
 		if k.kind == "ally":
 			_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
-			_details.add_child(_wrap(UI.label("Spells that help an ally always work.", "n700", 12, UI.INK_SOFT)))
 		elif k.kind == "attack":
 			var n: int = u.score + (1 if u.blessed else 0)
-			_details.add_child(_wrap(UI.label("Flip %d coins (%s)%s" % [n, u.ability, " +1 Bless" if u.blessed else ""], "n800", 13)))
-			_details.add_child(_wrap(UI.label("Needs 1 heads to hit.", "n700", 12, UI.INK_SOFT)))
+			_details.add_child(_wrap(UI.label("%d coins · %s · needs %d heads%s" % [n, u.ability, Rules.HEADS_TO_HIT, " · +1 Bless" if u.blessed else ""], "n800", 13)))
 		else:
-			_details.add_child(_wrap(UI.label("%s flips %d coins (%s save)" % [t.name, Rules.ENEMY_SAVE_COINS, k.save], "n800", 13)))
-			_details.add_child(_wrap(UI.label("Needs 1 heads to save. A save halves the damage.", "n700", 12, UI.INK_SOFT)))
-	elif targeting:
-		_details.add_child(_wrap(UI.label("Pick an ally. Allies in reach have a green circle." if k.kind == "ally" else "Pick a target. Foes in reach glow gold.", "n800", 13)))
+			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs 1 heads" % [Rules.ENEMY_SAVE_COINS, k.save], "n800", 13)))
 	elif k.kind == "self" and fight.self_done == k.id:
 		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))
 		_details.add_child(_wrap(UI.label(fight.self_message(k.id), "n700", 12, UI.INK_SOFT)))
@@ -462,7 +455,7 @@ func _build_all() -> void:
 	var edit := TagButton.make("Edit hotbar", 120, 36, 14)
 	edit.cut = 10
 	edit.icon = UI.icon("M4 20h4L19 9l-4-4L4 16z M13 7l4 4", UI.WHITE_WARM, 16, 2.4)
-	edit.pressed.connect(func(): fight.game.toast("The Action cards screen isn't in this prototype yet.", false))
+	edit.pressed.connect(func(): fight.game.toast("Not in the prototype yet", false))
 	head.add_child(edit)
 	var close := HexShape.make(30, 30, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("close", UI.INK_SOFT, 16, 2.6)
 	close.clickable = true
@@ -504,7 +497,7 @@ func _build_confirm() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	v.add_child(UI.label("End allies' phase?", "lilita", 20))
-	var t := UI.label("These allies still have AP left. Unspent AP is lost when the phase ends.", "n700", 13, UI.INK_SOFT)
+	var t := UI.label("Unspent AP is lost when the phase ends.", "n700", 13, UI.INK_SOFT)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	t.custom_minimum_size.x = 268
 	v.add_child(t)

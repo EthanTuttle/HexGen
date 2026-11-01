@@ -178,9 +178,7 @@ func _advance(minutes: float) -> void:
 		day += 1
 	var night := Rules.is_night(minute)
 	if night != was_night:
-		if night:
-			toast("Night falls. Build only within sight of the party, and find somewhere to rest.", false)
-		_light_slots()
+		_light_slots()   # the dial and the faded slots show night: no toast (DOCS: UI -> Screen text)
 
 
 # --- Placing -----------------------------------------------------------------
@@ -375,14 +373,11 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		finished[c] = regions.size() - 1
 	_transform(tiles, region, t)
 	var draw := Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION
-	var got := deck.draw(draw)
-	var lost := draw - got.size()
-	var over := deck.hand.size() - Rules.HAND_LIMIT
+	deck.draw(draw)
 	_reveal_pin = region.landmark_tile
 	_reveal_until = real_time + 3.5
-	toast("%s! Region finished: draw %d%s. Landmark: %s.%s" % [region.name, draw,
-			" (%d lost: deck empty, rest to reshuffle)" % lost if lost > 0 else "", region.landmark,
-			" Hand %d/7: keep building; you discard down to 7 when you rest." % deck.hand.size() if over > 0 else ""])
+	# No draw amounts or hand-limit notes (DOCS: UI -> Screen text); the hand and its count show them.
+	toast("%s! Landmark: %s" % [region.name, region.landmark])
 
 
 ## A finished region's tiles change to its variant's look (DOCS: Exploration screen -> Cluster goals; no rim).
@@ -619,10 +614,7 @@ func start_fight(t: Vector2i) -> void:
 	party_node.visible = true
 	hud.visible = true
 	rig.frame(party_node.centre(), 58.0, 50.0)
-	busy = false
-	if not won:
-		toast("The party fell back to camp. %d card%s dropped where they fell: win that fight to get them back." % [
-				dropped.size(), "" if dropped.size() == 1 else "s"], false)
+	busy = false   # no defeat toast: the results screen already showed the dropped cards (DOCS: UI -> Screen text)
 	_refresh()
 
 
