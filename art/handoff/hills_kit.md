@@ -136,7 +136,7 @@ Phone cost: no extra triangles and no per-frame cost, and merging should lower d
 
 **Lower mound (kit change):** these four variants and their landmarks are now built on a lower mound (`variants.LOW_GROUND`: 0.5 at the centre's edge, 0.8 at the middle, 0.35 at a joined edge's middle, against 1.0, 1.6, 0.7), because the old mound alone was already 34° along a wedge's middle. Landmark tops came down to match: Clan Hall and Library 0.9, Yeti Cave and Salamander Den 0.8. Triangle counts didn't change.
 
-**Slopes:** straight along a trail, the steepest point is 27–29° on the regions I checked; minis tilt at most 28°. Off the trails, about 3–17% of the walking ground by area is over 28° by kind of piece, up to 23% on joined wedges next to an inward landmark, with the worst at about 40° near the dips at tile corners. Tier 0's mound is steeper than that.
+**Slopes:** straight along a trail, the steepest point is 27–29° on the regions I checked; minis tilt at most 28°. Off the trails, 0–23% of the walking ground by area is over 28°, depending on the kind of piece (centres least, joined wedges most), with the worst at about 40° near the dips at tile corners. Tier 0's mound is steeper than that.
 
 ## Monastery steps: `steps_centre` and `steps_rise`
 
