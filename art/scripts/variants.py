@@ -413,11 +413,11 @@ def fey_wood(p, rng, kind):
     and rose trees among the greens around it."""
     if kind == "centre":  # the clearing fills the centre piece; only its corners keep a tree
         clearing = Vector((0.05, -0.1, 0))
-        fairy_ring(p, rng, clearing, 1.0)
-        pts = hk.scatter(rng, lambda q: hk.in_centre(q) and (q - clearing).length > 1.6, 3, 0.8, hk.CENTRE_BOUNDS)
+        fairy_ring(p, rng, clearing, 0.95)
+        pts = []  # no trees in the centre: the camera turns freely, so the ring needs clear ground all round
     elif kind == "same":  # trees stand back from the clearing, so their crowns don't hide the ring
-        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 0.8, margin=0.15, inner=0, side=0),
-                         7, 0.8, hk.WEDGE_BOUNDS)
+        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 1.1, margin=0.15, inner=0, side=0),
+                         6, 0.8, hk.WEDGE_BOUNDS)
     else:  # the forest's thinner fringe, with a few stray mushrooms past it
         pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 0.6, x1=X0 + 0.6 * (X1 - X0), margin=0.25,
                                                          inner=0, side=0), 3, 0.9, hk.WEDGE_BOUNDS)
@@ -494,7 +494,7 @@ def bare_tree(p, rng, at, h):
             spike(p, fork, fork + Vector((math.cos(a + s * 0.9), math.sin(a + s * 0.9), 1.0)).normalized() * 0.4,
                   0.03, bark)
         limbs.append((base, tip))
-    return limbs, top
+    return limbs, top, mid
 
 
 def web_face(p, pts):
@@ -504,26 +504,36 @@ def web_face(p, pts):
     p.surface.add(f)
 
 
-def draped_web(p, rng, at, limbs, top):
-    """Webs filling one or two forks: a sheet from the trunk out to two neighbouring limb tips, sagging
-    between them, and sometimes a tatter hanging from a tip."""
-    for k in rng.sample(range(len(limbs)), min(len(limbs), rng.randint(1, 2))):
-        (b1, t1), (b2, t2) = limbs[k], limbs[(k + 1) % len(limbs)]
-        low = (b1 + b2) / 2 - Vector((0, 0, 0.2))
-        sag = (t1 + t2) / 2 * 0.8 + low * 0.2 - Vector((0, 0, 0.12))
-        web_face(p, [low, t1, sag])
-        web_face(p, [low, sag, t2])
-    if rng.random() < 0.5:
-        tip = limbs[rng.randrange(len(limbs))][1]
-        web_face(p, [tip, tip + Vector((0.06, 0.04, -0.5)), tip + Vector((-0.05, -0.03, -0.32))])
+def thread(p, a, b, normal, width=0.03):
+    """One strand of web from a to b: a thin strip lying in the web's plane (normal: the plane's normal)."""
+    side = normal.cross(b - a).normalized() * width / 2
+    web_face(p, [a - side, b - side, b + side, a + side])
 
 
-def web_sheet(p, rng, a, b):
-    """A sheet of web strung between two trunks; its free top and bottom edges curve in toward the middle."""
-    z0, z1 = rng.uniform(0.35, 0.55), rng.uniform(1.2, 1.5)
-    up, mid = Vector((0, 0, 1)), (a + b) / 2
-    web_face(p, [a + up * z0, mid + up * (z0 + 0.22), mid + up * (z1 - 0.25), a + up * z1])
-    web_face(p, [mid + up * (z0 + 0.22), b + up * z0, b + up * z1, mid + up * (z1 - 0.25)])
+def orb_web(p, rng, a, b, sag=0.15):
+    """An orb web strung between two anchor points (two branches, or two trunks): a faint sagging sheet with
+    radial strands and rings of spiral over it, and a strand out to each anchor. Strands overlap the sheet,
+    so in the see-through material they read as lines on a veil."""
+    u = (b - a).normalized()
+    w = (Vector((0, 0, 1)) - u * u.z).normalized()  # up, within the web's plane
+    normal = u.cross(w)
+    r = (b - a).length * rng.uniform(0.38, 0.45)
+    c = (a + b) / 2 - w * (sag + r * 0.15)
+    n, a0 = 7, rng.uniform(0, 2 * math.pi)
+    rim = []
+    for k in range(n):
+        t = a0 + 2 * math.pi * k / n
+        rk = r * rng.uniform(0.85, 1.05) * (1.1 if math.sin(t) < 0 else 0.95)  # sags low, flatter on top
+        rim.append(c + (u * math.cos(t) + w * math.sin(t) * 0.85) * rk)
+    for k in range(n):
+        web_face(p, [c, rim[k], rim[(k + 1) % n]])
+        thread(p, c, rim[k], normal)
+    for share in (0.4, 0.75):
+        ring = [c.lerp(q, share) for q in rim]
+        for k in range(n):
+            thread(p, ring[k], ring[(k + 1) % n], normal, 0.022)
+    for end in (a, b):
+        thread(p, min(rim, key=lambda q: (q - end).length), end, normal)
 
 
 def bramble(p, rng, at):
@@ -557,7 +567,7 @@ def carcass(p, rng, at, spin):
 
 
 def dark_wood(p, rng, kind):
-    """Bare grey-black trees, no two alike, some with see-through webs in their forks and between them;
+    """Bare grey-black trees, no two alike; here and there a see-through orb web between two limbs or two trunks;
     thorny brambles and bones on the ground throughout; carcasses at the wood's edges."""
     if kind == "centre":
         inside, bounds, count, extra = (lambda q: hk.in_centre(q, 0.1)), hk.CENTRE_BOUNDS, 4, 2
@@ -568,14 +578,23 @@ def dark_wood(p, rng, kind):
         inside = lambda q: hk.in_edge_wedge(q, x1=X0 + 0.55 * (X1 - X0), margin=0.25, inner=0, side=0)  # noqa: E731
         bounds, count, extra = hk.WEDGE_BOUNDS, 3, 1
     trees = hk.scatter(rng, inside, count, 1.0, bounds)
+    trunks = []
     for at in trees:
-        limbs, top = bare_tree(p, rng, at, rng.uniform(1.4, 2.8))
-        if rng.random() < 0.5:
-            draped_web(p, rng, at, limbs, top)
+        limbs, top, mid = bare_tree(p, rng, at, rng.uniform(1.4, 2.8))
+        trunks.append((at, mid, top))
+        if len(limbs) > 2 and rng.random() < 0.25:  # a web between two neighbouring limbs, partway out
+            k = rng.randrange(len(limbs))
+            (b1, t1), (b2, t2) = limbs[k], limbs[(k + 1) % len(limbs)]
+            orb_web(p, rng, b1.lerp(t1, 0.9), b2.lerp(t2, 0.9), sag=0.05)
+    # One web strung between the nearest two trunks at mid-height, where they're close enough.
     pairs = sorted(((a - b).length, i, j) for i, a in enumerate(trees) for j, b in enumerate(trees) if i < j)
-    for dist, i, j in pairs[:1]:
-        if dist < 1.7:
-            web_sheet(p, rng, trees[i], trees[j])
+    if pairs and pairs[0][0] < 2.0:
+        _, i, j = pairs[0]
+        ends = []
+        for at, mid, top in (trunks[i], trunks[j]):
+            z = min(rng.uniform(0.9, 1.25), top.z * 0.7)
+            ends.append(at.lerp(mid, z / mid.z) if z <= mid.z else mid.lerp(top, (z - mid.z) / (top.z - mid.z)))
+        orb_web(p, rng, *ends)
     gaps = hk.scatter(rng, lambda q: inside(q) and all((q - t).length > 0.55 for t in trees), extra + 1, 0.7,
                       bounds)
     for at in gaps[:extra]:
@@ -593,9 +612,9 @@ def dark_wood(p, rng, kind):
 
 # --- Forest class variant: heartwood ------------------------------------------------------------
 # A sacred grove round one ancient tree (the Tree of Life, the landmark): its region hints at it with
-# offerings (ribbons, lanterns, carved stones) under a few big trees, but has no great tree of its own.
-# The trees top out at about 2.9, clearly below the hills' peaks (4.2). The light shafts and floating seeds are the engine's; the
-# lanterns keep their own material.
+# offerings (ribbons, lanterns, carved stones) in an open glade under a few big trees, but has no great tree
+# of its own. The trees top out at about 2.9, clearly below the hills' peaks (4.2). The light shafts and
+# floating seeds are the engine's; the lanterns keep their own material.
 
 def great_tree(p, rng, at, h, spread):
     """A big broadleaf: a thick trunk on flared roots, two limbs, and a wide, low green canopy with a gold
@@ -643,12 +662,17 @@ def hanging_lantern(p, rng, at, z, spread):
     p.box(q, (0.2, 0.2, 0.25), "lantern", z=z - 0.6)
 
 
-def carved_stone(p, rng, at):
-    """A standing stone with a carved band round it."""
-    h, spin = rng.uniform(0.7, 0.95), rng.uniform(0, 1)
+def carved_stone(p, rng, at, ribbon=None):
+    """A standing stone with two carved bands round it; with a ribbon colour, a strip of cloth is tied round
+    its top and hangs down one side."""
+    h, spin = rng.uniform(0.7, 0.95), rng.uniform(0, 2 * math.pi)
     p.box(at, (0.36, 0.26, h), "rock_light", spin=spin)
     p.box(at, (0.39, 0.29, 0.08), "stone_tan", z=h * 0.62, spin=spin)
     p.box(at, (0.39, 0.29, 0.05), "stone_tan", z=h * 0.42, spin=spin)
+    if ribbon:
+        p.box(at, (0.41, 0.31, 0.11), ribbon, z=h * 0.78, spin=spin)
+        tail = at + turn(Vector((0.2, rng.uniform(-0.04, 0.04), 0)), spin)
+        p.box(tail, (0.04, 0.24, h * 0.75), ribbon, z=h * 0.1, spin=spin)
 
 
 def moss(p, rng, inside, bounds, count):
@@ -657,21 +681,26 @@ def moss(p, rng, inside, bounds, count):
 
 
 def heartwood(p, rng, kind):
-    """Fewer, much bigger broadleaf trees with open mossy ground between; ribbons, lanterns, carved stones."""
-    if kind == "centre":  # a smaller tree off to one side of an open glade, which breaks up the ring the
-        # edge pieces' trees make (every edge of a kind shows the same piece)
-        at = Vector((-0.75, 0.55, 0))
-        under = great_tree(p, rng, at, 2.9, 0.95)
-        ribbons(p, rng, at, under, 0.95, 3)
-        hanging_lantern(p, rng, at, under, 0.95)
-        moss(p, rng, lambda q: hk.in_centre(q, 0.2) and (q - at).length > 0.6, hk.CENTRE_BOUNDS, 4)
-        for at in hk.scatter(rng, lambda q: hk.in_centre(q, 0.35) and q.x > -0.1, 3, 0.8, hk.CENTRE_BOUNDS):
-            carved_stone(p, rng, at)
+    """Fewer, much bigger broadleaf trees round an open glade in each tile's centre; ribbons, lanterns, carved
+    stones."""
+    if kind == "centre":  # an open glade, clear of trees so it shows from the map camera: carved stones in
+        # a loose ring, some with cloth tied round them, a lantern on a post, moss
+        a0 = rng.uniform(0, 2 * math.pi)
+        colours = rng.sample(["ribbon_red", "ribbon_white", "ribbon_blue"], 3)
+        stones = []
+        for k in range(5):
+            a = a0 + 2 * math.pi * k / 5 + rng.uniform(-0.2, 0.2)
+            stones.append(Vector((math.cos(a), math.sin(a), 0)) * rng.uniform(0.85, 1.05))
+            carved_stone(p, rng, stones[-1], colours[k] if k < 3 else None)
+        lantern(p, stones[3] * 0.6 + stones[4] * 0.4 + Vector((0.15, 0.1, 0)))
+        moss(p, rng, lambda q: hk.in_centre(q, 0.2) and all((q - t).length > 0.35 for t in stones),
+             hk.CENTRE_BOUNDS, 5)
         return
-    if kind == "same":  # a great tree, off the wedge's middle; its canopy may meet the neighbour's
-        at, h, spread = Vector((X0 + 0.95, 0.45, 0)), rng.uniform(3.4, 3.6), 1.4
-    else:  # set back, so the canopy stays inside the tile
-        at, h, spread = Vector((X0 + 0.8, -0.25, 0)), rng.uniform(3.2, 3.4), 1.2
+    if kind == "same":  # a great tree, off the wedge's middle and out past the glade; its canopy may meet the
+        # neighbour's
+        at, h, spread = Vector((X0 + 1.3, 0.5, 0)), rng.uniform(3.4, 3.6), 1.3
+    else:  # set back from the glade, with the canopy still inside the tile
+        at, h, spread = Vector((X0 + 1.1, -0.3, 0)), rng.uniform(3.2, 3.4), 1.0
     under = great_tree(p, rng, at, h, spread)
     ribbons(p, rng, at, under, spread, 3)
     if kind == "same":

@@ -28,6 +28,10 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
            # tier 2 and class variants
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12}
+# Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
+# tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
+TUFT = {"dark_wood": "tuft_dark_wood"}
+NO_FLOWERS = {"dark_wood"}
 WATER = {"river", "delta"}
 FLOWERS = ["flower", "flower_pink", "flower_white", "flower_blue"]
 
@@ -107,6 +111,9 @@ def scatter(terrains, water_shapes):
                 drift = 0.5 + 0.5 * math.sin(x / 3.1 + 0.4) * math.sin(y / 2.6 + x / 5.0)
                 out.append(("flower" if k < 0.15 + 0.75 * drift else "tuft", x, y, (ix, iy)))
                 continue
+            if terrains[(q, r)] in NO_FLOWERS:
+                out.append(("tuft" if k < 0.85 else "pebble", x, y, (ix, iy)))
+                continue
             out.append(("tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", x, y, (ix, iy)))
     return out
 
@@ -125,7 +132,8 @@ def add_ground_cover(piece, terrains):
         rng = random.Random(hash01(ix, iy, 4))
         at = Vector((x, y, 0))
         if kind == "tuft":
-            piece.cone(at, rng.uniform(0.12, 0.2), rng.uniform(0.2, 0.35), "grass_ink", segments=4,
+            colour = TUFT.get(terrains.get(tile_at(x, y)), "grass_ink")
+            piece.cone(at, rng.uniform(0.12, 0.2), rng.uniform(0.2, 0.35), colour, segments=4,
                        spin=rng.uniform(0, 1))
         elif kind == "flower":
             # One colour per drift: the same slow wave picks it, so colours come in patches.
