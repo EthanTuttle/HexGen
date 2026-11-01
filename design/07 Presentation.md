@@ -39,7 +39,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Terrain | Tier 1 variant | Look |
   | --- | --- | --- |
   | Forest | Deep, old forest | Dark pine stands: tall pines packed tight, a darker green, little light reaching the ground |
-  | Plains | Rolling meadows | Drifts of wildflowers in a few soft colours through the grass, and small grazing herds (horses or deer) |
+  | Plains | Rolling meadows | Dense drifts of wildflowers in a few soft colours through the grass, and small grazing herds (horses or deer) scaled to the tents and minis |
   | Hills/mountains | Highlands | Purple heather and stone cairns on the slopes, slightly taller and rockier peaks; more bare rock showing, fewer trees, a grey-green grass tint |
   | Farmland | Windmill country | Small windmills between the plots on some tiles; every plot ripe gold, with haystacks and grain carts on the tracks |
   | Village | Market town | Market stalls with striped awnings in the streets and square, crates and barrels; taller two-storey timber-framed townhouses packed closer |
@@ -90,7 +90,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Haunted homesteads | Abandoned Barn | A big haunted barn standing upright (not leaning), weathered grey, with one faint light glowing through its boards at night and a small family graveyard with a few stones beside it (chosen Nov 1, 2026; was a leaning farmhouse, which looked odd) |
   | Cider orchards | Harvest Festival | A festival green among the orchards with stalls, a maypole and long tables (chosen Nov 1, 2026; the details are the art's first pass) |
   | Bandit-raided farms | Militia Barn | A big red barn behind a palisade of sharpened stakes, with a lookout platform on the roof and pitchforks and spears racked by the doors (chosen Nov 1, 2026) |
-  | Rolling meadows | Nomad Camp | Round felt tents in a ring round a central fire, with a picket line of horses and rugs drying on racks (chosen Nov 1, 2026) |
+  | Rolling meadows | Nomad Camp | Round felt tents in a ring round a central fire, with a picket line of horses and rugs drying on racks (chosen Nov 1, 2026). Flow: worn tracks through the grass with a few blue-cloth spirit poles and horses heading in; an outlying tent, rugs and horses next to the camp |
   | Steppe/battlefield | Old Battlefield | A ruined war camp: tattered banners on poles, collapsed tents, a broken palisade and rows of old graves (chosen Nov 1, 2026) |
   | Stormy plains | Thunderbird Nest | A tall lone rock spire with a huge nest of charred logs on top, crackling faintly, with big feathers on the ground (chosen Nov 1, 2026) |
   | Tourney fields | Training Grounds | A round wooden arena with tiered stands and banners, its sand floor visible from above (chosen Nov 1, 2026) |
