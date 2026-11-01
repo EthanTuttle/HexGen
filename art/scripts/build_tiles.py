@@ -108,7 +108,9 @@ def forest(p, rng, kind):
 
 
 # Plot grid on a farm tile: (columns, rows), plot size and the path between plots.
-FARM_GRID = {(2, 2): (2.2, 1.9, 0.3), (3, 2): (1.75, 1.6, 0.3)}
+FARM_GRID = {(2, 2): (1.28, 1.6, 1.0), (3, 2): (1.75, 1.6, 0.3)}  # plot width, depth, gap (room for a mini)
+FARM_ROUTE_R = 2.4  # where a farm wedge's track path meets the farm's road round its plots
+FARM_PAD = 0.6      # the dirt road round the plots, the route running along its middle
 FARM_LAYOUT = (2, 2)
 FARM_SPIN = math.radians(30)  # rows run parallel to the tile's slanted sides
 LOW_CROPS = {"field_c": 0.08, "withered": 0.07, "withered_dark": 0.05, "scorched": 0.02}  # crop row heights
@@ -194,7 +196,7 @@ def farm_grid(p, rng, ripe=False, leave_out=None, crops=None):
     cols, rows = FARM_LAYOUT
     w, h, gap = FARM_GRID[FARM_LAYOUT]
     total_w, total_h = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
-    pad = gap
+    pad = FARM_PAD
     p.flat([turned(-total_w / 2 - pad, -total_h / 2 - pad), turned(total_w / 2 + pad, -total_h / 2 - pad),
             turned(total_w / 2 + pad, total_h / 2 + pad), turned(-total_w / 2 - pad, total_h / 2 + pad)],
            0.015, "road")
@@ -213,16 +215,31 @@ def farm_grid(p, rng, ripe=False, leave_out=None, crops=None):
             if given:
                 crop = given[(i * rows + j) % len(given)]
             wheat_plot(p, rng, cx, cy, w, h, crop)
+    farm_routes(p, total_w / 2 + pad / 2, total_h / 2 + pad / 2)
     return spare
+
+
+def farm_routes(p, u, v):
+    """The farm centre's path data: a loop along the middle of the road round the plots (half sizes u, v in the
+    turned grid) and the cross of gaps between the plots. The six wedge tracks' paths start on the loop: the two
+    edges along the grid's depth (2 and 5) where the gap between the plots meets it, the other four on its long
+    sides. So routes follow the road and the gaps, never across crops."""
+    d = FARM_ROUTE_R * 0.5  # where the long-side tracks meet the loop, across the grid
+    loop = [(u, -v), (u, -d), (u, 0), (u, d), (u, v), (0, v), (-u, v), (-u, d), (-u, 0), (-u, -d), (-u, -v), (0, -v)]
+    p.paths.append([turned(*q) for q in loop + loop[:1]])
+    p.paths.append([turned(-u, 0), turned(u, 0)])
+    p.paths.append([turned(0, -v), turned(0, v)])
 
 
 GATE_HALF = 0.42  # half the gap a fence gate leaves
 
 
-def track(p, x0=X0, x1=X1, half=0.22, mat="road"):
-    """A dirt track along the wedge's middle line, and its path centreline (inner end to edge midpoint)."""
+def track(p, x0=X0, x1=X1, half=0.22, mat="road", path_x0=FARM_ROUTE_R):
+    """A dirt track along the wedge's middle line, and its path centreline from path_x0 to the edge midpoint.
+    On plot farms the path starts on the road round the plots (FARM_ROUTE_R), where farm_routes() picks it up;
+    the drawn track still runs in to X0 (hidden under the plots where it crosses them)."""
     p.flat([Vector((x0, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((x0, half, 0))], 0.012, mat)
-    p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+    p.paths.append([Vector((path_x0, 0, 0)), Vector((X1, 0, 0))])
 
 
 def farm_gate(p, rng):
@@ -251,7 +268,6 @@ def farmland(p, rng, kind):
     with gates on some edges (fence_gates.py) where the track runs out through it."""
     if kind == "centre":
         farm_grid(p, rng)
-        p.hub = Vector((0, 0, 0))
         return
     if kind == "same":  # a dirt track runs on to the neighbouring farm
         track(p)
