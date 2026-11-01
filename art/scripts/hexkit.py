@@ -110,19 +110,21 @@ PALETTE = {
     "fey_teal": "#4FA6A0",
     "fey_violet": "#8F7BC6",
     "fey_rose": "#DB8FAA",
-    "fey_mushroom": "#EEE8F8",
+    "fey_mushroom": "#B47FE6",
     "fey_stem": "#E4DCCB",
     "dark_wood": "#5B5F4F",
-    "bark_grey": "#85817B",
-    "bark_black": "#3B3936",
-    "web": "#ECEAE3",
+    "bark_grey": "#57534E",
+    "bark_black": "#2B2926",
+    "bark_dark": "#403D39",
+    "web": "#D6D4CF",
     "bramble": "#6A3E34",
     "bramble_leaf": "#3F4A2F",
     "carcass": "#8C5E4B",
     "heartwood": "#7AA052",
     "moss": "#6B9440",
-    "leaf_gold": "#BDB64C",
-    "leaf_gold_dark": "#97A046",
+    "leaf_gold": "#B3B343",
+    "leaf_green": "#5E9A36",
+    "leaf_green_dark": "#467C30",
     "trunk_old": "#6E4A33",
     "ribbon_red": "#C8553D",
     "ribbon_white": "#F2E8D5",
@@ -140,8 +142,11 @@ PALETTE = {
 # hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
 # them toward the neighbours' ground colours like the base slabs' tops.
 # lantern, toadstool and fey_mushroom (the fey wood's fairy rings) glow at night, so the engine needs to find them.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "hill_grass",
+# web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "hill_grass",
                 "highland_grass"}
+
+WEB_ALPHA = 0.3
 
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
@@ -177,6 +182,11 @@ def material(name):
     bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
     bsdf.inputs["Roughness"].default_value = 0.9
     mat.diffuse_color = (*rgb, 1.0)
+    if name == "web":
+        bsdf.inputs["Alpha"].default_value = WEB_ALPHA
+        mat.surface_render_method = "BLENDED"
+        mat.use_backface_culling = False
+        mat.diffuse_color = (*rgb, WEB_ALPHA)
     return mat
 
 
