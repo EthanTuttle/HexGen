@@ -416,8 +416,8 @@ def fey_wood(p, rng, kind):
         fairy_ring(p, rng, clearing, 0.95)
         pts = []  # no trees in the centre: the camera turns freely, so the ring needs clear ground all round
     elif kind == "same":  # trees stand back from the clearing, so their crowns don't hide the ring
-        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 1.1, margin=0.15, inner=0, side=0),
-                         6, 0.8, hk.WEDGE_BOUNDS)
+        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 1.1, margin=0.1, inner=0, side=0),
+                         9, 0.62, hk.WEDGE_BOUNDS)
     else:  # the forest's thinner fringe, with a few stray mushrooms past it
         pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X0 + 0.6, x1=X0 + 0.6 * (X1 - X0), margin=0.25,
                                                          inner=0, side=0), 3, 0.9, hk.WEDGE_BOUNDS)
@@ -428,7 +428,7 @@ def fey_wood(p, rng, kind):
     # Counting by distance spreads them from the inner end of a wedge to the outer, so the six copies of an
     # edge piece don't line up into a coloured ring.
     colours = rng.sample(FEY_LEAVES, 3)
-    fey = {k: colours[n % 3] for n, k in enumerate(sorted(range(len(pts)), key=lambda k: pts[k].length)[1::3])}
+    fey = {k: colours[n % 3] for n, k in enumerate(sorted(range(len(pts)), key=lambda k: pts[k].length)[::3])}
     for k, at in enumerate(pts):
         fey_tree(p, rng, at, fey.get(k))
 
@@ -516,15 +516,17 @@ def orb_web(p, rng, a, b, sag=0.15):
     so in the see-through material they read as lines on a veil."""
     u = (b - a).normalized()
     w = (Vector((0, 0, 1)) - u * u.z).normalized()  # up, within the web's plane
+    w = Matrix.Rotation(rng.uniform(0.3, 0.6) * rng.choice((-1, 1)), 3, u) @ w  # tilted, as the wind leaves it
     normal = u.cross(w)
     r = (b - a).length * rng.uniform(0.38, 0.45)
-    c = (a + b) / 2 - w * (sag + r * 0.15)
+    c = (a + b) / 2 - w * (sag + r * 0.3)
     n, a0 = 7, rng.uniform(0, 2 * math.pi)
     rim = []
     for k in range(n):
         t = a0 + 2 * math.pi * k / n
-        rk = r * rng.uniform(0.85, 1.05) * (1.1 if math.sin(t) < 0 else 0.95)  # sags low, flatter on top
-        rim.append(c + (u * math.cos(t) + w * math.sin(t) * 0.85) * rk)
+        # wide and shallow, the bottom drooping in a belly and the top pulled nearly straight between anchors
+        rk = r * rng.uniform(0.9, 1.05)
+        rim.append(c + (u * math.cos(t) + w * math.sin(t) * (0.75 if math.sin(t) < 0 else 0.35)) * rk)
     for k in range(n):
         web_face(p, [c, rim[k], rim[(k + 1) % n]])
         thread(p, c, rim[k], normal)
@@ -616,7 +618,7 @@ def dark_wood(p, rng, kind):
 # of its own. The trees top out at about 2.9, clearly below the hills' peaks (4.2). The light shafts and
 # floating seeds are the engine's; the lanterns keep their own material.
 
-def great_tree(p, rng, at, h, spread):
+def great_tree(p, rng, at, h, spread, mossy=False):
     """A big broadleaf: a thick trunk on flared roots, two limbs, and a wide, low green canopy with a gold
     clump or two in its rim."""
     p.cylinder(at, 0.24, h * 0.5, "trunk_old", segments=7)
@@ -625,6 +627,8 @@ def great_tree(p, rng, at, h, spread):
         a = rng.uniform(0, 2 * math.pi) if k == 0 else a + math.pi / 2 + rng.uniform(-0.3, 0.3)
         rot = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(1.3, 3, "Y")
         p.box_rot(at + turn(Vector((0.32, 0, 0)), a) + Vector((0, 0, 0.07)), (0.12, 0.14, 0.5), "trunk_old", rot)
+        if mossy:
+            p.blob(at + turn(Vector((0.4, 0, 0)), a), 0.13, "moss", z=0.1, squash=0.5)
     for k in range(2):
         a = rng.uniform(0, 2 * math.pi)
         rot = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(0.8, 3, "Y")
@@ -710,6 +714,167 @@ def heartwood(p, rng, kind):
         carved_stone(p, rng, Vector((X1 - 0.7, rng.uniform(-0.5, 0.5), 0)))
 
 
+# --- Heartwood options (round 4, for Ethan to choose from) --------------------------------------
+# Three treatments of the same doc look, built as heartwood_a, _b and _c beside heartwood (v16) until one is
+# picked; the pick then becomes heartwood. All three: an open glade in each centre, the trees topping out
+# under 3.0, lime-gold highlights, no white blocks. Each has a second edge_same piece (edge_same_b) with a
+# smaller tree set elsewhere in the wedge; the engine alternates the two per edge (render_preview.build_map:
+# a hash of the tile and edge), so the six edges don't make an even pinwheel.
+
+def mossy_stone(p, rng, at, size, spiral=True):
+    """A small, low, weathered grey-green boulder with moss on top and, optionally, a faint carved spiral."""
+    lump(p, at, size, "stone_moss", z=size * 0.35, squash=0.7)
+    p.blob(at + Vector((0.02, 0.01, 0)), size * 0.7, "moss", z=size * 0.75, squash=0.35)
+    if spiral:  # a few small chips spiralling out on the side facing away from the tile's middle
+        a0 = math.atan2(at.y, at.x) if at.length > 0.1 else rng.uniform(0, 2 * math.pi)
+        out = Vector((math.cos(a0), math.sin(a0), 0))
+        side = Vector((-out.y, out.x, 0))
+        for k in range(5):
+            t = 0.6 + k * 1.1
+            q = at + out * size * 0.88 + (side * math.cos(t) + Vector((0, 0, 1)) * math.sin(t)) * size * 0.08 * (k + 1) * 0.5
+            p.box(q, (0.03, 0.03, 0.03), "stone_carve", z=size * 0.35, spin=a0)
+
+
+def moss_carpet(p, rng, centre, radius, mat="moss"):
+    """A soft, slightly raised carpet of moss: an uneven disc a little above the ground, with a few domes."""
+    n = 12
+    outline = [centre + Vector((math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n), 0))
+               * radius * rng.uniform(0.85, 1.05) for k in range(n)]
+    p.prism(outline, 0.0, 0.03, mat)
+    for at in hk.scatter(rng, lambda q: (q - centre).length < radius * 0.8, 4, 0.5, hk.CENTRE_BOUNDS):
+        p.blob(at, rng.uniform(0.18, 0.26), mat, squash=0.3)
+
+
+def low_branch(p, rng, at, a, z, length):
+    """A long, low limb from the trunk reaching out past the canopy toward angle a; returns points along its
+    outer part to hang things from."""
+    base = at + Vector((0, 0, z))
+    tip = base + Vector((math.cos(a), math.sin(a), 0.12)) * length
+    frustum(p, base, tip, 0.09, 0.04, "trunk_old", segments=5)
+    return [base.lerp(tip, t) for t in (0.62, 0.78, 0.92)]
+
+
+def hang_ribbon(p, rng, q, length, colour, spin):
+    twist = rng.choice((-1, 1)) * rng.uniform(0.6, 1.0)
+    p.box(q, (0.24, 0.025, length * 0.55), colour, z=-length * 0.55, spin=spin + twist / 3)
+    p.box(q, (0.2, 0.025, length * 0.5), colour, z=-length, spin=spin + twist)
+
+
+def hang_lantern(p, q, drop=0.25, size=0.2):
+    p.box(q, (0.02, 0.02, drop), "rope", z=-drop)
+    p.box(q, (size, size, size * 1.2), "lantern", z=-drop - size * 1.2)
+
+
+def branch_offerings(p, rng, at, h, spread, lantern=True):
+    """Ribbons and a lantern hung from a low branch reaching from the trunk toward the glade (the tile's
+    middle), out past the canopy's edge where the map camera sees them."""
+    a = math.atan2(-at.y, -at.x) + rng.uniform(-0.35, 0.35)
+    pts = low_branch(p, rng, at, a, h * 0.36, spread + 0.35)
+    colours = rng.sample(["ribbon_red", "ribbon_white", "ribbon_blue"], 3)
+    for k, q in enumerate(pts[:2] if lantern else pts):
+        hang_ribbon(p, rng, q, rng.uniform(0.55, 0.75), colours[k], a + math.pi / 2)
+    if lantern:
+        hang_lantern(p, pts[2])
+
+
+EDGE_TREES = {  # kind: (position, height range, spread); edge_same_b is the smaller, offset tree
+    "same": (Vector((X0 + 1.3, 0.5, 0)), (3.4, 3.6), 1.3),
+    "edge_same_b": (Vector((X0 + 1.6, -0.6, 0)), (3.0, 3.2), 1.05),
+    "other": (Vector((X0 + 1.1, -0.3, 0)), (3.2, 3.4), 1.0),
+}
+
+
+def heartwood_edge(p, rng, kind, offer):
+    at, hr, spread = EDGE_TREES[kind]
+    h = rng.uniform(*hr)
+    under = great_tree(p, rng, at, h, spread, mossy=True)
+    offer(at, h, spread, under)
+    moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and (q - at).length > 0.6, hk.WEDGE_BOUNDS, 3)
+    if kind == "edge_same_b":  # a mossy stone where the bigger tree would stand
+        mossy_stone(p, rng, Vector((X0 + 1.0, 0.65, 0)), 0.22)
+
+
+def heartwood_a(p, rng, kind):
+    """Nature first: nothing built. A moss carpet fills the glade, with a few small mossy boulders bearing a
+    faint carved spiral; ribbons and lanterns hang from low branches reaching toward the glade."""
+    if kind == "centre":
+        moss_carpet(p, rng, Vector((0, 0, 0)), 1.3, "moss_deep")
+        for at, size in zip(hk.scatter(rng, lambda q: 0.5 < q.length < 1.2, 3, 0.8, hk.CENTRE_BOUNDS),
+                            (0.28, 0.22, 0.18)):
+            mossy_stone(p, rng, at, size)
+        return
+    heartwood_edge(p, rng, kind, lambda at, h, spread, under: branch_offerings(p, rng, at, h, spread))
+
+
+def cord(p, rng, a, b, sag, colours):
+    """A rope sagging between a and b, with ribbons and small lanterns hung along it like prayer lines."""
+    pts = [a.lerp(b, t) - Vector((0, 0, sag * 4 * t * (1 - t))) for t in (0, 0.25, 0.5, 0.75, 1)]
+    d = b - a
+    spin = math.atan2(d.y, d.x)
+    for q0, q1 in zip(pts, pts[1:]):
+        frustum(p, q0, q1, 0.018, 0.018, "rope", segments=3)
+    for k, t in enumerate((0.15, 0.32, 0.5, 0.68, 0.85)):
+        q = a.lerp(b, t) - Vector((0, 0, sag * 4 * t * (1 - t)))
+        if k == 2:
+            hang_lantern(p, q, 0.1, 0.16)
+        else:
+            hang_ribbon(p, rng, q, rng.uniform(0.35, 0.5), colours[k % 3], spin)
+
+
+def heartwood_b(p, rng, kind):
+    """Offerings on cords: three younger trees at the glade's rim, with cords strung between them across the
+    glade, hung with ribbons and small lanterns; a few low mossy stones on the moss below."""
+    if kind == "centre":
+        a0 = rng.uniform(0, 2 * math.pi)
+        rim = []
+        for k in range(3):
+            a = a0 + 2 * math.pi * k / 3 + rng.uniform(-0.25, 0.25)
+            at = Vector((math.cos(a), math.sin(a), 0)) * 1.55
+            great_tree(p, rng, at, rng.uniform(2.0, 2.2), 0.48, mossy=True)
+            rim.append(at + Vector((0, 0, 1.25)))
+        colours = rng.sample(["ribbon_red", "ribbon_white", "ribbon_blue"], 3)
+        for k in range(3):
+            cord(p, rng, rim[k], rim[(k + 1) % 3], 0.3, colours[k:] + colours[:k])
+        for at, size in zip(hk.scatter(rng, lambda q: q.length < 0.9, 2, 0.8, hk.CENTRE_BOUNDS), (0.22, 0.17)):
+            mossy_stone(p, rng, at, size, spiral=False)
+        moss(p, rng, lambda q: hk.in_centre(q, 0.2), hk.CENTRE_BOUNDS, 4)
+        return
+
+    def offer(at, h, spread, under):
+        ribbons(p, rng, at, under, spread, 2)
+        hanging_lantern(p, rng, at, under, spread)
+    heartwood_edge(p, rng, kind, offer)
+
+
+def root_arch(p, rng, a, b):
+    """A great root breaking the surface: rising from a, arching low and diving back in at b, moss on top."""
+    mid = (a + b) / 2 + Vector((0, 0, rng.uniform(0.2, 0.28)))
+    frustum(p, a - Vector((0, 0, 0.05)), mid, 0.15, 0.12, "trunk_old", segments=6)
+    frustum(p, mid, b - Vector((0, 0, 0.05)), 0.12, 0.09, "trunk_old", segments=6)
+    p.blob(mid, 0.13, "moss", z=0.07, squash=0.5)
+
+
+def heartwood_c(p, rng, kind):
+    """A ring of roots: the grove's great roots break the surface in a ring round the glade, with a circle of
+    moss and small white and gold flowers inside it and one small mossy carved stone in the middle; ribbons
+    and lanterns hang from low branches at the edge."""
+    if kind == "centre":
+        n, r, a0 = 10, 1.25, rng.uniform(0, 2 * math.pi)
+        for k in range(n):
+            a1 = a0 + 2 * math.pi * k / n + rng.uniform(-0.08, 0.08)
+            a2 = a0 + 2 * math.pi * (k + 1.05) / n
+            rr = r * rng.uniform(0.95, 1.05)
+            root_arch(p, rng, Vector((math.cos(a1), math.sin(a1), 0)) * rr,
+                      Vector((math.cos(a2), math.sin(a2), 0)) * rr * rng.uniform(0.95, 1.05))
+        moss_carpet(p, rng, Vector((0, 0, 0)), 1.05)
+        for at in hk.scatter(rng, lambda q: 0.25 < q.length < 0.95, 14, 0.22, hk.CENTRE_BOUNDS):
+            p.box(at, (0.07, 0.07, 0.1), rng.choice(["flower_white", "flower_white", "flower"]), z=0.03,
+                  spin=rng.uniform(0, 1))
+        mossy_stone(p, rng, Vector((0.05, -0.05, 0)), 0.22)
+        return
+    heartwood_edge(p, rng, kind, lambda at, h, spread, under: branch_offerings(p, rng, at, h, spread))
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ()),
@@ -725,6 +890,10 @@ VARIANTS = {
     "fey_wood": ("forest", fey_wood, "fey_wood", ()),
     "dark_wood": ("forest", dark_wood, "dark_wood", ()),
     "heartwood": ("forest", heartwood, "heartwood", ()),
+    # heartwood options for Ethan (round 4); the pick replaces heartwood
+    "heartwood_a": ("forest", heartwood_a, "heartwood", ("edge_same_b",)),
+    "heartwood_b": ("forest", heartwood_b, "heartwood", ("edge_same_b",)),
+    "heartwood_c": ("forest", heartwood_c, "heartwood", ("edge_same_b",)),
 }
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 

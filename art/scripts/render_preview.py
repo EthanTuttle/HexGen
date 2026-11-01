@@ -147,7 +147,10 @@ def build_map(templates, animated=False, tiles=None):
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
         for i in range(6):
-            place(templates, f"{name}_edge_{'same' if joined[i] else 'other'}", col, at, math.radians(60 * i))
+            edge = f"{name}_edge_{'same' if joined[i] else 'other'}"
+            if joined[i] and f"{name}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
+                edge = f"{name}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
+            place(templates, edge, col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
                 if not joined[(i + 1) % 6]:
@@ -207,13 +210,19 @@ def stage(target, distance, elevation_deg, lens=50):
     scene.collection.objects.link(sun)
 
 
-def render(stem):
+def next_n(stem):
+    out = os.path.join(hk.ART, "preview")
+    n = 1
+    while glob.glob(os.path.join(out, f"{stem}_v{n}.png")) + glob.glob(os.path.join(out, f"{stem}_v{n}[a-z].png")):
+        n += 1
+    return n
+
+
+def render(stem, option=""):
+    """Renders to preview/<stem>_vN.png (or _vN<option>.png), N the first version not taken."""
     out = os.path.join(hk.ART, "preview")
     os.makedirs(out, exist_ok=True)
-    n = 1
-    while os.path.exists(os.path.join(out, f"{stem}_v{n}.png")):
-        n += 1
-    path = os.path.join(out, f"{stem}_v{n}.png")
+    path = os.path.join(out, f"{stem}_v{next_n(stem)}{option}.png")
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
     print("RENDERED", path)
@@ -248,17 +257,38 @@ if __name__ == "__main__":
         sys.exit(0)
     if "forest-t2" in flags:
         # The forest tier 2 map, then a close-up of each variant's region and its neighbours.
+        # While the kit holds heartwood options (heartwood_a, _b, ...), the map shows the first, and the
+        # heartwood close-up is rendered once per option as closeup_heartwood_vN<a, b, ...>.png.
+        options = sorted(v[-1] for v in vr.VARIANTS if v.startswith("heartwood_"))
+        swap = lambda o: {k: (f"heartwood_{o}" if t == "heartwood" else t) for k, t in FOREST_T2_MAP.items()}  # noqa: E731
         hk.empty_scene()
-        build_map(load_templates(tiles), tiles=FOREST_T2_MAP)
+        build_map(load_templates(tiles), tiles=swap(options[0]) if options else FOREST_T2_MAP)
         stage(Vector((-0.5, -1, 0)), 66, 45)
         render("forest_t2")
-        cam = bpy.context.scene.camera
-        for variant, group in FOREST_T2_CLOSEUPS.items():
+        el = math.radians(40)
+
+        def close_up(variant):
+            group = FOREST_T2_CLOSEUPS[variant]
             target = sum((hk.tile_position(q, r) for q, r in group), Vector()) / len(group)
-            el = math.radians(40)
+            cam = bpy.context.scene.camera
             cam.location = target + Vector((0, -24 * math.cos(el), 24 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+        for variant in FOREST_T2_CLOSEUPS:
+            if variant == "heartwood" and options:
+                continue
+            close_up(variant)
             render(f"closeup_{variant}")
+        if options:
+            n = next_n("closeup_heartwood")
+            for o in options:
+                hk.empty_scene()
+                build_map(load_templates(tiles), tiles=swap(o))
+                stage(Vector((-0.5, -1, 0)), 66, 45)
+                close_up("heartwood")
+                path = os.path.join(hk.ART, "preview", f"closeup_heartwood_v{n}{o}.png")
+                bpy.context.scene.render.filepath = path
+                bpy.ops.render.render(write_still=True)
+                print("RENDERED", path)
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()
