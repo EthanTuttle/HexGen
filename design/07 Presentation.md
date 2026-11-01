@@ -500,6 +500,11 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 
 The opening quest doubles as the tutorial. It teaches placing cards, combat and coins, and camps and rest.
 
+- **Fully scripted opening** (Ethan, Nov 1, 2026): the opening quest is a guided sequence until the tutorial's lessons are done. It starts where the character creator's send-off ends (v22b: the board, the mini on its starting tile, the hero's banner).
+- **Taught by the background's mentor** (Ethan, Nov 1, 2026): each path's mentor ([World & story](01 World & story.md) → Mentor details) explains things in their own voice: the tower's commander (Soldier), the dream voice of the hero's god (Acolyte), the client (Criminal), the wizard tower's master (Sage), the innkeeper (Folk Hero) and the noble's parent (Noble).
+- **Same beats, own story** (Ethan, Nov 1, 2026): all six starting quests teach the same lessons in the same order, each dressed in its own story, so every player learns the game the same way. The lesson order is open.
+- **No skipping** (Ethan, Nov 1, 2026): the tutorial stays simple and is woven into the story, so players *want* to play it rather than skip it. There is no tutorial toggle.
+
 ## Open questions
 
 - [ ] Final palette and fonts for the "Game pieces" style (the mockup's colours and fonts are placeholders)
@@ -550,7 +555,9 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: the Gear step is done)
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now; may be reworked once real minis exist)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b, the banners return)
-- [ ] **New:** how the send-off hands over to the game and onboarding (Onboarding)
+- [ ] **New:** the tutorial's lesson order, shared by all six starting quests (Onboarding)
+- [ ] **New (flagged):** onboarding timing against the mentors' stories. The tutorial must finish before the Sage's master teleports the tower away and before the Soldier's commander betrays the tower. The Criminal is taught by the client, who later returns as the avatar, which could be a strong twist (the player learned the game from the villain). The Acolyte's teacher is a dream voice, so its lessons happen in dreams or in the hero's mind
+- [ ] **New (flagged):** with no skipping, a returning player replays the scripted opening on every new campaign with the same background (other backgrounds' openings are new to them). And a guest joining a host plays the host's opening, not their own: do guests who have never played get any teaching?
 - [ ] **New:** character creator send-off for a guest joining a host with their own hero (no starting tile of their own)
 - [ ] **New:** names for the six starting quests (the send-off shows "[Quest name]")
 - [ ] **New:** starting-place art for each background's banner (v12 draws a hex tile with an icon as a stand-in)
