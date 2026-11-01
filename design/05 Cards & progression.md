@@ -10,7 +10,7 @@ Decided Oct 23–24, 2026 (the rarity rethink). The old Common/Rare/Legendary ma
 
 - **Terrain cards:** the only cards in the deck and hand. Each is one Common terrain type (see [Map & exploration](02 Map & exploration.md) → Exploration and terrain). Some have multi-hex footprints (see [Map & exploration](02 Map & exploration.md) → Placement). Corrupted versions can enter the deck (see [Map & exploration](02 Map & exploration.md) → Corruption).
 - **Story cards:** found through the main quest line. They never go to the hand: the story places them at fixed locations, so players have to travel to reach them. Starting hexes and all story locations (e.g. Gronogon, the cultist dungeon, the second wizard tower, the highest peak, the prison dungeon) are Story cards. (How the story places them: [Map & exploration](02 Map & exploration.md) → Placement.)
-- **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into its variant's core location (decided Nov 1, 2026; was a roll from a pool per variant; see [Map & exploration](02 Map & exploration.md) → Clustered regions). Where the former Rare cards go now is open (see Landmark list).
+- **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into its variant's core location (decided Nov 1, 2026; was a roll from a pool per variant; see [Map & exploration](02 Map & exploration.md) → Clustered regions). Each former Rare card is now folded in elsewhere or a minor landmark (decided Nov 1, 2026; see Landmark list).
 - **Legendaries** are mostly the locations of rare tier 3 region variants, which a quest can guarantee; the Sword in the Stone is placed by a quest (see Landmark list and [Map & exploration](02 Map & exploration.md) → Tier 3 variants). How each quest starts: see [World & story](01 World & story.md) → Quests.
 - Gear still has rarity tiers (see [Weapons & gear](04 Weapons & gear.md) → Equipment).
 
@@ -228,22 +228,22 @@ Unlock at level 10. **Reward** (decided Oct 22, 2026): a guaranteed subclass-spe
 
 Region locations per variant: see [Map & exploration](02 Map & exploration.md) → Region variants and locations.
 
-**Former Rare cards** (became landmarks in region pools on Oct 23, 2026; since Nov 1, 2026 each variant's landmark is its core location, so where these appear is open)
+**Former Rare cards** (became landmarks in region pools on Oct 23, 2026; since Nov 1, 2026 each variant's landmark is its core location, so each was reviewed on Nov 1, 2026. Minor landmarks roll on tile placement: see [Map & exploration](02 Map & exploration.md) → Minor landmarks)
 
-| Landmark | What it is |
-| --- | --- |
-| Dungeon | A dungeon |
-| Town | Better than a village |
-| Farm | Various types: wheat farm, orchard, livestock farm |
-| Traveling merchant | A merchant on a fixed hex who leaves after a time; the hex then reverts to plains/grassland |
-| Pool of life | Healing location |
-| Teleportation rune | Teleports to other teleportation runes on the map |
-| Stronghold | Enemy base; respawns after being cleared |
-| Guard tower | Friendly military base |
-| Wizard tower | A wizard's tower |
-| Inn | Like a town and better than a village, with more resting services (heal injuries, rest buffs for the next day, rest without a camp) and quests than merchants |
-| Church | Church or other minor place of worship (part of the pantheon; see [World & story](01 World & story.md) → Pantheon) |
-| Druid enclave | A druid enclave |
+| Landmark | What it is | Where it comes from now |
+| --- | --- | --- |
+| Dungeon | A dungeon | Folded into variants: their dungeons and lairs (e.g. Spider Nest; ruins variants lean on dungeons) |
+| Town | Better than a village | Folded into villages: towns are what village regions become |
+| Farm | Various types: wheat farm, orchard, livestock farm | Folded in: farmland is a regular terrain |
+| Traveling merchant | A merchant on a fixed hex who leaves after a time; the hex then reverts to plains/grassland | Folded into encounters: the passing merchant |
+| Pool of life | Healing location | Minor landmark |
+| Teleportation rune | Teleports to other teleportation runes on the map | Minor landmark |
+| Stronghold | Enemy base; respawns after being cleared | Minor landmark |
+| Guard tower | Friendly military base | Minor landmark |
+| Wizard tower | A wizard's tower | Minor landmark |
+| Inn | Like a town and better than a village, with more resting services (heal injuries, rest buffs for the next day, rest without a camp) and quests than merchants | Both: towns have inns, and lone roadside inns roll as minor landmarks |
+| Church | Church or other minor place of worship (part of the pantheon; see [World & story](01 World & story.md) → Pantheon) | Both: towns have churches, and lone chapels roll as minor landmarks |
+| Druid enclave | A druid enclave | Minor landmark |
 
 **Legendaries** (re-set Oct 24, 2026; how each quest starts: [World & story](01 World & story.md) → Other Legendary quests)
 
@@ -268,7 +268,9 @@ All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](0
 ## Open questions
 
 - [x] ~~Rarity rethink~~ (settled Oct 23–24, 2026: see Card types, Deck and hand, Starting decks and Class locations)
-- [ ] **New:** where the former Rare landmarks appear now that each variant's landmark is always its core location (decided Nov 1, 2026; replaces 'which landmarks each variant's pool holds')
+- [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks; see Landmark list)
+- [ ] **New (Nov 1, 2026):** minor landmark odds per placed tile ("very small chance"), and whether some lean toward certain terrains
+- [ ] **New (Nov 1, 2026):** landmark tile looks for the minor landmarks
 - [x] ~~Terrain lean for each class, background and god~~ (settled Oct 24, 2026: see Starting decks)
 - [ ] **New:** milestone terrain picks: how many cards are added, and how many choices are offered
 - [ ] **New:** class quests: what the task rewards now that the class location exists once the region is built. Also, the Rogue's Noble's manor sits oddly inside a Smugglers' bayou
