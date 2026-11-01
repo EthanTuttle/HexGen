@@ -178,7 +178,7 @@ After the Oct 27, 2026 review every score is boosted by exactly 3 races (plus Hu
   - **Race:** +1 to 2 of the race's 3 boosted scores (the player picks; see Races).
   - **Class:** +1 to one of the class's 3 main scores (the player picks; table below).
   - If the class +1 lands on a score the race also boosted, that score starts at 3 (one 3, one 2, four 1s). If not, three scores start at 2 (three 2s, three 1s).
-- Scores grow at levels 8 and 16 (+1, placed by the player: see [Cards & progression](05 Cards & progression.md) → Levels and milestones), from gear, and from cards/discoveries.
+- Scores grow at levels 4, 8, 12 and 16 (+1 each, placed by the player; 4 and 12 added Nov 1, 2026: see [Cards & progression](05 Cards & progression.md) → Levels and milestones), from gear, and from cards/discoveries.
 
 | Class | Main scores (the class +1 picks from these) |
 | --- | --- |
@@ -192,12 +192,13 @@ After the Oct 27, 2026 review every score is boosted by exactly 3 races (plus Hu
 ## Coin checks
 
 - Each check flips coins; heads count toward success.
-- A check passes when it reaches its heads target. At low levels the target is mostly 1; heads targets rise at higher levels so coin counts stay manageable.
+- A check passes when it reaches its heads target. At low levels the target is mostly 1; heads targets rise at higher levels so coin counts stay manageable. In combat, how targets and coins grow on both sides: see Combat → Hit chance scaling.
 - Ability scores set how many coins are flipped on checks and attacks, and decide damage. A score of 3 flips 3 coins; scores start at 1 to 3 (see Ability scores → Starting scores).
 - Skills/proficiency, gear and class also affect the number of coins.
 - Coins can be modified with rerolls/reflips and weighted or special coins.
+- **The long shot** (decided Nov 1, 2026; widened the same day): when a flip has fewer coins than its heads target (penalties such as armour, darkness, drowsy or Fortress never take it below 0), it flips 1 coin and needs heads in a row as many times as the target plus the coins it is short. 0 coins needing 1: twice (25%). 1 coin needing 2: 3 times (12.5%). 0 coins needing 2, or 2 needing 3: 4 times (6%). There's no cap, so stacked penalties keep paying off, and a long shot is never better than having one more coin. This applies to every flip: attacks, checks and saves. How armour takes coins: [Weapons & gear](04 Weapons & gear.md) → Armour.
 - How coins look: see [Presentation](07 Presentation.md).
-- **Pass chances** (maths reference, Oct 27, 2026): with score increases alone a main score that starts at 3 goes 3 → 4 (level 8) → 5 (level 16), so raised heads targets only work if gear and proficiency add coins too.
+- **Pass chances** (maths reference, Oct 27, 2026; updated Nov 1, 2026): one extra heads costs about as much as two coins. With score increases alone a main score that starts at 3 goes 3 → 4 (level 4) → 5 (level 8) → 6 (level 12) → 7 (level 16), which keeps pace with the combat heads targets (see Combat → Hit chance scaling).
 
 | Coins | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -288,6 +289,34 @@ Skills (learned at class locations such as Training Grounds, Tree of Life and Co
 - When a target passes its save against a damage spell, it takes half damage and ignores any rider effect (root, blind, slow, etc.).
 - Design principle: 3 AP cards (e.g. Megaton Punch, Knockout, Aimed Shot) take a whole turn, which is what gives AP support (Action Surge and future ally moves that grant AP) a strong payoff: extra AP becomes another big hit. Guidelines: big cards cost the full 3 AP so two in one turn needs support; extra AP stays rare and visible (a cooldown, concentration or once-per-fight card); self discounts like Wind-Up and Flow are fine as long as support payoffs stay bigger.
 - Terrain effects on the grid: see [Map & exploration](02 Map & exploration.md) → Exploration and terrain.
+
+### Hit chance scaling
+
+Decided Nov 1, 2026. **Bounded hit chances:** hit chances stay in about the same band all game. Getting stronger mostly means more HP, damage, cards and gear, not hitting more often. Distance from the start makes fights harder through enemy HP, damage, numbers, roles and cards (see [Map & exploration](02 Map & exploration.md) → Hex contents and encounters). The rule of thumb: one heads step costs about 2 coins, so each time a target rises by 1, the attacker should have gained about 2 coins.
+
+- **Heroes attacking enemies:** the heads target is 1 for ordinary foes. Elites, bosses and Legendary foes add +1. The far distance band adds +1 to everyone (far ordinary foes need 2, far elites and bosses 3). Armour then takes coins: [Weapons & gear](04 Weapons & gear.md) → Armour.
+- **Hero coins:** main scores grow 3 → 4 → 5 → 6 → 7 at levels 4, 8, 12 and 16 (see Ability scores), matching the target steps.
+- **Enemies attacking heroes:** the hero's level sets the heads target: 1 from level 1, 2 from level 8, 3 from level 16.
+- **Enemy coins:** set by role (minion 2, soldier 3, elite 4, boss 5), plus 2 per distance band (near +0, mid +2, far +4).
+- **Heroes growing harder to hit:** armour tier, Rare or Legendary armour taking 1 more coin, a feat adding another −1 (Plate Master, Nimble), and damage reduction from better gear: see [Weapons & gear](04 Weapons & gear.md) → Armour.
+
+What this gives when the hero is at the stage the content is meant for (hit chance against no / light / medium / heavy armour):
+
+| Matchup | Coins | Target | None | Light | Medium | Heavy |
+| --- | --- | --- | --- | --- | --- | --- |
+| Level-1 hero vs near ordinary foe | 3 | 1 | 88% | 75% | 50% | 25% |
+| Level-8 hero vs elite | 5 | 2 | 81% | 69% | 50% | 25% |
+| Level-16 hero vs far boss | 7 | 3 | 77% | 66% | 50% | 31% |
+| Near soldier vs level-1 hero | 3 | 1 | 88% | 75% | 50% | 25% |
+| Mid soldier vs level-8 hero | 5 | 2 | 81% | 69% | 50% | 25% |
+| Far soldier vs level-16 hero | 7 | 3 | 77% | 66% | 50% | 31% |
+
+Balance flags (noted Nov 1, 2026; watch in playtest):
+- **Walls:** a hero who reaches content early hits very rarely. A level-1 hero (3 coins) against an elite: 50 / 25 / 12.5 / 6%. That's on purpose, and armour-skipping cards, Sunder, buffs and saves are the answer. If heroes need more coins, add more score-increase levels or bigger increases rather than lowering targets (Ethan, Nov 1, 2026).
+- **Outlevelled areas:** a level-8 hero is rarely hit by near foes (a near soldier: 50 / 25 / 12.5 / 6%), so going back to the start is safe.
+- **Off-scores and second picks:** the table assumes a main score that starts at 3. A hero whose best score starts at 2 is a step behind (6 at level 16).
+- **No cap on defence:** heavy (−3), Rare armour (−1) and a feat or mastery (−1) stack to −5, which puts most attacks on the long shot. Area spells and saves are the counter.
+- Levels here are placeholders for the level condense.
 
 ## Class action cards
 
@@ -654,7 +683,8 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] Race details: breath weapon damage (rules set Oct 27, 2026: see Races); high elf and tiefling spells for levels 7, 14 … (level 1 set Oct 30, 2026: see Racial spells). (Bonus sizes settled Oct 27, 2026: see Ability scores → Starting scores)
 - [ ] **New (Oct 27, 2026, race review: all seven launch races done):** Fluffy's cat race also done; still open: the cat race's name; race lore for every race; amounts for metal golem damage reduction, Regrowth, Hearthfire and breath weapon damage; how NPCs and rivals react to a player Hayes (see [World & story](01 World & story.md))
 - [ ] **New (Oct 27, 2026):** how much faster wood elves walk on the hex map; the shield dwarf's extra HP per level (with the HP rules); the elven spells for levels 7+ (the level-1 list is set: see Racial spells)
-- [ ] **New (Oct 27, 2026):** heads targets at higher levels: score increases alone take a main score from 3 to 5 by level 16, so a 3-heads check is 50% there. How much should gear and proficiency add, and when do targets rise? (See the pass chances table in Coin checks)
+- [x] ~~Heads targets at higher levels~~ (settled Nov 1, 2026: bounded hit chances; targets +1 for elites and bosses and +1 far away; heroes need 2 / 3 from levels 8 / 16; score increases at 4, 8, 12 and 16; enemy coins by role +2 per distance band. See Combat → Hit chance scaling)
+- [ ] **New (Nov 1, 2026):** hit chance scaling follow-ups: where the near, mid and far distance bands start; heads targets for checks and saves outside combat (still "mostly 1"); enemy HP and damage per role and band
 - [ ] **New (Oct 30, 2026):** each companion's ability scores and gear at each stage of the game (mockups use placeholders, e.g. Mel's in character & gear v9)
 - [ ] Set spells for each tiefling bloodline (Hayes, Conleys, Keegans) for levels 7, 14 … (level 1 set Oct 30, 2026: Scorch, Ember Mend, Guiding Ember)
 - [ ] Big spell pass: define the spells, then assign them to tiefling bloodlines, high elf choices and casters

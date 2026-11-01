@@ -31,6 +31,26 @@ Equipment, weapon and armor categories, weapon rules, weapon category cards, wea
 
 Leader bards also gain medium armor and polearms (see [Classes & combat](03 Classes & combat.md) → Bard spells).
 
+## Armour
+
+How armour works in a fight (decided Nov 1, 2026). Armour makes you harder to hit by taking coins away from attackers. It doesn't change the heads target, which comes from the foe's role and distance or the hero's level (see [Classes & combat](03 Classes & combat.md) → Hit chance scaling). Why coins and not heads targets: one extra heads costs about as much as losing two coins, so heads-target steps swing hit chances by 25–40 points with only 3–5 coins, while coin steps stay steady as coin counts grow. The 0-coin rule (the long shot): [Classes & combat](03 Classes & combat.md) → Coin checks.
+
+| Tier | Attack flips against you | Cost to the wearer | Hit chance, level 1 (3 coins, needs 1) | Hit chance, level 16 (5 coins, needs 2) |
+| --- | --- | --- | --- | --- |
+| None | — | — | 88% | 81% |
+| Light | 1 fewer coin | — | 75% | 69% |
+| Medium | 2 fewer coins | Stealth: 1 fewer coin | 50% | 50% |
+| Heavy | 3 fewer coins | 1 hex less per Move; Stealth: 2 fewer coins; DEX saves: 1 fewer coin | 25% (long shot) | 25% |
+
+- **Every attack flip:** the penalty applies to every attack that flips to hit, weapons and spells alike (Firebolt, Searing Touch, Magic Bolt…). Saves skip it, so area spells and mind or soul spells get around armour. Heavy's DEX save penalty makes area spells its counter.
+- **Your tier:** your heaviest armour piece sets your tier and its costs: body armour, or a categorised helmet, leggings, boots or gloves (see Equipment). A single heavy piece makes you heavy. Pieces beyond the heaviest don't change the tier; their value comes from their item stats (open).
+- **No armour** (decided Nov 1, 2026): going without armour gets no perks of its own. It's mainly for Wizards, who can't wear any. Light armour costs nothing, so anyone who can wear it has no reason to go without. Nimble (a level-12 feat) brings no armour up to light: [Cards & progression](05 Cards & progression.md) → General feats.
+- **Shields** don't change hit chance (decided Nov 1, 2026). Their value is Block, which reduces damage, plus the shield cards (Fortress's "one fewer coin" stacks with armour as a card effect).
+- **Growing your defence** (decided Nov 1, 2026): some Rare or Legendary armour takes 1 more coin than its tier (e.g. heavy −4); a feat can add another −1 (Plate Master in heavy armour, CON; Nimble with no armour, DEX: [Cards & progression](05 Cards & progression.md) → General feats; mastery: open); better armour can also give damage reduction, so you still get hit but take less. There's no cap: heavy, Rare armour and a feat stack to −5. Which feat or mastery, and the damage reduction amounts: open.
+- **Enemies** use the same tiers and pay the same costs. Beasts and monsters have natural armour that counts as a tier (e.g. thick hide is light or medium; scales or stone are heavy).
+- **Cards that beat armour** (decided Nov 1, 2026): "pierces" or "ignores armour" (Piercing Shot, Heavy Bolt) means the attack skips the armour penalty entirely. "Lowers armour" (Sunder) drops the foe one tier for the rest of the fight. It stacks, each Sunder dropping another tier, down to none.
+- **Balance risk, accepted (Nov 1, 2026):** heavy takes a level-1 attacker (3 coins) to 0 coins, so heavy foes and heavy Fighters are hit only on the long shot (25%), against 88% unarmoured. That's about 3× less damage taken, which heavy pays for with movement, Stealth and DEX saves. Watch it in playtest, together with how many coins enemies flip.
+
 ## Starting gear
 
 Each class chooses from the most basic weapons and armor in its own categories. The player picks each piece in the character creator: main hand, offhand and armour, one by one (decided Oct 30, 2026). **One weapon set** (decided Oct 30, 2026): a new hero picks a single set; the second set starts empty and fills from loot. **Humans** (Versatile) can pick from every basic weapon and armour, not just their class's (decided Oct 30, 2026; the trait: [Classes & combat](03 Classes & combat.md) → Races). Background starter items: see [World & story](01 World & story.md) → Backgrounds.
@@ -143,7 +163,7 @@ The Volley branch (raining arrows on areas) moved to the shortbow.
 
 | Node | Sniper (range and positioning) | Deadeye (Aimed Shot upgrades) |
 | --- | --- | --- |
-| 1 | **High Ground** (passive): shooting from high ground flips an extra coin | **Piercing Shot**: Aimed Shot pierces armor |
+| 1 | **High Ground** (passive): shooting from high ground flips an extra coin | **Piercing Shot**: Aimed Shot pierces armor (skips the armour penalty: see Armour) |
 | 2 | New card: Overwatch (1 AP): shoot the first foe that moves in your sight next round | **Piercing Shot+**: a kill with it refunds 1 AP |
 | 3 (capstone) | **Overwatch+**: Overwatch triggers on every foe that moves | **Piercing Shot++**: it pierces through and hits every foe in a line |
 
@@ -213,7 +233,7 @@ Identity: the dedicated armor and shield breaker.
 
 | Node | Siegebreaker (smashing armor, shields and cover) | Earthshaker (ground slams and knockdowns) |
 | --- | --- | --- |
-| 1 | **Sunder**: Shatter also lowers the foe's armor for the fight | New card: Ground Pound (1 AP): slam the ground; adjacent foes are knocked prone; DEX save |
+| 1 | **Sunder**: Shatter also lowers the foe's armor for the fight (one tier per Sunder, stacking: see Armour) | New card: Ground Pound (1 AP): slam the ground; adjacent foes are knocked prone; DEX save |
 | 2 | New card: Breach (1 AP): smash through a wall or obstacle to open a path | **Downfall** (passive): prone foes take more damage from your hits |
 | 3 (capstone) | New card: Ram (2 AP): charge through cover and foes in a line, breaking both | New card: Cataclysm (2 AP): a huge slam; all foes nearby are knocked prone and stunned; DEX save |
 
@@ -263,7 +283,7 @@ Balance note: Knockout overlaps Execute-style finishers, and a Fighter could pai
 
 | Node | Arbalist (armor-piercing power shots) | Trapper (pins, roots and control) |
 | --- | --- | --- |
-| 1 | New card: Heavy Bolt (2 AP): a bolt that ignores armor and deals heavy damage | New card: Bolas Bolt (1 AP): a weighted bolt that knocks the target prone |
+| 1 | New card: Heavy Bolt (2 AP): a bolt that ignores armor (skips the armour penalty: see Armour) and deals heavy damage | New card: Bolas Bolt (1 AP): a weighted bolt that knocks the target prone |
 | 2 | **Braced Shot**: if you didn't move this turn, Heavy Bolt deals extra damage | New card: Tripwire (1 AP): string a line between two points; foes crossing it are knocked prone |
 | 3 (capstone) | New card: Ballista Bolt (3 AP): a massive bolt that pierces through every foe in a line | **Helpless** (passive): your crossbow attacks deal bonus damage to rooted or prone foes |
 
@@ -291,7 +311,8 @@ Only martials learn shield mastery; Clerics use shields without the tree.
 - [ ] Gold prices: inns, camp kits and shops
 - [ ] **New (mockup placeholder "+[gold]"):** how much gold a fight gives, and how many loot items it drops (gold sources are set; amounts aren't)
 - [ ] **New (mockup placeholder "[Item stats]"):** which stats gear items have and show in their pop-up (e.g. damage, armor, ability bonuses)
-- [ ] **New (flagged by Ethan, Oct 30, 2026):** how armour works. What armour does in a fight (e.g. damage reduction, a harder coin target to hit, extra HP), how light, medium and heavy differ (and any cost, such as movement or Stealth), and how shields stack with it. Several rules already lean on it: Piercing Shot "pierces armor", Sunder "lowers the foe's armor", Heavy Bolt "ignores armor", and the metal golem's damage reduction. The character creator's armour pick shows "[Item stats]" until this is settled
+- [x] ~~How armour works~~ (settled Nov 1, 2026: armour takes coins from attackers, light 1, medium 2, heavy 3, with costs; shields don't change hit chance. See Armour. The metal golem's damage reduction is a separate race trait)
+- [ ] **New (Nov 1, 2026):** armour follow-ups: how many hexes heavy's "1 hex less" is against the base Move (hexes per Move is still a placeholder); what categorised helmets, leggings, boots and gloves give beyond setting your tier (with item stats); how much damage reduction better armour gives, and whether a mastery also adds −1 (the feats are Plate Master and Nimble, Nov 1, 2026); whether a feat or mastery lets someone ease heavy's costs
 - [ ] **New (found in the split):** the fist weapons' base category cards (Guard Up, Haymaker, Step and Strike) only appear with their mastery trees. Add them to the Weapon category cards table so the table is complete?
 - [ ] Name collisions with other cards (Trip, Brace, Smite, Holy Brand Strike, Whirlwind/Whirl): tracked in Classes & combat
 - [x] ~~Weapon set swap cost~~ (settled Oct 25, 2026: 0 AP, once per turn; see Weapon rules)
