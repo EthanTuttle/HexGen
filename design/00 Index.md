@@ -267,6 +267,6 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Where the passives sit~~ (settled for now Oct 28: v8b, a sleeve on the party panel)
 - [x] ~~The game's name~~ (settled Nov 1: Heads or Hexes). Renamed in the docs and canvas titles Nov 1; the GitHub repo is still HexGen.
 - [x] ~~Title screen backdrop~~ (settled Nov 1: v1b, your last save)
-- [ ] New (Nov 1): app icon: v4a tile or v4b coin? (Home-screen name settled Nov 1: Heads/Hexes.)
+- [ ] New (Nov 1): app icon: v4a tile, or coin and tile together (v5a–v5c)? (Home-screen name settled Nov 1: Heads/Hexes.)
 - [x] ~~Autosaves with several heroes~~ (settled Nov 1: per hero, slots too)
 - [ ] New (Nov 1): what a save shows on Continue and in Load; the settings list; the join code's format (joining settled: a join code)
