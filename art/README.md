@@ -11,6 +11,23 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 | `export/` | `.glb` files the engines import; always the latest version |
 | `preview/` | Rendered test views, `*_vN.png` |
 
+## Rules for the art session
+
+New art assets are made in their own **Art Planning** session (set up Nov 1, 2026). These rules apply to that session, and to anyone else adding art.
+
+- **The docs decide the look.** Build from the design docs: tier 1 and tier 2 variant looks are in `design/07 Presentation.md` → Art direction → Region variant looks, and the variants and their landmarks are in `design/02 Map & exploration.md`. Don't invent looks, names or rules. Where the docs leave a choice open, give Ethan 3–4 options with the question tool, or list them in the report.
+- **Hand-off goes through the planner session.** Report finished work to the session that started you, never to the Godot session directly. The planner shows Ethan the previews and passes approved kits to Godot.
+- **Ethan reviews previews before the engine sees them.** Each group gets Blender preview renders: the region-finished map (`render_preview.py -- --variants`, or a map staged for the group) and a close-up of each variant. Nothing counts as done until he approves it.
+- **Never overwrite.** Each change builds the next `tiles_vN.blend` and `preview/*_vN.png`. Older versions stay for reference. Add a line to **Versions** below for each new kit, and a section under **Units and pieces** for each new kind of piece.
+- **Keep the piece contract.** A variant has `<variant>_centre`, `<variant>_edge_same` and `<variant>_edge_other`, registered in `scripts/variants.py` (`VARIANTS`). It uses its terrain's base with the top recoloured, picks edge pieces by terrain (`terrain_of`), and keeps origins at the tile centre on the ground, with edge pieces facing +X. Pieces must join seamlessly with every neighbour, including other variants of the same terrain.
+- **Blend in, no rim.** A finished region changes to its variant's look but keeps blending into the land round it (`design/07 Presentation.md` → Exploration screen → Cluster goals).
+- **True scale.** Minis are about 1.3 tall on a base that fills one combat cell. Trees and props are sized against them, and mountains stay bigger than trees.
+- **Built for phones.** Use the shared `kit` material with vertex colours. Give a part its own material (`OWN_MATERIAL` in `scripts/hexkit.py`) only when the engine has to light or move it, e.g. anything that glows at night, like the lanterns. Keep triangle counts in line with tier 1, and report the triangles and materials per variant.
+- **Effects belong to the engine.** Things that move, flash or shimmer (wisps, lightning, lava pulses, heat haze, swaying grass) are built in Godot. Build the props and the materials they need, and list each effect in the report for the planner to pass on.
+- **World-space systems are shared references.** Ground cover, sand and water (`ground_cover.py`, `sand.py`, `water.py`) are ported by the engines. If a variant needs a change there, make it in the reference script and flag it in the report.
+- **Git:** follow `CLAUDE.md`: your own branch and worktree, small commits, Git LFS for binaries, and merge to `main` when a group is approved.
+- **Report:** the kit version, the previews, triangles and materials per variant, effects for the engine, reference-script changes, and anything left open.
+
 ## Running the scripts
 
 Blender is `/Applications/Blender.app/Contents/MacOS/Blender` on the Mac. Run from the repo root:
