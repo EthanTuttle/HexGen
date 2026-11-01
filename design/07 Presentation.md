@@ -34,7 +34,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   - **Ponds:** a water tile with no water neighbours is a small round pond.
   - **Stable while building:** a tile's water shape depends only on its own water neighbours, so placing a tile reshapes only that tile and the ones touching it.
   - **Look:** a slow ripple and sparkle that flows along rivers, a light foam rim at the shore and a darker deep middle, bank dressing (reeds, rocks, lily pads, a small jetty), and the boats above on lakes and wide rivers.
-- **Region variant looks** (chosen Oct 30, 2026): when a region finishes, its tiles take on the variant's look (no rim: see the Exploration screen's cluster goals). A variant can change whatever makes it look best (colours, props, ground shape, borders), but its tiles keep blending into the land around them. Variants and their landmarks: [Map & exploration](02 Map & exploration.md) → Region variants and locations.
+- **Region variant looks** (chosen Oct 30, 2026): when a region finishes, its tiles take on the variant's look (no rim: see the Exploration screen's cluster goals). A variant can change whatever makes it look best (colours, props, ground shape, borders), but its tiles keep blending into the land around them, except raised hills regions, which stand on cliffs (chosen Nov 1, 2026; [Multiplayer & tech](06 Multiplayer & tech.md) → Tile build). Variants and their landmarks: [Map & exploration](02 Map & exploration.md) → Region variants and locations.
 
   | Terrain | Tier 1 variant | Look |
   | --- | --- | --- |
