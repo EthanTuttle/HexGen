@@ -189,6 +189,24 @@
    "title": "App icon v5c \u00b7 a cream slash runs corner to corner: the coin top left on dawn peach, the tile bottom right on midday blue",
    "is_interactive": false,
    "radius": 28
+  },
+  "Icon-v6a-DiagonalSlash.dc.html": {
+   "x": 0,
+   "y": 7700,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v6a \u00b7 v5c's placement (coin top left, tile bottom right) with v5b's look: one dawn pastel, and v5b's short cream slash between them, tilted across the diagonal",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v6b-DiagonalUpright.dc.html": {
+   "x": 924,
+   "y": 7700,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v6b \u00b7 the same with the slash at v5b's steeper, more upright angle",
+   "is_interactive": false,
+   "radius": 28
   }
  },
  "order": [
@@ -211,7 +229,9 @@
   "Title-v5-NoPanes.dc.html",
   "Icon-v5a-CoinAndTile.dc.html",
   "Icon-v5b-CoinSlashTile.dc.html",
-  "Icon-v5c-DiagonalSplit.dc.html"
+  "Icon-v5c-DiagonalSplit.dc.html",
+  "Icon-v6a-DiagonalSlash.dc.html",
+  "Icon-v6b-DiagonalUpright.dc.html"
  ],
  "notes": {
   "v1": {
@@ -274,6 +294,13 @@
    "x": 0,
    "y": 6160,
    "text": "v5 \u00b7 no panes; icons: coin and tile together",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons6": {
+   "x": 0,
+   "y": 7440,
+   "text": "App icon v6 \u00b7 v5c placement, v5b look",
    "kind": "title1",
    "maxW": 2692
   }
