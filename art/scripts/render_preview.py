@@ -10,6 +10,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bmesh  # noqa: E402
 import bpy  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
@@ -383,12 +384,14 @@ def build_map(templates, animated=False, tiles=None):
     return water_tiles
 
 
-def raise_region(templates, col, tiles_map, region, variant):
-    """The engine's raised region (cliffs.py): the region's pieces placed RAISE higher, cliff pieces on the outer edges
-    and corners, paths up a few of them. Returns the climbs."""
+def raise_region(templates, col, tiles_map, regions, progress=1.0):
+    """The engine's raised regions (cliffs.py). regions: (tiles, variant) pairs, all raised. progress: how far through the
+    rise, for a preview of it: tile pieces come up from the ground, cliffs from below it. Returns the climbs."""
     bpy.context.view_layer.update()
     centres = {t: hk.tile_position(*t) for t in tiles_map}
-    climbs = cliffs.climbs(set(region), {t: vr.terrain_of(n) for t, n in tiles_map.items()})
+    terrains = {t: vr.terrain_of(n) for t, n in tiles_map.items()}
+    raised = set(t for tiles, _ in regions for t in tiles)
+    all_climbs = []
 
     def tile_of(obj):
         return next((t for t, c in centres.items() if (c - obj.location).xy.length < 0.01), None)
@@ -397,32 +400,84 @@ def raise_region(templates, col, tiles_map, region, variant):
         for obj in col.objects:
             if tile_of(obj) == t and "_edge_" in obj.get("piece", "") and round(math.degrees(obj.rotation_euler.z)) % 360 == 60 * i:
                 return obj
-    for t, i in climbs:  # the wedge above is the notched one; below, the neighbour's wedge makes way unless it's ground
-        top = edge_piece(t, i)
-        top.data = templates[f"{variant}_edge_climb"].data
-        top["piece"] = f"{variant}_edge_climb"
-        if f"{variant}_steps_centre" in templates:  # the stair carries on to the tile's landing, or up the landmark's rise
-            place(templates, f"{variant}_{'steps_centre' if tiles_map[t] == variant else 'steps_rise'}", col, centres[t], math.radians(60 * i))
-        n = (t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])
-        foot = edge_piece(n, (i + 3) % 6)
-        if foot is not None and vr.terrain_of(tiles_map[n]) != "hills":
-            bpy.data.objects.remove(foot)
+
+    def swap(t, i, name):
+        obj = edge_piece(t, i)
+        obj.data = templates[name].data
+        obj["piece"] = name
+
+    for region, variant in regions:
+        region = set(region)
+        climbs = cliffs.climbs(region, terrains, raised)
+        all_climbs += climbs
+        ledge = {}
+        for t, i in climbs:
+            ledge[(t, (i - 1) % 6)] = "low"
+            ledge[(t, i)] = "mid"
+            ledge[(t, (i + 1) % 6)] = "top"
+            if f"{variant}_steps_centre" in templates:  # the stair carries on to the tile's landing, or up the landmark's rise
+                place(templates, f"{variant}_{'steps_centre' if tiles_map[t] == variant else 'steps_rise'}", col, centres[t],
+                      math.radians(60 * ((i + 1) % 6)))
+        for t, i in cliffs.outer_edges(region, raised):
+            swap(t, i, f"{variant}_edge_{ {'low': 'climb', 'mid': 'climb', 'top': 'climb_top'}[ledge[(t, i)]] if (t, i) in ledge else 'rim'}")
     for obj in list(col.objects):
-        if obj.name != "ground_cover" and tile_of(obj) in region:
-            obj.location.z += vr.RAISE
-        elif obj.name == "ground_cover":  # one mesh over the whole map, so move only what's on the region
+        if obj.name != "ground_cover" and tile_of(obj) in raised:
+            if obj.get("piece", "").startswith("base_"):
+                bpy.data.objects.remove(obj)  # the ground covers the tile
+                continue
+            obj.location.z += vr.RAISE * progress
+        elif obj.name == "ground_cover":  # raised ground holds no cover: only tufts fading in from neighbours, which stay down
             mesh = obj.data.copy()
-            for v in mesh.vertices:
-                w = obj.matrix_world @ v.co
-                if any(max((w - centres[t]).dot(hk.edge_normal(k)) for k in range(6)) <= hk.TILE_APOTHEM for t in region):
-                    v.co.z += vr.RAISE
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            seen, gone = set(), []
+            for v in bm.verts:
+                if v in seen:
+                    continue
+                seen.add(v)
+                isle = [v]
+                for u in isle:
+                    for e in u.link_edges:
+                        w = e.other_vert(u)
+                        if w not in seen:
+                            seen.add(w)
+                            isle.append(w)
+                mid = obj.matrix_world @ (sum((u.co for u in isle), Vector()) / len(isle))
+                if any(max((mid - centres[t]).dot(hk.edge_normal(k)) for k in range(6)) <= hk.TILE_APOTHEM for t in raised):
+                    gone += isle
+            bmesh.ops.delete(bm, geom=gone, context="VERTS")
+            bm.to_mesh(mesh)
+            bm.free()
             obj.data = mesh
-    for t, i in cliffs.outer_edges(set(region)):
-        kind = "cliff_path" if (t, i) in climbs else "cliff_edge_b" if gc.hash01(t[0] * 6 + i, t[1], 8) < 0.5 else "cliff_edge"
-        place(templates, f"{variant}_{kind}", col, centres[t], math.radians(60 * i))
-    for t, i in cliffs.outer_corners(set(region)):
-        place(templates, f"{variant}_cliff_corner", col, centres[t], math.radians(60 * i))
-    return climbs
+    low = -vr.RAISE * (1 - progress)
+    for region, variant in regions:
+        region = set(region)
+        ledge = {}
+        skip = set()
+        for t, i in (c for c in all_climbs if c[0] in region):
+            ledge[(t, (i - 1) % 6)], ledge[(t, i)], ledge[(t, (i + 1) % 6)] = "low", "mid", "top"
+            skip |= {(t, (i - 1) % 6), (t, i)}
+        for t, i in cliffs.outer_edges(region, raised):
+            kind = f"cliff_path_{ledge[(t, i)]}" if (t, i) in ledge else "cliff_edge_b" if gc.hash01(t[0] * 6 + i, t[1], 8) < 0.5 else "cliff_edge"
+            place(templates, f"{variant}_{kind}", col, centres[t] + Vector((0, 0, low)), math.radians(60 * i))
+        for t, i in cliffs.outer_corners(region, raised):
+            if (t, i) not in skip:
+                place(templates, f"{variant}_cliff_corner", col, centres[t] + Vector((0, 0, low)), math.radians(60 * i))
+    return all_climbs
+
+
+def tile_report(col, label):
+    """Triangles per tile, without the base, the way the budget counts them."""
+    bpy.context.view_layer.update()
+    per = {}
+    for obj in col.objects:
+        piece = obj.get("piece", "")
+        if not piece or piece.startswith("base_"):
+            continue
+        obj.data.calc_loop_triangles()
+        k = (round(obj.location.x, 1), round(obj.location.y, 1))
+        per[k] = per.get(k, 0) + len(obj.data.loop_triangles)
+    print(f"TRIS {label}: worst {max(per.values())}")
 
 
 def look_at(cam, eye, target):
@@ -666,7 +721,7 @@ if __name__ == "__main__":
         sys.exit(0)
     if "raised" in flags:
         # Raised regions (cliffs.py): 7 and 12 tiles from the map camera, from the foot of the cliff looking up, and a
-        # close-up of a path up the cliff. --only picks variants; --trial renders under a scratch name.
+        # close-up of a ledge. --only picks variants; --trial renders under a scratch name.
         prefix = "trial_" if "trial" in flags else ""
         for short, variant, lm in (("snowy", "snowy_peaks", "yeticave"), ("volcanic", "volcanic_peaks", "salamanderden"),
                                    ("highlands", "highlands", "clanhall"), ("monastery", "monastery_heights", "library")):
@@ -681,7 +736,8 @@ if __name__ == "__main__":
                 templates = load_templates(tiles)
                 build_map(templates, tiles=tiles_map)
                 col = bpy.data.collections["map"]
-                climbs = raise_region(templates, col, tiles_map, region, variant)
+                climbs = raise_region(templates, col, tiles_map, [(region, variant)])
+                tile_report(col, f"{short} {size}")
                 draw_effects(col, templates)
                 stage(view, far, 50)
                 print("CLIMBS", short, size, climbs)
@@ -690,17 +746,47 @@ if __name__ == "__main__":
                 t, i = next(((t, i) for t, i in climbs if hk.edge_normal(i).y < 0.1), climbs[0])
                 n = hk.edge_normal(i)
                 mid = hk.tile_position(*t) + n * hk.TILE_APOTHEM
-                centre = sum((hk.tile_position(*r_) for r_ in region), Vector()) / len(region)
                 if size == "7":
                     cam.data.lens = 24  # from the foot of a cliff, looking up, as the party would
                     wall = min(cliffs.outer_edges(set(region)), key=lambda e: (hk.tile_position(*e[0]) + hk.edge_normal(e[1]) * hk.TILE_APOTHEM).y)
                     side = hk.tile_position(*wall[0]) + hk.edge_normal(wall[1]) * hk.TILE_APOTHEM
                     look_at(cam, side + Vector((0, -11, 1.0)), side + Vector((0, 8, vr.RAISE + 1.5)))
                     render(f"{prefix}hills_{short}_low_raised")
-                    cam.data.lens = 40  # the path up the cliff, its route drawn
+                    cam.data.lens = 36  # the ledge, its route drawn
                     draw_paths(col, templates)
                     look_at(cam, mid + n * 13 + Vector((0, 0, vr.RAISE * 0.5 + 6)), mid + Vector((0, 0, vr.RAISE * 0.45)))
                     render(f"{prefix}hills_{short}_climb_raised")
+        sys.exit(0)
+    if "raised-scenes" in flags:
+        # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no
+        # walkable land beside it, and the rise halfway through.
+        prefix = "trial_" if "trial" in flags else ""
+
+        def scene(stem, tiles_map, regions, progress=1.0):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map)
+            col = bpy.data.collections["map"]
+            climbs = raise_region(templates, col, tiles_map, regions, progress)
+            print("CLIMBS", stem, climbs)
+            draw_effects(col, templates)
+            centre = sum((hk.tile_position(*t) for r_, _ in regions for t in r_), Vector()) / sum(len(r_) for r_, _ in regions)
+            stage(centre + Vector((0, -1.5, 2.0)), 66 if len(regions) == 1 else 88, 50)
+            render(f"{prefix}{stem}")
+
+        base = {**FLOW_RING, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        before = {t: n for t, n in base.items() if t not in ((-2, 1), (0, 2))}
+        scene("hills_snowy_added_before_raised", before, [(LANDMARK_REGION, "snowy_peaks")])
+        added = LANDMARK_REGION + [(-2, 1)]
+        scene("hills_snowy_added_after_raised", {**before, (-2, 1): "snowy_peaks", (0, 2): "forest"}, [(added, "snowy_peaks")])
+        second = [(q + 3, r) for q, r in LANDMARK_REGION]
+        both = {**FLOW_RING, **{t: "plains" for s_ in second for t in ((s_[0] + dq, s_[1] + dr) for dq, dr in hk.NEIGHBOURS)},
+                **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION},
+                **{t: ("salamanderden" if t == (4, -1) else "volcanic_peaks") for t in second}}
+        scene("hills_touching_raised", both, [(LANDMARK_REGION, "snowy_peaks"), (second, "volcanic_peaks")])
+        river = {**{t: "river" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        scene("hills_noway_raised", river, [(LANDMARK_REGION, "snowy_peaks")])
+        scene("hills_snowy_rising_raised", base, [(LANDMARK_REGION, "snowy_peaks")], 0.5)
         sys.exit(0)
     if "hills-t2" in flags:
         # Hills tier 2 and class variant: each region flowing into its landmark, and a close-up; monastery's paths.

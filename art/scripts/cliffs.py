@@ -1,15 +1,17 @@
 """Reference version of the engines' raised regions: highlands, snowy peaks, volcanic peaks and monastery heights stand
-on a cliff, with narrow paths climbing it at a few outer edges (design/06 -> Tile build: being tried).
+on a cliff, with narrow ledges climbing it (design/06 -> Tile build). Every cliff piece stays inside its own tile's edge
+line, so neighbours are untouched.
 
-Once a region finishes:
-1. Every piece on the region's tiles is placed RAISE higher. Nothing else about them changes.
-2. outer_edges(): every edge facing a tile outside the region gets <variant>_cliff_edge (or _cliff_edge_b, by
-   hash01(q * 6 + i, r, 8)), turned by 60 * i degrees. These stand on the ground, not at the raised height.
-3. outer_corners(): where edges i and i + 1 of a tile are both outer, <variant>_cliff_corner, turned by 60 * i. Corners
-   where two region tiles meet need no piece, since the two walls run into each other.
-4. climbs(): a few outer edges swap the cliff for <variant>_cliff_path and the wedge above it for <variant>_edge_climb.
-   Their path data joins the ground to the top; that's the only way up. The neighbour's wedge on that edge is left out,
-   unless it holds ground of its own (hills), so nothing stands in the path's foot.
+Once a region finishes, and again whenever a tile of hills terrain joins it (any other tile stays low):
+1. Every piece on the region's tiles is placed RAISE higher, and their bases are left out: the ground covers the tile.
+2. outer_edges(): every edge facing a tile that isn't raised gets <variant>_cliff_edge (or _cliff_edge_b, by
+   hash01(q * 6 + i, r, 8)) at ground level, turned by 60 * i degrees, and its wedge becomes <variant>_edge_rim. An edge
+   between two raised regions has neither: they join at one height.
+3. outer_corners(): where edges i and i + 1 are both outer, a <variant>_cliff_corner pinnacle, turned by 60 * i.
+4. climbs(): a climb (t, i) runs round three outer edges of tile t: at ground level <variant>_cliff_path_low on edge
+   i - 1, _mid on edge i, _top on edge i + 1, in place of those cliffs, and above them <variant>_edge_climb,
+   _edge_climb and _edge_climb_top in place of the wedges. No corner pinnacle at corners i - 1 and i. The neighbour on edge
+   i - 1 is where it starts, on the edge line. Their path data joins up; it's the only way up.
 Plain Python, so the engines can copy it.
 """
 import ground_cover as gc
@@ -19,43 +21,40 @@ RAISED = ("highlands", "snowy_peaks", "volcanic_peaks", "monastery_heights")
 UNWALKABLE = {"river"}  # as in fence_gates.py
 
 
-def outer_edges(region):
-    """region: the set of (q, r) in the finished region. Returns the outer (tile, edge) pairs."""
-    return [((q, r), i) for (q, r) in sorted(region) for i, (dq, dr) in enumerate(NEIGHBOURS) if (q + dq, r + dr) not in region]
+def outer_edges(region, raised=()):
+    """region: the set of (q, r) in the finished region. raised: all raised tiles. Returns the (tile, edge) pairs with a
+    cliff: those facing a tile that's neither in the region nor raised."""
+    return [((q, r), i) for (q, r) in sorted(region) for i, (dq, dr) in enumerate(NEIGHBOURS)
+            if (q + dq, r + dr) not in region and (q + dq, r + dr) not in raised]
 
 
-def outer_corners(region):
+def outer_corners(region, raised=()):
     """The (tile, corner) pairs where the region's edge turns outward; corner i lies between edges i and i + 1."""
-    outer = set(outer_edges(region))
-    return [(t, i) for t, i in outer_edges(region) if (t, (i + 1) % 6) in outer]
+    outer = set(outer_edges(region, raised))
+    return [(t, i) for t, i in outer if (t, (i + 1) % 6) in outer]
 
 
 def climbs(region, terrains, raised=()):
-    """Which outer edges have a path up. terrains: (q, r) -> terrain of every placed tile. raised: tiles of any raised
-    region. One outer edge in six is taken, by hash, never two on one tile or next to each other, and only where both
-    edges beside it are outer too, because the path stands out past the edge's ends and would run into the wall of a
-    tile there. A taken edge shows its path only while the land beyond is walkable and not raised. If that leaves none,
-    the walkable edge with the lowest hash gets one, so a region with walkable land beside it can always be reached."""
-    def foot(t, i):
+    """Which climbs show: (t, i) runs round edges i - 1, i and i + 1 of tile t, all outer, starting on edge i - 1. Any
+    region has such tiles, since a tile at the far side of it in any direction has three outer edges in a row. One
+    outer edge in six is taken, by hash, at most one per tile and never on tiles side by side. A taken one shows only while
+    the land at its start is walkable. If that leaves none, the walkable one with the lowest hash shows, so a
+    region with walkable land at a possible start can always be reached. Otherwise there's no way up yet."""
+    def beside(t, i):
         return (t[0] + NEIGHBOURS[i][0], t[1] + NEIGHBOURS[i][1])
 
     def walkable(t, i):
-        n = foot(t, i)
+        n = beside(t, (i - 1) % 6)
         return n in terrains and terrains[n] not in UNWALKABLE and n not in raised
 
-    def rank(e):
-        return gc.hash01(e[0][0] * 6 + e[1], e[0][1], 15)
-
-    ranked = sorted(outer_edges(region), key=rank)
-    outer = set(ranked)
+    outer = set(outer_edges(region, raised))
+    ranked = sorted((e for e in outer if (e[0], (e[1] - 1) % 6) in outer and (e[0], (e[1] + 1) % 6) in outer),
+                    key=lambda e: gc.hash01(e[0][0] * 6 + e[1], e[0][1], 15))
     taken = []
     for t, i in ranked:
-        if len(taken) >= max(2, len(ranked) // 6):
+        if len(taken) >= max(2, len(outer) // 6):
             break
-        if (t, (i - 1) % 6) in outer and (t, (i + 1) % 6) in outer and all(t != t2 and foot(t, i) != foot(t2, i2) and t2 != foot(t, i) for t2, i2 in taken):
+        if all(t != t2 and t2 not in [beside(t, k) for k in range(6)] for t2, _ in taken):
             taken.append((t, i))
     shown = [e for e in taken if walkable(*e)]
-    if not shown:
-        roomy = [e for e in ranked if (e[0], (e[1] - 1) % 6) in outer and (e[0], (e[1] + 1) % 6) in outer]
-        shown = [e for e in roomy + ranked if walkable(*e)][:1]
-    return shown
+    return shown or [e for e in ranked if walkable(*e)][:1]
