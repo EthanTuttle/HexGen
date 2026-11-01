@@ -158,6 +158,13 @@ def draw_paths(col, templates):
                 p.box((e + t["hub"]) / 2, (d.length, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
     p.finish(col)
 
+# Plains tier 0: a group of plains among forest, farms, a village and hills, to judge it beside full tiles.
+PLAINS_MAP = {**{t: "plains" for t in LANDMARK_REGION},
+              (2, -2): "forest", (2, -1): "forest", (2, 0): "plains", (1, 1): "farmland", (0, 2): "farmland",
+              (-1, 2): "farmland", (-2, 2): "village", (-2, 1): "plains", (-2, 0): "plains", (-1, -1): "hills",
+              (0, -2): "hills", (1, -2): "plains"}
+MEADOWS_MAP = {**FLOW_RING, **{t: ("nomadcamp" if t == LANDMARK_AT else "meadows") for t in LANDMARK_REGION}}
+
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
                 for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
@@ -293,6 +300,10 @@ def build_map(templates, animated=False, tiles=None):
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
             elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
                 edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
+            elif joined[i] and f"{kit}_edge_path" in templates and gc.hash01(
+                    *sorted(((q, r), (q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1])))[0],
+                    15 + sum(sorted(((q, r), (q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1])))[1]) * 7) < 0.4:
+                edge = f"{kit}_edge_path"  # a footpath on this edge (a hash of the two tiles, the same from both)
             elif not joined[i] and name in vr.LANDMARKS and f"{kit}_edge_other_lm" in templates:
                 edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
@@ -395,7 +406,7 @@ if __name__ == "__main__":
     # the Fey Court and the Spider Nest; --flow each forest variant's region flowing into its landmark;
     # --farmland the farm gates, the path data and the windmill country region with the Great Windmill;
     # --markettown-gates the farm map with market towns, to show their gates; --farmland-t2 the farmland tier 2
-    # regions and their landmarks.
+    # regions and their landmarks; --plains plains tier 0 options and meadows with the Nomad Camp.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -464,6 +475,33 @@ if __name__ == "__main__":
                                         0.8 + 17 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
             render(f"closeup_{tiles_map[LANDMARK_AT]}_landmark")
+        sys.exit(0)
+    if "plains" in flags:
+        # Plains tier 0 as it is and with each option, then meadows flowing into the Nomad Camp, and a close-up.
+        def plains_map(tiles_map, stem, paths=False, dist=50, el=50):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map)
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates)
+            if paths:
+                draw_paths(col, templates)
+            stage(Vector((0.5, -0.8, 0)), dist, el)
+            render(stem)
+        plains_map(PLAINS_MAP, "plains_t0_current")
+        for opt in "abc":
+            plains_map({k: (f"plains_{opt}" if v == "plains" else v) for k, v in PLAINS_MAP.items()}, f"plains_t0_{opt}")
+        plains_map(MEADOWS_MAP, "plains_meadows_paths", paths=True, el=55)
+        plains_map(MEADOWS_MAP, "plains_meadows_landmark")
+        region = [t for t, n in MEADOWS_MAP.items() if n in ("meadows", "nomadcamp")]
+        d, tw = lf.flow(set(region), LANDMARK_AT)
+        a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+        el = math.radians(40)
+        cam = bpy.context.scene.camera
+        cam.location = hk.tile_position(*LANDMARK_AT) + Vector((15 * math.cos(el) * math.cos(a),
+                                                                15 * math.cos(el) * math.sin(a), 1 + 15 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+        render("plains_nomadcamp_closeup")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same

@@ -78,16 +78,151 @@ def grazer(p, rng, at, spin):
     p.box(at + turn(Vector((-0.3, 0, 0)), spin), (0.05, 0.05, 0.22), "trunk", z=0.42, spin=spin)  # tail
 
 
+def worn_track(p, x1=X1, half=0.25):
+    """A track worn through the grass along a wedge's middle line, narrowing to a point at the tile's middle so
+    all a tile's tracks meet there, and its path centreline (the centre's hub takes it on from the inner end)."""
+    p.flat([Vector((0, 0, 0)), Vector((0.5, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)),
+            Vector((0.5, half, 0))], 0.012, "worn_track")
+    p.paths.append([Vector((X0, 0, 0)), Vector((x1, 0, 0))])
+
+
+def spirit_pole(p, rng, at):
+    """A nomads' marker beside a trail: a heap of stones with a pole in it, a strip of blue cloth at the top."""
+    p.cone(at, 0.22, 0.26, "rock", segments=6, spin=rng.uniform(0, 1))
+    p.box(at, (0.05, 0.05, 1.35), "trunk")
+    p.box(at + Vector((0, 0.13, 0)), (0.025, 0.24, 0.4), "ribbon_blue", z=0.92)
+
+
+def rug_rack(p, rng, at, spin, colours=("ribbon_red", "ribbon_blue")):
+    """Rugs drying on a rack: two posts, a rail, a rug over it with a band across it."""
+    side = turn(Vector((0.5, 0, 0)), spin)
+    for sd in (-1, 1):
+        p.box(at + side * sd, (0.06, 0.06, 0.95), "trunk")
+    p.box(at, (1.1, 0.05, 0.05), "trunk", z=0.92, spin=spin)
+    p.box(at, (0.8, 0.04, 0.72), colours[0], z=0.2, spin=spin)
+    p.box(at, (0.82, 0.05, 0.12), colours[1], z=0.5, spin=spin)
+
+
+def felt_tent(p, rng, at, r, door_to):
+    """A round felt tent: a low wall with a coloured band, a shallow cone roof, a door facing door_to."""
+    wall = r * 1.15
+    p.cylinder(at, r, wall, "felt", segments=8)
+    p.cylinder(at, r + 0.012, 0.1, rng.choice(["ribbon_red", "ribbon_blue"]), segments=8, z=wall * 0.62)
+    p.cone(at, r * 1.08, r * 0.75, "felt_dark", segments=8, z=wall)
+    p.cylinder(at, r * 0.2, 0.08, "trunk", segments=6, z=wall + r * 0.6)
+    a = math.atan2((door_to - at).y, (door_to - at).x)
+    p.box(at + Vector((math.cos(a), math.sin(a), 0)) * r, (0.05, r * 0.6, wall * 0.72), "ribbon_red", spin=a)
+
+
 def meadows(p, rng, kind):
-    """Wildflower drifts (ground cover) and small grazing herds."""
-    bt.plains(p, rng, kind)
+    """Wildflower drifts (ground cover) and small grazing herds, kept off the lanes the trails use. Toward the
+    Nomad Camp, tracks worn through the grass with spirit poles beside them and horses heading in; next to the
+    camp, an outlying tent and rugs drying."""
+    if kind in ("centre", "centre_b", "centre_near"):
+        p.hub = Vector((0, 0, 0))
+        spirit_pole(p, rng, Vector((0.36, 0.2, 0)))  # at the tile's middle, so a track starting here ends at something
+        if kind == "centre_near":
+            felt_tent(p, rng, bt.field_spot(1, 1.6), 0.5, Vector((0, 0, 0)))
+            rug_rack(p, rng, bt.field_spot(4, 2.1), 0.0)
+            herd = [bt.field_spot(2, 2.3), bt.field_spot(2, 2.3) + Vector((-0.45, 0.45, 0))]
+        elif kind == "centre":  # a small herd in one corner of the tile; the engine turns the centre by a hash
+            p.blob(bt.field_spot(4, 1.1), 0.3, "rock", squash=0.6)
+            herd = [bt.field_spot(1, 2.5) + q for q in (Vector((-0.45, 0, 0)), Vector((0.42, 0.1, 0)),
+                                                        Vector((0, 0.62, 0)))]
+        else:  # a pair
+            herd = [bt.field_spot(0, 2.6), bt.field_spot(0, 2.6) + Vector((0.3, 0.55, 0))]
+        spin = rng.uniform(0, 2 * math.pi)
+        for at in herd:
+            grazer(p, rng, at, spin + rng.uniform(-0.7, 0.7))
+        return
+    if kind in ("edge_trail", "edge_trail_in"):
+        worn_track(p)
+        spirit_pole(p, rng, Vector((X0 + 1.1, 0.62 if kind == "edge_trail" else -0.62, 0)))
+        if kind == "edge_trail":  # a horse beside the track, heading over the edge for the camp
+            grazer(p, rng, Vector((X0 + 1.5, -0.62, 0)), 0.0)
+        return
+
+
+def nomad_camp(p, rng, kind):
+    """Rolling meadows' Nomad Camp: six round felt tents in a ring round a central fire, a tall standard over it
+    so it reads from the map camera, a picket line of horses and rugs drying on racks. The tents stand between the
+    lanes, so tracks come in between them; the way in from edge 0 is the approach. Fire and smoke are the engine's."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.45, pointy=True)][::-1], 0.022, "camp_earth")
+    middle = Vector((0, 0, 0))
+    for k in range(6):
+        felt_tent(p, rng, bt.field_spot(k, 1.72), 0.6, middle)
+    # the fire: a ring of stones, crossed logs, embers
+    for k in range(7):
+        a = 2 * math.pi * k / 7
+        p.blob(Vector((math.cos(a), math.sin(a), 0)) * 0.32, 0.08, "rock", squash=0.7)
+    for spin in (0.4, 1.5, 2.6):
+        p.log(middle, 0.05, 0.5, "char", spin=spin, z=0.08, segments=5)
+    p.cone(middle, 0.17, 0.2, "ember", segments=5, z=0.05)
+    p.effects += [("fire", Vector((0, 0, 0.12))), ("smoke", Vector((0, 0, 0.3)))]
+    # the standard: tall, beside the fire, with long red streamers
+    pole = Vector((-0.55, 0.05, 0))
+    p.box(pole, (0.09, 0.09, 3.6), "trunk")
+    p.cylinder(pole, 0.2, 0.12, "hay", segments=6, z=3.4)
+    for sd, drop in ((1, 1.5), (-1, 1.15)):
+        p.box(pole + Vector((0, sd * 0.17, 0)), (0.03, 0.3, drop), "banner", z=3.4 - drop)
+    # the approach on edge 0, into the ring between two tents
+    p.flat([Vector((0.75, -0.26, 0)), Vector((2.15, -0.26, 0)), Vector((2.15, 0.26, 0)), Vector((0.75, 0.26, 0))], 0.03,
+           "worn_track")
+    # a picket line of horses out past the ring, and rugs drying, in the corners between lanes
+    back = bt.field_spot(4, 3.05)  # toward 270 degrees
+    for sd in (-1, 1):
+        p.box(back + Vector((sd * 0.72, 0, 0)), (0.07, 0.07, 0.75), "trunk")
+    p.box(back, (1.45, 0.03, 0.03), "rope", z=0.72)
+    for x in (-0.42, 0.0, 0.42):
+        grazer(p, rng, back + Vector((x, 0.32, 0)), -math.pi / 2)
+    rug_rack(p, rng, bt.field_spot(1, 2.75), 0.0)
+    rug_rack(p, rng, bt.field_spot(1, 3.15), 0.0, ("ribbon_blue", "hay"))
+    # Paths: the approach, a ring round the fire, and spokes from each lane's track end to the ring.
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 0.75 for i in range(6)]
+    p.paths.append([Vector((X0, 0, 0)), ring[0]])
+    p.paths.append(ring + [ring[0]])
+    for i in range(1, 6):
+        p.spokes[i] = [ring[i] / 0.75 * X0, ring[i]]
+
+
+# --- Plains tier 0 options (for Ethan to choose from) ---------------------------------------------------------
+# Plains is the go-between terrain, open grass; next to full forests and farms it can look empty. Three calm ways
+# to give it something, built as plains_a, _b, _c beside plains; the pick replaces it. The centre piece reaches out
+# past the centre region and turns by a hash of the tile (like the farms'), so tiles don't repeat.
+
+def plains_a(p, rng, kind):
+    """(a) A tree or two: a lone broadleaf, far from the middle, and a rock."""
     if kind == "centre":
-        herd = Vector((-0.5, 0.3, 0))
-        for k in range(3):
-            grazer(p, rng, herd + Vector((rng.uniform(-0.7, 0.7), rng.uniform(-0.6, 0.6), 0)),
-                   rng.uniform(0, 2 * math.pi))
-    elif kind == "same" and rng.random() < 0.6:
-        grazer(p, rng, Vector((X0 + 1.0, rng.uniform(-0.6, 0.6), 0)), rng.uniform(0, 2 * math.pi))
+        bt.tree(p, rng, bt.field_spot(1, 2.9))
+        p.blob(bt.field_spot(4, 1.3), 0.3, "rock", squash=0.6)
+    elif kind == "centre_b":
+        bt.tree(p, rng, bt.field_spot(0, 2.3))
+        bt.tree(p, rng, bt.field_spot(0, 2.3) + Vector((0.75, 0.3, 0)))
+
+
+def swell(p, at, r):
+    p.blob(at, r, "swell", squash=0.11)
+
+
+def plains_b(p, rng, kind):
+    """(b) Gentle ground swells: low, wide rises in a lighter green, and a rock."""
+    if kind == "centre":
+        swell(p, bt.field_spot(1, 1.9), 1.35)
+        swell(p, bt.field_spot(3, 2.2), 1.0)
+        p.blob(bt.field_spot(5, 1.2), 0.3, "rock", squash=0.6)
+    elif kind == "centre_b":
+        swell(p, bt.field_spot(0, 1.6), 1.15)
+        swell(p, bt.field_spot(3, 1.5), 1.4)
+
+
+def plains_c(p, rng, kind):
+    """(c) A worn footpath: on some joined edges (a hash of the two tiles, the same from both sides) a track worn
+    through the grass runs to the tile's middle, where a lone tree stands, so it always ends at something."""
+    if kind in ("centre", "centre_b"):
+        bt.tree(p, rng, Vector((0.3, 0.28, 0)))
+        p.hub = Vector((0, 0, 0))
+    elif kind == "edge_path":
+        worn_track(p)
 
 
 # --- Hills: highlands -----------------------------------------------------------
@@ -1713,7 +1848,7 @@ def great_windmill_sails(p, rng):
 
 LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest, "greatwindmill": great_windmill,
                     "abandonedbarn": abandoned_barn, "militiabarn": militia_barn,
-                    "harvestfestival": harvest_festival}
+                    "harvestfestival": harvest_festival, "nomadcamp": nomad_camp}
 # other separate pieces (the small mill isn't a landmark's): name -> (builder, where the piece's origin sits in the landmark's centre frame)
 LANDMARK_PARTS = {"greatwindmill_sails": (great_windmill_sails, MILL_HUB),
                   "windmill_small": (small_windmill, Vector((0, 0, 0)))}
@@ -1827,7 +1962,11 @@ def deep_flow(p, rng, kind, x0=None):
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
-    "meadows": ("plains", meadows, "plains", ()),
+    "meadows": ("plains", meadows, "plains", ("centre_b", "edge_trail", "edge_trail_in", "centre_near")),
+    # plains tier 0 options; the pick replaces plains
+    "plains_a": ("plains", plains_a, "plains", ("centre_b",)),
+    "plains_b": ("plains", plains_b, "plains", ("centre_b",)),
+    "plains_c": ("plains", plains_c, "plains", ("centre_b", "edge_path")),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
@@ -1859,7 +1998,7 @@ VARIANTS = {
 LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
              "spidernest": "dark_wood", "greatwindmill": "windmill_country",
              "abandonedbarn": "haunted_homesteads", "militiabarn": "raided_farms",
-             "harvestfestival": "cider_orchards"}
+             "harvestfestival": "cider_orchards", "nomadcamp": "meadows"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 
