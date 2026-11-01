@@ -271,4 +271,4 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~App icon~~ (final Nov 1: v8) (Home-screen name settled Nov 1: Heads/Hexes.)
 - [x] ~~Autosaves with several heroes~~ (settled Nov 1: per hero, slots too)
 - [x] ~~What a save shows; the settings list; the join code~~ (settled Nov 1: name and level, place, save time; Audio and Accessibility, plus Multiplayer in a game; a 6-letter code shown there; 3 slots per hero)
-- [ ] New (Nov 1): what goes in each Settings section; does the join code change each session, and can the host turn joining off?
+- [ ] New (Nov 1): what goes in each Settings section; a taken join code; removing a guest (settled Nov 1: the host switches multiplayer on and sets a lasting code in Settings)
