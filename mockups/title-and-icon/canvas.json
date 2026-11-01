@@ -261,6 +261,24 @@
    "title": "Title v6c \u00b7 a pill under Load | Join reads \"Hosting: Off\" or \"Hosting: On \u00b7 KDRWQX\" with a dot; tapping it opens the Host panel. Join stays as it was",
    "is_interactive": true,
    "radius": 28
+  },
+  "Title-v7-SteadyMultiplayer.dc.html": {
+   "x": 0,
+   "y": 10780,
+   "w": 844,
+   "h": 390,
+   "title": "Title v7 \u00b7 v6a chosen, with less movement: the green dot's space is always kept (it only fades in when hosting), so Load and Multiplayer keep their widths; the \"Open to guests in every game you launch\" line is gone",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v8-CentredLabel.dc.html": {
+   "x": 0,
+   "y": 11550,
+   "w": 844,
+   "h": 390,
+   "title": "Title v8 \u00b7 v7 with \"Multiplayer\" centred in its button while hosting is off; switching it on slides only the label left as the green dot grows in beside it. The buttons keep their sizes",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -291,7 +309,9 @@
   "Icon-v8-BigTileNoShadow.dc.html",
   "Title-v6a-MultiplayerButton.dc.html",
   "Title-v6b-HostHex.dc.html",
-  "Title-v6c-HostRow.dc.html"
+  "Title-v6c-HostRow.dc.html",
+  "Title-v7-SteadyMultiplayer.dc.html",
+  "Title-v8-CentredLabel.dc.html"
  ],
  "notes": {
   "v1": {
@@ -382,6 +402,20 @@
    "x": 0,
    "y": 9750,
    "text": "v6 \u00b7 where to switch multiplayer on",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v7": {
+   "x": 0,
+   "y": 10520,
+   "text": "v7 \u00b7 v6a chosen, steadier",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v8": {
+   "x": 0,
+   "y": 11290,
+   "text": "v8 \u00b7 Multiplayer centred until hosting",
    "kind": "title1",
    "maxW": 2692
   }
