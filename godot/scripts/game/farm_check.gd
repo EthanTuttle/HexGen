@@ -314,6 +314,19 @@ func _to_landmark(map: MapBoard, v: String) -> void:
 		game.rig.frame(Hex.to3(entrance), 16.0, 40.0, -90.0 - rad_to_deg(map.entrance_angle(lm)))
 		await _wait(0.5)
 		await _shot("21_party_at_greatwindmill")
+	var watch := LeaveWatch.new(game.party_node)
+	game.walk_to(far)
+	var off_lane := 0.0
+	while game.busy:
+		await get_tree().process_frame
+		watch.frame()
+		for m in game.party_node.members:
+			var at := Vector2(m.node.position.x, -m.node.position.z)
+			var tile := GroundCover.tile_at(at)
+			if tile == lm:
+				off_lane = maxf(off_lane, map.path_graph(lm).distance_to_paths(at))
+	_check(watch.passed(), "%s: leaving, %s" % [v, watch.report()])
+	_check(off_lane <= LANE, "%s: leaving, everyone stays on the landmark's paths (at most %.2f m off)" % [v, off_lane])
 
 
 ## An ordinary walk through the game, while nothing is being checked.

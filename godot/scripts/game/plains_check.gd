@@ -65,8 +65,12 @@ func _run() -> void:
 	_check_cover(map)
 	await _check_lightning(map)
 	await _pictures(map)
-	for v: String in Game.DEBUG_PLAINS:
+	var names: Array = Game.DEBUG_PLAINS.keys()
+	for k in names.size():
+		var v: String = names[k]
 		await _walk_in(map, v)
+		if k < names.size() - 1:
+			await _leave(_far(map, v), v, "40_leaving_camp" if k == 0 else "")
 	await _walk_out(map)
 	print("PLAINS DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
@@ -245,14 +249,19 @@ func _walk_to(goal: Vector2i) -> void:
 	await _wait(Rules.SETTLE_SECONDS)
 
 
-func _walk_in(map: MapBoard, v: String) -> void:
+func _far(map: MapBoard, v: String) -> Vector2i:
 	var g := _region(v)
-	var lm: Vector2i = g.landmark_tile
-	var far := lm
+	var far: Vector2i = g.landmark_tile
 	for t: Vector2i in g.tiles:
 		if map.flow_dist.get(t, 0) > map.flow_dist.get(far, 0):
 			far = t
-	await _walk_to(far)
+	return far
+
+
+func _walk_in(map: MapBoard, v: String) -> void:
+	var g := _region(v)
+	var lm: Vector2i = g.landmark_tile
+	await _walk_to(_far(map, v))
 	var route := game.party_node.route_preview(game.path_to(lm))
 	var c := Hex.tile_position(lm.x, lm.y)
 	# Curved, not along the middle lines, where the route leaves far's tile; and never inside the landmark's yard
@@ -290,5 +299,22 @@ func _walk_out(map: MapBoard) -> void:
 		if p.distance_to(c) < Rules.ROUND_LANDMARK - 0.05 and (absf((p - c).cross(Vector2.from_angle(e))) > 0.1 or (p - c).dot(Vector2.from_angle(e)) < 0.0):
 			ok = false
 	_check(ok, "leaving a landmark goes out through its entrance")
-	await _walk_to(other)
+	await _leave(other, "last plains landmark")
 	_check(game.party_tile == other, "the party walked out and away")
+
+
+## Out of a landmark, watching the followers peel off behind the hero.
+func _leave(goal: Vector2i, what: String, shots_as := "") -> void:
+	var watch := LeaveWatch.new(game.party_node)
+	game.walk_to(goal)
+	var t := 0.0
+	var next_shot := 0
+	const TIMES := [0.5, 1.1, 1.7]
+	while game.busy:
+		await get_tree().process_frame
+		watch.frame()
+		t += get_process_delta_time()
+		if shots_as != "" and next_shot < TIMES.size() and t >= TIMES[next_shot]:
+			next_shot += 1
+			await _shot("%s_%d" % [shots_as, next_shot])
+	_check(game.party_node.peeled and watch.passed(), "%s: leaving, %s" % [what, watch.report()])

@@ -19,6 +19,7 @@ signal entered(tile: Vector2i)          # the hero stepped onto a new hex
 var map: MapBoard
 var members: Array[Dictionary] = []     # {node, tilt, body, radius, offset, phase, side, yaw, up, squeeze}
 var walking := false
+var peeled := false                     # this walk turned back past the stopped file (_peel_off)
 var facing := -PI / 2                   # the cluster's facing (plan angle) while standing; south to start
 
 var _path := PackedVector2Array()       # the route, densely sampled
@@ -62,7 +63,7 @@ func setup(board: MapBoard, tile: Vector2i) -> void:
 		members.append({node = node, tilt = tilt, body = body,
 				radius = maxf(box.size.x, box.size.z) * 0.5,   # the base's corners (it fills a combat cell)
 				offset = (Hex.cell_position(c.x, c.y) - HERO_CELL) * Rules.STAND_SPREAD,
-				phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0})
+				phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0, from = 0.0, leg = PackedVector2Array(), join = 0.0})
 	place_at(tile)
 
 
@@ -101,14 +102,19 @@ func walk(tiles: Array[Vector2i]) -> void:
 	_file_start = _file_end
 	_build_path(tiles)
 	_s0 = 0.0
-	if _file_start and _tail.size() > 1:
-		# The followers stand behind the hero on the last route's end, and set off along it.
-		var whole := _tail.duplicate()
-		whole.append_array(_path)
-		_set_path(whole)
-		_s0 = _len[_tail.size() - 1]
-	else:
-		_file_start = false
+	peeled = _file_start and _peel_off()
+	if not peeled:
+		if _file_start and _tail.size() > 1:
+			# The followers stand behind the hero on the last route's end, and set off along it.
+			var whole := _tail.duplicate()
+			whole.append_array(_path)
+			_set_path(whole)
+			_s0 = _len[_tail.size() - 1]
+		else:
+			_file_start = false
+		for i in members.size():
+			members[i].from = _s0 - (i * Rules.FILE_GAP if _file_start else 0.0)
+			members[i].leg = PackedVector2Array()
 	_s = _s0
 	_t = 0.0
 	_trail = [Vector2(0, _s0)]
@@ -240,6 +246,93 @@ func route_preview(tiles: Array[Vector2i]) -> PackedVector2Array:
 	_end_facing = end
 	_file_end = file
 	return _path
+
+
+## Where the hero turns back past the stopped file (leaving a landmark by the way it came in), the followers don't
+## walk up to where it stood: each holds its spot until the hero has gone by, then falls in behind. The one nearest
+## the way out goes first, so the file's order turns round with it. One standing round a bend, past where the way
+## out leaves the file's line, walks the line to that point and falls in there. False if the route doesn't double back.
+func _peel_off() -> bool:
+	var reach := members.size() * Rules.FILE_GAP + 1.0
+	var first: Vector3 = members[1].node.position
+	var near := Vector2(first.x, -first.z)
+	if _point_at(_nearest_along(near, reach)).distance_to(near) > Rules.PEEL_REACH:
+		return false
+	# Where the way out parts from the file's line, working back from the hero.
+	var part := _tail.size() - 1
+	while part > 0 and _point_at(_nearest_along(_tail[part - 1], reach)).distance_to(_tail[part - 1]) <= Rules.PEEL_LINE:
+		part -= 1
+	var part_d := _nearest_along(_tail[part], reach)
+	var joins := []
+	for i in range(1, members.size()):
+		var pos: Vector3 = members[i].node.position
+		var at := Vector2(pos.x, -pos.z)
+		var k := 0
+		for n in _tail.size():
+			if _tail[n].distance_to(at) < _tail[k].distance_to(at):
+				k = n
+		var leg := PackedVector2Array()
+		var from := _nearest_along(at, reach)
+		if k < part:
+			leg.append(at)
+			for n in range(k + 1, part + 1):
+				leg.append(_tail[n])
+			from = part_d - _leg_length(leg)
+		joins.append({m = members[i], leg = leg, from = from})
+	joins.sort_custom(func(a, b): return a.from > b.from)
+	members[0].from = 0.0
+	members[0].leg = PackedVector2Array()
+	for k in joins.size():
+		var j: Dictionary = joins[k]
+		members[k + 1] = j.m
+		var stop: float = _len[-1] - ((k + 1) * Rules.FILE_GAP if _file_end else 0.0)
+		j.m.from = minf(j.from, stop)
+		j.m.leg = j.leg
+		j.m.join = part_d
+	return true
+
+
+static func _leg_length(leg: PackedVector2Array) -> float:
+	var out := 0.0
+	for k in range(1, leg.size()):
+		out += leg[k].distance_to(leg[k - 1])
+	return out
+
+
+## A member's spot `s` along the route: on its leg (below) until it joins, then on the route.
+func _member_at(m: Dictionary, s: float) -> Vector2:
+	if m.leg.is_empty() or s >= m.join:
+		return _point_at(s)
+	var back: float = m.join - s
+	for k in range(m.leg.size() - 1, 0, -1):
+		var step: float = m.leg[k].distance_to(m.leg[k - 1])
+		if back <= step:
+			return m.leg[k].lerp(m.leg[k - 1], back / maxf(step, 1e-5))
+		back -= step
+	return m.leg[0]
+
+
+func _member_angle(m: Dictionary, s: float) -> float:
+	if m.leg.is_empty() or s >= m.join:
+		return _angle_at(s)
+	var a := _member_at(m, s)
+	var b := _member_at(m, s + 0.2)
+	return (b - a).angle() if a.distance_to(b) > 1e-4 else facing
+
+
+## How far along the route's first `reach` metres it comes nearest to `p`.
+func _nearest_along(p: Vector2, reach: float) -> float:
+	var best := 0.0
+	var closest := INF
+	for k in range(1, _path.size()):
+		if _len[k - 1] > reach:
+			break
+		var on := Geometry2D.get_closest_point_to_segment(p, _path[k - 1], _path[k])
+		var d := on.distance_to(p)
+		if d < closest:
+			closest = d
+			best = _len[k - 1] + on.distance_to(_path[k - 1])
+	return best
 
 
 ## The end of the route that the stopped file stands on.
@@ -528,7 +621,7 @@ func _step(delta: float) -> void:
 		var stop := total - gap_end
 		if s < stop - 1e-3:
 			done = false
-		_place_member(m, s, _s0 - gap_start, stop, delta)
+		_place_member(m, maxf(s, m.from), m.from, stop, delta)
 	if done:
 		walking = false
 
@@ -538,7 +631,7 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 	# the route itself where the party starts or stops in a file on a narrow path).
 	var w_start := smoothstep(0.0, 1.2, s - from)
 	var w_end := smoothstep(0.0, 1.2, stop - s)
-	var tangent := _angle_at(s)
+	var tangent := _member_angle(m, s)
 	var frame := lerp_angle(lerp_angle(_start_facing, tangent, w_start), _end_facing, 1.0 - w_end)
 	var off := _turned(m.offset, frame)
 	var across := Vector2.from_angle(tangent + PI / 2)
@@ -547,23 +640,24 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 	side = (Vector2.ZERO if _file_end else off).lerp(side, w_end)
 	var old: Vector3 = m.node.position
 	# Facing: a little way ahead on the route, so it turns before a corner.
-	var end_face := _angle_at(minf(s, stop - 0.2)) if _file_end else _end_facing
-	var want := yaw_of(lerp_angle(_angle_at(minf(s + Rules.LOOK_AHEAD, stop)), end_face, 1.0 - w_end))
+	var end_face := _member_angle(m, minf(s, stop - 0.2)) if _file_end else _end_facing
+	var want := yaw_of(lerp_angle(_member_angle(m, minf(s + Rules.LOOK_AHEAD, stop)), end_face, 1.0 - w_end))
 	m.node.rotation.y = lerp_angle(m.node.rotation.y, want, minf(1.0, delta * Rules.TURN_RATE))
 	# Its own spot must be clear of the mountains (the route's clearance is measured from the route line, and a
 	# companion walks beside it): pushed in toward the route as far as it takes, spreading back out slowly.
 	var squeeze := minf(1.0, m.squeeze + delta * Rules.SQUEEZE_RATE)
 	if map.gates.has(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses
 		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 2.0)
-	var p := _point_at(s) + side * squeeze
+	var on_route := _member_at(m, s)
+	var p: Vector2 = on_route + side * squeeze
 	var felt := _feel(m, p)
 	if felt.mountain and squeeze > m.squeeze:
 		squeeze = m.squeeze
-		p = _point_at(s) + side * squeeze
+		p = on_route + side * squeeze
 		felt = _feel(m, p)
 	while felt.mountain and squeeze > 0.0:
 		squeeze = maxf(0.0, squeeze - 0.25)
-		p = _point_at(s) + side * squeeze
+		p = on_route + side * squeeze
 		felt = _feel(m, p)
 	m.squeeze = squeeze
 	var wet := in_water(p)
