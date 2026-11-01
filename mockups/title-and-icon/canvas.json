@@ -81,6 +81,33 @@
    "title": "App icon v1c \u00b7 the flip coin mid-toss, a hex with a tree struck on its face, on dark slate so it stands out on a home screen",
    "is_interactive": false,
    "radius": 28
+  },
+  "Title-v3-HeadsLastSave.dc.html": {
+   "x": 0,
+   "y": 2570,
+   "w": 844,
+   "h": 390,
+   "title": "Title v3 \u00b7 Heads or Hexes and v1b chosen: the logo on v1b's last-save map. Load groups saves by hero: pick a hero on the left (most recently played first, each with subtitle and last day) to see their autosaves and save slots. Hero names, subtitles and days are placeholders",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Icon-v2a-CoinFull.dc.html": {
+   "x": 0,
+   "y": 3340,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v2a \u00b7 v1c reworked: the coin faces us straight on and fills the whole icon (the slate shows only in the corners); no motion lines. A beaded ring, then a hex with a tree struck on its face",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v2b-CoinMargin.dc.html": {
+   "x": 924,
+   "y": 3340,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v2b \u00b7 the same coin a little smaller, with a slate edge all round and a soft shadow under it, for comparison with v2a",
+   "is_interactive": false,
+   "radius": 28
   }
  },
  "order": [
@@ -91,7 +118,10 @@
   "Title-v2b-FortunesHex.dc.html",
   "Icon-v1a-Tile.dc.html",
   "Icon-v1b-Mini.dc.html",
-  "Icon-v1c-Coin.dc.html"
+  "Icon-v1c-Coin.dc.html",
+  "Title-v3-HeadsLastSave.dc.html",
+  "Icon-v2a-CoinFull.dc.html",
+  "Icon-v2b-CoinMargin.dc.html"
  ],
  "notes": {
   "v1": {
@@ -112,6 +142,20 @@
    "x": 0,
    "y": 1540,
    "text": "App icon v1 \u00b7 three ideas",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v3": {
+   "x": 0,
+   "y": 2310,
+   "text": "v3 \u00b7 Heads or Hexes on v1b, saves grouped by hero",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons2": {
+   "x": 0,
+   "y": 3080,
+   "text": "App icon v2 \u00b7 the coin, face on",
    "kind": "title1",
    "maxW": 2692
   }
