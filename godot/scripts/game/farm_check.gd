@@ -346,6 +346,7 @@ func _walk_watching(tiles: Array[Vector2i], what: String) -> void:
 				at = p
 	_check(worst <= LANE, "%s: the route keeps to the drawn paths (at most %.2f m off%s)" % [what, worst,
 			"" if worst <= LANE else " at %s" % at])
+	var off_path := 0.0
 	var last := {}
 	var start_tile := walker.members.map(func(m): return GroundCover.tile_at(Vector2(m.node.position.x, -m.node.position.z)))
 	for k in walker.members.size():
@@ -359,8 +360,32 @@ func _walk_watching(tiles: Array[Vector2i], what: String) -> void:
 			if t != last[k]:
 				_crossing(map, last[k], t, p)
 				last[k] = t
+			if map.gates.has(t) and not Variants.wedges_of(map.terrains[t]) in ["village", "market_town"]:
+				off_path = maxf(off_path, map.path_graph(t).distance_to_paths(p))
+	_check(off_path <= LANE, "%s: every mini stays on the lanes on farm tiles (at most %.2f m off)" % [what, off_path])
 	await _wait(Rules.SETTLE_SECONDS + 0.2)
+	_check_stop(map, tiles[-1], what)
 	game.busy = false
+
+
+## Stopped on a narrow path: every base on the path, in a file, none on top of another.
+func _check_stop(map: MapBoard, t: Vector2i, what: String) -> void:
+	var graph := map.path_graph(t)
+	if graph.stand == null or graph.edge_node.is_empty():
+		return
+	var ms := game.party_node.members
+	var worst := 0.0
+	var closest := INF
+	for k in ms.size():
+		var a := Vector2(ms[k].node.position.x, -ms[k].node.position.z)
+		var tile := GroundCover.tile_at(a)
+		if map.terrains.has(tile):
+			worst = maxf(worst, map.path_graph(tile).distance_to_paths(a) if not map.path_graph(tile).nodes.is_empty() else 0.0)
+		for j in k:
+			var b := Vector2(ms[j].node.position.x, -ms[j].node.position.z)
+			closest = minf(closest, a.distance_to(b))
+	_check(worst <= 0.1 and closest >= Rules.FILE_GAP - 0.1, "%s: stopped in a file on the path (centres at most %.2f m off, %.2f m apart; bases %.2f m wide, lanes 0.9)" % [
+			what, worst, closest, ms[0].radius * 2.0])
 
 
 func _crossing(map: MapBoard, a: Vector2i, b: Vector2i, p: Vector2) -> void:

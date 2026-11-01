@@ -4,13 +4,13 @@
 # Steps: export the Xcode project from Godot (preset "iOS Simulator" in godot/export_presets.cfg), build it for the
 # Simulator (arm64, no signing), boot a Simulator, install, launch, and save a screenshot to build/ios/shots/.
 # Needs Xcode with its first-launch setup done (sudo xcodebuild -runFirstLaunch) and an iOS Simulator runtime
-# (xcodebuild -downloadPlatform iOS). The Simulator runs on the Mac's GPU: its frame rate says nothing about a phone.
+# (xcodebuild -downloadPlatform iOS). Saves to build/ios-cli/shots/. The Simulator runs on the Mac's GPU: its frame rate says nothing about a phone.
 # Known blocker: Godot 4.7.2's official iOS templates hold only an x86_64 Simulator library, so step 2 fails to link
 # for arm64 until the template is rebuilt for arm64 (see the README).
 set -e
 cd "$(dirname "$0")/../.."
 GODOT=/Applications/Godot.app/Contents/MacOS/Godot
-OUT=build/ios
+OUT=build/ios-cli   # its own folder, so an export never overwrites a project open in Xcode (build/ios)
 mkdir -p $OUT/shots
 
 echo "== 1. Export the Xcode project"

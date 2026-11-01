@@ -4,14 +4,17 @@
 # The team is the Apple Developer team that signs it (a free Personal Team works: pick it once in Xcode's Signing &
 # Capabilities, and Xcode makes the certificate on the first build). Signing is automatic. The phone needs
 # Developer Mode on, and the developer trusted once after the first install (Settings > General > VPN & Device
-# Management). Logs from the launch go to build/ios/device_launch.log.
+# Management). Logs from the launch go to build/ios-cli/device_launch.log. This script only uses xcodebuild: it never
+# opens the project in Xcode.
 set -e
 cd "$(dirname "$0")/../.."
 : ${HEXGEN_TEAM:?set HEXGEN_TEAM to the signing team ID}
 GODOT=/Applications/Godot.app/Contents/MacOS/Godot
-OUT=build/ios
+OUT=build/ios-cli   # its own folder, so an export never overwrites a project open in Xcode (build/ios)
 DEVICE="${1:-$(xcrun devicectl list devices 2>/dev/null | grep -E "iPhone.*physical" | grep -v unavailable | head -1 | grep -oE "[0-9A-F]{8}-[0-9A-F]{16}")}"
 echo "device $DEVICE"
+
+mkdir -p $OUT
 
 echo "== 1. Export the Xcode project"
 $GODOT --headless --path godot --export-debug "iOS Simulator" ../$OUT/HexGen.ipa

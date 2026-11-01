@@ -25,6 +25,10 @@ var _path := PackedVector2Array()       # the route, densely sampled
 var _len := PackedFloat32Array()        # distance along it at each sample
 var _s := 0.0                           # how far along the hero is
 var _trail: Array[Vector2] = []         # (time, s) of the hero, for the companions to follow
+var _s0 := 0.0                          # where the hero starts on the route (after the file's tail, below)
+var _file_start := false                # the party starts this walk stopped in a file on a narrow path
+var _file_end := false                  # and ends it so (DOCS: Walking: a tighter cluster that fits the path)
+var _tail := PackedVector2Array()       # the stretch of route the stopped file stands on, last follower to hero
 var _t := 0.0
 var _start_facing := 0.0
 var _end_facing := 0.0
@@ -76,6 +80,8 @@ func centre() -> Vector3:
 func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 	_tile = tile
 	_blocked.clear()
+	_file_end = false
+	_tail = PackedVector2Array()
 	var spot := _stand_spot(tile, angle)
 	facing = spot[1]
 	walking = false
@@ -92,10 +98,20 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 ## Walks the route through these tiles (each a neighbour of the last; the first a neighbour of where the party
 ## stands). Returns when everyone has arrived and settled into place.
 func walk(tiles: Array[Vector2i]) -> void:
+	_file_start = _file_end
 	_build_path(tiles)
-	_s = 0.0
+	_s0 = 0.0
+	if _file_start and _tail.size() > 1:
+		# The followers stand behind the hero on the last route's end, and set off along it.
+		var whole := _tail.duplicate()
+		whole.append_array(_path)
+		_set_path(whole)
+		_s0 = _len[_tail.size() - 1]
+	else:
+		_file_start = false
+	_s = _s0
 	_t = 0.0
-	_trail = [Vector2(0, 0)]
+	_trail = [Vector2(0, _s0)]
 	_start_facing = facing
 	_entered = {_tile: true}
 	walking = true
@@ -103,6 +119,7 @@ func walk(tiles: Array[Vector2i]) -> void:
 		await get_tree().process_frame
 	facing = _end_facing
 	_tile = tiles[-1]
+	_tail = _route_end() if _file_end else PackedVector2Array()
 	_arrive()
 	await get_tree().create_timer(Rules.SETTLE_SECONDS).timeout
 
@@ -116,6 +133,7 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 	var seq: Array[Vector2i] = [_tile]
 	seq.append_array(tiles)
 	var last := seq.size() - 1
+	_file_end = false
 	for k in seq.size():
 		var t := seq[k]
 		var c := Hex.tile_position(t.x, t.y)
@@ -129,6 +147,7 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 			_along(pts, way)
 			if last_tile:
 				_end_facing = (way[-1] - way[-2]).angle() if way.size() > 1 else facing
+				_file_end = not graph.edge_node.is_empty()
 			continue
 		var entrance := map.entrance_angle(t)
 		if not is_nan(entrance):
@@ -199,9 +218,21 @@ static func _along(pts: PackedVector2Array, way: PackedVector2Array) -> void:
 ## The route through these tiles without walking it (the first tap's preview).
 func route_preview(tiles: Array[Vector2i]) -> PackedVector2Array:
 	var end := _end_facing
+	var file := _file_end
 	_build_path(tiles)
 	_end_facing = end
+	_file_end = file
 	return _path
+
+
+## The end of the route that the stopped file stands on.
+func _route_end() -> PackedVector2Array:
+	var from := _len[-1] - (members.size() - 1) * Rules.FILE_GAP
+	var out := PackedVector2Array([_point_at(from)])
+	for k in _path.size():
+		if _len[k] > from:
+			out.append(_path[k])
+	return out
 
 
 ## Adds a straight stretch from the route's last point to `to`, sampled about as densely as the curves.
@@ -431,13 +462,13 @@ func _angle_at(s: float) -> float:
 ## The hero's distance along the route `time` seconds into the walk (the trail the companions follow).
 func _trail_s(time: float) -> float:
 	if time <= 0.0:
-		return 0.0
+		return _s0
 	for k in range(_trail.size() - 1, 0, -1):
 		if _trail[k - 1].x <= time:
 			var a := _trail[k - 1]
 			var b := _trail[k]
 			return lerpf(a.y, b.y, (time - a.x) / maxf(b.x - a.x, 1e-5))
-	return 0.0
+	return _s0
 
 
 # --- Every frame ----------------------------------------------------------------------
@@ -458,7 +489,7 @@ func _step(delta: float) -> void:
 	if _s < total:
 		var p := _point_at(_s)
 		var terrain: String = map.terrains.get(GroundCover.tile_at(p), "")
-		var ease_in := minf(1.0, 0.3 + 0.7 * _s / Rules.WALK_EASE_IN)
+		var ease_in := minf(1.0, 0.3 + 0.7 * (_s - _s0) / Rules.WALK_EASE_IN)
 		var ease_out := clampf((total - _s) / Rules.WALK_EASE_OUT, 0.15, 1.0)
 		_s = minf(total, _s + Rules.WALK_SPEED * Rules.TERRAIN_SPEED.get(terrain, 1.0) * ease_in * ease_out * delta)
 		var t := GroundCover.tile_at(_point_at(_s))
@@ -471,31 +502,42 @@ func _step(delta: float) -> void:
 	var done := true
 	for i in members.size():
 		var m: Dictionary = members[i]
+		# In a file, each follower keeps its gap on the route: from its place at the start to its stop at the end.
 		var s := _trail_s(_t - i * Rules.FOLLOW_DELAY)
-		if s < total - 1e-3:
+		var u := clampf((s - _s0) / maxf(total - _s0, 1e-3), 0.0, 1.0)
+		var gap_start := i * Rules.FILE_GAP if _file_start else 0.0
+		var gap_end := i * Rules.FILE_GAP if _file_end else 0.0
+		s -= lerpf(gap_start, gap_end, u)
+		var stop := total - gap_end
+		if s < stop - 1e-3:
 			done = false
-		_place_member(m, s, total, delta)
+		_place_member(m, s, _s0 - gap_start, stop, delta)
 	if done:
 		walking = false
 
 
-func _place_member(m: Dictionary, s: float, total: float, delta: float) -> void:
-	# Its spot: the route, plus its place in the cluster, which narrows to a loose file while walking.
-	var w_start := smoothstep(0.0, 1.2, s)
-	var w_end := smoothstep(0.0, 1.2, total - s)
+func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: float) -> void:
+	# Its spot: the route, plus its place in the cluster, which narrows to a loose file while walking (and stays on
+	# the route itself where the party starts or stops in a file on a narrow path).
+	var w_start := smoothstep(0.0, 1.2, s - from)
+	var w_end := smoothstep(0.0, 1.2, stop - s)
 	var tangent := _angle_at(s)
 	var frame := lerp_angle(lerp_angle(_start_facing, tangent, w_start), _end_facing, 1.0 - w_end)
 	var off := _turned(m.offset, frame)
 	var across := Vector2.from_angle(tangent + PI / 2)
 	var walking_off := across * off.dot(across) * Rules.WALK_SPREAD
-	var side := off.lerp(walking_off, w_start * w_end)
+	var side: Vector2 = (Vector2.ZERO if _file_start else off).lerp(walking_off, w_start)
+	side = (Vector2.ZERO if _file_end else off).lerp(side, w_end)
 	var old: Vector3 = m.node.position
 	# Facing: a little way ahead on the route, so it turns before a corner.
-	var want := yaw_of(lerp_angle(_angle_at(minf(s + Rules.LOOK_AHEAD, total)), _end_facing, 1.0 - w_end))
+	var end_face := _angle_at(minf(s, stop - 0.2)) if _file_end else _end_facing
+	var want := yaw_of(lerp_angle(_angle_at(minf(s + Rules.LOOK_AHEAD, stop)), end_face, 1.0 - w_end))
 	m.node.rotation.y = lerp_angle(m.node.rotation.y, want, minf(1.0, delta * Rules.TURN_RATE))
 	# Its own spot must be clear of the mountains (the route's clearance is measured from the route line, and a
 	# companion walks beside it): pushed in toward the route as far as it takes, spreading back out slowly.
 	var squeeze := minf(1.0, m.squeeze + delta * Rules.SQUEEZE_RATE)
+	if map.gates.has(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses
+		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 2.0)
 	var p := _point_at(s) + side * squeeze
 	var felt := _feel(m, p)
 	if felt.mountain and squeeze > m.squeeze:
