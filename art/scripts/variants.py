@@ -884,6 +884,150 @@ def heartwood_edge_landmark(p, rng):
     moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and q.y > 0.9, hk.WEDGE_BOUNDS, 2)
 
 
+# --- Landmarks: Hidden Shrine, Fey Court, Spider Nest ---------------------------------------------------
+# Nothing of these spills onto the neighbours. The Fey Court and the Spider Nest replace just the centre piece
+# (LANDMARK_CENTRES): the tile keeps its variant's wedges, so its edges blend as a normal tile's do. The Hidden
+# Shrine has its own wedges as well, deep forest's with the pines kept back and lower near the middle,
+# because deep forest's own wedges run tall pines right up to the centre and hide a small shrine.
+
+def hidden_shrine(p, rng, kind):
+    """Deep forest's Hidden Shrine: a small mossy stone shrine with a weathered statue of Adam, half swallowed
+    by roots and ivy, in a little clearing among the pines. The clearing stays open for the engine's shaft of
+    light. The wedges are deep forest's, with the pines kept back from the clearing and shorter near it."""
+    if kind != "centre":
+        x0 = X0 + (0.9 if kind == "same" else 0.6)
+        x1 = X1 if kind == "same" else X0 + 0.7 * (X1 - X0)
+        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=x0, x1=x1, margin=0.1, inner=0, side=0),
+                             11 if kind == "same" else 6, 0.6, hk.WEDGE_BOUNDS):
+            near = (at.x - X0) / (X1 - X0)  # 0 at the centre piece, 1 at the edge
+            pine(p, rng, at, rng.uniform(1.6, 2.1) + near * rng.uniform(0.8, 1.4), "pine_deep")
+        return
+    spin = math.radians(-90)  # the shrine faces -Y
+    # the clearing's rim: a few low pines in the centre piece's corners
+    for at in hk.scatter(rng, lambda q: hk.in_centre(q) and q.length > 1.7, 4, 0.6, hk.CENTRE_BOUNDS):
+        pine(p, rng, at, rng.uniform(1.5, 1.9), "pine_deep")
+    centre = Vector((0, 0.25, 0))
+    p.box(centre, (1.25, 1.0, 0.12), "stone_moss", spin=spin)  # the worn base, two steps
+    p.box(centre + Vector((0, 0.08, 0)), (1.0, 0.75, 0.24), "rock_dark", spin=spin)
+    back = centre + Vector((0, 0.3, 0))
+    for s in (-1, 1):  # two pillars and a lintel under a little pitched stone roof
+        p.box(back + Vector((s * 0.38, 0, 0)), (0.16, 0.16, 1.0), "rock", z=0.24, spin=spin)
+    p.box(back, (0.95, 0.3, 0.12), "rock_dark", z=1.24)
+    p.gable_roof(back, 1.1, 0.45, 0.28, "stone_moss", z=1.36)
+    p.box(back + Vector((0, 0.1, 0)), (0.62, 0.06, 1.0), "rock_dark", z=0.24)  # the niche's back wall
+    # the statue: a robed, worn figure with arms folded, in weathered stone
+    s0 = back + Vector((0, -0.05, 0))
+    frustum(p, s0 + Vector((0, 0, 0.24)), s0 + Vector((0, 0, 0.9)), 0.17, 0.11, "stone_statue", segments=7)
+    p.box(s0 + Vector((0, -0.08, 0)), (0.24, 0.1, 0.1), "stone_statue", z=0.62)  # folded arms
+    lump(p, s0, 0.11, "stone_statue", z=1.0)  # head
+    p.blob(s0, 0.09, "moss", z=1.09, squash=0.5)  # moss on its head
+    # roots climbing over the base and up one pillar, and ivy on the stones
+    for a, side in ((0.5, 1), (2.4, -1), (4.0, 1)):
+        out = Vector((math.cos(a), math.sin(a), 0))
+        pts = [centre + out * 1.4 + Vector((0, 0, -0.05)), centre + out * 0.8 + Vector((0, 0, 0.15)),
+               centre + out * 0.45 + Vector((0, 0, 0.3))]
+        root_run(p, pts, 0.11, 0.05, arch=0.1)
+    root_run(p, [back + Vector((0.55, 0.2, 0)), back + Vector((0.44, 0.05, 0.5)), back + Vector((0.4, 0, 1.15))],
+             0.08, 0.04)
+    for q, z in ((back + Vector((-0.42, -0.08, 0)), 0.5), (back + Vector((-0.4, -0.06, 0)), 0.85),
+                 (back + Vector((0.35, -0.1, 0)), 0.35), (back + Vector((0.1, 0.0, 0)), 1.45),
+                 (centre + Vector((0.5, -0.35, 0)), 0.2)):
+        p.blob(q, rng.uniform(0.1, 0.14), "ivy", z=z, squash=0.7)
+    for at in hk.scatter(rng, lambda q: 0.9 < q.length < 1.4, 3, 0.5, hk.CENTRE_BOUNDS):
+        p.blob(at, rng.uniform(0.18, 0.26), "moss", squash=0.3)
+
+
+def fey_court(p, rng, kind):
+    """Fey wood's Fey Court: a massive hollow round fey tree with doors, windows and balconies grown into its
+    swollen trunk, lit warmly from inside (the windows keep their own material, window_glow, to glow), and a
+    stair of shelf mushrooms winding up to the door."""
+    trunk_r, door_z = 0.95, 0.85
+    p.cylinder(Vector((0, 0, 0)), trunk_r, 2.4, "fey_bark", segments=10)
+    p.cone(Vector((0, 0, 0)), trunk_r * 1.35, 0.7, "fey_bark", segments=10)  # swollen foot
+    p.blob(Vector((0, 0, 0)), trunk_r * 1.05, "fey_bark", z=1.3, squash=1.1)  # bulging middle
+    # the crown: one great round violet head with smaller teal and rose rounds about it
+    p.blob(Vector((0, 0, 0)), 1.55, "fey_violet", z=2.85, squash=0.62)
+    for k, colour in enumerate(("fey_teal", "fey_rose", "fey_teal", "fey_rose", "fey_violet")):
+        a = 2 * math.pi * k / 5 + 0.4
+        p.blob(Vector((math.cos(a), math.sin(a), 0)) * 1.2, rng.uniform(0.55, 0.7), colour,
+               z=2.55 + rng.uniform(-0.1, 0.15))
+    # door and windows, on the side toward -Y and round it, set into the bark
+    def on_trunk(a, z, out=0.0):
+        r = trunk_r * (1.05 if 0.7 < z < 1.9 else 1.0) + out
+        return Vector((math.cos(a) * r, math.sin(a) * r, 0)), a
+    q, a = on_trunk(-math.pi / 2, door_z, 0.02)
+    p.box(q, (0.42, 0.08, 0.62), "fey_door", z=door_z, spin=a + math.pi / 2)
+    p.box(q + Vector((0, -0.02, 0)), (0.3, 0.06, 0.08), "window_glow", z=door_z + 0.5, spin=a + math.pi / 2)
+    for a, z in ((-0.6, 1.6), (-2.3, 1.75), (0.9, 1.25), (2.6, 1.5), (-1.3, 2.1), (1.9, 2.05)):
+        q, _ = on_trunk(a, z, 0.02)
+        p.box(q, (0.22, 0.06, 0.3), "window_glow", z=z, spin=a + math.pi / 2)
+        p.box(q, (0.28, 0.07, 0.05), "fey_bark", z=z - 0.04, spin=a + math.pi / 2)  # sill
+    # two balconies: a round platform on brackets with a low railing
+    for a, z in ((-0.6, 1.4), (2.6, 1.3)):
+        out = Vector((math.cos(a), math.sin(a), 0))
+        c = out * (trunk_r + 0.25)
+        p.cylinder(c, 0.38, 0.06, "trunk", segments=8, z=z)
+        for t in (-0.6, 0.0, 0.6):
+            q = c + turn(out, t) * 0.34
+            p.box(q, (0.04, 0.04, 0.25), "trunk", z=z + 0.06)
+        frustum(p, out * trunk_r + Vector((0, 0, z - 0.35)), c + Vector((0, 0, z)), 0.07, 0.05, "trunk")
+    # the stair of mushrooms: flat glowing caps winding up from the ground to the door
+    for k in range(6):
+        t = k / 5
+        a = -math.pi / 2 - 1.3 + 1.3 * t
+        r = trunk_r + 0.55 - 0.25 * t
+        q = Vector((math.cos(a), math.sin(a), 0)) * r
+        top = 0.15 + (door_z - 0.15) * t
+        p.cylinder(q, 0.05, top, "fey_stem", segments=5)
+        p.cylinder(q, 0.24, 0.06, "fey_mushroom", segments=7, z=top)
+    for at in hk.scatter(rng, lambda q: hk.in_centre(q, 0.2) and q.length > 1.7, 5, 0.4, hk.CENTRE_BOUNDS):
+        fey_mushroom(p, rng, at)
+
+
+def spider_nest(p, rng, kind):
+    """Dark wood's Spider Nest: a rocky outcrop among the dead trees with a cave mouth sealed by thick webs,
+    and bones and broken gear scattered at the entrance."""
+    # the outcrop: big rough rocks heaped round the cave, highest at the back
+    for c, r, sq in (((0, 0.45), 1.05, 0.95), ((-0.75, 0.2), 0.7, 0.9), ((0.8, 0.25), 0.75, 0.85),
+                     ((-0.35, 0.95), 0.75, 1.1), ((0.45, 0.95), 0.7, 1.0), ((-1.1, -0.25), 0.45, 0.7),
+                     ((1.15, -0.2), 0.45, 0.7)):
+        lump(p, Vector((*c, 0)), r, rng.choice(["rock_cave", "rock_cave", "rock_dark"]), z=r * 0.35, squash=sq)
+    mouth = Vector((0, -0.45, 0))
+    p.box(mouth + Vector((0, 0.2, 0)), (1.0, 0.3, 0.9), "cave_dark", z=0.0)  # the dark of the cave
+    # thick webs sealing the mouth: overlapping sheets and orb webs between the rocks either side
+    l, r_ = mouth + Vector((-0.55, 0.0, 0.05)), mouth + Vector((0.55, 0.0, 0.05))
+    for z in (0.15, 0.4, 0.62):
+        web_face(p, [l + Vector((0, 0, z - 0.15)), r_ + Vector((0, 0, z - 0.15)), r_ + Vector((0, -0.03, z + 0.15)),
+                     l + Vector((0, -0.03, z + 0.15))])
+    for z, dy in ((0.35, -0.05), (0.55, -0.1)):
+        orb_web(p, rng, l + Vector((0, dy, z)), r_ + Vector((0, dy, z)), sag=0.0)
+    for side in (-1, 1):  # strands out to the rocks and the ground
+        for k in range(3):
+            a = mouth + Vector((side * 0.5, -0.05, 0.3 + 0.2 * k))
+            b = mouth + Vector((side * (0.9 + 0.2 * k), -0.4 + 0.15 * k, 0.6 - 0.25 * k))
+            thread(p, a, b, Vector((0, -1, 0)), 0.03)
+    # dead trees about it, webbed
+    for at in hk.scatter(rng, lambda q: hk.in_centre(q, 0.1) and q.length > 1.55 and q.y > -0.3, 3, 0.9,
+                         hk.CENTRE_BOUNDS):  # behind and beside the outcrop, clear of the cave mouth
+        limbs, top, mid = bare_tree(p, rng, at, rng.uniform(1.6, 2.6))
+        if len(limbs) > 2:
+            (b1, t1), (b2, t2) = limbs[0], limbs[1]
+            orb_web(p, rng, b1.lerp(t1, 0.85), b2.lerp(t2, 0.85), sag=0.05)
+    # at the entrance: bones and broken gear
+    bones(p, rng, mouth + Vector((-0.45, -0.55, 0)))
+    bones(p, rng, mouth + Vector((0.5, -0.7, 0)), skull=False)
+    blade = mouth + Vector((0.15, -0.85, 0))
+    p.box(blade, (0.5, 0.06, 0.02), "iron", z=0.02, spin=0.4)  # a snapped sword
+    p.box(blade + turn(Vector((0.3, 0, 0)), 0.4), (0.06, 0.2, 0.04), "trunk", z=0.02, spin=0.4)
+    p.cylinder(mouth + Vector((-0.2, -1.05, 0)), 0.2, 0.04, "trunk", segments=7)  # a split shield
+    p.box(mouth + Vector((-0.2, -1.05, 0)), (0.42, 0.04, 0.05), "iron", z=0.03, spin=1.1)
+    p.blob(mouth + Vector((0.65, -0.35, 0)), 0.12, "iron", z=0.0, squash=0.8)  # a dented helmet
+    bramble(p, rng, Vector((-1.25, -0.9, 0)))
+
+
+LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest}
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ()),
@@ -901,10 +1045,20 @@ VARIANTS = {
     "heartwood": ("forest", heartwood, "heartwood", ("edge_same_b", "edge_landmark")),
     # landmark tiles, built like variants
     "treeoflife": ("forest", treeoflife, "heartwood", ("edge_path",)),
+    "hiddenshrine": ("forest", hidden_shrine, "deep_forest", ()),
 }
-# landmark: the variant whose tiles take its path wedge (on the landmark) and landmark wedge (on themselves)
-LANDMARKS = {"treeoflife": "heartwood"}
+# landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
+# and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
+# (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
+LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
+             "spidernest": "dark_wood"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
+BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
+
+
+def wedges_of(name):
+    """Whose wedges and ground colour a tile uses: its own, or its variant's for a centre-only landmark."""
+    return LANDMARKS[name] if name in LANDMARK_CENTRES else name
 
 
 def terrain_of(name):

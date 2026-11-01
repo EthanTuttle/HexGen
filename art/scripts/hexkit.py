@@ -129,6 +129,14 @@ PALETTE = {
     "trunk_old": "#6E4A33",
     "stone_moss": "#7D8873",
     "path_earth": "#A88A64",
+    "stone_statue": "#9DA394",
+    "ivy": "#3E6B37",
+    "fey_bark": "#9C8A96",
+    "fey_door": "#5E4A5E",
+    "window_glow": "#FFD27A",
+    "rock_cave": "#6E6A64",
+    "cave_dark": "#1E1B19",
+    "iron": "#8C9196",
     "ribbon_red": "#C8553D",
     "ribbon_white": "#F2E8D5",
     "ribbon_blue": "#5F86C2",
@@ -144,10 +152,11 @@ PALETTE = {
 # material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
 # hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
 # them toward the neighbours' ground colours like the base slabs' tops.
-# lantern, toadstool and fey_mushroom (the fey wood's fairy rings) glow at night, so the engine needs to find them.
+# lantern, toadstool, fey_mushroom (the fey wood's fairy rings) and window_glow (the Fey Court's windows) glow at
+# night, so the engine needs to find them.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "hill_grass",
-                "highland_grass"}
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow",
+                "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
 

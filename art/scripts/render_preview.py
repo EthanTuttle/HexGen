@@ -70,6 +70,10 @@ TREEOFLIFE_MAP = {
     (0, 2): "plains", (2, -1): "plains", (2, -2): "hills", (2, 0): "plains", (1, -2): "plains",
 }
 
+# The forest tier 2 map with a landmark in each tier 2 group: the Hidden Shrine among deep forest, the Fey
+# Court in fey wood, the Spider Nest in dark wood (the Tree of Life has its own map above).
+LANDMARK_MAP = {**FOREST_T2_MAP, (1, -1): "hiddenshrine", (-1, 0): "feycourt", (-2, 1): "spidernest"}
+
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
 BORDERED = {"farmland", "village"}
@@ -112,10 +116,11 @@ def build_map(templates, animated=False, tiles=None):
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
         base = place(templates, f"base_{terrain}", col, at)
-        if name in vr.VARIANTS:
+        kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
+        if kit in vr.VARIANTS:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
             base.material_slots[0].link = "OBJECT"
-            base.material_slots[0].material = hk.material(vr.VARIANTS[name][2])
+            base.material_slots[0].material = hk.material(vr.VARIANTS[kit][2])
         if terrain == "river":
             # Water is drawn per tile from its own water neighbours, the way the engines will.
             near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
@@ -156,14 +161,14 @@ def build_map(templates, animated=False, tiles=None):
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
         for i in range(6):
-            edge = f"{name}_edge_{'same' if joined[i] else 'other'}"
+            edge = f"{kit}_edge_{'same' if joined[i] else 'other'}"
             near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
-            if near and vr.LANDMARKS.get(name) == near:
+            if near and vr.LANDMARKS.get(name) == near and f"{name}_edge_path" in templates:
                 edge = f"{name}_edge_path"  # a landmark's edge toward its own variant (the Tree of Life's path)
-            elif vr.LANDMARKS.get(near) == name:
+            elif vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
-            elif joined[i] and f"{name}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
-                edge = f"{name}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
+            elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
+                edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
@@ -258,7 +263,8 @@ if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
     # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished;
     # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant; --treeoflife renders
-    # TREEOFLIFE_MAP and a close-up of the Tree of Life.
+    # TREEOFLIFE_MAP and a close-up of the Tree of Life; --landmarks a close-up of the Hidden Shrine,
+    # the Fey Court and the Spider Nest.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -295,6 +301,19 @@ if __name__ == "__main__":
         cam.location = Vector((0, 0, 0.8)) + Vector((0, -20 * math.cos(el), 20 * math.sin(el)))
         cam.rotation_euler = (math.pi / 2 - el, 0, 0)
         render("closeup_treeoflife")
+        sys.exit(0)
+    if "landmarks" in flags:
+        # A close-up of each landmark on LANDMARK_MAP, in its own variant's group.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=LANDMARK_MAP)
+        stage(Vector((-0.5, -1, 0)), 66, 45)
+        cam = bpy.context.scene.camera
+        el = math.radians(40)
+        for (q, r), name in LANDMARK_MAP.items():
+            if name in vr.LANDMARKS:
+                cam.location = hk.tile_position(q, r) + Vector((0, -15 * math.cos(el), 0.6 + 15 * math.sin(el)))
+                cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+                render(f"closeup_{name}")
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()

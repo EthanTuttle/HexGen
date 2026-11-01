@@ -668,6 +668,12 @@ def build():
             p = hk.Piece(name)
             builder(p, hk.seeded(name), kind)
             p.finish(col)
+    # Landmarks with a centre only (variants.LANDMARK_CENTRES); their tiles use their variant's wedges.
+    col = hk.new_collection("landmarks")
+    for landmark, builder in variants.LANDMARK_CENTRES.items():
+        p = hk.Piece(f"{landmark}_centre")
+        builder(p, hk.seeded(f"{landmark}_centre"), "centre")
+        p.finish(col)
     col = hk.new_collection("borders")
     for name, side in (("border_join_l", 1), ("border_join_r", -1)):
         p = hk.Piece(name)
