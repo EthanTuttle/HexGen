@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-01T12:00:00Z"
  },
- "title": "HexGen \u00b7 Title screen & app icon (working)",
+ "title": "Heads or Hexes \u00b7 Title screen & app icon (working)",
  "launch": {
   "view": "canvas"
  },
@@ -108,6 +108,33 @@
    "title": "App icon v2b \u00b7 the same coin a little smaller, with a slate edge all round and a soft shadow under it, for comparison with v2a",
    "is_interactive": false,
    "radius": 28
+  },
+  "Title-v4-FloatingLogo.dc.html": {
+   "x": 0,
+   "y": 4110,
+   "w": 844,
+   "h": 390,
+   "title": "Title v4 \u00b7 v3 with the logo floating on the map again, no cream pane: a little bigger, with a cream outline round the letters and a deeper shadow so it reads over any tiles. The menu keeps its pane",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Icon-v3a-CoinSky.dc.html": {
+   "x": 0,
+   "y": 4880,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v3a \u00b7 v2b's size; no beaded ring, the hex much bigger, a proper tiered pine tree, on the midday pastel (#D9E7EC). Home screen label shows how iOS cuts a long name",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v3b-CoinDusk.dc.html": {
+   "x": 924,
+   "y": 4880,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v3b \u00b7 the same coin on the dusk pastel (#EDCFD7)",
+   "is_interactive": false,
+   "radius": 28
   }
  },
  "order": [
@@ -121,7 +148,10 @@
   "Icon-v1c-Coin.dc.html",
   "Title-v3-HeadsLastSave.dc.html",
   "Icon-v2a-CoinFull.dc.html",
-  "Icon-v2b-CoinMargin.dc.html"
+  "Icon-v2b-CoinMargin.dc.html",
+  "Title-v4-FloatingLogo.dc.html",
+  "Icon-v3a-CoinSky.dc.html",
+  "Icon-v3b-CoinDusk.dc.html"
  ],
  "notes": {
   "v1": {
@@ -156,6 +186,20 @@
    "x": 0,
    "y": 3080,
    "text": "App icon v2 \u00b7 the coin, face on",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v4": {
+   "x": 0,
+   "y": 3850,
+   "text": "v4 \u00b7 the logo floating again",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons3": {
+   "x": 0,
+   "y": 4620,
+   "text": "App icon v3 \u00b7 bigger hex, a real tree, pastel backdrop",
    "kind": "title1",
    "maxW": 2692
   }

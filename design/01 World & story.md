@@ -1,4 +1,4 @@
-# HexGen — World & story
+# Heads or Hexes — World & story
 
 Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
 

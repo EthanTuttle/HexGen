@@ -1,4 +1,4 @@
-# HexGen — Design Index
+# Heads or Hexes — Design Index
 
 Last updated Oct 30, 2026 · @Ethan
 
@@ -128,7 +128,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
 - [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
 - [ ] New: Legendary odds; minor landmark odds per placed tile
-- [ ] New: landmark tile looks for every core location (forest and farmland done Nov 1, 2026)
+- [ ] New: landmark tile looks for every core location (forest, farmland and plains done Nov 1, 2026)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
 - [ ] New: class quests: what the task rewards; Rogue's manor in a bayou
@@ -265,8 +265,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)
 - [x] ~~Where the passives sit~~ (settled for now Oct 28: v8b, a sleeve on the party panel)
-- [x] ~~The game's name~~ (settled Nov 1: Heads or Hexes). Still open: rename HexGen in the docs, repo and canvases?
+- [x] ~~The game's name~~ (settled Nov 1: Heads or Hexes). Renamed in the docs and canvas titles Nov 1; the GitHub repo is still HexGen.
 - [x] ~~Title screen backdrop~~ (settled Nov 1: v1b, your last save)
-- [ ] New (Nov 1): app icon: v1a tile or the coin (v2a / v2b)?
+- [ ] New (Nov 1): app icon: v1a tile or the coin (v3a / v3b)? And a shorter home-screen display name?
 - [ ] New (Nov 1): autosaves with several heroes: last 10 per hero or overall; save slots per hero?
 - [ ] New (Nov 1): what a save shows on Continue and in Load; how joining works; the settings list

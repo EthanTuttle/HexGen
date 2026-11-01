@@ -1,4 +1,4 @@
-# HexGen — Multiplayer & tech
+# Heads or Hexes — Multiplayer & tech
 
 Last updated Oct 29, 2026 · @Ethan · Part of the [Index](00 Index.md)
 

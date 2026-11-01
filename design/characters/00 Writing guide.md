@@ -1,6 +1,6 @@
 # Writing guide
 
-How HexGen's characters are written (set up Oct 28, 2026, after the first bar lines read as "AI written"). Each character's voice sheet and lines live in this folder, one file per character, so writing for someone means opening one file.
+How the characters of Heads or Hexes are written (set up Oct 28, 2026, after the first bar lines read as "AI written"). Each character's voice sheet and lines live in this folder, one file per character, so writing for someone means opening one file.
 
 - **This guide:** the rules for dialogue and narration, the line types, the tells to avoid, how we write, and the voice sheet template.
 - **One file per companion:** [Fluffy](Fluffy.md), [Chelmsford](Chelmsford.md), [Mel](Mel.md), [Grant Augustus](Grant%20Augustus.md), [Kris Huntington](Kris%20Huntington.md), [Timothy](Timothy.md), [Dolmund](Dolmund.md), [Lilian](Lilian.md), [Frim](Frim.md), [Grimhold](Grimhold.md), [Leo Conley](Leo%20Conley.md), [Reginald](Reginald.md). Each holds their voice sheet, then every line they say, grouped by where it's said.
