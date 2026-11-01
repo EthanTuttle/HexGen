@@ -60,30 +60,37 @@ def deep_forest(p, rng, kind):
 # --- Plains: rolling meadows --------------------------------------------------
 # The wildflower drifts are ground cover (ground_cover.py: "meadows"); the pieces hold the grazing herds.
 
-def grazer(p, rng, at, spin):
-    """A small low-poly horse or deer, head down to graze or up."""
-    # Chunky proportions so it still reads as an animal from the map camera: a deep body on longer legs,
-    # a raised neck and a big head.
+def grazer(p, rng, at, spin, k=0.68):
+    """A small low-poly horse or deer, head down to graze or up, scaled (k) to the tents and minis."""
     hide = rng.choice(["hide", "hide", "hide_light"])
-    p.box(at, (0.56, 0.26, 0.28), hide, z=0.4, spin=spin)
+    p.box(at, (0.56 * k, 0.26 * k, 0.28 * k), hide, z=0.4 * k, spin=spin)
     for dx in (-0.2, 0.2):
         for dy in (-0.085, 0.085):
-            p.box(at + turn(Vector((dx, dy, 0)), spin), (0.075, 0.075, 0.42), hide, spin=spin)
+            p.box(at + turn(Vector((dx * k, dy * k, 0)), spin), (0.075 * k, 0.075 * k, 0.42 * k), hide, spin=spin)
     grazing = rng.random() < 0.35
     tilt = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.45 if not grazing else 2.2, 3, "Y")
-    neck = at + turn(Vector((0.3, 0, 0)), spin) + Vector((0, 0, 0.6 if not grazing else 0.45))
-    p.box_rot(neck, (0.13, 0.13, 0.34), hide, tilt)
-    head = at + turn(Vector((0.42 if not grazing else 0.5, 0, 0)), spin)
-    p.box(head, (0.28, 0.15, 0.15), hide, z=0.78 if not grazing else 0.2, spin=spin)
-    p.box(at + turn(Vector((-0.3, 0, 0)), spin), (0.05, 0.05, 0.22), "trunk", z=0.42, spin=spin)  # tail
+    neck = at + turn(Vector((0.3 * k, 0, 0)), spin) + Vector((0, 0, (0.6 if not grazing else 0.45) * k))
+    p.box_rot(neck, (0.13 * k, 0.13 * k, 0.34 * k), hide, tilt)
+    head = at + turn(Vector(((0.42 if not grazing else 0.5) * k, 0, 0)), spin)
+    p.box(head, (0.28 * k, 0.15 * k, 0.15 * k), hide, z=(0.78 if not grazing else 0.2) * k, spin=spin)
+    p.box(at + turn(Vector((-0.3 * k, 0, 0)), spin), (0.05 * k, 0.05 * k, 0.22 * k), "trunk", z=0.42 * k, spin=spin)  # tail
 
 
-def worn_track(p, x1=X1, half=0.25):
-    """A track worn through the grass along a wedge's middle line, narrowing to a point at the tile's middle so
-    all a tile's tracks meet there, and its path centreline (the centre's hub takes it on from the inner end)."""
-    p.flat([Vector((0, 0, 0)), Vector((0.5, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)),
-            Vector((0.5, half, 0))], 0.012, "worn_track")
-    p.paths.append([Vector((X0, 0, 0)), Vector((x1, 0, 0))])
+def fading_track(p, mat, ground, fade, half=0.25, path_x0=X0):
+    """A track worn along a wedge's middle line to the edge, and its path centreline (the centre takes it on from
+    the inner end). It narrows to a point at the tile's middle, so a tile's tracks meet there; with fade, where the
+    trail begins (edge_trail_start), it pales and thins into the ground instead."""
+    x1 = X1
+    if not fade:
+        p.flat([Vector((0, 0, 0)), Vector((0.5, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)),
+                Vector((0.5, half, 0))], 0.012, mat)
+    else:
+        p.flat([Vector((1.9, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((1.9, half, 0))], 0.012, mat)
+        steps = ((1.9, 1.45, 1.0, 0.8, 0.3), (1.45, 1.0, 0.8, 0.6, 0.6), (1.0, 0.55, 0.6, 0.3, 0.85))
+        for x_out, x_in, w_out, w_in, t in steps:
+            p.flat([Vector((x_in, -half * w_in, 0)), Vector((x_out, -half * w_out, 0)), Vector((x_out, half * w_out, 0)),
+                    Vector((x_in, half * w_in, 0))], 0.012, hk.mix_colour(mat, ground, t))
+    p.paths.append([Vector((path_x0, 0, 0)), Vector((x1, 0, 0))])
 
 
 def spirit_pole(p, rng, at):
@@ -116,11 +123,10 @@ def felt_tent(p, rng, at, r, door_to):
 
 def meadows(p, rng, kind):
     """Wildflower drifts (ground cover) and small grazing herds, kept off the lanes the trails use. Toward the
-    Nomad Camp, tracks worn through the grass with spirit poles beside them and horses heading in; next to the
-    camp, an outlying tent and rugs drying."""
+    Nomad Camp, tracks worn through the grass with a few spirit poles and horses heading in, fading out where the
+    trail begins; next to the camp, an outlying tent and rugs drying."""
     if kind in ("centre", "centre_b", "centre_near"):
         p.hub = Vector((0, 0, 0))
-        spirit_pole(p, rng, Vector((0.36, 0.2, 0)))  # at the tile's middle, so a track starting here ends at something
         if kind == "centre_near":
             felt_tent(p, rng, bt.field_spot(1, 1.6), 0.5, Vector((0, 0, 0)))
             rug_rack(p, rng, bt.field_spot(4, 2.1), 0.0)
@@ -135,11 +141,12 @@ def meadows(p, rng, kind):
         for at in herd:
             grazer(p, rng, at, spin + rng.uniform(-0.7, 0.7))
         return
-    if kind in ("edge_trail", "edge_trail_in"):
-        worn_track(p)
-        spirit_pole(p, rng, Vector((X0 + 1.1, 0.62 if kind == "edge_trail" else -0.62, 0)))
-        if kind == "edge_trail":  # a horse beside the track, heading over the edge for the camp
-            grazer(p, rng, Vector((X0 + 1.5, -0.62, 0)), 0.0)
+    if kind in ("edge_trail", "edge_trail_in", "edge_trail_start"):
+        fading_track(p, "worn_track", "plains", kind == "edge_trail_start")
+        if kind == "edge_trail_in":  # one spirit pole per trail edge, on the side nearer the camp
+            spirit_pole(p, rng, Vector((X0 + 1.1, -0.62, 0)))
+        else:  # a horse beside the track, heading over the edge for the camp
+            grazer(p, rng, Vector((X0 + 1.5, -0.55, 0)), 0.0)
         return
 
 
@@ -183,46 +190,6 @@ def nomad_camp(p, rng, kind):
     p.paths.append(ring + [ring[0]])
     for i in range(1, 6):
         p.spokes[i] = [ring[i] / 0.75 * X0, ring[i]]
-
-
-# --- Plains tier 0 options (for Ethan to choose from) ---------------------------------------------------------
-# Plains is the go-between terrain, open grass; next to full forests and farms it can look empty. Three calm ways
-# to give it something, built as plains_a, _b, _c beside plains; the pick replaces it. The centre piece reaches out
-# past the centre region and turns by a hash of the tile (like the farms'), so tiles don't repeat.
-
-def plains_a(p, rng, kind):
-    """(a) A tree or two: a lone broadleaf, far from the middle, and a rock."""
-    if kind == "centre":
-        bt.tree(p, rng, bt.field_spot(1, 2.9))
-        p.blob(bt.field_spot(4, 1.3), 0.3, "rock", squash=0.6)
-    elif kind == "centre_b":
-        bt.tree(p, rng, bt.field_spot(0, 2.3))
-        bt.tree(p, rng, bt.field_spot(0, 2.3) + Vector((0.75, 0.3, 0)))
-
-
-def swell(p, at, r):
-    p.blob(at, r, "swell", squash=0.11)
-
-
-def plains_b(p, rng, kind):
-    """(b) Gentle ground swells: low, wide rises in a lighter green, and a rock."""
-    if kind == "centre":
-        swell(p, bt.field_spot(1, 1.9), 1.35)
-        swell(p, bt.field_spot(3, 2.2), 1.0)
-        p.blob(bt.field_spot(5, 1.2), 0.3, "rock", squash=0.6)
-    elif kind == "centre_b":
-        swell(p, bt.field_spot(0, 1.6), 1.15)
-        swell(p, bt.field_spot(3, 1.5), 1.4)
-
-
-def plains_c(p, rng, kind):
-    """(c) A worn footpath: on some joined edges (a hash of the two tiles, the same from both sides) a track worn
-    through the grass runs to the tile's middle, where a lone tree stands, so it always ends at something."""
-    if kind in ("centre", "centre_b"):
-        bt.tree(p, rng, Vector((0.3, 0.28, 0)))
-        p.hub = Vector((0, 0, 0))
-    elif kind == "edge_path":
-        worn_track(p)
 
 
 # --- Hills: highlands -----------------------------------------------------------
@@ -1959,14 +1926,407 @@ def deep_flow(p, rng, kind, x0=None):
         pine(p, rng, at, rng.uniform(1.6, 2.0) + (abs(at.y) - 0.65) * rng.uniform(1.0, 1.6), "pine_deep")
 
 
+# --- Plains tier 2 and class variant ----------------------------------------------------------------------------
+# Open ground, props in tight groups off the lanes the trails use. The centre reaches past the centre region and
+# turns by a hash of the tile, with centre_b and edge_same_b as alternates, so nothing lines up. Trails: edge_trail
+# on the tile farther from the landmark, edge_trail_in on the closer one, edge_trail_start where the trail begins
+# (its track fades out into the ground). Landmarks are centre pieces, entrance on edge 0.
+PLAINS_KINDS = ("centre_b", "edge_same_b", "edge_trail", "edge_trail_in", "edge_trail_start", "centre_near")
+START = "edge_trail_start"
+
+
+# Steppe/battlefield
+
+def spear(p, rng, at, broken=False):
+    """A spear stuck in the ground at a lean, thick enough to read from the map camera; broken ones stop short."""
+    a, lean = rng.uniform(0, 2 * math.pi), rng.uniform(0.1, 0.4)
+    length = rng.uniform(0.45, 0.65) if broken else rng.uniform(1.0, 1.25)
+    top = at + Vector((math.cos(a) * lean, math.sin(a) * lean, 1)).normalized() * length
+    frustum(p, at, top, 0.065, 0.05, "trunk")
+    if not broken:
+        spike(p, top, top + (top - at).normalized() * 0.3, 0.095, "iron")
+
+
+def sword(p, rng, at):
+    """A sword driven point-first into the ground."""
+    rot = Matrix.Rotation(rng.uniform(0, 3), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "X")
+    p.box_rot(at + rot @ Vector((0, 0, 0.3)), (0.12, 0.03, 0.6), "iron", rot)
+    p.box_rot(at + rot @ Vector((0, 0, 0.62)), (0.3, 0.05, 0.05), "rust", rot)
+    p.box_rot(at + rot @ Vector((0, 0, 0.72)), (0.05, 0.05, 0.18), "trunk", rot)
+
+
+def shattered_shield(p, rng, at):
+    """A round shield lying in two pieces, a little apart."""
+    a0 = rng.uniform(0, 2 * math.pi)
+    for sd in (0, 1):
+        off = Vector((math.cos(a0 + math.pi * sd + 1.57), math.sin(a0 + math.pi * sd + 1.57), 0)) * 0.05
+        pts = [at + off + Vector((math.cos(a0 + math.pi * (sd + k / 5)), math.sin(a0 + math.pi * (sd + k / 5)), 0)) * 0.3
+               for k in range(6)]
+        p.prism(pts, 0.0, 0.05, "shield_wood", side_mat="rust")
+
+
+def rusted_helmet(p, rng, at):
+    p.blob(at, 0.15, "rust", z=0.08, squash=0.85)
+    p.cylinder(at, 0.17, 0.03, "rust", segments=6)
+
+
+def wreck(p, rng, at, heavy=False):
+    """A group of war wreckage: spears, a sword, a shattered shield, a helmet."""
+    spots = [at + Vector((rng.uniform(-0.45, 0.45), rng.uniform(-0.4, 0.4), 0)) for _ in range(5 if heavy else 3)]
+    for k, q in enumerate(spots):
+        spear(p, rng, q, broken=k % 2 == 1)
+    sword(p, rng, at + Vector((0.2, -0.3, 0)))
+    shattered_shield(p, rng, at + Vector((-0.3, 0.05, 0)))
+    if heavy:
+        rusted_helmet(p, rng, at + Vector((0.3, 0.25, 0)))
+
+
+def tattered_banner(p, at, h=1.9, cloth="banner"):
+    """A pole with a torn banner: strips of uneven length with gaps."""
+    p.box(at, (0.07, 0.07, h), "trunk")
+    w = 0.1 + h * 0.05  # taller banners are wider
+    p.box(at + Vector((0, w * 1.5, 0)), (0.03, w * 3, 0.03), "trunk", z=h - 0.06)
+    for k, drop in enumerate((h * 0.33, h * 0.2, h * 0.28)):
+        p.box(at + Vector((0, w * (k + 0.5), 0)), (0.025, w * 0.92, drop), cloth, z=h - 0.06 - drop)
+
+
+def battlefield(p, rng, kind):
+    """Old war wreckage on dry steppe. Toward the Old Battlefield, a road churned by old marching, spears planted
+    upright beside it; next to the camp, heavier wreckage and a grave or two."""
+    if kind in ("centre", "centre_b", "centre_near"):
+        p.hub = Vector((0, 0, 0))
+        if kind == "centre":
+            wreck(p, rng, bt.field_spot(1, 2.0), heavy=True)
+            rusted_helmet(p, rng, bt.field_spot(4, 1.4))
+        elif kind == "centre_b":
+            wreck(p, rng, bt.field_spot(0, 1.8))
+            wreck(p, rng, bt.field_spot(3, 2.5))
+        else:
+            wreck(p, rng, bt.field_spot(1, 1.9), heavy=True)
+            wreck(p, rng, bt.field_spot(3, 2.0), heavy=True)
+            for sd in (-1, 1):
+                old_grave(p, rng, bt.field_spot(5, 2.2) + Vector((sd * 0.3, 0, 0)))
+        return
+    if kind in ("edge_trail", "edge_trail_in", START):
+        fading_track(p, "war_road", "steppe", kind == START, half=0.27)
+        if kind == "edge_trail":  # spears planted in a row beside the road
+            for x in (0.7, 1.15, 1.6):
+                q = Vector((X0 + x, 0.62, 0))
+                frustum(p, q, q + Vector((0, 0, 1.25)), 0.05, 0.04, "trunk")
+                spike(p, q + Vector((0, 0, 1.25)), q + Vector((0, 0, 1.5)), 0.08, "iron")
+        elif kind == "edge_trail_in":
+            tattered_banner(p, Vector((X0 + 1.1, -0.62, 0)), 1.6)
+        return
+    if kind == "same":
+        wreck(p, rng, Vector((X0 + 1.3, 0.85, 0)))
+    elif kind == "edge_same_b":
+        rusted_helmet(p, rng, Vector((X0 + 0.9, -0.7, 0)))
+        spear(p, rng, Vector((X0 + 1.1, -0.85, 0)), broken=True)
+    elif kind == "other":
+        spear(p, rng, Vector((X0 + 1.0, 0.8, 0)))
+        spear(p, rng, Vector((X0 + 1.2, 0.95, 0)), broken=True)
+
+
+def collapsed_tent(p, rng, at, spin, r=0.9):
+    """A fallen war tent: slumped dirty canvas over a snapped pole."""
+    p.gable_roof(at, r * 1.3, r, r * 0.42, "canvas_dirty", z=0.0, spin=spin)
+    q = at + turn(Vector((r * 0.35, 0, 0)), spin)
+    frustum(p, q + Vector((0, 0, 0.2)), q + turn(Vector((0.18, 0.1, 0)), spin) + Vector((0, 0, 0.72)), 0.04, 0.03, "trunk")
+
+
+def old_grave(p, rng, at):
+    """An old grave: a low mound with a leaning wooden marker."""
+    p.blob(at, 0.26, "grave_mound", squash=0.3)
+    rot = Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "X") @ Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "Y")
+    p.box_rot(at + Vector((0, 0.12, 0.3)), (0.05, 0.05, 0.6), "boards", rot)
+    p.box_rot(at + Vector((0, 0.12, 0.42)), (0.28, 0.04, 0.05), "boards", rot)
+
+
+def old_battlefield(p, rng, kind):
+    """Steppe's Old Battlefield: a ruined war camp on churned earth. A broken palisade with gaps where the tracks
+    come in, collapsed tents, tall tattered banners at its heart, and rows of old graves outside it."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.5, pointy=True)][::-1], 0.022, "war_earth")
+    for k in range(6):  # palisade arcs between the lanes, some fallen short
+        a0, a1 = math.radians(60 * k + 13), math.radians(60 * k + 47)
+        if k == 3:
+            a1 = a0 + math.radians(14)
+        q0, q1 = (Vector((math.cos(a), math.sin(a), 0)) * 2.3 for a in (a0, a1))
+        stakes(p, rng, q0, q1, 2 if k == 3 else 4, h=0.85, r=0.1)
+    for k, spin in ((0, 0.3), (2, 1.2), (3, 2.2), (5, 0.8)):
+        collapsed_tent(p, rng, bt.field_spot(k, 1.5), spin)
+    tattered_banner(p, Vector((-0.1, 0.3, 0)), 3.1)
+    tattered_banner(p, Vector((-0.45, -0.2, 0)), 2.7, "banner_dark")
+    tattered_banner(p, Vector((0.1, -0.35, 0)), 2.3)
+    # rows of old graves out past the palisade, in two corners
+    for k in (1, 4):
+        a = math.radians(30 + 60 * k)
+        out, side = Vector((math.cos(a), math.sin(a), 0)), Vector((-math.sin(a), math.cos(a), 0))
+        for row, d in enumerate((2.72, 3.2)):
+            for t in range(-1, 2) if row == 0 else (-1.5, -0.5, 0.5, 1.5):
+                old_grave(p, rng, out * d + side * t * 0.52)
+    # the approach on edge 0
+    p.flat([Vector((0.75, -0.27, 0)), Vector((2.55, -0.27, 0)), Vector((2.55, 0.27, 0)), Vector((0.75, 0.27, 0))], 0.03,
+           "war_road")
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 0.8 for i in range(6)]
+    p.paths.append([Vector((X0, 0, 0)), ring[0]])
+    p.paths.append(ring + [ring[0]])
+    for i in range(1, 6):
+        p.spokes[i] = [ring[i] / 0.8 * X0, ring[i]]
+
+
+# Stormy plains (the lightning and the wind's ripple are the engine's; the tufts lean: ground_cover.BENT)
+
+def scorch_mark(p, rng, at, r):
+    """A black burn on the ground, ragged at the edge, with flecks round it."""
+    n = 9
+    p.prism([at + Vector((math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n), 0)) * r * rng.uniform(0.75, 1.1)
+             for k in range(n)], 0.0, 0.016, "scorch")
+    for k in range(3):
+        a = rng.uniform(0, 2 * math.pi)
+        q = at + Vector((math.cos(a), math.sin(a), 0)) * r * rng.uniform(1.2, 1.5)
+        p.box(q, (0.16, 0.12, 0.012), "scorch", spin=a)
+
+
+def split_tree(p, rng, at, h=None):
+    """A lone tree split by lightning: a charred trunk forking into two bare halves, a scorch at its foot."""
+    h = h or rng.uniform(1.7, 2.3)
+    scorch_mark(p, rng, at, 0.55)
+    a = rng.uniform(0, 2 * math.pi)
+    mid = at + Vector((0, 0, h * 0.42))
+    frustum(p, at, mid, 0.19, 0.13, "char")
+    for sd in (-1, 1):
+        tip = mid + Vector((math.cos(a) * sd * 0.5, math.sin(a) * sd * 0.5, h * (0.58 if sd > 0 else 0.42)))
+        spike(p, mid, tip, 0.11, "char", segments=5)
+        low = mid.lerp(tip, 0.55)
+        spike(p, low, low + Vector((-math.sin(a) * 0.3, math.cos(a) * 0.3, 0.26)), 0.04, "char")
+
+
+def big_feather(p, rng, at, spin, length=1.15):
+    """A storm bird's feather lying on the ground: a dark quill, pale vane."""
+    def q(x, y):
+        return at + turn(Vector((x, y, 0)), spin)
+    p.prism([q(0, 0), q(length * 0.35, -length * 0.13), q(length * 0.8, -length * 0.1), q(length, 0),
+             q(length * 0.8, length * 0.1), q(length * 0.35, length * 0.13)], 0.015, 0.035, "feather")
+    p.prism([q(length * 0.72, -length * 0.1), q(length * 0.8, -length * 0.1), q(length, 0), q(length * 0.8, length * 0.1),
+             q(length * 0.72, length * 0.1)], 0.015, 0.04, "feather_dark")
+    p.box(at + turn(Vector((length * 0.45, 0, 0)), spin), (length * 1.05, 0.035, 0.04), "scorch", z=0.02, spin=spin)
+
+
+def stormy_plains(p, rng, kind):
+    """Black scorch marks and split, charred lone trees on dark blue-tinged grass bent one way. Toward the
+    Thunderbird Nest, a burnt streak through the grass with a fallen feather here and there; next to it, more
+    charred trees and burns."""
+    if kind in ("centre", "centre_b", "centre_near"):
+        p.hub = Vector((0, 0, 0))
+        if kind == "centre":
+            split_tree(p, rng, bt.field_spot(1, 2.5))
+            scorch_mark(p, rng, bt.field_spot(4, 1.5), 0.6)
+        elif kind == "centre_b":
+            scorch_mark(p, rng, bt.field_spot(0, 1.7), 0.8)
+            scorch_mark(p, rng, bt.field_spot(3, 2.5), 0.5)
+        else:
+            split_tree(p, rng, bt.field_spot(1, 2.0))
+            scorch_mark(p, rng, bt.field_spot(5, 1.8), 0.7)
+            big_feather(p, rng, bt.field_spot(4, 1.9) - Vector((0.5, 0, 0)), 0.2)
+        return
+    if kind in ("edge_trail", "edge_trail_in", START):
+        fading_track(p, "burn_track", "stormy", kind == START, half=0.17)
+        if kind == "edge_trail_in":
+            big_feather(p, rng, Vector((X0 + 0.7, -0.68, 0)), 0.15)
+        return
+    if kind == "same":
+        scorch_mark(p, rng, Vector((X0 + 1.2, 0.85, 0)), 0.35)
+
+
+def thunderbird_nest(p, rng, kind):
+    """Stormy plains' Thunderbird Nest: a tall lone rock spire, no higher than a hill's peak, with a huge nest of
+    charred logs on top (it crackles: effect points) and big feathers on the burnt ground. A dark cleft at its foot
+    faces edge 0."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.3, pointy=True)][::-1], 0.022, "scorch_earth")
+    z = Vector((0, 0, 1))
+    pts = [Vector((0, 0, 0)), Vector((0.1, -0.05, 1.5)), Vector((-0.08, 0.08, 2.6)), Vector((0, 0, 3.3))]
+    for k, (a, b, r0, r1, mat) in enumerate(((pts[0], pts[1], 1.12, 0.72, "rock_wet"), (pts[1], pts[2], 0.72, 0.5, "rock_wet_dark"),
+                                             (pts[2], pts[3], 0.5, 0.62, "rock_wet"))):
+        frustum(p, a, b, r0, r1, mat, segments=7)
+    for k in range(5):  # boulders round the foot, clear of the lanes' routes
+        lump(p, bt.field_spot(k + (k >= 3), 1.2), rng.uniform(0.3, 0.42), "rock_wet_dark", z=0.1, squash=0.8)
+    # the nest: long charred logs raking out from the spire's top, a ring of logs laid round them, embers in the bowl
+    for k in range(13):
+        a = 2 * math.pi * k / 13 + rng.uniform(-0.1, 0.1)
+        out = Vector((math.cos(a), math.sin(a), 0))
+        frustum(p, out * 0.22 + z * 3.3, out * rng.uniform(1.15, 1.4) + z * rng.uniform(3.62, 3.8), 0.09, 0.05,
+                rng.choice(["char", "char", "trunk_old"]), segments=4)
+    for k in range(9):
+        a = 2 * math.pi * k / 9
+        p.log(Vector((math.cos(a), math.sin(a), 0)) * 0.95, 0.07, 0.8, "char", spin=a + math.pi / 2, z=3.62, segments=5)
+    for q in (Vector((0.2, 0.1, 0)), Vector((-0.2, 0.15, 0)), Vector((0, -0.22, 0))):
+        p.box(q, (0.2, 0.2, 0.05), "ember", z=3.42, spin=q.x * 5)
+    p.effects += [("crackle", Vector((0.15, 0.1, 3.75))), ("crackle", Vector((-0.5, -0.3, 3.85)))]
+    # the cleft at its foot, the burnt approach, feathers
+    p.box(Vector((1.02, 0, 0)), (0.12, 0.55, 0.85), "cave_dark")
+    p.flat([Vector((1.05, -0.17, 0)), Vector((2.4, -0.17, 0)), Vector((2.4, 0.17, 0)), Vector((1.05, 0.17, 0))], 0.03, "burn_track")
+    big_feather(p, rng, bt.field_spot(0, 1.95) + Vector((0, 0.1, 0.02)), 1.1, 1.3)
+    big_feather(p, rng, bt.field_spot(4, 1.9) + Vector((-0.5, 0, 0.02)), 0.3, 1.4)
+    big_feather(p, rng, bt.field_spot(2, 2.0) + Vector((-0.1, 0, 0.02)), 2.4, 1.15)
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 1.6 for i in range(6)]
+    p.paths.append([Vector((X0, 0, 0)), Vector((1.1, 0, 0))])
+    p.paths.append(ring + [ring[0]])
+    for i in range(6):
+        p.spokes[i] = [ring[i] / 1.6 * X0, ring[i]]
+
+
+# Tourney fields (class variant)
+
+def pennant_pole(p, at, h=1.5, cloth="banner"):
+    """A pole with a triangular pennant."""
+    p.box(at, (0.05, 0.05, h), "wall")
+    q = at + Vector((0, 0, h))
+    f = p.bm.faces.new([p.bm.verts.new(q), p.bm.verts.new(q + Vector((0, 0.42, -0.11))), p.bm.verts.new(q - Vector((0, 0, 0.24)))])
+    f.material_index = p._slot(cloth)
+    p.surface.add(f)
+
+
+def pavilion(p, rng, at, r=0.62, cols=("awning_a", "wall")):
+    """A round striped pavilion: striped wall, tall striped roof, a pennant on top."""
+    h = r * 1.3
+    p.cylinder(at, r, h, "wall", segments=8)
+    for k in range(0, 8, 2):
+        a = 2 * math.pi * (k + 0.5) / 8
+        p.box(at + Vector((math.cos(a), math.sin(a), 0)) * (r * 0.93), (0.04, r * 0.72, h - 0.01), cols[0], spin=a)
+    striped_roof(p, at, r * 1.18, r * 1.05, h, segments=8, cols=cols)
+    pennant_pole(p, at + Vector((0, 0, h + r * 1.0)), 0.4, cols[0])
+
+
+def sparring_ring(p, rng, at, r=0.72):
+    """A roped sparring ring: a sand octagon, posts, two ropes."""
+    pts = [at + Vector((math.cos(2 * math.pi * k / 8), math.sin(2 * math.pi * k / 8), 0)) * r for k in range(8)]
+    p.prism(pts, 0.0, 0.025, "arena_sand")
+    for k in range(0, 8, 2):
+        p.box(pts[k], (0.07, 0.07, 0.62), "trunk")
+    for k in range(0, 8, 2):
+        a, b = pts[k], pts[(k + 2) % 8]
+        d = b - a
+        for z in (0.32, 0.56):
+            p.box((a + b) / 2, (d.length, 0.03, 0.03), "ribbon_white", z=z, spin=math.atan2(d.y, d.x))
+
+
+def archery_butt(p, rng, at, spin):
+    """A straw target on legs, its rings facing along spin."""
+    side = turn(Vector((0, 0.2, 0)), spin)
+    for sd in (-1, 1):
+        p.box(at + side * sd, (0.06, 0.06, 0.7), "trunk")
+    p.log(at, 0.34, 0.1, "hay", spin=spin, z=0.68, segments=10)
+    fwd = turn(Vector((0.03, 0, 0)), spin)
+    p.log(at + fwd, 0.22, 0.1, "ribbon_white", spin=spin, z=0.68, segments=8)
+    p.log(at + fwd * 2, 0.1, 0.1, "banner", spin=spin, z=0.68, segments=6)
+
+
+def quintain(p, rng, at, spin):
+    """A jousting quintain: a post with a swinging arm, a shield at one end and a sandbag at the other."""
+    p.box(at, (0.1, 0.1, 1.15), "trunk")
+    p.box(at, (1.05, 0.06, 0.06), "trunk", z=1.1, spin=spin)
+    a = at + turn(Vector((0.5, 0, 0)), spin)
+    b = at - turn(Vector((0.5, 0, 0)), spin)
+    p.box(a, (0.04, 0.3, 0.38), "banner", z=0.74, spin=spin)
+    p.blob(b, 0.15, "sack", z=0.84, squash=1.2)
+
+
+def dummy(p, rng, at, spin):
+    """A training dummy: a post, a crossbar, a straw body and head."""
+    p.box(at, (0.07, 0.07, 1.0), "trunk")
+    p.box(at, (0.6, 0.05, 0.05), "trunk", z=0.72, spin=spin)
+    p.box(at, (0.28, 0.2, 0.42), "hay", z=0.42, spin=spin)
+    p.blob(at, 0.12, "sack", z=1.0)
+
+
+def tourney_centre_routes(p):
+    for i in range(6):
+        a = math.radians(60 * i)
+        p.spokes[i] = [Vector((math.cos(a), math.sin(a), 0)) * bt.FARM_ROUTE_R, Vector((0, 0, 0))]
+
+
+def tourney_fields(p, rng, kind):
+    """Round striped pavilions with pennants, roped sparring rings, archery butts, quintains and dummies on short
+    mown grass, bunting between poles at the grounds' edge. Toward the Training Grounds, a raked sand track with
+    pairs of pennant poles; next to it, a bigger pavilion and a row of dummies."""
+    if kind in ("centre", "centre_b", "centre_near"):
+        tourney_centre_routes(p)
+        if kind == "centre":
+            pavilion(p, rng, bt.field_spot(1, 2.0))
+            dummy(p, rng, bt.field_spot(3, 1.7), 0.3)
+            dummy(p, rng, bt.field_spot(3, 2.2), 0.7)
+        elif kind == "centre_b":
+            sparring_ring(p, rng, bt.field_spot(1, 2.1))
+            pavilion(p, rng, bt.field_spot(4, 2.3), 0.55, ("ribbon_blue", "wall"))
+        else:
+            pavilion(p, rng, bt.field_spot(1, 2.15), 0.78, ("ribbon_blue", "wall"))
+            for k in range(3):
+                dummy(p, rng, bt.field_spot(3, 2.0) + Vector((0.42 * (k - 1), 0.2 * (k - 1), 0)), 0.45)
+            sparring_ring(p, rng, bt.field_spot(5, 2.1))
+        return
+    if kind in ("edge_trail", "edge_trail_in", START):
+        fading_track(p, "arena_sand", "mown", kind == START, half=0.27, path_x0=bt.FARM_ROUTE_R)
+        if kind == "edge_trail":  # one pair of poles per trail edge
+            for sd in (-1, 1):
+                pennant_pole(p, Vector((X0 + 1.25, sd * 0.52, 0)), 1.5, "banner" if sd > 0 else "ribbon_blue")
+        return
+    if kind == "same":
+        # turned so that on none of the six edges do they show edge-on from the default camera
+        archery_butt(p, rng, Vector((X0 + 1.35, 1.0, 0)), math.pi + math.pi / 6)
+        archery_butt(p, rng, Vector((X0 + 1.1, 0.55, 0)), math.pi + math.pi / 6)
+    elif kind == "edge_same_b":
+        quintain(p, rng, Vector((X0 + 1.2, -0.85, 0)), 0.5)
+    else:  # the grounds' edge: bunting between poles
+        ys = (-1.25, 0.0, 1.25)
+        for y in ys:
+            p.box(Vector((X1 - 0.5, y, 0)), (0.06, 0.06, 1.25), "wall")
+        for y0, y1 in zip(ys, ys[1:]):
+            bunting(p, rng, Vector((X1 - 0.5, y0, 0)), Vector((X1 - 0.5, y1, 0)), 1.2, sag=0.14)
+
+
+def training_grounds(p, rng, kind):
+    """Tourney fields' Training Grounds: a round wooden arena with tiered stands and banners round the rim, its sand
+    floor visible from above, its gate on edge 0. The round route runs just outside it, joining the tracks."""
+    floor_r, tiers, seg, gap = 1.0, ((1.0, 1.35, 0.32), (1.35, 1.65, 0.62), (1.65, 1.98, 0.95)), 20, 2
+    p.prism([Vector((math.cos(2 * math.pi * k / seg), math.sin(2 * math.pi * k / seg), 0)) * floor_r for k in range(seg)],
+            0.0, 0.04, "arena_sand")
+    for k in range(seg):  # the stands, with a gap at edge 0 for the gate
+        if k < gap or k >= seg - gap:
+            continue
+        a0, a1 = 2 * math.pi * k / seg, 2 * math.pi * (k + 1) / seg
+        u0, u1 = Vector((math.cos(a0), math.sin(a0), 0)), Vector((math.cos(a1), math.sin(a1), 0))
+        for j, (r0, r1, h) in enumerate(tiers):
+            p.prism([u0 * r0, u0 * r1, u1 * r1, u1 * r0], 0.0, h, ("stand_a", "stand_b")[(k + j) % 2])
+    for x, sd in ((1.0, 1), (1.0, -1)):  # gate posts either side of the opening
+        a = math.radians(36 * sd)
+        for r in (1.0, 1.98):
+            p.box(Vector((math.cos(a), math.sin(a), 0)) * r, (0.13, 0.13, 1.45), "trunk")
+    for k in range(10):  # banners round the rim
+        if k in (0,):
+            continue
+        a = 2 * math.pi * k / 10
+        q = Vector((math.cos(a), math.sin(a), 0)) * 2.0
+        p.box(q, (0.07, 0.07, 2.3), "trunk")
+        p.box(q + turn(Vector((0.02, 0, 0)), a), (0.03, 0.34, 0.8), ("banner", "ribbon_blue")[k % 2], z=1.42, spin=a)
+    for sd in (-1, 1):
+        pennant_pole(p, Vector((2.0, sd * 0.68, 0)), 2.0, "banner")
+    p.flat([Vector((0.9, -0.3, 0)), Vector((2.35, -0.3, 0)), Vector((2.35, 0.3, 0)), Vector((0.9, 0.3, 0))], 0.03, "arena_sand")
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * bt.FARM_ROUTE_R for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    p.paths.append([ring[0], Vector((0.5, 0, 0))])
+
+
+LANDMARK_CENTRES.update(oldbattlefield=old_battlefield, thunderbirdnest=thunderbird_nest,
+                        traininggrounds=training_grounds)
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
-    "meadows": ("plains", meadows, "plains", ("centre_b", "edge_trail", "edge_trail_in", "centre_near")),
-    # plains tier 0 options; the pick replaces plains
-    "plains_a": ("plains", plains_a, "plains", ("centre_b",)),
-    "plains_b": ("plains", plains_b, "plains", ("centre_b",)),
-    "plains_c": ("plains", plains_c, "plains", ("centre_b", "edge_path")),
+    "meadows": ("plains", meadows, "plains", ("centre_b", "edge_trail", "edge_trail_in", "edge_trail_start", "centre_near")),
+    "battlefield": ("plains", battlefield, "steppe", PLAINS_KINDS),
+    "stormy_plains": ("plains", stormy_plains, "stormy", PLAINS_KINDS),
+    "tourney_fields": ("plains", tourney_fields, "mown", PLAINS_KINDS),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
@@ -1998,7 +2358,8 @@ VARIANTS = {
 LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
              "spidernest": "dark_wood", "greatwindmill": "windmill_country",
              "abandonedbarn": "haunted_homesteads", "militiabarn": "raided_farms",
-             "harvestfestival": "cider_orchards", "nomadcamp": "meadows"}
+             "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
+             "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

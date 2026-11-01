@@ -14,7 +14,8 @@ never changes as the map grows:
    uses that instead.
    Where a variant has a second trail wedge, <variant>_edge_trail_in (windmill country's carts face the mill),
    the tile closer to the landmark (the lower distance) uses it on that edge, and the farther tile uses
-   <variant>_edge_trail. heads_in() says which.
+   <variant>_edge_trail. heads_in() says which. A tile with only one trail edge, not the landmark, is where
+   a trail begins: it uses <variant>_edge_trail_start there, where that exists (its track fades out).
 4. A tile one step from the landmark uses its variant's near centre, which plays the look up.
 5. The landmark tile turns in 60 degree steps so its entrance (on edge 0 of every landmark piece) faces the
    edge where the longest trail arrives: the trail from the farthest tile (ties between equally far tiles

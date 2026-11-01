@@ -171,7 +171,26 @@ PALETTE = {
     "felt": "#EDE3CB",
     "felt_dark": "#D9CBA8",
     "camp_earth": "#BDB982",
-    "swell": "#ABD282",
+    "steppe": "#B4B97C",
+    "war_road": "#8D8058",
+    "war_earth": "#84795C",
+    "rust": "#8E5A3A",
+    "shield_wood": "#9C7B52",
+    "canvas_dirty": "#BDB19A",
+    "grave_mound": "#7E7A58",
+    "banner_dark": "#6E3A34",
+    "tuft_steppe": "#8E9A5C",
+    "stormy": "#71917F",
+    "burn_track": "#454843",
+    "tuft_storm": "#55786A",
+    "scorch": "#2A2826",
+    "scorch_earth": "#4B5550",
+    "feather": "#A9B9C6",
+    "feather_dark": "#4F6372",
+    "mown": "#B9DE8E",
+    "arena_sand": "#E4CD97",
+    "stand_a": "#9A7450",
+    "stand_b": "#86633F",
     "yard_dirt": "#B59A6E",
     "withered_soil": "#6E6A5A",
     "stake": "#9A7A55",
@@ -304,6 +323,24 @@ def scatter(rng, inside, count, min_dist, bounds, tries=400):
 
 WEDGE_BOUNDS = ((INNER * TILE_APOTHEM, TILE_APOTHEM), (-TILE_RADIUS / 2, TILE_RADIUS / 2))
 CENTRE_BOUNDS = ((-INNER * TILE_APOTHEM, INNER * TILE_APOTHEM), (-INNER * TILE_RADIUS, INNER * TILE_RADIUS))
+
+
+def mix_colour(a, b, t):
+    """The palette name of a colour t of the way from a to b, added to the palette the first time it's asked for."""
+    name = f"{a}_{b}_{round(t * 100)}"
+    if name not in PALETTE:
+        ca, cb = [[int(PALETTE[c].lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)] for c in (a, b)]
+        PALETTE[name] = "#%02X%02X%02X" % tuple(round(x + (y - x) * t) for x, y in zip(ca, cb))
+    return name
+
+
+def spike_up(piece, at, tip, r, mat_name, segments=4):
+    """A thin cone from at to tip, for the ground cover's leaning tufts."""
+    d = tip - at
+    m = Matrix.Translation(at + d / 2) @ d.to_track_quat("Z", "Y").to_matrix().to_4x4()
+    v = bmesh.ops.create_cone(piece.bm, cap_ends=True, cap_tris=True, segments=segments, radius1=r, radius2=0.0,
+                              depth=d.length, matrix=m)["verts"]
+    piece._paint(v, mat_name)
 
 
 def yup(v):

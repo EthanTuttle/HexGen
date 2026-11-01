@@ -24,21 +24,24 @@ BLEND = 1.6
 DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
            "hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
            # tier 1 region variants
-           "deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
+           "deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
            "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
            # tier 2 and class variants
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
            # landmark tiles
            "treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05,
-           "greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0, "nomadcamp": 0.0,
+           "greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0, "nomadcamp": 0.0, "oldbattlefield": 0.03, "thunderbirdnest": 0.1, "traininggrounds": 0.0,
            # farmland tier 2 (farm pieces hold their own, like farmland)
            "haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0,
-           # plains tier 0 options
-           "plains_a": 0.5, "plains_b": 0.5, "plains_c": 0.5}
+           # plains tier 2 and class variant
+           "battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05}
 # Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
 # tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
-TUFT = {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood"}
-NO_FLOWERS = {"dark_wood", "spidernest"}
+TUFT = {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
+        "oldbattlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "thunderbirdnest": "tuft_storm"}
+NO_FLOWERS = {"dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
+              "tourney_fields", "traininggrounds"}
+BENT = {"stormy_plains", "thunderbirdnest"}  # tufts lean hard one way (+X in world space), the wind's direction
 WATER = {"river", "delta"}
 FLOWERS = ["flower", "flower_pink", "flower_white", "flower_blue"]
 
@@ -134,7 +137,7 @@ def scatter(terrains, water_shapes):
             if terrains[(q, r)] == "meadows":
                 # Wildflower drifts: a slow world-space wave decides where flowers crowd out the grass.
                 drift = 0.5 + 0.5 * math.sin(x / 3.1 + 0.4) * math.sin(y / 2.6 + x / 5.0)
-                out.append(("flower" if k < 0.15 + 0.75 * drift else "tuft", x, y, (ix, iy)))
+                out.append(("flower" if k < 0.3 + 0.85 * drift else "tuft", x, y, (ix, iy)))
                 continue
             if terrains[(q, r)] in NO_FLOWERS:
                 out.append(("tuft" if k < 0.85 else "pebble", x, y, (ix, iy)))
@@ -145,6 +148,7 @@ def scatter(terrains, water_shapes):
 
 def add_ground_cover(piece, terrains):
     """Builds the scatter into a hexkit.Piece placed at the world origin."""
+    from hexkit import spike_up as hk_spike
     from mathutils import Vector
 
     water_shapes = {}
@@ -158,12 +162,18 @@ def add_ground_cover(piece, terrains):
         at = Vector((x, y, 0))
         if kind == "tuft":
             colour = tuft_colour(terrains, x, y, hash01(ix, iy, 5))
+            if terrains.get(tile_at(x, y)) in BENT:
+                h = rng.uniform(0.3, 0.45)
+                hk_spike(piece, at, at + Vector((h * 0.85, h * 0.2, h * 0.6)), rng.uniform(0.09, 0.13), colour)
+                continue
             piece.cone(at, rng.uniform(0.12, 0.2), rng.uniform(0.2, 0.35), colour, segments=4,
                        spin=rng.uniform(0, 1))
         elif kind == "flower":
             # One colour per drift: the same slow wave picks it, so colours come in patches.
             hue = FLOWERS[int((math.sin(x / 4.7) + math.sin(y / 3.9 + 1.0) + 2) * 1.999) % 4] \
                 if terrains.get(tile_at(x, y)) == "meadows" else "flower"
-            piece.box(at, (0.08, 0.08, 0.12), hue, spin=rng.uniform(0, 1))
+            big = terrains.get(tile_at(x, y)) == "meadows"  # the meadows' flowers are bigger, so the drifts read
+            size = (0.14, 0.14, 0.17) if big else (0.08, 0.08, 0.12)
+            piece.box(at, size, hue, spin=rng.uniform(0, 1))
         else:
             piece.blob(at, rng.uniform(0.07, 0.12), "rock", squash=0.6)
