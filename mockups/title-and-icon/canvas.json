@@ -234,6 +234,42 @@
    "title": "App icon v8 \u00b7 v7a with the shadow under the tile taken out and the tile bigger (about a fifth), sitting lower in the bottom right",
    "is_interactive": false,
    "radius": 28
+  },
+  "Title-v6a-MultiplayerButton.dc.html": {
+   "x": 0,
+   "y": 10010,
+   "w": 844,
+   "h": 390,
+   "title": "Title v6a \u00b7 Join becomes Multiplayer: one panel with Host (on/off switch, your 6-letter code with Change) and Join (type a friend's code). A green dot on the button while hosting. Also takes the save rules: Continue shows name and level, place and save time; no day",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v6b-HostHex.dc.html": {
+   "x": 924,
+   "y": 10010,
+   "w": 844,
+   "h": 390,
+   "title": "Title v6b \u00b7 a second hex button beside Settings (two figures) glows green while hosting and opens the Host panel (switch and code); Join stays as it was",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v6c-HostRow.dc.html": {
+   "x": 1848,
+   "y": 10010,
+   "w": 844,
+   "h": 390,
+   "title": "Title v6c \u00b7 a pill under Load | Join reads \"Hosting: Off\" or \"Hosting: On \u00b7 KDRWQX\" with a dot; tapping it opens the Host panel. Join stays as it was",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Title-v7-SteadyMultiplayer.dc.html": {
+   "x": 0,
+   "y": 10780,
+   "w": 844,
+   "h": 390,
+   "title": "Title v7 \u00b7 v6a chosen, with less movement: the green dot's space is always kept (it only fades in when hosting), so Load and Multiplayer keep their widths; the \"Open to guests in every game you launch\" line is gone",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -261,7 +297,11 @@
   "Icon-v6b-DiagonalUpright.dc.html",
   "Icon-v7a-SmallCoin.dc.html",
   "Icon-v7b-SmallCoinUpright.dc.html",
-  "Icon-v8-BigTileNoShadow.dc.html"
+  "Icon-v8-BigTileNoShadow.dc.html",
+  "Title-v6a-MultiplayerButton.dc.html",
+  "Title-v6b-HostHex.dc.html",
+  "Title-v6c-HostRow.dc.html",
+  "Title-v7-SteadyMultiplayer.dc.html"
  ],
  "notes": {
   "v1": {
@@ -345,6 +385,20 @@
    "x": 0,
    "y": 8980,
    "text": "App icon v8 \u00b7 v7a, bigger tile, no shadow",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v6": {
+   "x": 0,
+   "y": 9750,
+   "text": "v6 \u00b7 where to switch multiplayer on",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v7": {
+   "x": 0,
+   "y": 10520,
+   "text": "v7 \u00b7 v6a chosen, steadier",
    "kind": "title1",
    "maxW": 2692
   }

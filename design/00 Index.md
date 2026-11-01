@@ -268,6 +268,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~The game's name~~ (settled Nov 1: Heads or Hexes). Renamed in the docs and canvas titles Nov 1; the GitHub repo is still HexGen.
 - [x] ~~Title screen backdrop~~ (settled Nov 1: v1b, your last save)
 - [x] ~~Title screen~~ (final Nov 1: v5)
-- [ ] New (Nov 1): app icon: feedback on v8 (v7a's layout chosen; bigger tile, no shadow) (Home-screen name settled Nov 1: Heads/Hexes.)
+- [x] ~~App icon~~ (final Nov 1: v8) (Home-screen name settled Nov 1: Heads/Hexes.)
 - [x] ~~Autosaves with several heroes~~ (settled Nov 1: per hero, slots too)
-- [ ] New (Nov 1): what a save shows on Continue and in Load; the settings list; the join code's format (joining settled: a join code)
+- [x] ~~What a save shows; the settings list; the join code~~ (settled Nov 1: name and level, place, save time; Audio and Accessibility, plus Multiplayer in a game; a 6-letter code shown there; 3 slots per hero)
+- [ ] New (Nov 1): what goes in each Settings section; a taken join code; removing a guest (settled Nov 1: the host switches multiplayer on and sets a lasting code on the title screen)
+- [x] ~~Where the hosting switch goes~~ (settled Nov 1: v6a, Join becomes Multiplayer; v7 steadies it)
