@@ -346,7 +346,7 @@ The forest tier 2 variants (fey wood, dark wood, heartwood), deep forest's flow 
 - **Materials:** `web` blends at 0.3 and shows from both sides. `fey_mushroom`, `window_glow` and `lantern` glow at night.
 - **Ground cover:** the new densities; dark wood's darker tufts and no flowers; tuft colours mix across borders.
 - **Effects** (`scripts/forest_fx.gd`, all placeholder looks): fey motes, heartwood seeds and light shafts, the Hidden Shrine's shaft. Each is one node per tile, with no lights and no shadows. Shafts fade out at night.
-- **Walking:** where a step crosses a trail edge, the route runs straight along the trail through both tiles. On a landmark tile it circles to the entrance and stops there, facing the landmark. The waddle, follow-the-leader and the rest are unchanged.
+- **Walking:** where a step crosses a trail edge, the route runs straight along the trail through both tiles. On a landmark tile it circles to the entrance and stops there, facing the landmark (DOCS since Nov 1: "a landmark is always entered by its entrance", also when arriving off a trail). The waddle, follow-the-leader and the rest are unchanged.
 - **Merging finished regions:** a tile touching two finished regions now joins only the newer one, and the older one keeps its tiles (DOCS). Before, the newer region took them all.
 
 Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each forest variant around the start, with plains between. `-- --forestcheck` does the same, checks the pieces, the turn, edge_same_b, the web material and trail walking, and prints the frame cost. Add `--shots` to save `screens/forest_*.png`:
@@ -368,7 +368,9 @@ Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each fores
 | Game camera all the way out over the four regions | 810 | 258,000 | 4.1 ms |
 | Opening zoom over heartwood | 400 | 173,000 | 3.9 ms |
 
-The phone wasn't plugged in, so the 120 fps target is untested.
+The phone wasn't plugged in, so the 120 fps target is untested. The phone last held 120 fps at about 300 draw calls.
+
+**Next on the phone (Ethan, Nov 1):** run the forest debug spawn zoomed all the way out on the iPhone and report its fps and draw calls (`--forest` plus `HEXGEN_PHONECHECK=1`; see iOS: Simulator and iPhone). Don't merge each tile's pieces into one mesh until that test says it's needed.
 
 ## Terrains and region variants (tiles v13)
 
@@ -554,6 +556,24 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 - **No constrained triangulation** in `Geometry2D`; Delaunay plus a centre test was enough here.
 - **Screenshots need a window.** `--headless` has no renderer, so capture runs a real window for a few seconds. Godot's movie maker writes PNG frames or MJPEG `.avi` (not `.mp4`), so a small Swift script turns frames into `.mp4`.
 - Otherwise it went smoothly: glTF import kept every piece name and material, scenes and scripts are plain text, and tweens made the hop and recoil a few lines each.
+
+## Carrying on (for a fresh session)
+
+- **Branch:** `claude/godot-prototype-0a3fde`, in its own worktree. It never merges to main without Ethan. Merge `origin/main` before each task.
+- **Rules:**
+  - The design docs are canon; don't edit `art/` or `design/`.
+  - Ask before deciding anything the docs don't cover, and mark stand-ins `PLACEHOLDER` in code and in Placeholders above.
+  - Check every on-screen string against the Standing rule: screen text.
+- **Tests:**
+  - Run all three before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`).
+  - The demo once stalled after its coin shot (Nov 1) and didn't on the rerun. If it hangs, rerun it before hunting a bug.
+- **Art:** `godot/art/*.glb` link to `art/export/`. After the art changes, run `godot --headless --path godot --import` so the new pieces, and any new `class_name` scripts, load. New colours go in `Hex.PALETTE` (copied from `hexkit.COLOURS`). New variants go in `variants.gd`. New `ground_cover.py` entries go in `ground_cover.gd`.
+- **Piece picking:** follows `render_preview.build_map`, in `MapBoard._build_tile` and `_edge_piece`. Landmark trails come from `landmark_flow.gd`. Re-run `tools/flow_check.gd` whenever the Python changes.
+- **Open:**
+  - The phone fps test above.
+  - The Dynamic Island side: the HUD pads both sides, because Godot can't tell which way the phone is turned. A native bridge is offered but not decided.
+  - The docs questions under Unclear or contradictory.
+- **Placeholder list with values and files:** `godot-placeholders.md` in the Engine Planner's shared notes folder mirrors Placeholders above.
 
 ## Not checked yet
 
