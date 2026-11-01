@@ -320,6 +320,7 @@ class Piece:
         # to a JSON beside the glb.
         self.paths = []
         self.hub = None
+        self.spokes = {}  # edge -> polyline: centre paths the engine uses only where that edge's wedge has a path
         self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
     def _slot(self, mat_name):
@@ -429,6 +430,8 @@ class Piece:
             obj["paths"] = json.dumps([[yup(q) for q in line] for line in self.paths])
         if self.hub is not None:
             obj["path_hub"] = json.dumps(yup(self.hub))
+        if self.spokes:
+            obj["path_spokes"] = json.dumps({str(i): [yup(q) for q in line] for i, line in self.spokes.items()})
         if self.effects:
             obj["effects"] = json.dumps([{"kind": k, "at": yup(q)} for k, q in self.effects])
         collection.objects.link(obj)

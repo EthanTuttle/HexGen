@@ -389,8 +389,8 @@ def yard_ring_paths(p, entrance_x):
     p.paths.append([Vector((X0, 0, 0)), Vector((entrance_x, 0, 0))])
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 2.05 for i in range(6)]
     p.paths.append(ring + [ring[0]])
-    for q in ring:
-        p.paths.append([q / 2.05 * X0, q])
+    for i, q in enumerate(ring):  # spokes: only used where edge i's wedge has a path (no dead ends)
+        p.spokes[i] = [q / 2.05 * X0, q]
 
 
 def charred_barn(p, rng, at, spin):
@@ -551,6 +551,7 @@ def ladder(p, at, spin):
         p.box_rot(at + rot @ Vector((0, 0, 0.2 + 0.22 * k)), (0.025, 0.22, 0.025), "trunk", rot)
 
 
+ORCHARD_TRACK_X0 = 0.45  # orchard tracks start at the centre's little yard, so a wedge brings its own in
 ORCHARD_ROWS = ((X0 + 0.5, (0.85,)), (X0 + 1.45, (-1.15, 1.15)))  # wedge rows: depth, trees across (staggered)
 
 
@@ -584,11 +585,8 @@ def orchard_centre(p, rng, picking=False):
     spots = [Vector((math.cos(math.radians(30 + 120 * k)), math.sin(math.radians(30 + 120 * k)), 0)) * 1.25
              for k in range(3)]
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(0.55, pointy=True)][::-1], 0.012, "road")  # the yard
-    for i in range(6):  # track stubs from the yard out to every wedge (where a wedge has no track, it ends at the trees)
-        a = math.radians(60 * i)
-        out, side = Vector((math.cos(a), math.sin(a), 0)), Vector((-math.sin(a), math.cos(a), 0))
-        p.flat([out * 0.4 - side * 0.22, out * X0 - side * 0.22, out * X0 + side * 0.22, out * 0.4 + side * 0.22],
-               0.012, "road")
+    # No track stubs here: each wedge that has a track brings it in to the yard itself (ORCHARD_TRACK_X0), so
+    # tracks only appear where they lead somewhere.
     orchard_trees(p, rng, spots)
     basket(p, rng, Vector((0.3, 0.25, 0)))
     if picking:
@@ -627,7 +625,7 @@ def cider_orchards(p, rng, kind):
         p.hub = Vector((0, 0, 0))
         return
     if kind in ("edge_trail", "edge_trail_in"):  # toward the Harvest Festival: bunting along the track
-        bt.track(p)
+        bt.track(p, x0=ORCHARD_TRACK_X0)
         for x in (X0 + 0.35, X1 - 0.15):
             p.box(Vector((x, 0.42, 0)), (0.05, 0.05, 1.3), "trunk")
         bunting(p, rng, Vector((X0 + 0.35, 0.42, 0)), Vector((X1 - 0.15, 0.42, 0)), 1.25, sag=0.2)
@@ -636,7 +634,12 @@ def cider_orchards(p, rng, kind):
             p.box(Vector((X0 + 1.2, -0.05, 0)), (0.5, 0.3, 0.08), "apple", z=0.47)
         orchard_wedge(p, rng, track=True)
         return
-    bt.farmland(p, rng, kind)  # tracks, fences and gates as on other farms
+    if kind == "other":  # the fence, as on other farms
+        bt.edge_border(p, rng)
+    else:  # the track runs from the yard to the edge, through a gate where there is one
+        bt.track(p, x0=ORCHARD_TRACK_X0)
+        if kind == "edge_gate":
+            bt.farm_gate(p, rng)
     orchard_wedge(p, rng, track=kind != "other")
 
 
@@ -1659,7 +1662,7 @@ def great_windmill(p, rng, kind):
     p.paths.append(ring + [ring[0]])
     for i in range(1, 6):
         out = ring[i] / 1.35 * X0
-        p.paths.append([out, ring[i]])
+        p.spokes[i] = [out, ring[i]]  # only used where edge i's wedge has a path
 
 
 def great_windmill_sails(p, rng):

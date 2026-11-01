@@ -140,11 +140,18 @@ def draw_paths(col, templates):
                 d = b - a
                 p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
         key = (round(m.translation.x, 1), round(m.translation.y, 1))
+        for i, line in json.loads(src.get("path_spokes", "{}")).items():
+            tiles.setdefault(key, {}).setdefault("spokes", []).append((int(i), [m @ Vector((x, -z, y)) for x, y, z in line]))
         if "path_hub" in src:
             x, y, z = json.loads(src["path_hub"])
             tiles.setdefault(key, {})["hub"] = m @ Vector((x, -z, y))
         tiles.setdefault(key, {}).setdefault("ends", []).extend(l[0] for l in lines)
-    for t in tiles.values():
+    for t in tiles.values():  # spokes, only where a wedge path ends at the spoke's outer end
+        for i, line in t.get("spokes", []):
+            if any((e - line[0]).length < 0.05 for e in t.get("ends", [])):
+                for a, b in zip(line, line[1:]):
+                    d = b - a
+                    p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
         for e in t.get("ends", []) if "hub" in t else []:
             d = e - t["hub"]
             if d.length < 2.2:  # a wedge path's inner end on this tile
