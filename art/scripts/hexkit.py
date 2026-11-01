@@ -141,7 +141,6 @@ PALETTE = {
     "rock_wet_dark": "#35373C",
     "cocoon": "#E6E1D6",
     "gate_wood": "#8E4A32",
-    "wood_carve": "#B38E62",
     "iron": "#8C9196",
     "ribbon_red": "#C8553D",
     "ribbon_white": "#F2E8D5",

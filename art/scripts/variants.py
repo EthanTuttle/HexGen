@@ -725,10 +725,9 @@ HEARTWOOD_TREES = {  # kind: [(position, height range, spread)]; dense big broad
     "same": [(Vector((X0 + 1.45, 0.6, 0)), (3.1, 3.3), 1.05), (Vector((X0 + 0.55, -0.7, 0)), (2.8, 3.0), 0.85)],
     "edge_same_b": [(Vector((X0 + 1.7, -0.65, 0)), (3.0, 3.2), 1.0), (Vector((X0 + 0.7, 0.75, 0)), (2.8, 3.0), 0.8)],
     "other": [(Vector((X0 + 1.0, -0.4, 0)), (3.1, 3.3), 1.0), (Vector((X0 + 0.45, 0.85, 0)), (2.7, 2.9), 0.7)],
-    # beside the trail: kept off the middle line so the path shows between them
-    "trail": [(Vector((X0 + 1.5, 1.15, 0)), (2.9, 3.1), 0.75), (Vector((X0 + 1.4, -1.15, 0)), (2.8, 3.0), 0.7)],
+    # beside the trail: set back from the middle line and a little lower, leaving a lane the path shows down
+    "trail": [(Vector((X0 + 1.5, 1.35, 0)), (2.7, 2.9), 0.68), (Vector((X0 + 1.35, -1.35, 0)), (2.6, 2.8), 0.65)],
 }
-TRAIL_MARKERS = ("gate", "waypost", "lantern")  # options for Ethan: heartwood_edge_trail_<marker>
 
 
 def heartwood_trees(p, rng, kind):
@@ -736,46 +735,29 @@ def heartwood_trees(p, rng, kind):
         great_tree(p, rng, at, rng.uniform(*hr), spread)
 
 
-def trail_marker(p, rng, marker):
-    """What marks a heartwood trail on each wedge, near the edge (options for Ethan to pick from): a simple
-    wooden gate over the path in the torii style, a carved waypost beside it, or a small lantern post beside
-    it. They stand near the inner end of the wedge, so along a trail they come about evenly spaced (one a
-    third of the way from each tile's middle), and wayposts and lantern posts alternate sides."""
+def trail_gate(p, rng):
+    """A simple wooden gate over a heartwood trail, in the torii style (chosen Nov 1, 2026, over a carved waypost
+    and a lantern post). It stands near the inner end of the wedge, so along a trail the gates come about evenly
+    spaced, one a third of the way from each tile's middle."""
     x = X0 + 0.6
-    if marker == "gate":
-        for sd in (-1, 1):
-            frustum(p, Vector((x, sd * 0.48, 0)), Vector((x, sd * 0.46, 1.45)), 0.07, 0.06, "gate_wood", segments=6)
-        p.box(Vector((x, 0, 0)), (0.11, 1.2, 0.07), "gate_wood", z=1.18)  # the tie beam
-        p.box(Vector((x, 0, 0)), (0.16, 1.45, 0.1), "gate_wood", z=1.45)  # the top beam, its ends lifted
-        for sd in (-1, 1):
-            p.box_rot(Vector((x, sd * 0.8, 1.53)), (0.16, 0.22, 0.08), "gate_wood",
-                      Matrix.Rotation(-sd * 0.35, 3, "X"))
-    elif marker == "waypost":
-        at = Vector((x, 0.5, 0))
-        p.box(at, (0.17, 0.17, 1.05), "trunk_old", spin=0.3)
-        for z in (0.35, 0.62):  # carved bands
-            p.box(at, (0.19, 0.19, 0.06), "wood_carve", z=z, spin=0.3)
-        p.cone(at, 0.17, 0.2, "trunk_old", segments=4, z=1.05, spin=0.3 + math.pi / 4)  # pointed cap
-        p.blob(at, 0.1, "moss", z=0.05, squash=0.6)
-    else:  # lantern
-        at = Vector((x, 0.5, 0))
-        p.box(at, (0.08, 0.08, 1.15), "trunk_old")
-        p.box(at + Vector((-0.12, 0, 0)), (0.3, 0.05, 0.05), "trunk_old", z=1.1)  # arm over the path
-        q = at + Vector((-0.24, 0, 0))
-        p.box(q, (0.02, 0.02, 0.12), "rope", z=0.98)
-        p.box(q, (0.16, 0.16, 0.2), "lantern", z=0.78)
-        p.cone(q, 0.15, 0.1, "trunk_old", segments=4, z=0.98, spin=math.pi / 4)
+    for sd in (-1, 1):
+        frustum(p, Vector((x, sd * 0.48, 0)), Vector((x, sd * 0.46, 1.45)), 0.07, 0.06, "gate_wood", segments=6)
+    p.box(Vector((x, 0, 0)), (0.11, 1.2, 0.07), "gate_wood", z=1.18)  # the tie beam
+    p.box(Vector((x, 0, 0)), (0.16, 1.45, 0.1), "gate_wood", z=1.45)  # the top beam, its ends lifted
+    for sd in (-1, 1):
+        p.box_rot(Vector((x, sd * 0.8, 1.53)), (0.16, 0.22, 0.08), "gate_wood", Matrix.Rotation(-sd * 0.35, 3, "X"))
 
 
 def heartwood(p, rng, kind):
     """Big broadleaf trees standing dense on mossy ground, with no offerings (the cords hang only on the Tree of
-    Life, so it stands out); on the trails toward the Tree, a path between the trees, marked beside it."""
+    Life, so it stands out); on the trails toward the Tree, a path down a lane between the trees, under a
+    wooden gate."""
     if kind == "edge_landmark":
         heartwood_edge_landmark(p, rng)
         return
-    if kind.startswith("edge_trail_"):  # toward the Tree (see Flowing into the landmark)
+    if kind == "edge_trail":  # toward the Tree (see Flowing into the landmark)
         path_strip(p, rng, Vector((X1, 0, 0)), Vector((X0 - 0.3, 0, 0)), PATH_W)
-        trail_marker(p, rng, kind[len("edge_trail_"):])
+        trail_gate(p, rng)
         heartwood_trees(p, rng, "trail")
         moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and abs(q.y) > 0.5, hk.WEDGE_BOUNDS, 2)
         return
@@ -1108,9 +1090,9 @@ LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest}
 # Each forest variant's tiles lead the eye to the region's landmark (design/07 -> Landmark tiles). Extra
 # pieces, picked by landmark_flow.py: <variant>_edge_trail on the edges where the region's trails run (from
 # each tile one step toward the landmark), and <variant>_centre_near on the tiles next to the landmark.
-# Heartwood has no near centre, and its trail wedge comes in three marker options for Ethan
-# (heartwood_edge_trail_gate, _waypost, _lantern; see heartwood()). Each landmark's entrance faces edge 0, with
-# a short approach from the centre piece's edge-0 side to it. Every trail runs along the wedge's middle line, from near the centre out to the edge, so trails
+# Heartwood has no near centre; its trail wedge has a wooden gate (see heartwood()). Each landmark's entrance
+# faces edge 0, with a short approach from the centre piece's edge-0 side to it; the engine turns the landmark
+# so edge 0 meets the longest trail (landmark_flow.turn). Every trail runs along the wedge's middle line, from near the centre out to the edge, so trails
 # meet the neighbour's trail at the edge's middle whichever way they turn.
 
 def trail_line(rng, x0, x1, step, wobble=0.06):
@@ -1224,7 +1206,7 @@ VARIANTS = {
     "fey_wood": ("forest", fey_wood, "fey_wood", ("edge_trail", "centre_near")),
     "dark_wood": ("forest", dark_wood, "dark_wood", ("edge_trail", "centre_near")),
     "heartwood": ("forest", heartwood, "heartwood",
-                  ("edge_same_b", "edge_landmark") + tuple(f"edge_trail_{m}" for m in TRAIL_MARKERS)),
+                  ("edge_same_b", "edge_landmark", "edge_trail")),
     # landmark tiles, built like variants
     "treeoflife": ("forest", treeoflife, "heartwood", ("edge_trail",)),
     "hiddenshrine": ("forest", hidden_shrine, "deep_forest", ("edge_trail",)),

@@ -13,6 +13,9 @@ never changes as the map grows:
    landmark. A variant tile touching a landmark that has its own landmark wedge (the Tree of Life's roots)
    uses that instead.
 4. A tile one step from the landmark uses its variant's near centre, which plays the look up.
+5. The landmark tile turns in 60 degree steps so its entrance (on edge 0 of every landmark piece) faces the
+   edge where the longest trail arrives: the trail from the farthest tile (ties between equally far tiles
+   broken by hash01(q, r, 10)). Only the centre piece turns; the wedges stay on their own edges.
 Plain Python, so the engines can copy it.
 """
 import ground_cover as gc
@@ -50,3 +53,17 @@ def trail_edges(tile, toward):
         if toward.get(tile) == n or toward.get(n) == tile:
             out.append(i)
     return out
+
+
+def turn(landmark, dist, toward):
+    """How many 60 degree steps (anticlockwise, the way edge numbers go) the landmark's centre piece turns, so
+    its entrance on edge 0 faces the edge where the trail from the farthest tile arrives. 0 if the region is
+    the landmark alone."""
+    far = [t for t, d in dist.items() if d]
+    if not far:
+        return 0
+    t = max(far, key=lambda t: (dist[t], gc.hash01(t[0], t[1], 10)))
+    while toward[t] != landmark:
+        t = toward[t]
+    q, r = landmark
+    return NEIGHBOURS.index((t[0] - q, t[1] - r))
