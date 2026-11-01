@@ -135,6 +135,78 @@
    "title": "App icon v3b \u00b7 the same coin on the dusk pastel (#EDCFD7)",
    "is_interactive": false,
    "radius": 28
+  },
+  "Icon-v4a-Tile.dc.html": {
+   "x": 0,
+   "y": 5650,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v4a \u00b7 v1a's hex tile again, with the home-screen name Heads/Hexes, side by side with v4b",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v4b-Coin.dc.html": {
+   "x": 924,
+   "y": 5650,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v4b \u00b7 v3a's coin on the midday pastel, with the home-screen name Heads/Hexes",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Title-v5-NoPanes.dc.html": {
+   "x": 0,
+   "y": 6420,
+   "w": 844,
+   "h": 390,
+   "title": "Title v5 \u00b7 v4 with the menu's cream pane taken out too: the buttons float on the map like the logo, with a soft shadow under the group",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Icon-v5a-CoinAndTile.dc.html": {
+   "x": 0,
+   "y": 6930,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v5a \u00b7 the coin (v3's face) and v4a's painted tile side by side on the dawn pastel",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v5b-CoinSlashTile.dc.html": {
+   "x": 924,
+   "y": 6930,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v5b \u00b7 coin, a cream slash, then the tile, in one row, read like the name: Heads/Hexes",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v5c-DiagonalSplit.dc.html": {
+   "x": 1848,
+   "y": 6930,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v5c \u00b7 a cream slash runs corner to corner: the coin top left on dawn peach, the tile bottom right on midday blue",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v6a-DiagonalSlash.dc.html": {
+   "x": 0,
+   "y": 7700,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v6a \u00b7 v5c's placement (coin top left, tile bottom right) with v5b's look: one dawn pastel, and v5b's short cream slash between them, tilted across the diagonal",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v6b-DiagonalUpright.dc.html": {
+   "x": 924,
+   "y": 7700,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v6b \u00b7 the same with the slash at v5b's steeper, more upright angle",
+   "is_interactive": false,
+   "radius": 28
   }
  },
  "order": [
@@ -151,7 +223,15 @@
   "Icon-v2b-CoinMargin.dc.html",
   "Title-v4-FloatingLogo.dc.html",
   "Icon-v3a-CoinSky.dc.html",
-  "Icon-v3b-CoinDusk.dc.html"
+  "Icon-v3b-CoinDusk.dc.html",
+  "Icon-v4a-Tile.dc.html",
+  "Icon-v4b-Coin.dc.html",
+  "Title-v5-NoPanes.dc.html",
+  "Icon-v5a-CoinAndTile.dc.html",
+  "Icon-v5b-CoinSlashTile.dc.html",
+  "Icon-v5c-DiagonalSplit.dc.html",
+  "Icon-v6a-DiagonalSlash.dc.html",
+  "Icon-v6b-DiagonalUpright.dc.html"
  ],
  "notes": {
   "v1": {
@@ -200,6 +280,27 @@
    "x": 0,
    "y": 4620,
    "text": "App icon v3 \u00b7 bigger hex, a real tree, pastel backdrop",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons4": {
+   "x": 0,
+   "y": 5390,
+   "text": "App icon v4 \u00b7 tile or coin, with Heads/Hexes",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v5": {
+   "x": 0,
+   "y": 6160,
+   "text": "v5 \u00b7 no panes; icons: coin and tile together",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons6": {
+   "x": 0,
+   "y": 7440,
+   "text": "App icon v6 \u00b7 v5c placement, v5b look",
    "kind": "title1",
    "maxW": 2692
   }
