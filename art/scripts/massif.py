@@ -1,4 +1,6 @@
-"""Reference version of the engines' massif lift: highlands, snowy peaks, volcanic peaks and monastery heights rise
+"""Tried in tiles_v42 and not the plan (Ethan, Nov 1, 2026: not enough difference; see cliffs.py). Kept for reference.
+
+Reference version of the engines' massif lift: highlands, snowy peaks, volcanic peaks and monastery heights rise
 inward from the region's outer edge (design/06 -> Tile build: hills variants rise inward).
 
 Once a region finishes, its tiles are fixed, so this is worked out once per region and never changes as the map grows:
