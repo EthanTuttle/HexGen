@@ -75,7 +75,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Desert | Canyon | Deep winding gorges cut down into the land (unlike the badlands' mesas, which rise); cliff walls banded cream, orange and rust, with overhangs and arches; adobe cliff dwellings with ladders and dark doorways |
   | Farmland | Haunted homesteads | Grey withered crops and weeds overrunning the plots, broken fences; ragged scarecrows with crows perched and circling; boarded-up farmhouses with sagging roofs and dead trees in the yards |
   | Farmland | Bandit-raided farms | Scorched plots with a few small fires and rising smoke; charred barns and farmhouses beside intact ones; trampled crop paths with spilled sacks and broken crates |
-  | Farmland | Cider orchards | Neat rows of round fruit trees with red apples replace the wheat plots, with ladders, baskets and fallen fruit; tracks, fences and gates as on other farms (chosen Nov 1, 2026) |
+  | Farmland | Cider orchards | Rows of round fruit trees with red apples fill the whole tile instead of sitting in plots like wheat, spread out enough not to look busy, with ladders, baskets and fallen fruit; tracks still run between tiles, with fences and gates as on other farms (chosen Nov 1, 2026) |
   | Ruins | Haunted ruins | Pale blue-green light seeping from cracks and doorways, with faint spirit wisps, stronger at night; toppled gravestones, sarcophagi and mausoleum fronts; thin mist pooling and drifting between the stones |
   | Ruins | Golem-guarded ruins | Big dormant stone golems standing or kneeling, eyes and runes faintly lit; carved runes on walls and paving pulsing amber or blue; grander, less crumbled ruins with columns, arches and stairs still standing |
 
