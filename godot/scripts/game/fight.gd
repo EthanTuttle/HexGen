@@ -597,6 +597,21 @@ func _cell_under(pos: Vector2) -> Vector2i:
 	return cell_at(game.ground_point(pos) - Vector2(position.x, -position.z))
 
 
+## A unit's effects for its portrait, as [name, what it does] pairs: the states the loop tracks. PLACEHOLDER
+## numbers, as in _attack; the docs' injuries and other conditions aren't modelled.
+func effects(u: Dictionary) -> Array:
+	var fx := []
+	if u.down:
+		fx.append(["Down", "0 HP, can't act"])
+	if u.defending:
+		fx.append(["Defending", "takes %d less damage until their next turn" % Rules.DEFEND_REDUCTION])
+	if u.blessed:
+		fx.append(["Blessed", "+1 coin on their next attack"])
+	if u.poison:
+		fx.append(["Poison Blade", "hits this turn deal +%d damage" % Rules.POISON_BONUS])
+	return fx
+
+
 ## An enemy's name, HP and what it does; an ally's HP, AP and status.
 func _details(pos: Vector2) -> void:
 	var u := unit_at(_cell_under(pos))

@@ -28,7 +28,7 @@ func show_at(at: Vector2, title: String, lines: Array) -> void:
 	for c in _lines.get_children():
 		c.queue_free()
 	for l in lines:
-		var lab := UI.label(str(l), "n700", 10, UI.INK_SOFT)
+		var lab := UI.label(str(l), "n700", 11, UI.INK_SOFT)
 		lab.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_lines.add_child(lab)
 	visible = true

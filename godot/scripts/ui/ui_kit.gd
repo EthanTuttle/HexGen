@@ -138,6 +138,15 @@ class FingerButton extends Button:
 		return UI.finger_rect(size).has_point(point)
 
 
+## A party portrait's details (DOCS: Touch controls -> Long-press on HUD controls): the character's effects
+## (injuries, buffs, conditions) with what each does, one per line under their name; "" when they have none,
+## so nothing opens. `fx` holds [name, what it does] pairs.
+static func effects_tip(who: String, fx: Array) -> String:
+	if fx.is_empty():
+		return ""
+	return who + "\n" + "\n".join(fx.map(func(e): return "%s: %s" % [e[0], e[1]]))
+
+
 ## The hit area of a control drawn at `size`: grown to at least a finger (Rules.FINGER) each way, centred, so
 ## small mockup controls keep their look but are easy to tap (design: everything tappable at least 44 pt).
 static func finger_rect(size: Vector2) -> Rect2:

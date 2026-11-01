@@ -689,8 +689,8 @@ func _connect_gestures() -> void:
 	g.drag.connect(func(_r): popup.visible = false)
 	g.pinch.connect(func(_f): popup.visible = false)
 	g.gui_long_press.connect(func(c: Control, pos: Vector2):
-		# A HUD control's details: what hover shows on PC (its tooltip text), first part as the title.
-		var parts := Array(c.tooltip_text.split(","))
+		# A HUD control's details: what hover shows on PC (its tooltip text), first line (or part) as the title.
+		var parts := Array(c.tooltip_text.split("\n" if "\n" in c.tooltip_text else ","))
 		popup.show_at(pos, parts[0], parts.slice(1).map(func(x): return str(x).strip_edges())))
 
 

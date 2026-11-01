@@ -139,14 +139,14 @@ func tile_screen(t: Vector2i) -> Vector2:
 	return screen_of(Hex.to3(Hex.tile_position(t.x, t.y)))
 
 
-## The centre of the first visible control whose text or tooltip starts with `prefix`.
+## The centre of the first visible control whose text, tooltip or accessibility name starts with `prefix`.
 func control(prefix: String) -> Vector2:
 	for n in get_tree().root.find_children("*", "Control", true, false):
 		var c := n as Control
 		if not c.is_visible_in_tree() or c.mouse_filter == Control.MOUSE_FILTER_IGNORE:
 			continue
 		var t: String = str(c.get("text")) if c.get("text") != null else ""
-		if t.begins_with(prefix) or c.tooltip_text.begins_with(prefix):
+		if t.begins_with(prefix) or c.tooltip_text.begins_with(prefix) or c.accessibility_name.begins_with(prefix):
 			return c.get_global_rect().get_center()
 	return Vector2.INF
 
@@ -172,9 +172,52 @@ func audit(where: String) -> void:
 		if c.mouse_filter != Control.MOUSE_FILTER_STOP or not c.is_visible_in_tree() or c is Container:
 			continue
 		if c.size.x < Rules.FINGER or c.size.y < Rules.FINGER:
-			var label: String = c.tooltip_text if c.tooltip_text != "" else str(c.get("text")) if c.get("text") != null else c.get_class()
+			var label: String = c.accessibility_name if c.accessibility_name != "" else c.tooltip_text if c.tooltip_text != "" else str(c.get("text")) if c.get("text") != null else c.get_class()
 			print("AUDIT %s | %s | %s | %.0f x %.0f | hit %s" % [where, label, c.get_script().get_global_name() if c.get_script() else c.get_class(),
 					c.size.x, c.size.y, "grown" if c.has_method("_has_point") and c.get_script() != null else "NOT grown"])
+
+
+## Every visible control with hover text (PC hover, touch long-press). Only party portraits with effects and
+## combat's action cards (DOCS: Action cards -> long-press opens details) may have any.
+func tooltips(where: String) -> void:
+	var odd := []
+	for n in get_tree().root.find_children("*", "Control", true, false):
+		var c := n as Control
+		if c.tooltip_text == "" or not c.is_visible_in_tree() or c.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+			continue
+		var kind: String = c.get_script().get_global_name() if c.get_script() else c.get_class()
+		var portrait: bool = game.party.any(func(m): return m.name == c.accessibility_name)
+		if not portrait and not c.get_script() in [CombatHud._HotCard, CombatHud._AllCard]:
+			odd.append("%s (%s)" % [c.tooltip_text.get_slice("\n", 0), kind])
+	check(odd.is_empty(), "%s: no hover text on controls the docs give none %s" % [where, odd if not odd.is_empty() else ""])
+
+
+## Every visible label and drawn text at 11 pt or more (DOCS: Minimum text size on phones).
+func text_sizes(where: String) -> void:
+	var small := []
+	for n in get_tree().root.find_children("*", "Control", true, false):
+		var c := n as Control
+		if not c.is_visible_in_tree():
+			continue
+		var sz := -1
+		var what := ""
+		if c is Label and (c as Label).text != "":
+			sz = c.get_theme_font_size("font_size")
+			what = (c as Label).text
+		elif (c is HexShape and (c as HexShape).text != "") or (c is TagButton):
+			sz = c.text_size
+			what = c.text
+		if sz >= 0 and sz < 11:
+			small.append("%s %d pt" % [what.left(20), sz])
+	check(small.is_empty(), "%s: no text under 11 pt %s" % [where, small if not small.is_empty() else ""])
+
+
+## Presses and holds a finger still past the long-press time, then lets go.
+func hold_still(p: Vector2) -> void:
+	await _touch(0, p, true)
+	await _wait(0.7)
+	await _touch(0, p, false)
+	await _wait(0.2)
 
 
 func check(ok: bool, what: String) -> void:
@@ -202,6 +245,7 @@ func say(text: String) -> void:
 func _run() -> void:
 	await _wait(1.2)
 	audit("map")
+	text_sizes("map")
 	var demo := Demo.new()   # its slot picker, so the cards grow clusters the way the demo plays
 	demo.game = game
 
@@ -271,19 +315,40 @@ func _run() -> void:
 	await _wait(0.2)
 	check(game.map.terrains.size() > 0 and game.picked == null, "the long-press didn't pick a walk")
 
-	# 5. Long-press a card in the hand: what hover shows on PC.
+	# 5. Long-press on HUD controls (DOCS: Touch controls -> Long-press on HUD controls): only a party portrait
+	# with effects opens anything; a hand card, the Quests and nav buttons and a portrait with no effects don't.
+	game.popup.visible = false   # the hex's pop-up from step 4
 	if not game.deck.hand.is_empty():
-		say("Long-press a card: its details")
+		say("Long-press a card: nothing")
 		var c: Control = game.hud._hand_grid.get_child(0)
 		var held_before := game.held
-		await _touch(0, c.get_global_rect().get_center(), true)
-		await _wait(0.6)
-		check(game.popup.visible, "a long-press on a hand card shows its details")
-		await shot("long_press_card")
-		await _wait(0.6)
-		await _touch(0, c.get_global_rect().get_center(), false)
-		await _wait(0.2)
-		check(game.held == held_before, "letting go after a long-press doesn't hold the card")
+		await hold_still(c.get_global_rect().get_center())
+		check(not game.popup.visible, "a long-press on a hand card opens nothing")
+		check(game.held == held_before, "letting go after a long-press on a hand card doesn't hold it")
+	say("Long-press Quests and the nav button: nothing")
+	var toasts_before: String = game.hud._toast_text.text
+	await hold_still(control("Quests"))
+	check(not game.popup.visible and game.hud._toast_text.text == toasts_before, "a long-press on Quests opens nothing and doesn't press it")
+	await hold_still(control("Camera"))
+	check(not game.popup.visible and not game.hud._cam_buttons.visible, "a long-press on the nav button opens nothing and doesn't open it")
+	say("Long-press a portrait with no effects: nothing")
+	var portrait := control(game.party[1].name)
+	await hold_still(portrait)
+	check(not game.popup.visible, "a long-press on a portrait with no effects opens nothing")
+	say("Long-press a portrait with an effect: its effects")
+	game.party[1]["effects"] = [["[Test effect]", "test only, added by the touch test"]]   # TEST ONLY: no effects are modelled outside fights
+	game.hud._refresh_tray()
+	await _wait(0.1)
+	await _touch(0, portrait, true)
+	await _wait(0.6)
+	check(game.popup.visible and game.popup._title.text == game.party[1].name, "a long-press on a portrait with an effect shows them")
+	await shot("long_press_portrait")
+	await _touch(0, portrait, false)
+	await _wait(0.2)
+	game.party[1].erase("effects")
+	game.hud._refresh_tray()
+	game.popup.visible = false
+	tooltips("explore")
 
 	# 6. Pinch to zoom: neither places nor walks.
 	game.hold(-1)
@@ -362,6 +427,8 @@ func _run() -> void:
 	while not game.after.visible:
 		await _wait(0.1)
 	await _wait(4.5)
+	text_sizes("results")
+	tooltips("results")
 	say("Tap Back to map")
 	await tap(control("Back to"))
 	await _wait(1.2)
@@ -377,6 +444,8 @@ func _fight() -> void:
 	var f := game.fight
 	var long_pressed := false
 	audit("combat")
+	text_sizes("combat")
+	tooltips("combat")
 	var guard := 0
 	while f.active and guard < 30:   # allies' turns played (the foes' turns don't count)
 		if f.phase != "allies" or f.busy:
@@ -401,6 +470,27 @@ func _fight() -> void:
 				await shot("long_press_foe")
 				await _wait(0.6)
 				await _touch(0, _fingers[0], false)
+				await _wait(0.2)
+				game.popup.visible = false
+				say("Long-press End hex and a portrait: only effects open")
+				await hold_still(control("End allies"))
+				check(not game.popup.visible and f.phase == "allies", "a long-press on End hex opens nothing and doesn't end the phase")
+				var face := control(u.name)
+				if f.effects(u).is_empty():
+					await hold_still(face)
+					check(not game.popup.visible, "a long-press on a combat portrait with no effects opens nothing")
+				u.defending = true   # TEST ONLY: shows an effect, put back below
+				f.hud.refresh()
+				await _wait(0.1)
+				await _touch(0, face, true)
+				await _wait(0.6)
+				check(game.popup.visible and game.popup._title.text == u.name, "a long-press on a combat portrait shows its effects")
+				await shot("long_press_combat_portrait")
+				await _touch(0, face, false)
+				await _wait(0.2)
+				u.defending = false
+				f.hud.refresh()
+				game.popup.visible = false
 			var tries := 0
 			while f.active and f.phase == "allies" and f.ap_left(u) > 0 and tries < 5:
 				tries += 1

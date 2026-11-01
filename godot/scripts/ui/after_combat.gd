@@ -89,7 +89,7 @@ func _party_panel(game: Game, downed: Dictionary) -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	v.alignment = BoxContainer.ALIGNMENT_BEGIN
-	v.add_child(UI.label("PARTY", "n900", 10, UI.WHITE_WARM, 1))
+	v.add_child(UI.label("PARTY", "n900", 11, UI.INK, 1))   # 11 pt floor; ink: white on the tray is only 2.5:1
 	for m in game.party:
 		var was_down: bool = downed.get(m.name, false)
 		var h := HBoxContainer.new()
@@ -138,7 +138,7 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array) -> Control:
 		var t: String = cards[i]
 		var hx := HexShape.make(60, 69, UI.CREAM_LIGHT, UI.terrain_bg(t), 4).with_icon("t_" + t, UI.terrain_ink(t), 28).with_shadow(UI.HEX_SHADOW)
 		hx.position = Vector2(x + (i % 4) * 72, 48 + (i / 4) * 80)
-		hx.tooltip_text = Rules.NAMES[t] + (" (won back)" if won and i >= drawn.size() else "")
+		hx.accessibility_name = Rules.NAMES[t] + (" (won back)" if won and i >= drawn.size() else "")
 		if not won:
 			hx.modulate.a = 0.55
 		p.add_child(hx)

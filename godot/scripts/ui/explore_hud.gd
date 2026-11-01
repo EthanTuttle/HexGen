@@ -73,7 +73,8 @@ func _refresh_tray() -> void:
 		v.add_theme_constant_override("separation", 3)
 		v.alignment = BoxContainer.ALIGNMENT_CENTER
 		var h := HexShape.make(38, 44, UI.RIM, Color(m.color)).with_text(m.initial, 16).with_shadow(UI.HEX_SHADOW)
-		h.tooltip_text = "%s: opens the character and gear screen (not in this prototype)" % m.name
+		h.accessibility_name = m.name
+		h.tooltip_text = UI.effects_tip(m.name, m.get("effects", []))   # DOCS: Long-press on HUD controls
 		h.clickable = true
 		var cc := CenterContainer.new()
 		cc.add_child(h)
@@ -91,18 +92,18 @@ func _build_buttons() -> void:
 	var quests := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("quests", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 	quests.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	quests.clickable = true
-	quests.tooltip_text = "Quests (not in this prototype)"
+	quests.accessibility_name = "Quests"
 	quests.pressed.connect(func(): game.toast("The quest log isn't in this prototype yet.", false))
 	col.add_child(quests)
 	_nav_row.add_theme_constant_override("separation", 6)
 	var gear := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("gear", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 	gear.clickable = true
-	gear.tooltip_text = "Character and gear (not in this prototype)"
+	gear.accessibility_name = "Character and gear"
 	gear.pressed.connect(func(): game.toast("The character and gear screen isn't in this prototype yet.", false))
 	_nav_row.add_child(gear)
 	_nav = HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("nav", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 	_nav.clickable = true
-	_nav.tooltip_text = "Camera controls"
+	_nav.accessibility_name = "Camera controls"
 	_nav.pressed.connect(_toggle_nav)
 	_nav_row.add_child(_nav)
 	_cam_buttons.add_theme_constant_override("separation", 4)
@@ -113,7 +114,7 @@ func _build_buttons() -> void:
 	for b in [["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["rot_l", "Rotate left"], ["rot_r", "Rotate right"], ["center", "Center on the party"]]:
 		var h := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon(b[0], UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 		h.clickable = true
-		h.tooltip_text = b[1]
+		h.accessibility_name = b[1]
 		h.pressed.connect(game.camera_button.bind(b[0]))
 		_cam_buttons.add_child(h)
 	_nav_row.add_child(_cam_buttons)
@@ -280,7 +281,7 @@ func _refresh_hand() -> void:
 		h.with_shadow(UI.ORANGE_EDGE if on else UI.HEX_SHADOW)
 		h.position = Vector2((i % 3) * 46, (i / 3) * 52 + (0 if on else 6))
 		h.clickable = true
-		h.tooltip_text = Rules.NAMES[t] + (", held: tap a lit hex to place" if on else ", tap to hold")
+		h.accessibility_name = Rules.NAMES[t] + (", held" if on else "")
 		h.pressed.connect(game.hold.bind(i))
 		h.gui_input.connect(_card_press.bind(i))
 		_hand_grid.add_child(h)
@@ -302,7 +303,7 @@ var _rest: Control
 
 func _build_rest() -> void:
 	_rest = _RestCard.new()
-	_rest.tooltip_text = "Rest, heal, 8 hours pass, discard down to 7, reshuffle"
+	_rest.accessibility_name = "Rest"
 	_rest.pressed.connect(game.rest)
 	UI.at(_rest, 378 - 37, 390 - 92 - 6)
 	add_child(_rest)
@@ -600,7 +601,7 @@ func _make_mark(m: Dictionary) -> Control:
 				tv.add_theme_constant_override("separation", 0)
 				var a := UI.label(m.name, "lilita", 12)
 				a.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var b := UI.label(m.region, "n800", 9, INK_REGION)
+				var b := UI.label(m.region, "n800", 11, INK_REGION)
 				b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				tv.add_child(a)
 				tv.add_child(b)
@@ -611,7 +612,7 @@ func _make_mark(m: Dictionary) -> Control:
 				v.add_child(cc)
 			var pin := _Pin.new()
 			pin.custom_minimum_size = Vector2(22, 24)
-			pin.tooltip_text = m.name
+			pin.accessibility_name = m.name
 			pin.clicked.connect(game.toggle_pin.bind(m.tile))
 			var c2 := CenterContainer.new()
 			c2.add_child(pin)

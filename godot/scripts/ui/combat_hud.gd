@@ -55,7 +55,7 @@ func _build_tray() -> void:
 	var end := _EndHex.new()
 	end.custom_minimum_size = Vector2(38, 47)
 	end.pressed.connect(fight.end_phase)
-	end.tooltip_text = "End allies' phase"
+	end.accessibility_name = "End allies' phase"
 	var cc := CenterContainer.new()
 	cc.add_child(end)
 	v.add_child(cc)
@@ -78,7 +78,8 @@ func _refresh_tray() -> void:
 		v.add_theme_constant_override("separation", 3)
 		var h := HexShape.make(38, 44, UI.ORANGE if on else UI.RIM, Color(u.color), 4 if on else 3).with_text(u.initial, 16).with_shadow(UI.HEX_SHADOW)
 		h.clickable = true
-		h.tooltip_text = "%s, %d AP left%s" % [u.name, fight.ap_left(u), ", acting now" if on else ""]
+		h.accessibility_name = u.name
+		h.tooltip_text = UI.effects_tip(u.name, fight.effects(u))   # DOCS: Long-press on HUD controls
 		h.pressed.connect(fight.select.bind(u))
 		if u.down:
 			h.modulate.a = 0.5
@@ -137,7 +138,7 @@ func _build_cam() -> void:
 	for b in [["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["rot_l", "Rotate left"], ["rot_r", "Rotate right"], ["center", "Center on the acting character"]]:
 		var h := HexShape.make(40, 46, UI.RIM, UI.CREAM_LIGHT).with_icon(b[0], Color("#33403B"), 18, 2.4).with_shadow(UI.HEX_SHADOW)
 		h.clickable = true
-		h.tooltip_text = b[1]
+		h.accessibility_name = b[1]
 		h.pressed.connect(_cam.bind(b[0]))
 		v.add_child(h)
 	add_child(v)
@@ -383,8 +384,8 @@ class _HotCard extends Control:
 		if k.limit == "":
 			draw_texture_rect(UI.icon("repeat", Color("#2E6B3A"), 16, 2.6), Rect2(r.position + Vector2(54, 10), Vector2(16, 16)), false)
 		elif k.limit == "fight":
-			draw_style_box(UI.box(Color("#9A4A12"), 8), Rect2(r.position + Vector2(44, 9), Vector2(27, 16)))
-			draw_string(f, r.position + Vector2(49, 21), "1", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UI.WHITE_WARM)
+			draw_style_box(UI.box(Color("#843E0E"), 8), Rect2(r.position + Vector2(44, 9), Vector2(27, 16)))   # 7.4:1 under the 11 pt "1"
+			draw_string(f, r.position + Vector2(48, 21), "1", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.WHITE_WARM)
 			draw_texture_rect(UI.icon("fight_once", UI.WHITE_WARM, 10, 2.6), Rect2(r.position + Vector2(57, 12), Vector2(10, 10)), false)
 		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
 		var lines := String(k.n).split(" ")
@@ -461,7 +462,6 @@ func _build_all() -> void:
 	var edit := TagButton.make("Edit hotbar", 120, 36, 14)
 	edit.cut = 10
 	edit.icon = UI.icon("M4 20h4L19 9l-4-4L4 16z M13 7l4 4", UI.WHITE_WARM, 16, 2.4)
-	edit.tooltip_text = "The Action cards screen isn't in this prototype"
 	edit.pressed.connect(func(): fight.game.toast("The Action cards screen isn't in this prototype yet.", false))
 	head.add_child(edit)
 	var close := HexShape.make(30, 30, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("close", UI.INK_SOFT, 16, 2.6)
@@ -612,8 +612,8 @@ func _make_bar(u: Dictionary) -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var plate := HexShape.make(14, 16, UI.RED if not u.ally else Color("#C9A97A"), UI.RED if not u.ally else Color(u.color), 0 if not u.ally else 1.5)
-	plate.with_text(u.initial, 9, UI.WHITE_WARM if not u.ally else UI.INK)
+	var plate := HexShape.make(17, 19.5, UI.RED if not u.ally else Color("#C9A97A"), UI.RED if not u.ally else Color(u.color), 0 if not u.ally else 1.5)
+	plate.with_text(u.initial, 11, UI.WHITE_WARM if not u.ally else UI.INK)
 	var cc := CenterContainer.new()
 	cc.add_child(plate)
 	v.add_child(cc)
