@@ -6,7 +6,7 @@ Heroes and companions, races, ability scores, coin checks, tactical combat, clas
 
 ## Hero and companions
 
-- The player controls a hero plus companions. Up to 3 companions at once.
+- The player controls a hero plus companions. Up to 3 companions at once. **More can be recruited** (chosen Nov 1, 2026): a companion who doesn't fit in the party (a 4th recruit, or one dropped when a multiplayer guest joins) shows up only at inns and camps. The player needs a way to **swap party members** around (not designed yet; Open questions).
 - Companions are gained by recruiting in locations and as quest rewards.
 - Companions have full classes and gear, like the hero, and level up with the hero.
 - In tactical combat, the player controls companions directly.
@@ -708,3 +708,4 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] **New:** the candidate card pool is stale. Ideas now used as real cards include Sweep, Lunge, Feint, Hook, Execute, Smite, Ground Pound, Brace, Vault, Volley, Heavy Bolt, Ricochet, Haymaker, Enchant Blade, Blink Strike, Illusory Double, Blink and Fireball. Prune them?
 - [x] ~~Which actions besides Move and the basic attack are repeatable?~~ (settled Oct 21, 2026: weapon cards, class cards and spells are once per turn by default; repeatable cards are marked where listed. See Combat)
 - [ ] **New (hex grid):** with 6 neighbours per hex, recheck cards that hit "every adjacent foe" (Cleave, Whirlwind Dance, Pocket Sand, Ground Pound, Zone of Steel), which can now reach up to 6 foes instead of 8 on squares. Also define "behind" and "flanked" on hexes (Backstab, Sneak Attack, Shadowstep, Panther beast), and how arcs and lines work, since lines only run cleanly in 6 directions (Sweeping Arc, Wide Chop, Piercing Throw, Aimed Shot capstone, Aurora's Wrath)
+- [ ] **New:** the party swap: where and how the player swaps companions in and out (at inns and camps only, or anywhere?), and what waiting companions do

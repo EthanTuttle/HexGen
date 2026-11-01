@@ -218,7 +218,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New (Nov 1): armour follow-ups: heavy's Move penalty size, categorised accessory stats, any damage reduction, easing heavy's costs; playtest heavy at level 1 (hit only on the long shot)
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
-- [ ] New: a guest's send-off
+- [x] ~~A guest's send-off~~ (settled Nov 1: Ready / Join, dropping in beside the host's hero; the last companion makes room)
+- [ ] New (Nov 1): the party swap (recruits beyond 3 wait at inns and camps); must guests be Ready before the host's Begin?
 - [ ] New: onboarding: the tutorial's lesson order; timing against the mentors' stories; returning players and guests with no skipping (see Presentation → Onboarding)
 - [ ] New: names for the six starting quests
 - [ ] New: names for the unnamed racial passives (v8 working names)
