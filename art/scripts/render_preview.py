@@ -317,8 +317,6 @@ def build_map(templates, animated=False, tiles=None):
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
                 if lf.heads_in((q, r), i, dist) and f"{kit}_edge_trail_in" in templates:
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
-                elif len(trails) == 1 and name not in vr.LANDMARKS and f"{kit}_edge_trail_start" in templates:
-                    edge = f"{kit}_edge_trail_start"  # where the trail begins: the track fades out
             elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
                 edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
             elif not joined[i] and name in vr.LANDMARKS and f"{kit}_edge_other_lm" in templates:
@@ -531,9 +529,7 @@ if __name__ == "__main__":
         el = math.radians(40)
         for short, variant, lm, with_paths in (("steppe", "battlefield", "oldbattlefield", False),
                                                ("stormy", "stormy_plains", "thunderbirdnest", False),
-                                               ("tourney_b", "tourney_fields_b", "traininggrounds", False),
-                                               ("tourney_a", "tourney_fields", "traininggrounds", True)):
-            vr.LANDMARKS[lm] = variant
+                                               ("tourney", "tourney_fields", "traininggrounds", False)):
             tiles_map = density_map(variant, lm)
             for paths in ((True, False) if with_paths else (False,)):
                 hk.empty_scene()
@@ -551,8 +547,21 @@ if __name__ == "__main__":
             cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
                                                                     1.2 + 16 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
-            if short != "tourney_a":
-                render(f"plains_t2_{lm}_closeup")
+            render(f"plains_t2_{lm}_closeup")
+        sys.exit(0)
+    if "tourney-stations" in flags:
+        # Close-ups of the tourney stations: each centre piece alone on its base, unturned.
+        el = math.radians(42)
+        for piece in ("centre", "centre_b", "centre_mid", "centre_near"):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            col = hk.new_collection("map")
+            base = place(templates, "base_plains", col, Vector((0, 0, 0)))
+            base.material_slots[0].link = "OBJECT"
+            base.material_slots[0].material = hk.material("mown")
+            place(templates, f"tourney_fields_{piece}", col, Vector((0, 0, 0)))
+            stage(Vector((0, 0, 0)), 15, 42)
+            render(f"plains_t2_tourney_stations_{piece}")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same

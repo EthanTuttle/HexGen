@@ -34,13 +34,13 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            # farmland tier 2 (farm pieces hold their own, like farmland)
            "haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0,
            # plains tier 2 and class variant
-           "battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05, "tourney_fields_b": 0.05}
+           "battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05}
 # Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
 # tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
 TUFT = {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
         "oldbattlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "thunderbirdnest": "tuft_storm"}
 NO_FLOWERS = {"dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
-              "tourney_fields", "tourney_fields_b", "traininggrounds"}
+              "tourney_fields", "traininggrounds"}
 BENT = {"stormy_plains", "thunderbirdnest"}  # tufts lean hard one way (+X in world space), the wind's direction
 WATER = {"river", "delta"}
 FLOWERS = ["flower", "flower_pink", "flower_white", "flower_blue"]

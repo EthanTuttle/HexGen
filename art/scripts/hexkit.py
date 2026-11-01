@@ -172,7 +172,6 @@ PALETTE = {
     "felt_dark": "#D9CBA8",
     "camp_earth": "#BDB982",
     "steppe": "#B4B97C",
-    "war_road": "#8D8058",
     "war_earth": "#84795C",
     "rust": "#8E5A3A",
     "shield_wood": "#9C7B52",
@@ -181,7 +180,6 @@ PALETTE = {
     "banner_dark": "#6E3A34",
     "tuft_steppe": "#8E9A5C",
     "stormy": "#8FC4A6",
-    "burn_track": "#454843",
     "tuft_storm": "#62A488",
     "scorch": "#3C3B38",
     "scorch_rim": "#6F8A7A",
@@ -189,6 +187,7 @@ PALETTE = {
     "feather": "#A9B9C6",
     "feather_dark": "#4F6372",
     "mown": "#B9DE8E",
+    "lane_mown": "#CDE9A6",
     "arena_sand": "#E4CD97",
     "stand_a": "#9A7450",
     "stand_b": "#86633F",
@@ -324,15 +323,6 @@ def scatter(rng, inside, count, min_dist, bounds, tries=400):
 
 WEDGE_BOUNDS = ((INNER * TILE_APOTHEM, TILE_APOTHEM), (-TILE_RADIUS / 2, TILE_RADIUS / 2))
 CENTRE_BOUNDS = ((-INNER * TILE_APOTHEM, INNER * TILE_APOTHEM), (-INNER * TILE_RADIUS, INNER * TILE_RADIUS))
-
-
-def mix_colour(a, b, t):
-    """The palette name of a colour t of the way from a to b, added to the palette the first time it's asked for."""
-    name = f"{a}_{b}_{round(t * 100)}"
-    if name not in PALETTE:
-        ca, cb = [[int(PALETTE[c].lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)] for c in (a, b)]
-        PALETTE[name] = "#%02X%02X%02X" % tuple(round(x + (y - x) * t) for x, y in zip(ca, cb))
-    return name
 
 
 def spike_up(piece, at, tip, r, mat_name, segments=4):

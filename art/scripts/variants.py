@@ -76,23 +76,6 @@ def grazer(p, rng, at, spin, k=0.68):
     p.box(at + turn(Vector((-0.3 * k, 0, 0)), spin), (0.05 * k, 0.05 * k, 0.22 * k), "trunk", z=0.42 * k, spin=spin)  # tail
 
 
-def fading_track(p, mat, ground, fade, half=0.25, path_x0=X0):
-    """A track worn along a wedge's middle line to the edge, and its path centreline (the centre takes it on from
-    the inner end). It narrows to a point at the tile's middle, so a tile's tracks meet there; with fade, where the
-    trail begins (edge_trail_start), it pales and thins into the ground instead."""
-    x1 = X1
-    if not fade:
-        p.flat([Vector((0, 0, 0)), Vector((0.5, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)),
-                Vector((0.5, half, 0))], 0.012, mat)
-    else:
-        p.flat([Vector((1.9, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((1.9, half, 0))], 0.012, mat)
-        steps = ((1.9, 1.45, 1.0, 0.8, 0.3), (1.45, 1.0, 0.8, 0.6, 0.6), (1.0, 0.55, 0.6, 0.3, 0.85))
-        for x_out, x_in, w_out, w_in, t in steps:
-            p.flat([Vector((x_in, -half * w_in, 0)), Vector((x_out, -half * w_out, 0)), Vector((x_out, half * w_out, 0)),
-                    Vector((x_in, half * w_in, 0))], 0.012, hk.mix_colour(mat, ground, t))
-    p.paths.append([Vector((path_x0, 0, 0)), Vector((x1, 0, 0))])
-
-
 def spirit_pole(p, rng, at):
     """A nomads' marker beside a trail: a heap of stones with a pole in it, a strip of blue cloth at the top."""
     p.cone(at, 0.22, 0.26, "rock", segments=6, spin=rng.uniform(0, 1))
@@ -151,8 +134,8 @@ def meadows(p, rng, kind):
 
 def nomad_camp(p, rng, kind):
     """Rolling meadows' Nomad Camp: six round felt tents in a ring round a central fire, a tall standard over it
-    so it reads from the map camera, a picket line of horses and rugs drying on racks. The way in from edge 0 is the
-    approach. Fire and smoke are the engine's."""
+    so it reads from the map camera, a picket line of horses and rugs drying on racks. The way in is the gap between
+    the tents on edge 0. Fire and smoke are the engine's."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.45, pointy=True)][::-1], 0.022, "camp_earth")
     p.no_cover.append((Vector((0, 0, 0)), 2.5))
     middle = Vector((0, 0, 0))
@@ -172,9 +155,6 @@ def nomad_camp(p, rng, kind):
     p.cylinder(pole, 0.2, 0.12, "hay", segments=6, z=3.4)
     for sd, drop in ((1, 1.5), (-1, 1.15)):
         p.box(pole + Vector((0, sd * 0.17, 0)), (0.03, 0.3, drop), "banner", z=3.4 - drop)
-    # the approach on edge 0, into the ring between two tents
-    p.flat([Vector((0.75, -0.26, 0)), Vector((2.15, -0.26, 0)), Vector((2.15, 0.26, 0)), Vector((0.75, 0.26, 0))], 0.03,
-           "worn_track")
     # a picket line of horses out past the ring, and rugs drying, in the corners between lanes
     back = bt.field_spot(4, 3.05)  # toward 270 degrees
     for sd in (-1, 1):
@@ -1928,9 +1908,8 @@ def deep_flow(p, rng, kind, x0=None):
 # Open ground with no paths: props in tight groups. The centre reaches past the centre region and turns by a hash
 # of the tile, with centre_b and edge_same_b as alternates, so nothing lines up. The flow to the landmark is density:
 # centre_near on tiles one step from it, centre_mid two steps, the plain centres beyond (landmark_flow's distance).
-# Landmarks are centre pieces, entrance on edge 0. Tourney fields option a alone has tracks.
+# Landmarks are centre pieces, entrance on edge 0, with no drawn approach.
 PLAINS_KINDS = ("centre_b", "edge_same_b", "centre_mid", "centre_near")  # density bands: no tracks (design/06)
-START = "edge_trail_start"
 
 
 # Steppe/battlefield
@@ -2057,9 +2036,7 @@ def old_battlefield(p, rng, kind):
         for row, d in enumerate((2.72, 3.2)):
             for t in range(-1, 2) if row == 0 else (-1.5, -0.5, 0.5, 1.5):
                 old_grave(p, rng, out * d + side * t * 0.52)
-    # the approach on edge 0
-    p.flat([Vector((0.75, -0.27, 0)), Vector((2.55, -0.27, 0)), Vector((2.55, 0.27, 0)), Vector((0.75, 0.27, 0))], 0.03,
-           "war_road")
+    # the way in on edge 0 is the palisade's gap, with no drawn road
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 0.8 for i in range(6)]
     p.paths.append([Vector((X0, 0, 0)), ring[0]])
     p.paths.append(ring + [ring[0]])
@@ -2151,9 +2128,8 @@ def thunderbird_nest(p, rng, kind):
     for q in (Vector((0.2, 0.1, 0)), Vector((-0.2, 0.15, 0)), Vector((0, -0.22, 0))):
         p.box(q, (0.2, 0.2, 0.05), "ember", z=3.42, spin=q.x * 5)
     p.effects += [("crackle", Vector((0.15, 0.1, 3.75))), ("crackle", Vector((-0.5, -0.3, 3.85)))]
-    # the cleft at its foot, the burnt approach, feathers
+    # the cleft at its foot, feathers
     p.box(Vector((1.02, 0, 0)), (0.12, 0.55, 0.85), "cave_dark")
-    p.flat([Vector((1.05, -0.17, 0)), Vector((2.4, -0.17, 0)), Vector((2.4, 0.17, 0)), Vector((1.05, 0.17, 0))], 0.03, "burn_track")
     big_feather(p, rng, bt.field_spot(0, 1.95) + Vector((0, 0.1, 0.02)), 1.1, 1.3)
     big_feather(p, rng, bt.field_spot(4, 1.9) + Vector((-0.5, 0, 0.02)), 0.3, 1.4)
     big_feather(p, rng, bt.field_spot(2, 2.0) + Vector((-0.1, 0, 0.02)), 2.4, 1.15)
@@ -2174,28 +2150,58 @@ def pennant_pole(p, at, h=1.5, cloth="banner"):
         p.surface.add(f)
 
 
-def pavilion(p, rng, at, r=0.62, cols=("awning_a", "wall")):
-    """A round striped pavilion: striped wall, tall striped roof, a pennant on top."""
+def pavilion(p, rng, at, r=0.55, cols=("awning_a", "wall"), door_to=None):
+    """A round striped pavilion: striped wall, tall striped roof, a pennant on top, a dark door facing door_to."""
     h = r * 1.3
     p.cylinder(at, r, h, "wall", segments=8)
     for k in range(0, 8, 2):
         a = 2 * math.pi * (k + 0.5) / 8
         p.box(at + Vector((math.cos(a), math.sin(a), 0)) * (r * 0.93), (0.04, r * 0.72, h - 0.01), cols[0], spin=a)
+    if door_to is not None:
+        a = math.atan2((door_to - at).y, (door_to - at).x)
+        p.box(at + Vector((math.cos(a), math.sin(a), 0)) * r, (0.05, r * 0.7, h * 0.75), "mill_door", spin=a)
     striped_roof(p, at, r * 1.18, r * 1.05, h, segments=8, cols=cols)
     pennant_pole(p, at + Vector((0, 0, h + r * 1.0)), 0.4, cols[0])
 
 
-def sparring_ring(p, rng, at, r=0.72):
-    """A roped sparring ring: a sand octagon, posts, two ropes."""
-    pts = [at + Vector((math.cos(2 * math.pi * k / 8), math.sin(2 * math.pi * k / 8), 0)) * r for k in range(8)]
-    p.prism(pts, 0.0, 0.025, "arena_sand")
-    for k in range(0, 8, 2):
-        p.box(pts[k], (0.07, 0.07, 0.62), "trunk")
-    for k in range(0, 8, 2):
-        a, b = pts[k], pts[(k + 2) % 8]
+def sparring_ring(p, rng, at, r=0.68):
+    """A roped sparring ring: a square of sand, four posts, two ropes, a bench and a weapon rack along one side.
+    Nothing stands within a stride of it."""
+    pts = [at + Vector((sx, sy, 0)) * r for sx, sy in ((1, 1), (-1, 1), (-1, -1), (1, -1))]
+    p.prism([at + (q - at) * 1.12 for q in pts], 0.0, 0.025, "arena_sand")
+    for q in pts:
+        p.box(q, (0.07, 0.07, 0.62), "trunk")
+    for k in range(4):
+        a, b = pts[k], pts[(k + 1) % 4]
         d = b - a
         for z in (0.32, 0.56):
             p.box((a + b) / 2, (d.length, 0.03, 0.03), "ribbon_white", z=z, spin=math.atan2(d.y, d.x))
+    bench(p, at + Vector((-0.42, -r - 0.42, 0)), 0.0)
+    weapon_rack(p, at + Vector((0.48, -r - 0.42, 0)), 0.0)
+
+
+def bench(p, at, spin):
+    """A plain bench, long along spin."""
+    side = turn(Vector((0.33, 0, 0)), spin)
+    for sd in (-1, 1):
+        p.box(at + side * sd, (0.06, 0.2, 0.2), "trunk", spin=spin)
+    p.box(at, (0.86, 0.22, 0.05), "shield_wood", z=0.2, spin=spin)
+
+
+def weapon_rack(p, at, spin):
+    """A rack of practice weapons: two posts, a rail, three poles leaning on it."""
+    along = turn(Vector((1, 0, 0)), spin)
+    for sd in (-1, 1):
+        p.box(at + along * sd * 0.3, (0.06, 0.06, 0.62), "trunk")
+    p.box(at, (0.68, 0.05, 0.05), "trunk", z=0.58, spin=spin)
+    tilt = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.22, 3, "X")
+    for t in (-0.2, 0.0, 0.2):
+        p.box_rot(at + along * t + Vector((0, 0, 0.45)), (0.035, 0.035, 0.95), ("banner", "iron", "trunk")[int(t * 5) + 1], tilt)
+
+
+def ground_patch(p, origin, spin, x0, x1, y0, y1, mat, z=0.014):
+    """A rectangle on the ground, in a station's own frame."""
+    p.flat([origin + turn(Vector((x, y, 0)), spin) for x, y in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))], z, mat)
 
 
 def archery_butt(p, rng, at, spin):
@@ -2227,76 +2233,86 @@ def dummy(p, rng, at, spin):
     p.blob(at, 0.12, "sack", z=1.0)
 
 
-def tourney_centre_routes(p):
-    for i in range(6):
-        a = math.radians(60 * i)
-        p.spokes[i] = [Vector((math.cos(a), math.sin(a), 0)) * bt.FARM_ROUTE_R, Vector((0, 0, 0))]
+# A tourney tile is a few stations, each laid out the way it's used; origin and spin place a station on the tile.
+
+def archery_range(p, rng, origin, spin):
+    """Three butts side by side at the far end of a mown shooting lane, a white shooting line at the near end with a
+    bench and a rack of bows behind it, so the archers stand in a row and shoot down the lane."""
+    def at(x, y):
+        return origin + turn(Vector((x, y, 0)), spin)
+    ground_patch(p, origin, spin, -1.35, 1.45, -0.95, 0.95, "lane_mown")
+    ground_patch(p, origin, spin, -1.2, -1.12, -0.85, 0.85, "ribbon_white", z=0.02)
+    for y in (-0.62, 0.0, 0.62):
+        archery_butt(p, rng, at(1.3, y), spin + math.pi)
+    bench(p, at(-1.65, -0.45), spin + math.pi / 2)
+    weapon_rack(p, at(-1.65, 0.5), spin + math.pi / 2)
+
+
+def tilt_lane(p, rng, origin, spin):
+    """A quintain's riding lane: a long worn run-up, a low rail down one side keeping riders straight, two quintains
+    beside the lane with their arms swinging over it, a pennant at each end."""
+    def at(x, y):
+        return origin + turn(Vector((x, y, 0)), spin)
+    ground_patch(p, origin, spin, -2.1, 2.1, -0.36, 0.36, "arena_sand")
+    for x in (-1.95, -0.65, 0.65, 1.95):
+        p.box(at(x, 0.5), (0.07, 0.07, 0.42), "trunk")
+    p.box(at(0, 0.5), (3.95, 0.05, 0.06), "stand_a", z=0.38, spin=spin)
+    for x in (-0.75, 0.85):
+        quintain(p, rng, at(x, -0.6), spin - math.pi / 2)
+    for x, cloth in ((-2.25, "banner"), (2.25, "ribbon_blue")):
+        pennant_pole(p, at(x, 0.5), 1.5, cloth)
+
+
+def dummy_line(p, rng, origin, spin):
+    """A row of training dummies evenly spaced along a sand practice strip, room in front of each to swing, a weapon
+    rack at the end of the row."""
+    def at(x, y):
+        return origin + turn(Vector((x, y, 0)), spin)
+    ground_patch(p, origin, spin, -1.35, 1.35, -0.6, 0.42, "arena_sand")
+    for x in (-0.95, 0.0, 0.95):
+        dummy(p, rng, at(x, 0.2), spin)
+    weapon_rack(p, at(1.75, -0.1), spin + math.pi / 2)
+
+
+def pavilion_camp(p, rng, origin, spin, count=3, cols=("awning_a", "wall")):
+    """A team's camp: pavilions in a shallow arc, doors to the front (+x), a line of bunting on two poles across the
+    front, along the camp's edge."""
+    def at(x, y):
+        return origin + turn(Vector((x, y, 0)), spin)
+    front = at(1.5, 0)
+    for x, y in ((-0.1, -1.2), (-0.1, 1.2), (-0.55, 0))[:count]:
+        pavilion(p, rng, at(x, y), 0.58, cols, door_to=front)
+    a, b = at(0.85, -1.55), at(0.85, 1.55)
+    for q in (a, b):
+        p.box(q, (0.06, 0.06, 1.35), "wall")
+    bunting(p, rng, a, b, 1.3, sag=0.2)
 
 
 def tourney_fields(p, rng, kind):
-    """Round striped pavilions with pennants, roped sparring rings, archery butts, quintains and dummies on short
-    mown grass, bunting between poles at the grounds' edge. Toward the Training Grounds, a raked sand track with
-    pairs of pennant poles; next to it, a bigger pavilion and a row of dummies."""
-    if kind in ("centre", "centre_b", "centre_near"):
-        tourney_centre_routes(p)
-        if kind == "centre":
-            pavilion(p, rng, bt.field_spot(1, 2.0))
-            dummy(p, rng, bt.field_spot(3, 1.7), 0.3)
-            dummy(p, rng, bt.field_spot(3, 2.2), 0.7)
-        elif kind == "centre_b":
-            sparring_ring(p, rng, bt.field_spot(1, 2.1))
-            pavilion(p, rng, bt.field_spot(4, 2.3), 0.55, ("ribbon_blue", "wall"))
-        else:
-            pavilion(p, rng, bt.field_spot(1, 2.15), 0.78, ("ribbon_blue", "wall"))
-            for k in range(3):
-                dummy(p, rng, bt.field_spot(3, 2.0) + Vector((0.42 * (k - 1), 0.2 * (k - 1), 0)), 0.45)
-            sparring_ring(p, rng, bt.field_spot(5, 2.1))
-        return
-    if kind in ("edge_trail", "edge_trail_in", START):
-        fading_track(p, "arena_sand", "mown", kind == START, half=0.27, path_x0=bt.FARM_ROUTE_R)
-        if kind == "edge_trail":  # one pair of poles per trail edge
-            for sd in (-1, 1):
-                pennant_pole(p, Vector((X0 + 1.25, sd * 0.52, 0)), 1.5, "banner" if sd > 0 else "ribbon_blue")
-        return
-    if kind == "same":
-        # turned so that on none of the six edges do they show edge-on from the default camera
-        archery_butt(p, rng, Vector((X0 + 1.35, 1.0, 0)), math.pi + math.pi / 6)
-        archery_butt(p, rng, Vector((X0 + 1.1, 0.55, 0)), math.pi + math.pi / 6)
-    elif kind == "edge_same_b":
-        quintain(p, rng, Vector((X0 + 1.2, -0.85, 0)), 0.5)
-    else:  # the grounds' edge: bunting between poles
-        ys = (-1.25, 0.0, 1.25)
-        for y in ys:
-            p.box(Vector((X1 - 0.5, y, 0)), (0.06, 0.06, 1.25), "wall")
-        for y0, y1 in zip(ys, ys[1:]):
-            bunting(p, rng, Vector((X1 - 0.5, y0, 0)), Vector((X1 - 0.5, y1, 0)), 1.2, sag=0.14)
-
-
-def tourney_fields_b(p, rng, kind):
-    """Tourney fields, option b: the same look with no tracks. The flow to the Training Grounds is density: sparse far
-    off, more pavilions, rings and pennants closer (centre_mid two steps away, centre_near one step), gathered on the
-    band pieces' +X side, which faces the landmark."""
-    if kind == "centre_b":
-        sparring_ring(p, rng, bt.field_spot(1, 2.2))
+    """Tourney grounds on short mown grass, each tile a few stations: an archery range, a quintain's riding lane,
+    a dummy line, a sparring ring, a team's pavilion camp. Bunting marks the grounds' edge. No tracks: the flow to the
+    Training Grounds is density: practice stations far off, then a camp of two pavilions (centre_mid, two steps away),
+    then a bigger camp with more around it (centre_near, one step), the camps on the band pieces' +X side, which
+    faces the landmark."""
+    if kind == "centre":
+        archery_range(p, rng, Vector((0.25, 1.55, 0)), 0.0)
+        dummy_line(p, rng, Vector((-0.1, -1.7, 0)), 0.0)
+    elif kind == "centre_b":
+        tilt_lane(p, rng, Vector((0, 1.75, 0)), 0.0)
+        sparring_ring(p, rng, Vector((0.3, -1.3, 0)))
     elif kind == "centre_mid":
-        pavilion(p, rng, bt.field_spot(0, 2.6))
-        sparring_ring(p, rng, bt.field_spot(5, 2.6))
-        pennant_pole(p, bt.field_spot(0, 1.4), 1.6, "ribbon_blue")
-        pennant_pole(p, bt.field_spot(5, 1.3), 1.6)
+        pavilion_camp(p, rng, Vector((2.0, 0, 0)), 0.0, 2)
+        sparring_ring(p, rng, Vector((-1.3, 0.3, 0)))
     elif kind == "centre_near":
-        pavilion(p, rng, bt.field_spot(0, 2.7), 0.75, ("ribbon_blue", "wall"))
-        pavilion(p, rng, bt.field_spot(5, 3.0), 0.6)
-        sparring_ring(p, rng, bt.field_spot(5, 1.6))
-        for k in range(3):
-            dummy(p, rng, bt.field_spot(0, 1.3) + Vector((0.42 * (k - 1), 0.2 * (k - 1), 0)), 0.45)
-        for k, r in ((1, 1.6), (1, 2.5), (4, 1.6), (4, 2.5)):
-            pennant_pole(p, bt.field_spot(k, r), 1.7, ("banner", "ribbon_blue")[int(r > 2)])
-    elif kind == "edge_same_b":
-        archery_butt(p, rng, Vector((X0 + 1.35, 1.0, 0)), math.pi + math.pi / 6)
-        archery_butt(p, rng, Vector((X0 + 1.1, 0.55, 0)), math.pi + math.pi / 6)
-    elif kind in ("centre", "other"):
-        tourney_fields(p, rng, kind)
-        p.spokes = {}
+        pavilion_camp(p, rng, Vector((2.0, 0, 0)), 0.0, 3, ("ribbon_blue", "wall"))
+        sparring_ring(p, rng, Vector((-0.15, 2.45, 0)))
+        archery_range(p, rng, Vector((-1.0, -1.1, 0)), 0.0)
+    elif kind == "other":  # the grounds' edge: a bunting line along the whole edge, corner to corner, so it runs on
+        h = bt.BORDER_X * bt.TAN30
+        for y in (-h, 0.0, h):
+            p.box(Vector((bt.BORDER_X, y, 0)), (0.07, 0.07, 1.3), "wall")
+        for y0, y1 in ((-h, 0.0), (0.0, h)):
+            bunting(p, rng, Vector((bt.BORDER_X, y0, 0)), Vector((bt.BORDER_X, y1, 0)), 1.25, sag=0.16)
 
 
 def training_grounds(p, rng, kind):
@@ -2325,7 +2341,7 @@ def training_grounds(p, rng, kind):
         p.box(q + turn(Vector((0.02, 0, 0)), a), (0.03, 0.34, 0.8), ("banner", "ribbon_blue")[k % 2], z=1.42, spin=a)
     for sd in (-1, 1):
         pennant_pole(p, Vector((2.0, sd * 0.68, 0)), 2.0, "banner")
-    p.flat([Vector((0.9, -0.3, 0)), Vector((2.35, -0.3, 0)), Vector((2.35, 0.3, 0)), Vector((0.9, 0.3, 0))], 0.03, "arena_sand")
+    p.flat([Vector((0.9, -0.3, 0)), Vector((2.0, -0.3, 0)), Vector((2.0, 0.3, 0)), Vector((0.9, 0.3, 0))], 0.045, "arena_sand")  # the gate's floor, to the stands' outer edge
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * bt.FARM_ROUTE_R for i in range(6)]
     p.paths.append(ring + [ring[0]])
     p.paths.append([ring[0], Vector((0.5, 0, 0))])
@@ -2340,10 +2356,8 @@ VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
     "meadows": ("plains", meadows, "plains", ("centre_b", "centre_mid", "centre_near")),
     "battlefield": ("plains", battlefield, "steppe", PLAINS_KINDS),
-    "stormy_plains": ("plains", stormy_plains, "stormy", PLAINS_KINDS),
-    "tourney_fields": ("plains", tourney_fields, "mown",
-                       ("centre_b", "edge_same_b", "edge_trail", "edge_trail_in", "edge_trail_start", "centre_near")),
-    "tourney_fields_b": ("plains", tourney_fields_b, "mown", PLAINS_KINDS),
+    "stormy_plains": ("plains", stormy_plains, "stormy", ("centre_b", "centre_mid", "centre_near")),
+    "tourney_fields": ("plains", tourney_fields, "mown", ("centre_b", "centre_mid", "centre_near")),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
