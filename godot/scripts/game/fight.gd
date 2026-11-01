@@ -464,7 +464,7 @@ func _ally_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	if k.effect == "heal":
 		var before: int = t.hp
 		t.hp = mini(t.max_hp, t.hp + Rules.HEAL)
-		result = {coins = [], title = "Healed", good = true, sub = "%s heals %d HP. [amount set by WIS; placeholder]" % [t.name, t.hp - before]}
+		result = {coins = [], title = "Healed", good = true, sub = ""}   # no message: the HP bar shows it
 		hud.float_text(t, "+%d" % (t.hp - before), false, true)
 	else:
 		t.blessed = true
@@ -485,13 +485,6 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.poison = true
 		"defend":
 			a.defending = true
-
-
-func self_message(id: String) -> String:
-	return {"action_surge": "+3 bonus AP this turn. Bonus AP is spent first and lost at the end of the turn.",
-		"second_wind": "Healed %d HP. [amount not set; placeholder]" % Rules.HEAL,
-		"poison_blade": "Hits this turn poison (+%d damage each; placeholder)." % Rules.POISON_BONUS,
-		"defend": "Bracing: %d less damage per hit until your next turn. [placeholder]" % Rules.DEFEND_REDUCTION}.get(id, "")
 
 
 func _hurt(t: Dictionary, dmg: int) -> void:

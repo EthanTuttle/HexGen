@@ -205,17 +205,17 @@ func hold_for_drag(i: int) -> void:
 ## Why a held card can't go on slot t, or "" if it can (DOCS: Placement).
 func why_not(t: Vector2i, terrain: String) -> String:
 	if map.terrains.has(t):
-		return "That hex is already placed."
+		return "Already placed"
 	if not map.slot_nodes.has(t):
-		return "A card must go next to placed land."
+		return "Must touch placed land"
 	if absi(t.x) > Rules.MAP_LIMIT or absi(t.y) > Rules.MAP_LIMIT:
-		return "Edge of the prototype map."
+		return "Edge of the map"
 	if Rules.is_night(minute) and Rules.hex_distance(t, party_tile) > Rules.SIGHT_RANGE:
-		return "Night: you can only build within sight of the party (%d hexes)." % Rules.SIGHT_RANGE
+		return "Out of sight at night"
 	for n in Hex.NEIGHBOURS:
 		var other := land(t + n)
 		if other != "" and Rules.banned(terrain, other):
-			return "%s can't go next to %s." % [Rules.NAMES[terrain], Rules.NAMES.get(other, other)]
+			return "Clashes with %s" % Rules.NAMES.get(other, other)
 	return ""
 
 
@@ -274,7 +274,7 @@ func _light_slots() -> void:
 		if why == "":
 			mi.material_override = _slot_mats.lit
 			_slot_marks.append(_slot_icon(t, "t_" + terrain, UI.terrain_ink(terrain), 0.55))
-		elif why.contains("can't go next to"):
+		elif why.begins_with("Clashes"):
 			mi.material_override = _slot_mats.banned
 			_slot_marks.append(_slot_icon(t, "close", Color("#8E3B2E"), 0.8))
 		elif far:
@@ -356,8 +356,7 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		for c in tiles:
 			finished[c] = joined
 		regions[joined].tiles = tiles
-		_transform(tiles, regions[joined], t)
-		toast("%s added to %s." % [Rules.NAMES[terrain], regions[joined].name])
+		_transform(tiles, regions[joined], t)   # no toast: the region visibly grows
 		return
 	var goal := _goal_for(terrain)
 	if tiles.size() < goal:
@@ -628,11 +627,10 @@ func rest() -> void:
 		return
 	for m in party:
 		m.hp = m.max_hp
-	var dropped := deck.rest()
+	deck.rest()
 	_advance(Rules.REST_MINUTES)
 	held = -1
-	toast("Rested at camp: HP restored, 8 hours passed%s, discard pile reshuffled." % [", discarded down to 7" if dropped else ""])
-	_refresh()
+	_refresh()   # no summary toast: the HP bars, the clock and the deck count show it (DOCS: UI -> Screen text)
 
 
 # --- Camera buttons (nav) ------------------------------------------------------
@@ -772,7 +770,7 @@ func tap(t: Vector2i) -> void:
 		return
 	if held >= 0:
 		if map.terrains.has(t):
-			toast("That hex is already placed.", false)
+			toast("Already placed", false)
 		elif map.slot_nodes.has(t):
 			try_place(t)
 	elif map.terrains.has(t):

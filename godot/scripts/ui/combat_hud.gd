@@ -253,8 +253,7 @@ func _refresh_details() -> void:
 		else:
 			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs 1 heads" % [Rules.ENEMY_SAVE_COINS, k.save], "n800", 13)))
 	elif k.kind == "self" and fight.self_done == k.id:
-		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))
-		_details.add_child(_wrap(UI.label(fight.self_message(k.id), "n700", 12, UI.INK_SOFT)))
+		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))   # no message: HP bars and effects show it
 
 	# The button (and the note under it when the card can't be used)
 	var label := ""
