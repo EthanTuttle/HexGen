@@ -108,12 +108,14 @@ def forest(p, rng, kind):
 
 
 # Plot grid on a farm tile: (columns, rows), plot size and the path between plots.
-FARM_GRID = {(2, 2): (1.28, 1.6, 1.0), (3, 2): (1.75, 1.6, 0.3)}  # plot width, depth, gap (room for a mini)
-FARM_ROUTE_R = 2.4  # where a farm wedge's track path meets the farm's road round its plots
-FARM_PAD = 0.6      # the dirt road round the plots, the route running along its middle
-FARM_LAYOUT = (2, 2)
+FARM_ROUTE_R = 2.4  # where a farm wedge's track path starts; the centre's spokes run in from there along the lanes
+FARM_LANE = 0.45    # half the width of the lanes the fields leave along the wedges' middle lines (room for a mini)
+ROW_PITCH = 0.3     # crop rows: spacing, and the width of each row
+ROW_WIDTH = 0.21
 FARM_SPIN = math.radians(30)  # rows run parallel to the tile's slanted sides
-LOW_CROPS = {"field_c": 0.08, "withered": 0.07, "withered_dark": 0.05, "scorched": 0.02}  # crop row heights
+LOW_CROPS = {"field_c": 0.08, "withered": 0.07, "withered_dark": 0.05, "scorched": 0.02,
+             "ploughed": 0.05}  # crop row heights; the rest stand 0.16 tall
+WHEAT = ["field_a", "field_b", "field_c", "field_barley", "ploughed"]  # the plain farm's crops, picked per field
 
 # Borders around farms and villages: one style for both, at one depth, so they join up.
 BORDER_STYLE = "fence"         # "fence", "wall" or "stacked"
@@ -126,15 +128,88 @@ def turned(x, y):
     return Vector((x * c - y * s_, x * s_ + y * c, 0))
 
 
-def wheat_plot(p, rng, cx, cy, w, h, crop):
-    """One plot: brown soil with raised rows of a crop running along its width."""
-    p.flat([turned(cx - w / 2, cy - h / 2), turned(cx + w / 2, cy - h / 2),
-            turned(cx + w / 2, cy + h / 2), turned(cx - w / 2, cy + h / 2)], 0.04, "soil_light")
-    rows = max(3, int(h / 0.28))
-    tall = LOW_CROPS.get(crop, 0.16)  # young green crop sits lower; withered and burnt crops lower still
-    for k in range(rows):
-        y = cy - h / 2 + (k + 0.5) * h / rows
-        p.box(turned(cx, y), (w - 0.14, h / rows * 0.62, tall), crop, z=0.04, spin=FARM_SPIN)
+def clip_polygon(poly, inside_point, normal):
+    """The part of convex polygon poly on the side of the line through inside_point that normal points to."""
+    out = []
+    for k, q in enumerate(poly):
+        r = poly[(k + 1) % len(poly)]
+        dq, dr = (q - inside_point).dot(normal), (r - inside_point).dot(normal)
+        if dq >= 0:
+            out.append(q)
+        if dq * dr < 0:
+            out.append(q.lerp(r, dq / (dq - dr)))
+    return out
+
+
+def crop_field(p, poly, along, crop):
+    """A field: soil over convex outline poly (anticlockwise), with straight rows of crop running along direction
+    `along` from one side of the field to the other, each clipped cleanly at the field's edge."""
+    p.prism(poly, 0.0, 0.03, "soil_light")
+    along = along.normalized()
+    across = Vector((-along.y, along.x, 0))
+    lo, hi = min(q.dot(across) for q in poly), max(q.dot(across) for q in poly)
+    s_ = lo + (ROW_PITCH - ROW_WIDTH) / 2 + 0.03
+    while s_ + ROW_WIDTH < hi:
+        band = clip_polygon(poly, across * s_, across)
+        band = clip_polygon(band, across * (s_ + ROW_WIDTH), -across) if len(band) >= 3 else []
+        if len(band) >= 3:
+            p.prism(band, 0.03, 0.03 + LOW_CROPS.get(crop, 0.16), crop)
+        s_ += ROW_PITCH
+
+
+def field_wedge(p, rng, lane, crops, x1=None):
+    """A wedge's fields, rows running along its middle line: one field either side of the lane, or one across
+    the whole wedge where lane is False. x1: how far out they reach (the edge, or short of the fence).
+    crops: the crop of each field in turn."""
+    x1 = x1 or X1 - 0.08
+
+    def slant(x):
+        return x * TAN30 - 0.14
+    along = Vector((1, 0, 0))
+    if lane:
+        for sd, crop in zip((1, -1), crops):
+            poly = [Vector((X0, sd * FARM_LANE, 0)), Vector((x1, sd * FARM_LANE, 0)),
+                    Vector((x1, sd * slant(x1), 0)), Vector((X0, sd * slant(X0), 0))]
+            crop_field(p, poly if sd > 0 else poly[::-1], along, crop)
+    else:
+        crop_field(p, [Vector((X0, -slant(X0), 0)), Vector((x1, -slant(x1), 0)), Vector((x1, slant(x1), 0)),
+                       Vector((X0, slant(X0), 0))], along, crops[0])
+
+
+def field_spot(k, r=1.55):
+    """A point on the middle of the centre's field k (k counts anticlockwise from the one toward 30 degrees)."""
+    a = math.radians(30 + 60 * k)
+    return Vector((math.cos(a), math.sin(a), 0)) * r
+
+
+def field_centre(p, rng, crops, bare=(), bare_mat="stubble"):
+    """The centre of a farm: a small yard in the middle and six fields between the lanes out to the six edges,
+    their rows running along one lane. crops: the crop of each field. Fields in bare are bare_mat with no rows,
+    for a building or a windmill (at field_spot). The routes are spokes along the lanes, used only where that
+    edge's wedge has a path, so nothing leads to a dead end."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(0.55, pointy=True)][::-1], 0.012, "road")
+    for k in range(6):
+        a0, a1 = math.radians(60 * k), math.radians(60 * k + 60)
+        n0, n1 = Vector((math.cos(a0), math.sin(a0), 0)), Vector((math.cos(a1), math.sin(a1), 0))
+        s0, s1 = Vector((-n0.y, n0.x, 0)), Vector((n1.y, -n1.x, 0))  # toward the field, off each lane
+        poly = [(n0 + n1).normalized() * (FARM_LANE / math.sin(math.radians(30))),
+                n0 * X0 + s0 * FARM_LANE, (n0 + n1).normalized() * (hk.INNER * hk.TILE_RADIUS - 0.1),
+                n1 * X0 + s1 * FARM_LANE]
+        if k in bare:
+            p.flat(poly, 0.03, bare_mat)
+        else:
+            crop_field(p, poly, n0 if k % 2 == 0 else n1, crops[k % len(crops)])
+    for i in range(6):
+        a = math.radians(60 * i)
+        p.spokes[i] = [Vector((math.cos(a), math.sin(a), 0)) * FARM_ROUTE_R, Vector((0, 0, 0))]
+
+
+def picked(rng, crops, n):
+    """n crops for neighbouring fields, picked by the piece's seeded rng, no two together the same."""
+    out = []
+    for _ in range(n):
+        out.append(rng.choice([c for c in crops if not out or c != out[-1]]))
+    return out
 
 
 def border_line(p, rng, a, b):
@@ -189,55 +264,14 @@ def border_join(p, rng, side):
     border_line(p, rng, Vector((BORDER_X, y, 0)), Vector((X1, y, 0)))
 
 
-def farm_grid(p, rng, ripe=False, leave_out=None, crops=None):
-    """The centre's grid of wheat plots on a dirt yard. ripe: every plot gold (no young green one).
-    leave_out: index of a plot to skip; its (cx, cy, w, h) in the turned grid is returned for something else.
-    crops: the crop of each plot in turn (by index), in place of the usual gold and green."""
-    cols, rows = FARM_LAYOUT
-    w, h, gap = FARM_GRID[FARM_LAYOUT]
-    total_w, total_h = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
-    pad = FARM_PAD
-    p.flat([turned(-total_w / 2 - pad, -total_h / 2 - pad), turned(total_w / 2 + pad, -total_h / 2 - pad),
-            turned(total_w / 2 + pad, total_h / 2 + pad), turned(-total_w / 2 - pad, total_h / 2 + pad)],
-           0.015, "road")
-    given = crops
-    crops = ["field_a", "field_b"] * (cols * rows)
-    young = -1 if ripe else rng.randrange(cols * rows)
-    spare = None
-    for i in range(cols):
-        for j in range(rows):
-            cx = -total_w / 2 + w / 2 + i * (w + gap)
-            cy = -total_h / 2 + h / 2 + j * (h + gap)
-            if i * rows + j == leave_out:
-                spare = (cx, cy, w, h)
-                continue
-            crop = "field_c" if i * rows + j == young else crops[(i + j + rng.randrange(2)) % 2]
-            if given:
-                crop = given[(i * rows + j) % len(given)]
-            wheat_plot(p, rng, cx, cy, w, h, crop)
-    farm_routes(p, total_w / 2 + pad / 2, total_h / 2 + pad / 2)
-    return spare
-
-
-def farm_routes(p, u, v):
-    """The farm centre's path data: a loop along the middle of the road round the plots (half sizes u, v in the
-    turned grid) and the cross of gaps between the plots. The six wedge tracks' paths start on the loop: the two
-    edges along the grid's depth (2 and 5) where the gap between the plots meets it, the other four on its long
-    sides. So routes follow the road and the gaps, never across crops."""
-    d = FARM_ROUTE_R * 0.5  # where the long-side tracks meet the loop, across the grid
-    loop = [(u, -v), (u, -d), (u, 0), (u, d), (u, v), (0, v), (-u, v), (-u, d), (-u, 0), (-u, -d), (-u, -v), (0, -v)]
-    p.paths.append([turned(*q) for q in loop + loop[:1]])
-    p.paths.append([turned(-u, 0), turned(u, 0)])
-    p.paths.append([turned(0, -v), turned(0, v)])
-
-
 GATE_HALF = 0.42  # half the gap a fence gate leaves
+FARM_TRACK_X0 = 0.4  # farm tracks start at the centre's yard
 
 
-def track(p, x0=X0, x1=X1, half=0.22, mat="road", path_x0=FARM_ROUTE_R):
-    """A dirt track along the wedge's middle line, and its path centreline from path_x0 to the edge midpoint.
-    On plot farms the path starts on the road round the plots (FARM_ROUTE_R), where farm_routes() picks it up;
-    the drawn track still runs in to X0 (hidden under the plots where it crosses them)."""
+def track(p, x0=FARM_TRACK_X0, x1=X1, half=0.22, mat="road", path_x0=FARM_ROUTE_R):
+    """A dirt track along the wedge's middle line, from the centre's yard to the edge, and its path centreline
+    from path_x0 to the edge midpoint (the centre's spoke takes it on from there). The wedge brings its own
+    track in, so a track only appears where it leads somewhere."""
     p.flat([Vector((x0, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((x0, half, 0))], 0.012, mat)
     p.paths.append([Vector((path_x0, 0, 0)), Vector((X1, 0, 0))])
 
@@ -264,19 +298,24 @@ def farm_gate(p, rng):
 
 
 def farmland(p, rng, kind):
-    """A neat grid of wheat plots with dirt paths; tracks join neighbouring farms, a fence closes off the rest,
-    with gates on some edges (fence_gates.py) where the track runs out through it."""
-    if kind == "centre":
-        farm_grid(p, rng)
+    """Fields fill the tile: crop rows either side of tracks that run from a small yard in the centre to the edge
+    midpoints, a fence closing off the rest, with gates on some edges (fence_gates.py). The crop of each field
+    is picked per piece by its seeded rng, and centre_b and edge_same_b are second versions the engine picks
+    between per tile and per edge, so a big farm group doesn't read as one field."""
+    if kind in ("centre", "centre_b"):
+        field_centre(p, rng, picked(rng, WHEAT, 6))
         return
-    if kind == "same":  # a dirt track runs on to the neighbouring farm
+    if kind in ("same", "edge_same_b"):
         track(p)
+        field_wedge(p, rng, True, picked(rng, WHEAT, 2))
         return
     if kind == "edge_gate":  # the fence, with a gate the track runs out through to the edge's middle
         track(p)
         farm_gate(p, rng)
+        field_wedge(p, rng, True, picked(rng, WHEAT, 2), x1=BORDER_X - 0.22)
         return
     edge_border(p, rng)
+    field_wedge(p, rng, False, picked(rng, WHEAT, 1), x1=BORDER_X - 0.22)
 
 
 RIVER_HALF = 0.75   # half the width of a river channel
@@ -725,6 +764,7 @@ def build():
         base(terrain, col)
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
         kinds += ("edge_gate",) if terrain in BORDERED else ()
+        kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"
