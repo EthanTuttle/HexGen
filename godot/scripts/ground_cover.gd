@@ -10,7 +10,14 @@ const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, 
 	"hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
 	# tier 1 region variants
 	"deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
-	"delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3}
+	"delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
+	# tier 2 and class variants
+	"fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
+	# landmark tiles
+	"treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05}
+## Tuft colour where it isn't the usual grass_ink; terrains in NO_FLOWERS get tufts instead of flowers.
+const TUFT := {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood"}
+const NO_FLOWERS := ["dark_wood", "spidernest"]
 const FLOWERS := ["flower", "flower_pink", "flower_white", "flower_blue"]
 
 const R := Water.R
@@ -103,7 +110,25 @@ static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: i
 		# Wildflower drifts: a slow world-space wave decides where flowers crowd out the grass.
 		var drift := 0.5 + 0.5 * sin(p.x / 3.1 + 0.4) * sin(p.y / 2.6 + p.x / 5.0)
 		return ["flower" if k < 0.15 + 0.75 * drift else "tuft", p, Vector2i(ix, iy), true]
+	if terrains[t] in NO_FLOWERS:
+		return ["tuft" if k < 0.85 else "pebble", p, Vector2i(ix, iy)]
 	return ["tuft" if k < 0.7 else "flower" if k < 0.93 else "pebble", p, Vector2i(ix, iy)]
+
+
+## The tuft colour at p (ground_cover.tuft_colour). Within BLEND of an edge whose neighbour has another tuft
+## colour, some tufts take the neighbour's, from none at BLEND to half right at the edge. k: hash stream 5.
+static func tuft_colour(terrains: Dictionary, p: Vector2, k: float) -> String:
+	var t := tile_at(p)
+	var own: String = TUFT.get(terrains.get(t), "grass_ink")
+	var local := p - Hex.tile_position(t.x, t.y)
+	for i in 6:
+		var to_edge := A - local.dot(Water.normal(i))
+		var other = terrains.get(t + Hex.NEIGHBOURS[i])
+		if to_edge < BLEND and other != null:
+			var theirs: String = TUFT.get(other, "grass_ink")
+			if theirs != own and k < 0.5 * (1 - to_edge / BLEND):
+				return theirs
+	return own
 
 
 static func _near_shore(p: Vector2, shores: Array, d: float) -> bool:
@@ -127,16 +152,16 @@ static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector
 			var item := _keep(terrains, water_shapes, ix, iy, p)
 			if not item.is_empty():
 				items.append(item)
-	return _build(items)
+	return _build(items, terrains)
 
 
 static func build(terrains: Dictionary, water_shapes: Dictionary) -> MeshInstance3D:
-	return _build(scatter(terrains, water_shapes))
+	return _build(scatter(terrains, water_shapes), terrains)
 
 
-static func _build(items: Array) -> MeshInstance3D:
+static func _build(items: Array, terrains: Dictionary) -> MeshInstance3D:
 	var piece := Piece.new()
-	var ink := Hex.colour("grass_ink"); var rock := Hex.colour("rock")
+	var rock := Hex.colour("rock")
 	for item in items:
 		var cell: Vector2i = item[2]
 		var rng := PyRandom.new(hash01(cell.x, cell.y, 4))
@@ -145,6 +170,7 @@ static func _build(items: Array) -> MeshInstance3D:
 			"tuft":
 				var radius := rng.uniform(0.12, 0.2)
 				var height := rng.uniform(0.2, 0.35)
+				var ink := Hex.colour(tuft_colour(terrains, item[1], hash01(cell.x, cell.y, 5)))
 				piece.cone(at, radius, height, ink, 4, 0.0, rng.uniform(0, 1))
 			"flower":
 				# Meadows: one colour per drift; the same slow wave picks it, so colours come in patches.

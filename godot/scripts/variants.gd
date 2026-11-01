@@ -1,28 +1,61 @@
 class_name Variants
 extends RefCounted
-## Tier 1 region variants, from art/scripts/variants.py (VARIANTS) and render_preview.py (TIER1).
-## A variant has the same pieces as its terrain under its own name; edge pieces are picked by the terrain.
+## Region variants, from art/scripts/variants.py (VARIANTS, LANDMARKS, LANDMARK_CENTRES) and render_preview.py
+## (TIER1). A variant has the same pieces as its terrain under its own name; edge pieces are picked by the terrain.
+## A landmark tile's name is the landmark's (e.g. "treeoflife"); it counts as its variant's terrain.
 
 ## Each terrain's tier 1 variant (render_preview.TIER1).
 const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highlands", "farmland": "windmill_country",
 	"village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "excavation"}
 
-## Each variant's ground colour (variants.VARIANTS, third field): the engine recolours its terrain's base slab.
+## Tier 2 variants with art (DOCS: design/02 -> Region variants and locations; the class variant is in the
+## pool too). Terrains not listed have no tier 2 art yet and keep their terrain's look.
+const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"]}
+
+## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
+const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
+	"heartwood": ["Heartwood", "Tree of Life"]}
+
+## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
+const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
+	"heartwood": "treeoflife"}
+
+## Landmark -> its variant (variants.LANDMARKS).
+const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
+	"spidernest": "dark_wood"}
+
+## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
+const LANDMARK_CENTRES := ["feycourt", "spidernest"]
+
+## Each variant's (and landmark's) ground colour (variants.VARIANTS, third field): the engine recolours its
+## terrain's base slab.
 const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands": "highland_grass",
 	"windmill_country": "plains", "market_town": "cobble", "delta": "plains", "bog": "bog",
-	"wasteland": "wasteland", "excavation": "plains"}
+	"wasteland": "wasteland", "excavation": "plains",
+	"fey_wood": "fey_wood", "dark_wood": "dark_wood", "heartwood": "heartwood",
+	"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood", "spidernest": "dark_wood"}
 
 static var _base := {}
 
 
-## The terrain a tile counts as (variants.terrain_of): a variant's terrain, else the name itself.
+## The terrain a tile counts as (variants.terrain_of): a variant's or landmark's terrain, else the name itself.
 static func terrain_of(name) -> String:
 	if name == null:
 		return ""
 	if _base.is_empty():
 		for t in TIER1:
 			_base[TIER1[t]] = t
+		for t in TIER2:
+			for v in TIER2[t]:
+				_base[v] = t
+		for lm in LANDMARKS:
+			_base[lm] = _base[LANDMARKS[lm]]
 	return _base.get(name, name)
+
+
+## Whose wedges a tile uses: its own, or its variant's for a centre-only landmark (variants.wedges_of).
+static func wedges_of(name: String) -> String:
+	return LANDMARKS[name] if name in LANDMARK_CENTRES else name
 
 
 static func is_water(name) -> bool:

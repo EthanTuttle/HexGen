@@ -312,7 +312,11 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
 | Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
-| Landmarks | A pin and a name; no landmark model | No landmark art or pools wired up |
+| Landmarks | Forest regions: the landmark tile takes its landmark's piece (forest kit). Other terrains: a pin and a name, no model | Only the forest landmarks have art |
+| Tier 2 roll | Forest: fey wood, dark wood or heartwood, evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
+| Walking on trails | A trail starts 1.2 m from a tile's centre (`TRAIL_INNER`); the party stops 2.2 m from a landmark's centre, at its entrance (`ENTRANCE_RING`) | Not in the art hand-off |
+| Forest effects | Fey motes, heartwood seeds and light shafts, the shrine's shaft: counts, colours, sizes, the shafts' lean (`forest_fx.gd`, `shaders/light_shaft.gdshader`) | The hand-off names the effects, not their look |
+| Night glow strengths | Fairy rings 0.15 by day to 1.75 at night; the Fey Court's windows 0.4 to 3.4 (`map_board.gd`) | "Glow softly at night" |
 | Cluster badge shows from | 2 tiles | The mockup's number for "a few hexes" |
 | Combat line-up | Party on the south side, foes on the north | Not set |
 
@@ -331,6 +335,40 @@ For Ethan to decide:
 9. **How a tile's terrain shapes its combat board** (trees, rocks).
 10. **The screens the loop needed but no mockup covers:** a defeat screen, resting at camp, and the After combat buttons when nobody levels up.
 11. **Who picks the cards to discard at rest** (presumably the player, but the screen for it isn't designed).
+
+## Forest kit (tiles v23)
+
+The forest tier 2 variants (fey wood, dark wood, heartwood), deep forest's flow pieces and the four forest landmarks, from `art/export/tiles.glb` and `art/handoff/forest_kit.md`. Docs: 07 → Region variant looks, Landmark tiles, Exploration screen → Walking; 06 → Tile build; 02 → Landmarks.
+
+- **Regions:** a forest's first region becomes deep forest, later ones roll fey wood, dark wood or heartwood (placeholder: an even roll). When a region finishes, its random landmark tile takes the variant's landmark (Hidden Shrine, Fey Court, Spider Nest, Tree of Life).
+- **Trails** (`scripts/landmark_flow.gd`, a port of `art/scripts/landmark_flow.py`): worked out once from the game's own region tiles when the region finishes, then fixed. Each tile picks its trail wedges, near centre and heartwood's landmark wedge by the hand-off's order (`MapBoard._edge_piece`). The landmark's centre turns to face its longest trail.
+- **edge_same_b:** heartwood's joined edges alternate by `hash01(q * 6 + i, r, 8) < 0.5`.
+- **Materials:** `web` blends at 0.3 and shows from both sides. `fey_mushroom`, `window_glow` and `lantern` glow at night.
+- **Ground cover:** the new densities; dark wood's darker tufts and no flowers; tuft colours mix across borders.
+- **Effects** (`scripts/forest_fx.gd`, all placeholder looks): fey motes, heartwood seeds and light shafts, the Hidden Shrine's shaft. Each is one node per tile, with no lights and no shadows. Shafts fade out at night.
+- **Walking:** where a step crosses a trail edge, the route runs straight along the trail through both tiles. On a landmark tile it circles to the entrance and stops there, facing the landmark. The waddle, follow-the-leader and the rest are unchanged.
+- **Merging finished regions:** a tile touching two finished regions now joins only the newer one, and the older one keeps its tiles (DOCS). Before, the newer region took them all.
+
+Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each forest variant around the start, with plains between. `-- --forestcheck` does the same, checks the pieces, the turn, edge_same_b, the web material and trail walking, and prints the frame cost. Add `--shots` to save `screens/forest_*.png`:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path godot --rendering-method mobile --resolution 1704x786 -- --forestcheck --phone --shots --quit
+```
+
+`tools/flow_check.gd` compares the port with the Python on random regions. Its cases come from `tools/flow_cases.py` (commands in the tool's header).
+
+**Results (Nov 1, 2026):**
+- `--forestcheck`: 0 failed.
+- `flow_check`: 300 random regions, 0 differ from `landmark_flow.py` (trail edges, turn, edge_same_b hash).
+
+**Busiest view (Mac, Mobile renderer, phone size):**
+
+| View | Draw calls | Triangles | Frame on the Mac |
+| --- | --- | --- | --- |
+| Game camera all the way out over the four regions | 810 | 258,000 | 4.1 ms |
+| Opening zoom over heartwood | 400 | 173,000 | 3.9 ms |
+
+The phone wasn't plugged in, so the 120 fps target is untested.
 
 ## Terrains and region variants (tiles v13)
 

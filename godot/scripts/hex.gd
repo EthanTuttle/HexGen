@@ -35,6 +35,9 @@ const PALETTE := {
 	"bone": "#F1EBDD", "pit": "#6B5038", "pit_dark": "#3A2B20", "canvas": "#E2B98A", "lantern": "#F6D36B",
 	"rope": "#C9B58A", "slot": "#F6EFE4", "backdrop": "#CFE4F2", "cell_grass_a": "#8DBB7A",
 	"cell_grass_b": "#96C283", "cell_grass_c": "#88B575",
+	# tier 2 forest variants and landmarks (hexkit.COLOURS, tiles v23)
+	"fey_wood": "#5C9270", "fey_mushroom": "#B47FE6", "dark_wood": "#5B5F4F", "web": "#D6D4CF",
+	"tuft_dark_wood": "#53574A", "heartwood": "#7AA052", "window_glow": "#FFD27A",
 }
 
 

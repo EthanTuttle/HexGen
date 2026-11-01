@@ -113,19 +113,63 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 	_blocked.clear()
 	var hero: Vector3 = members[0].node.position
 	var pts := PackedVector2Array([Vector2(hero.x, -hero.z)])
-	var here := Hex.tile_position(_tile.x, _tile.y)
-	for t in tiles:
-		var next := Hex.tile_position(t.x, t.y)
-		var mid := (here + next) * 0.5          # the middle of the edge it crosses
-		_quad(pts, here, mid)                   # bends through the hex it's in
-		here = next
-	var spot := _stand_spot(tiles[-1], (anchor(tiles[-1]) - here).angle())
-	_quad(pts, here, spot[0])
-	_end_facing = spot[1]
+	var seq: Array[Vector2i] = [_tile]
+	seq.append_array(tiles)
+	var last := seq.size() - 1
+	for k in seq.size():
+		var t := seq[k]
+		var c := Hex.tile_position(t.x, t.y)
+		var in_dir := Vector2.ZERO if k == 0 else (Hex.tile_position(seq[k - 1].x, seq[k - 1].y) - c).normalized()
+		var out_dir := Vector2.ZERO if k == last else (Hex.tile_position(seq[k + 1].x, seq[k + 1].y) - c).normalized()
+		var entrance := map.entrance_angle(t)
+		if not is_nan(entrance):
+			# A landmark tile: in to its entrance ring, round it to the entrance (to stop) or to the way out, so the
+			# party never walks through the landmark itself.
+			if k > 0:
+				_line(pts, c + in_dir * Rules.ENTRANCE_RING)
+			_arc(pts, c, Rules.ENTRANCE_RING, entrance if k == last else out_dir.angle())
+			if k == last:
+				_end_facing = entrance + PI   # facing the landmark
+			else:
+				_line(pts, c + out_dir * Hex.A)
+			continue
+		# DOCS (Exploration screen -> Walking): where a step crosses a landmark trail edge, the route follows the
+		# drawn trail, which runs along the wedge's middle line from near the centre to the edge's middle.
+		if k > 0 and map.trail_edge(seq[k - 1], t):
+			_line(pts, c + in_dir * Rules.TRAIL_INNER)
+		if k == last:
+			var spot := _stand_spot(t, (anchor(t) - c).angle())
+			_quad(pts, c, spot[0])
+			_end_facing = spot[1]
+		elif map.trail_edge(t, seq[k + 1]):
+			_quad(pts, c, c + out_dir * Rules.TRAIL_INNER)
+			_line(pts, c + out_dir * Hex.A)
+		else:
+			_quad(pts, c, c + out_dir * Hex.A)   # bends through the hex to the middle of the edge it crosses
 	var allowed := {_tile: true}
 	for t in tiles:
 		allowed[t] = true
 	_set_path(_round_mountains(pts, allowed))
+
+
+## Adds a straight stretch from the route's last point to `to`, sampled about as densely as the curves.
+static func _line(pts: PackedVector2Array, to: Vector2) -> void:
+	var from := pts[-1]
+	var n := maxi(1, ceili(from.distance_to(to) / 0.25))
+	for k in range(1, n + 1):
+		pts.append(from.lerp(to, float(k) / n))
+
+
+## Adds an arc round `centre` from the route's last point to the angle `to` (the short way), easing out to
+## `radius`.
+static func _arc(pts: PackedVector2Array, centre: Vector2, radius: float, to: float) -> void:
+	var from := pts[-1] - centre
+	var a0 := from.angle()
+	var turn := wrapf(to - a0, -PI, PI)
+	var n := maxi(1, ceili(absf(turn) * radius / 0.25))
+	for k in range(1, n + 1):
+		var u := float(k) / n
+		pts.append(centre + Vector2.from_angle(a0 + turn * u) * lerpf(from.length(), radius, u))
 
 
 func _set_path(pts: PackedVector2Array) -> void:

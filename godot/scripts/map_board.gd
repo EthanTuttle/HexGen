@@ -54,6 +54,13 @@ var _still_water: StandardMaterial3D
 var _glow: StandardMaterial3D          # toadstools
 var _lamp: StandardMaterial3D          # lanterns (tiles v12)
 var _mist_mat: ShaderMaterial
+var _fey: StandardMaterial3D           # fey wood's fairy rings and stepping caps, the Fey Court's stair
+var _window: StandardMaterial3D        # the Fey Court's windows
+var _web: StandardMaterial3D           # dark wood's and the Spider Nest's webs
+## Landmark flow of every finished region with landmark art (LandmarkFlow), fixed once the region finishes.
+var flow_dist := {}                    # tile -> steps to its region's landmark
+var flow_toward := {}                  # tile -> the region neighbour one step closer
+var landmark_turns := {}               # landmark tile -> 60 degree steps its centre piece turns
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
 
@@ -121,6 +128,27 @@ func retile(changes: Dictionary) -> void:
 				", water redrawn" if water_changed else "", (Time.get_ticks_usec() - t0) / 1000])
 
 
+## Works out a finished region's trails to its landmark (LandmarkFlow.flow and turn), once, when it finishes.
+## Call before retiling the region, so its tiles pick their trail and near pieces.
+func set_flow(region: Array, landmark: Vector2i) -> void:
+	var f := LandmarkFlow.flow(region, landmark)
+	flow_dist.merge(f.dist, true)
+	flow_toward.merge(f.toward, true)
+	landmark_turns[landmark] = LandmarkFlow.turn(landmark, f.dist, f.toward)
+
+
+## Whether the edge between neighbours a and b is a landmark trail edge.
+func trail_edge(a: Vector2i, b: Vector2i) -> bool:
+	return flow_toward.get(a) == b or flow_toward.get(b) == a
+
+
+## The plan angle a landmark tile's entrance faces (its centre piece's edge 0, turned), or NAN if t isn't one.
+func entrance_angle(t: Vector2i) -> float:
+	if not Variants.LANDMARKS.has(terrains.get(t)):
+		return NAN
+	return deg_to_rad(60.0 * landmark_turns.get(t, 0))
+
+
 ## The node holding tile t's pieces (for transitions).
 func tile_node(t: Vector2i) -> Node3D:
 	return _tile_nodes.get(t)
@@ -179,6 +207,23 @@ func _setup_materials() -> void:
 				var m := mesh.surface_get_material(k) as BaseMaterial3D
 				m.vertex_color_use_as_albedo = true
 				m.albedo_color = Color.WHITE
+	# Tiles v23 (forest kit): the fairy rings and the Fey Court's windows glow at night; webs are see-through.
+	_fey = _glow.duplicate() as StandardMaterial3D
+	_fey.albedo_color = Hex.colour("fey_mushroom")
+	_fey.emission = Hex.colour("fey_mushroom")
+	_window = _glow.duplicate() as StandardMaterial3D
+	_window.albedo_color = Hex.colour("window_glow")
+	_window.emission = Hex.colour("window_glow")
+	_web = StandardMaterial3D.new()
+	_web.albedo_color = Color(Hex.colour("web"), 0.3)   # hexkit.WEB_ALPHA
+	_web.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_web.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for mesh: Mesh in _kit.values():
+		for k in mesh.get_surface_count():
+			match Kit.material_name(mesh, k):
+				"fey_mushroom": mesh.surface_set_material(k, _fey)
+				"window_glow": mesh.surface_set_material(k, _window)
+				"web": mesh.surface_set_material(k, _web)
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
@@ -235,13 +280,19 @@ func _build_tile(t: Vector2i) -> void:
 	if terrain == "river":
 		return
 	var centre := "_centre"
+	if flow_dist.get(t) == 1 and _kit.has(name + "_centre_near"):
+		centre = "_centre_near"  # next to the landmark: the variant's look played up
 	if _kit.has(name + "_centre_mill") and GroundCover.hash01(t.x, t.y, 7) < 0.5:
 		centre = "_centre_mill"  # windmills stand on about half the tiles (the preview's placeholder rule)
-	Kit.place(node, _kit, name + centre, at)
+	# A landmark's centre turns so its entrance (edge 0) faces its longest trail; its wedges stay put.
+	Kit.place(node, _kit, name + centre, at, deg_to_rad(60.0 * landmark_turns.get(t, 0)))
 	if terrain == "desert":
 		node.add_child(Sand.build_tile(terrains, t))
 	if name == "bog":
 		node.add_child(_mist(at))
+	var fx := ForestFx.for_tile(name, at, t, landmark_turns.get(t, 0))
+	if fx:
+		node.add_child(fx)
 	var joined := []
 	for n in Hex.NEIGHBOURS:
 		joined.append(linked(name, terrains.get(t + n)))
@@ -266,9 +317,11 @@ func _build_tile(t: Vector2i) -> void:
 			Kit.place(node, _kit, name + "_ridge_knot", at)
 			for part in parts:
 				Kit.place(node, _kit, name + "_ridge_" + part[0], at, deg_to_rad(60.0 * part[1]))
+	var kit := Variants.wedges_of(name)   # a centre-only landmark takes its variant's wedges
+	var trails := LandmarkFlow.trail_edges(t, flow_toward)
 	for i in 6:
 		var angle := deg_to_rad(60.0 * i)
-		Kit.place(node, _kit, name + ("_edge_same" if joined[i] else "_edge_other"), at, angle)
+		Kit.place(node, _kit, _edge_piece(t, name, kit, i, joined[i], trails), at, angle)
 		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
 		if terrain in BORDERED and joined[i]:
 			if not joined[(i + 1) % 6]:
@@ -277,6 +330,23 @@ func _build_tile(t: Vector2i) -> void:
 				Kit.place(node, _kit, "border_join_r", at, angle)
 	if terrain in ["hills", "desert"]:
 		_add_ground_collision(node)
+
+
+## The wedge on edge i (render_preview.build_map, tiles v23): toward the Tree of Life, heartwood's landmark wedge;
+## on a trail edge, the landmark's own trail wedge or its kit's; on a joined edge, edge_same, or the alternate
+## edge_same_b where the kit has one and hash01(q * 6 + i, r, 8) < 0.5; otherwise edge_other.
+func _edge_piece(t: Vector2i, name: String, kit: String, i: int, joined: bool, trails: Array) -> String:
+	var near = terrains.get(t + Hex.NEIGHBOURS[i])
+	if Variants.LANDMARKS.get(near) == name and _kit.has(name + "_edge_landmark"):
+		return name + "_edge_landmark"
+	if i in trails:
+		if _kit.has(name + "_edge_trail"):
+			return name + "_edge_trail"
+		if _kit.has(kit + "_edge_trail"):
+			return kit + "_edge_trail"
+	if joined and _kit.has(kit + "_edge_same_b") and GroundCover.hash01(t.x * 6 + i, t.y, 8) < 0.5:
+		return kit + "_edge_same_b"
+	return kit + ("_edge_same" if joined else "_edge_other")
 
 
 ## Collision for the ground the party walks on (PartyWalker.ground raycasts it): the hills pieces' grass
@@ -446,6 +516,9 @@ func _process(delta: float) -> void:
 		var night := clampf((1.18 - time_of_day.sun.light_energy) / (1.18 - 0.35), 0.0, 1.0)
 		_glow.emission_energy_multiplier = 2.5 * night
 		_lamp.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: lit a little by day, bright at night
+		_fey.emission_energy_multiplier = 0.15 + 1.6 * night   # PLACEHOLDER: "glow softly at night"
+		_window.emission_energy_multiplier = 0.4 + 3.0 * night  # PLACEHOLDER: warm light inside
+		ForestFx.set_night(night)
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 	var s := _time
 	for k in boats.size():

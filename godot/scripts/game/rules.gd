@@ -93,6 +93,10 @@ const MAX_TILT_DEG := 28.0               # the steepest a base tilts
 const TILT_RATE := 12.0                  # how fast a base settles onto a new slope (1/s), so facet edges don't jitter
 const HEIGHT_RATE := 14.0                # how fast a mini sinks to lower ground (1/s); it never trails below ground
 const SQUEEZE_RATE := 2.5                # how fast a companion pushed in toward the route by a mountain spreads back out (1/s)
+## Walking on landmark trails (DOCS: Exploration screen -> Walking; tiles v23). Trails run along each wedge's
+## middle line from near the centre piece to the edge's middle (variants.py -> Flowing into the landmark).
+const TRAIL_INNER := 1.2                 # PLACEHOLDER: where a trail starts, metres from a tile's centre
+const ENTRANCE_RING := 2.2               # PLACEHOLDER: how far from a landmark's centre the party stops, at its entrance
 const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game hours (8/24 of a 30-minute day)
 
 # --- Encounters (design/02 -> Hex contents and encounters) --------------------

@@ -28,7 +28,7 @@ var minute := Rules.START_MINUTE      # minutes into the 30-minute day
 var day := 1
 var encounters := {}                  # tile -> {expires, persistent, dropped}
 var finished := {}                    # tile -> region index
-var regions: Array[Dictionary] = []   # {terrain, tiles, name, landmark, landmark_tile, tier}
+var regions: Array[Dictionary] = []   # {terrain, tiles, name, landmark, landmark_tile, tier, variant}
 var order := {}                       # tile -> placement number (for "newest tile of a cluster")
 var fight: Fight
 var real_time := 0.0
@@ -49,6 +49,7 @@ var _slot_marks: Array[Node3D] = []
 var popup := BoardPopup.new()         # long-press / hover details
 var picked = null                     # the hex a first tap picked to walk to (Vector2i), or null
 var _path_marks: Array[Node3D] = []
+var _debug_fill := {}                 # spawn_forest_regions' plains (no cluster goal)
 
 
 func _ready() -> void:
@@ -104,6 +105,12 @@ func _ready() -> void:
 	safe.add_child(popup)
 	_connect_gestures()
 	_refresh()
+	if "--forest" in OS.get_cmdline_user_args():
+		spawn_forest_regions()
+	elif "--forestcheck" in OS.get_cmdline_user_args():
+		var fc := ForestCheck.new()
+		fc.game = self
+		add_child(fc)
 	if PhoneCheck.wanted():
 		add_child(PhoneCheck.new())
 	if "--touchtest" in OS.get_cmdline_user_args():
@@ -352,24 +359,20 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		if finished.has(c):
 			joined = maxi(joined, finished[c])
 	if joined >= 0:
-		# A tile added to a finished region just expands it (the newer region if it touches two).
+		# A tile added to a finished region just expands it (the newer region if it touches two). Finished
+		# regions that touch stay separate (DOCS: Merging finished regions), so only unfinished tiles join.
 		for c in tiles:
-			finished[c] = joined
-		regions[joined].tiles = tiles
-		_transform(tiles, regions[joined], t)   # no toast: the region visibly grows
+			if not finished.has(c):
+				finished[c] = joined
+				regions[joined].tiles.append(c)
+		_transform(regions[joined].tiles, regions[joined], t)   # no toast: the region visibly grows
 		return
 	var goal := _goal_for(terrain)
 	if tiles.size() < goal:
 		return
 	var first := not regions.any(func(g): return g.terrain == terrain)
-	var names: Array = Rules.REGION_NAMES.get(terrain, ["[Region]", "[landmark]"])
-	var region := {terrain = terrain, tiles = tiles, tier = 1 if first else 2,
-			name = names[0] if first else "[Tier 2 %s variant]" % Rules.NAMES[terrain].to_lower(),
-			landmark = names[1] if first else "[landmark]",
-			landmark_tile = tiles[rng.randi_range(0, tiles.size() - 1)]}
-	regions.append(region)
-	for c in tiles:
-		finished[c] = regions.size() - 1
+	var region := new_region(terrain, tiles, Variants.TIER1[terrain] if first else _roll_tier2(terrain),
+			tiles[rng.randi_range(0, tiles.size() - 1)])
 	_transform(tiles, region, t)
 	var draw := Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION
 	deck.draw(draw)
@@ -379,15 +382,81 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 	toast("%s! Landmark: %s" % [region.name, region.landmark])
 
 
-## A finished region's tiles change to its variant's look (DOCS: Exploration screen -> Cluster goals; no rim).
-## Only tier 1 has art: a tier 2 region keeps its terrain's look for now.
+## Records a finished region. variant "" means a tier 2 region with no art yet (it keeps its terrain's look).
+func new_region(terrain: String, tiles: Array[Vector2i], variant: String, landmark_tile: Vector2i) -> Dictionary:
+	var tier := 1 if variant == Variants.TIER1[terrain] else 2
+	var names: Array = Rules.REGION_NAMES.get(terrain, ["[Region]", "[landmark]"]) if tier == 1 \
+			else Variants.TIER2_NAMES.get(variant, ["[Tier 2 %s variant]" % Rules.NAMES[terrain].to_lower(), "[landmark]"])
+	var region := {terrain = terrain, tiles = tiles, tier = tier, variant = variant, name = names[0],
+			landmark = names[1], landmark_tile = landmark_tile}
+	regions.append(region)
+	for c in tiles:
+		finished[c] = regions.size() - 1
+	return region
+
+
+## A later region's tier 2 variant (DOCS: rolled at random with a slight lean from neighbouring terrain).
+## PLACEHOLDER: an even roll with no lean (the lean isn't set). Terrains with no tier 2 art yet give "".
+func _roll_tier2(terrain: String) -> String:
+	var pool: Array = Variants.TIER2.get(terrain, [])
+	return pool[rng.randi_range(0, pool.size() - 1)] if not pool.is_empty() else ""
+
+
+## The look a finished region's tile takes: its landmark's on the landmark tile (where the variant has landmark
+## art), else the variant's.
+func region_look(region: Dictionary, c: Vector2i) -> String:
+	var lm: String = Variants.LANDMARK_OF.get(region.variant, "")
+	return lm if lm != "" and c == region.landmark_tile else region.variant
+
+
+## Sets a region's landmark trails (DOCS: Tile build -> Trails to the landmark), once, when it finishes.
+func _set_flow(region: Dictionary) -> void:
+	if region.get("flowed", false) or not Variants.LANDMARK_OF.has(region.variant):
+		return
+	region.flowed = true
+	map.set_flow(region.tiles, region.landmark_tile)
+
+
+## Debug (`-- --forest`, or F9 on PC): a finished 7-tile region of each forest variant, each with its landmark
+## on a random tile, around the start with plains between, made at once by the same rules as a region finishing.
+const DEBUG_FOREST := {"deep_forest": Vector2i(3, -3), "fey_wood": Vector2i(3, 0), "dark_wood": Vector2i(0, 3),
+	"heartwood": Vector2i(-3, 3)}
+
+func spawn_forest_regions() -> void:
+	var changes := {}
+	for v: String in DEBUG_FOREST:
+		var c: Vector2i = DEBUG_FOREST[v]
+		var tiles: Array[Vector2i] = [c]
+		for n in Hex.NEIGHBOURS:
+			tiles.append(c + n)
+		if tiles.any(func(x): return map.terrains.has(x)):
+			continue
+		var region := new_region("forest", tiles, v, tiles[rng.randi_range(0, tiles.size() - 1)])
+		_set_flow(region)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
+	# Plains between them, so the party can walk there (they show no cluster goal).
+	for q in range(-4, 5):
+		for r in range(-4, 5):
+			var x := Rules.START_TILE + Vector2i(q, r)
+			if Rules.hex_distance(x, Rules.START_TILE) <= 4 and not changes.has(x) and not map.terrains.has(x):
+				changes[x] = "plains"
+				order[x] = order.size()
+				_debug_fill[x] = true
+	map.retile(changes)
+	_refresh()
+
+
+## A finished region's tiles change to its variant's look (DOCS: Exploration screen -> Cluster goals; no rim),
+## and its landmark tile to the landmark's. Tier 2 regions without art keep their terrain's look for now.
 ## PLACEHOLDER transition: a wave spreading from the tile that finished it; each tile sinks flat into the
 ## ground (0.22 s), swaps to the variant's pieces, then springs back up with a small overshoot (0.45 s).
 func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> void:
-	if region.tier != 1:
+	if region.variant == "":
 		return
-	var variant: String = Variants.TIER1[region.terrain]
-	var todo := tiles.filter(func(c): return map.terrains[c] != variant)
+	_set_flow(region)
+	var todo := tiles.filter(func(c): return map.terrains[c] != region_look(region, c))
 	if todo.is_empty():
 		return
 	todo.sort_custom(func(a, b): return Rules.hex_distance(a, from) < Rules.hex_distance(b, from))
@@ -402,7 +471,7 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 	await get_tree().create_timer((todo.size() - 1) * STEP + SINK).timeout
 	var changes := {}
 	for c in todo:
-		changes[c] = variant
+		changes[c] = region_look(region, c)
 	map.retile(changes)
 	for k in todo.size():
 		var node := map.tile_node(todo[k])
@@ -425,7 +494,7 @@ func markers() -> Array:
 	var out := []
 	var seen := {}
 	for t: Vector2i in map.terrains:
-		if seen.has(t) or finished.has(t) or t == Rules.START_TILE:
+		if seen.has(t) or finished.has(t) or t == Rules.START_TILE or _debug_fill.has(t):
 			continue
 		var cl := cluster(t)
 		for c in cl:
@@ -659,6 +728,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		hold(-1)
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9 and not busy:
+		spawn_forest_regions()   # debug, PC only
 
 
 ## Board gestures (Gestures, on the camera rig): a tap picks, a long-press or a resting mouse shows details,
@@ -700,7 +771,7 @@ func _details(pos: Vector2) -> void:
 		var g: Dictionary = regions[finished[t]]
 		title = Rules.NAMES[g.terrain]
 		lines.append("Region: %s, finished (%d hexes)" % [g.name, g.tiles.size()])
-		lines.append("Variant: %s" % (Rules.REGION_NAMES[g.terrain][0] if g.tier == 1 else "[tier 2 variant]"))
+		lines.append("Variant: %s" % g.name)
 		lines.append("Landmark: %s" % g.landmark)
 	else:
 		var terrain := land(t)
