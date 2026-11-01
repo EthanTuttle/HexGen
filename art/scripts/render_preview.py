@@ -61,6 +61,15 @@ FOREST_T2_MAP = {
 FOREST_T2_CLOSEUPS = {"fey_wood": [(0, -1), (-1, 0), (-1, -1)], "dark_wood": [(-1, 1), (-2, 1), (-2, 2)],
                       "heartwood": [(0, 1), (1, 1), (0, 2)]}
 
+# The Tree of Life in a heartwood group: four heartwood neighbours (four paths), one plain forest and one
+# plains neighbour (roots ending before the edge), and a lone hills tile beyond to compare its height.
+TREEOFLIFE_MAP = {
+    (0, 0): "treeoflife",
+    (1, 0): "heartwood", (1, -1): "heartwood", (0, 1): "heartwood", (-1, 1): "heartwood", (1, 1): "heartwood",
+    (-1, 0): "forest", (0, -1): "plains", (-1, -1): "plains", (-2, 1): "plains", (-1, 2): "plains",
+    (0, 2): "plains", (2, -1): "plains", (2, -2): "hills", (2, 0): "plains", (1, -2): "plains",
+}
+
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
 BORDERED = {"farmland", "village"}
@@ -148,7 +157,12 @@ def build_map(templates, animated=False, tiles=None):
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
         for i in range(6):
             edge = f"{name}_edge_{'same' if joined[i] else 'other'}"
-            if joined[i] and f"{name}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
+            near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
+            if near and vr.LANDMARKS.get(name) == near:
+                edge = f"{name}_edge_path"  # a landmark's edge toward its own variant (the Tree of Life's path)
+            elif vr.LANDMARKS.get(near) == name:
+                edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
+            elif joined[i] and f"{name}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{name}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
@@ -243,7 +257,8 @@ def build_board(templates, radius=4):
 if __name__ == "__main__":
     # Optional args after --: a tiles .blend, then a combat_cells .blend.
     # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished;
-    # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant.
+    # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant; --treeoflife renders
+    # TREEOFLIFE_MAP and a close-up of the Tree of Life.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -268,6 +283,18 @@ if __name__ == "__main__":
             cam.location = target + Vector((0, -24 * math.cos(el), 24 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, 0)
             render(f"closeup_{variant}")
+        sys.exit(0)
+    if "treeoflife" in flags:
+        # The Tree of Life landmark in a heartwood group, then a close-up of it.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles=TREEOFLIFE_MAP)
+        stage(Vector((0.5, -0.5, 0)), 52, 45)
+        render("treeoflife")
+        cam = bpy.context.scene.camera
+        el = math.radians(38)
+        cam.location = Vector((0, 0, 0.8)) + Vector((0, -20 * math.cos(el), 20 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+        render("closeup_treeoflife")
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()

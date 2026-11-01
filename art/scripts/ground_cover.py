@@ -27,7 +27,9 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "deep_forest": 0.08, "meadows": 0.6, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
            "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
            # tier 2 and class variants
-           "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12}
+           "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
+           # landmark tiles
+           "treeoflife": 0.1}
 # Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
 # tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
 TUFT = {"dark_wood": "tuft_dark_wood"}

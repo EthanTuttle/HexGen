@@ -128,6 +128,7 @@ PALETTE = {
     "leaf_green_dark": "#467C30",
     "trunk_old": "#6E4A33",
     "stone_moss": "#7D8873",
+    "path_earth": "#A88A64",
     "ribbon_red": "#C8553D",
     "ribbon_white": "#F2E8D5",
     "ribbon_blue": "#5F86C2",

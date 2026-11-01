@@ -736,6 +736,9 @@ def heartwood(p, rng, kind):
             mossy_stone(p, rng, at, size)
         moss(p, rng, lambda q: hk.in_centre(q, 0.2), hk.CENTRE_BOUNDS, 4)
         return
+    if kind == "edge_landmark":
+        heartwood_edge_landmark(p, rng)
+        return
     at, hr, spread = EDGE_TREES[kind]
     h = rng.uniform(*hr)
     under = great_tree(p, rng, at, h, spread, mossy=True)
@@ -744,6 +747,141 @@ def heartwood(p, rng, kind):
     moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and (q - at).length > 0.6, hk.WEDGE_BOUNDS, 3)
     if kind == "edge_same_b":  # a mossy stone where the bigger tree would stand
         mossy_stone(p, rng, Vector((X0 + 1.0, 0.65, 0)), 0.22)
+
+
+# --- Landmark: the Tree of Life (heartwood's core location) ------------------------------------------
+# A landmark tile replaces a finished region's tile (design/02 -> Landmarks; look: design/07 -> Landmark
+# tiles; pieces: design/06 -> Tile build). The Tree of Life is built like a variant, on base_forest with
+# heartwood's ground colour:
+#   treeoflife_centre       the giant tree, its cords of ribbons and lanterns, and its roots out to the
+#                           wedges' middle; the same on every Tree of Life tile
+#   treeoflife_edge_path    on each edge whose neighbour is heartwood: a prayer path from the edge to the
+#                           trunk between two roots that run on to the edge
+#   treeoflife_edge_same /  on every other edge (forest or any other terrain): the roots dive back into
+#   treeoflife_edge_other   the ground before the edge, with moss
+#   heartwood_edge_landmark a heartwood tile's wedge on the edge touching the Tree of Life, in place of its
+#                           normal one: the two roots and the path carry on from the edge toward its glade
+# So the paths follow the heartwood neighbours however many there are: the engine picks a wedge per edge
+# as for any tile, and LANDMARKS tells it which neighbours get the path and the landmark wedge. The roots
+# cross each edge at ROOT_Y either side of the middle, mirrored, so they meet the neighbour's roots exactly.
+
+ROOT_Y = 0.65  # where the two roots cross an edge, either side of its middle
+ROOT_EDGE_R, ROOT_EDGE_Z = 0.11, 0.06  # their radius and height there, the same on both sides of the edge
+ROOT_MID = 2.6  # how far out from the trunk the centre piece takes them, along their line
+
+
+def root_line(t, side):
+    """A point on a root's line from the trunk (t=0) out to the edge crossing (t=1), in edge 0's frame."""
+    return Vector((0, 0, 0)).lerp(Vector((X1, side * ROOT_Y, 0)), t)
+
+
+def root_run(p, pts, r0, r1, arch=0.0, mat="trunk_old"):
+    """A root through points pts, tapering from r0 to r1, rising by arch in the middle like a buttress."""
+    n = len(pts) - 1
+    for k in range(n):
+        a, b = pts[k].copy(), pts[k + 1].copy()
+        a.z += arch * math.sin(math.pi * k / n)
+        b.z += arch * math.sin(math.pi * (k + 1) / n)
+        frustum(p, a, b, r0 + (r1 - r0) * k / n, r0 + (r1 - r0) * (k + 1) / n, mat, segments=5)
+
+
+def path_strip(p, rng, a, b, width):
+    """A trodden earth path from a to b, its edges wobbling a little."""
+    d = b - a
+    side = Vector((-d.y, d.x, 0)).normalized()
+    n = max(2, round(d.length / 0.5))
+    pts = [a.lerp(b, k / n) + side * rng.uniform(-0.05, 0.05) for k in range(n + 1)]
+    for q0, q1 in zip(pts, pts[1:]):
+        w0, w1 = width * rng.uniform(0.9, 1.1), width * rng.uniform(0.9, 1.1)
+        p.prism([q0 - side * w0 / 2, q1 - side * w1 / 2, q1 + side * w1 / 2, q0 + side * w0 / 2], 0.0, 0.015,
+                "path_earth")
+
+
+def treeoflife(p, rng, kind):
+    """The Tree of Life: one giant heartwood broadleaf, about as tall as a hill peak, with cords of ribbons and
+    lanterns running out from its branches and great roots spreading in every direction."""
+    if kind == "centre":
+        h_trunk, zc, spread = 2.6, 2.85, 3.0
+        frustum(p, Vector((0, 0, 0)), Vector((0, 0, h_trunk)), 0.75, 0.55, "trunk_old", segments=9)
+        p.cone(Vector((0, 0, 0)), 1.25, 0.95, "trunk_old", segments=9)  # flared foot
+        for k in range(5):  # great limbs up into the canopy
+            a = 2 * math.pi * k / 5 + rng.uniform(-0.2, 0.2)
+            base = Vector((0, 0, h_trunk * 0.8))
+            frustum(p, base, base + Vector((math.cos(a) * 1.5, math.sin(a) * 1.5, 0.7)), 0.3, 0.14, "trunk_old")
+        # Roots: two per edge, along the lines to that edge's crossings, buttressed where they leave the trunk.
+        for i in range(6):
+            rot = Matrix.Rotation(math.radians(60 * i), 3, "Z")
+            for side in (-1, 1):
+                pts = [root_line(t, side) for t in (0.15, 0.32, 0.47, ROOT_MID / X1)]
+                pts[0].z, pts[-1].z = 0.45, ROOT_EDGE_Z + 0.04
+                bend = side * rng.uniform(0.15, 0.3)  # each root snakes a little, its ends fixed
+                pts[1].y += bend
+                pts[2].y -= bend * 0.6
+                root_run(p, [rot @ q for q in pts], 0.38, 0.14, arch=0.3)
+        # Low branches reaching out toward the tile's corners, with a cord of ribbons and lanterns from each
+        # tip down to a post near the corner.
+        colours = ["ribbon_red", "ribbon_white", "ribbon_blue"]
+        for i in range(6):
+            a = math.radians(60 * i + 30) + rng.uniform(-0.1, 0.1)
+            out = Vector((math.cos(a), math.sin(a), 0))
+            base, tip = Vector((0, 0, 1.85)) + out * 0.6, Vector((0, 0, 2.0)) + out * 2.6
+            frustum(p, base, tip, 0.17, 0.07, "trunk_old")
+            post = out * 4.0
+            p.box(post, (0.1, 0.1, 1.1), "trunk", spin=a)
+            mossy_stone(p, rng, post + out * 0.18, 0.17)
+            cord(p, rng, tip, post + Vector((0, 0, 1.07)), 0.3, colours[i % 3:] + colours[:i % 3])
+        # The canopy: a broad, low crown of green clumps with lime-gold highlights and a raised top.
+        p.blob(Vector((0, 0, 0)), spread * 0.7, "leaf_green", z=zc + 0.1, squash=0.5)
+        a0 = rng.uniform(0, 2 * math.pi)
+        for k in range(8):
+            a = a0 + 2 * math.pi * k / 8 + rng.uniform(-0.15, 0.15)
+            q = Vector((math.cos(a), math.sin(a), 0)) * spread * rng.uniform(0.62, 0.7)
+            leaf = "leaf_gold" if k in (1, 4, 6) else ("leaf_green", "leaf_green_dark")[k % 2]
+            p.blob(q, spread * rng.uniform(0.36, 0.42), leaf, z=zc + rng.uniform(-0.2, 0.05), squash=0.6)
+        for k in range(3):
+            a = a0 + 2 * math.pi * k / 3 + 0.5
+            q = Vector((math.cos(a), math.sin(a), 0)) * spread * 0.3
+            p.blob(q, spread * 0.3, ("leaf_green_dark", "leaf_gold", "leaf_green")[k], z=zc + 0.7, squash=0.6)
+        under = zc - spread * 0.2
+        ribbons(p, rng, Vector((0, 0, 0)), under, spread, 6)
+        for _ in range(3):
+            hanging_lantern(p, rng, Vector((0, 0, 0)), under, spread)
+        moss(p, rng, lambda q: hk.in_centre(q, 0.1) and q.length > 1.3, hk.CENTRE_BOUNDS, 4)
+        return
+    if kind == "edge_path":  # a heartwood neighbour: the prayer path comes in, the roots run on to the edge
+        for side in (-1, 1):
+            pts = [root_line(t, side) for t in (ROOT_MID / X1, 0.83, 1.0)]
+            pts[0].z, pts[-1].z = ROOT_EDGE_Z + 0.04, ROOT_EDGE_Z
+            root_run(p, pts, 0.14, ROOT_EDGE_R, arch=0.12)
+        path_strip(p, rng, Vector((X1, 0, 0)), Vector((1.15, 0, 0)), 0.42)
+        for t in (0.3, 0.65):  # flat stones set in the path
+            lump(p, Vector((1.15 + t * (X1 - 1.15), rng.uniform(-0.06, 0.06), 0)), 0.13, "stone_moss", z=0.0,
+                 squash=0.3)
+        moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and abs(q.y) > 1.0, hk.WEDGE_BOUNDS, 2)
+        return
+    # any other neighbour: the roots dive back into the ground before the edge
+    for side in (-1, 1):
+        pts = [root_line(t, side) for t in (ROOT_MID / X1, 0.78, 0.86)]
+        pts[0].z, pts[1].z, pts[2].z = ROOT_EDGE_Z + 0.04, 0.05, -0.12
+        root_run(p, pts, 0.14, 0.06, arch=0.1)
+    moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3), hk.WEDGE_BOUNDS, 3)
+    mossy_stone(p, rng, Vector((X0 + 1.4, rng.choice((-0.9, 0.9)), 0)), 0.18)
+
+
+def heartwood_edge_landmark(p, rng):
+    """A heartwood tile's wedge on the edge touching the Tree of Life: the tree's two roots carry on from the
+    edge and dive into the ground, and the prayer path runs on from the edge to the glade. A smaller tree
+    stands to one side, clear of the path."""
+    for side in (-1, 1):
+        pts = [Vector((X1, side * ROOT_Y, ROOT_EDGE_Z)), Vector((X1 - 0.6, side * 0.55, 0.08)),
+               Vector((X1 - 1.2, side * 0.45, -0.1))]
+        root_run(p, pts, ROOT_EDGE_R, 0.05, arch=0.08)
+    path_strip(p, rng, Vector((X1, 0, 0)), Vector((X0 - 0.05, 0, 0)), 0.42)
+    lump(p, Vector((X0 + 0.9, 0.05, 0)), 0.13, "stone_moss", z=0.0, squash=0.3)
+    at = Vector((X0 + 1.15, -1.15, 0))
+    under = great_tree(p, rng, at, rng.uniform(2.8, 3.0), 0.85, mossy=True)
+    ribbons(p, rng, at, under, 0.85, 2)
+    moss(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and q.y > 0.9, hk.WEDGE_BOUNDS, 2)
 
 
 # variant: (terrain, builder, ground colour, extra pieces)
@@ -760,8 +898,12 @@ VARIANTS = {
     # tier 2 and class variants
     "fey_wood": ("forest", fey_wood, "fey_wood", ()),
     "dark_wood": ("forest", dark_wood, "dark_wood", ()),
-    "heartwood": ("forest", heartwood, "heartwood", ("edge_same_b",)),
+    "heartwood": ("forest", heartwood, "heartwood", ("edge_same_b", "edge_landmark")),
+    # landmark tiles, built like variants
+    "treeoflife": ("forest", treeoflife, "heartwood", ("edge_path",)),
 }
+# landmark: the variant whose tiles take its path wedge (on the landmark) and landmark wedge (on themselves)
+LANDMARKS = {"treeoflife": "heartwood"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 
 
