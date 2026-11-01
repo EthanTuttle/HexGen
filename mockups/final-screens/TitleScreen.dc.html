@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Title v8: centred Multiplayer label</title>
+<title>Title v11: copy the code</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -97,20 +97,10 @@ a{color:#B5532F}a:hover{color:#7E3519}
               <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Host</span>
               <button role="switch" aria-checked="{{host.on}}" aria-label="Hosting" onClick="{{toggleHost}}" style="border: none; cursor: pointer; width: 64px; height: 32px; border-radius: 16px; padding: 3px; background: {{host.track}}; display: flex; justify-content: {{host.side}}; align-items: center"><span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 26px; border-radius: 13px; background: #FCF7EE; font-family: Nunito, sans-serif; font-weight: 900; font-size: 11px; color: #24302C">{{host.lab}}</span></button>
             </div>
-            <span class="cap">Your code</span>
-            <sc-if value="{{host.editing}}" hint-placeholder-val="{{ false }}">
-              <div style="display: flex; gap: 8px; align-items: center">
-                <label for="hc" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Your code</label>
-                <input id="hc" maxlength="6" placeholder="6 letters" style="width: 140px; height: 38px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 10px; font-family: 'Lilita One', sans-serif; font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #24302C">
-                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{saveCode}}">Save</button></span>
-              </div>
-            </sc-if>
-            <sc-if value="{{host.notEditing}}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; gap: 8px; align-items: center">
-                <span style="display: flex; gap: 4px"><sc-for list="{{host.letters}}" as="l" hint-placeholder-count="6"><span style="width: 24px; height: 32px; border-radius: 7px; background: #F6EEDF; box-shadow: 0 2px 0 #CDB894; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #24302C">{{l}}</span></sc-for></span>
-                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{editCode}}">Change</button></span>
-              </div>
-            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 10px; visibility: {{host.codeVis}}; opacity: {{host.dotOp}}; transition: opacity .2s ease">
+              <span class="cap">Your code</span>
+              <span style="display: flex; gap: 4px"><sc-for list="{{host.letters}}" as="l" hint-placeholder-count="6"><span style="width: 24px; height: 32px; border-radius: 7px; background: #F6EEDF; box-shadow: 0 2px 0 #CDB894; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #24302C">{{l}}</span></sc-for><button aria-label="{{host.copyLab}}" onClick="{{copyCode}}" style="border: none; cursor: pointer; margin-left: 4px; width: 32px; height: 32px; border-radius: 8px; background: #E6DCC8; color: #33403B; display: flex; align-items: center; justify-content: center; padding: 0"><sc-if value="{{host.notCopied}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"></path></svg></sc-if><sc-if value="{{host.copied}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F6A3E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg></sc-if></button></span>
+            </div>
             
           </div>
       </sc-if>
@@ -120,20 +110,10 @@ a{color:#B5532F}a:hover{color:#7E3519}
               <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Host</span>
               <button role="switch" aria-checked="{{host.on}}" aria-label="Hosting" onClick="{{toggleHost}}" style="border: none; cursor: pointer; width: 64px; height: 32px; border-radius: 16px; padding: 3px; background: {{host.track}}; display: flex; justify-content: {{host.side}}; align-items: center"><span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 26px; border-radius: 13px; background: #FCF7EE; font-family: Nunito, sans-serif; font-weight: 900; font-size: 11px; color: #24302C">{{host.lab}}</span></button>
             </div>
-            <span class="cap">Your code</span>
-            <sc-if value="{{host.editing}}" hint-placeholder-val="{{ false }}">
-              <div style="display: flex; gap: 8px; align-items: center">
-                <label for="hc" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Your code</label>
-                <input id="hc" maxlength="6" placeholder="6 letters" style="width: 140px; height: 38px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 10px; font-family: 'Lilita One', sans-serif; font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #24302C">
-                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{saveCode}}">Save</button></span>
-              </div>
-            </sc-if>
-            <sc-if value="{{host.notEditing}}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; gap: 8px; align-items: center">
-                <span style="display: flex; gap: 4px"><sc-for list="{{host.letters}}" as="l" hint-placeholder-count="6"><span style="width: 24px; height: 32px; border-radius: 7px; background: #F6EEDF; box-shadow: 0 2px 0 #CDB894; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #24302C">{{l}}</span></sc-for></span>
-                <span class="w"><button class="b" style="height: 34px; font-size: 14px; padding: 0 16px" onClick="{{editCode}}">Change</button></span>
-              </div>
-            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 10px; visibility: {{host.codeVis}}; opacity: {{host.dotOp}}; transition: opacity .2s ease">
+              <span class="cap">Your code</span>
+              <span style="display: flex; gap: 4px"><sc-for list="{{host.letters}}" as="l" hint-placeholder-count="6"><span style="width: 24px; height: 32px; border-radius: 7px; background: #F6EEDF; box-shadow: 0 2px 0 #CDB894; display: flex; align-items: center; justify-content: center; font-family: 'Lilita One', sans-serif; font-size: 18px; color: #24302C">{{l}}</span></sc-for><button aria-label="{{host.copyLab}}" onClick="{{copyCode}}" style="border: none; cursor: pointer; margin-left: 4px; width: 32px; height: 32px; border-radius: 8px; background: #E6DCC8; color: #33403B; display: flex; align-items: center; justify-content: center; padding: 0"><sc-if value="{{host.notCopied}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"></path></svg></sc-if><sc-if value="{{host.copied}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F6A3E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg></sc-if></button></span>
+            </div>
             
           </div><div style="display: flex; flex-direction: column; gap: 10px">
             <span style="font-family: 'Lilita One', sans-serif; font-size: 16px">Join</span>
@@ -179,8 +159,9 @@ class Component extends DCLogic {
         { a: 'Slot 2', b: '[Region] · [Saved time]', op: 1 },
         { a: 'Slot 3', b: 'Empty', op: 0.6 }
       ],
-      host: { on: on ? 'true' : 'false', isOn: on, track: on ? '#5E8F5A' : '#BFAE8E', side: on ? 'flex-end' : 'flex-start', lab: on ? 'On' : 'Off', editing: this.state.editing, notEditing: !this.state.editing, letters: this.state.code.split(''), code: this.state.code, dot: on ? '#5E8F5A' : '#BFAE8E', ring: on ? '0 0 0 3px #7FB36A' : 'none', glow: on ? 'drop-shadow(0 0 8px #9CD07F)' : 'drop-shadow(0 3px 0 #A48A62)', mpLab: on ? 'On' : '', dotOp: on ? 1 : 0, dotW: on ? '9px' : '0px', dotM: on ? '7px' : '0px', rowText: on ? 'Hosting: On · ' + this.state.code : 'Hosting: Off' },
-      toggleHost: () => this.setState({ host: !this.state.host }),
+      host: { on: on ? 'true' : 'false', isOn: on, track: on ? '#5E8F5A' : '#BFAE8E', side: on ? 'flex-end' : 'flex-start', lab: on ? 'On' : 'Off', editing: this.state.editing, notEditing: !this.state.editing, letters: this.state.code.split(''), code: this.state.code, dot: on ? '#5E8F5A' : '#BFAE8E', ring: on ? '0 0 0 3px #7FB36A' : 'none', glow: on ? 'drop-shadow(0 0 8px #9CD07F)' : 'drop-shadow(0 3px 0 #A48A62)', mpLab: on ? 'On' : '', dotOp: on ? 1 : 0, copied: !!this.state.copied, notCopied: !this.state.copied, copyLab: this.state.copied ? 'Code copied' : 'Copy code', codeVis: on ? 'visible' : 'hidden', dotW: on ? '9px' : '0px', dotM: on ? '7px' : '0px', rowText: on ? 'Hosting: On · ' + this.state.code : 'Hosting: Off' },
+      toggleHost: () => { if (this.state.host) { this.setState({ host: false }); return; } const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 6; i++) c += A[Math.floor(Math.random() * A.length)]; this.setState({ host: true, code: c }); },
+      copyCode: () => { try { const r = navigator.clipboard && navigator.clipboard.writeText(this.state.code); if (r && r.catch) r.catch(() => {}); } catch (e) {} this.setState({ copied: true }); clearTimeout(this._c); this._c = setTimeout(() => this.setState({ copied: false }), 1500); },
       editCode: () => this.setState({ editing: true }),
       saveCode: () => { const el = document.getElementById('hc'); const v = el && el.value ? el.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6) : ''; this.setState({ editing: false, code: v.length === 6 ? v : this.state.code }); },
       toast: this.state.toast,
