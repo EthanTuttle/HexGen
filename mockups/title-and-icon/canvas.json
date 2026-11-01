@@ -297,6 +297,15 @@
    "title": "Title v10 \u00b7 v9 with the space for \"Your code\" and its letter tiles always kept, so the panel never changes size; they only fade in when hosting is switched on",
    "is_interactive": true,
    "radius": 28
+  },
+  "Title-v11-CopyCode.dc.html": {
+   "x": 0,
+   "y": 13860,
+   "w": 844,
+   "h": 390,
+   "title": "Title v11 \u00b7 v10 with a copy button at the end of the code tiles: tapping it copies the code and the icon turns into a green tick for a moment; nothing moves",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -331,7 +340,8 @@
   "Title-v7-SteadyMultiplayer.dc.html",
   "Title-v8-CentredLabel.dc.html",
   "Title-v9-RolledCode.dc.html",
-  "Title-v10-SteadyHost.dc.html"
+  "Title-v10-SteadyHost.dc.html",
+  "Title-v11-CopyCode.dc.html"
  ],
  "notes": {
   "v1": {
@@ -450,6 +460,13 @@
    "x": 0,
    "y": 12830,
    "text": "v10 \u00b7 the Host panel holds still",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v11": {
+   "x": 0,
+   "y": 13600,
+   "text": "v11 \u00b7 copy the code",
    "kind": "title1",
    "maxW": 2692
   }
