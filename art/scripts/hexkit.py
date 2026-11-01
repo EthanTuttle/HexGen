@@ -146,6 +146,23 @@ PALETTE = {
     "mill_stone": "#D8CDB8",
     "mill_door": "#5E4330",
     "barn": "#A9553E",
+    "withered": "#A8A48E",
+    "withered_dark": "#7E7B6C",
+    "weed": "#77806A",
+    "haunted": "#8C937C",
+    "boards": "#8B7A66",
+    "roof_old": "#6E5A50",
+    "grave": "#A7A69E",
+    "crow": "#26262A",
+    "rag": "#9C8F7A",
+    "window_faint": "#E6D79A",
+    "raided": "#94A06A",
+    "scorched": "#3B342C",
+    "char": "#2E2925",
+    "ember": "#E0773A",
+    "barn_red": "#B23B2C",
+    "stake": "#9A7A55",
+    "banner": "#C23A2E",
     "path_debug": "#E0303A",  # previews only: the path data drawn over a map
     "gate_wood": "#8E4A32",
     "iron": "#8C9196",
@@ -164,11 +181,11 @@ PALETTE = {
 # material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
 # hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
 # them toward the neighbours' ground colours like the base slabs' tops.
-# lantern, toadstool, fey_mushroom (the fey wood's fairy rings) and window_glow (the Fey Court's windows) glow at
-# night, so the engine needs to find them.
+# lantern, toadstool, fey_mushroom (the fey wood's fairy rings), window_glow (the Fey Court's windows) and
+# window_faint (the Abandoned Farmhouse's one lit window, dimmer) glow at night, so the engine needs to find them.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
 OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow",
-                "hill_grass", "highland_grass"}
+                "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
 
@@ -298,6 +315,7 @@ class Piece:
         # to a JSON beside the glb.
         self.paths = []
         self.hub = None
+        self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
     def _slot(self, mat_name):
         if mat_name not in self.mats:
@@ -406,6 +424,8 @@ class Piece:
             obj["paths"] = json.dumps([[yup(q) for q in line] for line in self.paths])
         if self.hub is not None:
             obj["path_hub"] = json.dumps(yup(self.hub))
+        if self.effects:
+            obj["effects"] = json.dumps([{"kind": k, "at": yup(q)} for k, q in self.effects])
         collection.objects.link(obj)
         return obj
 

@@ -24,13 +24,15 @@ bpy.ops.export_scene.gltf(
     export_materials="EXPORT",
     export_cameras=False,
     export_lights=False,
-    export_extras=True,      # path centrelines ride along as node extras ("paths", "path_hub")
+    export_extras=True,      # path centrelines and effect points ride along as node extras
 )
 print("EXPORTED", out)
-# The same path data as a plain JSON beside the glb, for engines that don't read extras: piece -> {paths, hub}.
+# The same data as a plain JSON beside the glb, for engines that don't read extras:
+# piece -> {paths, hub, effects}; effects are [{"kind": "fire" / "smoke" / "crows", "at": [x, y, z]}].
 paths = {o.name: {"paths": json.loads(o["paths"]) if "paths" in o else [],
-                  "hub": json.loads(o["path_hub"]) if "path_hub" in o else None}
-         for o in bpy.data.objects if "paths" in o or "path_hub" in o}
+                  "hub": json.loads(o["path_hub"]) if "path_hub" in o else None,
+                  "effects": json.loads(o["effects"]) if "effects" in o else []}
+         for o in bpy.data.objects if "paths" in o or "path_hub" in o or "effects" in o}
 if paths:
     with open(os.path.join(ART, "export", f"{stem}_paths.json"), "w") as fh:
         json.dump(paths, fh, separators=(",", ":"), sort_keys=True)

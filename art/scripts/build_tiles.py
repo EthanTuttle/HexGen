@@ -111,6 +111,7 @@ def forest(p, rng, kind):
 FARM_GRID = {(2, 2): (2.2, 1.9, 0.3), (3, 2): (1.75, 1.6, 0.3)}
 FARM_LAYOUT = (2, 2)
 FARM_SPIN = math.radians(30)  # rows run parallel to the tile's slanted sides
+LOW_CROPS = {"field_c": 0.08, "withered": 0.07, "withered_dark": 0.05, "scorched": 0.02}  # crop row heights
 
 # Borders around farms and villages: one style for both, at one depth, so they join up.
 BORDER_STYLE = "fence"         # "fence", "wall" or "stacked"
@@ -128,7 +129,7 @@ def wheat_plot(p, rng, cx, cy, w, h, crop):
     p.flat([turned(cx - w / 2, cy - h / 2), turned(cx + w / 2, cy - h / 2),
             turned(cx + w / 2, cy + h / 2), turned(cx - w / 2, cy + h / 2)], 0.04, "soil_light")
     rows = max(3, int(h / 0.28))
-    tall = 0.16 if crop != "field_c" else 0.08  # young green crop sits lower
+    tall = LOW_CROPS.get(crop, 0.16)  # young green crop sits lower; withered and burnt crops lower still
     for k in range(rows):
         y = cy - h / 2 + (k + 0.5) * h / rows
         p.box(turned(cx, y), (w - 0.14, h / rows * 0.62, tall), crop, z=0.04, spin=FARM_SPIN)
@@ -186,9 +187,10 @@ def border_join(p, rng, side):
     border_line(p, rng, Vector((BORDER_X, y, 0)), Vector((X1, y, 0)))
 
 
-def farm_grid(p, rng, ripe=False, leave_out=None):
+def farm_grid(p, rng, ripe=False, leave_out=None, crops=None):
     """The centre's grid of wheat plots on a dirt yard. ripe: every plot gold (no young green one).
-    leave_out: index of a plot to skip; its (cx, cy, w, h) in the turned grid is returned for something else."""
+    leave_out: index of a plot to skip; its (cx, cy, w, h) in the turned grid is returned for something else.
+    crops: the crop of each plot in turn (by index), in place of the usual gold and green."""
     cols, rows = FARM_LAYOUT
     w, h, gap = FARM_GRID[FARM_LAYOUT]
     total_w, total_h = cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap
@@ -196,6 +198,7 @@ def farm_grid(p, rng, ripe=False, leave_out=None):
     p.flat([turned(-total_w / 2 - pad, -total_h / 2 - pad), turned(total_w / 2 + pad, -total_h / 2 - pad),
             turned(total_w / 2 + pad, total_h / 2 + pad), turned(-total_w / 2 - pad, total_h / 2 + pad)],
            0.015, "road")
+    given = crops
     crops = ["field_a", "field_b"] * (cols * rows)
     young = -1 if ripe else rng.randrange(cols * rows)
     spare = None
@@ -207,6 +210,8 @@ def farm_grid(p, rng, ripe=False, leave_out=None):
                 spare = (cx, cy, w, h)
                 continue
             crop = "field_c" if i * rows + j == young else crops[(i + j + rng.randrange(2)) % 2]
+            if given:
+                crop = given[(i * rows + j) % len(given)]
             wheat_plot(p, rng, cx, cy, w, h, crop)
     return spare
 
