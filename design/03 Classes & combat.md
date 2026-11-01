@@ -196,6 +196,7 @@ After the Oct 27, 2026 review every score is boosted by exactly 3 races (plus Hu
 - Ability scores set how many coins are flipped on checks and attacks, and decide damage. A score of 3 flips 3 coins; scores start at 1 to 3 (see Ability scores → Starting scores).
 - Skills/proficiency, gear and class also affect the number of coins.
 - Coins can be modified with rerolls/reflips and weighted or special coins.
+- **The long shot** (decided Nov 1, 2026): when penalties (armour, darkness, drowsy, Fortress…) would take any flip below 1 coin, it flips 1 coin and needs heads twice in a row (25%). It can't go lower than that, however many penalties stack. This applies to every flip: attacks, checks and saves. How armour takes coins: [Weapons & gear](04 Weapons & gear.md) → Armour.
 - How coins look: see [Presentation](07 Presentation.md).
 - **Pass chances** (maths reference, Oct 27, 2026): with score increases alone a main score that starts at 3 goes 3 → 4 (level 8) → 5 (level 16), so raised heads targets only work if gear and proficiency add coins too.
 

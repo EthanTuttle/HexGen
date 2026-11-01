@@ -209,7 +209,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator Scores and Skills~~ (settled Oct 30, 2026: v15a)
 - [x] ~~Character creator Gear step hexes per row~~ (settled Oct 30, 2026: v19c, 5)
 - [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: Gear step done)
-- [ ] New: how armour works (what it does in a fight, light vs medium vs heavy, shields): see Weapons & gear
+- [x] ~~How armour works~~ (settled Nov 1: armour takes coins from attackers, light 1 / medium 2 / heavy 3, with movement, Stealth and DEX save costs; shields don't change hit chance; the 25% long shot at 0 coins. See Weapons & gear → Armour)
+- [ ] New (Nov 1): armour follow-ups: heavy's Move penalty size, categorised accessory stats, any damage reduction, easing heavy's costs; playtest heavy at level 1 (hit only on the long shot)
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
 - [ ] New: a guest's send-off
