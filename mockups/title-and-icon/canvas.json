@@ -207,6 +207,33 @@
    "title": "App icon v6b \u00b7 the same with the slash at v5b's steeper, more upright angle",
    "is_interactive": false,
    "radius": 28
+  },
+  "Icon-v7a-SmallCoin.dc.html": {
+   "x": 0,
+   "y": 8470,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v7a \u00b7 v6a with a smaller plain coin (beaded ring and a raised centre, no hex) top left and the tile much bigger bottom right; the short slash across the diagonal",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v7b-SmallCoinUpright.dc.html": {
+   "x": 924,
+   "y": 8470,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v7b \u00b7 the same with v6b's more upright slash",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v8-BigTileNoShadow.dc.html": {
+   "x": 0,
+   "y": 9240,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v8 \u00b7 v7a with the shadow under the tile taken out and the tile bigger (about a fifth), sitting lower in the bottom right",
+   "is_interactive": false,
+   "radius": 28
   }
  },
  "order": [
@@ -231,7 +258,10 @@
   "Icon-v5b-CoinSlashTile.dc.html",
   "Icon-v5c-DiagonalSplit.dc.html",
   "Icon-v6a-DiagonalSlash.dc.html",
-  "Icon-v6b-DiagonalUpright.dc.html"
+  "Icon-v6b-DiagonalUpright.dc.html",
+  "Icon-v7a-SmallCoin.dc.html",
+  "Icon-v7b-SmallCoinUpright.dc.html",
+  "Icon-v8-BigTileNoShadow.dc.html"
  ],
  "notes": {
   "v1": {
@@ -301,6 +331,20 @@
    "x": 0,
    "y": 7440,
    "text": "App icon v6 \u00b7 v5c placement, v5b look",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons7": {
+   "x": 0,
+   "y": 8210,
+   "text": "App icon v7 \u00b7 a smaller, plain coin; a bigger tile",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons8": {
+   "x": 0,
+   "y": 8980,
+   "text": "App icon v8 \u00b7 v7a, bigger tile, no shadow",
    "kind": "title1",
    "maxW": 2692
   }
