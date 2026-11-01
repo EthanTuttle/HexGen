@@ -143,12 +143,19 @@ def haystack(p, rng, at):
     p.cone(at, r * 1.05, r * 0.9, "hay", segments=8, z=r * 1.1)
 
 
-def windmill(p, rng, at, spin):
-    p.cylinder(at, 0.5, 0.3, "rock", segments=8)
-    p.cylinder(at, 0.42, 1.9, "wall", segments=8, z=0.3)
-    p.cone(at, 0.52, 0.6, "roof", segments=8, z=2.2)
+SMALL_MILL_SPOT = bt.field_spot(1, 1.66)  # in a centre_mill's yard, its plinth clear of the lanes
+
+
+def small_windmill(p, rng):
+    """Windmill country's small mill, its own piece with its origin at its foot, facing -Y (the default camera).
+    The engine places it at SMALL_MILL_SPOT turned with the centre, but doesn't turn the mill itself, so all small
+    mills face one way and the sails never show edge-on from the default camera."""
+    at, spin = Vector((0, 0, 0)), -math.pi / 2
+    p.cylinder(at, 0.38, 0.3, "rock", segments=8)
+    p.cylinder(at, 0.34, 1.9, "wall", segments=8, z=0.3)
+    p.cone(at, 0.42, 0.6, "roof", segments=8, z=2.2)
     face = turn(Vector((1, 0, 0)), spin)
-    hub = at + face * 0.5 + Vector((0, 0, 1.95))
+    hub = at + face * 0.42 + Vector((0, 0, 1.95))
     p.box_rot(hub, (0.12, 0.12, 0.12), "trunk", Matrix.Rotation(spin, 3, "Z"))
     for k in range(4):  # four sails in the plane facing out, turned 45 degrees
         a = math.radians(45 + 90 * k)
@@ -157,30 +164,586 @@ def windmill(p, rng, at, spin):
         p.box_rot(hub + rot @ Vector((0.05, 0, 0.78)), (0.04, 0.06, 1.4), "trunk", rot)
 
 
-def grain_cart(p, rng, at, spin):
+def grain_cart(p, rng, at, spin, shafts=False):
+    """A two-wheeled cart piled with grain. shafts: a pair of shafts out in front (toward spin), so it reads
+    as heading that way."""
     p.box(at, (0.7, 0.42, 0.22), "crate", z=0.22, spin=spin)
     p.box(at, (0.6, 0.34, 0.12), "hay", z=0.44, spin=spin)
     side = turn(Vector((0, 1, 0)), spin)
     for s in (-1, 1):
         p.log(at + side * s * 0.24, 0.16, 0.05, "trunk", spin=spin + math.pi / 2, z=0.16)
+        if shafts:
+            p.box(at + turn(Vector((0.6, s * 0.15, 0)), spin), (0.55, 0.035, 0.035), "trunk", z=0.22, spin=spin)
+
+
+def sacks(p, rng, at, cols, rows, spin=0.0):
+    """Grain sacks stacked in a little pile: a row of fat sacks with a smaller row on top."""
+    for layer in range(2):
+        n = cols * rows - layer * (cols + rows - 1)
+        for k in range(max(1, n)):
+            i, j = k % cols, k // cols
+            q = at + turn(Vector(((i - (cols - 1) / 2) * 0.24 + layer * 0.12, (j - (rows - 1) / 2) * 0.2, 0)), spin)
+            p.blob(q, 0.13, "sack", z=0.1 + layer * 0.17, squash=0.75)
+
+
+def cart_road(p, rng, heading_in):
+    """Windmill country's trail wedges: the farm track widened into a rutted cart road running on to the edge.
+    There are two: edge_trail on the tile farther from the mill, with one grain cart on it heading out over the
+    edge toward the mill, and edge_trail_in on the tile closer to it, with no cart, so each trail edge has one
+    cart, facing the mill."""
+    x0 = bt.FARM_TRACK_X0
+    bt.track(p, half=0.4)
+    for sd in (-1, 1):  # wheel ruts
+        p.flat([Vector((x0, sd * 0.24 - 0.05, 0)), Vector((X1, sd * 0.24 - 0.05, 0)),
+                Vector((X1, sd * 0.24 + 0.05, 0)), Vector((x0, sd * 0.24 + 0.05, 0))], 0.018, "rut")
+    if not heading_in:
+        grain_cart(p, rng, Vector((X0 + 1.1, 0.05, 0)), rng.uniform(-0.06, 0.06), shafts=True)
+
+
+RIPE = ["field_a", "field_a", "field_b"]  # windmill country: every field ripe gold; the yard is stubble
 
 
 def windmill_country(p, rng, kind):
-    """Every plot ripe gold, one harvested into haystacks; windmills on some tiles; grain carts on the tracks."""
-    if kind in ("centre", "centre_mill"):
-        cx, cy, w, h = bt.farm_grid(p, rng, ripe=True, leave_out=3)
-        at = bt.turned(cx, cy)
-        p.flat([bt.turned(cx - w / 2, cy - h / 2), bt.turned(cx + w / 2, cy - h / 2),
-                bt.turned(cx + w / 2, cy + h / 2), bt.turned(cx - w / 2, cy + h / 2)], 0.03, "stubble")
+    """Fields fill the tile, every one ripe; the small windmill, or haystacks, on a stubble field; grain carts on
+    some tracks; cart roads toward the Great Windmill."""
+    if kind in ("centre", "centre_b", "centre_mill", "centre_near"):
+        bt.field_centre(p, rng, bt.picked(rng, RIPE, 6), yard_mat="stubble")
+        spot, other = bt.field_spot(1), bt.field_spot(2, 1.5)
         if kind == "centre_mill":
-            windmill(p, rng, at, bt.FARM_SPIN + math.pi / 2)
+            haystack(p, rng, other)  # the mill is its own piece, small_windmill
+        elif kind == "centre_near":  # next to the Great Windmill: the harvest piled up, a cart loading
+            sacks(p, rng, other, 2, 2)
+            grain_cart(p, rng, spot, math.pi / 2)
         else:
-            for k in range(3):
-                haystack(p, rng, at + bt.turned(rng.uniform(-0.6, 0.6), rng.uniform(-0.5, 0.5)))
+            for at in (spot, spot + Vector((0.1, 0.38, 0)), other):
+                haystack(p, rng, at)
         return
-    bt.farmland(p, rng, kind)
-    if kind == "same" and rng.random() < 0.6:
-        grain_cart(p, rng, Vector((X1 - 0.55, 0, 0)), 0.0)
+    if kind in ("edge_trail", "edge_trail_in"):  # toward the Great Windmill: the track widens into a cart road
+        cart_road(p, rng, kind == "edge_trail_in")
+        bt.field_wedge(p, rng, True, bt.picked(rng, RIPE, 2))
+        return
+    if kind in ("same", "edge_same_b"):
+        bt.track(p)
+        bt.field_wedge(p, rng, True, bt.picked(rng, RIPE, 2))
+        if kind == "edge_same_b":  # a grain cart on the track
+            grain_cart(p, rng, Vector((X1 - 0.75, 0, 0)), 0.0)
+        return
+    if kind == "edge_gate":
+        bt.track(p)
+        bt.farm_gate(p, rng)
+        bt.field_wedge(p, rng, True, bt.picked(rng, RIPE, 2), x1=bt.BORDER_X - 0.22)
+        return
+    bt.edge_border(p, rng)
+    bt.field_wedge(p, rng, False, bt.picked(rng, RIPE, 1), x1=bt.BORDER_X - 0.22, fill_lane=kind == "other")
+
+
+# --- Farmland tier 2: haunted homesteads and bandit-raided farms -----------------------------------------
+# Both keep the farm rules: tracks on joined edges, a fence round the group with gates (fence_gates.py), path
+# data on every piece, trail and near pieces picked by landmark_flow.py, fields filling the tile with routes along
+# the lanes. The building on a centre stands on its yard field (FARM_SPOT), clear of the lanes and the crops.
+YARD_Z = 0.022  # a landmark's yard lies over the wedge tracks, which run in toward the middle under it
+FARM_SPOT = bt.field_spot(1)
+HAUNTED = ["withered", "dead_earth", "withered_dark", "dead_earth"]  # dead patches break up the grey rows
+
+
+def boarded_house(p, rng, at, spin, w=0.8, d=0.62, h=0.55, sag=0.12):
+    """A small farmhouse gone to ruin: grey walls, a sagging roof (one end dropped), boards over its windows
+    and door."""
+    p.box(at, (w, d, h), "withered", spin=spin)
+    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(sag, 3, "Y")
+    p.box_rot(at + Vector((0, 0, h + 0.18)), (w + 0.12, d + 0.18, 0.08), "roof_old", rot)  # a slumped roof slab
+    p.gable_roof(at, w * 0.9, d + 0.12, 0.32, "roof_old", z=h, spin=spin + sag * 0.3)
+    face = turn(Vector((0, -1, 0)), spin)
+    for x in (-0.2, 0.2):  # boards across the windows
+        q = at + turn(Vector((x, 0, 0)), spin) + face * (d / 2 + 0.02)
+        for k in (-1, 1):
+            p.box_rot(q + Vector((0, 0, h * 0.6)), (0.2, 0.03, 0.04), "boards",
+                      Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(k * 0.4, 3, "Y"))
+
+
+def scarecrow(p, rng, at, spin, crows=2):
+    """A ragged scarecrow on a post: a sack head, torn coat, arms out on a crossbar, crows perched on it."""
+    p.box(at, (0.05, 0.05, 1.1), "trunk")
+    p.box(at, (0.8, 0.05, 0.05), "trunk", z=0.85, spin=spin)
+    p.box(at, (0.3, 0.16, 0.42), "rag", z=0.5, spin=spin)  # coat
+    p.box(at + turn(Vector((0.2, 0, 0)), spin), (0.22, 0.03, 0.3), "rag", z=0.55, spin=spin + 0.3)  # tatter
+    p.blob(at, 0.12, "sack", z=1.05, squash=1.1)
+    p.cone(at, 0.17, 0.14, "boards", segments=6, z=1.12)  # hat
+    for k in range(crows):
+        q = at + turn(Vector((0.36 * (1 if k == 0 else -1), 0, 0)), spin)
+        crow(p, q + Vector((0, 0, 0.9)), spin + k * 2.0)
+
+
+def crow(p, at, spin):
+    lump(p, at, 0.07, "crow", z=0.05, squash=0.8)
+    p.cone(at + turn(Vector((0.08, 0, 0)), spin), 0.025, 0.05, "char", segments=3, z=0.07)
+
+
+def weeds(p, rng, inside, bounds, count):
+    for at in hk.scatter(rng, inside, count, 0.3, bounds):
+        p.cone(at, rng.uniform(0.1, 0.16), rng.uniform(0.18, 0.32), "weed", segments=4, spin=rng.uniform(0, 1))
+
+
+def broken_fence(p, rng, a, b):
+    """A fence along a to b that's fallen into ruin: posts leaning this way and that, rails missing or hanging,
+    but no gap wide enough to walk through (only gates are ways out)."""
+    d = b - a
+    n = max(1, round(d.length / 0.6))
+    ang = math.atan2(d.y, d.x)
+    for k in range(n + 1):
+        lean = Matrix.Rotation(ang, 3, "Z") @ Matrix.Rotation(rng.uniform(-0.3, 0.3), 3, "X")
+        p.box_rot(a + d * (k / n) + Vector((0, 0, 0.2)), (0.07, 0.07, 0.42), "boards", lean)
+    for k in range(n):
+        for z in (0.16, 0.32):
+            if rng.random() < 0.35:
+                continue  # a missing rail
+            q0, q1 = a + d * (k / n), a + d * ((k + 1) / n)
+            drop = rng.uniform(-0.1, 0.0) if rng.random() < 0.3 else 0.0
+            rot = Matrix.Rotation(ang, 3, "Z") @ Matrix.Rotation(drop * 2, 3, "Y")
+            p.box_rot((q0 + q1) / 2 + Vector((0, 0, z + drop)), ((q1 - q0).length, 0.04, 0.04), "boards", rot)
+
+
+def haunted_edge_fence(p, rng, gate):
+    h = bt.BORDER_X * bt.TAN30
+    X = bt.BORDER_X
+    if not gate:
+        broken_fence(p, rng, Vector((X, -h, 0)), Vector((X, h, 0)))
+        return
+    broken_fence(p, rng, Vector((X, -h, 0)), Vector((X, -bt.GATE_HALF, 0)))
+    broken_fence(p, rng, Vector((X, bt.GATE_HALF, 0)), Vector((X, h, 0)))
+    for sd in (-1, 1):
+        p.box(Vector((X, sd * bt.GATE_HALF, 0)), (0.11, 0.11, 0.5), "boards")
+    # the gate fallen flat in the grass beside the track
+    for dx in (-0.45, -0.35):
+        p.box(Vector((X + dx, 0.6, 0)), (0.75, 0.05, 0.03), "boards", z=0.03, spin=math.radians(80))
+
+
+def off_lanes(q):
+    """Clear of the lanes along the six spokes."""
+    return all(abs(q.dot(Vector((-hk.edge_normal(i).y, hk.edge_normal(i).x, 0)))) > bt.FARM_LANE
+               for i in range(6) if q.dot(hk.edge_normal(i)) > 0)
+
+
+def haunted_homesteads(p, rng, kind):
+    """Grey withered crops and weeds overrunning the fields, broken fences, ragged scarecrows with crows,
+    boarded-up farmhouses with sagging roofs and dead trees in the yards."""
+    if kind in ("centre", "centre_b", "centre_near"):
+        dark = kind == "centre_near"  # next to the Abandoned Barn: mostly dead earth, a second dead tree
+        bt.field_centre(p, rng, ["dead_earth", "withered_dark"] if dark else bt.picked(rng, HAUNTED, 6), )
+        boarded_house(p, rng, FARM_SPOT, math.pi / 2)
+        bare_tree(p, rng, bt.field_spot(2, 1.5), 1.9, bark="bark_grey")
+        if dark:
+            bare_tree(p, rng, bt.field_spot(4, 1.6), 1.7, bark="bark_dark")
+        crow_at = bt.field_spot(3 if kind == "centre_b" else 5, 1.45)
+        scarecrow(p, rng, crow_at, 0.4)
+        weeds(p, rng, lambda q: hk.in_centre(q, 0.2) and off_lanes(q) and q.length > 0.9, hk.CENTRE_BOUNDS,
+              12 if dark else 7)
+        p.effects.append(("crows", crow_at + Vector((0, 0, 2.2))))
+        return
+    if kind in ("same", "edge_same_b"):
+        bt.track(p)
+        bt.field_wedge(p, rng, True, bt.picked(rng, HAUNTED, 2))
+        weeds(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and abs(q.y) > 0.5, hk.WEDGE_BOUNDS, 5)
+        return
+    if kind in ("edge_trail", "edge_trail_in"):  # toward the Abandoned Barn: ragged scarecrows with crows
+        bt.track(p)
+        bt.field_wedge(p, rng, True, bt.picked(rng, HAUNTED, 2))
+        scarecrow(p, rng, Vector((X0 + 1.2, 0.75 if kind == "edge_trail" else -0.75, 0)), math.pi / 2, crows=1)
+        weeds(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.3) and abs(q.y) > 0.7, hk.WEDGE_BOUNDS, 4)
+        return
+    if kind == "edge_gate":
+        bt.track(p)
+        haunted_edge_fence(p, rng, gate=True)
+        bt.field_wedge(p, rng, True, bt.picked(rng, HAUNTED, 2), x1=bt.BORDER_X - 0.22)
+        return
+    haunted_edge_fence(p, rng, gate=False)
+    bt.field_wedge(p, rng, False, bt.picked(rng, HAUNTED, 1), x1=bt.BORDER_X - 0.22, fill_lane=kind == "other")
+    weeds(p, rng, lambda q: hk.in_edge_wedge(q, x1=bt.BORDER_X - 0.3, margin=0.2), hk.WEDGE_BOUNDS, 3)
+
+
+def abandoned_barn(p, rng, kind):
+    """Haunted homesteads' Abandoned Barn: a big haunted barn standing upright, weathered grey, its doors facing
+    edge 0 with the approach path, one faint light glowing through the gaps in its boards at night
+    (window_faint, its own material), and a small family graveyard with a few stones beside it, in an
+    overgrown grey yard."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], YARD_Z, "withered_dark")
+    at, w, d, h = Vector((-0.05, 0.3, 0)), 1.5, 1.9, 1.35
+    p.box(at, (w, d, h), "barn_grey")
+    p.gable_roof(at, d + 0.15, w + 0.25, 0.95, "roof_old", z=h, spin=math.pi / 2)
+    for k in range(7):  # board seams down the long walls
+        y = at.y - d / 2 + d * (k + 0.5) / 7
+        for sd in (-1, 1):
+            p.box(Vector((at.x + sd * (w / 2 + 0.005), y, 0)), (0.02, 0.03, h), "boards")
+    door = Vector((at.x + w / 2 + 0.01, at.y, 0))
+    p.box(door, (0.04, 0.9, 0.95), "mill_door")  # the big doors, toward edge 0
+    p.box_rot(door + Vector((0.02, 0, 0.47)), (0.03, 0.08, 1.2), "boards", Matrix.Rotation(0.65, 3, "X"))  # a brace
+    p.box(door + Vector((0, 0, 0)), (0.04, 0.42, 0.42), "boards", z=h + 0.12)  # the hayloft hatch, shut
+    # the faint light: thin glowing gaps between boards on the side toward edge 5 and in the front gable
+    for k in range(3):
+        p.box(Vector((at.x - 0.25 + 0.22 * k, at.y - d / 2 - 0.006, 0)), (0.05, 0.02, 0.5), "window_faint", z=0.45)
+    p.box(door + Vector((0.01, 0, 0)), (0.02, 0.22, 0.05), "window_faint", z=h + 0.45)
+    # the approach from the centre piece's edge-0 side to the doors
+    p.flat([Vector((door.x + 0.05, -0.25, 0)), Vector((1.6, -0.25, 0)), Vector((1.6, 0.25, 0)),
+            Vector((door.x + 0.05, 0.25, 0))], 0.03, "road")
+    # the family graveyard beside the barn, toward the corner between edges 4 and 5
+    yard = Vector((0.15, -1.35, 0))
+    for k in range(10):  # a low broken picket round it
+        a_ = 2 * math.pi * k / 10
+        if k == 2:
+            continue
+        p.box(yard + Vector((math.cos(a_) * 0.6, math.sin(a_) * 0.42, 0)), (0.05, 0.05, 0.3), "boards",
+              spin=rng.uniform(-0.3, 0.3))
+    for q in ((-0.3, 0.1), (0.0, 0.12), (0.3, 0.08), (-0.15, -0.18), (0.18, -0.16)):
+        g = yard + Vector((*q, 0))
+        p.box(g, (0.2, 0.08, 0.3), "grave", spin=rng.uniform(-0.15, 0.15))
+        p.log(g + Vector((0, 0, 0.3)), 0.1, 0.08, "grave", spin=math.pi / 2, z=0.0, segments=6)
+    bare_tree(p, rng, Vector((-1.25, -0.85, 0)), 2.1, bark="bark_grey")
+    scarecrow(p, rng, Vector((-1.2, 1.2, 0)), 0.8)
+    weeds(p, rng, lambda q: q.length < 1.85 and (q - yard).length > 0.75 and not (-0.85 < q.x < 0.75 and
+                                                                                   -0.7 < q.y < 1.3),
+          hk.CENTRE_BOUNDS, 9)
+    p.effects.append(("crows", Vector((-0.05, 0.3, 3.0))))
+    yard_ring_paths(p, door.x + 0.05)
+
+
+def yard_ring_paths(p, entrance_x):
+    """Paths for a landmark centre with something walled or fenced in its middle: the approach along edge 0 from
+    the centre piece's edge to the entrance, and a ring just outside the centre piece (r 2.05) joined to every
+    edge's track end, so tracks from other edges come round to the approach."""
+    p.paths.append([Vector((bt.FARM_ROUTE_R, 0, 0)), Vector((entrance_x, 0, 0))])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 2.05 for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    for i, q in enumerate(ring):  # spokes: only used where edge i's wedge has a path (no dead ends)
+        p.spokes[i] = [q / 2.05 * bt.FARM_ROUTE_R, q]
+
+
+def charred_barn(p, rng, at, spin):
+    """A burnt-out barn: blackened walls, the roof fallen in to a few charred rafters."""
+    p.box(at, (0.9, 0.6, 0.5), "char", spin=spin)
+    for k in range(4):
+        x = -0.34 + 0.22 * k
+        rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.6 * (1 if k % 2 else -1), 3, "X")
+        p.box_rot(at + turn(Vector((x, 0, 0)), spin) + Vector((0, 0, 0.7)), (0.06, 0.06, 0.5), "char", rot)
+    p.box(at + turn(Vector((0.15, 0.05, 0)), spin), (0.28, 0.18, 0.05), "ember", z=0.5, spin=spin)
+
+
+def intact_barn(p, rng, at, spin):
+    p.box(at, (0.9, 0.6, 0.55), "barn_brown", spin=spin)  # weathered brown: only the Militia Barn is red
+    p.gable_roof(at, 1.02, 0.76, 0.4, "roof_old", z=0.55, spin=spin)
+
+
+def spilled(p, rng, at):
+    """Spilled grain sacks and a broken crate."""
+    for k in range(2):
+        p.blob(at + Vector((0.15 * k, 0.1 * k, 0)), 0.12, "sack", z=0.06, squash=0.6)
+    p.box(at + Vector((0.3, -0.15, 0)), (0.28, 0.28, 0.14), "crate", spin=0.5)
+    p.box(at + Vector((0.45, 0.05, 0)), (0.3, 0.05, 0.03), "crate", z=0.02, spin=1.2)
+
+
+def stakes(p, rng, a, b, n, h=0.75, r=0.06):
+    """A row of sharpened stakes from a to b, leaning outward a little, on a rail that ties them into a line."""
+    d = b - a
+    out = Vector((d.y, -d.x, 0)).normalized()
+    for k in range(n):
+        q = a + d * ((k + 0.5) / n)
+        top = q + Vector((0, 0, h)) + out * 0.12
+        frustum(p, q, top, r, r * 0.85, "stake", segments=5)
+        spike(p, top, top + (top - q).normalized() * r * 3, r * 0.85, "stake", segments=5)
+    if r > 0.07:  # a crossbar along a barricade row
+        p.box((a + b) / 2 + out * 0.05, (d.length, 0.06, 0.07), "trunk", z=h * 0.45, spin=math.atan2(d.y, d.x))
+
+
+def raided_farms(p, rng, kind):
+    """Scorched fields with a few small fires and rising smoke (engine effects, marked on the piece), charred
+    barns beside intact ones, trampled tracks with spilled sacks and broken crates."""
+    if kind in ("centre", "centre_b", "centre_near"):
+        near = kind == "centre_near"  # next to the Militia Barn: defended, the crops mostly saved
+        burnt = () if near else ((0, 3) if kind == "centre" else (3, 5))  # scorched fields, with fires
+        crops = [("scorched" if k in burnt else rng.choice(["field_a", "field_b"])) for k in range(6)]
+        if near:
+            crops[4] = "scorched"
+        bt.field_centre(p, rng, crops, yard_mat="scorched" if kind == "centre" else "yard_dirt")
+        if kind == "centre":
+            charred_barn(p, rng, FARM_SPOT, math.pi / 2)
+            ember = FARM_SPOT + Vector((0.15, 0.05, 0.55))
+            p.effects += [("fire", ember), ("smoke", ember)]
+        else:
+            intact_barn(p, rng, FARM_SPOT, math.pi / 2)
+        if near:
+            stakes(p, rng, bt.field_spot(4, 1.3) - Vector((0.45, 0, 0)), bt.field_spot(4, 1.3) + Vector((0.45, 0, 0)), 4,
+                   h=0.75, r=0.11)
+        for k in burnt:  # small fires on the scorched fields
+            q = bt.field_spot(k, 1.45)
+            p.box(q, (0.25, 0.25, 0.04), "ember", z=0.05, spin=0.4)
+            p.effects += [("fire", q + Vector((0, 0, 0.08))), ("smoke", q + Vector((0, 0, 0.08)))]
+        spilled(p, rng, bt.field_spot(2, 1.5))  # in the yard
+        return
+    if kind in ("same", "edge_same_b"):  # a trampled track through, sacks and a crate spilled beside it
+        bt.track(p, half=0.32)
+        bt.field_wedge(p, rng, True, ["scorched", "field_a"] if kind == "same" else ["field_b", "scorched"])
+        spilled(p, rng, Vector((X0 + 1.0, rng.choice((-0.7, 0.7)), 0.03)))
+        return
+    if kind in ("edge_trail", "edge_trail_in"):  # toward the Militia Barn: the defenders' line
+        bt.track(p, half=0.32)
+        bt.field_wedge(p, rng, True, ["field_a", "scorched"] if kind == "edge_trail" else ["scorched", "field_b"])
+        x = X0 + 1.4 if kind == "edge_trail" else X0 + 1.0
+        for sd in (-1, 1):  # stake barricades either side of the track, leaving it open: a few thick stakes
+            stakes(p, rng, Vector((x, sd * 0.5, 0)), Vector((x + 0.2, sd * 1.3, 0)), 3, h=0.75, r=0.11)
+        if kind == "edge_trail":  # a red militia banner on a pole beside the barricade
+            pole = Vector((x - 0.2, 1.35, 0))
+            p.box(pole, (0.05, 0.05, 1.5), "trunk")
+            p.box(pole + Vector((0, 0.18, 0)), (0.03, 0.34, 0.24), "banner", z=1.2)
+        return
+    if kind == "edge_gate":
+        bt.track(p, half=0.32)
+        h = bt.BORDER_X * bt.TAN30
+        bt.border_line(p, rng, Vector((bt.BORDER_X, -h, 0)), Vector((bt.BORDER_X, -bt.GATE_HALF, 0)))
+        bt.border_line(p, rng, Vector((bt.BORDER_X, bt.GATE_HALF, 0)), Vector((bt.BORDER_X, h, 0)))
+        for sd in (-1, 1):
+            p.box(Vector((bt.BORDER_X, sd * bt.GATE_HALF, 0)), (0.11, 0.11, 0.56), "char")
+        p.box(Vector((bt.BORDER_X - 0.3, -0.75, 0)), (0.75, 0.05, 0.04), "char", z=0.06, spin=1.3)  # gate, smashed
+        bt.field_wedge(p, rng, True, ["scorched", "field_a"], x1=bt.BORDER_X - 0.22)
+        return
+    bt.edge_border(p, rng)
+    bt.field_wedge(p, rng, False, [rng.choice(["scorched", "field_a"])], x1=bt.BORDER_X - 0.22,
+                   fill_lane=kind == "other")
+
+
+def militia_barn(p, rng, kind):
+    """Bandit-raided farms' Militia Barn: a big red barn behind a palisade of sharpened stakes, with a lookout
+    platform on the roof and pitchforks and spears racked by the doors. The doors face edge 0, with the path in
+    through the palisade's opening."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], YARD_Z, "road")
+    at, w, d, h = Vector((-0.15, 0, 0)), 1.5, 1.9, 1.15
+    p.box(at, (w, d, h), "barn_red")
+    p.gable_roof(at, d + 0.15, w + 0.2, 0.8, "roof", z=h, spin=math.pi / 2)
+    p.box(at + Vector((w / 2 + 0.01, 0, 0)), (0.04, 0.8, 0.85), "mill_door")  # the big doors, toward edge 0
+    p.box(at + Vector((w / 2 + 0.03, 0, 0)), (0.03, 0.06, 0.85), "wall")  # their split
+    # the lookout on the roof ridge: four posts, a platform, a rail
+    top = at + Vector((0, 0.25, h + 0.8))
+    for x in (-0.25, 0.25):
+        for y in (-0.25, 0.25):
+            p.box(top + Vector((x, y, -0.1)), (0.05, 0.05, 0.7), "trunk")
+    p.box(top, (0.66, 0.66, 0.06), "trunk", z=0.25)
+    for sd in (-1, 1):
+        p.box(top + Vector((sd * 0.32, 0, 0)), (0.04, 0.66, 0.04), "trunk", z=0.55)
+        p.box(top + Vector((0, sd * 0.32, 0)), (0.66, 0.04, 0.04), "trunk", z=0.55)
+    # racks by the doors: pitchforks and spears leaning on a rail
+    for sd in (-1, 1):
+        rack = at + Vector((w / 2 + 0.2, sd * 0.65, 0))
+        p.box(rack, (0.06, 0.4, 0.05), "trunk", z=0.55)
+        for k in range(3):
+            q = rack + Vector((0.05, -0.15 + 0.15 * k, 0))
+            p.box_rot(q + Vector((0, 0, 0.45)), (0.03, 0.03, 0.95), "trunk", Matrix.Rotation(-0.2, 3, "Y"))
+            tip = q + Vector((-0.1, 0, 0.92))
+            if k == 1:
+                spike(p, tip, tip + Vector((-0.04, 0, 0.18)), 0.03, "iron", segments=3)  # a spear
+            else:
+                for t in (-0.05, 0.0, 0.05):  # a pitchfork's tines
+                    p.box(tip + Vector((0, t, 0)), (0.015, 0.015, 0.16), "iron", z=0.0)
+    # the palisade: sharpened stakes round the barn, open toward edge 0
+    corners = [Vector((math.cos(math.radians(a_)), math.sin(math.radians(a_)), 0)) * 1.75
+               for a_ in (20, 80, 140, 200, 260, 320)]
+    for a, b in zip(corners, corners[1:]):
+        stakes(p, rng, a, b, 6, h=0.85)
+    # the path in through the opening to the doors
+    p.flat([Vector((0.65, -0.3, 0)), Vector((1.6, -0.3, 0)), Vector((1.6, 0.3, 0)), Vector((0.65, 0.3, 0))], 0.03,
+           "road")
+    yard_ring_paths(p, 0.65)  # outside the palisade, so the other edges' tracks come round to the opening
+
+
+# --- Farmland tier 2: cider orchards ----------------------------------------------------------------------
+# Rows of round fruit trees in place of the wheat plots, on the same grid, so tracks, fences, gates, path data
+# and the hub work as on any farm.
+BUNTING = ["awning_a", "ribbon_blue", "hay", "ribbon_white", "banner"]
+
+
+def apple_tree(p, rng, at, h=None, laden=False):
+    """A round fruit tree hung with red apples; laden ones carry more fruit."""
+    h = h or rng.uniform(0.95, 1.35)
+    p.cylinder(at, 0.065, h * 0.45, "trunk", segments=5)
+    p.blob(at, h * 0.36, rng.choice(["leaf", "leaf", "leaf_dark"]), z=h * 0.72, squash=0.95)
+    for k in range(5 if laden else 2):
+        a = rng.uniform(0, 2 * math.pi)
+        q = at + Vector((math.cos(a), math.sin(a), 0)) * h * 0.3
+        p.box(q, (0.075, 0.075, 0.075), "apple", z=h * rng.uniform(0.55, 0.85), spin=a)
+
+
+def basket(p, rng, at):
+    p.cylinder(at, 0.13, 0.15, "crate", segments=6)
+    for k in range(3):
+        p.box(at + Vector((0.05 * (k - 1), 0.03 * (k % 2), 0)), (0.07, 0.07, 0.07), "apple", z=0.15)
+
+
+def ladder(p, at, spin):
+    """A ladder leaning into a tree."""
+    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.35, 3, "Y")
+    for sd in (-1, 1):
+        p.box_rot(at + turn(Vector((0, sd * 0.1, 0)), spin) + rot @ Vector((0, 0, 0.5)), (0.03, 0.03, 1.0), "trunk",
+                  rot)
+    for k in range(4):
+        p.box_rot(at + rot @ Vector((0, 0, 0.2 + 0.22 * k)), (0.025, 0.22, 0.025), "trunk", rot)
+
+
+ORCHARD_TRACK_X0 = 0.45  # orchard tracks start at the centre's little yard, so a wedge brings its own in
+ORCHARD_ROWS = ((X0 + 0.5, (0.85,)), (X0 + 1.45, (-1.15, 1.15)))  # wedge rows: depth, trees across (staggered)
+
+
+def orchard_trees(p, rng, spots):
+    """Apple trees at spots, jittered and varied in size, about one in four laden; a ladder in one, a basket
+    and a few fallen apples under some."""
+    for k, at in enumerate(spots):
+        at = at + Vector((rng.uniform(-0.12, 0.12), rng.uniform(-0.12, 0.12), 0))
+        apple_tree(p, rng, at, laden=rng.random() < 0.25)
+        if rng.random() < 0.35:
+            p.box(at + Vector((rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), 0)), (0.075, 0.075, 0.06), "apple",
+                  spin=rng.uniform(0, 1))
+        if k == 1:
+            ladder(p, at + Vector((-0.35, 0.05, 0)), 0.0)
+        if k == 2:
+            basket(p, rng, at + Vector((-0.45, 0.1, 0)))
+
+
+def orchard_wedge(p, rng, track):
+    """A wedge of the orchard: loose rows parallel to the edge (they ring the tile), clear of the track along
+    the middle line where there is one."""
+    spots = [Vector((x, y, 0)) for x, ys in ORCHARD_ROWS for y in ys]
+    if not track:
+        spots.append(Vector((X0 + 0.95, -0.2, 0)))
+    orchard_trees(p, rng, spots)
+
+
+def orchard_centre(p, rng, picking=False):
+    """The centre of the orchard: trees between the six lanes from the middle (where the hub joins the
+    tracks), a cleared yard in the middle with a basket or two. picking: a cart being loaded and more baskets."""
+    spots = [Vector((math.cos(math.radians(30 + 120 * k)), math.sin(math.radians(30 + 120 * k)), 0)) * 1.25
+             for k in range(3)]
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(0.55, pointy=True)][::-1], 0.012, "road")  # the yard
+    # No track stubs here: each wedge that has a track brings it in to the yard itself (ORCHARD_TRACK_X0), so
+    # tracks only appear where they lead somewhere.
+    orchard_trees(p, rng, spots)
+    basket(p, rng, Vector((0.3, 0.25, 0)))
+    if picking:
+        for q in ((-0.3, 0.3), (-0.2, -0.35)):
+            basket(p, rng, Vector((*q, 0)))
+
+
+def bunting(p, rng, a, b, z, sag=0.15):
+    """A cord of little triangular flags sagging between a and b at height z."""
+    d = b - a
+    n = max(3, round(d.length / 0.22))
+    spin = math.atan2(d.y, d.x)
+    pts = [a.lerp(b, t / n) + Vector((0, 0, z - sag * 4 * (t / n) * (1 - t / n))) for t in range(n + 1)]
+    for q0, q1 in zip(pts, pts[1:]):
+        frustum(p, q0, q1, 0.012, 0.012, "rope", segments=3)
+    for k, q in enumerate(pts[1:-1]):
+        side = turn(Vector((0.07, 0, 0)), spin)
+        f = p.bm.faces.new([p.bm.verts.new(q - side), p.bm.verts.new(q + side),
+                            p.bm.verts.new(q - Vector((0, 0, 0.15)))])
+        f.material_index = p._slot(BUNTING[k % len(BUNTING)])
+        p.surface.add(f)
+
+
+def cider_orchards(p, rng, kind):
+    """Rows of round fruit trees with red apples filling the whole tile, spread out, with ladders, baskets and
+    fallen fruit; tracks run between tiles, with fences and gates as on other farms."""
+    if kind in ("centre", "centre_near"):
+        orchard_centre(p, rng, picking=kind == "centre_near")
+        if kind == "centre_near":  # next to the Harvest Festival: bunting over the yard, a cart being loaded
+            grain_cart(p, rng, Vector((0.35, -0.3, 0)), 0.6)
+            p.box(Vector((0.35, -0.3, 0)), (0.5, 0.3, 0.08), "apple", z=0.47, spin=0.6)  # its load of apples
+            for a_deg in (90, 270):
+                a = math.radians(a_deg)
+                p.box(Vector((math.cos(a), math.sin(a), 0)) * 0.75, (0.05, 0.05, 1.4), "trunk")
+            bunting(p, rng, Vector((0, 0.75, 0)), Vector((0, -0.75, 0)), 1.35)
+        p.hub = Vector((0, 0, 0))
+        return
+    if kind in ("edge_trail", "edge_trail_in"):  # toward the Harvest Festival: bunting along the track
+        bt.track(p, x0=ORCHARD_TRACK_X0, path_x0=X0)
+        for x in (X0 + 0.35, X1 - 0.15):
+            p.box(Vector((x, 0.42, 0)), (0.05, 0.05, 1.3), "trunk")
+        bunting(p, rng, Vector((X0 + 0.35, 0.42, 0)), Vector((X1 - 0.15, 0.42, 0)), 1.25, sag=0.2)
+        if kind == "edge_trail":  # an apple cart heading over the edge for the festival
+            grain_cart(p, rng, Vector((X0 + 1.2, -0.05, 0)), 0.0, shafts=True)
+            p.box(Vector((X0 + 1.2, -0.05, 0)), (0.5, 0.3, 0.08), "apple", z=0.47)
+        orchard_wedge(p, rng, track=True)
+        return
+    if kind == "other":  # the fence, as on other farms
+        bt.edge_border(p, rng)
+    else:  # the track runs from the yard to the edge, through a gate where there is one
+        bt.track(p, x0=ORCHARD_TRACK_X0, path_x0=X0)
+        if kind == "edge_gate":
+            bt.farm_gate(p, rng)
+    orchard_wedge(p, rng, track=kind != "other")
+
+
+def striped_roof(p, at, r, h, z, segments=10, cols=("awning_a", "wall")):
+    """A pyramid roof in alternating stripes, one colour per face."""
+    top = p.bm.verts.new(at + Vector((0, 0, z + h)))
+    ring = [p.bm.verts.new(at + Vector((math.cos(2 * math.pi * k / segments) * r,
+                                        math.sin(2 * math.pi * k / segments) * r, z))) for k in range(segments)]
+    for k in range(segments):
+        p.bm.faces.new([ring[k], ring[(k + 1) % segments], top]).material_index = p._slot(cols[k % 2])
+
+
+def festival_stall(p, rng, at, spin):
+    """A big market stall: a long counter of goods under a deep striped awning."""
+    p.box(at, (1.2, 0.5, 0.45), "crate", spin=spin)
+    for dx in (-0.58, 0.58):
+        for dy in (-0.25, 0.3):
+            p.box(at + turn(Vector((dx, dy, 0)), spin), (0.05, 0.05, 1.2), "trunk", spin=spin)
+    for k in range(6):
+        p.box(at + turn(Vector((-0.55 + 0.22 * k, 0.03, 0)), spin), (0.22, 0.8, 0.04), ("awning_a", "wall")[k % 2],
+              z=1.2, spin=spin)
+    for k in range(4):
+        basket(p, rng, at + turn(Vector((-0.42 + 0.28 * k, 0, 0)), spin) + Vector((0, 0, 0.45)))
+
+
+def harvest_festival(p, rng, kind):
+    """Cider orchards' Harvest Festival: a festival green among the orchards with a big striped festival tent,
+    a tall maypole, large stalls and long tables, under bunting. Its entrance faces edge 0: a bunting arch over
+    the approach from the centre piece's edge to the green."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], YARD_Z, "green")
+    # the festival tent at the back: striped walls under a tall striped pyramid roof with a pennant on top
+    tent = Vector((-0.95, 0, 0))
+    p.cylinder(tent, 0.95, 1.1, "wall", segments=10)
+    for k in range(10):  # red stripes round the wall
+        a = 2 * math.pi * (k + 0.5) / 10
+        if k % 2 == 0:
+            p.box(tent + Vector((math.cos(a), math.sin(a), 0)) * 0.94, (0.04, 0.56, 1.08), "awning_a", spin=a)
+    striped_roof(p, tent, 1.15, 1.45, 1.1)
+    p.box(tent, (0.05, 0.05, 0.6), "trunk", z=2.55)
+    p.box(tent + Vector((0, 0.18, 0)), (0.02, 0.36, 0.22), "banner", z=2.9)
+    p.box(tent + Vector((0.96, 0, 0)), (0.04, 0.55, 0.85), "mill_door")  # the open front, toward the green
+    # the maypole: tall and striped, a garland near the top, six ribbons out to pegs round it
+    pole = Vector((0.5, 0, 0))
+    p.cylinder(pole, 0.08, 3.6, "wall", segments=6)
+    for k in range(6):
+        p.cylinder(pole, 0.085, 0.22, "banner", segments=6, z=0.35 + 0.55 * k)
+    p.cylinder(pole, 0.3, 0.15, "leaf", segments=8, z=3.35)
+    for k in range(6):
+        a = math.radians(60 * k + 30)
+        peg = pole + Vector((math.cos(a), math.sin(a), 0)) * 0.85
+        frustum(p, pole + Vector((0, 0, 3.35)), peg + Vector((0, 0, 0.05)), 0.025, 0.025,
+                ("awning_a", "ribbon_blue", "hay", "ribbon_white", "banner", "fey_rose")[k], segments=3)
+    # big stalls either side, long tables near the entrance
+    for sd in (-1, 1):
+        festival_stall(p, rng, Vector((-0.2, sd * 1.4, 0)), 0.0 if sd > 0 else math.pi)
+        table = Vector((1.15, sd * 1.05, 0))
+        p.box(table, (1.0, 0.32, 0.36), "crate")
+        for dy in (-0.28, 0.28):
+            p.box(table + Vector((0, dy, 0)), (1.0, 0.12, 0.2), "trunk")
+        for k in range(3):
+            basket(p, rng, table + Vector((-0.3 + 0.3 * k, 0, 0.36)))
+    # the entrance: a bunting arch over the approach on edge 0, and the path in
+    for sd in (-1, 1):
+        p.box(Vector((1.62, sd * 0.5, 0)), (0.08, 0.08, 1.7), "trunk")
+    p.box(Vector((1.62, 0, 0)), (0.07, 1.06, 0.07), "trunk", z=1.7)
+    bunting(p, rng, Vector((1.62, -0.5, 0)), Vector((1.62, 0.5, 0)), 1.65, sag=0.1)
+    p.flat([Vector((1.3, -0.25, 0)), Vector((1.75, -0.25, 0)), Vector((1.75, 0.25, 0)), Vector((1.3, 0.25, 0))],
+           0.03, "road")
+    p.paths.append([Vector((X0, 0, 0)), Vector((1.3, 0, 0))])
+    p.hub = Vector((1.3, 0, 0))  # the green is open: the other edges' tracks cross it to the entrance
 
 
 # --- Village: market town ---------------------------------------------------------
@@ -227,8 +790,22 @@ def market_town(p, rng, kind):
         townhouse(p, rng, Vector((X0 + 0.7, 0.85, 0)), 0.0)
         townhouse(p, rng, Vector((X1 - 0.75, -1.2, 0)), 0.0)
         stall(p, rng, Vector((X0 + 0.9, -0.8, 0)), 0.0)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])  # the street runs on along the middle line
         return
     garden = X0 + 0.6 * (X1 - X0)
+    if kind == "edge_gate":  # the garden strip and fence, with a cobbled street out through a gate
+        p.flat(bt.band(garden, X1), 0.015, "plains")
+        p.flat([Vector((garden - 0.05, -0.36, 0)), Vector((X1, -0.36, 0)), Vector((X1, 0.36, 0)),
+                Vector((garden - 0.05, 0.36, 0))], 0.02, "cobble")
+        bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15) and abs(q.y) < 0.5,
+                   hk.WEDGE_BOUNDS, 4)
+        townhouse(p, rng, Vector((X0 + 0.7, 0.95, 0)), math.radians(90))
+        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=bt.BORDER_X - 0.25, margin=0.2)
+                             and abs(q.y) > 0.65, 2, 0.5, hk.WEDGE_BOUNDS):
+            p.blob(at, 0.22, "hedge", squash=0.8)
+        bt.farm_gate(p, rng)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+        return
     p.flat(bt.band(garden, X1), 0.015, "plains")
     bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
     townhouse(p, rng, Vector((X0 + 0.7, 0.3, 0)), math.radians(90))
@@ -1083,7 +1660,63 @@ def spider_nest(p, rng, kind):
     face_edge0(p)
 
 
-LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest}
+MILL_HUB = Vector((0.8, 0, 3.15))  # where the Great Windmill's sails turn, in the centre piece's frame
+
+
+def great_windmill(p, rng, kind):
+    """Windmill country's Great Windmill: a tall stone tower mill with a granary barn, grain sacks stacked by its
+    door and a grain cart waiting outside, on a beaten yard. Its door faces edge 0 (+X), with the cart road's
+    approach from the centre piece's edge to the door. The big sails are their own piece, greatwindmill_sails,
+    so the engine can turn them."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.95, pointy=True)][::-1], YARD_Z, "road")  # the yard
+    p.cylinder(Vector((0, 0, 0)), 1.02, 0.3, "rock", segments=10)  # plinth
+    frustum(p, Vector((0, 0, 0.3)), Vector((0, 0, 3.35)), 0.92, 0.6, "mill_stone", segments=10)
+    p.cylinder(Vector((0, 0, 0)), 0.64, 0.12, "trunk", segments=10, z=3.3)  # the cap's wooden curb
+    p.cone(Vector((0, 0, 0)), 0.7, 0.8, "roof", segments=10, z=3.42)
+    p.box(Vector((0.7, 0, 0)), (0.22, 0.22, 0.22), "trunk", z=3.04)  # the windshaft's housing
+    p.box(Vector((0.93, 0, 0)), (0.08, 0.42, 0.7), "mill_door", z=0.3)  # the door, toward edge 0
+    for a_, z in ((0.0, 1.5), (2.1, 1.1), (-2.1, 1.9), (1.0, 2.5)):  # small windows
+        r = 0.92 - 0.32 * (z - 0.3) / 3.05 + 0.01
+        p.box(Vector((math.cos(a_) * r, math.sin(a_) * r, 0)), (0.06, 0.16, 0.22), "mill_door", z=z, spin=a_)
+    # the approach: the cart road's last stretch, from the centre piece's edge to the door
+    p.flat([Vector((0.98, -0.42, 0)), Vector((1.6, -0.42, 0)), Vector((1.6, 0.42, 0)), Vector((0.98, 0.42, 0))],
+           0.03, "road")
+    sacks(p, rng, Vector((1.12, 0.66, 0)), 2, 2, 0.3)  # by the door
+    # the granary barn, toward the back corner between edges 2 and 3
+    barn = Vector((math.cos(math.radians(150)), math.sin(math.radians(150)), 0)) * 1.7
+    p.box(barn, (1.15, 0.85, 0.8), "barn", spin=math.radians(60))
+    p.gable_roof(barn, 1.3, 1.05, 0.55, "roof", z=0.8, spin=math.radians(60))
+    p.box(barn + turn(Vector((0, -0.43, 0)), math.radians(60)), (0.4, 0.04, 0.55), "mill_door",
+          spin=math.radians(60))
+    # a grain cart waiting outside, toward the corner between edges 5 and 0
+    grain_cart(p, rng, Vector((1.05, -1.0, 0)), math.pi, shafts=True)
+    # Paths: the approach on edge 0, a ring round the tower the other edges' tracks join, and spokes out to them.
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 1.35 for i in range(6)]
+    p.paths.append([Vector((bt.FARM_ROUTE_R, 0, 0)), Vector((1.0, 0, 0))])
+    p.paths.append(ring + [ring[0]])
+    for i in range(1, 6):
+        out = ring[i] / 1.35 * bt.FARM_ROUTE_R
+        p.spokes[i] = [out, ring[i]]  # only used where edge i's wedge has a path
+
+
+def great_windmill_sails(p, rng):
+    """The Great Windmill's four big sails, built round the hub (the piece's origin) in the YZ plane, so the
+    engine turns them about the piece's X axis."""
+    p.box(Vector((0, 0, 0)), (0.2, 0.2, 0.2), "trunk", z=-0.1)
+    for k in range(4):
+        rot = Matrix.Rotation(math.radians(45 + 90 * k), 3, "X")
+        p.box_rot(rot @ Vector((0.06, 0.16, 1.05)), (0.03, 0.7, 1.65), "sail", rot)  # the sail cloth
+        p.box_rot(rot @ Vector((0.08, 0, 0.95)), (0.05, 0.09, 1.9), "trunk", rot)  # the stock
+        for t in (0.5, 1.05, 1.6):  # bars across the frame
+            p.box_rot(rot @ Vector((0.09, 0.16, t)), (0.03, 0.74, 0.035), "trunk", rot)
+
+
+LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest, "greatwindmill": great_windmill,
+                    "abandonedbarn": abandoned_barn, "militiabarn": militia_barn,
+                    "harvestfestival": harvest_festival}
+# other separate pieces (the small mill isn't a landmark's): name -> (builder, where the piece's origin sits in the landmark's centre frame)
+LANDMARK_PARTS = {"greatwindmill_sails": (great_windmill_sails, MILL_HUB),
+                  "windmill_small": (small_windmill, Vector((0, 0, 0)))}
 
 
 # --- Flowing into the landmark (round 6, for Ethan to judge) ------------------------------------------------
@@ -1196,13 +1829,22 @@ VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
     "meadows": ("plains", meadows, "plains", ()),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
-    "windmill_country": ("farmland", windmill_country, "plains", ("centre_mill",)),
-    "market_town": ("village", market_town, "cobble", ()),
+    "windmill_country": ("farmland", windmill_country, "plains",
+                         ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
+                          "centre_near", "edge_other_lm")),
+    "market_town": ("village", market_town, "cobble", ("edge_gate",)),
     "delta": ("river", delta, "plains", ()),
     "bog": ("swamp", bog, "bog", ()),
     "wasteland": ("desert", wasteland, "wasteland", ()),
     "excavation": ("ruins", excavation, "plains", ()),
     # tier 2 and class variants
+    "haunted_homesteads": ("farmland", haunted_homesteads, "haunted",
+                           ("centre_b", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in", "centre_near",
+                            "edge_other_lm")),
+    "raided_farms": ("farmland", raided_farms, "raided",
+                     ("centre_b", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in", "centre_near",
+                      "edge_other_lm")),
+    "cider_orchards": ("farmland", cider_orchards, "orchard_grass", ("edge_gate", "edge_trail", "edge_trail_in", "centre_near")),
     "fey_wood": ("forest", fey_wood, "fey_wood", ("edge_trail", "centre_near")),
     "dark_wood": ("forest", dark_wood, "dark_wood", ("edge_trail", "centre_near")),
     "heartwood": ("forest", heartwood, "heartwood",
@@ -1215,7 +1857,9 @@ VARIANTS = {
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
 # (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
 LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
-             "spidernest": "dark_wood"}
+             "spidernest": "dark_wood", "greatwindmill": "windmill_country",
+             "abandonedbarn": "haunted_homesteads", "militiabarn": "raided_farms",
+             "harvestfestival": "cider_orchards"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

@@ -12,6 +12,9 @@ never changes as the map grows:
    trail wedge there (the landmark tile too), so the trails join up into branches that all end at the
    landmark. A variant tile touching a landmark that has its own landmark wedge (the Tree of Life's roots)
    uses that instead.
+   Where a variant has a second trail wedge, <variant>_edge_trail_in (windmill country's carts face the mill),
+   the tile closer to the landmark (the lower distance) uses it on that edge, and the farther tile uses
+   <variant>_edge_trail. heads_in() says which.
 4. A tile one step from the landmark uses its variant's near centre, which plays the look up.
 5. The landmark tile turns in 60 degree steps so its entrance (on edge 0 of every landmark piece) faces the
    edge where the longest trail arrives: the trail from the farthest tile (ties between equally far tiles
@@ -67,3 +70,11 @@ def turn(landmark, dist, toward):
         t = toward[t]
     q, r = landmark
     return NEIGHBOURS.index((t[0] - q, t[1] - r))
+
+
+def heads_in(tile, i, dist):
+    """True where `tile` is the closer of the two tiles on its trail edge i, so the way to the landmark runs in
+    from the edge toward this tile's middle (it uses <variant>_edge_trail_in where that exists)."""
+    q, r = tile
+    dq, dr = NEIGHBOURS[i]
+    return dist.get(tile, 0) < dist.get((q + dq, r + dr), 0)

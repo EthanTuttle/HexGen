@@ -3,6 +3,7 @@
 Units: 1 Blender unit = 1 glTF metre. Z is up; pivots sit at the centre, at ground level (z = 0).
 Rules and numbers: design/06 Multiplayer & tech.md -> Engine prototype.
 """
+import json
 import math
 import os
 import random
@@ -140,6 +141,37 @@ PALETTE = {
     "rock_wet": "#4B4D52",
     "rock_wet_dark": "#35373C",
     "cocoon": "#E6E1D6",
+    "sack": "#D9C9A1",
+    "rut": "#B39A70",
+    "mill_stone": "#D8CDB8",
+    "mill_door": "#5E4330",
+    "barn": "#A9553E",
+    "withered": "#A8A48E",
+    "withered_dark": "#7E7B6C",
+    "weed": "#77806A",
+    "haunted": "#8C937C",
+    "boards": "#8B7A66",
+    "roof_old": "#6E5A50",
+    "grave": "#A7A69E",
+    "crow": "#26262A",
+    "rag": "#9C8F7A",
+    "window_faint": "#E6D79A",
+    "raided": "#94A06A",
+    "scorched": "#3B342C",
+    "char": "#2E2925",
+    "ember": "#E0773A",
+    "barn_red": "#B23B2C",
+    "barn_brown": "#86603F",
+    "barn_grey": "#8F8B82",
+    "apple": "#C9302C",
+    "orchard_grass": "#7FAE57",
+    "green": "#9CCB6E",
+    "dead_earth": "#77715F",
+    "yard_dirt": "#B59A6E",
+    "withered_soil": "#6E6A5A",
+    "stake": "#9A7A55",
+    "banner": "#C23A2E",
+    "path_debug": "#E0303A",  # previews only: the path data drawn over a map
     "gate_wood": "#8E4A32",
     "iron": "#8C9196",
     "ribbon_red": "#C8553D",
@@ -157,11 +189,11 @@ PALETTE = {
 # material and carries its colour in the mesh's vertex colours (COLOR_0 in glTF), so a piece draws in one call.
 # hill_grass and highland_grass are the ground of the hills pieces, which cover the base slab: the engine fades
 # them toward the neighbours' ground colours like the base slabs' tops.
-# lantern, toadstool, fey_mushroom (the fey wood's fairy rings) and window_glow (the Fey Court's windows) glow at
-# night, so the engine needs to find them.
+# lantern, toadstool, fey_mushroom (the fey wood's fairy rings), window_glow (the Fey Court's windows) and
+# window_faint (the Abandoned Farmhouse's one lit window, dimmer) glow at night, so the engine needs to find them.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
 OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow",
-                "hill_grass", "highland_grass"}
+                "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
 
@@ -269,6 +301,11 @@ WEDGE_BOUNDS = ((INNER * TILE_APOTHEM, TILE_APOTHEM), (-TILE_RADIUS / 2, TILE_RA
 CENTRE_BOUNDS = ((-INNER * TILE_APOTHEM, INNER * TILE_APOTHEM), (-INNER * TILE_RADIUS, INNER * TILE_RADIUS))
 
 
+def yup(v):
+    """A point in glTF's Y-up axes, rounded, as the engines read the glb: (x, z, -y)."""
+    return [round(v.x, 3) + 0.0, round(v.z, 3) + 0.0, round(-v.y, 3) + 0.0]  # + 0.0 turns -0.0 into 0.0
+
+
 # --- Geometry builder ------------------------------------------------------
 
 class Piece:
@@ -280,6 +317,14 @@ class Piece:
         self.mats = []
         self.surface = set()  # open surfaces built facing up; finish() leaves their normals alone
         self.smooth = set()   # faces to shade smooth (the sand); everything else stays faceted
+        # Walkable path centrelines for the engine's routing (design/07 -> Walking): polylines in the piece's own
+        # frame, and an optional hub that the engine joins to every wedge path's inner end on the same tile.
+        # finish() stores them on the object as glTF extras (Y-up, like the glb); export_gltf.py also writes them
+        # to a JSON beside the glb.
+        self.paths = []
+        self.hub = None
+        self.spokes = {}  # edge -> polyline: centre paths the engine uses only where that edge's wedge has a path
+        self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
     def _slot(self, mat_name):
         if mat_name not in self.mats:
@@ -384,6 +429,14 @@ class Piece:
             poly.use_smooth = poly.index in smooth
         obj = bpy.data.objects.new(self.name, mesh)
         obj.location = location
+        if self.paths:
+            obj["paths"] = json.dumps([[yup(q) for q in line] for line in self.paths])
+        if self.hub is not None:
+            obj["path_hub"] = json.dumps(yup(self.hub))
+        if self.spokes:
+            obj["path_spokes"] = json.dumps({str(i): [yup(q) for q in line] for i, line in self.spokes.items()})
+        if self.effects:
+            obj["effects"] = json.dumps([{"kind": k, "at": yup(q)} for k, q in self.effects])
         collection.objects.link(obj)
         return obj
 

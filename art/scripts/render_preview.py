@@ -11,11 +11,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 import ground_cover as gc  # noqa: E402
 import landmark_flow as lf  # noqa: E402
+import fence_gates as fg  # noqa: E402
+import json  # noqa: E402
 import sand  # noqa: E402
 import variants as vr  # noqa: E402
 import water as wt  # noqa: E402
@@ -86,6 +88,81 @@ FLOW_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LAN
              for v, lm in (("heartwood", "treeoflife"), ("fey_wood", "feycourt"), ("dark_wood", "spidernest"),
                            ("deep_forest", "hiddenshrine"))}
 
+# Farmland: a farm group with a village beside it, a river along one side (no gates open onto water) and other
+# land round it, so the gates show; and a windmill country region with the Great Windmill on an outer tile.
+FARM_MAP = {
+    (0, 0): "farmland", (1, 0): "farmland", (0, 1): "farmland", (-1, 1): "farmland", (1, -1): "farmland",
+    (-1, 0): "village", (0, -1): "village",
+    (2, -1): "plains", (2, 0): "plains", (1, 1): "forest", (0, 2): "plains", (-1, 2): "river", (-2, 2): "river",
+    (-2, 1): "river", (-2, 0): "plains", (-1, -1): "forest", (1, -2): "plains", (0, -2): "plains", (2, -2): "plains",
+}
+WINDMILL_MAP = {**{k: v for k, v in FLOW_RING.items()},
+                **{t: ("greatwindmill" if t == LANDMARK_AT else "windmill_country") for t in LANDMARK_REGION}}
+
+
+def draw_effects(col, templates):
+    """Stand-ins for the engine's effects at each placed piece's effect points: a fire (orange cone), smoke (a
+    grey column) or circling crows (black specks), so a preview shows where they go."""
+    bpy.context.view_layer.update()
+    p = hk.Piece("effects_overlay")
+    for obj in list(col.objects):
+        src = templates.get(obj.get("piece", ""))
+        if src is None or "effects" not in src:
+            continue
+        for e in json.loads(src["effects"]):
+            x, y, z = e["at"]
+            at = obj.matrix_world @ Vector((x, -z, y))
+            if e["kind"] == "fire":
+                p.cone(at, 0.14, 0.32, "ember", segments=5)
+            elif e["kind"] == "smoke":
+                for k in range(4):
+                    p.blob(at + Vector((0.08 * k, 0.05 * k, 0)), 0.16 + 0.05 * k, "rock_light", z=0.4 + 0.42 * k)
+            else:
+                for k in range(5):
+                    a_ = 2 * math.pi * k / 5
+                    p.box(at + Vector((math.cos(a_) * 0.5, math.sin(a_) * 0.5, 0.1 * k)), (0.14, 0.04, 0.02), "crow")
+    p.finish(col)
+
+
+def draw_paths(col, templates):
+    """Draws every placed piece's path centrelines (and hub spokes) as thin red strips, to check the routing data."""
+    bpy.context.view_layer.update()  # so the placed objects' matrix_world is current
+    p = hk.Piece("paths_overlay")
+    tiles = {}
+    for obj in list(col.objects):
+        src = templates.get(obj.get("piece", ""))
+        if src is None:
+            continue
+        m = obj.matrix_world
+        lines = [[m @ Vector((x, -z, y)) for x, y, z in line] for line in json.loads(src.get("paths", "[]"))]
+        for line in lines:
+            for a, b in zip(line, line[1:]):
+                d = b - a
+                p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+        key = (round(m.translation.x, 1), round(m.translation.y, 1))
+        for i, line in json.loads(src.get("path_spokes", "{}")).items():
+            tiles.setdefault(key, {}).setdefault("spokes", []).append((int(i), [m @ Vector((x, -z, y)) for x, y, z in line]))
+        if "path_hub" in src:
+            x, y, z = json.loads(src["path_hub"])
+            tiles.setdefault(key, {})["hub"] = m @ Vector((x, -z, y))
+        tiles.setdefault(key, {}).setdefault("ends", []).extend(l[0] for l in lines)
+    for t in tiles.values():  # spokes, only where a wedge path ends at the spoke's outer end
+        for i, line in t.get("spokes", []):
+            if any((e - line[0]).length < 0.05 for e in t.get("ends", [])):
+                for a, b in zip(line, line[1:]):
+                    d = b - a
+                    p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+        for e in t.get("ends", []) if "hub" in t else []:
+            d = e - t["hub"]
+            if d.length < 2.2:  # a wedge path's inner end on this tile
+                p.box((e + t["hub"]) / 2, (d.length, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+    p.finish(col)
+
+# Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
+FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
+                for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
+                              ("cider_orchards", "harvestfestival"))}
+
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
 BORDERED = {"farmland", "village"}
@@ -110,6 +187,7 @@ def load_templates(path):
 
 def place(templates, name, col, at, angle=0.0):
     obj = bpy.data.objects.new(name, templates[name].data)
+    obj["piece"] = name  # which kit piece it is, for draw_paths
     obj.location = at
     obj.rotation_euler.z = angle
     col.objects.link(obj)
@@ -139,6 +217,8 @@ def build_map(templates, animated=False, tiles=None):
             dist.update(d)
             toward.update(t)
             turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
+    # Fence gates round farm and village groups (fence_gates.py).
+    gates = fg.fence_gates({k: vr.terrain_of(n) for k, n in MAP.items()})
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -163,9 +243,19 @@ def build_map(templates, animated=False, tiles=None):
         centre = "centre"
         if dist.get((q, r)) == 1 and f"{name}_centre_near" in templates:
             centre = "centre_near"  # next to the landmark: the variant's look played up
+        if centre == "centre" and f"{name}_centre_b" in templates and gc.hash01(q, r, 13) < 0.5:
+            centre = "centre_b"  # a second version of the centre, so a big group doesn't repeat
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
             centre = "centre_mill"  # windmills stand on about half the tiles (placeholder rule)
-        place(templates, f"{name}_{centre}", col, at, math.radians(60 * turns.get((q, r), 0)))
+        spin = math.radians(60 * turns.get((q, r), 0))
+        if f"{name}_centre_b" in templates:  # a farm's centre turns by a hash of the tile, so yards don't line up
+            spin = math.radians(60 * int(gc.hash01(q * 31 + 7, r * 17 + 3, 14) * 6))
+        place(templates, f"{name}_{centre}", col, at, spin)
+        if centre == "centre_mill":  # the small mill goes where the turned yard is, but doesn't turn itself
+            place(templates, "windmill_small", col, at + Matrix.Rotation(spin, 3, "Z") @ vr.SMALL_MILL_SPOT)
+        for part, (_, hub) in vr.LANDMARK_PARTS.items():  # e.g. the Great Windmill's sails, turned with it
+            if part.startswith(f"{name}_"):
+                place(templates, part, col, at + Matrix.Rotation(spin, 3, "Z") @ hub, spin)
         if terrain == "desert":
             # The sand is shaped in world space, the way the engines will.
             p = hk.Piece(f"sand_{q}_{r}")
@@ -199,6 +289,12 @@ def build_map(templates, animated=False, tiles=None):
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
             elif i in trails:  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
+                if lf.heads_in((q, r), i, dist) and f"{kit}_edge_trail_in" in templates:
+                    edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
+            elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
+                edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
+            elif not joined[i] and name in vr.LANDMARKS and f"{kit}_edge_other_lm" in templates:
+                edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
@@ -296,7 +392,10 @@ if __name__ == "__main__":
     # --terrains renders TERRAIN_MAP (every terrain) instead; --variants renders it with every region finished;
     # --forest-t2 renders FOREST_T2_MAP and a close-up of each forest tier 2 variant; --treeoflife renders
     # TREEOFLIFE_MAP and a close-up of the Tree of Life; --landmarks a close-up of the Hidden Shrine,
-    # the Fey Court and the Spider Nest; --flow each forest variant's region flowing into its landmark.
+    # the Fey Court and the Spider Nest; --flow each forest variant's region flowing into its landmark;
+    # --farmland the farm gates, the path data and the windmill country region with the Great Windmill;
+    # --markettown-gates the farm map with market towns, to show their gates; --farmland-t2 the farmland tier 2
+    # regions and their landmarks.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -365,6 +464,84 @@ if __name__ == "__main__":
                                         0.8 + 17 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
             render(f"closeup_{tiles_map[LANDMARK_AT]}_landmark")
+        sys.exit(0)
+    if "farmland-t2" in flags:
+        # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same
+        # with the path data drawn, and a close-up of each landmark looking at its entrance.
+        el = math.radians(40)
+        short = {"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "cider"}
+        for variant, tiles_map in FARM_T2_MAPS.items():
+            lm = tiles_map[LANDMARK_AT]
+            for paths in (True, False):  # the plain map last, so the close-up below is shot without the paths
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                col = bpy.data.collections["map"]
+                draw_effects(col, templates)
+                if paths:
+                    draw_paths(col, templates)
+                stage(Vector((0.5, -0.8, 0)), 50, 55 if paths else 50)
+                render(f"farmland_t2_{short[variant]}_{'paths' if paths else 'landmark'}")
+            region = [t for t, n in tiles_map.items() if n in (variant, lm)]
+            d, tw = lf.flow(set(region), LANDMARK_AT)
+            a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+            cam = bpy.context.scene.camera
+            at = hk.tile_position(*LANDMARK_AT)
+            cam.location = at + Vector((14 * math.cos(el) * math.cos(a), 14 * math.cos(el) * math.sin(a),
+                                        1.0 + 14 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+            render(f"farmland_t2_{lm}_closeup")
+        sys.exit(0)
+    if "markettown-gates" in flags:
+        # The farm map with its villages finished as market towns, to show their gates.
+        hk.empty_scene()
+        build_map(load_templates(tiles), tiles={k: ("market_town" if v == "village" else v) for k, v in FARM_MAP.items()})
+        stage(Vector((0.5, -0.8, 0)), 50, 50)
+        render("farmland_markettown_gates")
+        tiles_map = {k: ("market_town" if v == "village" else v) for k, v in FARM_MAP.items()}
+        g = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})
+        t, edges = next((t, e) for t, e in sorted(g.items()) if e and tiles_map[t] == "market_town")
+        a = math.radians(60 * edges[0])
+        el = math.radians(40)
+        at = hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3
+        cam = bpy.context.scene.camera
+        cam.location = at + Vector((-8 * math.cos(el) * math.cos(a), -8 * math.cos(el) * math.sin(a), 8 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, a - math.pi / 2)
+        render("farmland_markettown_gate_closeup")
+        sys.exit(0)
+    if "farmland" in flags:
+        # Farmland: the farm and village group with its gates, the same with the path data drawn over it, the
+        # windmill country region flowing into the Great Windmill, and close-ups of a gate and the mill.
+        el = math.radians(40)
+        for stem, tiles_map, paths in (("farmland_gates", FARM_MAP, False), ("farmland_paths", FARM_MAP, True),
+                                       ("farmland_windmill_landmark", WINDMILL_MAP, False),
+                                       ("farmland_windmill_paths", WINDMILL_MAP, True)):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map)
+            if paths:
+                draw_paths(bpy.data.collections["map"], templates)
+            stage(Vector((0.5, -0.8, 0)), 50, 55 if paths else 50)
+            render(stem)
+            cam = bpy.context.scene.camera
+            if stem == "farmland_gates":  # close-up of a gate (the first one found on the map)
+                g = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})
+                t, edges = next((t, e) for t, e in sorted(g.items()) if e and tiles_map[t] == "farmland")
+                a = math.radians(60 * edges[0])
+                at = hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3
+                cam.location = at + Vector((-8 * math.cos(el) * math.cos(a), -8 * math.cos(el) * math.sin(a),
+                                            8 * math.sin(el)))
+                cam.rotation_euler = (math.pi / 2 - el, 0, a - math.pi / 2)
+                render("farmland_gate_closeup")
+            if stem == "farmland_windmill_landmark":  # close-up of the mill, looking at its door
+                region = [t for t, n in tiles_map.items() if n in ("windmill_country", "greatwindmill")]
+                d, tw = lf.flow(set(region), LANDMARK_AT)
+                a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+                at = hk.tile_position(*LANDMARK_AT)
+                cam.location = at + Vector((15 * math.cos(el) * math.cos(a), 15 * math.cos(el) * math.sin(a),
+                                            1.5 + 15 * math.sin(el)))
+                cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+                render("farmland_greatwindmill_closeup")
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()
