@@ -168,6 +168,26 @@ PALETTE = {
     "green": "#9CCB6E",
     "dead_earth": "#77715F",
     "turf": "#7E9A57",
+    "snow_ground": "#EEF3F7",
+    "snow_light": "#F8FBFD",
+    "ice": "#BCDDEB",
+    "ice_rock": "#AEBBC6",
+    "ice_rock_dark": "#8795A3",
+    "print": "#B4C5D3",
+    "ash_ground": "#7C7876",
+    "basalt": "#4B4750",
+    "basalt_dark": "#35323A",
+    "lava": "#F4792A",
+    "shrub_red": "#A6372C",
+    "ore": "#82E6D8",
+    "stone_step": "#C9C2B2",
+    "stone_pale": "#D7CFBD",
+    "stone_dark": "#7D7768",
+    "temple_roof": "#3F7472",
+    "temple_roof_dark": "#2F5553",
+    "bell": "#B08D3C",
+    "herb_a": "#6FA046",
+    "herb_b": "#9D84C2",
     "clan_a": "#3F6AA8",
     "clan_b": "#E4D9B8",
     "worn_track": "#C4BC82",
@@ -218,8 +238,10 @@ PALETTE = {
 # them toward the neighbours' ground colours like the base slabs' tops.
 # lantern, toadstool, fey_mushroom (the fey wood's fairy rings), window_glow (the Fey Court's windows) and
 # window_faint (the Abandoned Farmhouse's one lit window, dimmer) glow at night, so the engine needs to find them.
+# lava (volcanic cracks, craters, the den) pulses and glows. snow_ground and ash_ground are hills ground, faded like
+# hill_grass.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow",
+OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3

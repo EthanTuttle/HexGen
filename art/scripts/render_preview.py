@@ -142,7 +142,7 @@ def draw_paths(col, templates):
         for line in lines:
             for a, b in zip(line, line[1:]):
                 d = b - a
-                p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+                vr.frustum(p, a + Vector((0, 0, 0.14)), b + Vector((0, 0, 0.14)), 0.05, 0.05, "path_debug", segments=4)
         key = (round(m.translation.x, 1), round(m.translation.y, 1))
         for i, line in json.loads(src.get("path_spokes", "{}")).items():
             tiles.setdefault(key, {}).setdefault("spokes", []).append((int(i), [m @ Vector((x, -z, y)) for x, y, z in line]))
@@ -154,12 +154,11 @@ def draw_paths(col, templates):
         for i, line in t.get("spokes", []):
             if any((e - line[0]).length < 0.05 for e in t.get("ends", [])):
                 for a, b in zip(line, line[1:]):
-                    d = b - a
-                    p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+                    vr.frustum(p, a + Vector((0, 0, 0.14)), b + Vector((0, 0, 0.14)), 0.05, 0.05, "path_debug", segments=4)
         for e in t.get("ends", []) if "hub" in t else []:
             d = e - t["hub"]
             if d.length < 2.2:  # a wedge path's inner end on this tile
-                p.box((e + t["hub"]) / 2, (d.length, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+                vr.frustum(p, e + Vector((0, 0, 0.14)), t["hub"] + Vector((0, 0, 0.14)), 0.05, 0.05, "path_debug", segments=4)
     p.finish(col)
 
 # Plains tier 0: a group of plains among forest, farms, a village and hills, to judge it beside full tiles.
@@ -324,7 +323,8 @@ def build_map(templates, animated=False, tiles=None):
             for where, i in parts:
                 place(templates, f"{name}_mountain_{where}", col, at, math.radians(60 * i))
             # In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
-            if len(parts) >= 2 and dist.get((q, r), 3) > 2:  # none within two steps of a landmark: clear ground
+            # None within two steps of a landmark (clear ground), nor where steps run (they'd bury them).
+            if len(parts) >= 2 and dist.get((q, r), 3) > 2 and f"{kit}_steps_centre" not in templates:
                 place(templates, f"{name}_ridge_knot", col, at)
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
@@ -339,11 +339,18 @@ def build_map(templates, animated=False, tiles=None):
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
             elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
                 edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
+            elif not joined[i] and f"{kit}_edge_other_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
+                edge = f"{kit}_edge_other_b"  # trees: a wedge facing other land is the only one clear of rock
             elif not joined[i] and name in vr.LANDMARKS and f"{kit}_edge_other_lm" in templates:
                 edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
+            if i in trails and f"{kit}_steps_centre" in templates:  # the stair's flight on the centre, one per trail edge
+                if name not in vr.LANDMARKS:
+                    place(templates, f"{kit}_steps_centre", col, at, math.radians(60 * i))
+                elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
+                    place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
                 if not joined[(i + 1) % 6]:
@@ -606,6 +613,31 @@ if __name__ == "__main__":
                                                                 2.2 + 16 * math.sin(el)))
         cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
         render("hills_clanhall_closeup")
+        sys.exit(0)
+    if "hills-t2" in flags:
+        # Hills tier 2 and class variant: each region flowing into its landmark, and a close-up; monastery's paths.
+        el = math.radians(38)
+        for short, variant, lm, with_paths in (("snowy", "snowy_peaks", "yeticave", False),
+                                               ("volcanic", "volcanic_peaks", "salamanderden", False),
+                                               ("monastery", "monastery_heights", "library", True)):
+            tiles_map = {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else variant) for t in LANDMARK_REGION}}
+            for paths in ((True, False) if with_paths else (False,)):
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                col = bpy.data.collections["map"]
+                draw_effects(col, templates)
+                if paths:
+                    draw_paths(col, templates)
+                stage(Vector((0.5, -0.8, 0)), 54, 50)
+                render(f"hills_t2_{short}_{'paths' if paths else 'landmark'}")
+            d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (variant, lm)), LANDMARK_AT)
+            a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+            cam = bpy.context.scene.camera
+            cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
+                                                                    2.2 + 16 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+            render(f"hills_t2_{lm}_closeup")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same

@@ -462,13 +462,13 @@ def height_at(at, kind):
     return hill_height(at.x, abs(at.y) / (at.x * TAN30), kind)
 
 
-def hill_surface(p, sectors, d0, d1, kind, grass="hill_grass", rock_slope=0.6, height=None):
+def hill_surface(p, sectors, d0, d1, kind, grass="hill_grass", rock_slope=0.6, height=None, cliff="cliff"):
     """Triangulated ground over the given sectors between depths d0 and d1: faces steeper than rock_slope
     (by their normal's height) show rock, the rest grass. height(d) replaces the usual ground (a landmark's
     plateau); it must give H0 at the centre piece's edge, so it meets the wedges."""
     bm = p.bm
     nd = max(2, round(ND * (d1 - d0) / X1))
-    grass, cliff = p._slot(grass), p._slot("cliff")
+    grass, cliff = p._slot(grass), p._slot(cliff)
     middle = bm.verts.new((0, 0, (height(0) if height else hill_height(0, 0, kind)) + 0.01)) if d0 == 0 else None
     for i in sectors:
         n = hk.edge_normal(i)
@@ -512,7 +512,9 @@ MOUNTAINS = {
 RINGS = (0.22, 0.45, 0.7, 1.0)  # share of the base radius at each ring of the mountain
 
 
-def mountain(p, rng, kind, scale=1.0, grass="hill_grass"):
+def mountain(p, rng, kind, scale=1.0, grass="hill_grass", rock=("rock", "rock_dark"), cap=None, jag=1.0, crater=False):
+    """cap: the colour of the top two rings (snow). jag: how ragged the sides are. crater: a cone with its top open
+    on a glowing crater (lava, its own material) and a smoke effect point."""
     centre, height, radius, (a0, a1), sym = MOUNTAINS[kind]
     height *= scale
     centre = Vector((centre.x, centre.y, 0))
@@ -524,12 +526,15 @@ def mountain(p, rng, kind, scale=1.0, grass="hill_grass"):
                 + 0.1 * math.sin(sym * (3 + k) * th + phases[k + 2]))
 
     bm = p.bm
-    rock, rock_dark, grass = p._slot("rock"), p._slot("rock_dark"), p._slot(grass)
+    rock_mat, rock_dark, grass = p._slot(rock[0]), p._slot(rock[1]), p._slot(grass)
+    rock = rock_mat
     angles = [math.radians(a) for a in range(a0, a1 + 1, 20)]
     if a1 - a0 == 360:
         angles = angles[:-1]
     lift = (lambda q: hill_height(hex_depth(q), 0, "centre")) if kind == "peak" else (lambda q: -0.05)
-    apex = bm.verts.new(centre + Vector((0, 0, height + lift(centre))))
+    apex = bm.verts.new(centre + Vector((0, 0, height * (0.72 if crater else 1.0) + lift(centre))))
+    if crater:
+        p.effects.append(("smoke", centre + Vector((0, 0, height * 1.02 + lift(centre)))))
     rings = []
     for k, share in enumerate(RINGS):
         ring = []
@@ -537,7 +542,9 @@ def mountain(p, rng, kind, scale=1.0, grass="hill_grass"):
             r = radius * share * (1 + wobble(th, 0))
             q = centre + Vector((math.cos(th), math.sin(th), 0)) * r
             # Concave sides and ragged ring heights, so it reads as a rocky mountain rather than a cone.
-            drop = (1 - share) ** 1.25 * (1 + 1.2 * wobble(th + k, 1)) if share < 1 else 0.0
+            drop = (1 - share) ** 1.25 * (1 + 1.2 * jag * wobble(th + k, 1)) if share < 1 else 0.0
+            if crater and share < 1:  # the first ring is the crater's rim
+                drop = ((1 - share) / (1 - RINGS[0])) ** 1.05 * (1 + 0.3 * jag * wobble(th + k, 1))
             q.z = height * drop + lift(q)
             ring.append(bm.verts.new(q))
         rings.append(ring)
@@ -554,6 +561,10 @@ def mountain(p, rng, kind, scale=1.0, grass="hill_grass"):
         f = bm.faces.new(verts)
         # Rock above, a grassy skirt on the lowest ring; facets alternate between two rock shades.
         f.material_index = grass if ring == len(RINGS) - 1 else rock if rng.random() < 0.6 else rock_dark
+        if cap and ring <= 1:
+            f.material_index = p._slot(cap)
+        if crater and ring == 0:
+            f.material_index = p._slot("lava")
         p.surface.add(f)
 
 
@@ -566,44 +577,61 @@ RIDGE_HEIGHT = 1.4  # crest height above the ground under it
 RIDGE_HALF = 1.5    # half the ridge's width at its foot: broad, so it reads as mountain, not a wall
 
 
-def ridge(p, rng, kind, scale=1.0, half=None):
+def ridge(p, rng, kind, scale=1.0, half=None, rock=("rock", "rock_dark"), crest=None):
+    """A ragged rocky ridge, like the mountains it joins: a serrated crest whose height jumps from row to row, a
+    wandering line, uneven shoulders and feet, split into triangles, with crags standing up along it. crest: a colour
+    for the top facets (snow)."""
     half = RIDGE_HALF if half is None else half
+
     def ground(c):
         # The edge ridge runs along edge 0's wedge middle, the corner ridge along the wedge's side (s = 1).
         d = hex_depth(c)
         return hill_height(d, 0, "centre") if d <= X0 else hill_height(c.x, abs(c.y) / (c.x * TAN30), "same")
 
+    def shade():
+        return rock[0] if rng.random() < 0.6 else rock[1]
+
     if kind == "ridge_knot":
-        p.cone(Vector((0, 0, 0)), 1.0, RIDGE_HEIGHT * scale + 0.6, "rock", segments=6, z=ground(Vector()) - 0.3,
-               spin=rng.uniform(0, 1))
+        g = ground(Vector())
+        for q, r, h in ((Vector((0, 0, 0)), 1.0, 1.0), (Vector((0.35, 0.2, 0)), 0.55, 1.28), (Vector((-0.4, 0.15, 0)), 0.5, 1.1),
+                        (Vector((0, -0.4, 0)), 0.48, 1.18)):
+            p.cone(q, r, (RIDGE_HEIGHT * scale + 0.6) * h, shade(), segments=5, z=g - 0.3, spin=rng.uniform(0, 1))
         return
     end = RIDGES[kind]
     along = end.normalized()
     side = Vector((-along.y, along.x, 0))
-    rock, rock_dark = p._slot("rock"), p._slot("rock_dark")
     rows, n = [], 10
     for k in range(n + 1):
         c = end * (k / n)
         g = ground(c)
-        crest = g + RIDGE_HEIGHT * scale * (0.75 + 0.4 * rng.random())
-        jag = side * rng.uniform(-0.12, 0.12)
-        # A shoulder halfway down each side breaks up the slope.
-        rows.append([p.bm.verts.new(c - side * half + Vector((0, 0, g - 0.5))),
-                     p.bm.verts.new(c - side * half * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
-                     p.bm.verts.new(c + jag + Vector((0, 0, crest))),
-                     p.bm.verts.new(c + side * half * 0.45 + Vector((0, 0, g + (crest - g) * rng.uniform(0.4, 0.6)))),
-                     p.bm.verts.new(c + side * half + Vector((0, 0, g - 0.5)))])
+        lift = rng.uniform(1.0, 1.4) if k % 2 else rng.uniform(0.45, 0.8)  # high and low in turn: serrated
+        top = g + RIDGE_HEIGHT * scale * lift
+        jag = side * rng.uniform(-0.26, 0.26)
+        rows.append([p.bm.verts.new(c - side * half * rng.uniform(0.82, 1.12) + Vector((0, 0, g - 0.5))),
+                     p.bm.verts.new(c - side * half * rng.uniform(0.32, 0.6) + Vector((0, 0, g + (top - g) * rng.uniform(0.3, 0.68)))),
+                     p.bm.verts.new(c + jag + Vector((0, 0, top))),
+                     p.bm.verts.new(c + side * half * rng.uniform(0.32, 0.6) + Vector((0, 0, g + (top - g) * rng.uniform(0.3, 0.68)))),
+                     p.bm.verts.new(c + side * half * rng.uniform(0.82, 1.12) + Vector((0, 0, g - 0.5)))])
     for a, b in zip(rows, rows[1:]):
         for j in range(4):
-            f = p.bm.faces.new((a[j], b[j], b[j + 1], a[j + 1]))
-            f.material_index = rock if rng.random() < 0.6 else rock_dark
-            p.surface.add(f)
+            tris = ((a[j], b[j], b[j + 1]), (a[j], b[j + 1], a[j + 1])) if rng.random() < 0.5 else \
+                ((a[j], b[j], a[j + 1]), (b[j], b[j + 1], a[j + 1]))
+            for t in tris:
+                f = p.bm.faces.new(t)
+                f.material_index = p._slot(crest if crest and j in (1, 2) else shade())
+                p.surface.add(f)
+    for k in range(1, n, 3):  # crags standing up along it
+        c = end * (k / n) + side * rng.uniform(-0.3, 0.3)
+        g = ground(c)
+        p.cone(c, rng.uniform(0.4, 0.62), RIDGE_HEIGHT * scale * rng.uniform(1.25, 1.7), shade(), segments=5, z=g, spin=rng.uniform(0, 1))
 
 
 def surface_kind(kind):
     """The ground shape a piece has: its alternates and band pieces share their plain piece's."""
     if kind in ("centre_b", "centre_mid", "centre_near"):
         return "centre"
+    if kind == "edge_other_b":
+        return "other"
     return "same" if kind in ("edge_same_b", "edge_trail", "edge_trail_in") else kind
 
 
@@ -625,8 +653,9 @@ def outcrop(p, rng, at, kind, size=1.0, mats=("rock", "rock_dark")):
 
 
 def hills(p, rng, kind):
-    """A smooth grassy mound. Boulders are grouped into outcrops rather than strewn evenly, and a pair of trees
-    stands on some edges; the edge's middle stays clear for the ridge that runs on into joined hills."""
+    """A smooth grassy mound. Boulders are grouped into outcrops rather than strewn evenly. Trees stand only on
+    edge_other_b: a joined edge always has a mountain or ridge somewhere on its wedge, but a wedge facing other land
+    can't have one (a corner mountain needs both its edges joined; the neighbouring edges' reach stops short)."""
     if kind in MOUNTAINS:
         mountain(p, rng, kind)
         return
@@ -642,6 +671,8 @@ def hills(p, rng, kind):
     if kind == "same":
         outcrop(p, rng, Vector((X0 + 1.15, 0.9, 0)), kind)
     elif kind == "edge_same_b":
+        outcrop(p, rng, Vector((X0 + 1.2, -0.95, 0)), kind, 0.8)
+    elif kind == "edge_other_b":
         for q in (Vector((X0 + 1.2, -0.95, 0)), Vector((X0 + 0.75, -0.75, 0))):
             tree(p, rng, on_ground(q, kind))
     else:
@@ -822,7 +853,7 @@ def build():
         kinds += ("edge_gate",) if terrain in BORDERED else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += ("centre_b",) if terrain == "plains" else ()
-        kinds += ("centre_b", "edge_same_b") if terrain == "hills" else ()
+        kinds += ("centre_b", "edge_same_b", "edge_other_b") if terrain == "hills" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"
