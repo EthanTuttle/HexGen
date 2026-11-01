@@ -166,6 +166,7 @@ PALETTE = {
     "apple": "#C9302C",
     "orchard_grass": "#7FAE57",
     "green": "#9CCB6E",
+    "pond": "#7FB6D6",
     "stake": "#9A7A55",
     "banner": "#C23A2E",
     "path_debug": "#E0303A",  # previews only: the path data drawn over a map

@@ -484,6 +484,24 @@ if __name__ == "__main__":
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
             render(f"farmland_t2_{lm}_closeup")
         sys.exit(0)
+    if "farm-layouts" in flags:
+        # Wheat farm layout options: for each, the farm group with its village and the windmill country region
+        # with the Great Windmill (turned to use the option's wedges), plain and with the path data.
+        for opt in ("a", "b"):
+            farm = {k: (f"farmland_{opt}" if v == "farmland" else v) for k, v in FARM_MAP.items()}
+            mill = {k: (f"windmill_country_{opt}" if v == "windmill_country" else v) for k, v in WINDMILL_MAP.items()}
+            vr.LANDMARKS["greatwindmill"] = f"windmill_country_{opt}"  # the mill's tile takes this option's wedges
+            for stem, tiles_map in (("farm", farm), ("windmill", mill)):
+                for paths in (False, True):
+                    hk.empty_scene()
+                    templates = load_templates(tiles)
+                    build_map(templates, tiles=tiles_map)
+                    if paths:
+                        draw_paths(bpy.data.collections["map"], templates)
+                    stage(Vector((0.5, -0.8, 0)), 50, 55 if paths else 50)
+                    render(f"farmland_layout_{opt}_{stem}{'_paths' if paths else ''}")
+        vr.LANDMARKS["greatwindmill"] = "windmill_country"
+        sys.exit(0)
     if "markettown-gates" in flags:
         # The farm map with its villages finished as market towns, to show their gates.
         hk.empty_scene()
