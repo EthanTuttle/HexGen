@@ -315,6 +315,15 @@
    "title": "Town v8c \u00b7 Swap party at the inn, drag between rows: the party row (the hero locked, then 3 slots) over a dashed waiting row. Drag a portrait onto another to swap, or onto the waiting row to bench them; tapping one then the other works too",
    "is_interactive": true,
    "radius": 28
+  },
+  "Town-v9-SwapDetails.dc.html": {
+   "x": 0,
+   "y": 6860,
+   "w": 844,
+   "h": 390,
+   "title": "Town v9 \u00b7 v8b (chosen) with no duplicated info: the party and waiting rows show only portrait and name; race, class and level live in the details card, which gets more room (bigger portrait, spaced name, subtitle and where-chip, the action pinned to the bottom, \"Tap a companion\" when nothing is picked)",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -351,7 +360,8 @@
   "Ref-Gear-v8d-ForV7.dc.html",
   "Town-v8a-SwapInScene.dc.html",
   "Town-v8b-SwapColumns.dc.html",
-  "Town-v8c-SwapDrag.dc.html"
+  "Town-v8c-SwapDrag.dc.html",
+  "Town-v9-SwapDetails.dc.html"
  ],
  "notes": {
   "v1": {
@@ -414,6 +424,13 @@
    "x": 0,
    "y": 5830,
    "text": "v8 \u00b7 Swap party at the inn, three ways",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v9": {
+   "x": 0,
+   "y": 6600,
+   "text": "v9 \u00b7 v8b chosen: details only in the card",
    "kind": "title1",
    "maxW": 2692
   }
