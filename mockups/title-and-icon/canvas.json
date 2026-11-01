@@ -135,6 +135,24 @@
    "title": "App icon v3b \u00b7 the same coin on the dusk pastel (#EDCFD7)",
    "is_interactive": false,
    "radius": 28
+  },
+  "Icon-v4a-Tile.dc.html": {
+   "x": 0,
+   "y": 5650,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v4a \u00b7 v1a's hex tile again, with the home-screen name Heads/Hexes, side by side with v4b",
+   "is_interactive": false,
+   "radius": 28
+  },
+  "Icon-v4b-Coin.dc.html": {
+   "x": 924,
+   "y": 5650,
+   "w": 844,
+   "h": 390,
+   "title": "App icon v4b \u00b7 v3a's coin on the midday pastel, with the home-screen name Heads/Hexes",
+   "is_interactive": false,
+   "radius": 28
   }
  },
  "order": [
@@ -151,7 +169,9 @@
   "Icon-v2b-CoinMargin.dc.html",
   "Title-v4-FloatingLogo.dc.html",
   "Icon-v3a-CoinSky.dc.html",
-  "Icon-v3b-CoinDusk.dc.html"
+  "Icon-v3b-CoinDusk.dc.html",
+  "Icon-v4a-Tile.dc.html",
+  "Icon-v4b-Coin.dc.html"
  ],
  "notes": {
   "v1": {
@@ -200,6 +220,13 @@
    "x": 0,
    "y": 4620,
    "text": "App icon v3 \u00b7 bigger hex, a real tree, pastel backdrop",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "icons4": {
+   "x": 0,
+   "y": 5390,
+   "text": "App icon v4 \u00b7 tile or coin, with Heads/Hexes",
    "kind": "title1",
    "maxW": 2692
   }
