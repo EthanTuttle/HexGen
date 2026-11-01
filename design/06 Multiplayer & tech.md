@@ -13,7 +13,7 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 
 **Sessions and guests**
 
-- Drop-in / drop-out; guests join the host's world. **Joining is by join code** (chosen Nov 1, 2026): the host shares a short code and the guest types it in (title screen → Join; [Presentation](07 Presentation.md) → Title screen, name and app icon). No friends list or invites for now. The code's format and how the host finds theirs are open.
+- Drop-in / drop-out; guests join the host's world. **Joining is by join code** (chosen Nov 1, 2026): the host shares a short code and the guest types it in (title screen → Join; [Presentation](07 Presentation.md) → Title screen, name and app icon). No friends list or invites for now. **The code is 6 letters** (chosen Nov 1, 2026), e.g. KDRWQX, leaving out look-alike letters such as I and O so it reads aloud cleanly. **The host finds it in Settings** (the pause menu; chosen Nov 1, 2026): a Multiplayer section shows the code and who's connected.
 - Up to 4 players.
 - A guest brings their own hero (not their companions).
 - The party stays at 4: one of the host's companions drops out for each guest who joins, and the host chooses which.
@@ -46,7 +46,7 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 ## Saving
 
 - Autosave on every hex move; the last 10 autosaves are kept **per hero**.
-- Manual save slots as well, also **per hero** (chosen Nov 1, 2026: each hero keeps their own autosaves and slots, and Load groups them by hero).
+- Manual save slots as well, also **per hero** (chosen Nov 1, 2026: each hero keeps their own autosaves and slots, and Load groups them by hero): **3 slots per hero** (chosen Nov 1, 2026).
 - Saves are stored locally and synced to the cloud. Reloading saves to undo permanent failures (save-scumming) is left up to the player; the game does not prevent it. If saves conflict across devices, the player picks which one to keep.
 
 ## Implementation
@@ -110,4 +110,5 @@ Engine comparison as of Oct 2026 (checked against public info; re-check pricing 
 - [ ] **New:** multiplayer networking and cloud-save backend (follows from the engine choice)
 - [x] ~~Saves with several heroes~~ (settled Nov 1, 2026: autosaves and save slots are per hero)
 - [x] ~~How a guest finds a game~~ (settled Nov 1, 2026: a join code)
-- [ ] **New:** the join code: its format, and where the host sees theirs; how many manual slots each hero gets
+- [x] ~~The join code's format and where the host sees it; manual slots per hero~~ (settled Nov 1, 2026: 6 letters, shown in Settings → Multiplayer; 3 slots per hero)
+- [ ] **New:** does a code change each session, and can the host turn joining off?
