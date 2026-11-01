@@ -181,7 +181,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Exact backdrop colours per time of day~~ (settled Oct 30: the Godot prototype's light, revisit in playtesting; see Presentation → Art direction)
 - [ ] New: the size of the rift's lilac shift
 - [x] ~~Touch: long-press on HUD controls, and a minimum text size on phones~~ (settled Oct 31: portraits show effects and the rest do nothing; 11 pt floor. Screen edges settled Oct 30: the UI shifts away from the Dynamic Island)
-- [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
+- [ ] New: the next exploration version (planned as v9, which went to the button cluster on Nov 1: the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
 - [ ] New: which way water flows (prototype placeholder: toward the bottom of the screen)
 - [ ] New: farm and village border variants for terrain variants (stacked stone, block walls; wooden fence is the default)
 - [ ] New: minis painted, unpainted or mixed
@@ -212,7 +212,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: how armour works (what it does in a fight, light vs medium vs heavy, shields): see Weapons & gear
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
-- [ ] New: a guest's send-off; how the send-off hands over to onboarding
+- [ ] New: a guest's send-off
+- [ ] New: onboarding: the tutorial's lesson order; timing against the mentors' stories; returning players and guests with no skipping (see Presentation → Onboarding)
 - [ ] New: names for the six starting quests
 - [ ] New: names for the unnamed racial passives (v8 working names)
 - [ ] New: character creator finale after naming
@@ -227,7 +228,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: once-per-fight tag: "1/fight" text (v12b) or "1" plus a swords icon (v12c)
 - [ ] New: board token plates: enemy labels vs ally initials (both can be "C")
 - [ ] New: ally cards: can casters target themselves, and what range (v14 placeholder: 5 hexes)?
-- [ ] New: exploration hand: side column (v6a) or next tile only (v6b)
+- [x] ~~Exploration hand: side column or next tile only~~ (settled Nov 1, 2026: side column)
 - [ ] New: final terrain colours and icons for map tiles; corrupted tile look
 - [x] ~~End-of-fight screen~~ (in progress as the after-combat screen; see Presentation)
 - [x] ~~Landmark names on the board~~ (settled: pin, name on tap)

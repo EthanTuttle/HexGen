@@ -1,6 +1,6 @@
 # HexGen — Presentation
 
-Last updated Oct 30, 2026 · @Ethan · Part of the [Index](00 Index.md)
+Last updated Nov 1, 2026 · @Ethan · Part of the [Index](00 Index.md)
 
 Art direction, UI look, screen layouts, screen mockups, camera and controls, audio and onboarding.
 
@@ -235,7 +235,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Details panel** (v3): source and AP, name, description, then "Use:" (repeatable, once per turn or once per fight) and how the card resolves: "Attack Flip: <ability>" (the ability the flip uses: the weapon category's for weapon attacks, the caster's for spell attacks) or "Save: <ability>" (the target's save). Cards with neither, such as Healing Word, show no line. The panel doesn't repeat which hotbar slot a card is in, and the hotbar tray has no footer note.
 - v1 layout (to review): the gear screen's top bar (back, name, party switcher) with Set 1 / Set 2 tabs on the right; the full list on a cream panel as compact tiles (AP hex, icon, name, hotbar slot), reusing combat v11's All actions tiles; a details panel on the right like combat's; the hotbar on a wood-brown tray along the bottom, its cards drawn like combat's hotbar cards. v1a shows it from the gear screen, v1b from combat. v2 links it into the flow: gear → Action cards → back, and combat's All actions pop-up → Edit hotbar → back to the fight. Combat v12 carries a copy updated with the Oct 24 AP costs (Command replaced by Reposition; Flame Burst and Chain Spark now use DEX saves).
 
-**Exploration screen** (in progress, latest v6; choices made Oct 24, 2026; placement rules: [Map & exploration](02 Map & exploration.md) → Placement)
+**Exploration screen** (in progress: v8b chosen Nov 1, 2026; latest v9, the standard button cluster; choices made Oct 24, 2026; placement rules: [Map & exploration](02 Map & exploration.md) → Placement)
 
 - **The board** is the world map on the soft pastel backdrop, which drifts with the time of day. It uses the same tilted, rotatable camera as combat (zoom, rotate freely, drag to pan, centre on the party). Empty slots touching land show as pale hexes.
 - **Terrain cards are hex tiles** (chosen Oct 24, 2026): a card in hand is drawn as the hex itself, with the terrain's colour and icon, so it reads as what you'll place and looks nothing like a combat action card.
@@ -251,8 +251,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Quests, camera and equipment buttons** (standard for every hex screen, chosen Oct 28, 2026: town v6c, tidied in v7): under the party panel the three hexes touch in a zig-zag: Quests on top, the nav (camera) button half a hex to the right, equipment below. Opened, the camera buttons (zoom in and out, rotate left and right, frame) fan out as a small honeycomb against the nav button's right side, on top of everything (v6a's fan), and a tap on the board closes them. The new-quest and new-item dots sit at the top left of their buttons, so the nav button never covers them. This also stops panels such as the quest board from sitting over the nav button. The map and combat mockups take it in their next versions.
 - **Passives on a sleeve** (chosen Oct 28, 2026, for now: v8b): a narrow strip of darker wood joined to the party panel's right edge, as one piece with it, holds the passive hexes in a column. It grows as passives are added and disappears when there are none. Made because v7's column right beside the party panel looked cramped. Not picked: their own small tray with a gap (v8a); a row beside Quests (v8c). Carried into the social scenes in social v5.
 - **Pop-ups for passives and the quest log** (Oct 28, 2026, v8): the title sits tight on the first line (the close button no longer pushes it down), and the quest log opens upward from the Quests button with a set height; a longer list scrolls inside it.
-- **Camera controls behind a nav button** (chosen Oct 28, 2026; exploration v7): the zoom, rotate and centre buttons that sat to the right of the party panel move behind a nav button to the right of the equipment button, and open out in a row to the right. Touch gestures still work as before (see Camera and controls).
-- **Hand: being compared.** v1a holds the hand in a side column (tap a card to hold it, with deck and discard counts). v1b shows only the next tile, always held, with a Next tile button to cycle through the rest of the hand. Latest pair: v6a / v6b.
+- **Camera controls behind a nav button** (chosen Oct 28, 2026; exploration v7): the zoom, rotate and centre buttons that sat to the right of the party panel move behind a nav button to the right of the equipment button, and open out in a row to the right. Touch gestures still work as before (see Camera and controls). **Replaced on the map in exploration v9** (Nov 1, 2026): the map takes the standard cluster (Quests, nav and equipment in a zig-zag, the camera buttons fanning out; see Quests, camera and equipment buttons above).
+- **Hand: a side column** (chosen Nov 1, 2026, with v8b): the hand sits in a column at the side; tapping a card holds it, with deck and discard counts. Rejected: next tile only (v1b–v7b: one card always held, with a Next tile button to cycle through the rest), which sat uneasily with the scarcity being in choosing which card to place where.
 - **Debug tools (mockup only, v5; a collapsible Debug tab from v6):** an Endless hand switch (each placement draws a random terrain) and a +5 cards button, for testing big areas. They deliberately break the hand and deck rules and aren't part of the game.
 - Mockup placeholders (terrain colours and icons, the cluster badge trigger, time per placement and per hex walked, the dial skip): see Screen mockups → Mockup placeholders.
 
@@ -466,7 +466,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Character & gear | Pending feedback on v8d; v9–v11 (Oct 30, 2026) bring it up to the newer screens; latest v12a / v12c, two layouts to compare (v13a / v13c: the same with a plain background) | v8d | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Character & Gear (working)](https://claude.ai/artifact/MtzUejEunFdDF8CNsyZHWc) |
 | Combat | In progress (latest: v14, ally targeting with green circles, on v13's hex-base tokens and movement) | — | — | [HexGen · Combat (working)](https://claude.ai/artifact/7rzLG7m3x3gXAG7kU9JERj) |
 | Character minis | Retired Oct 29, 2026 (SVG minis v1–v5 kept for reference; reference art now comes from ChatGPT renders of each visual description, in `art/minis/`) | — | — | [HexGen · Minis (working)](https://claude.ai/artifact/AiWD6SrHacApJxiYC7zMB5) |
-| Exploration | In progress (v7a side column / v7b next tile only: Quests, equipment and passives on screen, camera behind a nav button; latest: v8b, passives on a sleeve, chosen for now; v8a and v8c not picked) | — | — | [HexGen · Exploration (working)](https://claude.ai/artifact/GQ6LxMzHa214Rjzcabgjr4) |
+| Exploration | In progress (v7a side column / v7b next tile only: Quests, equipment and passives on screen, camera behind a nav button; v8b, passives on a sleeve, chosen Nov 1, 2026; v8a and v8c not picked; latest: v9, v8b with the standard Quests / nav / equipment cluster and fan) | — | — | [HexGen · Exploration (working)](https://claude.ai/artifact/GQ6LxMzHa214Rjzcabgjr4) |
 | Rewards & level-up | After combat: final. Level-up: in progress (latest: v9a level 3 / v9b level 4 feat, with v8c level 5 / v8d level 8: each level shows only what it grants) | After combat v7 | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Rewards & level-up (working)](https://claude.ai/artifact/UeCB1R47oqpqYZs172hNjg) |
 | Weapon mastery | Final (v5c: the weapon hex is the root of the tree) | v5c | [HexGen · Final screens](https://claude.ai/artifact/XWCoF7tyrjf3T6CzDi5rLA) | [HexGen · Weapon mastery (working)](https://claude.ai/artifact/XKzGEWvKrWJz8L5bXzCPum) |
 | Social encounter | In progress (layout v1d, who flips v2a and rewards v3a chosen; latest: v9, the camera back in scenes: tap to continue, drag to look around) | — | — | [HexGen · Social encounter (working)](https://claude.ai/artifact/TWEGUNEtMTL8298rXdakpC) |
@@ -500,6 +500,11 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 
 The opening quest doubles as the tutorial. It teaches placing cards, combat and coins, and camps and rest.
 
+- **Fully scripted opening** (Ethan, Nov 1, 2026): the opening quest is a guided sequence until the tutorial's lessons are done. It starts where the character creator's send-off ends (v22b: the board, the mini on its starting tile, the hero's banner).
+- **Taught by the background's mentor** (Ethan, Nov 1, 2026): each path's mentor ([World & story](01 World & story.md) → Mentor details) explains things in their own voice: the tower's commander (Soldier), the dream voice of the hero's god (Acolyte), the client (Criminal), the wizard tower's master (Sage), the innkeeper (Folk Hero) and the noble's parent (Noble).
+- **Same beats, own story** (Ethan, Nov 1, 2026): all six starting quests teach the same lessons in the same order, each dressed in its own story, so every player learns the game the same way. The lesson order is open.
+- **No skipping** (Ethan, Nov 1, 2026): the tutorial stays simple and is woven into the story, so players *want* to play it rather than skip it. There is no tutorial toggle.
+
 ## Open questions
 
 - [ ] Final palette and fonts for the "Game pieces" style (the mockup's colours and fonts are placeholders)
@@ -514,7 +519,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Phones' screen edges~~ (settled Oct 30, 2026: the UI shifts in by the safe area on the Dynamic Island's side, the board shows behind it; see Camera and controls → Phone screen edges)
 - [x] ~~A minimum text size on phones~~ (settled Oct 31, 2026: 11 pt)
 - [ ] **New:** whether the mini's base rim colour marks the character or the side (ally/enemy)
-- [ ] **New:** exploration v9: the party as a cluster of true-scale minis instead of one token; combat v15: flat-top cells (both chosen Oct 29, 2026)
+- [ ] **New:** the next exploration version (planned as v9; v9 went to the button cluster on Nov 1, 2026): the party as a cluster of true-scale minis instead of one token; combat v15: flat-top cells (both chosen Oct 29, 2026)
 - [x] ~~Region variant art: what a variant changes~~ (settled Oct 30, 2026: whatever makes it look best, while still blending in; tier 1 looks chosen, see Art direction → Region variant looks)
 - [x] ~~Tier 2 and class variant looks~~ (settled Oct 31, 2026: see Art direction → Region variant looks)
 - [ ] **New:** desert's Dunes/wasteland look shows buried ruins; check it stays distinct from the ruins terrain and from the Buried city (desert tier 3)
@@ -550,7 +555,9 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Character creator: feedback on v20~~ (approved Oct 30, 2026: the Gear step is done)
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now; may be reworked once real minis exist)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b, the banners return)
-- [ ] **New:** how the send-off hands over to the game and onboarding (Onboarding)
+- [ ] **New:** the tutorial's lesson order, shared by all six starting quests (Onboarding)
+- [ ] **New (flagged):** onboarding timing against the mentors' stories. The tutorial must finish before the Sage's master teleports the tower away and before the Soldier's commander betrays the tower. The Criminal is taught by the client, who later returns as the avatar, which could be a strong twist (the player learned the game from the villain). The Acolyte's teacher is a dream voice, so its lessons happen in dreams or in the hero's mind
+- [ ] **New (flagged):** with no skipping, a returning player replays the scripted opening on every new campaign with the same background (other backgrounds' openings are new to them). And a guest joining a host plays the host's opening, not their own: do guests who have never played get any teaching?
 - [ ] **New:** character creator send-off for a guest joining a host with their own hero (no starting tile of their own)
 - [ ] **New:** names for the six starting quests (the send-off shows "[Quest name]")
 - [ ] **New:** starting-place art for each background's banner (v12 draws a hex tile with an icon as a stand-in)
@@ -573,7 +580,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** board token plates: enemy letters clash with ally initials (mockup "Enemy C" and Chelmsford's "C"). Use numbers, icons or enemy-type initials for foes?
 - [ ] **New:** can a caster target themselves with ally cards (Bless, Healing Word)? Combat v14 allows it; card text only says "an ally"
 - [ ] **New:** range of ally spells (Bless, Healing Word): combat v14 uses 5 hexes as a placeholder
-- [ ] **New:** exploration hand: side column (v6a) or next tile only (v6b)? Next tile sits uneasily with the rule that the scarcity is in choosing which card to place where ([Cards & progression](05 Cards & progression.md) → Core loop), which is why it gets a Next tile button
+- [x] ~~Exploration hand: side column or next tile only~~ (settled Nov 1, 2026: side column; see Exploration screen → Hand)
 - [ ] **New:** final terrain colours and icons for map tiles (v1's are placeholders), and how corrupted tiles look
 - [x] ~~After-combat v5a or v5b~~ (settled Oct 26, 2026: v5b's rewards reveal, now v6 with the Legendary flip)
 - [ ] **New:** after-combat v7: the reveal's pacing (mockup: 0.55 s per reward, about 2 s for a Legendary), and whether tapping the panel to skip should also skip a Legendary's flip
@@ -593,7 +600,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~Social encounter layout~~ (settled Oct 28, 2026: v1d, options as cards over the zoomed hex)
 - [x] ~~Social encounter: who flips a non-social check~~ (settled Oct 28, 2026: v2a, the player picks)
 - [x] ~~Social encounter rewards~~ (settled Oct 28, 2026: v3a's reveal, flying to homes shared with the map; social v4, exploration v7)
-- [ ] **New:** feedback on exploration v7 and social v4 (Quests, equipment and passives on screen; camera behind the nav button; no nav button in scenes)
+- [ ] **New:** feedback on social v4 (Quests, equipment and passives on screen; no nav button in scenes). Exploration settled Nov 1, 2026: v8b chosen, buttons reworked in v9
 - [x] ~~Where the passives sit~~ (settled for now Oct 28, 2026: v8b, a sleeve on the party panel; carried into social v5)
 - [ ] **New:** approach tag colours and icons for social options (v1's are placeholders)
 - [x] ~~Town screen: which way in~~ (settled Oct 28, 2026: v1a, a scene with a card per service)
