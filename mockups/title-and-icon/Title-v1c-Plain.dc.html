@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Title v1c: plain menu backdrop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#B5532F}a:hover{color:#7E3519}
+.w{display:block;filter:drop-shadow(0 3px 0 #A48A62)}
+.w.p{filter:drop-shadow(0 4px 0 #7E3519)}
+.b{border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:38px;padding:0 20px;box-sizing:border-box;clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,13px 100%,0 50%);font-family:'Lilita One',sans-serif;font-size:16px;background:#FCF7EE;color:#33403B}
+.b:active{transform:translateY(2px)}
+.b.p{height:54px;background:#B5532F;color:#FCF7EE;font-size:20px;clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%)}
+.sub{font-family:Nunito,sans-serif;font-weight:800;font-size:11px;opacity:.9;margin-top:1px}
+.hb{border:none;cursor:pointer;padding:0;width:46px;height:52px;background:#FCF7EE;color:#33403B;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);display:flex;align-items:center;justify-content:center}
+.cap{font-size:10px;font-weight:900;letter-spacing:.06em;color:#5A6862;text-transform:uppercase}
+.row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;background:#F6EEDF;border:none;width:100%;text-align:left;cursor:pointer;font-family:Nunito,sans-serif;color:#24302C}
+.row:hover{background:#FFE9A8}
+@keyframes spin{from{transform:rotateX(58deg) rotateZ(0deg)}to{transform:rotateX(58deg) rotateZ(360deg)}}
+@keyframes sky{0%{background:#F4DCCB}25%{background:#D9E7EC}50%{background:#D9E7EC}70%{background:#EDCFD7}85%{background:#A9AECB}100%{background:#F4DCCB}}
+@keyframes land{0%{filter:brightness(1.03) sepia(.12)}25%{filter:none}50%{filter:none}70%{filter:brightness(1) sepia(.15) saturate(1.05)}85%{filter:brightness(.72) saturate(.75) hue-rotate(8deg)}100%{filter:brightness(1.03) sepia(.12)}}
+@keyframes pan{0%{transform:rotateX(52deg) rotateZ(-8deg) translate(-40px,10px)}50%{transform:rotateX(52deg) rotateZ(-4deg) translate(40px,-30px)}100%{transform:rotateX(52deg) rotateZ(-8deg) translate(-40px,10px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pop{0%{opacity:0;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}
+@keyframes rise{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+<div data-root="title" style="position: relative; width: 844px; height: 390px; overflow: hidden; font-family: Nunito, sans-serif; color: #24302C; background: #BFD9D2">
+  <div aria-hidden="true" style="position: absolute; inset: 0; opacity: .5"><span style="position: absolute; left: 40px; top: 250px; width: 90px; height: 104px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #CFE4DE"></span><span style="position: absolute; left: 120px; top: 40px; width: 60px; height: 69px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #CFE4DE"></span><span style="position: absolute; left: 700px; top: 60px; width: 110px; height: 127px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #CFE4DE"></span><span style="position: absolute; left: 760px; top: 250px; width: 70px; height: 81px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #CFE4DE"></span><span style="position: absolute; left: 600px; top: 300px; width: 50px; height: 58px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #CFE4DE"></span><span style="position: absolute; left: 230px; top: 300px; width: 44px; height: 51px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #CFE4DE"></span></div>
+  <div style="position: absolute; left: 0; right: 0; top: 52px; display: flex; justify-content: center; animation: rise .6s ease-out both; transform: scale(1.25); transform-origin: 50% 0"><div role="img" aria-label="HexGen" style="display: flex; align-items: center; gap: 12px"><span style="position: relative; display: block; width: 50px; height: 58px; filter: drop-shadow(0 4px 0 #7E3519)"><span style="position: absolute; inset: 0; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #FCF7EE"></span><span style="position: absolute; inset: 4px; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background: #6E9E5F; display: flex; align-items: center; justify-content: center"><svg width="60%" height="60%" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17 L12 3 L19 17 Z" fill="#4C7D47"></path><path d="M12 3 L19 17 L12 17 Z" fill="#3F6A3E"></path><rect x="10.8" y="17" width="2.4" height="4" fill="#7E5A3A"></rect></svg></span></span><span aria-hidden="true" style="font-family: 'Lilita One', sans-serif; font-size: 58px; color: #B5532F; text-shadow: 0 3px 0 #8E3B2E, 0 6px 0 #7E3519, 0 9px 12px rgba(36,48,44,0.25); line-height: 1">HexGen</span></div></div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+    <sc-if value="{{hasSave}}" hint-placeholder-val="{{ true }}"><span class="w p" style="width: 280px; animation: rise .5s ease-out .15s both"><button class="b p" onClick="{{cont}}">Continue<span class="sub">[Hero name] · Day [N]</span></button></span></sc-if>
+    <div style="display: flex; gap: 10px; animation: rise .5s ease-out .25s both">
+      <span class="w {{newCls}}" style="width: 180px"><button class="b {{newCls}}" onClick="{{newGame}}">New campaign</button></span>
+      <span class="w" style="width: 110px"><button class="b" onClick="{{openLoad}}">Load</button></span>
+      <span class="w" style="width: 110px"><button class="b" onClick="{{openJoin}}">Join</button></span>
+    </div>
+  </div>
+  <span class="w" style="position: absolute; top: 18px; right: 22px; z-index: 5"><button class="hb" aria-label="Settings" onClick="{{openSet}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button></span>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 15; padding: 6px 14px; border-radius: 14px; background: #24302C; color: #FCF7EE; font-weight: 800; font-size: 12px; animation: pop .15s ease-out both">{{toast}} → [next screen]</div></sc-if>
+  
+<sc-if value="{{pop.any}}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; inset: 0; z-index: 20; background: rgba(36,48,44,0.42); display: flex; align-items: center; justify-content: center">
+    <div style="width: 470px; max-height: 330px; box-sizing: border-box; padding: 16px 18px 18px; border-radius: 18px; background: #FCF7EE; box-shadow: 0 6px 0 #BFAE8E; animation: pop .18s ease-out both; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <span style="font-family: 'Lilita One', sans-serif; font-size: 22px; color: #24302C">{{pop.title}}</span>
+        <button aria-label="Close" onClick="{{close}}" style="border: none; cursor: pointer; width: 34px; height: 38px; background: #E6DCC8; color: #33403B; clip-path: polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <sc-if value="{{pop.load}}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span class="cap">Autosaves</span>
+            <div style="display: flex; flex-direction: column; gap: 6px; max-height: 214px; overflow-y: auto">
+              <sc-for list="{{autos}}" as="s" hint-placeholder-count="4"><button class="row" onClick="{{close}}"><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 900; font-size: 12px">{{s.a}}</span><span style="font-weight: 700; font-size: 11px; color: #5A6862">{{s.b}}</span></span></button></sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span class="cap">Save slots</span>
+            <sc-for list="{{slots}}" as="s" hint-placeholder-count="3"><button class="row" onClick="{{close}}" style="opacity: {{s.op}}"><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 900; font-size: 12px">{{s.a}}</span><span style="font-weight: 700; font-size: 11px; color: #5A6862">{{s.b}}</span></span></button></sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{pop.join}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <label for="jc" class="cap">Join code</label>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <input id="jc" placeholder="[Join code]" style="flex: 1; height: 40px; box-sizing: border-box; border: 2px solid #CDB894; border-radius: 10px; background: #FFF8EE; padding: 0 12px; font-family: Nunito, sans-serif; font-weight: 800; font-size: 15px; color: #24302C">
+            <span class="w p" style="width: 120px"><button class="b p" style="height: 40px; font-size: 16px" onClick="{{close}}">Join</button></span>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{pop.set}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 18px; border-radius: 10px; background: #F6EEDF; font-weight: 800; font-size: 13px; color: #5A6862; text-align: center">[Settings]</div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"firstLaunch":{"editor":"boolean","default":false},"$preview":{"width":844,"height":390}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { pop: null, toast: false }; }
+  renderVals() {
+    const first = this.props.firstLaunch ?? false;
+    const p = this.state.pop;
+    const T = { load: 'Load', join: 'Join a game', set: 'Settings' };
+    const autos = [];
+    for (let i = 0; i < 10; i++) autos.push({ a: '[Hero name] · Day [N]', b: i === 0 ? '[Region] · Latest' : '[Region] · [Saved time]' });
+    return {
+      hasSave: !first,
+      newCls: first ? 'p' : '',
+      pop: { any: !!p, load: p === 'load', join: p === 'join', set: p === 'set', title: p ? T[p] : '' },
+      autos,
+      slots: [
+        { a: 'Slot 1 · [Hero name]', b: '[Region] · Day [N]', op: 1 },
+        { a: 'Slot 2 · [Hero name]', b: '[Region] · Day [N]', op: 1 },
+        { a: 'Slot 3', b: 'Empty', op: 0.6 }
+      ],
+      toast: this.state.toast,
+      cont: () => { this.setState({ toast: 'Continue' }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: false }), 1400); },
+      newGame: () => { this.setState({ toast: 'New campaign' }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: false }), 1400); },
+      openLoad: () => this.setState({ pop: 'load' }),
+      openJoin: () => this.setState({ pop: 'join' }),
+      openSet: () => this.setState({ pop: 'set' }),
+      close: () => this.setState({ pop: null }),
+      stop: (e) => e.stopPropagation()
+    };
+  }
+  componentWillUnmount(){ clearTimeout(this._t); }
+}
+</script>
+</body>
+</html>
