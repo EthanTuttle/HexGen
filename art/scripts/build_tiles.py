@@ -89,10 +89,15 @@ def house(p, rng, at, spin):
 # --- Terrain pieces ----------------------------------------------------------
 
 def plains(p, rng, kind):
-    # Grass tufts and flowers are ground cover, scattered by the engine across the whole map
-    # (reference: ground_cover.py), so plains pieces only hold bigger props.
+    """Open grass, plain on purpose (chosen Nov 1, 2026: option a of tiles_v35): a lone tree or a pair, far from the
+    middle, and a rock. The engine turns the centre by a hash of the tile, so nothing lines up. Grass tufts and
+    flowers are ground cover, scattered by the engine across the whole map (reference: ground_cover.py)."""
     if kind == "centre":
-        p.blob(Vector((0.4, -0.6, 0)), 0.3, "rock", squash=0.6)
+        tree(p, rng, field_spot(1, 2.9))
+        p.blob(field_spot(4, 1.3), 0.3, "rock", squash=0.6)
+    elif kind == "centre_b":
+        tree(p, rng, field_spot(0, 2.3))
+        tree(p, rng, field_spot(0, 2.3) + Vector((0.75, 0.3, 0)))
 
 
 def forest(p, rng, kind):
@@ -788,6 +793,7 @@ def build():
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
         kinds += ("edge_gate",) if terrain in BORDERED else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
+        kinds += ("centre_b",) if terrain == "plains" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"

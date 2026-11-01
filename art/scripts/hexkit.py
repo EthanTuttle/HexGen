@@ -167,6 +167,30 @@ PALETTE = {
     "orchard_grass": "#7FAE57",
     "green": "#9CCB6E",
     "dead_earth": "#77715F",
+    "worn_track": "#C4BC82",
+    "felt": "#EDE3CB",
+    "felt_dark": "#D9CBA8",
+    "camp_earth": "#BDB982",
+    "steppe": "#B4B97C",
+    "war_earth": "#84795C",
+    "rust": "#8E5A3A",
+    "shield_wood": "#9C7B52",
+    "canvas_dirty": "#BDB19A",
+    "grave_mound": "#7E7A58",
+    "banner_dark": "#6E3A34",
+    "tuft_steppe": "#8E9A5C",
+    "stormy": "#8FC4A6",
+    "tuft_storm": "#62A488",
+    "scorch": "#3C3B38",
+    "scorch_rim": "#6F8A7A",
+    "scorch_earth": "#4B5550",
+    "feather": "#A9B9C6",
+    "feather_dark": "#4F6372",
+    "mown": "#B9DE8E",
+    "lane_mown": "#CDE9A6",
+    "arena_sand": "#E4CD97",
+    "stand_a": "#9A7450",
+    "stand_b": "#86633F",
     "yard_dirt": "#B59A6E",
     "withered_soil": "#6E6A5A",
     "stake": "#9A7A55",
@@ -301,6 +325,15 @@ WEDGE_BOUNDS = ((INNER * TILE_APOTHEM, TILE_APOTHEM), (-TILE_RADIUS / 2, TILE_RA
 CENTRE_BOUNDS = ((-INNER * TILE_APOTHEM, INNER * TILE_APOTHEM), (-INNER * TILE_RADIUS, INNER * TILE_RADIUS))
 
 
+def spike_up(piece, at, tip, r, mat_name, segments=4):
+    """A thin cone from at to tip, for the ground cover's leaning tufts."""
+    d = tip - at
+    m = Matrix.Translation(at + d / 2) @ d.to_track_quat("Z", "Y").to_matrix().to_4x4()
+    v = bmesh.ops.create_cone(piece.bm, cap_ends=True, cap_tris=True, segments=segments, radius1=r, radius2=0.0,
+                              depth=d.length, matrix=m)["verts"]
+    piece._paint(v, mat_name)
+
+
 def yup(v):
     """A point in glTF's Y-up axes, rounded, as the engines read the glb: (x, z, -y)."""
     return [round(v.x, 3) + 0.0, round(v.z, 3) + 0.0, round(-v.y, 3) + 0.0]  # + 0.0 turns -0.0 into 0.0
@@ -323,6 +356,7 @@ class Piece:
         # to a JSON beside the glb.
         self.paths = []
         self.hub = None
+        self.no_cover = []  # (centre, radius): circles the engine's ground cover keeps off (burns, yards, feathers)
         self.spokes = {}  # edge -> polyline: centre paths the engine uses only where that edge's wedge has a path
         self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
@@ -435,6 +469,8 @@ class Piece:
             obj["path_hub"] = json.dumps(yup(self.hub))
         if self.spokes:
             obj["path_spokes"] = json.dumps({str(i): [yup(q) for q in line] for i, line in self.spokes.items()})
+        if self.no_cover:
+            obj["no_cover"] = json.dumps([{"at": yup(q), "r": round(r, 3)} for q, r in self.no_cover])
         if self.effects:
             obj["effects"] = json.dumps([{"kind": k, "at": yup(q)} for k, q in self.effects])
         collection.objects.link(obj)

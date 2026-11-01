@@ -112,7 +112,11 @@ def draw_effects(col, templates):
         for e in json.loads(src["effects"]):
             x, y, z = e["at"]
             at = obj.matrix_world @ Vector((x, -z, y))
-            if e["kind"] == "fire":
+            if e["kind"] == "crackle":
+                for k in range(4):
+                    a_ = 2 * math.pi * k / 4
+                    p.box(at + Vector((math.cos(a_) * 0.2, math.sin(a_) * 0.2, 0.15 * k)), (0.07, 0.07, 0.07), "ember")
+            elif e["kind"] == "fire":
                 p.cone(at, 0.14, 0.32, "ember", segments=5)
             elif e["kind"] == "smoke":
                 for k in range(4):
@@ -157,6 +161,24 @@ def draw_paths(col, templates):
             if d.length < 2.2:  # a wedge path's inner end on this tile
                 p.box((e + t["hub"]) / 2, (d.length, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
     p.finish(col)
+
+# Plains tier 0: a group of plains among forest, farms, a village and hills, to judge it beside full tiles.
+PLAINS_MAP = {**{t: "plains" for t in LANDMARK_REGION},
+              (2, -2): "forest", (2, -1): "forest", (2, 0): "plains", (1, 1): "farmland", (0, 2): "farmland",
+              (-1, 2): "farmland", (-2, 2): "village", (-2, 1): "plains", (-2, 0): "plains", (-1, -1): "hills",
+              (0, -2): "hills", (1, -2): "plains"}
+# A bigger region, so density flows show all their bands: far corner three steps from the landmark and more.
+DENSITY_REGION = LANDMARK_REGION + [(1, 1), (0, 2), (-1, 2), (-2, 2), (-2, 1)]
+
+
+DENSITY_VIEW = sum((hk.tile_position(*t) for t in DENSITY_REGION), Vector()) / len(DENSITY_REGION)
+
+
+def density_map(variant, landmark):
+    return {**FLOW_RING, **{t: (landmark if t == LANDMARK_AT else variant) for t in DENSITY_REGION}}
+
+
+MEADOWS_MAP = density_map("meadows", "nomadcamp")
 
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
@@ -243,6 +265,8 @@ def build_map(templates, animated=False, tiles=None):
         centre = "centre"
         if dist.get((q, r)) == 1 and f"{name}_centre_near" in templates:
             centre = "centre_near"  # next to the landmark: the variant's look played up
+        elif dist.get((q, r)) == 2 and f"{name}_centre_mid" in templates:
+            centre = "centre_mid"  # two steps from the landmark: on the way to it
         if centre == "centre" and f"{name}_centre_b" in templates and gc.hash01(q, r, 13) < 0.5:
             centre = "centre_b"  # a second version of the centre, so a big group doesn't repeat
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
@@ -250,6 +274,8 @@ def build_map(templates, animated=False, tiles=None):
         spin = math.radians(60 * turns.get((q, r), 0))
         if f"{name}_centre_b" in templates:  # a farm's centre turns by a hash of the tile, so yards don't line up
             spin = math.radians(60 * int(gc.hash01(q * 31 + 7, r * 17 + 3, 14) * 6))
+        if centre in ("centre_mid", "centre_near") and f"{name}_centre_mid" in templates:
+            spin = math.radians(60 * lf.toward_edge((q, r), toward))  # density bands lean toward the landmark
         place(templates, f"{name}_{centre}", col, at, spin)
         if centre == "centre_mill":  # the small mill goes where the turned yard is, but doesn't turn itself
             place(templates, "windmill_small", col, at + Matrix.Rotation(spin, 3, "Z") @ vr.SMALL_MILL_SPOT)
@@ -287,7 +313,7 @@ def build_map(templates, animated=False, tiles=None):
             near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
             if vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
-            elif i in trails:  # a trail toward the landmark: the landmark's own trail piece, or its kit's
+            elif i in trails and (f"{name}_edge_trail" in templates or f"{kit}_edge_trail" in templates):  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
                 if lf.heads_in((q, r), i, dist) and f"{kit}_edge_trail_in" in templates:
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
@@ -305,8 +331,18 @@ def build_map(templates, animated=False, tiles=None):
                 if not joined[(i - 1) % 6]:
                     place(templates, "border_join_r", col, at, math.radians(60 * i))
     # Small ground cover across the whole map, the way the engines will scatter it.
+    # Circles the pieces keep the ground cover off (burns, yards), in world space.
+    bpy.context.view_layer.update()
+    clear = []
+    for obj in col.objects:
+        src = templates.get(obj.get("piece", ""))
+        if src is not None and "no_cover" in src:
+            for c in json.loads(src["no_cover"]):
+                x, y, z = c["at"]
+                w = obj.matrix_world @ Vector((x, -z, y))
+                clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP)
+    gc.add_ground_cover(p, MAP, clear)
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP)
@@ -395,7 +431,7 @@ if __name__ == "__main__":
     # the Fey Court and the Spider Nest; --flow each forest variant's region flowing into its landmark;
     # --farmland the farm gates, the path data and the windmill country region with the Great Windmill;
     # --markettown-gates the farm map with market towns, to show their gates; --farmland-t2 the farmland tier 2
-    # regions and their landmarks.
+    # regions and their landmarks; --plains plains tier 0 options and meadows with the Nomad Camp.
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     flags = dict(a[2:].partition("=")[::2] for a in args if a.startswith("--"))
     args = [a for a in args if not a.startswith("--")]
@@ -464,6 +500,68 @@ if __name__ == "__main__":
                                         0.8 + 17 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
             render(f"closeup_{tiles_map[LANDMARK_AT]}_landmark")
+        sys.exit(0)
+    if "plains" in flags:
+        # Plains tier 0 as it is and with each option, then meadows flowing into the Nomad Camp, and a close-up.
+        def plains_map(tiles_map, stem, paths=False, dist=62, el=50):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map)
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates)
+            if paths:
+                draw_paths(col, templates)
+            stage(DENSITY_VIEW, dist, el)
+            render(stem)
+        plains_map(MEADOWS_MAP, "plains_meadows_landmark")
+        region = [t for t, n in MEADOWS_MAP.items() if n in ("meadows", "nomadcamp")]
+        d, tw = lf.flow(set(region), LANDMARK_AT)
+        a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+        el = math.radians(40)
+        cam = bpy.context.scene.camera
+        cam.location = hk.tile_position(*LANDMARK_AT) + Vector((15 * math.cos(el) * math.cos(a),
+                                                                15 * math.cos(el) * math.sin(a), 1 + 15 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+        render("plains_nomadcamp_closeup")
+        sys.exit(0)
+    if "plains-t2" in flags:
+        # Plains tier 2 and class variant: each region flowing into its landmark, its path data, and a close-up.
+        el = math.radians(40)
+        for short, variant, lm, with_paths in (("steppe", "battlefield", "oldbattlefield", False),
+                                               ("stormy", "stormy_plains", "thunderbirdnest", False),
+                                               ("tourney", "tourney_fields", "traininggrounds", False)):
+            tiles_map = density_map(variant, lm)
+            for paths in ((True, False) if with_paths else (False,)):
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                col = bpy.data.collections["map"]
+                draw_effects(col, templates)
+                if paths:
+                    draw_paths(col, templates)
+                stage(DENSITY_VIEW, 62, 55 if paths else 50)
+                render(f"plains_t2_{short}_{'paths' if paths else 'landmark'}")
+            d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (variant, lm)), LANDMARK_AT)
+            a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+            cam = bpy.context.scene.camera
+            cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
+                                                                    1.2 + 16 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+            render(f"plains_t2_{lm}_closeup")
+        sys.exit(0)
+    if "tourney-stations" in flags:
+        # Close-ups of the tourney stations: each centre piece alone on its base, unturned.
+        el = math.radians(42)
+        for piece in ("centre", "centre_b", "centre_mid", "centre_near"):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            col = hk.new_collection("map")
+            base = place(templates, "base_plains", col, Vector((0, 0, 0)))
+            base.material_slots[0].link = "OBJECT"
+            base.material_slots[0].material = hk.material("mown")
+            place(templates, f"tourney_fields_{piece}", col, Vector((0, 0, 0)))
+            stage(Vector((0, 0, 0)), 15, 42)
+            render(f"plains_t2_tourney_stations_{piece}")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same
