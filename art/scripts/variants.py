@@ -172,25 +172,47 @@ def nomad_camp(p, rng, kind):
 
 # --- Hills: highlands -----------------------------------------------------------
 
-HIGHLAND_PEAKS = 1.25  # mountains this much taller than plain hills
+HIGHLAND_PEAKS = 1.12  # mountains this much taller than plain hills
 
 
-def heather(p, rng, at, kind):
-    for _ in range(7):
-        q = at + Vector((rng.uniform(-0.45, 0.45), rng.uniform(-0.35, 0.35), 0))
-        q.z = bt.height_at(q, kind)
-        p.blob(q, rng.uniform(0.12, 0.2), "heather", squash=0.5)
+def heather(p, rng, at, kind, n=7, spread=0.5):
+    """A drift of purple heather lying on the ground."""
+    for _ in range(n):
+        q = bt.on_ground(at + Vector((rng.uniform(-spread, spread), rng.uniform(-spread * 0.8, spread * 0.8), 0)), kind)
+        lump(p, q, rng.uniform(0.14, 0.24), "heather", squash=0.45)
 
 
-def cairn(p, rng, at):
+def cairn(p, rng, at, big=False):
+    k = 1.5 if big else 1.0
     z = 0.0
     for r in (0.24, 0.19, 0.14, 0.09):
-        p.blob(at, r, rng.choice(["rock_light", "rock"]), z=z + r * 0.6, squash=0.7)
-        z += r * 1.1
+        lump(p, at, r * k, rng.choice(["rock", "rock_dark"]), z=z + r * k * 0.6, squash=0.7)
+        z += r * k * 1.1
+
+
+def clan_banner(p, at, h=1.9, cloth="clan_a", band="clan_b"):
+    """A clan's banner on a pole: whole cloths on two crossbars at right angles, so turning a piece can't leave them
+    edge-on, each with a band across it."""
+    p.box(at, (0.07, 0.07, h), "trunk_old")
+    for spin in (0.0, -math.pi / 2):
+        mid = at + turn(Vector((0, 0.24, 0)), spin)
+        p.box(mid, (0.03, 0.46, 0.03), "trunk_old", z=h - 0.06, spin=spin)
+        p.box(mid, (0.025, 0.4, 0.7), cloth, z=h - 0.76, spin=spin)
+        p.box(mid, (0.03, 0.42, 0.1), band, z=h - 0.44, spin=spin)
+
+
+def turf_bothy(p, rng, at, spin):
+    """A low stone herder's hut under a turf roof, its door toward +X of its own turn."""
+    p.box(at, (0.5, 0.72, 0.36), "rock", spin=spin)
+    p.gable_roof(at, 0.84, 0.64, 0.3, "turf", z=0.36, spin=spin + math.pi / 2)
+    p.box(at + turn(Vector((0.25, 0, 0)), spin), (0.04, 0.2, 0.28), "mill_door", spin=spin)
 
 
 def highlands(p, rng, kind):
-    """Purple heather and cairns; more bare rock, no trees, a grey-green grass; taller, rockier peaks."""
+    """Purple heather drifts, cairns and grouped bare rock on grey-green grass, no trees; taller, rockier peaks. No
+    paths: open moor, so the flow to the Clan Hall is by what thickens toward it: way-cairns beside the trail edges
+    (nothing drawn on the ground), and on the centre's +X side, which turns to face the hall, a clan banner and cairn
+    two steps out (centre_mid), a herder's bothy and banners one step out (centre_near)."""
     if kind in bt.MOUNTAINS:
         bt.mountain(p, rng, kind, scale=HIGHLAND_PEAKS, grass="highland_grass")
         return
@@ -198,21 +220,40 @@ def highlands(p, rng, kind):
         # Lower and narrower than the peaks' scale, so the heather slopes between the peaks stay in view.
         bt.ridge(p, rng, kind, scale=0.8, half=1.05)
         return
-    if kind == "centre":
-        bt.hill_surface(p, range(6), 0, X0, kind, grass="highland_grass", rock_slope=0.78)
-        inside, bounds = (lambda q: hk.in_centre(q, 0.3) and q.length > 1.0), hk.CENTRE_BOUNDS
-    else:
-        bt.hill_surface(p, [0], X0, X1, kind, grass="highland_grass", rock_slope=0.78)
-        inside, bounds = (lambda q: hk.in_edge_wedge(q, margin=0.45)), hk.WEDGE_BOUNDS
-    pts = hk.scatter(rng, inside, 6, 0.9, bounds)
-    for k, at in enumerate(pts):
-        at.z = bt.height_at(at, kind)
-        if k < 2:
-            heather(p, rng, at, kind)
-        elif k == 2 and kind != "same":
-            cairn(p, rng, at)
+    if kind.startswith("centre"):
+        bt.hill_surface(p, range(6), 0, X0, "centre", grass="highland_grass", rock_slope=0.7)
+        q0, q5 = bt.field_spot(0, 1.3), bt.field_spot(5, 1.3)
+        if kind == "centre":
+            heather(p, rng, bt.field_spot(1, 1.25), kind)
+            bt.outcrop(p, rng, bt.field_spot(4, 1.25), kind, 0.8)
+        elif kind == "centre_b":
+            heather(p, rng, bt.field_spot(3, 1.25), kind)
+            cairn(p, rng, bt.on_ground(bt.field_spot(0, 1.3), kind))
+        elif kind == "centre_mid":
+            heather(p, rng, bt.field_spot(2, 1.3), kind)
+            cairn(p, rng, bt.on_ground(q5, kind), big=True)
+            clan_banner(p, bt.on_ground(q0, kind))
         else:
-            p.blob(at, rng.uniform(0.2, 0.36), rng.choice(["rock", "rock_dark"]), squash=0.7)
+            heather(p, rng, bt.field_spot(2, 1.3), kind)
+            heather(p, rng, bt.field_spot(3, 1.3), kind)
+            turf_bothy(p, rng, bt.on_ground(q5, kind) + Vector((0, 0, -0.03)), 0.0)
+            clan_banner(p, bt.on_ground(q0, kind), 2.2)
+            clan_banner(p, bt.on_ground(bt.field_spot(1, 1.3), kind), 1.8)
+        return
+    bt.hill_surface(p, [0], X0, X1, bt.surface_kind(kind), grass="highland_grass", rock_slope=0.7)
+    if kind == "same":
+        heather(p, rng, Vector((X0 + 1.1, -0.95, 0)), kind)
+        bt.outcrop(p, rng, Vector((X0 + 1.0, 0.9, 0)), kind)
+    elif kind == "edge_same_b":
+        heather(p, rng, Vector((X0 + 1.0, 0.95, 0)), kind, 9, 0.6)
+    elif kind == "edge_trail":  # one way-cairn per trail edge, on the farther tile's side
+        cairn(p, rng, bt.on_ground(Vector((X0 + 1.2, 0.72, 0)), kind), big=True)
+        heather(p, rng, Vector((X0 + 1.0, -0.95, 0)), kind)
+    elif kind == "edge_trail_in":
+        heather(p, rng, Vector((X0 + 1.1, 0.95, 0)), kind, 9)
+    else:
+        heather(p, rng, Vector((X0 + 0.8, -0.6, 0)), kind)
+        bt.outcrop(p, rng, Vector((X0 + 0.9, 0.75, 0)), kind, 0.8)
 
 
 # --- Farmland: windmill country -------------------------------------------------
@@ -2351,6 +2392,63 @@ LANDMARK_CENTRES.update(oldbattlefield=old_battlefield, thunderbirdnest=thunderb
                         traininggrounds=training_grounds)
 
 
+# --- Landmark: the Clan Hall (highlands) -------------------------------------------------------------------
+# A hills landmark stands on its own levelled top, with no mountain or ridge on its tile: its neighbours leave it out
+# when they work out their mountains, tiles within two steps draw no ridges, and no mountain stands on a trail
+# edge (render_preview.build_map), so the range opens into a pass leading to the door.
+CLAN_TOP = 1.4  # the height of the hall's level top
+
+
+def clan_top(d):
+    return CLAN_TOP + (bt.H0 - CLAN_TOP) * bt.smooth(1.5, X0, d)
+
+
+def clan_hall(p, rng, kind):
+    """Highlands' Clan Hall: a long timber-and-stone hall on a rocky-edged rise, under a turf roof with smoke from a
+    central vent (an effect point), carved doorposts at its gable door on edge 0, clan banners either side."""
+    bt.hill_surface(p, range(6), 0, X0, "centre", grass="highland_grass", rock_slope=0.4, height=clan_top)
+    z = Vector((0, 0, CLAN_TOP))
+    at = z + Vector((-0.1, 0, 0))
+    length, width = 2.7, 1.4
+    p.box(at, (length + 0.1, width + 0.1, 0.26), "rock_dark")  # the stone footing
+    p.box(at, (length, width, 0.6), "stand_b", z=0.26)
+    for k in range(7):  # upright timbers down the long walls
+        x = -length / 2 + 0.05 + (length - 0.1) * k / 6
+        for sd in (-1, 1):
+            p.box(at + Vector((x, sd * (width / 2 + 0.015), 0)), (0.09, 0.04, 0.6), "trunk_old", z=0.26)
+    p.gable_roof(at, length + 0.28, width + 0.42, 1.05, "turf", z=0.86)
+    p.box(at, (length + 0.3, 0.1, 0.07), "rock", z=1.87)  # stones along the ridge
+    p.box(at, (0.3, 0.26, 0.2), "rock_dark", z=1.85)  # the smoke vent
+    p.effects.append(("smoke", at + Vector((0, 0, 2.1))))
+    front = at + Vector((length / 2 + 0.02, 0, 0))
+    for sd in (-1, 1):  # the gable's front, boarded
+        p.box(front + Vector((0, sd * 0.42, 0)), (0.05, 0.56, 0.6), "trunk_old", z=0.26)
+    p.box(front, (0.05, 0.3, 0.56), "mill_door", z=0.26)
+    gable = [front + Vector((0.045, y, zz)) for y, zz in ((-0.72, 0.86), (0.72, 0.86), (0, 1.87))]
+    f = p.bm.faces.new([p.bm.verts.new(q) for q in gable])
+    f.material_index = p._slot("trunk_old")
+    p.surface.add(f)
+    for sd in (-1, 1):  # carved doorposts: taller than the door, banded, a carved head on top
+        post = front + Vector((0.1, sd * 0.24, 0))
+        frustum(p, post, post + Vector((0, 0, 1.18)), 0.075, 0.06, "gate_wood", segments=6)
+        for zz in (0.42, 0.72):
+            p.cylinder(post, 0.085, 0.05, "hay", segments=6, z=zz)
+        lump(p, post, 0.11, "gate_wood", z=1.24)
+    for x, y, h in ((1.38, 0.9, 2.6), (1.38, -0.9, 2.6)):
+        clan_banner(p, z + Vector((x, y, 0)), h)
+    for k in (2, 3):  # outcrops on the rise's back, so it reads as a ridge
+        bt.outcrop(p, rng, bt.field_spot(k, 1.5), "centre", 0.7)
+    # Paths: up from edge 0 to the door, and round the hall on the rise, to come to the door from any side.
+    door = z + Vector((1.3, 0, 0))
+    p.paths.append([Vector((X0, 0, bt.H0)), door])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 1.62 for i in range(6)]
+    ring = [q + Vector((0, 0, clan_top(bt.hex_depth(q)))) for q in ring]
+    p.paths.append(ring + [ring[0]])
+
+
+LANDMARK_CENTRES["clanhall"] = clan_hall
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -2358,7 +2456,9 @@ VARIANTS = {
     "battlefield": ("plains", battlefield, "steppe", PLAINS_KINDS),
     "stormy_plains": ("plains", stormy_plains, "stormy", ("centre_b", "centre_mid", "centre_near")),
     "tourney_fields": ("plains", tourney_fields, "mown", ("centre_b", "centre_mid", "centre_near")),
-    "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
+    "highlands": ("hills", highlands, "highland_grass",
+                  tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS + ("centre_b", "centre_mid", "centre_near", "edge_same_b", "edge_trail",
+                                                          "edge_trail_in")),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
                           "centre_near", "edge_other_lm")),
@@ -2390,7 +2490,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "spidernest": "dark_wood", "greatwindmill": "windmill_country",
              "abandonedbarn": "haunted_homesteads", "militiabarn": "raided_farms",
              "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
-             "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
+             "clanhall": "highlands", "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

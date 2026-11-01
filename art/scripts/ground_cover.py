@@ -30,7 +30,7 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
            # landmark tiles
            "treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05,
-           "greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0, "nomadcamp": 0.0, "oldbattlefield": 0.03, "thunderbirdnest": 0.1, "traininggrounds": 0.0,
+           "greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0, "nomadcamp": 0.0, "oldbattlefield": 0.03, "thunderbirdnest": 0.1, "traininggrounds": 0.0, "clanhall": 0.0,
            # farmland tier 2 (farm pieces hold their own, like farmland)
            "haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0,
            # plains tier 2 and class variant

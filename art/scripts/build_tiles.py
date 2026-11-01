@@ -462,13 +462,14 @@ def height_at(at, kind):
     return hill_height(at.x, abs(at.y) / (at.x * TAN30), kind)
 
 
-def hill_surface(p, sectors, d0, d1, kind, grass="hill_grass", rock_slope=0.6):
+def hill_surface(p, sectors, d0, d1, kind, grass="hill_grass", rock_slope=0.6, height=None):
     """Triangulated ground over the given sectors between depths d0 and d1: faces steeper than rock_slope
-    (by their normal's height) show rock, the rest grass."""
+    (by their normal's height) show rock, the rest grass. height(d) replaces the usual ground (a landmark's
+    plateau); it must give H0 at the centre piece's edge, so it meets the wedges."""
     bm = p.bm
     nd = max(2, round(ND * (d1 - d0) / X1))
     grass, cliff = p._slot(grass), p._slot("cliff")
-    middle = bm.verts.new((0, 0, hill_height(0, 0, kind) + 0.01)) if d0 == 0 else None
+    middle = bm.verts.new((0, 0, (height(0) if height else hill_height(0, 0, kind)) + 0.01)) if d0 == 0 else None
     for i in sectors:
         n = hk.edge_normal(i)
         t = Vector((-n.y, n.x, 0))
@@ -482,7 +483,7 @@ def hill_surface(p, sectors, d0, d1, kind, grass="hill_grass", rock_slope=0.6):
             for b in range(NV + 1):
                 v = -1 + 2 * b / NV
                 q = n * d + t * (v * d * TAN30)
-                q.z = hill_height(d, abs(v), kind) + 0.01
+                q.z = (height(d) if height else hill_height(d, abs(v), kind)) + 0.01
                 row.append(bm.verts.new(q))
             grid.append(row)
         for a in range(nd):
@@ -599,25 +600,52 @@ def ridge(p, rng, kind, scale=1.0, half=None):
             p.surface.add(f)
 
 
+def surface_kind(kind):
+    """The ground shape a piece has: its alternates and band pieces share their plain piece's."""
+    if kind in ("centre_b", "centre_mid", "centre_near"):
+        return "centre"
+    return "same" if kind in ("edge_same_b", "edge_trail", "edge_trail_in") else kind
+
+
+def on_ground(at, kind):
+    """at, standing on this piece's ground."""
+    return Vector((at.x, at.y, height_at(at, surface_kind(kind))))
+
+
+def outcrop(p, rng, at, kind, size=1.0, mats=("rock", "rock_dark")):
+    """Boulders grouped as one outcrop: a big one with smaller ones huddled against it."""
+    a0 = rng.uniform(0, 2 * math.pi)
+    for k, (r, off) in enumerate(((0.42, 0.0), (0.27, 0.48), (0.2, 0.46), (0.14, 0.62))):
+        a = a0 + k * 2.1
+        q = on_ground(at + Vector((math.cos(a), math.sin(a), 0)) * off * size, kind)
+        v = bmesh.ops.create_icosphere(p.bm, subdivisions=0 if k else 1, radius=r * size,
+                                       matrix=Matrix.Translation(q + Vector((0, 0, r * size * 0.2))) @
+                                       Matrix.Diagonal((1, 1, 0.75, 1)) @ Matrix.Rotation(a, 4, "Z"))["verts"]
+        p._paint(v, mats[k % 2])
+
+
 def hills(p, rng, kind):
+    """A smooth grassy mound. Boulders are grouped into outcrops rather than strewn evenly, and a pair of trees
+    stands on some edges; the edge's middle stays clear for the ridge that runs on into joined hills."""
     if kind in MOUNTAINS:
         mountain(p, rng, kind)
         return
     if kind in RIDGE_KINDS:
         ridge(p, rng, kind)
         return
-    if kind == "centre":
-        hill_surface(p, range(6), 0, X0, kind)
-        pts = hk.scatter(rng, lambda q: hk.in_centre(q, 0.2) and q.length > 1.1, 3, 0.6, hk.CENTRE_BOUNDS)
+    if kind in ("centre", "centre_b"):
+        hill_surface(p, range(6), 0, X0, "centre")
+        if kind == "centre":
+            outcrop(p, rng, field_spot(1, 1.35), "centre", 0.85)
+        return
+    hill_surface(p, [0], X0, X1, surface_kind(kind))
+    if kind == "same":
+        outcrop(p, rng, Vector((X0 + 1.15, 0.9, 0)), kind)
+    elif kind == "edge_same_b":
+        for q in (Vector((X0 + 1.2, -0.95, 0)), Vector((X0 + 0.75, -0.75, 0))):
+            tree(p, rng, on_ground(q, kind))
     else:
-        hill_surface(p, [0], X0, X1, kind)
-        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 4, 0.8, hk.WEDGE_BOUNDS)
-    for at in pts:
-        at.z = height_at(at, kind)
-        if kind != "centre" and rng.random() < 0.25:
-            tree(p, rng, at)
-        else:
-            p.blob(at, rng.uniform(0.18, 0.32), rng.choice(["rock", "rock_dark"]), squash=0.7)
+        outcrop(p, rng, Vector((X0 + 0.85, 0.7, 0)), kind, 0.8)
 
 
 # --- Desert ------------------------------------------------------------------
@@ -794,6 +822,7 @@ def build():
         kinds += ("edge_gate",) if terrain in BORDERED else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += ("centre_b",) if terrain == "plains" else ()
+        kinds += ("centre_b", "edge_same_b") if terrain == "hills" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:
             name = f"{terrain}_{kind}" if kind not in ("same", "other") else f"{terrain}_edge_{kind}"

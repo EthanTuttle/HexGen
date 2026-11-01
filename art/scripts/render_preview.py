@@ -180,6 +180,13 @@ def density_map(variant, landmark):
 
 MEADOWS_MAP = density_map("meadows", "nomadcamp")
 
+# Hills tier 0 beside full forests and farms: a group, a pair and a lone tile.
+HILLS_MAP = {(-1, 0): "hills", (0, 0): "hills", (0, -1): "hills", (-1, 1): "hills", (1, 0): "hills", (0, 1): "hills",
+             (2, -1): "plains", (1, -1): "forest", (-1, -1): "forest", (-2, 1): "plains", (-2, 0): "plains",
+             (-1, 2): "farmland", (0, 2): "farmland", (1, 1): "plains", (2, 0): "hills", (2, 1): "hills",
+             (3, -1): "plains", (3, 0): "plains", (1, 2): "farmland", (0, -2): "plains", (1, -2): "hills"}
+HIGHLANDS_MAP = {**FLOW_RING, **{t: ("clanhall" if t == LANDMARK_AT else "highlands") for t in LANDMARK_REGION}}
+
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
                 for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
@@ -292,19 +299,32 @@ def build_map(templates, animated=False, tiles=None):
         if terrain == "hills":
             # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
             # meet; otherwise half on each edge shared with one other hills tile.
-            triple = [joined[i] and joined[(i + 1) % 6] for i in range(6)]  # corner i: between edges i and i + 1
-            if not any(joined):
+            # A landmark has none of this, and its neighbours leave it out, so it keeps clear ground.
+            # No mountain on a trail edge either: the range opens into a pass along the way to the landmark.
+            def ranges(t, i):  # do tile t and its neighbour on edge i share a mountain?
+                n = (t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])
+                return (linked(MAP[t], MAP.get(n)) and i not in lf.trail_edges(t, toward)
+                        and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS)
+            ranged = [ranges((q, r), i) for i in range(6)]
+
+            def corner_shared(i):  # all three tiles round corner i must share: every copy of the third must be drawn
+                n = (q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1])
+                return ranged[i] and ranged[(i + 1) % 6] and ranges(n, (i + 2) % 6)
+            triple = [corner_shared(i) for i in range(6)]  # corner i: between edges i and i + 1
+            if name in vr.LANDMARKS:
+                ranged = triple = [False] * 6
+            elif not any(ranged) and dist.get((q, r), 3) > 2:
                 place(templates, f"{name}_peak", col, at)
             parts = []
             for i in range(6):
                 if triple[i]:
                     parts.append(("corner", i))
-                elif joined[i] and not triple[(i - 1) % 6]:
+                elif ranged[i] and not triple[(i - 1) % 6]:
                     parts.append(("edge", i))
             for where, i in parts:
                 place(templates, f"{name}_mountain_{where}", col, at, math.radians(60 * i))
             # In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
-            if len(parts) >= 2:
+            if len(parts) >= 2 and dist.get((q, r), 3) > 2:  # none within two steps of a landmark: clear ground
                 place(templates, f"{name}_ridge_knot", col, at)
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
@@ -562,6 +582,30 @@ if __name__ == "__main__":
             place(templates, f"tourney_fields_{piece}", col, Vector((0, 0, 0)))
             stage(Vector((0, 0, 0)), 15, 42)
             render(f"plains_t2_tourney_stations_{piece}")
+        sys.exit(0)
+    if "hills" in flags:
+        # Hills tier 0 beside full tiles, then highlands flowing into the Clan Hall, with a close-up.
+        def hills_map(tiles_map, stem, target, paths=False):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map)
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates)
+            if paths:
+                draw_paths(col, templates)
+            stage(target, 54, 50)
+            render(stem)
+        hills_map(HILLS_MAP, "hills_t0", Vector((3, 0, 0)))
+        hills_map(HIGHLANDS_MAP, "hills_highlands_landmark", Vector((0.5, -0.8, 0)))
+        region = [t for t, n in HIGHLANDS_MAP.items() if n in ("highlands", "clanhall")]
+        d, tw = lf.flow(set(region), LANDMARK_AT)
+        a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+        el = math.radians(38)
+        cam = bpy.context.scene.camera
+        cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
+                                                                2.2 + 16 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+        render("hills_clanhall_closeup")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same
