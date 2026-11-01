@@ -39,6 +39,8 @@ def pine(p, rng, at, h, mat):
 
 def deep_forest(p, rng, kind):
     """Dark pine stands: tall pines packed tight, a darker green, little light reaching the ground."""
+    if kind in ("edge_trail", "centre_near"):  # leading to the landmark (see Flowing into the landmark)
+        return deep_flow(p, rng, kind)
     if kind == "centre":  # a clearing lets the ground show, so the wood still reads in low light
         clearing = Vector((0.45, -0.35, 0))
         pts = hk.scatter(rng, lambda q: hk.in_centre(q) and (q - clearing).length > 1.0, 8, 0.6, hk.CENTRE_BOUNDS)
@@ -411,6 +413,8 @@ def fairy_ring(p, rng, centre, radius):
 def fey_wood(p, rng, kind):
     """A big fairy ring of lilac mushrooms in an open clearing at the heart of each tile; round teal, violet
     and rose trees among the greens around it."""
+    if kind in ("edge_trail", "centre_near"):  # leading to the landmark (see Flowing into the landmark)
+        return fey_flow(p, rng, kind)
     if kind == "centre":  # the clearing fills the centre piece; only its corners keep a tree
         clearing = Vector((0.05, -0.1, 0))
         fairy_ring(p, rng, clearing, 0.95)
@@ -461,11 +465,13 @@ def lump(p, at, radius, mat, z=0.0, squash=1.0):
     p._paint(bmesh.ops.create_icosphere(p.bm, subdivisions=0, radius=radius, matrix=m)["verts"], mat)
 
 
-def bare_tree(p, rng, at, h):
+def bare_tree(p, rng, at, h, bark=None, shape=None):
     """A dead grey-black tree, each one its own shape: a leaning, kinked trunk with bare pointed limbs, a tall
-    thin spire, or a snapped stump. Returns each limb's (base, tip), going round the trunk, for webs."""
-    bark = rng.choice(["bark_grey", "bark_dark", "bark_dark", "bark_black"])
-    shape = rng.choices(["crooked", "spire", "snapped"], (5, 2, 1))[0]
+    thin spire, or a snapped stump. bark and shape, if given, override the random picks. Returns each limb's
+    (base, tip), going round the trunk, for webs, the trunk's top and its middle."""
+    picked_bark = rng.choice(["bark_grey", "bark_dark", "bark_dark", "bark_black"])
+    picked_shape = rng.choices(["crooked", "spire", "snapped"], (5, 2, 1))[0]
+    bark, shape = bark or picked_bark, shape or picked_shape
     lean = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), 0)).normalized() * rng.uniform(0.05, 0.3)
     if shape == "snapped":
         h *= 0.55
@@ -571,6 +577,8 @@ def carcass(p, rng, at, spin):
 def dark_wood(p, rng, kind):
     """Bare grey-black trees, no two alike; here and there a see-through orb web between two limbs or two trunks;
     thorny brambles and bones on the ground throughout; carcasses at the wood's edges."""
+    if kind in ("edge_trail", "centre_near"):  # leading to the landmark (see Flowing into the landmark)
+        return dark_flow(p, rng, kind)
     if kind == "centre":
         inside, bounds, count, extra = (lambda q: hk.in_centre(q, 0.1)), hk.CENTRE_BOUNDS, 4, 2
     elif kind == "same":
@@ -739,6 +747,8 @@ def heartwood(p, rng, kind):
     if kind == "edge_landmark":
         heartwood_edge_landmark(p, rng)
         return
+    if kind in ("edge_trail", "centre_near"):  # leading to the Tree (see Flowing into the landmark)
+        return heartwood_flow(p, rng, kind)
     at, hr, spread = EDGE_TREES[kind]
     h = rng.uniform(*hr)
     under = great_tree(p, rng, at, h, spread, mossy=True)
@@ -755,19 +765,21 @@ def heartwood(p, rng, kind):
 # heartwood's ground colour:
 #   treeoflife_centre       the giant tree, its cords of ribbons and lanterns, and its roots out to the
 #                           wedges' middle; the same on every Tree of Life tile
-#   treeoflife_edge_path    on each edge whose neighbour is heartwood: a prayer path from the edge to the
-#                           trunk between two roots that run on to the edge
+#   treeoflife_edge_trail   on each edge whose neighbour is heartwood (all of them are trail edges, see
+#                           landmark_flow.py): a prayer path from the edge to the trunk between two roots
+#                           that run on to the edge
 #   treeoflife_edge_same /  on every other edge (forest or any other terrain): the roots dive back into
 #   treeoflife_edge_other   the ground before the edge, with moss
 #   heartwood_edge_landmark a heartwood tile's wedge on the edge touching the Tree of Life, in place of its
 #                           normal one: the two roots and the path carry on from the edge toward its glade
 # So the paths follow the heartwood neighbours however many there are: the engine picks a wedge per edge
-# as for any tile, and LANDMARKS tells it which neighbours get the path and the landmark wedge. The roots
+# as for any tile, and landmark_flow.py tells it which edges are trail edges. The roots
 # cross each edge at ROOT_Y either side of the middle, mirrored, so they meet the neighbour's roots exactly.
 
 ROOT_Y = 0.65  # where the two roots cross an edge, either side of its middle
 ROOT_EDGE_R, ROOT_EDGE_Z = 0.11, 0.06  # their radius and height there, the same on both sides of the edge
 ROOT_MID = 2.6  # how far out from the trunk the centre piece takes them, along their line
+PATH_W = 0.55  # the prayer path's width, the same on every piece it crosses
 
 
 def root_line(t, side):
@@ -785,7 +797,7 @@ def root_run(p, pts, r0, r1, arch=0.0, mat="trunk_old"):
         frustum(p, a, b, r0 + (r1 - r0) * k / n, r0 + (r1 - r0) * (k + 1) / n, mat, segments=5)
 
 
-def path_strip(p, rng, a, b, width):
+def path_strip(p, rng, a, b, width, mat="path_earth"):
     """A trodden earth path from a to b, its edges wobbling a little."""
     d = b - a
     side = Vector((-d.y, d.x, 0)).normalized()
@@ -793,8 +805,7 @@ def path_strip(p, rng, a, b, width):
     pts = [a.lerp(b, k / n) + side * rng.uniform(-0.05, 0.05) for k in range(n + 1)]
     for q0, q1 in zip(pts, pts[1:]):
         w0, w1 = width * rng.uniform(0.9, 1.1), width * rng.uniform(0.9, 1.1)
-        p.prism([q0 - side * w0 / 2, q1 - side * w1 / 2, q1 + side * w1 / 2, q0 + side * w0 / 2], 0.0, 0.015,
-                "path_earth")
+        p.prism([q0 - side * w0 / 2, q1 - side * w1 / 2, q1 + side * w1 / 2, q0 + side * w0 / 2], 0.0, 0.015, mat)
 
 
 def treeoflife(p, rng, kind):
@@ -848,12 +859,12 @@ def treeoflife(p, rng, kind):
             hanging_lantern(p, rng, Vector((0, 0, 0)), under, spread)
         moss(p, rng, lambda q: hk.in_centre(q, 0.1) and q.length > 1.3, hk.CENTRE_BOUNDS, 4)
         return
-    if kind == "edge_path":  # a heartwood neighbour: the prayer path comes in, the roots run on to the edge
+    if kind == "edge_trail":  # toward a heartwood tile: the prayer path comes in, the roots run on to the edge
         for side in (-1, 1):
             pts = [root_line(t, side) for t in (ROOT_MID / X1, 0.83, 1.0)]
             pts[0].z, pts[-1].z = ROOT_EDGE_Z + 0.04, ROOT_EDGE_Z
             root_run(p, pts, 0.14, ROOT_EDGE_R, arch=0.12)
-        path_strip(p, rng, Vector((X1, 0, 0)), Vector((1.15, 0, 0)), 0.42)
+        path_strip(p, rng, Vector((X1, 0, 0)), Vector((1.15, 0, 0)), PATH_W)
         for t in (0.3, 0.65):  # flat stones set in the path
             lump(p, Vector((1.15 + t * (X1 - 1.15), rng.uniform(-0.06, 0.06), 0)), 0.13, "stone_moss", z=0.0,
                  squash=0.3)
@@ -876,7 +887,7 @@ def heartwood_edge_landmark(p, rng):
         pts = [Vector((X1, side * ROOT_Y, ROOT_EDGE_Z)), Vector((X1 - 0.6, side * 0.55, 0.08)),
                Vector((X1 - 1.2, side * 0.45, -0.1))]
         root_run(p, pts, ROOT_EDGE_R, 0.05, arch=0.08)
-    path_strip(p, rng, Vector((X1, 0, 0)), Vector((X0 - 0.05, 0, 0)), 0.42)
+    path_strip(p, rng, Vector((X1, 0, 0)), Vector((X0 - 0.05, 0, 0)), PATH_W)
     lump(p, Vector((X0 + 0.9, 0.05, 0)), 0.13, "stone_moss", z=0.0, squash=0.3)
     at = Vector((X0 + 1.15, -1.15, 0))
     under = great_tree(p, rng, at, rng.uniform(2.8, 3.0), 0.85, mossy=True)
@@ -894,6 +905,8 @@ def hidden_shrine(p, rng, kind):
     """Deep forest's Hidden Shrine: a small mossy stone shrine with a weathered statue of Adam, half swallowed
     by roots and ivy, in a little clearing among the pines. The clearing stays open for the engine's shaft of
     light. The wedges are deep forest's, with the pines kept back from the clearing and shorter near it."""
+    if kind == "edge_trail":  # the old stone path ends at the clearing
+        return deep_flow(p, rng, kind, x0=1.25)
     if kind != "centre":
         x0 = X0 + (0.9 if kind == "same" else 0.6)
         x1 = X1 if kind == "same" else X0 + 0.7 * (X1 - X0)
@@ -991,9 +1004,10 @@ def spider_nest(p, rng, kind):
     for c, r, sq in (((0, 0.45), 1.05, 0.95), ((-0.75, 0.2), 0.7, 0.9), ((0.8, 0.25), 0.75, 0.85),
                      ((-0.35, 0.95), 0.75, 1.1), ((0.45, 0.95), 0.7, 1.0), ((-1.1, -0.25), 0.45, 0.7),
                      ((1.15, -0.2), 0.45, 0.7)):
-        lump(p, Vector((*c, 0)), r, rng.choice(["rock_cave", "rock_cave", "rock_dark"]), z=r * 0.35, squash=sq)
-    mouth = Vector((0, -0.45, 0))
-    p.box(mouth + Vector((0, 0.2, 0)), (1.0, 0.3, 0.9), "cave_dark", z=0.0)  # the dark of the cave
+        lump(p, Vector((*c, 0)) * 1.15, r * 1.25, rng.choice(["rock_cave", "rock_cave", "rock_dark"]),
+             z=r * 0.45, squash=sq)
+    mouth = Vector((0, -0.55, 0))
+    p.box(mouth + Vector((0, 0.2, 0)), (1.15, 0.3, 1.0), "cave_dark", z=0.0)  # the dark of the cave
     # thick webs sealing the mouth: overlapping sheets and orb webs between the rocks either side
     l, r_ = mouth + Vector((-0.55, 0.0, 0.05)), mouth + Vector((0.55, 0.0, 0.05))
     for z in (0.15, 0.4, 0.62):
@@ -1028,9 +1042,143 @@ def spider_nest(p, rng, kind):
 LANDMARK_CENTRES = {"feycourt": fey_court, "spidernest": spider_nest}
 
 
+# --- Flowing into the landmark (round 6, for Ethan to judge) ------------------------------------------------
+# Each forest variant's tiles lead the eye to the region's landmark (design/07 -> Landmark tiles). Two extra
+# pieces per variant, picked by landmark_flow.py: <variant>_edge_trail on the edges where the region's trails
+# run (from each tile one step toward the landmark), and <variant>_centre_near on the tiles next to the
+# landmark. Every trail runs along the wedge's middle line, from near the centre out to the edge, so trails
+# meet the neighbour's trail at the edge's middle whichever way they turn.
+
+def trail_line(rng, x0, x1, step, wobble=0.06):
+    """Points along a wedge's middle line from depth x0 to x1, about `step` apart, wobbling a little."""
+    n = max(1, round((x1 - x0) / step))
+    return [Vector((x0 + (x1 - x0) * k / n, rng.uniform(-wobble, wobble), 0)) for k in range(n + 1)]
+
+
+def off_trail(width, x0=None):
+    """Inside the wedge, clear of the trail along its middle line."""
+    return lambda q: hk.in_edge_wedge(q, x0=x0, margin=0.15, inner=0, side=0) and abs(q.y) > width  # noqa: E731
+
+
+def heartwood_flow(p, rng, kind):
+    """Heartwood: a prayer path from glade to glade toward the Tree of Life, with a ribbon gate across it on
+    every wedge, and the glades next to the Tree hung more densely."""
+    if kind == "centre_near":  # the glade next to the Tree: ribbons and a lantern on each rim tree as well
+        a0 = rng.uniform(0, 2 * math.pi)
+        rim = []
+        for k in range(3):
+            a = a0 + 2 * math.pi * k / 3 + rng.uniform(-0.25, 0.25)
+            at = Vector((math.cos(a), math.sin(a), 0)) * 1.6
+            under = great_tree(p, rng, at, rng.uniform(1.8, 1.95), 0.4, mossy=True, girth=0.55)
+            ribbons(p, rng, at, under, 0.4, 3)
+            hanging_lantern(p, rng, at, under, 0.4)
+            rim.append(at + Vector((0, 0, 1.1)))
+        colours = rng.sample(["ribbon_red", "ribbon_white", "ribbon_blue"], 3)
+        for k in range(3):
+            cord(p, rng, rim[k], rim[(k + 1) % 3], 0.28, colours[k:] + colours[:k])
+        moss(p, rng, lambda q: hk.in_centre(q, 0.2), hk.CENTRE_BOUNDS, 4)
+        return
+    path_strip(p, rng, Vector((X1, 0, 0)), Vector((X0 + 0.1, 0, 0)), PATH_W)
+    gate = X1 - 0.55
+    for s in (-1, 1):
+        p.box(Vector((gate, s * 0.5, 0)), (0.08, 0.08, 1.25), "trunk")
+    cord(p, rng, Vector((gate, -0.5, 1.22)), Vector((gate, 0.5, 1.22)), 0.1,
+         rng.sample(["ribbon_red", "ribbon_white", "ribbon_blue"], 3))
+    at = Vector((X0 + 1.5, 1.0, 0))
+    under = great_tree(p, rng, at, rng.uniform(3.0, 3.2), 1.0, mossy=True)
+    ribbons(p, rng, at, under, 1.0, 2)
+    hanging_lantern(p, rng, at, under, 1.0)
+    moss(p, rng, lambda q: off_trail(0.5)(q) and (q - at).length > 0.6, hk.WEDGE_BOUNDS, 3)
+
+
+def fey_flow(p, rng, kind):
+    """Fey wood: a line of glowing stepping caps from the fairy ring out along each trail, the trees around it
+    more often coloured; next to the Fey Court the ring is fuller, with coloured trees in the centre's
+    corners."""
+    if kind == "centre_near":
+        clearing = Vector((0.05, -0.1, 0))
+        fairy_ring(p, rng, clearing, 0.95)
+        fairy_ring(p, rng, clearing, 0.6)  # a second, inner ring
+        corners = hk.scatter(rng, lambda q: hk.in_centre(q) and q.length > 1.75, 3, 0.9, hk.CENTRE_BOUNDS)
+        for k, at in enumerate(corners):
+            fey_tree(p, rng, at, FEY_LEAVES[k % 3])
+        return
+    for q in trail_line(rng, 1.15, X1 - 0.1, 0.36):  # stepping caps: flat, glowing, on short stems
+        p.cylinder(q, 0.035, 0.07, "fey_stem", segments=4)
+        p.cylinder(q, rng.uniform(0.11, 0.14), 0.04, "fey_mushroom", segments=6, z=0.07)
+    pts = hk.scatter(rng, lambda q: off_trail(0.6, X0 + 0.9)(q), 8, 0.62, hk.WEDGE_BOUNDS)
+    colours = rng.sample(FEY_LEAVES, 3)
+    order = sorted(range(len(pts)), key=lambda k: pts[k].length)
+    fey = {k: colours[n % 3] for n, k in enumerate(order[::2])}  # every second tree coloured, not every third
+    for k, at in enumerate(pts):
+        fey_tree(p, rng, at, fey.get(k))
+
+
+def dark_flow(p, rng, kind):
+    """Dark wood: a dark drag furrow strewn with bones along each trail, under a web strung across it between
+    black trees; next to the Spider Nest the trees are all black and snapped or bent, every one webbed."""
+    if kind == "centre_near":
+        trees = hk.scatter(rng, lambda q: hk.in_centre(q, 0.1), 4, 1.0, hk.CENTRE_BOUNDS)
+        for at in trees:
+            limbs, top, mid = bare_tree(p, rng, at, rng.uniform(1.4, 2.4), bark="bark_black",
+                                        shape=rng.choice(["crooked", "snapped"]))
+            if len(limbs) > 1:
+                (b1, t1), (b2, t2) = limbs[0], limbs[1]
+                orb_web(p, rng, b1.lerp(t1, 0.9), b2.lerp(t2, 0.9), sag=0.05)
+        for at in hk.scatter(rng, lambda q: hk.in_centre(q, 0.2) and all((q - t).length > 0.6 for t in trees),
+                             3, 0.7, hk.CENTRE_BOUNDS):
+            bones(p, rng, at)
+        return
+    path_strip(p, rng, Vector((X0 - 0.1, 0, 0)), Vector((X1, 0, 0)), 0.38, "drag_scrape")  # the drag furrow
+    for x in (X0 + 0.35, X0 + 1.25):
+        bones(p, rng, Vector((x, rng.uniform(-0.15, 0.15), 0)), skull=rng.random() < 0.5)
+    sides = []
+    for s in (-1, 1):
+        at = Vector((X0 + rng.uniform(0.9, 1.3), s * rng.uniform(0.75, 0.95), 0))
+        limbs, top, mid = bare_tree(p, rng, at, rng.uniform(2.0, 2.6), bark="bark_black", shape="crooked")
+        sides.append(at.lerp(mid, 1.1 / mid.z) if mid.z > 1.1 else mid)
+    orb_web(p, rng, *sides)
+    for at in hk.scatter(rng, lambda q: off_trail(0.7, X0 + 1.8)(q), 2, 1.0, hk.WEDGE_BOUNDS):
+        bare_tree(p, rng, at, rng.uniform(1.6, 2.6))
+    bramble(p, rng, Vector((X1 - 0.6, rng.choice((-0.9, 0.9)), 0)))
+
+
+def stone_trail(p, rng, x0, x1):
+    """Fragments of an old stone path along the middle line: mossy flat slabs with gaps."""
+    for q in trail_line(rng, x0, x1, 0.36, 0.08):
+        if rng.random() < 0.3:
+            continue
+        p.box(q, (rng.uniform(0.26, 0.34), rng.uniform(0.22, 0.3), 0.05), rng.choice(["stone_moss", "rock"]),
+              spin=rng.uniform(-0.4, 0.4))
+
+
+def marker_stone(p, rng, at):
+    """A small mossy standing stone beside the old path."""
+    h = rng.uniform(0.45, 0.6)
+    p.box(at, (0.22, 0.18, h), "stone_moss", spin=rng.uniform(0, 1))
+    p.blob(at, 0.12, "moss", z=h, squash=0.5)
+
+
+def deep_flow(p, rng, kind, x0=None):
+    """Deep forest: fragments of an old stone path along each trail, a mossy marker stone beside it, and the
+    pines opening and shortening toward the path; next to the Hidden Shrine the centre's clearing is wider,
+    with a marker stone in it."""
+    if kind == "centre_near":
+        clearing = Vector((0.2, -0.2, 0))
+        for at in hk.scatter(rng, lambda q: hk.in_centre(q) and (q - clearing).length > 1.25, 6, 0.6,
+                             hk.CENTRE_BOUNDS):
+            pine(p, rng, at, rng.uniform(1.7, 2.2), "pine_deep")
+        marker_stone(p, rng, clearing + Vector((0.3, 0.2, 0)))
+        return
+    stone_trail(p, rng, X0 - 0.1 if x0 is None else x0, X1)
+    marker_stone(p, rng, Vector((X1 - 0.7, rng.choice((-0.45, 0.45)), 0)))
+    for at in hk.scatter(rng, off_trail(0.65), 12, 0.6, hk.WEDGE_BOUNDS):
+        pine(p, rng, at, rng.uniform(1.6, 2.0) + (abs(at.y) - 0.65) * rng.uniform(1.0, 1.6), "pine_deep")
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
-    "deep_forest": ("forest", deep_forest, "deep_forest", ()),
+    "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
     "meadows": ("plains", meadows, "plains", ()),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains", ("centre_mill",)),
@@ -1040,12 +1188,12 @@ VARIANTS = {
     "wasteland": ("desert", wasteland, "wasteland", ()),
     "excavation": ("ruins", excavation, "plains", ()),
     # tier 2 and class variants
-    "fey_wood": ("forest", fey_wood, "fey_wood", ()),
-    "dark_wood": ("forest", dark_wood, "dark_wood", ()),
-    "heartwood": ("forest", heartwood, "heartwood", ("edge_same_b", "edge_landmark")),
+    "fey_wood": ("forest", fey_wood, "fey_wood", ("edge_trail", "centre_near")),
+    "dark_wood": ("forest", dark_wood, "dark_wood", ("edge_trail", "centre_near")),
+    "heartwood": ("forest", heartwood, "heartwood", ("edge_same_b", "edge_landmark", "edge_trail", "centre_near")),
     # landmark tiles, built like variants
-    "treeoflife": ("forest", treeoflife, "heartwood", ("edge_path",)),
-    "hiddenshrine": ("forest", hidden_shrine, "deep_forest", ()),
+    "treeoflife": ("forest", treeoflife, "heartwood", ("edge_trail",)),
+    "hiddenshrine": ("forest", hidden_shrine, "deep_forest", ("edge_trail",)),
 }
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others

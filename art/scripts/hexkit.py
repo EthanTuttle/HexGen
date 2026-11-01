@@ -129,6 +129,7 @@ PALETTE = {
     "trunk_old": "#6E4A33",
     "stone_moss": "#7D8873",
     "path_earth": "#A88A64",
+    "drag_scrape": "#7A6A57",
     "stone_statue": "#9DA394",
     "ivy": "#3E6B37",
     "fey_bark": "#9C8A96",
