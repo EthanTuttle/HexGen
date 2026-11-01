@@ -167,7 +167,18 @@ PLAINS_MAP = {**{t: "plains" for t in LANDMARK_REGION},
               (2, -2): "forest", (2, -1): "forest", (2, 0): "plains", (1, 1): "farmland", (0, 2): "farmland",
               (-1, 2): "farmland", (-2, 2): "village", (-2, 1): "plains", (-2, 0): "plains", (-1, -1): "hills",
               (0, -2): "hills", (1, -2): "plains"}
-MEADOWS_MAP = {**FLOW_RING, **{t: ("nomadcamp" if t == LANDMARK_AT else "meadows") for t in LANDMARK_REGION}}
+# A bigger region, so density flows show all their bands: far corner three steps from the landmark and more.
+DENSITY_REGION = LANDMARK_REGION + [(1, 1), (0, 2), (-1, 2), (-2, 2), (-2, 1)]
+
+
+DENSITY_VIEW = sum((hk.tile_position(*t) for t in DENSITY_REGION), Vector()) / len(DENSITY_REGION)
+
+
+def density_map(variant, landmark):
+    return {**FLOW_RING, **{t: (landmark if t == LANDMARK_AT else variant) for t in DENSITY_REGION}}
+
+
+MEADOWS_MAP = density_map("meadows", "nomadcamp")
 
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
@@ -254,6 +265,8 @@ def build_map(templates, animated=False, tiles=None):
         centre = "centre"
         if dist.get((q, r)) == 1 and f"{name}_centre_near" in templates:
             centre = "centre_near"  # next to the landmark: the variant's look played up
+        elif dist.get((q, r)) == 2 and f"{name}_centre_mid" in templates:
+            centre = "centre_mid"  # two steps from the landmark: on the way to it
         if centre == "centre" and f"{name}_centre_b" in templates and gc.hash01(q, r, 13) < 0.5:
             centre = "centre_b"  # a second version of the centre, so a big group doesn't repeat
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
@@ -261,6 +274,8 @@ def build_map(templates, animated=False, tiles=None):
         spin = math.radians(60 * turns.get((q, r), 0))
         if f"{name}_centre_b" in templates:  # a farm's centre turns by a hash of the tile, so yards don't line up
             spin = math.radians(60 * int(gc.hash01(q * 31 + 7, r * 17 + 3, 14) * 6))
+        if centre in ("centre_mid", "centre_near") and f"{name}_centre_mid" in templates:
+            spin = math.radians(60 * lf.toward_edge((q, r), toward))  # density bands lean toward the landmark
         place(templates, f"{name}_{centre}", col, at, spin)
         if centre == "centre_mill":  # the small mill goes where the turned yard is, but doesn't turn itself
             place(templates, "windmill_small", col, at + Matrix.Rotation(spin, 3, "Z") @ vr.SMALL_MILL_SPOT)
@@ -298,7 +313,7 @@ def build_map(templates, animated=False, tiles=None):
             near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
             if vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
-            elif i in trails:  # a trail toward the landmark: the landmark's own trail piece, or its kit's
+            elif i in trails and (f"{name}_edge_trail" in templates or f"{kit}_edge_trail" in templates):  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
                 if lf.heads_in((q, r), i, dist) and f"{kit}_edge_trail_in" in templates:
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
@@ -318,8 +333,18 @@ def build_map(templates, animated=False, tiles=None):
                 if not joined[(i - 1) % 6]:
                     place(templates, "border_join_r", col, at, math.radians(60 * i))
     # Small ground cover across the whole map, the way the engines will scatter it.
+    # Circles the pieces keep the ground cover off (burns, yards), in world space.
+    bpy.context.view_layer.update()
+    clear = []
+    for obj in col.objects:
+        src = templates.get(obj.get("piece", ""))
+        if src is not None and "no_cover" in src:
+            for c in json.loads(src["no_cover"]):
+                x, y, z = c["at"]
+                w = obj.matrix_world @ Vector((x, -z, y))
+                clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP)
+    gc.add_ground_cover(p, MAP, clear)
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP)
@@ -480,7 +505,7 @@ if __name__ == "__main__":
         sys.exit(0)
     if "plains" in flags:
         # Plains tier 0 as it is and with each option, then meadows flowing into the Nomad Camp, and a close-up.
-        def plains_map(tiles_map, stem, paths=False, dist=50, el=50):
+        def plains_map(tiles_map, stem, paths=False, dist=62, el=50):
             hk.empty_scene()
             templates = load_templates(tiles)
             build_map(templates, tiles=tiles_map)
@@ -488,10 +513,8 @@ if __name__ == "__main__":
             draw_effects(col, templates)
             if paths:
                 draw_paths(col, templates)
-            stage(Vector((0.5, -0.8, 0)), dist, el)
+            stage(DENSITY_VIEW, dist, el)
             render(stem)
-        plains_map(PLAINS_MAP, "plains_t0")
-        plains_map(MEADOWS_MAP, "plains_meadows_paths", paths=True, el=55)
         plains_map(MEADOWS_MAP, "plains_meadows_landmark")
         region = [t for t, n in MEADOWS_MAP.items() if n in ("meadows", "nomadcamp")]
         d, tw = lf.flow(set(region), LANDMARK_AT)
@@ -506,10 +529,13 @@ if __name__ == "__main__":
     if "plains-t2" in flags:
         # Plains tier 2 and class variant: each region flowing into its landmark, its path data, and a close-up.
         el = math.radians(40)
-        for short, variant, lm in (("steppe", "battlefield", "oldbattlefield"), ("stormy", "stormy_plains", "thunderbirdnest"),
-                                   ("tourney", "tourney_fields", "traininggrounds")):
-            tiles_map = {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else variant) for t in LANDMARK_REGION}}
-            for paths in (True, False):
+        for short, variant, lm, with_paths in (("steppe", "battlefield", "oldbattlefield", False),
+                                               ("stormy", "stormy_plains", "thunderbirdnest", False),
+                                               ("tourney_b", "tourney_fields_b", "traininggrounds", False),
+                                               ("tourney_a", "tourney_fields", "traininggrounds", True)):
+            vr.LANDMARKS[lm] = variant
+            tiles_map = density_map(variant, lm)
+            for paths in ((True, False) if with_paths else (False,)):
                 hk.empty_scene()
                 templates = load_templates(tiles)
                 build_map(templates, tiles=tiles_map)
@@ -517,7 +543,7 @@ if __name__ == "__main__":
                 draw_effects(col, templates)
                 if paths:
                     draw_paths(col, templates)
-                stage(Vector((0.5, -0.8, 0)), 50, 55 if paths else 50)
+                stage(DENSITY_VIEW, 62, 55 if paths else 50)
                 render(f"plains_t2_{short}_{'paths' if paths else 'landmark'}")
             d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (variant, lm)), LANDMARK_AT)
             a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
@@ -525,7 +551,8 @@ if __name__ == "__main__":
             cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
                                                                     1.2 + 16 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
-            render(f"plains_t2_{lm}_closeup")
+            if short != "tourney_a":
+                render(f"plains_t2_{lm}_closeup")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same

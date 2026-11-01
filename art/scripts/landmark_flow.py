@@ -16,7 +16,10 @@ never changes as the map grows:
    the tile closer to the landmark (the lower distance) uses it on that edge, and the farther tile uses
    <variant>_edge_trail. heads_in() says which. A tile with only one trail edge, not the landmark, is where
    a trail begins: it uses <variant>_edge_trail_start there, where that exists (its track fades out).
-4. A tile one step from the landmark uses its variant's near centre, which plays the look up.
+4. A tile one step from the landmark uses its variant's near centre, which plays the look up, and two steps its
+   mid centre, where the variant has one. A variant with no trail wedges has no trails: its flow is only these
+   density bands. toward_edge() says how to turn these pieces (in 60 degree steps) so their +X side faces the
+   landmark, so the density leans toward it.
 5. The landmark tile turns in 60 degree steps so its entrance (on edge 0 of every landmark piece) faces the
    edge where the longest trail arrives: the trail from the farthest tile (ties between equally far tiles
    broken by hash01(q, r, 10)). Only the centre piece turns; the wedges stay on their own edges.
@@ -79,3 +82,10 @@ def heads_in(tile, i, dist):
     q, r = tile
     dq, dr = NEIGHBOURS[i]
     return dist.get(tile, 0) < dist.get((q + dq, r + dr), 0)
+
+
+def toward_edge(tile, toward):
+    """The edge of `tile` its toward step crosses: how many 60 degree steps to turn a density band piece."""
+    q, r = tile
+    n = toward[tile]
+    return NEIGHBOURS.index((n[0] - q, n[1] - r))

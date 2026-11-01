@@ -180,10 +180,11 @@ PALETTE = {
     "grave_mound": "#7E7A58",
     "banner_dark": "#6E3A34",
     "tuft_steppe": "#8E9A5C",
-    "stormy": "#71917F",
+    "stormy": "#8FC4A6",
     "burn_track": "#454843",
-    "tuft_storm": "#55786A",
-    "scorch": "#2A2826",
+    "tuft_storm": "#62A488",
+    "scorch": "#3C3B38",
+    "scorch_rim": "#6F8A7A",
     "scorch_earth": "#4B5550",
     "feather": "#A9B9C6",
     "feather_dark": "#4F6372",
@@ -365,6 +366,7 @@ class Piece:
         # to a JSON beside the glb.
         self.paths = []
         self.hub = None
+        self.no_cover = []  # (centre, radius): circles the engine's ground cover keeps off (burns, yards, feathers)
         self.spokes = {}  # edge -> polyline: centre paths the engine uses only where that edge's wedge has a path
         self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
@@ -477,6 +479,8 @@ class Piece:
             obj["path_hub"] = json.dumps(yup(self.hub))
         if self.spokes:
             obj["path_spokes"] = json.dumps({str(i): [yup(q) for q in line] for i, line in self.spokes.items()})
+        if self.no_cover:
+            obj["no_cover"] = json.dumps([{"at": yup(q), "r": round(r, 3)} for q, r in self.no_cover])
         if self.effects:
             obj["effects"] = json.dumps([{"kind": k, "at": yup(q)} for k, q in self.effects])
         collection.objects.link(obj)

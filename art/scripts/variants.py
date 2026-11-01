@@ -122,39 +122,39 @@ def felt_tent(p, rng, at, r, door_to):
 
 
 def meadows(p, rng, kind):
-    """Wildflower drifts (ground cover) and small grazing herds, kept off the lanes the trails use. Toward the
-    Nomad Camp, tracks worn through the grass with a few spirit poles and horses heading in, fading out where the
-    trail begins; next to the camp, an outlying tent and rugs drying."""
-    if kind in ("centre", "centre_b", "centre_near"):
-        p.hub = Vector((0, 0, 0))
-        if kind == "centre_near":
-            felt_tent(p, rng, bt.field_spot(1, 1.6), 0.5, Vector((0, 0, 0)))
-            rug_rack(p, rng, bt.field_spot(4, 2.1), 0.0)
-            herd = [bt.field_spot(2, 2.3), bt.field_spot(2, 2.3) + Vector((-0.45, 0.45, 0))]
-        elif kind == "centre":  # a small herd in one corner of the tile; the engine turns the centre by a hash
-            p.blob(bt.field_spot(4, 1.1), 0.3, "rock", squash=0.6)
-            herd = [bt.field_spot(1, 2.5) + q for q in (Vector((-0.45, 0, 0)), Vector((0.42, 0.1, 0)),
-                                                        Vector((0, 0.62, 0)))]
-        else:  # a pair
-            herd = [bt.field_spot(0, 2.6), bt.field_spot(0, 2.6) + Vector((0.3, 0.55, 0))]
-        spin = rng.uniform(0, 2 * math.pi)
-        for at in herd:
-            grazer(p, rng, at, spin + rng.uniform(-0.7, 0.7))
+    """Wildflower drifts (ground cover) and small grazing herds. No tracks: the flow to the Nomad Camp is density.
+    Far off, only herds; two tiles from the camp (centre_mid), a rug rack, a spirit pole and a bigger herd; next to it
+    (centre_near), outlying tents as well. The engine turns these band pieces so their +X side, where the props
+    gather, faces the landmark (landmark_flow.toward_edge)."""
+    if kind == "centre":  # a small herd in one corner of the tile; the engine turns the centre by a hash
+        p.blob(bt.field_spot(4, 1.1), 0.3, "rock", squash=0.6)
+        herd = [bt.field_spot(1, 2.5) + q for q in (Vector((-0.45, 0, 0)), Vector((0.42, 0.1, 0)), Vector((0, 0.62, 0)))]
+    elif kind == "centre_b":  # a pair
+        herd = [bt.field_spot(0, 2.6), bt.field_spot(0, 2.6) + Vector((0.3, 0.55, 0))]
+    elif kind == "centre_mid":
+        rug_rack(p, rng, bt.field_spot(0, 2.9), 2.1)
+        spirit_pole(p, rng, bt.field_spot(5, 2.5))
+        herd = [bt.field_spot(0, 1.6) + q for q in (Vector((-0.4, 0, 0)), Vector((0.35, 0.1, 0)), Vector((0, 0.55, 0)))]
+    elif kind == "centre_near":
+        felt_tent(p, rng, bt.field_spot(0, 2.8), 0.5, Vector((0, 0, 0)))
+        felt_tent(p, rng, bt.field_spot(5, 3.0), 0.46, Vector((0, 0, 0)))
+        rug_rack(p, rng, bt.field_spot(5, 1.7), 0.5)
+        spirit_pole(p, rng, bt.field_spot(0, 1.5))
+        herd = [bt.field_spot(1, 2.3) + q for q in (Vector((-0.4, 0, 0)), Vector((0.35, 0.1, 0)), Vector((0, 0.55, 0)))]
+        herd += [bt.field_spot(4, 2.3), bt.field_spot(4, 2.3) + Vector((0.45, 0.25, 0))]
+    else:
         return
-    if kind in ("edge_trail", "edge_trail_in", "edge_trail_start"):
-        fading_track(p, "worn_track", "plains", kind == "edge_trail_start")
-        if kind == "edge_trail_in":  # one spirit pole per trail edge, on the side nearer the camp
-            spirit_pole(p, rng, Vector((X0 + 1.1, -0.62, 0)))
-        else:  # a horse beside the track, heading over the edge for the camp
-            grazer(p, rng, Vector((X0 + 1.5, -0.55, 0)), 0.0)
-        return
+    spin = rng.uniform(0, 2 * math.pi)
+    for at in herd:
+        grazer(p, rng, at, spin + rng.uniform(-0.7, 0.7))
 
 
 def nomad_camp(p, rng, kind):
     """Rolling meadows' Nomad Camp: six round felt tents in a ring round a central fire, a tall standard over it
-    so it reads from the map camera, a picket line of horses and rugs drying on racks. The tents stand between the
-    lanes, so tracks come in between them; the way in from edge 0 is the approach. Fire and smoke are the engine's."""
+    so it reads from the map camera, a picket line of horses and rugs drying on racks. The way in from edge 0 is the
+    approach. Fire and smoke are the engine's."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.45, pointy=True)][::-1], 0.022, "camp_earth")
+    p.no_cover.append((Vector((0, 0, 0)), 2.5))
     middle = Vector((0, 0, 0))
     for k in range(6):
         felt_tent(p, rng, bt.field_spot(k, 1.72), 0.6, middle)
@@ -184,12 +184,10 @@ def nomad_camp(p, rng, kind):
         grazer(p, rng, back + Vector((x, 0.32, 0)), -math.pi / 2)
     rug_rack(p, rng, bt.field_spot(1, 2.75), 0.0)
     rug_rack(p, rng, bt.field_spot(1, 3.15), 0.0, ("ribbon_blue", "hay"))
-    # Paths: the approach, a ring round the fire, and spokes from each lane's track end to the ring.
+    # Paths: the approach, and a ring round the fire.
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 0.75 for i in range(6)]
     p.paths.append([Vector((X0, 0, 0)), ring[0]])
     p.paths.append(ring + [ring[0]])
-    for i in range(1, 6):
-        p.spokes[i] = [ring[i] / 0.75 * X0, ring[i]]
 
 
 # --- Hills: highlands -----------------------------------------------------------
@@ -1927,11 +1925,11 @@ def deep_flow(p, rng, kind, x0=None):
 
 
 # --- Plains tier 2 and class variant ----------------------------------------------------------------------------
-# Open ground, props in tight groups off the lanes the trails use. The centre reaches past the centre region and
-# turns by a hash of the tile, with centre_b and edge_same_b as alternates, so nothing lines up. Trails: edge_trail
-# on the tile farther from the landmark, edge_trail_in on the closer one, edge_trail_start where the trail begins
-# (its track fades out into the ground). Landmarks are centre pieces, entrance on edge 0.
-PLAINS_KINDS = ("centre_b", "edge_same_b", "edge_trail", "edge_trail_in", "edge_trail_start", "centre_near")
+# Open ground with no paths: props in tight groups. The centre reaches past the centre region and turns by a hash
+# of the tile, with centre_b and edge_same_b as alternates, so nothing lines up. The flow to the landmark is density:
+# centre_near on tiles one step from it, centre_mid two steps, the plain centres beyond (landmark_flow's distance).
+# Landmarks are centre pieces, entrance on edge 0. Tourney fields option a alone has tracks.
+PLAINS_KINDS = ("centre_b", "edge_same_b", "centre_mid", "centre_near")  # density bands: no tracks (design/06)
 START = "edge_trail_start"
 
 
@@ -1985,46 +1983,38 @@ def tattered_banner(p, at, h=1.9, cloth="banner"):
     """A pole with a torn banner: strips of uneven length with gaps."""
     p.box(at, (0.07, 0.07, h), "trunk")
     w = 0.1 + h * 0.05  # taller banners are wider
-    p.box(at + Vector((0, w * 1.5, 0)), (0.03, w * 3, 0.03), "trunk", z=h - 0.06)
-    for k, drop in enumerate((h * 0.33, h * 0.2, h * 0.28)):
-        p.box(at + Vector((0, w * (k + 0.5), 0)), (0.025, w * 0.92, drop), cloth, z=h - 0.06 - drop)
+    for spin in (0.0, -math.pi / 2):  # two cloths at right angles, so turning a piece can't leave one edge-on
+        p.box(at + turn(Vector((0, w * 1.5, 0)), spin), (0.03, w * 3, 0.03), "trunk", z=h - 0.06, spin=spin)
+        for k, drop in enumerate((h * 0.33, h * 0.2, h * 0.28)):
+            p.box(at + turn(Vector((0, w * (k + 0.5), 0)), spin), (0.025, w * 0.92, drop), cloth, z=h - 0.06 - drop, spin=spin)
 
 
 def battlefield(p, rng, kind):
-    """Old war wreckage on dry steppe. Toward the Old Battlefield, a road churned by old marching, spears planted
-    upright beside it; next to the camp, heavier wreckage and a grave or two."""
-    if kind in ("centre", "centre_b", "centre_near"):
-        p.hub = Vector((0, 0, 0))
-        if kind == "centre":
-            wreck(p, rng, bt.field_spot(1, 2.0), heavy=True)
-            rusted_helmet(p, rng, bt.field_spot(4, 1.4))
-        elif kind == "centre_b":
-            wreck(p, rng, bt.field_spot(0, 1.8))
-            wreck(p, rng, bt.field_spot(3, 2.5))
-        else:
-            wreck(p, rng, bt.field_spot(1, 1.9), heavy=True)
-            wreck(p, rng, bt.field_spot(3, 2.0), heavy=True)
-            for sd in (-1, 1):
-                old_grave(p, rng, bt.field_spot(5, 2.2) + Vector((sd * 0.3, 0, 0)))
-        return
-    if kind in ("edge_trail", "edge_trail_in", START):
-        fading_track(p, "war_road", "steppe", kind == START, half=0.27)
-        if kind == "edge_trail":  # spears planted in a row beside the road
-            for x in (0.7, 1.15, 1.6):
-                q = Vector((X0 + x, 0.62, 0))
-                frustum(p, q, q + Vector((0, 0, 1.25)), 0.05, 0.04, "trunk")
-                spike(p, q + Vector((0, 0, 1.25)), q + Vector((0, 0, 1.5)), 0.08, "iron")
-        elif kind == "edge_trail_in":
-            tattered_banner(p, Vector((X0 + 1.1, -0.62, 0)), 1.6)
-        return
-    if kind == "same":
-        wreck(p, rng, Vector((X0 + 1.3, 0.85, 0)))
+    """Old war wreckage on dry steppe, no road: it thickens toward the Old Battlefield. Far off, a few spears and a
+    helmet; two tiles from the camp (centre_mid), heavy groups and a banner; next to it (centre_near), heavier still,
+    with banners and rows of graves. The band pieces' +X side, where the wreckage gathers, faces the landmark."""
+    if kind == "centre":
+        spear(p, rng, bt.field_spot(1, 2.2))
+        spear(p, rng, bt.field_spot(1, 2.2) + Vector((0.3, 0.2, 0)), broken=True)
+        rusted_helmet(p, rng, bt.field_spot(4, 1.4))
+    elif kind == "centre_b":
+        shattered_shield(p, rng, bt.field_spot(0, 2.0))
+        spear(p, rng, bt.field_spot(3, 2.4), broken=True)
+    elif kind == "centre_mid":
+        wreck(p, rng, bt.field_spot(0, 2.5), heavy=True)
+        wreck(p, rng, bt.field_spot(5, 2.5))
+        tattered_banner(p, bt.field_spot(5, 1.5), 2.0)
+    elif kind == "centre_near":
+        wreck(p, rng, bt.field_spot(0, 2.9), heavy=True)
+        wreck(p, rng, bt.field_spot(5, 3.0), heavy=True)
+        wreck(p, rng, bt.field_spot(0, 1.5), heavy=True)
+        tattered_banner(p, bt.field_spot(5, 1.7), 2.6)
+        tattered_banner(p, bt.field_spot(1, 2.1), 2.2, "banner_dark")
+        for t in (-1, 0, 1):
+            old_grave(p, rng, bt.field_spot(4, 2.0) + Vector((t * 0.55, 0, 0)))
+            old_grave(p, rng, bt.field_spot(4, 2.65) + Vector((t * 0.55, 0, 0)))
     elif kind == "edge_same_b":
-        rusted_helmet(p, rng, Vector((X0 + 0.9, -0.7, 0)))
         spear(p, rng, Vector((X0 + 1.1, -0.85, 0)), broken=True)
-    elif kind == "other":
-        spear(p, rng, Vector((X0 + 1.0, 0.8, 0)))
-        spear(p, rng, Vector((X0 + 1.2, 0.95, 0)), broken=True)
 
 
 def collapsed_tent(p, rng, at, spin, r=0.9):
@@ -2046,6 +2036,7 @@ def old_battlefield(p, rng, kind):
     """Steppe's Old Battlefield: a ruined war camp on churned earth. A broken palisade with gaps where the tracks
     come in, collapsed tents, tall tattered banners at its heart, and rows of old graves outside it."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.5, pointy=True)][::-1], 0.022, "war_earth")
+    p.no_cover.append((Vector((0, 0, 0)), 2.55))
     for k in range(6):  # palisade arcs between the lanes, some fallen short
         a0, a1 = math.radians(60 * k + 13), math.radians(60 * k + 47)
         if k == 3:
@@ -2054,9 +2045,11 @@ def old_battlefield(p, rng, kind):
         stakes(p, rng, q0, q1, 2 if k == 3 else 4, h=0.85, r=0.1)
     for k, spin in ((0, 0.3), (2, 1.2), (3, 2.2), (5, 0.8)):
         collapsed_tent(p, rng, bt.field_spot(k, 1.5), spin)
-    tattered_banner(p, Vector((-0.1, 0.3, 0)), 3.1)
-    tattered_banner(p, Vector((-0.45, -0.2, 0)), 2.7, "banner_dark")
-    tattered_banner(p, Vector((0.1, -0.35, 0)), 2.3)
+    tattered_banner(p, Vector((-0.1, 0.3, 0)), 3.9)
+    tattered_banner(p, Vector((-0.5, -0.2, 0)), 3.3, "banner_dark")
+    tattered_banner(p, Vector((0.1, -0.35, 0)), 2.8)
+    for k in (1, 4):  # two more at the palisade
+        tattered_banner(p, bt.field_spot(k, 2.05), 2.6)
     # rows of old graves out past the palisade, in two corners
     for k in (1, 4):
         a = math.radians(30 + 60 * k)
@@ -2070,21 +2063,19 @@ def old_battlefield(p, rng, kind):
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 0.8 for i in range(6)]
     p.paths.append([Vector((X0, 0, 0)), ring[0]])
     p.paths.append(ring + [ring[0]])
-    for i in range(1, 6):
-        p.spokes[i] = [ring[i] / 0.8 * X0, ring[i]]
 
 
 # Stormy plains (the lightning and the wind's ripple are the engine's; the tufts lean: ground_cover.BENT)
 
 def scorch_mark(p, rng, at, r):
-    """A black burn on the ground, ragged at the edge, with flecks round it."""
-    n = 9
-    p.prism([at + Vector((math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n), 0)) * r * rng.uniform(0.75, 1.1)
-             for k in range(n)], 0.0, 0.016, "scorch")
-    for k in range(3):
-        a = rng.uniform(0, 2 * math.pi)
-        q = at + Vector((math.cos(a), math.sin(a), 0)) * r * rng.uniform(1.2, 1.5)
-        p.box(q, (0.16, 0.12, 0.012), "scorch", spin=a)
+    """A black burn on the ground, a ragged streak rather than a ring: a dark heart in a paler rim, stretched one way
+    by the blast. The ground cover keeps off it (Piece.no_cover)."""
+    n, a0, stretch = 9, rng.uniform(0, math.pi), rng.uniform(1.25, 1.6)
+    radii = [rng.uniform(0.72, 1.12) for _ in range(n)]
+    for rr, mat, z in ((1.0, "scorch_rim", 0.012), (0.58, "scorch", 0.016)):
+        p.prism([at + turn(Vector((math.cos(2 * math.pi * k / n) * stretch, math.sin(2 * math.pi * k / n), 0)), a0) * r * rr *
+                 radii[k] for k in range(n)], 0.0, z, mat)
+    p.no_cover.append((at, r * stretch * 1.1))
 
 
 def split_tree(p, rng, at, h=None):
@@ -2102,40 +2093,37 @@ def split_tree(p, rng, at, h=None):
 
 
 def big_feather(p, rng, at, spin, length=1.15):
-    """A storm bird's feather lying on the ground: a dark quill, pale vane."""
+    """A storm bird's feather lying on the ground: a broad pale vane, a dark tip, a short quill."""
     def q(x, y):
         return at + turn(Vector((x, y, 0)), spin)
-    p.prism([q(0, 0), q(length * 0.35, -length * 0.13), q(length * 0.8, -length * 0.1), q(length, 0),
-             q(length * 0.8, length * 0.1), q(length * 0.35, length * 0.13)], 0.015, 0.035, "feather")
-    p.prism([q(length * 0.72, -length * 0.1), q(length * 0.8, -length * 0.1), q(length, 0), q(length * 0.8, length * 0.1),
-             q(length * 0.72, length * 0.1)], 0.015, 0.04, "feather_dark")
-    p.box(at + turn(Vector((length * 0.45, 0, 0)), spin), (length * 1.05, 0.035, 0.04), "scorch", z=0.02, spin=spin)
+    w = length * 0.2
+    p.prism([q(length * 0.12, 0), q(length * 0.3, -w), q(length * 0.72, -w), q(length * 0.72, w), q(length * 0.3, w)],
+            0.015, 0.035, "feather")
+    p.prism([q(length * 0.72, -w), q(length * 0.92, -w * 0.55), q(length, 0), q(length * 0.92, w * 0.55), q(length * 0.72, w)],
+            0.015, 0.04, "feather_dark")
+    p.box(q(length * 0.05, 0), (length * 0.3, 0.05, 0.04), "feather_dark", z=0.02, spin=spin)
+    p.no_cover.append((q(length / 2, 0), length * 0.55))
 
 
 def stormy_plains(p, rng, kind):
-    """Black scorch marks and split, charred lone trees on dark blue-tinged grass bent one way. Toward the
-    Thunderbird Nest, a burnt streak through the grass with a fallen feather here and there; next to it, more
-    charred trees and burns."""
-    if kind in ("centre", "centre_b", "centre_near"):
-        p.hub = Vector((0, 0, 0))
-        if kind == "centre":
-            split_tree(p, rng, bt.field_spot(1, 2.5))
-            scorch_mark(p, rng, bt.field_spot(4, 1.5), 0.6)
-        elif kind == "centre_b":
-            scorch_mark(p, rng, bt.field_spot(0, 1.7), 0.8)
-            scorch_mark(p, rng, bt.field_spot(3, 2.5), 0.5)
-        else:
-            split_tree(p, rng, bt.field_spot(1, 2.0))
-            scorch_mark(p, rng, bt.field_spot(5, 1.8), 0.7)
-            big_feather(p, rng, bt.field_spot(4, 1.9) - Vector((0.5, 0, 0)), 0.2)
-        return
-    if kind in ("edge_trail", "edge_trail_in", START):
-        fading_track(p, "burn_track", "stormy", kind == START, half=0.17)
-        if kind == "edge_trail_in":
-            big_feather(p, rng, Vector((X0 + 0.7, -0.68, 0)), 0.15)
-        return
-    if kind == "same":
-        scorch_mark(p, rng, Vector((X0 + 1.2, 0.85, 0)), 0.35)
+    """Blue-green grass bent one way, scorch marks and lone split, charred trees, no trails: they thicken toward the
+    Thunderbird Nest. Far off, a lone tree or a burn; two tiles from it (centre_mid), a tree, a burn, a feather; next to
+    it (centre_near), more again. The band pieces' +X side, where they gather, faces the landmark."""
+    if kind == "centre":
+        split_tree(p, rng, bt.field_spot(1, 2.6), 1.8)
+    elif kind == "centre_b":
+        scorch_mark(p, rng, bt.field_spot(3, 2.2), 0.5)
+    elif kind == "centre_mid":
+        split_tree(p, rng, bt.field_spot(0, 2.7))
+        scorch_mark(p, rng, bt.field_spot(5, 2.5), 0.65)
+        big_feather(p, rng, bt.field_spot(0, 1.3), 0.4)
+    elif kind == "centre_near":
+        split_tree(p, rng, bt.field_spot(0, 2.8))
+        split_tree(p, rng, bt.field_spot(5, 2.0), 1.8)
+        scorch_mark(p, rng, bt.field_spot(5, 3.2), 0.75)
+        scorch_mark(p, rng, bt.field_spot(0, 1.5), 0.6)
+        big_feather(p, rng, bt.field_spot(1, 2.3), 0.2)
+        big_feather(p, rng, bt.field_spot(4, 2.2), 1.2, 1.3)
 
 
 def thunderbird_nest(p, rng, kind):
@@ -2143,6 +2131,7 @@ def thunderbird_nest(p, rng, kind):
     charred logs on top (it crackles: effect points) and big feathers on the burnt ground. A dark cleft at its foot
     faces edge 0."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.3, pointy=True)][::-1], 0.022, "scorch_earth")
+    p.no_cover.append((Vector((0, 0, 0)), 2.35))
     z = Vector((0, 0, 1))
     pts = [Vector((0, 0, 0)), Vector((0.1, -0.05, 1.5)), Vector((-0.08, 0.08, 2.6)), Vector((0, 0, 3.3))]
     for k, (a, b, r0, r1, mat) in enumerate(((pts[0], pts[1], 1.12, 0.72, "rock_wet"), (pts[1], pts[2], 0.72, 0.5, "rock_wet_dark"),
@@ -2171,8 +2160,6 @@ def thunderbird_nest(p, rng, kind):
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * 1.6 for i in range(6)]
     p.paths.append([Vector((X0, 0, 0)), Vector((1.1, 0, 0))])
     p.paths.append(ring + [ring[0]])
-    for i in range(6):
-        p.spokes[i] = [ring[i] / 1.6 * X0, ring[i]]
 
 
 # Tourney fields (class variant)
@@ -2181,9 +2168,10 @@ def pennant_pole(p, at, h=1.5, cloth="banner"):
     """A pole with a triangular pennant."""
     p.box(at, (0.05, 0.05, h), "wall")
     q = at + Vector((0, 0, h))
-    f = p.bm.faces.new([p.bm.verts.new(q), p.bm.verts.new(q + Vector((0, 0.42, -0.11))), p.bm.verts.new(q - Vector((0, 0, 0.24)))])
-    f.material_index = p._slot(cloth)
-    p.surface.add(f)
+    for out in (Vector((0, 0.42, -0.11)), Vector((0.42, 0, -0.11))):  # two at right angles, so one always shows
+        f = p.bm.faces.new([p.bm.verts.new(q), p.bm.verts.new(q + out), p.bm.verts.new(q - Vector((0, 0, 0.24)))])
+        f.material_index = p._slot(cloth)
+        p.surface.add(f)
 
 
 def pavilion(p, rng, at, r=0.62, cols=("awning_a", "wall")):
@@ -2284,6 +2272,33 @@ def tourney_fields(p, rng, kind):
             bunting(p, rng, Vector((X1 - 0.5, y0, 0)), Vector((X1 - 0.5, y1, 0)), 1.2, sag=0.14)
 
 
+def tourney_fields_b(p, rng, kind):
+    """Tourney fields, option b: the same look with no tracks. The flow to the Training Grounds is density: sparse far
+    off, more pavilions, rings and pennants closer (centre_mid two steps away, centre_near one step), gathered on the
+    band pieces' +X side, which faces the landmark."""
+    if kind == "centre_b":
+        sparring_ring(p, rng, bt.field_spot(1, 2.2))
+    elif kind == "centre_mid":
+        pavilion(p, rng, bt.field_spot(0, 2.6))
+        sparring_ring(p, rng, bt.field_spot(5, 2.6))
+        pennant_pole(p, bt.field_spot(0, 1.4), 1.6, "ribbon_blue")
+        pennant_pole(p, bt.field_spot(5, 1.3), 1.6)
+    elif kind == "centre_near":
+        pavilion(p, rng, bt.field_spot(0, 2.7), 0.75, ("ribbon_blue", "wall"))
+        pavilion(p, rng, bt.field_spot(5, 3.0), 0.6)
+        sparring_ring(p, rng, bt.field_spot(5, 1.6))
+        for k in range(3):
+            dummy(p, rng, bt.field_spot(0, 1.3) + Vector((0.42 * (k - 1), 0.2 * (k - 1), 0)), 0.45)
+        for k, r in ((1, 1.6), (1, 2.5), (4, 1.6), (4, 2.5)):
+            pennant_pole(p, bt.field_spot(k, r), 1.7, ("banner", "ribbon_blue")[int(r > 2)])
+    elif kind == "edge_same_b":
+        archery_butt(p, rng, Vector((X0 + 1.35, 1.0, 0)), math.pi + math.pi / 6)
+        archery_butt(p, rng, Vector((X0 + 1.1, 0.55, 0)), math.pi + math.pi / 6)
+    elif kind in ("centre", "other"):
+        tourney_fields(p, rng, kind)
+        p.spokes = {}
+
+
 def training_grounds(p, rng, kind):
     """Tourney fields' Training Grounds: a round wooden arena with tiered stands and banners round the rim, its sand
     floor visible from above, its gate on edge 0. The round route runs just outside it, joining the tracks."""
@@ -2323,10 +2338,12 @@ LANDMARK_CENTRES.update(oldbattlefield=old_battlefield, thunderbirdnest=thunderb
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
-    "meadows": ("plains", meadows, "plains", ("centre_b", "edge_trail", "edge_trail_in", "edge_trail_start", "centre_near")),
+    "meadows": ("plains", meadows, "plains", ("centre_b", "centre_mid", "centre_near")),
     "battlefield": ("plains", battlefield, "steppe", PLAINS_KINDS),
     "stormy_plains": ("plains", stormy_plains, "stormy", PLAINS_KINDS),
-    "tourney_fields": ("plains", tourney_fields, "mown", PLAINS_KINDS),
+    "tourney_fields": ("plains", tourney_fields, "mown",
+                       ("centre_b", "edge_same_b", "edge_trail", "edge_trail_in", "edge_trail_start", "centre_near")),
+    "tourney_fields_b": ("plains", tourney_fields_b, "mown", PLAINS_KINDS),
     "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
