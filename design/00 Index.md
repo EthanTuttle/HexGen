@@ -164,6 +164,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
 - [x] ~~Godot on iPhone frame rate~~ (Nov 1, 2026: 120 fps on the 15 Pro; target set to 120 where possible, never below 60)
 - [ ] New: combat boards on sloped ground follow the slope; what height does in combat (see Classes & combat)
+- [ ] New: raised hills regions: effect on reaching landmarks, a region with no walkable land beside it, and two raised regions touching (see Multiplayer & tech)
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
@@ -220,7 +221,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
 - [x] ~~A guest's send-off~~ (settled Nov 1: Ready / Join, dropping in beside the host's hero; the last companion makes room)
-- [ ] New (Nov 1): Swap party at the inn: town v8a / v8b / v8c (swaps only at inns and camps; camp later; slots can be empty). Guests not Ready at Begin drop in when they finish (settled)
+- [ ] New (Nov 1): Swap party at the inn: feedback on town v9 (v8b's two columns chosen; camp later) Guests not Ready at Begin drop in when they finish (settled)
 - [ ] New: onboarding: the tutorial's lesson order; timing against the mentors' stories; returning players and guests with no skipping (see Presentation → Onboarding)
 - [ ] New: names for the six starting quests
 - [ ] New: names for the unnamed racial passives (v8 working names)
