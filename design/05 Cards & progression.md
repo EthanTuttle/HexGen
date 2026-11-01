@@ -10,7 +10,7 @@ Decided Oct 23–24, 2026 (the rarity rethink). The old Common/Rare/Legendary ma
 
 - **Terrain cards:** the only cards in the deck and hand. Each is one Common terrain type (see [Map & exploration](02 Map & exploration.md) → Exploration and terrain). Some have multi-hex footprints (see [Map & exploration](02 Map & exploration.md) → Placement). Corrupted versions can enter the deck (see [Map & exploration](02 Map & exploration.md) → Corruption).
 - **Story cards:** found through the main quest line. They never go to the hand: the story places them at fixed locations, so players have to travel to reach them. Starting hexes and all story locations (e.g. Gronogon, the cultist dungeon, the second wizard tower, the highest peak, the prison dungeon) are Story cards. (How the story places them: [Map & exploration](02 Map & exploration.md) → Placement.)
-- **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into a landmark rolled from its region variant's pool (see [Map & exploration](02 Map & exploration.md) → Clustered regions). The former Rare cards now live in those pools (see Landmark list).
+- **Landmarks are not cards.** Players never place landmarks. A finished region converts one random tile into its variant's core location (decided Nov 1, 2026; was a roll from a pool per variant; see [Map & exploration](02 Map & exploration.md) → Clustered regions). Where the former Rare cards go now is open (see Landmark list).
 - **Legendaries** are mostly the locations of rare tier 3 region variants, which a quest can guarantee; the Sword in the Stone is placed by a quest (see Landmark list and [Map & exploration](02 Map & exploration.md) → Tier 3 variants). How each quest starts: see [World & story](01 World & story.md) → Quests.
 - Gear still has rarity tiers (see [Weapons & gear](04 Weapons & gear.md) → Equipment).
 
@@ -228,7 +228,7 @@ Unlock at level 10. **Reward** (decided Oct 22, 2026): a guaranteed subclass-spe
 
 Region locations per variant: see [Map & exploration](02 Map & exploration.md) → Region variants and locations.
 
-**Former Rare cards** (now landmarks in region pools since Oct 23, 2026; which variants' pools each joins: open)
+**Former Rare cards** (became landmarks in region pools on Oct 23, 2026; since Nov 1, 2026 each variant's landmark is its core location, so where these appear is open)
 
 | Landmark | What it is |
 | --- | --- |
@@ -268,7 +268,7 @@ All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](0
 ## Open questions
 
 - [x] ~~Rarity rethink~~ (settled Oct 23–24, 2026: see Card types, Deck and hand, Starting decks and Class locations)
-- [ ] **New:** landmark pools: which landmarks each region variant's pool holds (the variant's current location and former Rare cards)
+- [ ] **New:** where the former Rare landmarks appear now that each variant's landmark is always its core location (decided Nov 1, 2026; replaces 'which landmarks each variant's pool holds')
 - [x] ~~Terrain lean for each class, background and god~~ (settled Oct 24, 2026: see Starting decks)
 - [ ] **New:** milestone terrain picks: how many cards are added, and how many choices are offered
 - [ ] **New:** class quests: what the task rewards now that the class location exists once the region is built. Also, the Rogue's Noble's manor sits oddly inside a Smugglers' bayou
