@@ -368,7 +368,7 @@ Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each fores
 | Game camera all the way out over the four regions | 810 | 258,000 | 4.1 ms |
 | Opening zoom over heartwood | 400 | 173,000 | 3.9 ms |
 
-The phone wasn't plugged in, so the 120 fps target is untested. The phone last held 120 fps at about 300 draw calls.
+**Frame-rate target** (DOCS: 06 → Engine prototype, Nov 1): run at 120 fps where the phone allows, and never drop below 60.
 
 **On Ethan's iPhone 15 Pro (Nov 1, 2026; iOS 26.6.2, Mobile renderer on Metal):** the forest spawn holds **120 fps**, the screen's top rate, in every view. Launched with `DEVICECTL_CHILD_HEXGEN_PHONECHECK=1 DEVICECTL_CHILD_HEXGEN_FORESTPERF=1`, which runs `PhoneCheck._forest_perf`.
 
@@ -383,7 +383,7 @@ The phone wasn't plugged in, so the 120 fps target is untested. The phone last h
 - **CPU and GPU time:** render CPU time is about 0.3 ms a frame. Godot reports no GPU time on Metal (0.00), so the GPU headroom isn't measured.
 - **Shadows:** two shots 1.5 s apart differ on only 0.03% (day) and 0.04% (night) of pixels, scattered like the drifting seeds and motes. The shadows hold still.
 - **Nightfall:** no hitch (worst frame 9.4 ms).
-- **Mesh merging:** not needed yet. Each tile's pieces stay separate.
+- **Against the target:** well within it, with every view at the top rate. Mesh merging isn't needed, and each tile's pieces stay separate.
 
 ## Terrains and region variants (tiles v13)
 
@@ -582,8 +582,8 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
   - The demo once stalled after its coin shot (Nov 1) and didn't on the rerun. If it hangs, rerun it before hunting a bug.
 - **Art:** `godot/art/*.glb` link to `art/export/`. After the art changes, run `godot --headless --path godot --import` so the new pieces, and any new `class_name` scripts, load. New colours go in `Hex.PALETTE` (copied from `hexkit.COLOURS`). New variants go in `variants.gd`. New `ground_cover.py` entries go in `ground_cover.gd`.
 - **Piece picking:** follows `render_preview.build_map`, in `MapBoard._build_tile` and `_edge_piece`. Landmark trails come from `landmark_flow.gd`. Re-run `tools/flow_check.gd` whenever the Python changes.
+- **Frame-rate target:** 120 fps where the phone allows, never below 60 (06 → Engine prototype). Check new content on the phone with the forest perf run (`DEVICECTL_CHILD_HEXGEN_FORESTPERF=1`) or the phone check.
 - **Open:**
-  - The phone fps test above.
   - The Dynamic Island side: the HUD pads both sides, because Godot can't tell which way the phone is turned. A native bridge is offered but not decided.
   - The docs questions under Unclear or contradictory.
 - **Placeholder list with values and files:** `godot-placeholders.md` in the Engine Planner's shared notes folder mirrors Placeholders above.
