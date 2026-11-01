@@ -218,11 +218,11 @@ def next_n(stem):
     return n
 
 
-def render(stem, option=""):
-    """Renders to preview/<stem>_vN.png (or _vN<option>.png), N the first version not taken."""
+def render(stem):
+    """Renders to preview/<stem>_vN.png, N the first version not taken (counting lettered options too)."""
     out = os.path.join(hk.ART, "preview")
     os.makedirs(out, exist_ok=True)
-    path = os.path.join(out, f"{stem}_v{next_n(stem)}{option}.png")
+    path = os.path.join(out, f"{stem}_v{next_n(stem)}.png")
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
     print("RENDERED", path)
@@ -257,38 +257,17 @@ if __name__ == "__main__":
         sys.exit(0)
     if "forest-t2" in flags:
         # The forest tier 2 map, then a close-up of each variant's region and its neighbours.
-        # While the kit holds heartwood options (heartwood_a, _b, ...), the map shows the first, and the
-        # heartwood close-up is rendered once per option as closeup_heartwood_vN<a, b, ...>.png.
-        options = sorted(v[-1] for v in vr.VARIANTS if v.startswith("heartwood_"))
-        swap = lambda o: {k: (f"heartwood_{o}" if t == "heartwood" else t) for k, t in FOREST_T2_MAP.items()}  # noqa: E731
         hk.empty_scene()
-        build_map(load_templates(tiles), tiles=swap(options[0]) if options else FOREST_T2_MAP)
+        build_map(load_templates(tiles), tiles=FOREST_T2_MAP)
         stage(Vector((-0.5, -1, 0)), 66, 45)
         render("forest_t2")
-        el = math.radians(40)
-
-        def close_up(variant):
-            group = FOREST_T2_CLOSEUPS[variant]
+        cam = bpy.context.scene.camera
+        for variant, group in FOREST_T2_CLOSEUPS.items():
             target = sum((hk.tile_position(q, r) for q, r in group), Vector()) / len(group)
-            cam = bpy.context.scene.camera
+            el = math.radians(40)
             cam.location = target + Vector((0, -24 * math.cos(el), 24 * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, 0)
-        for variant in FOREST_T2_CLOSEUPS:
-            if variant == "heartwood" and options:
-                continue
-            close_up(variant)
             render(f"closeup_{variant}")
-        if options:
-            n = next_n("closeup_heartwood")
-            for o in options:
-                hk.empty_scene()
-                build_map(load_templates(tiles), tiles=swap(o))
-                stage(Vector((-0.5, -1, 0)), 66, 45)
-                close_up("heartwood")
-                path = os.path.join(hk.ART, "preview", f"closeup_heartwood_v{n}{o}.png")
-                bpy.context.scene.render.filepath = path
-                bpy.ops.render.render(write_still=True)
-                print("RENDERED", path)
         sys.exit(0)
     if "terrains" in flags:
         hk.empty_scene()
