@@ -107,6 +107,10 @@ func _ready() -> void:
 	_refresh()
 	if "--forest" in OS.get_cmdline_user_args():
 		spawn_forest_regions()
+	elif "--farmcheck" in OS.get_cmdline_user_args():
+		var fm := FarmCheck.new()
+		fm.game = self
+		add_child(fm)
 	elif "--forestcheck" in OS.get_cmdline_user_args():
 		var fc := ForestCheck.new()
 		fc.game = self
@@ -417,30 +421,46 @@ func _set_flow(region: Dictionary) -> void:
 	map.set_flow(region.tiles, region.landmark_tile)
 
 
-## Debug (`-- --forest`, or F9 on PC): a finished 7-tile region of each forest variant, each with its landmark
-## on a random tile, around the start with plains between, made at once by the same rules as a region finishing.
+## Debug (`-- --forest`, or F9 on PC): a finished 7-tile region of each forest and farmland variant, each with its
+## landmark on a random tile, plus a market town and a tier 0 farm and village group, around the start with plains
+## between, made at once by the same rules as a region finishing.
 const DEBUG_FOREST := {"deep_forest": Vector2i(3, -3), "fey_wood": Vector2i(3, 0), "dark_wood": Vector2i(0, 3),
 	"heartwood": Vector2i(-3, 3)}
+const DEBUG_FARM := {"windmill_country": Vector2i(-3, 0), "haunted_homesteads": Vector2i(0, -3),
+	"raided_farms": Vector2i(6, -3), "cider_orchards": Vector2i(-6, 3)}
+const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
+const DEBUG_FARMS := Vector2i(3, 3)      # tier 0: farmland in the middle and half the ring, village the other half
 
 func spawn_forest_regions() -> void:
 	var changes := {}
-	for v: String in DEBUG_FOREST:
-		var c: Vector2i = DEBUG_FOREST[v]
+	var wanted := DEBUG_FOREST.duplicate()
+	wanted.merge(DEBUG_FARM)
+	wanted["market_town"] = DEBUG_TOWN
+	for v: String in wanted:
+		var c: Vector2i = wanted[v]
 		var tiles: Array[Vector2i] = [c]
 		for n in Hex.NEIGHBOURS:
 			tiles.append(c + n)
 		if tiles.any(func(x): return map.terrains.has(x)):
 			continue
-		var region := new_region("forest", tiles, v, tiles[rng.randi_range(0, tiles.size() - 1)])
+		var region := new_region(Variants.terrain_of(v), tiles, v, tiles[rng.randi_range(0, tiles.size() - 1)])
 		_set_flow(region)
 		for x in tiles:
 			changes[x] = region_look(region, x)
 			order[x] = order.size()
+	for k in 7:
+		var x: Vector2i = DEBUG_FARMS + (Vector2i.ZERO if k == 6 else Hex.NEIGHBOURS[k])
+		if not map.terrains.has(x):
+			changes[x] = "village" if k < 3 else "farmland"
+			order[x] = order.size()
+			_debug_fill[x] = true
 	# Plains between them, so the party can walk there (they show no cluster goal).
-	for q in range(-4, 5):
-		for r in range(-4, 5):
-			var x := Rules.START_TILE + Vector2i(q, r)
-			if Rules.hex_distance(x, Rules.START_TILE) <= 4 and not changes.has(x) and not map.terrains.has(x):
+	var land_now := changes.keys()
+	land_now.append(Rules.START_TILE)
+	for t: Vector2i in land_now:
+		for n in Hex.NEIGHBOURS:
+			var x: Vector2i = t + n
+			if not changes.has(x) and not map.terrains.has(x):
 				changes[x] = "plains"
 				order[x] = order.size()
 				_debug_fill[x] = true
@@ -563,7 +583,7 @@ func path_to(goal: Vector2i) -> Array[Vector2i]:
 			break
 		for n in Hex.NEIGHBOURS:
 			var m: Vector2i = c + n
-			if map.terrains.has(m) and not came.has(m):
+			if map.terrains.has(m) and not came.has(m) and map.edge_open(c, m):   # fences only through a gate
 				came[m] = c
 				todo.append(m)
 	var path: Array[Vector2i] = []
@@ -809,17 +829,25 @@ func pick(t) -> void:
 	dot.radius = 0.2   # PLACEHOLDER look: no mockup shows the path yet
 	dot.height = 0.08
 	dot.material = mat
-	var prev := Hex.tile_position(party_tile.x, party_tile.y)
-	for step in path:
-		var at := Hex.tile_position(step.x, step.y)
-		for k in 3:   # three dots per step, from the last hex to this one
+	# Three dots per step, along the route the party will walk.
+	var route := party_node.route_preview(path)
+	var dots := path.size() * 3
+	var length := 0.0
+	for k in range(1, route.size()):
+		length += route[k].distance_to(route[k - 1])
+	var d := 0.0
+	var n := 1
+	for k in range(1, route.size()):
+		var seg := route[k].distance_to(route[k - 1])
+		while n <= dots and d + seg >= length * n / dots:
 			var mi := MeshInstance3D.new()
 			mi.mesh = dot
-			mi.position = Hex.to3(prev.lerp(at, (k + 1) / 3.0), 0.3)
-			mi.scale = Vector3.ONE * (1.6 if k == 2 and step == path[-1] else 1.0)
+			mi.position = Hex.to3(route[k - 1].lerp(route[k], (length * n / dots - d) / maxf(seg, 1e-4)), 0.3)
+			mi.scale = Vector3.ONE * (1.6 if n == dots else 1.0)
 			add_child(mi)
 			_path_marks.append(mi)
-		prev = at
+			n += 1
+		d += seg
 
 
 func ground_point(screen: Vector2) -> Vector2:

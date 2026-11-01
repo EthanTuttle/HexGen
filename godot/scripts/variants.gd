@@ -10,22 +10,31 @@ const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highland
 
 ## Tier 2 variants with art (DOCS: design/02 -> Region variants and locations; the class variant is in the
 ## pool too). Terrains not listed have no tier 2 art yet and keep their terrain's look.
-const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"]}
+const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
+	"farmland": ["haunted_homesteads", "raided_farms", "cider_orchards"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
-	"heartwood": ["Heartwood", "Tree of Life"]}
+	"heartwood": ["Heartwood", "Tree of Life"], "haunted_homesteads": ["Haunted homesteads", "Abandoned Barn"],
+	"raided_farms": ["Bandit-raided farms", "Militia Barn"], "cider_orchards": ["Cider orchards", "Harvest Festival"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
-	"heartwood": "treeoflife"}
+	"heartwood": "treeoflife", "windmill_country": "greatwindmill", "haunted_homesteads": "abandonedbarn",
+	"raided_farms": "militiabarn", "cider_orchards": "harvestfestival"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
-	"spidernest": "dark_wood"}
+	"spidernest": "dark_wood", "greatwindmill": "windmill_country", "abandonedbarn": "haunted_homesteads",
+	"militiabarn": "raided_farms", "harvestfestival": "cider_orchards"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
-const LANDMARK_CENTRES := ["feycourt", "spidernest"]
+const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival"]
+
+## Where the small mill stands in a centre_mill's yard (variants.SMALL_MILL_SPOT), and the Great Windmill's sails
+## in its centre's frame (variants.MILL_HUB): plan x, y, then height.
+const SMALL_MILL_SPOT := Vector2(0, 1.66)
+const MILL_HUB := Vector3(0.8, 0, 3.15)
 
 ## Each variant's (and landmark's) ground colour (variants.VARIANTS, third field): the engine recolours its
 ## terrain's base slab.
@@ -33,7 +42,9 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"windmill_country": "plains", "market_town": "cobble", "delta": "plains", "bog": "bog",
 	"wasteland": "wasteland", "excavation": "plains",
 	"fey_wood": "fey_wood", "dark_wood": "dark_wood", "heartwood": "heartwood",
-	"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood", "spidernest": "dark_wood"}
+	"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood", "spidernest": "dark_wood",
+	"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass",
+	"greatwindmill": "plains", "abandonedbarn": "haunted", "militiabarn": "raided", "harvestfestival": "orchard_grass"}
 
 static var _base := {}
 

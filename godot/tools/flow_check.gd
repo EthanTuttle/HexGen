@@ -1,6 +1,6 @@
 extends SceneTree
-## Checks the landmark flow port (scripts/landmark_flow.gd) and the edge_same_b hash against
-## art/scripts/landmark_flow.py on the same regions. Cases come from tools/flow_cases.py, from the repo root:
+## Checks the landmark flow port (scripts/landmark_flow.gd), the edge_same_b hash and the fence gates
+## (scripts/fence_gates.gd) against art/scripts/landmark_flow.py and fence_gates.py on the same regions. Cases come from tools/flow_cases.py, from the repo root:
 ##   python3 -I godot/tools/flow_cases.py art/scripts /tmp/flow_cases.json
 ##   godot --headless --path godot --script res://tools/flow_check.gd -- /tmp/flow_cases.json
 
@@ -26,7 +26,19 @@ func _init() -> void:
 			var p: PackedStringArray = key.split(",")
 			var b := GroundCover.hash01(int(p[0]) * 6 + int(p[2]), int(p[1]), 8) < 0.5
 			ok = ok and b == c.same_b[key]
+		for key in c.heads_in:
+			var p: PackedStringArray = key.split(",")
+			ok = ok and LandmarkFlow.heads_in(Vector2i(int(p[0]), int(p[1])), int(p[2]), f.dist) == c.heads_in[key]
+		var terrains := {}
+		for row in c.terrains:
+			terrains[Vector2i(row[0], row[1])] = row[2]
+		var gates := FenceGates.gates(terrains)
+		ok = ok and gates.size() == c.gates.size()
+		for key in c.gates:
+			var p: PackedStringArray = key.split(",")
+			var mine: Array = gates.get(Vector2i(int(p[0]), int(p[1])), [])
+			ok = ok and mine == c.gates[key].map(func(x): return int(x))
 		if not ok:
 			bad += 1
-	print("FLOW CHECK: %d cases, %d differ from landmark_flow.py" % [cases.size(), bad])
+	print("FLOW CHECK: %d cases, %d differ from landmark_flow.py and fence_gates.py" % [cases.size(), bad])
 	quit()

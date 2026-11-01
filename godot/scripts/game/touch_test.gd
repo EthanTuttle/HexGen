@@ -300,6 +300,8 @@ func _run() -> void:
 	await tap((game.hud._hand_grid.get_child(j) as Control).get_global_rect().get_center())
 	check(game.held == j, "tapping a card holds it")
 	await _wait(0.3)
+	game.rig.target = Hex.to3(Hex.tile_position(slot2.x, slot2.y))   # in view: not under the banner or a panel
+	await _wait(0.2)
 	await tap(tile_screen(slot2))
 	await _wait(0.4)
 	check(game.map.terrains.has(slot2), "tapping a lit slot places the held card")

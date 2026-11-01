@@ -45,6 +45,12 @@ static func trail_edges(tile: Vector2i, toward: Dictionary) -> Array:
 	return out
 
 
+## True where `tile` is the closer of the two tiles on its trail edge i, so the way to the landmark runs in from
+## the edge toward this tile's middle (it uses <variant>_edge_trail_in where that exists).
+static func heads_in(tile: Vector2i, i: int, dist: Dictionary) -> bool:
+	return dist.get(tile, 0) < dist.get(tile + Hex.NEIGHBOURS[i], 0)
+
+
 ## How many 60 degree steps (anticlockwise, the way edge numbers go) the landmark's centre piece turns, so its
 ## entrance on edge 0 faces the edge where the trail from the farthest tile arrives. 0 for the landmark alone.
 static func turn(landmark: Vector2i, dist: Dictionary, toward: Dictionary) -> int:

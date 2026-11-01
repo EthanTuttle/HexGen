@@ -312,9 +312,11 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
 | Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
-| Landmarks | Forest regions: the landmark tile takes its landmark's piece (forest kit). Other terrains: a pin and a name, no model | Only the forest landmarks have art |
-| Tier 2 roll | Forest: fey wood, dark wood or heartwood, evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
+| Landmarks | Forest and farmland regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
+| Tier 2 roll | Forest: fey wood, dark wood or heartwood. Farmland: haunted homesteads, bandit-raided farms or cider orchards. Evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
 | Walking on trails | A trail starts 1.2 m from a tile's centre (`TRAIL_INNER`); the party stops 2.2 m from a landmark's centre, at its entrance (`ENTRANCE_RING`) | Not in the art hand-off |
+| Farm effects | Fire, smoke and crows at the art's effect points: counts, colours, sizes, speeds (`farm_fx.gd`); the sails' speed (`Rules.SAIL_SPEED`); the barn's faint glow, 0.1 by day to 1.0 at night (`map_board.gd`) | The hand-off gives the points, not the look |
+| Stopping on farm tiles | The tile's middle where the spokes meet, a landmark's approach end, a cider orchard's hub | The docs say routes keep to paths, not where a party stops |
 | Forest effects | Fey motes, heartwood seeds and light shafts, the shrine's shaft: counts, colours, sizes, the shafts' lean (`forest_fx.gd`, `shaders/light_shaft.gdshader`) | The hand-off names the effects, not their look |
 | Night glow strengths | Fairy rings 0.15 by day to 1.75 at night; the Fey Court's windows 0.4 to 3.4 (`map_board.gd`) | "Glow softly at night" |
 | Cluster badge shows from | 2 tiles | The mockup's number for "a few hexes" |
@@ -384,6 +386,23 @@ Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each fores
 - **Shadows:** two shots 1.5 s apart differ on only 0.03% (day) and 0.04% (night) of pixels, scattered like the drifting seeds and motes. The shadows hold still.
 - **Nightfall:** no hitch (worst frame 9.4 ms).
 - **Against the target:** well within it, with every view at the top rate. Mesh merging isn't needed, and each tile's pieces stay separate.
+
+## Farmland kit (tiles v34)
+
+Tier 0 farmland and villages with fence gates, windmill country with the Great Windmill, haunted homesteads with the Abandoned Barn, bandit-raided farms with the Militia Barn, and cider orchards with the Harvest Festival, from `art/export/tiles.glb` and `art/handoff/farmland_kit.md`. Docs: 06 → Tile build; 07 → Exploration screen → Walking, Landmark tiles.
+
+- **Pieces** (`MapBoard._build_tile`, `_edge_piece`): `centre_b` by hash, the farm centre's hashed turn (only the centre turns), near centres, `centre_mill` with `windmill_small` (in the turned yard, not turned itself), `edge_trail_in` on the closer tile (`LandmarkFlow.heads_in`), `edge_gate`, `edge_other_lm`. The Great Windmill's sails spin about their own X (`Spinner`).
+- **Gates** (`scripts/fence_gates.gd`, a port of `fence_gates.py`): worked out again on every placement, and any tile whose gates change is rebuilt. A fallback gate isn't kept once the first ranked gate appears (the art script allows either).
+- **Routes follow drawn paths:**
+  - Each tile's path data comes from the glb's node extras (`Kit.path_data`), joined into a graph (`scripts/tile_paths.gd`), so no extra file is needed on the phone. `art/export/tiles_paths.json` holds the same data and isn't used here.
+  - `Game.path_to` only steps through open edges (`MapBoard.edge_open`): a fence edge opens only at a gate, so a party walks round to the nearest gate, counted in hexes.
+  - On each tile `PartyWalker._build_path` takes the shortest way along the graph, corners slightly rounded. The first tap's dots follow the same route.
+- **Village and market town centres have no path data yet.** The streets are followed through their wedges, and between the streets' inner ends the route bends through the tile's middle as before, so it **crosses houses there for now**. The party stops at the usual spot on the tile. When the art adds street lines, the graph picks them up with no route code to change.
+- **Forest tiles keep their own rule:** trails and landmark entrances as in the forest kit, because their pieces have no path data.
+- **Effects** (`scripts/farm_fx.gd`, placeholder looks): fire and smoke (one particle node per kind per piece, using emission points), crows (one mesh per flock), no lights, no shadows. `window_faint` glows faintly at night.
+- **A walled-off tile:** a tile whose only neighbours are closed fences (say a lake beside a farm) can't be reached. A tap on it does nothing, with no message, because no text was added.
+
+Debug: `-- --forest` or F9 now spawns the forest regions, the four farm regions, a market town and a tier 0 farm and village group. `-- --farmcheck` (add `--shots` for `screens/farm_*.png`) checks gates, centre turn and `centre_b`, small mills, sails and effect points, and walks a party across and out of farm groups, round to a gate, and along trails to each landmark, watching every mini. `tools/flow_check.gd` now compares the gates and `heads_in` with the Python too.
 
 ## Terrains and region variants (tiles v13)
 
@@ -578,7 +597,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
   - Ask before deciding anything the docs don't cover, and mark stand-ins `PLACEHOLDER` in code and in Placeholders above.
   - Check every on-screen string against the Standing rule: screen text.
 - **Tests:**
-  - Run all three before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`).
+  - Run all four before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`) and `--farmcheck --shots --quit` (`FARM DONE: 0 failed`).
   - The demo once stalled after its coin shot (Nov 1) and didn't on the rerun. If it hangs, rerun it before hunting a bug.
 - **Art:** `godot/art/*.glb` link to `art/export/`. After the art changes, run `godot --headless --path godot --import` so the new pieces, and any new `class_name` scripts, load. New colours go in `Hex.PALETTE` (copied from `hexkit.COLOURS`). New variants go in `variants.gd`. New `ground_cover.py` entries go in `ground_cover.gd`.
 - **Piece picking:** follows `render_preview.build_map`, in `MapBoard._build_tile` and `_edge_piece`. Landmark trails come from `landmark_flow.gd`. Re-run `tools/flow_check.gd` whenever the Python changes.

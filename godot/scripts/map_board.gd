@@ -61,6 +61,9 @@ var _web: StandardMaterial3D           # dark wood's and the Spider Nest's webs
 var flow_dist := {}                    # tile -> steps to its region's landmark
 var flow_toward := {}                  # tile -> the region neighbour one step closer
 var landmark_turns := {}               # landmark tile -> 60 degree steps its centre piece turns
+var gates := {}                        # fenced tile -> the edges that show a gate (FenceGates)
+var _faint: StandardMaterial3D         # the Abandoned Barn's light through its boards
+var _graphs := {}                      # tile -> its drawn paths (TilePaths), built when asked for
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
 
@@ -86,6 +89,7 @@ func build(map := MAP) -> void:
 	terrains = map.duplicate()
 	for t: Vector2i in terrains:
 		_set_ground(t)
+	_update_gates()
 	_update_water()
 	for t: Vector2i in terrains:
 		_build_tile(t)
@@ -120,6 +124,7 @@ func retile(changes: Dictionary) -> void:
 					water_changed = true
 	if water_changed:
 		_update_water()
+	touched.merge(_update_gates())
 	for t: Vector2i in touched:
 		_build_tile(t)
 	_build_slots()
@@ -135,6 +140,42 @@ func set_flow(region: Array, landmark: Vector2i) -> void:
 	flow_dist.merge(f.dist, true)
 	flow_toward.merge(f.toward, true)
 	landmark_turns[landmark] = LandmarkFlow.turn(landmark, f.dist, f.toward)
+
+
+## Works out the fence gates; returns the tiles whose gates changed, as they need rebuilding.
+func _update_gates() -> Dictionary:
+	var by_terrain := {}
+	for t: Vector2i in terrains:
+		by_terrain[t] = Variants.terrain_of(terrains[t])
+	var now := FenceGates.gates(by_terrain)
+	var changed := {}
+	for t: Vector2i in now:
+		if now[t] != gates.get(t, []):
+			changed[t] = true
+	gates = now
+	return changed
+
+
+## Whether a party can step between neighbours a and b: fences are only crossed through a gate (DOCS: Walking).
+func edge_open(a: Vector2i, b: Vector2i) -> bool:
+	if gates.has(a) == gates.has(b):
+		return true
+	var fenced := a if gates.has(a) else b
+	var other := b if gates.has(a) else a
+	return Hex.NEIGHBOURS.find(other - fenced) in gates[fenced]
+
+
+## Tile t's drawn paths (empty where its pieces have no path data).
+func path_graph(t: Vector2i) -> TilePaths:
+	if not _graphs.has(t):
+		var pieces := []
+		var node := tile_node(t)
+		if node:
+			for c in node.get_children():
+				if c is MeshInstance3D and c.has_meta("piece") and not Kit.path_data(c.get_meta("piece")).is_empty():
+					pieces.append([String(c.get_meta("piece")), posmod(roundi(rad_to_deg(c.rotation.y) / 60.0), 6)])
+		_graphs[t] = TilePaths.build(pieces, Hex.tile_position(t.x, t.y))
+	return _graphs[t]
 
 
 ## Whether the edge between neighbours a and b is a landmark trail edge.
@@ -214,6 +255,9 @@ func _setup_materials() -> void:
 	_window = _glow.duplicate() as StandardMaterial3D
 	_window.albedo_color = Hex.colour("window_glow")
 	_window.emission = Hex.colour("window_glow")
+	_faint = _glow.duplicate() as StandardMaterial3D
+	_faint.albedo_color = Hex.colour("window_faint")
+	_faint.emission = Hex.colour("window_faint")
 	_web = StandardMaterial3D.new()
 	_web.albedo_color = Color(Hex.colour("web"), 0.3)   # hexkit.WEB_ALPHA
 	_web.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -224,6 +268,7 @@ func _setup_materials() -> void:
 				"fey_mushroom": mesh.surface_set_material(k, _fey)
 				"window_glow": mesh.surface_set_material(k, _window)
 				"web": mesh.surface_set_material(k, _web)
+				"window_faint": mesh.surface_set_material(k, _faint)
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
@@ -265,6 +310,7 @@ func _set_ground(t: Vector2i) -> void:
 func _build_tile(t: Vector2i) -> void:
 	if _tile_nodes.has(t):
 		_tile_nodes[t].free()
+	_graphs.erase(t)
 	var node := Node3D.new()
 	node.name = "tile_%d_%d" % [t.x, t.y]
 	add_child(node)
@@ -282,10 +328,24 @@ func _build_tile(t: Vector2i) -> void:
 	var centre := "_centre"
 	if flow_dist.get(t) == 1 and _kit.has(name + "_centre_near"):
 		centre = "_centre_near"  # next to the landmark: the variant's look played up
+	if centre == "_centre" and _kit.has(name + "_centre_b") and GroundCover.hash01(t.x, t.y, 13) < 0.5:
+		centre = "_centre_b"     # a second version of the centre, so a big group doesn't repeat
 	if _kit.has(name + "_centre_mill") and GroundCover.hash01(t.x, t.y, 7) < 0.5:
 		centre = "_centre_mill"  # windmills stand on about half the tiles (the preview's placeholder rule)
-	# A landmark's centre turns so its entrance (edge 0) faces its longest trail; its wedges stay put.
-	Kit.place(node, _kit, name + centre, at, deg_to_rad(60.0 * landmark_turns.get(t, 0)))
+	# A landmark's centre turns so its entrance (edge 0) faces its longest trail; a farm's turns by a hash of the
+	# tile, so yards don't line up. Wedges stay put.
+	var turn: int = landmark_turns.get(t, 0)
+	if _kit.has(name + "_centre_b"):
+		turn = int(GroundCover.hash01(t.x * 31 + 7, t.y * 17 + 3, 14) * 6)
+	var spin := deg_to_rad(60.0 * turn)
+	Kit.place(node, _kit, name + centre, at, spin)
+	if centre == "_centre_mill":   # the small mill goes where the turned yard is, but doesn't turn itself
+		Kit.place(node, _kit, "windmill_small", at + Variants.SMALL_MILL_SPOT.rotated(spin))
+	if name == "greatwindmill":
+		node.add_child(_sails(at, spin))
+	var farm_fx := FarmFx.for_piece(name + centre, at, turn)
+	if farm_fx:
+		node.add_child(farm_fx)
 	if terrain == "desert":
 		node.add_child(Sand.build_tile(terrains, t))
 	if name == "bog":
@@ -321,7 +381,8 @@ func _build_tile(t: Vector2i) -> void:
 	var trails := LandmarkFlow.trail_edges(t, flow_toward)
 	for i in 6:
 		var angle := deg_to_rad(60.0 * i)
-		Kit.place(node, _kit, _edge_piece(t, name, kit, i, joined[i], trails), at, angle)
+		var edge := _edge_piece(t, name, kit, i, joined[i], trails)
+		Kit.place(node, _kit, edge, at, angle)
 		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
 		if terrain in BORDERED and joined[i]:
 			if not joined[(i + 1) % 6]:
@@ -332,18 +393,40 @@ func _build_tile(t: Vector2i) -> void:
 		_add_ground_collision(node)
 
 
-## The wedge on edge i (render_preview.build_map, tiles v23): toward the Tree of Life, heartwood's landmark wedge;
-## on a trail edge, the landmark's own trail wedge or its kit's; on a joined edge, edge_same, or the alternate
-## edge_same_b where the kit has one and hash01(q * 6 + i, r, 8) < 0.5; otherwise edge_other.
+## The Great Windmill's sails, at its hub (variants.MILL_HUB) turned with the landmark, spinning about their own X.
+func _sails(at: Vector2, spin: float) -> Spinner:
+	var s := Spinner.new()
+	s.name = "sails"
+	s.axis = Vector3.RIGHT
+	s.speed = Rules.SAIL_SPEED
+	var hub := Vector2(Variants.MILL_HUB.x, Variants.MILL_HUB.y).rotated(spin)
+	s.position = Hex.to3(at + hub, Variants.MILL_HUB.z)
+	s.rotation.y = spin
+	var mi := MeshInstance3D.new()
+	mi.mesh = _kit["greatwindmill_sails"]
+	s.add_child(mi)
+	return s
+
+
+## The wedge on edge i (render_preview.build_map, tiles v34): toward the Tree of Life, heartwood's landmark wedge;
+## on a trail edge, the landmark's own trail wedge or its kit's (edge_trail_in on the tile closer to the landmark);
+## on a gate edge, edge_gate; on a landmark's fence edge, edge_other_lm where it exists; on a joined edge, edge_same,
+## or the alternate edge_same_b where the kit has one and hash01(q * 6 + i, r, 8) < 0.5; otherwise edge_other.
 func _edge_piece(t: Vector2i, name: String, kit: String, i: int, joined: bool, trails: Array) -> String:
 	var near = terrains.get(t + Hex.NEIGHBOURS[i])
 	if Variants.LANDMARKS.get(near) == name and _kit.has(name + "_edge_landmark"):
 		return name + "_edge_landmark"
 	if i in trails:
+		if LandmarkFlow.heads_in(t, i, flow_dist) and _kit.has(kit + "_edge_trail_in"):
+			return kit + "_edge_trail_in"
 		if _kit.has(name + "_edge_trail"):
 			return name + "_edge_trail"
 		if _kit.has(kit + "_edge_trail"):
 			return kit + "_edge_trail"
+	if not joined and i in gates.get(t, []) and _kit.has(kit + "_edge_gate"):
+		return kit + "_edge_gate"
+	if not joined and Variants.LANDMARKS.has(name) and _kit.has(kit + "_edge_other_lm"):
+		return kit + "_edge_other_lm"
 	if joined and _kit.has(kit + "_edge_same_b") and GroundCover.hash01(t.x * 6 + i, t.y, 8) < 0.5:
 		return kit + "_edge_same_b"
 	return kit + ("_edge_same" if joined else "_edge_other")
@@ -518,6 +601,7 @@ func _process(delta: float) -> void:
 		_lamp.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: lit a little by day, bright at night
 		_fey.emission_energy_multiplier = 0.15 + 1.6 * night   # PLACEHOLDER: "glow softly at night"
 		_window.emission_energy_multiplier = 0.4 + 3.0 * night  # PLACEHOLDER: warm light inside
+		_faint.emission_energy_multiplier = 0.1 + 0.9 * night   # PLACEHOLDER: dimmer than the windows
 		ForestFx.set_night(night)
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 	var s := _time

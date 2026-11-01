@@ -96,6 +96,8 @@ const SQUEEZE_RATE := 2.5                # how fast a companion pushed in toward
 ## Walking on landmark trails (DOCS: Exploration screen -> Walking; tiles v23). Trails run along each wedge's
 ## middle line from near the centre piece to the edge's middle (variants.py -> Flowing into the landmark).
 const TRAIL_INNER := 1.2                 # PLACEHOLDER: where a trail starts, metres from a tile's centre
+const PATH_CORNER := 0.35                # PLACEHOLDER: how far before a corner on a drawn path the route starts to bend
+const SAIL_SPEED := 0.6                  # PLACEHOLDER: the Great Windmill's sails, radians a second
 const ENTRANCE_RING := 2.2               # PLACEHOLDER: how far from a landmark's centre the party stops, at its entrance
 const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game hours (8/24 of a 30-minute day)
 

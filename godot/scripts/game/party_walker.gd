@@ -121,26 +121,44 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 		var c := Hex.tile_position(t.x, t.y)
 		var in_dir := Vector2.ZERO if k == 0 else (Hex.tile_position(seq[k - 1].x, seq[k - 1].y) - c).normalized()
 		var out_dir := Vector2.ZERO if k == last else (Hex.tile_position(seq[k + 1].x, seq[k + 1].y) - c).normalized()
+		var graph := map.path_graph(t)
+		var last_tile := k == last
+		# DOCS (Exploration screen -> Walking): on tiles with drawn paths the route follows them.
+		var way := _way_on_paths(graph, pts[-1], k, seq, last_tile)
+		if not way.is_empty():
+			_along(pts, way)
+			if last_tile:
+				_end_facing = (way[-1] - way[-2]).angle() if way.size() > 1 else facing
+			continue
 		var entrance := map.entrance_angle(t)
 		if not is_nan(entrance):
 			# A landmark tile: in to its entrance ring, round it to the entrance (to stop) or to the way out, so the
 			# party never walks through the landmark itself.
 			if k > 0:
 				_line(pts, c + in_dir * Rules.ENTRANCE_RING)
-			_arc(pts, c, Rules.ENTRANCE_RING, entrance if k == last else out_dir.angle())
-			if k == last:
+			_arc(pts, c, Rules.ENTRANCE_RING, entrance if last_tile else out_dir.angle())
+			if last_tile:
 				_end_facing = entrance + PI   # facing the landmark
 			else:
 				_line(pts, c + out_dir * Hex.A)
 			continue
-		# DOCS (Exploration screen -> Walking): where a step crosses a landmark trail edge, the route follows the
-		# drawn trail, which runs along the wedge's middle line from near the centre to the edge's middle.
-		if k > 0 and map.trail_edge(seq[k - 1], t):
+		# Where a step crosses a landmark trail edge, or a wedge has a drawn path but the tile's centre has none yet
+		# (village centres: for now the route bends through the middle, between the streets' inner ends), the route
+		# runs along the wedge's middle line from near the centre to the edge's middle.
+		var in_edge := Hex.NEIGHBOURS.find(seq[k - 1] - t) if k > 0 else -1
+		if graph.edge_inner.has(in_edge):
+			_line(pts, graph.edge_inner[in_edge])
+		elif k > 0 and map.trail_edge(seq[k - 1], t):
 			_line(pts, c + in_dir * Rules.TRAIL_INNER)
-		if k == last:
+		if last_tile:
 			var spot := _stand_spot(t, (anchor(t) - c).angle())
 			_quad(pts, c, spot[0])
 			_end_facing = spot[1]
+			continue
+		var out_edge := Hex.NEIGHBOURS.find(seq[k + 1] - t)
+		if graph.edge_inner.has(out_edge):
+			_quad(pts, c, graph.edge_inner[out_edge])
+			_line(pts, c + out_dir * Hex.A)
 		elif map.trail_edge(t, seq[k + 1]):
 			_quad(pts, c, c + out_dir * Rules.TRAIL_INNER)
 			_line(pts, c + out_dir * Hex.A)
@@ -150,6 +168,40 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 	for t in tiles:
 		allowed[t] = true
 	_set_path(_round_mountains(pts, allowed))
+
+
+## The way along a tile's drawn paths from where the route has got to, to the next edge's middle or (on the last
+## tile) its stopping point; empty if the paths don't connect them, and the tile falls back on the curves.
+func _way_on_paths(graph: TilePaths, from: Vector2, k: int, seq: Array[Vector2i], last_tile: bool) -> PackedVector2Array:
+	if graph.nodes.is_empty():
+		return PackedVector2Array()
+	var a: int = graph.edge_node.get(Hex.NEIGHBOURS.find(seq[k - 1] - seq[k]), -1) if k > 0 else graph.nearest(from)
+	var b = graph.stand if last_tile else graph.edge_node.get(Hex.NEIGHBOURS.find(seq[k + 1] - seq[k]), -1)
+	if a < 0 or b == null or b < 0:
+		return PackedVector2Array()
+	return graph.route(a, b)
+
+
+## Adds a drawn path to the route: straight stretches, with each corner rounded a little.
+static func _along(pts: PackedVector2Array, way: PackedVector2Array) -> void:
+	for k in way.size():
+		if k == 0 or k == way.size() - 1:
+			if pts[-1].distance_to(way[k]) > 0.01:
+				_line(pts, way[k])
+			continue
+		var into := (way[k] - way[k - 1])
+		var out := (way[k + 1] - way[k])
+		var r := minf(Rules.PATH_CORNER, minf(into.length(), out.length()) * 0.5)
+		_line(pts, way[k] - into.normalized() * r)
+		_quad(pts, way[k], way[k] + out.normalized() * r)
+
+
+## The route through these tiles without walking it (the first tap's preview).
+func route_preview(tiles: Array[Vector2i]) -> PackedVector2Array:
+	var end := _end_facing
+	_build_path(tiles)
+	_end_facing = end
+	return _path
 
 
 ## Adds a straight stretch from the route's last point to `to`, sampled about as densely as the curves.
@@ -327,6 +379,9 @@ func _clear(a: Vector2, b: Vector2) -> bool:
 ## Returns [hero's spot, facing].
 func _stand_spot(tile: Vector2i, angle: float) -> Array:
 	var centre := Hex.tile_position(tile.x, tile.y)
+	var graph := map.path_graph(tile) if map.tile_node(tile) else null
+	if graph and graph.stand != null:
+		return [graph.nodes[graph.stand], angle]   # on the drawn paths, never in the crops
 	var spot := anchor(tile)
 	if _cluster_clear(tile, spot, angle):
 		return [spot, angle]

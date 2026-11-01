@@ -2,7 +2,7 @@
     python3 -I godot/tools/flow_cases.py art/scripts /tmp/flow_cases.json"""
 import sys, json, random
 sys.path.insert(0, sys.argv[1])
-import landmark_flow as lf, ground_cover as gc
+import landmark_flow as lf, ground_cover as gc, fence_gates as fg
 rnd = random.Random(4)
 cases = []
 for n in range(300):
@@ -19,5 +19,15 @@ for n in range(300):
     same_b = {f"{q},{r},{i}": gc.hash01(q * 6 + i, r, 8) < 0.5 for q, r in region for i in range(6)}
     cases.append({"region": sorted(region), "landmark": lm, "turn": lf.turn(lm, dist, toward),
                   "toward": {f"{q},{r}": list(t) for (q, r), t in toward.items()}, "trails": trails, "same_b": same_b})
+    # heads_in, and fence gates on a random map of terrains
+    cases[-1]["heads_in"] = {f"{q},{r},{i}": lf.heads_in((q, r), i, dist) for q, r in region for i in range(6)}
+    kinds = ["farmland", "village", "river", "plains", "forest"]
+    terrains = {t: rnd.choice(kinds) for t in region}
+    for t in sorted(region):
+        for dq, dr in lf.NEIGHBOURS:
+            if rnd.random() < 0.3:
+                terrains.setdefault((t[0] + dq, t[1] + dr), rnd.choice(kinds))
+    cases[-1]["terrains"] = [[q, r, k] for (q, r), k in terrains.items()]
+    cases[-1]["gates"] = {f"{q},{r}": e for (q, r), e in fg.fence_gates(terrains).items()}
 json.dump(cases, open(sys.argv[2], "w"))
 print(len(cases), "cases")

@@ -3,6 +3,7 @@ extends RefCounted
 ## Meshes from an exported .glb kit (art/export, linked into godot/art), by node name.
 
 static var _cache := {}
+static var _paths := {}   # piece -> {paths, hub, spokes, effects}, from the glb's node extras
 
 
 static func meshes(path: String) -> Dictionary:
@@ -12,9 +13,23 @@ static func meshes(path: String) -> Dictionary:
 	var out := {}
 	for child in root.find_children("*", "MeshInstance3D", true, false):
 		out[String(child.name)] = (child as MeshInstance3D).mesh
+		if child.has_meta("extras"):
+			_paths[String(child.name)] = _path_extras(child.get_meta("extras"))
 	root.free()
 	_cache[path] = out
 	return out
+
+
+## A piece's path data and effect points (art/handoff/farmland_kit.md), or {} if it has none. Load the kit first.
+static func path_data(piece: String) -> Dictionary:
+	return _paths.get(piece, {})
+
+
+static func _path_extras(extras: Dictionary) -> Dictionary:
+	var read := func(key: String, empty):
+		return JSON.parse_string(extras[key]) if extras.has(key) else empty
+	return {paths = read.call("paths", []), hub = read.call("path_hub", null), spokes = read.call("path_spokes", {}),
+		effects = read.call("effects", [])}
 
 
 static func place(parent: Node3D, kit: Dictionary, name: String, at: Vector2, angle := 0.0) -> MeshInstance3D:
