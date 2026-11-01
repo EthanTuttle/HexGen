@@ -620,6 +620,8 @@ if __name__ == "__main__":
         for short, variant, lm, with_paths in (("snowy", "snowy_peaks", "yeticave", False),
                                                ("volcanic", "volcanic_peaks", "salamanderden", False),
                                                ("monastery", "monastery_heights", "library", True)):
+            if "snowy-only" in flags and short != "snowy":
+                continue
             tiles_map = {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else variant) for t in LANDMARK_REGION}}
             for paths in ((True, False) if with_paths else (False,)):
                 hk.empty_scene()

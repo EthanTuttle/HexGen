@@ -2514,23 +2514,38 @@ def frozen_pond(p, at, r):
     lump(p, at, r, "ice", z=0.0, squash=0.11)
 
 
-def footprint(p, at, spin, ground):
-    """A huge print pressed into the snow, tilted with the slope, three toes ahead of it."""
-    d = turn(Vector((0.25, 0, 0)), spin)
-    pitch = math.atan2(ground(at + d) - ground(at - d), 0.5)
-    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(-pitch, 3, "Y")
-    p.box_rot(Vector((at.x, at.y, ground(at))), (0.46, 0.25, 0.025), "print", rot)
-    for y in (-0.09, 0.0, 0.09):
-        q = at + turn(Vector((0.31, y, 0)), spin)
-        p.box_rot(Vector((q.x, q.y, ground(q))), (0.1, 0.07, 0.025), "print", rot)
+# A left foot pointing along +X, length 1: heel and sole either side of the pinched arch, then the toes, big toe on the
+# inside. Each part is a convex outline.
+FOOT_HEEL = ((-0.08, -0.1), (-0.08, 0.17), (-0.3, 0.18), (-0.45, 0.13), (-0.5, 0.0), (-0.45, -0.13), (-0.3, -0.17))
+FOOT_SOLE = ((-0.08, -0.1), (0.1, -0.22), (0.2, -0.26), (0.28, -0.2), (0.28, 0.22), (0.18, 0.27), (-0.08, 0.17))
+FOOT_TOES = ((0.42, -0.17, 0.095), (0.41, -0.01, 0.065), (0.38, 0.11, 0.06), (0.33, 0.22, 0.055))
 
 
-def print_line(p, a, b, spin, ground):
-    """Big footprints a stride apart from a to b, left and right."""
-    n = max(1, round((b - a).length / 0.62))
-    side = turn(Vector((0, 0.17, 0)), spin)
+def footprint(p, at, spin, ground, left=True, length=0.95):
+    """A huge print pressed into the snow, draped on the ground point by point: heel, sole and toes. Lifted just
+    enough that a hump in the ground under a plate doesn't bury it."""
+    toes = [[(x + r * math.cos(k * math.tau / 5), y + r * math.sin(k * math.tau / 5)) for k in range(5)] for x, y, r in FOOT_TOES]
+    plates = [[at + turn(Vector((x * length, (y if left else -y) * length, 0)), spin) for x, y in outline]
+              for outline in [FOOT_HEEL, FOOT_SOLE] + toes]
+    lift = 0.03  # the ground's facets stand a little off its height function
+    for pts in plates:
+        mid = sum(pts, Vector((0, 0, 0))) / len(pts)
+        z_mid = sum(ground(q) for q in pts) / len(pts)
+        lift = max(lift, ground(mid) - z_mid, *(ground(q.lerp(mid, 0.5)) - (ground(q) + z_mid) / 2 for q in pts))
+    for pts in plates:
+        face = p.bm.faces.new([p.bm.verts.new((q.x, q.y, ground(q) + lift)) for q in (pts if left else pts[::-1])])
+        face.material_index = p._slot("print")
+        p.surface.add(face)
+
+
+def print_line(p, a, b, ground):
+    """Big footprints walking from a to b, a long stride apart, left then right."""
+    n = max(1, round((b - a).length / 1.07))
+    spin = math.atan2(b.y - a.y, b.x - a.x)
+    side = turn(Vector((0, 0.24, 0)), spin)
     for k in range(n):
-        footprint(p, a.lerp(b, (k + 0.5) / n) + side * (1 if k % 2 else -1), spin, ground)
+        left = k % 2 == 0
+        footprint(p, a.lerp(b, (k + 0.5) / n) + side * (1 if left else -1), spin, ground, left)
 
 
 def snowy_peaks(p, rng, kind):
@@ -2555,18 +2570,18 @@ def snowy_peaks(p, rng, kind):
         elif kind == "centre_mid":
             snow_pine(p, rng, bt.on_ground(bt.field_spot(2, 1.3), kind))
             bones(p, rng, bt.on_ground(bt.field_spot(5, 1.15), kind))
-            print_line(p, Vector((0.25, 0, 0)), Vector((X0, 0, 0)), 0.0, ground)
+            print_line(p, Vector((0.25, 0, 0)), Vector((X0, 0, 0)), ground)
         elif kind == "centre_near":
             bones(p, rng, bt.on_ground(bt.field_spot(0, 1.2), kind))
             bones(p, rng, bt.on_ground(bt.field_spot(5, 1.2), kind))
             bones(p, rng, bt.on_ground(bt.field_spot(3, 1.1), kind), skull=False)
-            print_line(p, Vector((0.25, 0, 0)), Vector((X0, 0, 0)), 0.0, ground)
+            print_line(p, Vector((0.25, 0, 0)), Vector((X0, 0, 0)), ground)
         return
     bt.hill_surface(p, [0], X0, X1, bt.surface_kind(kind), grass="snow_ground", cliff="ice_rock", rock_slope=0.6)
     if kind == "edge_trail":
-        print_line(p, Vector((X0, 0, 0)), Vector((X1, 0, 0)), 0.0, ground)
+        print_line(p, Vector((X0, 0, 0)), Vector((X1, 0, 0)), ground)
     elif kind == "edge_trail_in":
-        print_line(p, Vector((X0, 0, 0)), Vector((X1, 0, 0)), math.pi, ground)
+        print_line(p, Vector((X1, 0, 0)), Vector((X0, 0, 0)), ground)
     elif kind == "same":
         bt.outcrop(p, rng, Vector((X0 + 1.05, 0.9, 0)), kind, 0.8, ice)
     elif kind == "other":  # the wood's edge, clear of any rock: pines, and grass showing near the edge
@@ -2615,7 +2630,7 @@ def yeti_cave(p, rng, kind):
         q = mouth + Vector((0.2, y, 0.0))
         spike(p, q, q + Vector((0, 0, 0.33)), 0.09, "ice", segments=4)
     ground = lambda q: height(bt.hex_depth(q)) + 0.02  # noqa: E731
-    print_line(p, Vector((0.95, 0, 0)), Vector((X0, 0, 0)), math.pi, ground)
+    print_line(p, Vector((1.66, 0, 0)), Vector((1.0, 0, 0)), lambda q: ground(q) + 0.05)
     for q, skull in ((Vector((1.15, 0.72, YETI_TOP)), True), (Vector((1.2, -0.75, YETI_TOP)), True), (Vector((0.85, 1.05, YETI_TOP)), False)):
         bones(p, rng, q, skull=skull)
     p.paths.append([Vector((X0, 0, bt.H0)), mouth + Vector((0.3, 0, 0))])
