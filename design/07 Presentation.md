@@ -79,7 +79,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Ruins | Haunted ruins | Pale blue-green light seeping from cracks and doorways, with faint spirit wisps, stronger at night; toppled gravestones, sarcophagi and mausoleum fronts; thin mist pooling and drifting between the stones |
   | Ruins | Golem-guarded ruins | Big dormant stone golems standing or kneeling, eyes and runes faintly lit; carved runes on walls and paving pulsing amber or blue; grander, less crumbled ruins with columns, arches and stairs still standing |
 
-- **Landmark tiles** (chosen Nov 1, 2026): each variant's core location (its landmark; rule: [Map & exploration](02 Map & exploration.md) → Landmarks) is a tile with its own look, built from the variant's look, on the random tile the region picks when it finishes. **The variant's other tiles play up or flow into the landmark** (Ethan, Nov 1, 2026), so the region leads the eye to it; how each variant does it is being tried in the art kits.
+- **Landmark tiles** (chosen Nov 1, 2026): each variant's core location (its landmark; rule: [Map & exploration](02 Map & exploration.md) → Landmarks) is a tile with its own look, built from the variant's look, on the random tile the region picks when it finishes. **The variant's other tiles play up or flow into the landmark** (Ethan, Nov 1, 2026), so the region leads the eye to it; how each variant does it is being tried in the art kits. **Not every terrain needs paths** (Ethan, Nov 1, 2026): open terrain such as the plains variants has no drawn trails, and leads the eye by what thickens toward the landmark instead.
 
   | Variant | Core location | Look |
   | --- | --- | --- |
@@ -90,7 +90,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Haunted homesteads | Abandoned Barn | A big haunted barn standing upright (not leaning), weathered grey, with one faint light glowing through its boards at night and a small family graveyard with a few stones beside it (chosen Nov 1, 2026; was a leaning farmhouse, which looked odd) |
   | Cider orchards | Harvest Festival | A festival green among the orchards with stalls, a maypole and long tables (chosen Nov 1, 2026; the details are the art's first pass) |
   | Bandit-raided farms | Militia Barn | A big red barn behind a palisade of sharpened stakes, with a lookout platform on the roof and pitchforks and spears racked by the doors (chosen Nov 1, 2026) |
-  | Rolling meadows | Nomad Camp | Round felt tents in a ring round a central fire, with a picket line of horses and rugs drying on racks (chosen Nov 1, 2026). Flow: worn tracks through the grass with a few blue-cloth spirit poles and horses heading in; an outlying tent, rugs and horses next to the camp |
+  | Rolling meadows | Nomad Camp | Round felt tents in a ring round a central fire, with a picket line of horses and rugs drying on racks (chosen Nov 1, 2026). Flow: no paths; herds and outlying tents, rugs and spirit poles get thicker toward the camp |
   | Steppe/battlefield | Old Battlefield | A ruined war camp: tattered banners on poles, collapsed tents, a broken palisade and rows of old graves (chosen Nov 1, 2026) |
   | Stormy plains | Thunderbird Nest | A tall lone rock spire with a huge nest of charred logs on top, crackling faintly, with big feathers on the ground (chosen Nov 1, 2026) |
   | Tourney fields | Training Grounds | A round wooden arena with tiered stands and banners, its sand floor visible from above (chosen Nov 1, 2026) |
