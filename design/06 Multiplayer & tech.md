@@ -18,7 +18,7 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 - A guest brings their own hero (not their companions).
 - The party stays at 4: **each guest who joins replaces the last companion in the party** (chosen Nov 1, 2026, replacing "the host chooses which"). The host can swap party members around afterwards (the party swap: [Classes & combat](03 Classes & combat.md) → Hero and companions); a companion who drops out waits at inns and camps like any companion who doesn't fit.
 - **Joining mid-game** (chosen Nov 1, 2026): the guest's hero drops in right beside the host's hero, wherever the host is, even when the party is split up.
-- **Joining while the host is still making their hero** (chosen Nov 1, 2026): the guest's character creator ends with **Ready** instead of Begin, and the game starts for everyone with the host's Begin. If the host is already playing, the button reads **Join** and the guest drops straight in (send-off: [Presentation](07 Presentation.md) → Character creator screen).
+- **Joining while the host is still making their hero** (chosen Nov 1, 2026): the guest's character creator ends with **Ready** instead of Begin, and the game starts with the host's Begin; guests who aren't Ready yet just drop in beside the host's hero when they finish (chosen Nov 1, 2026). If the host is already playing, the button reads **Join** and the guest drops straight in (send-off: [Presentation](07 Presentation.md) → Character creator screen).
 - **A guest's background doesn't touch the story or the start** (chosen Nov 1, 2026): guests always play in the host's world, so only the host's background sets the opening and the chapters (see Quests and story below). A guest's background still shapes their own hero as usual.
 - If the host leaves, the session ends for everyone.
 - On leaving, a guest keeps only their hero's progress: XP, gear and levels. Card unlocks, quest progress and Legendaries stay with the host's world.
@@ -117,4 +117,4 @@ Engine comparison as of Oct 2026 (checked against public info; re-check pricing 
 - [x] ~~Does the code change each session; can the host turn joining off?~~ (settled Nov 1, 2026: the host sets a code that stays the same, and switches multiplayer on or off on the title screen)
 - [x] ~~A taken host-chosen code; removing a guest~~ (settled Nov 1, 2026: codes are rolled when hosting is switched on, so hosts don't pick them; the host can remove a guest)
 - [ ] **New:** where the host's Remove button sits (party panel tag, pause menu panel) and what a removed guest sees
-- [ ] **New:** when the host presses Begin, must every guest be Ready first, or do unready guests drop in when they finish?
+- [x] ~~Must guests be Ready before the host's Begin?~~ (settled Nov 1, 2026: no; they drop in when they finish)

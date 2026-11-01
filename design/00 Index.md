@@ -219,7 +219,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
 - [x] ~~A guest's send-off~~ (settled Nov 1: Ready / Join, dropping in beside the host's hero; the last companion makes room)
-- [ ] New (Nov 1): the party swap (recruits beyond 3 wait at inns and camps); must guests be Ready before the host's Begin?
+- [ ] New (Nov 1): the party screen's layout (swaps only at inns and camps; inn first, camp later). Guests not Ready at Begin drop in when they finish (settled)
 - [ ] New: onboarding: the tutorial's lesson order; timing against the mentors' stories; returning players and guests with no skipping (see Presentation → Onboarding)
 - [ ] New: names for the six starting quests
 - [ ] New: names for the unnamed racial passives (v8 working names)
