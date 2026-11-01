@@ -181,7 +181,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Exact backdrop colours per time of day~~ (settled Oct 30: the Godot prototype's light, revisit in playtesting; see Presentation → Art direction)
 - [ ] New: the size of the rift's lilac shift
 - [x] ~~Touch: long-press on HUD controls, and a minimum text size on phones~~ (settled Oct 31: portraits show effects and the rest do nothing; 11 pt floor. Screen edges settled Oct 30: the UI shifts away from the Dynamic Island)
-- [ ] New: exploration v9 (the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
+- [ ] New: the next exploration version (planned as v9, which went to the button cluster on Nov 1: the party as a cluster of true-scale minis) and combat v15 (flat-top cells), both chosen Oct 29
 - [ ] New: which way water flows (prototype placeholder: toward the bottom of the screen)
 - [ ] New: farm and village border variants for terrain variants (stacked stone, block walls; wooden fence is the default)
 - [ ] New: minis painted, unpainted or mixed
