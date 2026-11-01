@@ -370,7 +370,20 @@ Debug: `-- --forest` (or F9 on PC) spawns a finished 7-tile region of each fores
 
 The phone wasn't plugged in, so the 120 fps target is untested. The phone last held 120 fps at about 300 draw calls.
 
-**Next on the phone (Ethan, Nov 1):** run the forest debug spawn zoomed all the way out on the iPhone and report its fps and draw calls (`--forest` plus `HEXGEN_PHONECHECK=1`; see iOS: Simulator and iPhone). Don't merge each tile's pieces into one mesh until that test says it's needed.
+**On Ethan's iPhone 15 Pro (Nov 1, 2026; iOS 26.6.2, Mobile renderer on Metal):** the forest spawn holds **120 fps**, the screen's top rate, in every view. Launched with `DEVICECTL_CHILD_HEXGEN_PHONECHECK=1 DEVICECTL_CHILD_HEXGEN_FORESTPERF=1`, which runs `PhoneCheck._forest_perf`.
+
+| View | fps | Worst frame | Draw calls | Triangles |
+| --- | --- | --- | --- | --- |
+| Day, opening zoom (58 m) over heartwood | 119.9 | 13.1 ms | 400 | 173,000 |
+| Day, zoomed all the way out (110 m) | 120.0 | 8.5 ms | 810 | 258,000 |
+| Across nightfall, clock running | 120.0 | 9.4 ms | | |
+| Night, opening zoom | 120.0 | 8.7 ms | 428 | 183,000 |
+| Night, 110 m (the game limits night to 60 m) | 120.0 | 8.5 ms | 849 | 275,000 |
+
+- **CPU and GPU time:** render CPU time is about 0.3 ms a frame. Godot reports no GPU time on Metal (0.00), so the GPU headroom isn't measured.
+- **Shadows:** two shots 1.5 s apart differ on only 0.03% (day) and 0.04% (night) of pixels, scattered like the drifting seeds and motes. The shadows hold still.
+- **Nightfall:** no hitch (worst frame 9.4 ms).
+- **Mesh merging:** not needed yet. Each tile's pieces stay separate.
 
 ## Terrains and region variants (tiles v13)
 
