@@ -45,7 +45,7 @@ Instead of plain deck thinning (a smaller deck runs dry sooner and loses buildin
 - Level cap: 100.
 - **Working scale, not final** (noted Oct 22, 2026): the 1–100 spread leaves room between levels to add things while designing. A level condense is planned before release, and in the final game every level-up should grant something; a level with no reward feels bad. Level numbers in these docs (e.g. 5, 10, 15, 20) are placeholders for that condense.
 - Every 5 levels, a milestone offers terrain picks: the player chooses terrain cards to add to the deck permanently (changed Oct 24, 2026 from a rarity-weighted pick of 1 card from 3). How many cards and choices: open.
-- **Ability score increases at levels 8 and 16** (restored Oct 27, 2026; an Oct 26 change had replaced them with ability points on every level-up): each character gets +1 ability point, which the player places on the score they choose. Other levels give no ability points.
+- **Ability score increases at levels 4, 8, 12 and 16** (restored Oct 27, 2026 at 8 and 16; an Oct 26 change had replaced them with ability points on every level-up; 4 and 12 added Nov 1, 2026 so main scores keep pace with combat heads targets: see [Classes & combat](03 Classes & combat.md) → Hit chance scaling): each character gets +1 ability point, which the player places on the score they choose. Other levels give no ability points.
 - **General feats** at levels 4 and 12 (decided Oct 27, 2026): see General feats below.
 - Level milestones also widen sight range (see [Map & exploration](02 Map & exploration.md) → Day and night).
 - Class card unlocks by level (class action cards, spells): see [Classes & combat](03 Classes & combat.md) → Class action cards. New combat cards come only from level-ups (exceptions: [Classes & combat](03 Classes & combat.md) → Class action cards); class locations upgrade them and teach skills (decided Oct 22, 2026; see Class locations).
@@ -55,7 +55,7 @@ Instead of plain deck thinning (a smaller deck runs dry sooner and loses buildin
 
 Decided Oct 27, 2026. Feats are perks any class can pick at set levels.
 
-- **Levels:** 4 and 12 (placeholders for the level condense). Neither level grants another unlock. Feats after level 20: open.
+- **Levels:** 4 and 12 (placeholders for the level condense). Each also gives a +1 ability score increase (since Nov 1, 2026), and nothing else. Feats after level 20: open.
 - **Requirements:** total level, an ability score, race or background. Never class.
 - **Picking:** a free pick from every feat the character qualifies for. Level-12 feats need level 12, and the level-12 pick can also be any level-4 feat.
 - **What a feat can do:** mostly passive perks; a few grant an action card (new combat cards come only from level-ups, and a feat pick is a level-up). Feats build only on rules that already exist.
@@ -277,7 +277,7 @@ All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](0
 - [ ] Full progression system, levels 1–100: what every level grants (including levels between milestones), ability score and HP growth, and card unlocks beyond level 15, and at which levels martials' weapon mastery trainings unlock (counts by level 15 are set: see Levels and milestones; general feats at 4 and 12 are set: see General feats)
 - [x] ~~Ability points per level-up~~ (settled Oct 27, 2026: no per-level points; +1 at levels 8 and 16, placed by the player: see Levels and milestones)
 - [ ] **New:** ability score increases after level 16: which levels
-- [ ] **New (Oct 27, 2026, saved for later):** rethink when ability score increases come, planned together with when enemies raise their attacks, defenses and saves. At higher heads targets checks get hard fast (pass chances: [Classes & combat](03 Classes & combat.md) → Coin checks), which pushes players to stack their main score
+- [x] ~~Rethink when ability score increases come, together with enemy attacks, defences and saves~~ (settled Nov 1, 2026: +1 at 4, 8, 12 and 16; enemy scaling in [Classes & combat](03 Classes & combat.md) → Hit chance scaling). Saves outside combat: still open there
 - [ ] **New (mockup placeholder "+[XP]"):** XP: what earns it (fights, quests, finished regions, story beats?), how much each gives, and how much each level needs
 - [ ] **New:** level condense: the real level cap, mapping today's placeholder levels onto it, and making sure every level-up grants something
 - [ ] Draw amounts: final tuning in playtest. With the hand cut to 7, draws of 3 and 5 refill a much bigger share of the hand; shrink them, or keep them so one fight still gets the player building? (Big Hand and Night Owl push on this too.)
