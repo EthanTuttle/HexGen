@@ -1,14 +1,14 @@
-# Farmland kit hand-off (tiles_v33)
+# Farmland kit hand-off (tiles_v34)
 
 This kit holds tier 0 farmland and villages with their fence gates, windmill country with the Great Windmill (tier 1), and three tier 2 variants: haunted homesteads with the Abandoned Barn, bandit-raided farms with the Militia Barn, and cider orchards with the Harvest Festival. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v33.blend`.
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v34.blend`.
 - **Path data and effect points:** in the glb as node extras, and in `art/export/tiles_paths.json`.
 - **Looks:** `design/07 Presentation.md` → Art direction → Region variant looks and Landmark tiles.
 - **Engine rules:** `design/06 Multiplayer & tech.md` → Tile build.
 - **Walking along paths:** `design/07 Presentation.md` → Exploration screen → Walking.
 - **Build notes per piece:** `art/README.md` → Units and pieces.
-- **Previews:** `art/preview/farmland_*_v6.png` and `art/preview/farmland_t2_*_v6.png` (the Abandoned Barn close-up is `_v5`), plus `farmland_markettown_gates_v2.png` and `farmland_markettown_gate_closeup_v2.png`.
+- **Previews:** `art/preview/farmland_*_v6.png` and `art/preview/farmland_t2_*_v6.png` (the Abandoned Barn close-up is `_v5`; the windmill country maps are `farmland_windmill_landmark_v7.png` and `farmland_windmill_paths_v7.png`), plus `farmland_markettown_gates_v2.png` and `farmland_markettown_gate_closeup_v2.png`.
 
 The trail rule, near centres and landmark turn work as in the forest kit (`art/handoff/forest_kit.md` → Choosing pieces); only what's new for farmland is written out here.
 
@@ -21,7 +21,7 @@ Every piece sits on `base_farmland` (`base_village` for villages and market town
 | `farmland` (tier 0) | `plains` | centre / centre_b 340, edge_same / edge_same_b 180, edge_other 384, edge_gate 408 |
 | `village` (tier 0) | `cobble` | centre 368, edge_same 160, edge_other 232, edge_gate 376 |
 | `market_town` (tier 1) | `cobble` | centre 1,036, edge_same 456, edge_other 256, edge_gate 380 |
-| `windmill_country` (tier 1) | `plains` | centre 360, centre_b 364, centre_mill 452, centre_near 408, edge_same 180, edge_same_b 260, edge_other 384, edge_other_lm 312, edge_gate 408, trail / in about 300 / 200 |
+| `windmill_country` (tier 1) | `plains` | centre 360, centre_b 364, centre_mill 272 plus `windmill_small` 180, centre_near 408, edge_same 180, edge_same_b 260, edge_other 384, edge_other_lm 312, edge_gate 408, trail / in 308 / 204 |
 | `greatwindmill` (landmark) | `plains` | centre 468, plus `greatwindmill_sails` 252 (separate piece; see Turning sails) |
 | `haunted_homesteads` (tier 2) | `haunted` | centre 502, centre_b 540, centre_near 540, edge_same / edge_same_b 148, edge_other 288, edge_other_lm 264, edge_gate 420, trail / in 174 / 318 |
 | `abandonedbarn` (landmark) | `haunted` | centre 862 |
@@ -37,7 +37,7 @@ Every piece sits on `base_farmland` (`base_village` for villages and market town
 - **Field layouts:** `centre` and `centre_b` have different field shapes (each field's rows run along a different lane, picked by the piece's seed) and crops. A tile uses `centre_b` when `hash01(q, r, 13) < 0.5`. With the turn, that's 12 looks per variant. A joined edge `i` uses `edge_same_b` when `hash01(q * 6 + i, r, 8) < 0.5`, as for heartwood.
 - **Field mixes:** plain farms are all gold (two golds); windmill country is gold, with stubble yards for its small mills; haunted is withered rows broken up with bare dead earth (`dead_earth`); raided is burnt fields among gold.
 - **Fence edges:** `edge_other` also fills the centre's unused lane with crop, up to 0.75 from the middle. On a landmark tile use `<variant>_edge_other_lm` instead, with no fill, because the landmark's yard lies there. The same applies to a centre-only landmark in these variants: `greatwindmill`, `abandonedbarn`, `militiabarn`.
-- **Windmill country:** `centre_mill` has a small windmill in its stubble yard. The preview uses it on about half the tiles, where `hash01(q, r, 7) < 0.5`; this takes priority over `centre_b` and `centre_near`.
+- **Small windmills (tiles_v34):** `windmill_country_centre_mill` has the stubble yard but no mill. The mill is its own piece, `windmill_small` (180 triangles, origin at its foot, facing -Y in Blender's frame, +Z in the glb, toward the default camera). Place it on the tile at `variants.SMALL_MILL_SPOT` (0, 1.66 in Blender's frame; 0, 0, -1.66 in the glb's Y-up frame), turned about the tile's middle by the centre's turn, but don't turn the mill itself, so all small mills face one way and the sails never show edge-on from the default camera. It keeps that facing if the player turns the camera. The preview uses `centre_mill` on about half the tiles, where `hash01(q, r, 7) < 0.5`; this takes priority over `centre_b` and `centre_near`.
 - **Budget:** the heaviest full tile, a cider orchard, is about 2,600 triangles, far under the forest's deep forest (4,816).
 
 ## Materials
@@ -103,7 +103,6 @@ Every farm variant and landmark has a `DENSITY` entry of 0.0, like farmland: the
 
 ## Still not working
 
-- **Small mills' sails:** a mill turns with its centre, so from a given camera some mills show their sails nearly edge-on.
 - **Merged fields:** lanes must stay open for routes, so centre fields can't merge across a lane. Fields only read as merged with the wedge field beyond them, not with a neighbour in the centre.
 - **Lane fill through a yard:** on a fence edge that happens to meet the yard's middle lane, the crop strip splits the yard in two.
 - **Spilled sacks and barricades:** on raided farms' wedges these still stand on crops, as approved props.
