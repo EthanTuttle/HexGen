@@ -288,6 +288,15 @@
    "title": "Title v9 \u00b7 v8 with rolled codes: the Host side shows only the switch while hosting is off; switching it on rolls a new 6-letter code (no I or O) shown as letter tiles. No Change button: hosts no longer pick a code. The code stays while hosting stays on",
    "is_interactive": true,
    "radius": 28
+  },
+  "Title-v10-SteadyHost.dc.html": {
+   "x": 0,
+   "y": 13090,
+   "w": 844,
+   "h": 390,
+   "title": "Title v10 \u00b7 v9 with the space for \"Your code\" and its letter tiles always kept, so the panel never changes size; they only fade in when hosting is switched on",
+   "is_interactive": true,
+   "radius": 28
   }
  },
  "order": [
@@ -321,7 +330,8 @@
   "Title-v6c-HostRow.dc.html",
   "Title-v7-SteadyMultiplayer.dc.html",
   "Title-v8-CentredLabel.dc.html",
-  "Title-v9-RolledCode.dc.html"
+  "Title-v9-RolledCode.dc.html",
+  "Title-v10-SteadyHost.dc.html"
  ],
  "notes": {
   "v1": {
@@ -433,6 +443,13 @@
    "x": 0,
    "y": 12060,
    "text": "v9 \u00b7 rolled join codes",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v10": {
+   "x": 0,
+   "y": 12830,
+   "text": "v10 \u00b7 the Host panel holds still",
    "kind": "title1",
    "maxW": 2692
   }
