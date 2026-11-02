@@ -53,8 +53,9 @@ def climbs(region, terrains, raised=()):
     Only those whose foot is open count. One outer edge in six is taken, by hash, at most one per tile and never on tiles
     side by side. A taken one shows only while the land in front of its foot is walkable and clear: not fenced, and not
     forest, whose trees would stand in front of it. If that leaves none, the clear one with the lowest hash shows, then the
-    walkable one, so a region with walkable land in front of a possible foot can always be reached. Otherwise there's
-    no way up yet."""
+    walkable one, so a region with walkable land in front of a possible foot can always be reached. Failing that, the one with
+    the lowest hash whose foot opens onto a placed river or lake tile, reached by a check or a raft (design/02 -> Crossing
+    water), so a region ringed by water always has a way up. Otherwise there's no way up yet: nothing is placed there."""
     raised = set(raised) | set(region)
 
     def walkable(t, i):
@@ -72,4 +73,5 @@ def climbs(region, terrains, raised=()):
             break
         if all(t != t2 and t2 not in [beside(t, k) for k in range(6)] for t2, _ in taken):
             taken.append((t, i))
-    return [e for e in taken if clear(*e)] or [e for e in ranked if clear(*e)][:1] or [e for e in ranked if walkable(*e)][:1]
+    return [e for e in taken if clear(*e)] or [e for e in ranked if clear(*e)][:1] or [e for e in ranked if walkable(*e)][:1] \
+        or [e for e in ranked if terrains.get(beside(e[0], e[1] - 1)) in UNWALKABLE][:1]

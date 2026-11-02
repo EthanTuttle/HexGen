@@ -1053,7 +1053,7 @@ if __name__ == "__main__":
                 **{t: ("salamanderden" if t == (4, -1) else "volcanic_peaks") for t in second}}
         scene("hills_touching_raised", both, [(LANDMARK_REGION, "snowy_peaks"), (second, "volcanic_peaks")])
         river = {**{t: "river" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
-        scene("hills_noway_raised", river, [(LANDMARK_REGION, "snowy_peaks")])
+        scene("hills_ringed_raised", river, [(LANDMARK_REGION, "snowy_peaks")], foot=True)  # a ledge's foot on the water
         scene("hills_snowy_rising_raised", base, [(LANDMARK_REGION, "snowy_peaks")], 0.5)
         fenced = {**{t: "farmland" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
         # Ground-level hills beside a raised region: all the land round it, so every ledge's foot faces them.

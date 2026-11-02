@@ -97,7 +97,7 @@ Ethan chose this at height 5 (design/06 → Tile build). Only `snowy_peaks` and 
 Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_cliffs.py` (see Which ledges) and `render_preview.raise_region`. Previews, for `snowy` and `volcanic` (the `highlands` and `monastery` `_raised` previews are left from when they rose, and no longer apply):
 - **Regions:** `hills_<variant>_7_raised_v3.png`, `_12_raised_v3`, `_low_raised_v3` (from the foot of a cliff), `_climb_raised_v3` (a ledge, its route in red).
 - **Every ledge, in the 7- and 12-tile regions:** `hills_<variant>_<7|12><a|b|c>_foot_raised_v1` (low, from the land in front of the foot) and `_top_raised_v1` (from above the plateau). These are new, so they start at v1.
-- **Scenes:** `hills_snowy_added_before_raised_v2`, `hills_snowy_added_after_raised_v3`, `hills_touching_raised_v2`, `hills_noway_raised_v2`, `hills_snowy_rising_raised_v2`, `hills_fenced_foot_raised_v1`, `hills_fenced_foot_raised_foot_v1`, `hills_snowy_beside_highlands_raised_v1`, `hills_snowy_beside_tier0_raised_v1`, `hills_volcanic_beside_monastery_raised_v1` (each with a `_foot_v1`).
+- **Scenes:** `hills_snowy_added_before_raised_v2`, `hills_snowy_added_after_raised_v3`, `hills_touching_raised_v2`, `hills_ringed_raised_v1` with `_foot_v1`, `hills_snowy_rising_raised_v2`, `hills_fenced_foot_raised_v1`, `hills_fenced_foot_raised_foot_v1`, `hills_snowy_beside_highlands_raised_v1`, `hills_snowy_beside_tier0_raised_v1`, `hills_volcanic_beside_monastery_raised_v1` (each with a `_foot_v1`).
 
 **The rule: one height per region, and cliff pieces per outer edge.** No vertex shifting or baking:
 
@@ -129,7 +129,7 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 - **Foot:** straight ahead lies the tile on edge `i - 1`, low and walkable. No cliff section within 8 straight out, within 4 at 45° either way, or nearer than 1.5.
 - **Top:** comes out on the tile's own ground.
 - **Gates:** none opens onto a cliff except at a foot, every fenced tile in front of a foot has its gate there, and every fenced group with walkable low land beside it has a gate onto that land.
-- **Result at 20,000 shapes:** 40,581 ledges, 0 failures. 403 shapes had no walkable land beside them, so no way up, as decided. 1,097 had some walkable land but none in front of a possible foot, so they wait for more land; none of those had walkable land all round.
+- **Result at 20,000 shapes (Nov 2, 2026):** 41,720 ledges, 0 failures, 1,139 of them opening onto water, and only where no foot could open onto land. Every one of 16,976 single regions tried ringed by water has a way up, with its ledges passing the same checks. 93 shapes had no ledge and no walkable land, and 268 had some walkable land but none in front of a possible foot: all have unplaced slots or a second raised region in the way, so they wait for more land. With the water fallback removed, the test fails (433 failures in 500 shapes).
 
 **The ledge:** cut into the cliff, climbing round the tile's corners in one long run rather than switchbacks, which is what let it fit inside the line.
 - **Foot:** about the middle of edge `i - 1`, where it widens toward the land in front. Before it, that edge is plain cliff, with a rock wall closing the ledge's end, so nothing leads the eye along the wall into a neighbouring cliff.
@@ -166,7 +166,7 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 
 **Two raised regions touching:** they join as one plateau (Ethan's choice, design/06): no cliff between them, at one height (`hills_touching_raised_v2`). They use `edge_other` there, so the ground dips to the join. Each has its own ledges, on land that isn't raised. If one has none, the party can still cross from the other, since the ground joins.
 
-**No walkable land beside it:** `climbs()` returns nothing (`hills_noway_raised_v2`, ringed by a river), so there's no way up. Beside empty slots that fixes itself once land is placed, as with fence gates. Land round it can also be raised region that has its own ledge. A river all round stays that way until crossing gear or boats are set up (Ethan's choice, design/02 → Obstacles), so no bridge or ford is drawn.
+**No walkable land beside it (changed Nov 2, 2026):** a ledge's foot may now open onto a placed river or lake tile when no foot can open onto land, reached by a check or a raft (design/02 → Crossing water; `hills_ringed_raised_v1`). So a region ringed by water always has a way up. `climbs()` tries these last, after clear land and any walkable land. The foot stands on the water tile's edge, which is a land edge for that tile, so its `water.landings` entry joins the foot: the foot's route starts 0.13 from that edge's midpoint, as on land. **For the engine:** copy `cliffs.climbs` again, and run it again when water or land is placed in front of a foot, since land placed later takes over from a water foot by the usual order. No pieces changed. Beside empty slots there's still no way up until something is placed.
 
 ## Monastery steps: `steps_centre` and `steps_rise`
 

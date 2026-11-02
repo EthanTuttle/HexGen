@@ -1,6 +1,6 @@
 """Checks cliffs.climbs() on random region shapes, by the geometry rather than by the rule's own terms: every ledge's foot
-must open onto a walkable neighbour straight ahead, with no other cliff section in front of or beside it, and its top must
-come out on the region's own ground. Fence gates must never open onto a cliff except at a foot, always open at a foot, and
+must open onto a placed low neighbour straight ahead (water only when no foot can open onto land), with no other cliff section
+in front of or beside it, and its top must come out on the region's own ground. A region ringed by water always has a ledge. Fence gates must never open onto a cliff except at a foot, always open at a foot, and
 every fenced group with walkable low land beside it must have a gate onto that land. Plain Python: python3 art/scripts/test_cliffs.py [shapes] [seed]. Exits 1 on a failure.
 """
 import math
@@ -64,8 +64,10 @@ def check(region, terrains, raised, climb, foot_y=FOOT_Y):
     front = gc.tile_at(foot[0] + out[0] * 3, foot[1] + out[1] * 3)
     if front != cliffs.beside(t, edge):
         wrong.append(f"straight ahead is {front}, not the tile on edge {edge}")
-    if terrains.get(front, "river") in cliffs.UNWALKABLE or front in raised:
-        wrong.append(f"straight ahead, {front} isn't walkable low land")
+    if front not in terrains or front in raised:
+        wrong.append(f"straight ahead, {front} isn't placed low ground")
+    elif terrains[front] in cliffs.UNWALKABLE and cliffs.climbs(region, {k: v for k, v in terrains.items() if v not in cliffs.UNWALKABLE}, raised):
+        wrong.append(f"straight ahead, {front} is water, though a foot could open onto land")
     others = [(r, k) for r in raised for k in range(6) if cliffs.beside(r, k) not in raised and (r, k) != (t, edge)]
     for r, k in others:
         seg = segment(r, k)
@@ -148,6 +150,7 @@ def main(shapes=20000, seed=1):
         print("FAIL the test doesn't catch a foot at a concave corner")
         return 1
     failures, climbs_seen, none_with_land, none_no_land, full = [], 0, [], 0, 0
+    on_water, ringed = 0, 0
     for n in range(shapes):
         region = ring_shape(rng) if rng.random() < 0.05 else blob(rng, rng.randint(1, 40))
         raised = set(region)
@@ -162,6 +165,15 @@ def main(shapes=20000, seed=1):
                 terrains[t] = rng.choice(land)
         shown = cliffs.climbs(region, terrains, raised)
         climbs_seen += len(shown)
+        on_water += sum(terrains[cliffs.beside(c[0], c[1] - 1)] in cliffs.UNWALKABLE for c in shown)
+        if raised == region:  # ringed by water: there must be a way up, by a check or a raft
+            ringed += 1
+            ring = {**{t: "hills" for t in raised}, **{t: "river" for t in around(raised)}}
+            if not cliffs.climbs(region, ring, raised):
+                failures.append((sorted(region), "ringed", "a region ringed by water has no way up"))
+            for c in cliffs.climbs(region, ring, raised):
+                for w in check(region, ring, raised, c):
+                    failures.append((sorted(region), c, w))
         for c in shown:
             for w in check(region, terrains, raised, c):
                 failures.append((sorted(region), c, w))
@@ -175,7 +187,8 @@ def main(shapes=20000, seed=1):
             else:
                 none_no_land += 1
     print(f"{shapes} shapes, {climbs_seen} ledges checked: {len(failures)} failures")
-    print(f"No ledge with no walkable land beside it: {none_no_land} shapes (expected: no way up yet)")
+    print(f"Ledges opening onto water: {on_water}. Regions tried ringed by water: {ringed}")
+    print(f"No ledge with no walkable land beside it: {none_no_land} shapes (expected only with nothing placed in front of a foot)")
     print(f"No ledge though walkable land is beside it: {len(none_with_land)} shapes, {full} of them with walkable land all round")
     for region, c, w in failures[:10]:
         print("FAIL", c, w, "region", region)

@@ -38,7 +38,16 @@ A long raft of lashed logs, with a striped sail at the back so it reads at map z
 
 - **Seats:** its `effects` list has four `seat` points, one behind the other, for up to four minis. Bases overlap a little, as they do when a party stops.
 - **Size:** 3.5 long and 1.4 wide, to fit a 1.5-wide river. The long shape keeps the party's order. It turns as one piece, so on a tight bend it can clip a bank.
-- **Engine:** at a landing, swap the party's walk for the raft under its seats, moved along the line and bobbing; swap back at the far landing. No animation of stepping on is drawn.
+- **Engine:** the raft is a permanent purchase carried with the party (design/02 → Crossing water), not a thing left on the bank. So it only appears for a crossing: at a landing, show it under the seats and swap the party's walk for it, moved along the line and bobbing; hide it at the far landing. It can fade or pop in; no animation of stepping on is drawn.
+
+## Crossing with an Athletics check
+
+No raft. Pass or fail, the party crosses on the same lines (design/02: a failed check costs everyone some HP). No new art: lower the minis to about waist height on the water lines, and add a splash effect at each landing and, on a fail, on the party. The splash is the engine's; no effect points are in the pieces, since a landing is worked out at runtime.
+
+## Decided for round 2
+
+- **Meditation Rock:** its stepping stones are free to walk, with path data across them.
+- **Lake Serpent's Lair:** a check or a raft, no causeway: a landing spot at the rock, with a route to the cave.
 
 ## River Port
 
@@ -57,7 +66,7 @@ The harbour needs the same shader treatment as other water. Both are in `add_wat
 
 **Routes:** `port_routes(water, t)` gives `(land, floats)` in the tile's frame. All land routes end at `PORT_STOP` on the quay, coming through the alley in the row or along the quay; floats end at `PORT_FLOAT`, and that joins `PORT_STOP` at the quay's steps.
 
-**Rafts for sale:** a stack and a sign on the quay, and one moored by the steps.
+**Rafts for sale:** a stack and a sign on the quay, and one moored by the steps. These are set dressing; the party's own raft is the `raft` piece.
 
 **Effects:** `smoke` at the tavern's chimney. `window_glow` on the row. `ground_cover.py`: `riverport` has density 0 and a `no_cover` circle.
 
@@ -74,3 +83,4 @@ The harbour needs the same shader treatment as other water. Both are in `add_wat
 - **Lakes:** a delta region that forms triangles of tiles turns into a lake with scattered islands, not channels.
 - **Tall row, small harbour:** the harbour is small at map zoom, and a region with little water shows the port as a town beside a pond.
 - **Placeholder colours:** `timber_light` is new.
+- **Ledges onto water:** `cliffs.climbs` changed, and its foot on a water tile is in `art/handoff/hills_kit.md`. Godot needs it from this branch.
