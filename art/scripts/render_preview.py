@@ -22,6 +22,7 @@ import fence_gates as fg  # noqa: E402
 import json  # noqa: E402
 import sand  # noqa: E402
 import variants as vr  # noqa: E402
+import village_streets as vs  # noqa: E402
 import water as wt  # noqa: E402
 
 # Pointy-top axial (q, r) -> terrain. Two forests touch, a river runs into a lake, villages join.
@@ -102,7 +103,7 @@ WINDMILL_MAP = {**{k: v for k, v in FLOW_RING.items()},
                 **{t: ("greatwindmill" if t == LANDMARK_AT else "windmill_country") for t in LANDMARK_REGION}}
 
 
-def draw_effects(col, templates):
+def draw_effects(col, templates, thin=False):
     """Stand-ins for the engine's effects at each placed piece's effect points: a fire (orange cone), smoke (a
     grey column) or circling crows (black specks), so a preview shows where they go."""
     bpy.context.view_layer.update()
@@ -121,6 +122,10 @@ def draw_effects(col, templates):
             elif e["kind"] == "fire":
                 p.cone(at, 0.14, 0.32, "ember", segments=5)
             elif e["kind"] == "smoke":
+                if thin:  # a town's many chimneys: a thin wisp each
+                    for k in range(3):
+                        p.blob(at + Vector((0.04 * k, 0.03 * k, 0)), 0.07 + 0.015 * k, "rock_light", z=0.1 + 0.2 * k)
+                    continue
                 for k in range(4):
                     p.blob(at + Vector((0.08 * k, 0.05 * k, 0)), 0.16 + 0.05 * k, "rock_light", z=0.4 + 0.42 * k)
             else:
@@ -187,6 +192,20 @@ HILLS_MAP = {(-1, 0): "hills", (0, 0): "hills", (0, -1): "hills", (-1, 1): "hill
              (-1, 2): "farmland", (0, 2): "farmland", (1, 1): "plains", (2, 0): "hills", (2, 1): "hills",
              (3, -1): "plains", (3, 0): "plains", (1, 2): "farmland", (0, -2): "plains", (1, -2): "hills"}
 HIGHLANDS_MAP = {**FLOW_RING, **{t: ("clanhall" if t == LANDMARK_AT else "highlands") for t in LANDMARK_REGION}}
+
+# Village tier 0: a group of tiles in a loose shape with farms joined to it, and other land round it; market town's region.
+VILLAGE_MAP = {**FLOW_RING, (0, 0): "village", (1, 0): "village", (0, 1): "village", (-1, 1): "village", (-1, 0): "village",
+               (0, -1): "village", (1, -1): "farmland", (2, -1): "farmland", (-1, 2): "farmland"}
+MARKET_MAP = {**FLOW_RING, **{t: ("tradinghouse" if t == LANDMARK_AT else "market_town") for t in LANDMARK_REGION}}
+
+TOWN_T2 = {lm: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
+           for lm, v in (("keep", "fortified_town"), ("blackmarket", "slums"), ("college", "scholars_town"))}
+# A bigger fortified town, to show its works thinning away from the Keep.
+FORT_12_MAP = {**{t: FLOW_RING.get(t, "plains") for r_ in DENSITY_REGION for t in ((r_[0] + dq, r_[1] + dr) for dq, dr in hk.NEIGHBOURS)},
+               **{t: ("keep" if t == (0, 1) else "fortified_town") for t in DENSITY_REGION}}
+# A fortified town's walls meeting a plain village and farms: gatehouses where streets leave the region.
+FORT_JOIN_MAP = {**FLOW_RING, (0, 0): "fortified_town", (1, 0): "fortified_town", (0, 1): "fortified_town", (-1, 1): "village",
+                 (-1, 0): "village", (0, -1): "farmland", (1, -1): "keep", (1, 1): "farmland"}
 
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
@@ -259,6 +278,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
     gates = fg.fence_gates(terrains, raised, [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)])
+    streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -340,10 +360,15 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 place(templates, f"{name}_ridge_knot", col, at)
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
+        walled = f"{kit}_border_join_l" in templates  # stone walls in place of the fence, at the region's edges
+        kin = [joined[k] and (not walled or vr.wedges_of(MAP.get((q + hk.NEIGHBOURS[k][0], r + hk.NEIGHBOURS[k][1]))) == kit) for k in range(6)]
         for i in range(6):
             edge = f"{kit}_edge_{'same' if joined[i] else 'other'}"
             near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
-            if vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
+            neighbour = near and vr.wedges_of(near)
+            if walled and joined[i] and neighbour != kit:  # a wall at the region's edge: a gatehouse where a street leaves it
+                edge = f"{kit}_edge_gate" if i in streets[(q, r)] else f"{kit}_edge_other{'_lm' if name in vr.LANDMARKS else ''}"
+            elif vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
             elif i in trails and (f"{name}_edge_trail" in templates or f"{kit}_edge_trail" in templates):  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
@@ -357,6 +382,10 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
+            elif joined[i] and f"{kit}_edge_block" in templates:  # a town: a street only where this edge has one
+                edge = f"{kit}_{dict(main='edge_same', side='edge_side').get(streets[(q, r)].get(i), 'edge_block')}"
+                if edge == f"{kit}_edge_block" and name in vr.LANDMARKS and f"{kit}_edge_block_lm" in templates:
+                    edge = f"{kit}_edge_block_lm"  # without the house toward the middle: the landmark's yard lies there
             place(templates, edge, col, at, math.radians(60 * i))
             if i in trails and f"{kit}_steps_centre" in templates:  # the stair's flight on the centre, one per trail edge
                 if name not in vr.LANDMARKS:
@@ -364,11 +393,12 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
                     place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-            if terrain in BORDERED and joined[i] and "border_join_l" in templates:
-                if not joined[(i + 1) % 6]:
-                    place(templates, "border_join_l", col, at, math.radians(60 * i))
-                if not joined[(i - 1) % 6]:
-                    place(templates, "border_join_r", col, at, math.radians(60 * i))
+            if terrain in BORDERED and kin[i] and "border_join_l" in templates:
+                join = f"{kit}_border_join" if walled else "border_join"
+                if not kin[(i + 1) % 6]:
+                    place(templates, f"{join}_l", col, at, math.radians(60 * i))
+                if not kin[(i - 1) % 6]:
+                    place(templates, f"{join}_r", col, at, math.radians(60 * i))
     # Small ground cover across the whole map, the way the engines will scatter it.
     # Circles the pieces keep the ground cover off (burns, yards), in world space.
     bpy.context.view_layer.update()
@@ -777,6 +807,87 @@ if __name__ == "__main__":
                     exit_ = centre + out * vr.LEDGE_X + along * vr.climb_heights()[2] + Vector((0, 0, vr.RAISE))
                     look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
                     render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_top_raised")
+        sys.exit(0)
+    if "keep-alone" in flags:
+        # The Keep on its own, on a bare tile, from several angles: its proportions without the town round it.
+        prefix = "trial_" if "trial" in flags else ""
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        col = hk.new_collection("map")
+        base = place(templates, "base_village", col, Vector((0, 0, 0)))
+        place(templates, "keep_centre", col, Vector((0, 0, 0)))
+        stage(Vector((0, 0, 1.0)), 14, 50)
+        cam = bpy.context.scene.camera
+        for stem, ang, elev, dist in (("front", 0, 25, 13), ("corner", 45, 30, 13), ("side", 90, 25, 13), ("back", 180, 30, 13),
+                                      ("map", -60, 50, 15), ("low", 20, 8, 11)):
+            a_, e_ = math.radians(ang), math.radians(elev)
+            cam.location = Vector((dist * math.cos(e_) * math.cos(a_), dist * math.cos(e_) * math.sin(a_), 1.2 + dist * math.sin(e_)))
+            look_at(cam, cam.location, Vector((0, 0, 1.2)))
+            render(f"{prefix}village_keep_alone_{stem}")
+        sys.exit(0)
+    if "slum-option" in flags:
+        # One ground option for the slums (build with env HEX_SLUM): the region at map zoom and a low look along a street.
+        opt = flags["slum-option"]
+        prefix = "trial_" if "trial" in flags else ""
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        build_map(templates, tiles=TOWN_T2["blackmarket"])
+        draw_effects(bpy.data.collections["map"], templates, thin=True)
+        stage(Vector((0.5, -0.8, 0)), 54, 50)
+        render(f"{prefix}village_slums_ground_{opt}_map")
+        cam = bpy.context.scene.camera
+        el = math.radians(35)
+        at = hk.tile_position(0, 0)
+        cam.location = at + Vector((0, -11 * math.cos(el), 1.0 + 11 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+        render(f"{prefix}village_slums_ground_{opt}_closeup")
+        sys.exit(0)
+    if "village" in flags:
+        # Village streets: a tier 0 group with farms beside it, with the paths drawn; market town flowing into the Trading
+        # House, with the paths drawn; low close-ups of a street, a gate and the landmark.
+        prefix = "trial_" if "trial" in flags else ""
+        el = math.radians(38)
+
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(f"{prefix}{stem}")
+
+        def look(at, a, dist, elev=el, lift=0.6):
+            cam = bpy.context.scene.camera
+            cam.location = at + Vector((dist * math.cos(elev) * math.cos(a), dist * math.cos(elev) * math.sin(a), lift + dist * math.sin(elev)))
+            cam.rotation_euler = (math.pi / 2 - elev, 0, a + math.pi / 2)
+
+        for stem, tiles_map, focus, dist in (("village_t0", VILLAGE_MAP, Vector((0.5, -0.8, 0)), 58),
+                                             ("village_market", MARKET_MAP, Vector((0.5, -0.8, 0)), 54),
+                                             ("village_fortified", TOWN_T2["keep"], Vector((0.5, -0.8, 0)), 54),
+                                             ("village_slums", TOWN_T2["blackmarket"], Vector((0.5, -0.8, 0)), 54),
+                                             ("village_scholars", TOWN_T2["college"], Vector((0.5, -0.8, 0)), 54),
+                                             ("village_fortified_join", FORT_JOIN_MAP, Vector((0.5, -0.8, 0)), 58),
+                                             ("village_fortified_12", FORT_12_MAP, DENSITY_VIEW, 74)):
+            for paths in (True, False):
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                draw_effects(bpy.data.collections["map"], templates, thin=True)
+                if paths:
+                    draw_paths(bpy.data.collections["map"], templates)
+                stage(focus, dist, 50)
+                shot(f"{stem}_{'paths' if paths else 'map'}")
+            if stem == "village_t0":
+                ax = vs.axis(0, 0)  # along the main street, low, from the middle of the tile looking out
+                look(hk.tile_position(0, 0) + hk.edge_normal(ax) * 7.5, math.radians(60 * ax), 8, math.radians(28), 0.4)
+                shot("village_street_closeup")
+                g = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})
+                t, edges = next((t, e) for t, e in sorted(g.items()) if e and tiles_map[t] == "village")
+                a = math.radians(60 * edges[0])
+                look(hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3, a + math.pi, 9)
+                shot("village_gate_closeup")
+            else:
+                lm = tiles_map.get(LANDMARK_AT)  # (only the 7-tile maps have it there)
+                if lm in vr.LANDMARKS and stem in ("village_market", "village_fortified", "village_slums", "village_scholars"):
+                    d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (vr.LANDMARKS[lm], lm)), LANDMARK_AT)
+                    look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
+                    shot(f"village_{lm}_closeup")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no

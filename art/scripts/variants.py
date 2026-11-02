@@ -1171,17 +1171,18 @@ def harvest_festival(p, rng, kind):
 
 # --- Village: market town ---------------------------------------------------------
 
-def townhouse(p, rng, at, spin):
-    """Two storeys, the upper one jutting out a little over a dark timber band."""
-    w, d, h = rng.uniform(0.9, 1.05), rng.uniform(0.75, 0.85), rng.uniform(1.5, 1.8)
-    p.box(at, (w, d, h * 0.5), "wall", spin=spin)
+def townhouse(p, rng, at, w, d, spin):
+    """Two storeys, the upper one jutting out a little over a dark timber band, with timber posts on its corners."""
+    h = rng.uniform(1.5, 1.8)
+    wall = rng.choice(("wall", "wall", "wall_warm"))
+    p.box(at, (w, d, h * 0.5), wall, spin=spin)
     p.box(at, (w + 0.06, d + 0.06, 0.07), "timber", z=h * 0.5 - 0.035, spin=spin)
-    p.box(at, (w + 0.1, d + 0.1, h * 0.5), "wall", z=h * 0.5, spin=spin)
-    p.gable_roof(at, w + 0.25, d + 0.3, 0.7, "roof", z=h, spin=spin)
+    p.box(at, (w + 0.1, d + 0.1, h * 0.5), wall, z=h * 0.5, spin=spin)
+    p.gable_roof(at, w + 0.2, d + 0.26, 0.62, rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
 
 
-def stall(p, rng, at, spin):
-    """A market stall: a counter with goods under a striped awning, crates and a barrel beside it."""
+def stall(p, rng, at, spin, extras=True):
+    """A market stall: a counter with goods under a striped awning; extras: crates and a barrel beside it."""
     p.box(at, (0.8, 0.4, 0.38), "crate", spin=spin)
     for dx in (-0.38, 0.38):
         for dy in (-0.18, 0.18):
@@ -1192,50 +1193,43 @@ def stall(p, rng, at, spin):
     for k in range(3):
         p.blob(at + turn(Vector((-0.25 + 0.25 * k, 0.02, 0)), spin), 0.08, rng.choice(["fruit", "hay", "lily"]),
                z=0.42, squash=0.7)
-    p.box(at + turn(Vector((0.62, 0.2, 0)), spin), (0.26, 0.26, 0.24), "crate", spin=spin + 0.3)
-    p.cylinder(at + turn(Vector((-0.6, 0.25, 0)), spin), 0.13, 0.3, "trunk", segments=8)
+    if extras:
+        p.box(at + turn(Vector((0.62, 0.2, 0)), spin), (0.26, 0.26, 0.24), "crate", spin=spin + 0.3)
+        p.cylinder(at + turn(Vector((-0.6, 0.25, 0)), spin), 0.13, 0.3, "trunk", segments=8)
+
+
+def market_goods(p, rng, at, spin):
+    """Crates and a barrel stacked where the stallholder keeps them, off the street."""
+    p.box(at, (0.28, 0.28, 0.26), "crate", spin=spin + 0.3)
+    p.box(at + turn(Vector((0.3, 0.05, 0)), spin), (0.22, 0.22, 0.2), "crate", spin=spin - 0.2)
+    p.cylinder(at + turn(Vector((-0.3, 0.03, 0)), spin), 0.13, 0.3, "trunk", segments=8)
 
 
 def market_town(p, rng, kind):
-    """Stalls with striped awnings in the streets and square; taller timber-framed townhouses packed close."""
+    """Stalls with striped awnings in the streets and square, packed among taller timber-framed townhouses. They
+    thicken toward the Trading House: more of them round the square on near tiles, and lining the street on trail edges."""
+    def corner_stall(k, slot):  # on a corner line, far enough out to clear both streets, its goods behind it
+        at, a = bt.corner_spot(k, 2.2)
+        stall(p, rng, at, a + math.pi / 2, extras=False)
+        market_goods(p, rng, bt.corner_spot(k, 2.75)[0], a + math.pi / 2)
+
     if kind == "centre":
-        bt.cobbles(p, rng, lambda q: hk.in_centre(q, margin=0.2) and q.length > 0.9, hk.CENTRE_BOUNDS, 14)
-        for ang in (90, 210, 330):  # stalls round the square
-            a = math.radians(ang)
-            stall(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.6, a + math.pi / 2)
-        for ang in (30, 150, 270):  # houses between the edge pieces' houses, which sit near the edge axes
-            a = math.radians(ang)
-            townhouse(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 1.25, a + math.pi / 2)
-        return
-    if kind == "same":
-        bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.15) and abs(q.y) < 0.5, hk.WEDGE_BOUNDS, 8)
-        # Kept clear of the houses on the neighbouring edges' pieces, so roofs don't cut into each other.
-        townhouse(p, rng, Vector((X0 + 0.7, 0.85, 0)), 0.0)
-        townhouse(p, rng, Vector((X1 - 0.75, -1.2, 0)), 0.0)
-        stall(p, rng, Vector((X0 + 0.9, -0.8, 0)), 0.0)
-        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])  # the street runs on along the middle line
-        return
-    garden = X0 + 0.6 * (X1 - X0)
-    if kind == "edge_gate":  # the garden strip and fence, with a cobbled street out through a gate
-        p.flat(bt.band(garden, X1), 0.015, "plains")
-        p.flat([Vector((garden - 0.05, -0.36, 0)), Vector((X1, -0.36, 0)), Vector((X1, 0.36, 0)),
-                Vector((garden - 0.05, 0.36, 0))], 0.02, "cobble")
-        bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15) and abs(q.y) < 0.5,
-                   hk.WEDGE_BOUNDS, 4)
-        townhouse(p, rng, Vector((X0 + 0.7, 0.95, 0)), math.radians(90))
-        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=bt.BORDER_X - 0.25, margin=0.2)
-                             and abs(q.y) > 0.65, 2, 0.5, hk.WEDGE_BOUNDS):
-            p.blob(at, 0.22, "hedge", squash=0.8)
-        bt.farm_gate(p, rng)
-        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
-        return
-    p.flat(bt.band(garden, X1), 0.015, "plains")
-    bt.cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
-    townhouse(p, rng, Vector((X0 + 0.7, 0.3, 0)), math.radians(90))
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=bt.BORDER_X - 0.25, margin=0.2),
-                         3, 0.5, hk.WEDGE_BOUNDS):
-        p.blob(at, 0.22, "hedge", squash=0.8)
-    bt.edge_border(p, rng)
+        bt.town_square(p, rng, townhouse, ("house", "stall", "house", "stall", "house", "well"), corner_stall)
+    elif kind == "centre_b":
+        bt.town_square(p, rng, townhouse, ("stall", "house", "house", "stall", "house", "house"), corner_stall)
+    elif kind == "centre_near":
+        bt.town_square(p, rng, townhouse, ("stall", "stall", "stall", "house", "stall", "stall"), corner_stall)
+    elif kind == "same":  # a house on one side of the main street, a stall on the other
+        bt.town_street(p, rng, townhouse, bt.STREET_MAIN, ("house", "stall"))
+        stall(p, rng, Vector((bt.ROW_X, -(bt.STREET_MAIN + 0.38), 0)), 0.0, extras=False)
+        market_goods(p, rng, Vector((bt.ROW_X, -(bt.STREET_MAIN + 0.95), 0)), 0.0)
+    elif kind == "edge_trail":  # the way to the Trading House: stalls on both sides, under bunting
+        bt.town_street(p, rng, townhouse, bt.STREET_MAIN, ("stall", "stall"))
+        for sd in (1, -1):
+            stall(p, rng, Vector((bt.ROW_X, sd * (bt.STREET_MAIN + 0.38), 0)), 0.0, extras=False)
+            market_goods(p, rng, Vector((bt.ROW_X, sd * (bt.STREET_MAIN + 0.95), 0)), 0.0)
+    else:
+        bt.town_edge(p, rng, kind, townhouse)
 
 
 # --- River: delta ----------------------------------------------------------------------
@@ -3200,6 +3194,698 @@ def library(p, rng, kind):
 LANDMARK_CENTRES.update(yeticave=yeti_cave, salamanderden=salamander_den, library=library)
 
 
+# --- Village landmarks ------------------------------------------------------------
+
+def arcade(p, x, y0, y1, bays, height, depth, stone, seg=4):
+    """A row of round arches facing +X: piers, and above each opening a curved band up to the top of the row."""
+    bay = (y1 - y0) / bays
+    pier = bay * 0.2
+    open_half = (bay - pier) / 2
+    spring = height * 0.58
+
+    def block(a, b, c, d):  # a solid from a quad in the (y, z) plane, depth thick along X
+        v = [p.bm.verts.new((x - depth * k, y, z)) for k in (0, 1) for y, z in (a, b, c, d)]
+        idx = p._slot(stone)
+        for f in ((v[0], v[1], v[2], v[3]), (v[7], v[6], v[5], v[4]), (v[0], v[4], v[5], v[1]), (v[1], v[5], v[6], v[2]),
+                  (v[2], v[6], v[7], v[3]), (v[3], v[7], v[4], v[0])):
+            p.bm.faces.new(f).material_index = idx
+
+    for k in range(bays + 1):
+        y = y0 + bay * k
+        p.box(Vector((x - depth / 2, y, 0)), (depth, pier, height), stone)
+    rise = min(open_half, height - spring - 0.05)
+    for k in range(bays):
+        mid = y0 + bay * (k + 0.5)
+        for s_ in range(seg):
+            t0, t1 = math.pi * s_ / seg, math.pi * (s_ + 1) / seg
+            y_a, z_a = mid - open_half * math.cos(t0), spring + rise * math.sin(t0)
+            y_b, z_b = mid - open_half * math.cos(t1), spring + rise * math.sin(t1)
+            block((y_a, z_a), (y_b, z_b), (y_b, height), (y_a, height))
+
+
+def trading_house(p, rng, kind):
+    """Market town's Trading House: a big timber-framed guildhall at the back of an open market square, an arcade of
+    arches along its front, guild banners hanging from the upper floor, and a clock tower with a weathervane on the ridge.
+    Its entrance faces edge 0. The other streets cross the square, or walk round the hall to reach it."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "street")
+    bt.cobbles(p, rng, lambda q: q.x > 0.3 and q.length < 1.7, hk.CENTRE_BOUNDS, 8, z=0.034)
+    hall, half, low, up = -0.6, 1.1, 1.25, 1.05  # the hall's middle in x, half its length, its two floors' heights
+    p.box(Vector((hall - 0.1, 0, 0)), (1.0, half * 2 - 0.1, low), "wall_warm")  # the back of the ground floor, in shadow
+    p.box(Vector((hall + 0.42, 0, 0)), (0.03, half * 2 - 0.1, low * 0.95), "pit_dark")  # dark behind the arches
+    arcade(p, hall + 0.68, -half, half, 5, low, 0.14, "stone_tan")
+    p.box(Vector((hall, 0, 0)), (1.46, half * 2 + 0.12, 0.08), "timber", z=low)
+    p.box(Vector((hall, 0, 0)), (1.46, half * 2 + 0.12, up), "wall", z=low + 0.04)
+    p.box(Vector((hall, 0, 0)), (1.5, half * 2 + 0.16, 0.08), "timber", z=low + up)
+    for k in range(7):  # timber frame across the front
+        p.box(Vector((hall + 0.74, -half - 0.02 + (half * 2 + 0.04) * k / 6, 0)), (0.03, 0.07, up), "timber", z=low + 0.04)
+    for y in (-0.575, 0, 0.575):  # windows between the banners
+        p.box(Vector((hall + 0.75, y, 0)), (0.03, 0.17, 0.4), "window_glow", z=low + 0.4)
+    roof = low + up + 0.08
+    p.gable_roof(Vector((hall, 0, 0)), half * 2 + 0.34, 1.72, 1.35, "roof", z=roof, spin=math.pi / 2)
+    # the clock tower on the ridge, with a four-sided spire and a gilded weathervane
+    tower = Vector((hall, 0, 0))
+    p.box(tower, (0.62, 0.62, 2.2), "timber", z=roof + 0.3)
+    clock = tower + Vector((0.32, 0, 0))
+    p.box(clock, (0.02, 0.42, 0.42), "bone", z=roof + 1.72)
+    p.box(clock + Vector((0.015, 0, 0)), (0.02, 0.03, 0.18), "timber", z=roof + 1.92)
+    p.box(clock + Vector((0.015, 0.06, 0)), (0.02, 0.13, 0.03), "timber", z=roof + 1.91)
+    p.cone(tower, 0.56, 1.05, "roof_brown", segments=4, z=roof + 2.5, spin=math.pi / 4)
+    p.box(tower, (0.035, 0.035, 0.45), "lantern", z=roof + 3.5)
+    p.box(tower, (0.38, 0.03, 0.03), "lantern", z=roof + 3.82)
+    p.cone(tower + Vector((0.2, 0, 0)), 0.06, 0.12, "lantern", segments=4, z=roof + 3.78)
+    # guild banners: long cloths hanging from the upper floor, two colours by turns
+    for k, y in enumerate((-0.86, -0.29, 0.29, 0.86)):
+        cloth = ("banner_guild", "awning_a")[k % 2]
+        p.box(Vector((hall + 0.78, y, 0)), (0.025, 0.28, 0.82), cloth, z=low + 0.1)
+        p.box(Vector((hall + 0.78, y, 0)), (0.05, 0.32, 0.03), "lantern", z=low + 0.9)
+    p.paths.append([Vector((X0, 0, 0)), Vector((0.55, 0, 0)), Vector((hall + 0.95, 0, 0))])
+    side = lambda sd: [Vector((0.2, sd * 1.42, 0)), Vector((0.55, 0, 0))]
+    for i, sd in ((1, 1), (5, -1)):
+        p.spokes[i] = [Vector((0.877, sd * 1.519, 0)), Vector((0.55, 0, 0))]
+    for i, sd in ((2, 1), (4, -1)):
+        p.spokes[i] = [Vector((-0.877, sd * 1.519, 0))] + side(sd)
+    # edge 3 walks round whichever side of the hall; one is enough
+    p.spokes[3] = [Vector((-X0, 0, 0)), Vector((-1.5, 1.3, 0))] + side(1)
+
+
+LANDMARK_CENTRES.update(tradinghouse=trading_house)
+
+
+# --- Village: shared bits for round 2 ------------------------------------------------
+
+def town_ring(p, out=2.3):
+    """The walk round a centre-only town landmark that fills its centre: a ring just outside it, a spoke from each edge's
+    street out to the ring, used only where that edge's wedge has a path. The approach through the entrance is the caller's."""
+    ring = []
+    for k in range(12):  # close in at each edge's street, so it doesn't walk back on itself, and out round the corners
+        a = math.radians(30 * k)
+        ring.append(Vector((math.cos(a), math.sin(a), 0)) * (2.05 if k % 2 == 0 else out))
+    p.paths.append(ring + ring[:1])
+    for i in range(6):
+        p.spokes[i] = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * X0, ring[2 * i]]
+
+
+def along_y(z_angle):
+    return Matrix.Rotation(z_angle, 3, "Z")
+
+
+# --- Village: fortified town -------------------------------------------------------
+
+FORT_LOOK = dict(street="street", stone="cobble_dark", alley="cobble_dark", garden="plains")
+WALL_H = 1.2
+FORT_GATE = 0.55  # half the opening in a wall gate
+
+
+def stone_house(p, rng, at, w, d, spin):
+    """A grey block house under a slate roof."""
+    h = rng.uniform(0.85, 1.05)
+    p.box(at, (w, d, h), rng.choice(("stone_block", "stone_block", "stone_block_dark")), spin=spin)
+    p.gable_roof(at, w + 0.12, d + 0.16, 0.5, rng.choice(("slate", "slate", "slate_dark")), z=h, spin=spin)
+
+
+def stone_wall(p, a, b, h=WALL_H, thick=0.3, mat="stone_block", pitch=0.42):
+    """A straight stone wall with merlons along its top, one every pitch."""
+    d = b - a
+    length, ang = d.length, math.atan2(d.y, d.x)
+    if length < 0.02:
+        return
+    p.box(a + d / 2, (length, thick, h), mat, spin=ang)
+    n = max(1, round(length / pitch))
+    dark = "stone_block_dark" if mat == "stone_block" else "stone_block"
+    for k in range(n):
+        p.box(a + d * ((k + 0.5) / n), (length / n * 0.55, thick + 0.02, 0.17), dark, z=h, spin=ang)
+
+
+def wall_tower(p, at, r=0.3, h=1.7):
+    """A small round tower where wall sections meet, capped in slate."""
+    p.cylinder(at, r, h, "stone_block", segments=8)
+    p.cylinder(at, r + 0.05, 0.14, "stone_block_dark", segments=8, z=h)
+    p.cone(at, r + 0.03, 0.45, "slate", segments=8, z=h + 0.14)
+
+
+def fort_banner(p, at, side=Vector((1, 0, 0)), z=0.45, h=0.7):
+    """A cloth in the fortified town's one colour hanging flat against a wall; side: along the wall's face."""
+    p.box(at, (0.04, 0.3, h), "banner_fort", z=z, spin=math.atan2(side.y, side.x) + math.pi / 2)
+
+
+def fort_outside(p):
+    p.flat(bt.band(bt.BORDER_X, X1), 0.015, "plains")
+
+
+def spear_rack(p, at, spin):
+    """A rack of spears standing against a rail, where the armourer can reach them."""
+    for t in (-0.2, 0.2):
+        p.box(at + turn(Vector((t, 0, 0)), spin), (0.05, 0.05, 0.62), "timber", spin=spin)
+    p.box(at, (0.5, 0.04, 0.05), "timber", z=0.56, spin=spin)
+    for k in range(4):
+        p.box(at + turn(Vector((-0.15 + 0.1 * k, 0.02, 0)), spin), (0.02, 0.02, 0.92), "trunk", spin=spin)
+        p.cone(at + turn(Vector((-0.15 + 0.1 * k, 0.02, 0)), spin), 0.028, 0.1, "rock_light", segments=4, z=0.92)
+
+
+def anvil(p, at, spin):
+    """An anvil on its block."""
+    p.cylinder(at, 0.1, 0.2, "trunk", segments=6)
+    p.box(at, (0.08, 0.08, 0.06), "rock_dark", z=0.2, spin=spin)
+    p.box(at, (0.24, 0.1, 0.06), "rock_dark", z=0.26, spin=spin)
+
+
+def corner_at(k, r, t=0.0):
+    """A point in corner slot k: r out along its corner line, t across it."""
+    at, a = bt.corner_spot(k, r)
+    return at + turn(Vector((0, t, 0)), a)
+
+
+def barrels(p, at, spin, n=3):
+    for j in range(n):
+        p.cylinder(at + turn(Vector((0, -0.28 + 0.28 * j, 0)), spin), 0.12, 0.3, "trunk", segments=8)
+
+
+def smithy(p, rng, k):
+    """A stone forge with a tall chimney putting up smoke, its anvil and a rack of finished spears out front."""
+    at, a = bt.corner_spot(k)
+    spin = a + math.pi / 2
+    stone_house(p, rng, at, 0.85, 0.55, spin)
+    c = corner_at(k, 2.72, 0.24)
+    p.box(c, (0.2, 0.2, 1.85), "stone_block_dark")
+    p.effects.append(("smoke", c + Vector((0, 0, 1.95))))
+    anvil(p, corner_at(k, 2.05, 0.18), spin)
+    spear_rack(p, corner_at(k, 2.12, -0.2), spin)
+
+
+def armoury(p, rng, k):
+    """A stone store with racks of spears either side of its door, and crates of gear."""
+    at, a = bt.corner_spot(k)
+    spin = a + math.pi / 2
+    stone_house(p, rng, at, 0.85, 0.55, spin)
+    for t in (-0.26, 0.26):
+        spear_rack(p, corner_at(k, 2.2, t), spin)
+
+
+def stable(p, rng, k):
+    """A long low timber stable, open-fronted toward the square, with hay stacked at one end."""
+    at, a = bt.corner_spot(k, 2.6)
+    spin = a + math.pi / 2
+    p.box(at + turn(Vector((0.12, 0, 0)), a), (0.3, 0.92, 0.62), "pit_dark", spin=a)
+    p.box(at + turn(Vector((-0.08, 0, 0)), a), (0.05, 0.92, 0.1), "timber", z=0.5, spin=a)
+    for t in (-0.44, -0.15, 0.15, 0.44):
+        p.box(at + turn(Vector((-0.08, t, 0)), a), (0.06, 0.06, 0.6), "timber", spin=a)
+    p.gable_roof(at, 1.04, 0.62, 0.32, "slate", z=0.6, spin=spin)
+    for t in (-0.3, 0.3):
+        hay_bale(p, corner_at(k, 2.2, t), spin)
+
+
+def hay_bale(p, at, spin):
+    p.box(at, (0.34, 0.22, 0.2), "hay", spin=spin)
+
+
+def supply_wagon(p, at, spin):
+    """A covered supply wagon, its shaft down, parked out of the street."""
+    p.box(at, (0.72, 0.36, 0.18), "crate", z=0.14, spin=spin)
+    for t in (-0.24, 0.24):
+        for sd in (-1, 1):
+            p.log(at + turn(Vector((t, sd * 0.2, 0)), spin), 0.13, 0.03, "timber", spin=spin + math.pi / 2, z=0.13)
+    p.box(at, (0.66, 0.32, 0.2), "canvas", z=0.32, spin=spin)
+    p.box(at, (0.66, 0.2, 0.08), "canvas", z=0.52, spin=spin)
+    p.box(at + turn(Vector((0.42, 0, 0)), spin), (0.2, 0.04, 0.04), "timber", z=0.1, spin=spin)
+
+
+def wagon_yard(p, rng, k):
+    """Where a house would stand: a supply wagon with barrels and hay unloaded behind it."""
+    spin = bt.corner_spot(k)[1] + math.pi / 2
+    supply_wagon(p, corner_at(k, 2.35), spin)
+    barrels(p, corner_at(k, 2.9, 0.1), spin + math.pi / 2)
+    hay_bale(p, corner_at(k, 2.9, -0.42), spin)
+    hay_bale(p, corner_at(k, 2.9, -0.42) + Vector((0, 0, 0.2)), spin + 0.4)
+
+
+def fortified_town(p, rng, kind):
+    """Grey stone houses with slate roofs. Stone walls replace the fence at the region's edges, with small towers where
+    tiles meet, a gatehouse wherever a street leaves the region, and banners on their outer faces. Inside there are no
+    flags (those are the Keep's): smithies and armouries with chimney smoke and racks of spears, and supply wagons,
+    barrels, hay and stables, thickening toward the Keep."""
+    h = bt.BORDER_X * bt.TAN30
+
+    def works(k, slot):
+        {"smithy": smithy, "armoury": armoury, "stable": stable, "wagon": wagon_yard}[slot](p, rng, k)
+
+    if kind == "centre":
+        bt.town_square(p, rng, stone_house, ("house", "house", "smithy", "house", "house", "well"), works, FORT_LOOK)
+    elif kind == "centre_b":
+        bt.town_square(p, rng, stone_house, ("house", "wagon", "house", "house", "house", "house"), works, FORT_LOOK)
+    elif kind == "centre_mid":
+        bt.town_square(p, rng, stone_house, ("smithy", "house", "wagon", "house", "stable", "house"), works, FORT_LOOK)
+    elif kind == "centre_near":
+        bt.town_square(p, rng, stone_house, ("smithy", "stable", "armoury", "wagon", "smithy", "house"), works, FORT_LOOK)
+    elif kind == "same":
+        bt.town_street(p, rng, stone_house, bt.STREET_MAIN, look=FORT_LOOK)
+    elif kind == "edge_trail":  # the way to the Keep: a house on one side; barrels, hay and a rack of spears on the other
+        bt.town_street(p, rng, stone_house, bt.STREET_MAIN, ("house", "open"), look=FORT_LOOK)
+        y = -(bt.STREET_MAIN + 0.22)
+        barrels(p, Vector((bt.ROW_X - 0.28, y, 0)), math.pi / 2, n=2)
+        hay_bale(p, Vector((bt.ROW_X + 0.28, y, 0)), 0.0)
+        hay_bale(p, Vector((bt.ROW_X + 0.28, y - 0.26, 0)), 0.2)
+        spear_rack(p, Vector((bt.ROW_X - 0.1, y - 0.5, 0)), 0.0)
+    elif kind in ("other", "edge_other_lm"):  # the wall, a tower at its corner, and a banner on its outer face
+        if kind == "other":
+            stone_house(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
+        fort_outside(p)
+        stone_wall(p, Vector((bt.BORDER_X, -h, 0)), Vector((bt.BORDER_X, h, 0)))
+        wall_tower(p, Vector((bt.BORDER_X, h, 0)))
+        fort_banner(p, Vector((bt.BORDER_X + 0.17, 0.75, 0)), Vector((0, 1, 0)))
+    elif kind == "edge_gate":  # a gatehouse the street runs through, high enough to walk under
+        fort_outside(p)
+        bt.strip(p, FORT_GATE, mat="street")
+        bt.street_stones(p, rng, FORT_GATE, 4, FORT_LOOK)
+        tower_y = FORT_GATE + 0.3
+        stone_wall(p, Vector((bt.BORDER_X, -h, 0)), Vector((bt.BORDER_X, -tower_y, 0)))
+        stone_wall(p, Vector((bt.BORDER_X, tower_y, 0)), Vector((bt.BORDER_X, h, 0)))
+        wall_tower(p, Vector((bt.BORDER_X, h, 0)))
+        for sd in (-1, 1):
+            wall_tower(p, Vector((bt.BORDER_X, sd * tower_y, 0)), r=0.3, h=2.1)
+            p.box(Vector((bt.BORDER_X - 0.3, sd * (FORT_GATE - 0.02), 0)), (0.42, 0.06, 1.35), "timber", spin=sd * 0.2)  # door, open
+        p.box(Vector((bt.BORDER_X, 0, 0)), (0.42, tower_y * 2, 0.5), "stone_block", z=1.55)
+        for k in range(5):
+            p.box(Vector((bt.BORDER_X, -tower_y * 0.8 + tower_y * 0.4 * k, 0)), (0.44, 0.13, 0.17), "stone_block_dark", z=2.05)
+        fort_banner(p, Vector((bt.BORDER_X + 0.23, 0, 0)), Vector((0, 1, 0)), z=1.57, h=0.42)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+    elif kind in ("border_join_l", "border_join_r"):  # the wall carried out to the shared edge, a tower where the tiles meet
+        y = (1 if kind == "border_join_l" else -1) * h
+        stone_wall(p, Vector((bt.BORDER_X, y, 0)), Vector((X1, y, 0)))
+        wall_tower(p, Vector((X1, y, 0)))
+    else:
+        bt.town_edge(p, rng, kind, stone_house, FORT_LOOK)
+
+
+def keep(p, rng, kind):
+    """Fortified town's Keep: a castle of four towers round an open courtyard you can see into. Curtain walls stand about
+    two-thirds the height of the towers, with battlements, and a square gatehouse on edge 0 rises just above them, its
+    arch high enough to walk under. The party walks in through it; other streets walk round the walls to it."""
+    a, wall_h, tower_h, thick = 1.1, 1.9, 2.95, 0.26
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "street")
+    p.flat([Vector((-a, -a, 0)), Vector((a, -a, 0)), Vector((a, a, 0)), Vector((-a, a, 0))], 0.03, "yard_dirt")
+    gh = 0.65  # half the gatehouse's width
+    keep_wall = lambda q0, q1: stone_wall(p, q0, q1, wall_h, thick, "keep_stone", 0.27)
+    keep_wall(Vector((-a, a, 0)), Vector((a, a, 0)))
+    keep_wall(Vector((-a, -a, 0)), Vector((a, -a, 0)))
+    keep_wall(Vector((-a, -a, 0)), Vector((-a, a, 0)))
+    keep_wall(Vector((a, -a, 0)), Vector((a, -gh, 0)))
+    keep_wall(Vector((a, gh, 0)), Vector((a, a, 0)))
+    for sx in (-1, 1):  # four round towers, a corbelled top with battlements, slit windows and a flag each
+        for sy in (-1, 1):
+            at = Vector((sx * a, sy * a, 0))
+            p.cylinder(at, 0.36, tower_h, "keep_stone", segments=10)
+            p.cylinder(at, 0.42, 0.16, "stone_block", segments=10, z=tower_h)
+            for k in range(6):
+                t = math.radians(60 * k + 15)
+                p.box(at + Vector((math.cos(t), math.sin(t), 0)) * 0.37, (0.13, 0.13, 0.17), "stone_block", z=tower_h + 0.16, spin=t)
+            out = Vector((sx, sy, 0)).normalized()
+            for z in (1.0, wall_h + 0.35):  # slit windows, facing outward
+                p.box(at + out * 0.355, (0.03, 0.06, 0.24), "pit_dark", z=z, spin=math.atan2(out.y, out.x))
+            p.cylinder(at, 0.03, 1.0, "timber", segments=6, z=tower_h + 0.16)
+            p.box(at + Vector((0, 0.2, 0)), (0.03, 0.38, 0.26), "banner_fort", z=tower_h + 0.88)
+    # the gatehouse: a round arch high enough to walk under, a block over it with battlements, a little above the walls and
+    # well below the towers, and its doors folded back inside
+    depth, arch_h = 0.56, 1.75
+    top = wall_h + 0.42
+    bt_x = a + depth / 2
+    arcade(p, bt_x, -gh, gh, 1, arch_h, depth, "keep_stone")
+    p.box(Vector((a, 0, 0)), (depth, gh * 2, top - arch_h), "keep_stone", z=arch_h)
+    p.box(Vector((a, 0, 0)), (depth + 0.06, gh * 2 + 0.06, 0.06), "stone_block", z=top - 0.02)
+    for k in range(5):
+        y = -gh + 0.1 + (gh * 2 - 0.2) * k / 4
+        for x in (bt_x - 0.02, a - depth / 2 + 0.02):
+            p.box(Vector((x, y, 0)), (0.08, 0.13, 0.17), "stone_block", z=top + 0.04)
+    for sd in (-1, 1):
+        p.box(Vector((a - depth / 2 - 0.2, sd * 0.48, 0)), (0.42, 0.05, 1.4), "timber", spin=sd * 0.12)
+    fort_banner(p, Vector((bt_x + 0.01, 0, 0)), Vector((0, 1, 0)), z=arch_h + 0.04, h=0.48)
+    # in the courtyard, against its walls: a well, a store shed and a straw target, clear of the way in
+    p.cylinder(Vector((-0.5, 0.5, 0)), 0.2, 0.32, "rock", segments=8)
+    shed = Vector((-0.5, -0.76, 0))
+    p.box(shed, (0.9, 0.36, 0.6), "wall_stone_light")
+    p.gable_roof(shed, 1.0, 0.46, 0.25, "slate", z=0.6)
+    p.cylinder(Vector((0.45, 0.78, 0)), 0.03, 0.75, "timber", segments=6)
+    p.blob(Vector((0.45, 0.78, 0)), 0.16, "hay", z=0.65, squash=1.2)
+    p.paths.append([Vector((X0, 0, 0)), Vector((a + 0.5, 0, 0)), Vector((0.05, 0, 0))])
+    town_ring(p)
+
+
+# --- Village: slums ----------------------------------------------------------------
+
+SLUM_LOOK = dict(street="mud_street", stone="mud_damp", stones=1, stone_size=1.8, blotch=True, alley="mud_dark", garden="weed_ground")
+PATCHES = ("patch_red", "patch_ochre", "patch_teal", "patch_brown", "patch_cream", "patch_red", "patch_ochre")
+CLOTHES = ("awning_b", "patch_teal", "patch_ochre", "flower_blue", "patch_red")
+
+
+def sag_roof(p, at, w, d, h, mat, z, spin, rng):
+    """A gable roof with a ridge that sags in the middle and runs off level, so the house looks lopsided."""
+    rot = Matrix.Rotation(spin, 4, "Z")
+    tilt = rng.uniform(-0.1, 0.1)
+    shift = rng.uniform(-0.07, 0.07)
+    pts = [(-w / 2, -d / 2, 0), (0, -d / 2, -0.02), (w / 2, -d / 2, 0), (w / 2, d / 2, 0), (0, d / 2, -0.02), (-w / 2, d / 2, 0),
+           (-w / 2, shift, h + tilt), (0, shift, h * 0.72), (w / 2, shift, h - tilt)]
+    v = [p.bm.verts.new(at + Vector((0, 0, z)) + rot @ Vector(q)) for q in pts]
+    idx = p._slot(mat)
+    for f in ((v[0], v[1], v[7], v[6]), (v[1], v[2], v[8], v[7]), (v[3], v[4], v[7], v[8]), (v[4], v[5], v[6], v[7]),
+              (v[2], v[3], v[8]), (v[5], v[0], v[6]), (v[0], v[5], v[4], v[1]), (v[1], v[4], v[3], v[2])):
+        p.bm.faces.new(f).material_index = idx
+
+
+def shack(p, rng, at, w, d, spin):
+    """A lopsided patched shack with a sagging roof, some with a chimney putting up thin smoke (an effect point)."""
+    h = rng.uniform(0.55, 0.72)
+    wall = rng.choice(("shack_a", "shack_b", "shack_b"))
+    lean = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(rng.uniform(-0.035, 0.035), 3, "X")
+    p.box_rot(at + Vector((0, 0, h / 2)), (w, d, h), wall, lean)
+    plank = rng.choice((-1, 1))
+    p.box(at + turn(Vector((plank * w * 0.2, -d / 2 - 0.012, 0)), spin), (w * 0.3, 0.02, h * 0.45), rng.choice(("patch_brown", "shack_a")),
+          z=h * 0.2, spin=spin)
+    sag_roof(p, at, w + 0.14, d + 0.16, 0.42, rng.choice(("roof_tin", "roof_tin", "patch_brown")), h - 0.01, spin, rng)
+    if rng.random() < 0.35:
+        c = at + turn(Vector((w * 0.25, d * 0.2, 0)), spin)
+        p.box(c, (0.11, 0.11, 0.42), "rock_dark", z=h + 0.1)
+        p.effects.append(("smoke", c + Vector((0, 0, h + 0.55))))
+
+
+def red_lantern(p, at, z):
+    p.box(at, (0.11, 0.11, 0.15), "lantern_red", z=z)
+
+
+def lantern_post(p, at):
+    """A leaning post with a red lantern hanging from it."""
+    p.cylinder(at, 0.03, 1.2, "timber", segments=5)
+    red_lantern(p, at + Vector((0.06, 0, 0)), 0.98)
+
+
+def junk(p, rng, at, spin):
+    """A heap of crates and barrels, and a broken cart tipped on its axle."""
+    for k in range(3):
+        p.box(at + turn(Vector((-0.22 + 0.22 * k, rng.uniform(-0.1, 0.1), 0)), spin), (0.22, 0.22, 0.2), "crate", spin=spin + rng.uniform(-0.5, 0.5))
+    p.box(at + turn(Vector((0, 0, 0)), spin), (0.2, 0.2, 0.16), "crate", z=0.2, spin=spin + 0.4)
+    p.cylinder(at + turn(Vector((0.42, 0.12, 0)), spin), 0.11, 0.26, "trunk", segments=6)
+    cart = at + turn(Vector((-0.05, 0.38, 0)), spin)
+    p.box_rot(cart + Vector((0, 0, 0.17)), (0.6, 0.3, 0.1), "crate", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.3, 3, "Y"))
+    p.log(cart + turn(Vector((0.1, 0.17, 0)), spin) + Vector((0, 0, 0.13)), 0.13, 0.03, "timber", spin=spin + math.pi / 2, segments=8)
+
+
+def washing_line(p, rng, x, half):
+    """A line across the street on posts, high enough to walk under, hung with washing."""
+    a, b = Vector((x, -half - 0.1, 0)), Vector((x, half + 0.1, 0))
+    for q in (a, b):
+        p.cylinder(q, 0.025, 1.8, "timber", segments=5)
+    frustum(p, a + Vector((0, 0, 1.78)), b + Vector((0, 0, 1.78)), 0.012, 0.012, "rope", segments=3)
+    n = 4
+    for k in range(n):
+        t = (k + 0.5) / n
+        p.box(a.lerp(b, t), (0.02, 0.17, 0.3), rng.choice(CLOTHES), z=1.46)
+
+
+def weed_patch(p, rng, at, r=0.34):
+    """A rough patch of weeds on the mud."""
+    corners = [at + Vector((math.cos(math.radians(60 * k + 20)), math.sin(math.radians(60 * k + 20)), 0)) * r * rng.uniform(0.7, 1.15) for k in range(6)]
+    p.flat(corners, 0.022, "weed_ground")
+    for k in range(4):
+        tuft = at + Vector((rng.uniform(-r, r), rng.uniform(-r, r), 0)) * 0.6
+        p.cone(tuft, 0.08, rng.uniform(0.14, 0.24), "weed", segments=4, spin=rng.uniform(0, 1))
+
+
+def veg_plot(p, rng, at, spin):
+    """A small vegetable plot: rows of greens on dug earth, a stick at each end of the rows."""
+    w, d = 0.72, 0.5
+    corners = [at + turn(Vector((sx * w / 2, sy * d / 2, 0)), spin) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    p.flat(corners, 0.024, "soil_light")
+    for row in (-0.15, 0.0, 0.15):
+        p.box(at + turn(Vector((0, row, 0)), spin), (w - 0.1, 0.08, 0.09), rng.choice(("field_c", "lily", "reed")), spin=spin)
+    p.box(at + turn(Vector((w / 2, d / 2, 0)), spin), (0.03, 0.03, 0.3), "timber", spin=spin)
+    p.box(at + turn(Vector((-w / 2, -d / 2, 0)), spin), (0.03, 0.03, 0.3), "timber", spin=spin)
+
+
+def scraggly_tree(p, rng, at):
+    """A thin leaning tree with a few bare branches and two small tufts of leaves."""
+    lean = Vector((rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), 1.05))
+    top = at + lean
+    frustum(p, at, top, 0.06, 0.03, "deadwood", segments=5)
+    for k in range(2):
+        a = rng.uniform(0, math.tau) + k * math.pi
+        tip = top + Vector((math.cos(a) * 0.32, math.sin(a) * 0.32, rng.uniform(0.12, 0.28)))
+        frustum(p, at + lean * 0.72, tip, 0.025, 0.012, "deadwood", segments=4)
+        p.blob(tip, rng.uniform(0.15, 0.2), "weed", squash=0.8)
+
+
+def slums(p, rng, kind):
+    """Lopsided patched shacks packed along muddy streets on light grey mud, with puddles, patches of weeds, small vegetable
+    plots and a few scraggly trees between them; washing lines across the streets, heaps of crates, broken carts and
+    barrels, thin smoke from many chimneys, and red lanterns that glow at night, more of them toward the Black Market."""
+    def behind(k):  # out behind the row, where the corner line runs on: more shacks, or a patch of green among them
+        at, a = bt.corner_spot(k, 3.5)
+        roll = rng.random()
+        if roll < 0.45:
+            shack(p, rng, at, 0.72, 0.5, a + math.pi / 2)
+        elif roll < 0.65:
+            scraggly_tree(p, rng, at)
+        elif roll < 0.85:
+            veg_plot(p, rng, at, a + math.pi / 2)
+        else:
+            weed_patch(p, rng, at)
+
+    def slot(k, what):
+        at, a = bt.corner_spot(k)
+        behind(k)
+        if what == "shack":
+            shack(p, rng, at, 0.85, 0.55, a + math.pi / 2)
+        elif what == "junk":
+            junk(p, rng, bt.corner_spot(k, 2.45)[0], a + math.pi / 2)
+        elif what == "lantern":
+            shack(p, rng, at, 0.85, 0.55, a + math.pi / 2)
+            lantern_post(p, bt.corner_spot(k, 1.8)[0])
+        elif what == "plot":
+            veg_plot(p, rng, bt.corner_spot(k, 2.5)[0], a + math.pi / 2)
+            weed_patch(p, rng, bt.corner_spot(k, 2.95)[0], 0.26)
+        elif what == "scrag":
+            scraggly_tree(p, rng, bt.corner_spot(k, 2.55)[0])
+            weed_patch(p, rng, bt.corner_spot(k, 2.55)[0], 0.4)
+
+    if kind == "centre":
+        bt.town_square(p, rng, shack, ("shack", "lantern", "plot", "junk", "shack", "scrag"), slot, SLUM_LOOK)
+    elif kind == "centre_b":
+        bt.town_square(p, rng, shack, ("scrag", "shack", "shack", "lantern", "plot", "junk"), slot, SLUM_LOOK)
+    elif kind == "centre_near":
+        bt.town_square(p, rng, shack, ("lantern", "lantern", "shack", "junk", "lantern", "plot"), slot, SLUM_LOOK)
+    elif kind in ("same", "edge_side"):
+        half = bt.STREET_MAIN if kind == "same" else bt.STREET_SIDE
+        bt.town_street(p, rng, shack, half, look=SLUM_LOOK)
+        washing_line(p, rng, 3.35, half + 0.62)
+        lantern_post(p, Vector((bt.ALLEY_X, half + 0.1, 0)))
+        if kind == "same":
+            junk(p, rng, Vector((bt.ALLEY_X + 0.05, -(half + 0.66), 0)), 0.0)
+    elif kind == "edge_trail":  # the way to the Black Market: lantern posts by turns, and a line of lanterns across the street
+        half = bt.STREET_MAIN
+        bt.town_street(p, rng, shack, half, look=SLUM_LOOK)
+        for x, sd in ((2.5, 1), (2.6, -1), (3.86, 1)):
+            lantern_post(p, Vector((x, sd * (half + 0.08), 0)))
+        a, b = Vector((3.86, -half - 0.08, 0)), Vector((3.86, half + 0.08, 0))
+        p.cylinder(a, 0.025, 1.75, "timber", segments=5)
+        p.cylinder(b, 0.025, 1.75, "timber", segments=5)
+        frustum(p, a + Vector((0, 0, 1.73)), b + Vector((0, 0, 1.73)), 0.012, 0.012, "rope", segments=3)
+        for t in (0.25, 0.5, 0.75):
+            red_lantern(p, a.lerp(b, t), 1.5)
+        washing_line(p, rng, 3.05, half + 0.14)
+    else:
+        bt.town_edge(p, rng, kind, shack, SLUM_LOOK)
+        if kind in ("other", "edge_other_lm"):  # the strip inside the fence: a vegetable plot, and a heap beside it
+            veg_plot(p, rng, Vector((3.2, 0.25, 0)), 0.0)
+            junk(p, rng, Vector((3.2, -0.6, 0)), 0.3)
+        elif kind == "edge_block":
+            weed_patch(p, rng, Vector((2.72, 0.75, 0)), 0.22)
+
+
+def black_market(p, rng, kind):
+    """Slums' Black Market: a tangle of patched awnings over a narrow lane running in from edge 0, stalls beneath them, red
+    lanterns glowing under the awnings. Shacks back the stalls. The lane ends in a shack, so the party stops inside."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "mud_ground")
+    lane = 0.48
+    bt.strip(p, lane, x0=-1.05, x1=X0, mat="mud_street", z=0.03)
+    for x, sd in ((1.25, 1), (0.55, 1), (-0.25, 1), (0.95, -1), (0.2, -1), (-0.55, -1)):  # stalls either side of the lane
+        at = Vector((x, sd * (lane + 0.22), 0))
+        p.box(at, (0.62, 0.36, 0.36), "crate")
+        for k in range(3):
+            p.blob(at + Vector((-0.18 + 0.18 * k, 0, 0)), 0.07, rng.choice(("fruit", "lily", "bone", "lantern_red")), z=0.4, squash=0.7)
+        for dx in (-0.28, 0.28):
+            p.box(at + Vector((dx, sd * 0.14, 0)), (0.04, 0.04, 1.65), "timber")
+    for x, y, spin in ((0.0, 1.2, 0.1), (-0.95, 1.0, -0.12), (1.2, 0.98, 0.05), (0.0, -1.2, -0.1), (-0.95, -1.0, 0.15), (1.2, -0.98, -0.05),
+                       (-1.2, 0.05, math.pi / 2)):  # shacks packed behind the stalls, and one closing the lane's end
+        shack(p, rng, Vector((x, y, 0)), 0.88, 0.62, spin)
+    # the tangle: patched cloths over both sides at different heights and tilts, leaving a ragged gap above the lane
+    for sd in (1, -1):
+        x = -1.3
+        while x < 1.55:
+            w = rng.uniform(0.5, 0.8)
+            for row, (y, z) in enumerate(((0.5, 1.72), (1.05, 1.98))):
+                if row == 1 and rng.random() < 0.15:
+                    continue
+                at = Vector((x + w / 2 + rng.uniform(-0.08, 0.08), sd * (y + rng.uniform(-0.05, 0.08)), 0))
+                rot = Matrix.Rotation(rng.uniform(-0.2, 0.2), 3, "Z") @ Matrix.Rotation(sd * rng.uniform(-0.3, -0.12), 3, "X") @ Matrix.Rotation(rng.uniform(-0.1, 0.1), 3, "Y")
+                p.box_rot(at + Vector((0, 0, z + rng.uniform(-0.05, 0.1))), (w, 0.72, 0.025), rng.choice(PATCHES), rot)
+                if row == 0:
+                    p.box_rot(at + Vector((rng.uniform(-0.1, 0.1), sd * 0.1, z + 0.09)), (w * 0.35, 0.22, 0.02), rng.choice(PATCHES), rot)  # a patch on it
+            x += w * 0.92
+    for x in (-1.0, -0.4, 0.2, 0.8, 1.4):  # cloths crossing the gap here and there, and lanterns under the awnings along the lane
+        if x in (-0.4, 0.8):
+            p.box_rot(Vector((x, 0, 2.05)), (0.42, 1.2, 0.025), rng.choice(PATCHES), Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "Z"))
+        for sd in (1, -1):
+            frustum(p, Vector((x, sd * (lane - 0.02), 1.7)), Vector((x, sd * (lane - 0.02), 1.5)), 0.01, 0.01, "rope", segments=3)
+            red_lantern(p, Vector((x, sd * (lane - 0.02), 0)), 1.36)
+    p.paths.append([Vector((X0, 0, 0)), Vector((-0.6, 0, 0))])
+    town_ring(p, 2.6)
+
+
+# --- Village: scholars' town -------------------------------------------------------
+
+SCHOLAR_LOOK = dict(street="street", stone="cobble_dark", alley="cobble_dark", garden="lawn")
+
+
+def scholar_house(p, rng, at, w, d, spin):
+    h = rng.uniform(0.9, 1.15)
+    p.box(at, (w, d, h), "cream_stone", spin=spin)
+    p.gable_roof(at, w + 0.12, d + 0.16, 0.55, "slate_blue", z=h, spin=spin)
+
+
+def hemisphere(p, at, r, mat, z, rings=4, segments=10):
+    """A dome from stacked rings."""
+    for k in range(rings):
+        t0, t1 = math.pi / 2 * k / rings, math.pi / 2 * (k + 1) / rings
+        frustum(p, at + Vector((0, 0, z + r * math.sin(t0))), at + Vector((0, 0, z + r * math.sin(t1))), r * math.cos(t0), max(r * math.cos(t1), 0.01), mat, segments=segments)
+
+
+def slim_tower(p, rng, at, top):
+    """A slim stone tower, topped with a pointed roof, a dome, or a dome with a telescope poking out."""
+    h = rng.uniform(1.9, 2.5)
+    p.cylinder(at, 0.27, h, "cream_stone", segments=8)
+    p.box(at + Vector((0, -0.26, 0)), (0.1, 0.03, 0.18), "window_glow", z=h - 0.5)
+    p.cylinder(at, 0.31, 0.08, "slate_blue", segments=8, z=h)
+    if top == "pointed":
+        p.cone(at, 0.32, 0.8, "slate_blue", segments=8, z=h + 0.08)
+    else:
+        hemisphere(p, at, 0.3, "slate_blue", h + 0.08, rings=3, segments=8)
+    if top == "telescope":
+        frustum(p, at + Vector((-0.1, 0, h + 0.28)), at + Vector((0.42, 0, h + 0.62)), 0.07, 0.05, "brass", segments=6)
+
+
+def trimmed_hedge(p, a, b, h=0.26):
+    d = b - a
+    p.box(a + d / 2, (d.length, 0.16, h), "hedge", spin=math.atan2(d.y, d.x))
+
+
+def scholar_statue(p, at):
+    p.box(at, (0.26, 0.26, 0.3), "cream_stone")
+    p.cylinder(at, 0.07, 0.42, "stone_block", segments=6, z=0.3)
+    p.blob(at, 0.08, "stone_block", z=0.78)
+
+
+def fountain(p, at):
+    p.cylinder(at, 0.28, 0.14, "cream_stone", segments=10)
+    p.cylinder(at, 0.22, 0.02, "water", segments=10, z=0.14)
+    p.cylinder(at, 0.05, 0.42, "cream_stone", segments=6, z=0.14)
+
+
+def court(p, rng, at, spin, size=0.72, centre=fountain):
+    """A small cloistered court: a lawn with trimmed hedges round it, a fountain or statue in the middle."""
+    corners = [at + turn(Vector((sx * size / 2, sy * size / 2, 0)), spin) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    p.flat(corners, 0.03, "lawn")
+    for k in range(4):
+        if k != 1:  # one side open toward the street
+            trimmed_hedge(p, corners[k], corners[(k + 1) % 4])
+    centre(p, at)
+
+
+def scholars_town(p, rng, kind):
+    """Slim stone towers with pointed roofs, some topped with domes or telescopes; small cloistered courts with lawns,
+    trimmed hedges and a fountain or statue; cream stone walls and slate-blue roofs. Statues and hedges line the way to
+    the College, and courts thicken round it, leaving the towers farther off so its dome stands out."""
+    def slot(k, what):
+        at, a = bt.corner_spot(k, 2.5)
+        if what in ("pointed", "domed", "telescope"):
+            slim_tower(p, rng, at, what)
+        elif what == "court":
+            court(p, rng, bt.corner_spot(k, 2.65)[0], a, centre=rng.choice((fountain, scholar_statue)))
+
+    if kind == "centre":
+        bt.town_square(p, rng, scholar_house, ("house", "pointed", "house", "court", "house", "domed"), slot, SCHOLAR_LOOK)
+    elif kind == "centre_b":
+        bt.town_square(p, rng, scholar_house, ("court", "house", "telescope", "house", "pointed", "house"), slot, SCHOLAR_LOOK)
+    elif kind == "centre_near":
+        bt.town_square(p, rng, scholar_house, ("court", "house", "court", "house", "court", "pointed"), slot, SCHOLAR_LOOK)
+    elif kind == "edge_block":
+        scholar_house(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
+        court(p, rng, Vector((3.3, 0, 0)), 0.0, size=1.0, centre=fountain if rng.random() < 0.5 else scholar_statue)
+    elif kind == "edge_block_lm":
+        court(p, rng, Vector((3.3, 0, 0)), 0.0, size=1.0, centre=fountain)
+    elif kind == "same":
+        bt.town_street(p, rng, scholar_house, bt.STREET_MAIN, look=SCHOLAR_LOOK)
+    elif kind == "edge_trail":  # the way to the College: trimmed hedges and statues along the main street
+        bt.town_street(p, rng, scholar_house, bt.STREET_MAIN, ("house", "open"), look=SCHOLAR_LOOK)
+        y = bt.STREET_MAIN + 0.13
+        trimmed_hedge(p, Vector((2.9, -y, 0)), Vector((3.8, -y, 0)))
+        scholar_house(p, rng, Vector((3.35, -(y + 0.55), 0)), 0.85, 0.72, 0.0)
+        for sd in (1, -1):
+            scholar_statue(p, Vector((bt.ALLEY_X - 0.1, sd * (y + 0.1), 0)))
+    else:
+        bt.town_edge(p, rng, kind, scholar_house, SCHOLAR_LOOK)
+
+
+def college(p, rng, kind):
+    """Scholars' town's College: a big domed hall with a colonnaded front, a cloister courtyard beside it, and a performers'
+    stage out front, on a paved square whose way in is on edge 0."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "street")
+    # the hall
+    hall, hy = -0.42, 0.6
+    p.box(Vector((hall, hy, 0)), (1.35, 1.32, 1.5), "cream_stone")
+    p.box(Vector((hall, hy, 0)), (1.45, 1.42, 0.08), "slate_blue", z=1.5)
+    p.cylinder(Vector((hall, hy, 0)), 0.62, 0.55, "cream_stone", segments=12, z=1.58)
+    hemisphere(p, Vector((hall, hy, 0)), 0.68, "slate_blue", 2.13, rings=4, segments=12)
+    p.cylinder(Vector((hall, hy, 0)), 0.1, 0.26, "cream_stone", segments=6, z=2.78)
+    p.cone(Vector((hall, hy, 0)), 0.11, 0.3, "brass", segments=6, z=3.04)
+    # the colonnaded front: columns on a step, a beam and a pediment; the door behind them
+    front = hall + 0.675
+    p.box(Vector((front + 0.14, hy, 0)), (0.42, 1.42, 0.07), "cream_stone")
+    for k in range(6):
+        p.cylinder(Vector((front + 0.26, hy - 0.6 + 0.24 * k, 0)), 0.055, 1.3, "stone_pale_col", segments=8, z=0.07)
+    p.box(Vector((front + 0.14, hy, 0)), (0.42, 1.42, 0.12), "cream_stone", z=1.37)
+    p.gable_roof(Vector((front + 0.14, hy, 0)), 0.42, 1.48, 0.36, "slate_blue", z=1.49, spin=0.0)
+    p.box(Vector((front + 0.01, hy, 0)), (0.02, 0.36, 0.95), "timber", z=0.07)
+    # the cloister: a covered walk on columns round a lawn with a fountain
+    cx, cy, half_x, half_y = -0.5, -0.82, 0.74, 0.46
+    p.flat([Vector((cx - half_x, cy - half_y, 0)), Vector((cx + half_x, cy - half_y, 0)), Vector((cx + half_x, cy + half_y, 0)), Vector((cx - half_x, cy + half_y, 0))], 0.031, "lawn")
+    for a, b, spin in ((Vector((cx, cy - half_y, 0)), half_x, 0.0), (Vector((cx, cy + half_y, 0)), half_x, 0.0),
+                       (Vector((cx - half_x, cy, 0)), half_y, math.pi / 2), (Vector((cx + half_x, cy, 0)), half_y, math.pi / 2)):
+        outward = turn(Vector((0, 1, 0)), spin)
+        sign = 1 if (a - Vector((cx, cy, 0))).dot(outward) > 0 else -1
+        back = a + outward * sign * 0.12
+        p.box(back, (b * 2 + 0.2, 0.05, 0.72), "cream_stone", spin=spin)
+        n = max(3, round(b * 2 / 0.32))
+        for k in range(n + 1):
+            p.cylinder(a + turn(Vector((-b + 2 * b * k / n, 0, 0)), spin) - outward * sign * 0.06, 0.03, 0.72, "stone_pale_col", segments=6)
+        p.gable_roof(a + outward * sign * 0.02, b * 2 + 0.3, 0.42, 0.14, "slate_blue", z=0.72, spin=spin)
+    fountain(p, Vector((cx, cy, 0)))
+    for sd in (-1, 1):
+        p.blob(Vector((cx + sd * 0.42, cy, 0)), 0.11, "hedge", squash=0.9)
+    # the performers' stage out front, open toward the square and edge 0, with a curtain behind and benches before it
+    st = Vector((0.88, -0.92, 0))
+    p.box(st, (0.56, 0.72, 0.28), "timber")
+    p.box(st, (0.6, 0.76, 0.03), "crate", z=0.28)
+    p.box(st + Vector((-0.28, 0, 0)), (0.04, 0.8, 0.85), "awning_a", z=0.28)
+    for sd in (-1, 1):
+        p.box(st + Vector((-0.28, sd * 0.4, 0)), (0.06, 0.06, 1.25), "timber")
+    p.box(st + Vector((-0.28, 0, 0)), (0.06, 0.86, 0.06), "timber", z=1.25)
+    bunting(p, rng, st + Vector((-0.28, -0.4, 0)), st + Vector((-0.28, 0.4, 0)), 1.27, sag=0.04)
+    for y in (-0.72, -1.12):
+        p.box(Vector((1.48, y, 0)), (0.12, 0.34, 0.18), "trunk")
+    p.paths.append([Vector((X0, 0, 0)), Vector((1.05, 0.32, 0)), Vector((front + 0.62, hy, 0))])
+    town_ring(p, 2.6)
+
+
+LANDMARK_CENTRES.update(keep=keep, blackmarket=black_market, college=college)
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -3217,12 +3903,15 @@ VARIANTS = {
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
                           "centre_near", "edge_other_lm")),
-    "market_town": ("village", market_town, "cobble", ("edge_gate",)),
+    "market_town": ("village", market_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
     "delta": ("river", delta, "plains", ()),
     "bog": ("swamp", bog, "bog", ()),
     "wasteland": ("desert", wasteland, "wasteland", ()),
     "excavation": ("ruins", excavation, "plains", ()),
     # tier 2 and class variants
+    "fortified_town": ("village", fortified_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail", "centre_mid", "border_join_l", "border_join_r")),
+    "slums": ("village", slums, "mud_ground", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
+    "scholars_town": ("village", scholars_town, "pale_paving", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
     "haunted_homesteads": ("farmland", haunted_homesteads, "haunted",
                            ("centre_b", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in", "centre_near",
                             "edge_other_lm")),
@@ -3246,6 +3935,8 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "abandonedbarn": "haunted_homesteads", "militiabarn": "raided_farms",
              "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
              "clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks", "library": "monastery_heights",
+             "tradinghouse": "market_town",
+             "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
