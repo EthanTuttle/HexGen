@@ -1,4 +1,4 @@
-# Hills kit hand-off (tiles_v47)
+# Hills kit hand-off (tiles_v47; range rules updated Nov 2, 2026, no piece changed)
 
 This kit holds tier 0 hills, highlands with the Clan Hall (tier 1), cold snowy peaks with the Yeti Cave and volcanic peaks with the Salamander Den (tier 2), and monastery heights with the Library (class variant). Everything below can be followed from the repo alone.
 
@@ -77,7 +77,20 @@ Then for each tile:
 2. **Lone peak:** `<variant>_peak` only if no edge is ranged and the tile is more than two steps from a landmark (or the region has none).
 3. **Corner mountain:** `<variant>_mountain_corner`, turned by 60° × `i`, where corner `i` lies between edges `i` and `i + 1`. It needs **all three edges round the corner to be ranged**, the third being the one between the two neighbours (`corner_shared`). Each tile checks this for itself, and without the third-edge check a corner mountain gets drawn only in part, looking sliced.
 4. **Edge mountain:** `<variant>_mountain_edge`, turned by 60° × `i`, on a ranged edge `i`, unless the corner just before it (`i - 1`) is already a corner mountain.
-5. **Ridges:** with two or more mountain parts on a tile, more than two steps from a landmark, and not on monastery heights: one `<variant>_ridge_knot` at the middle, and a `_ridge_edge` or `_ridge_corner` to each part, turned the same way. Monastery has none because they'd bury the steps; it keeps its mountains.
+5. **Ridges:** with two or more mountain parts on a tile, more than two steps from a landmark, not on monastery heights, and not on a tile where a ledge comes out (`cliffs.ledge_tops(climbs)`): one `<variant>_ridge_knot` at the middle, and a `_ridge_edge` or `_ridge_corner` to each part, turned the same way. Monastery has none because they'd bury the steps; it keeps its mountains.
+
+A ledge's tile keeps its mountains; only the ridges go (design/06). Run `climbs()` before placing ridges, for every raised region. Ledges can change as land is placed, so re-run this rule with them: a ledge's tile loses its ridges, and a tile that stops having a ledge gets them back. Godot's `Cliffs.forced_climb` (a party's one ledge down) should count as a ledge here while it shows.
+
+**Openings at ledge tops (Nov 2, 2026):** measured on 150 random regions of 5 to 20 tiles (531 ledges, snowy's pieces, one seed), treating every mountain and ridge footprint as solid, by a one-off script not in the repo.
+
+| From where a ledge comes out to the next tile | Before the rule | With the rule |
+| --- | --- | --- |
+| No way out at all | 0.6% | 0 |
+| Way out is under about 0.6 wide | 6.4% | 2.4% |
+
+Those remaining narrow ones all have one way out, the trail edge, squeezed by the mountain on the edge beside it. So routes may still need to brush rock there.
+
+Previews: `hills_snowy_big_raised_v1.png`, `hills_volcanic_big_raised_v1.png` (37 tiles, six ledges; 46 ridged tiles across the two renders, none on a ledge's tile) and `_big_raised_a_top_v1` for each. The 7- and 12-tile regions place no ridges at all, so their previews don't change.
 
 Mountains and ridges are solid: routes go round them. Their heights before the raise:
 

@@ -15,6 +15,7 @@ ground-level hills region beside it):
    foot is near the middle of edge i - 1, facing straight out into the neighbour there; the first part of that edge is
    plain cliff, so a neighbouring cliff at that corner stays beside the foot, not in front of it. Their path data joins
    up; it's the only way up. test_cliffs.py checks the rule on random region shapes.
+5. ledge_tops(): no ridges on a tile where a ledge comes out (design/06), so run climbs() before placing ridges. Its mountains stay.
 Plain Python, so the engines can copy it.
 """
 import ground_cover as gc
@@ -46,6 +47,11 @@ def foot_is_open(t, i, raised):
     """A foot opens onto the tile on edge i - 1 only if that tile and the three tiles beyond it, in front of the foot, aren't raised."""
     ahead = beside(t, i - 1)
     return ahead not in raised and all(beside(ahead, k) not in raised for k in (i - 2, i - 1, i))
+
+
+def ledge_tops(climbs_):
+    """The tiles where these ledges come out: they have no ridges, so a party arriving at the top has an opening."""
+    return {t for t, _ in climbs_}
 
 
 def climbs(region, terrains, raised=()):

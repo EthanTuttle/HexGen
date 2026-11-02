@@ -129,6 +129,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v53 (same kit, later):** `cliffs.ledge_tops`: no ridges on a tile where a ledge comes out. Pieces unchanged. See `handoff/hills_kit.md` → Range rules.
 - **tiles_v53:** river round 2 feedback. No tree on Meditation Rock's tile, its stacks larger so they read at map zoom. `water.landmark_fits` (the pick rule for River Port, Meditation Rock and Troll Bridge) and `water.raft_can_enter` (no rafts on rapids). See `handoff/river_kit.md`.
 - **tiles_v52:** river round 2. Great lake with Lake Serpent's Lair, rapids with bridges and the Troll Bridge, still waters with Meditation Rock (`water.py` styles, `tile_props`, `bridge_spot`, `lair_routes`, `rock_routes`; `variants.PROP_PIECES`). The River Port's ground plate is gone: its water stops at the quay (`port_shape`), its paving lies flush, and stone walls meet the water (`port_walls`). See `handoff/river_kit.md`.
 - **tiles_v51 (same kit, later):** `cliffs.climbs`: a ledge's foot may open onto water when nothing else is available.

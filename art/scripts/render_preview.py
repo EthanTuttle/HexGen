@@ -266,7 +266,7 @@ def place(templates, name, col, at, angle=0.0):
 def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=None):
     """Places the test map. With animated=True, water tiles get banks and dressing only and are
     returned as (q, r, position, mask) so the animation can build moving water and bobbing boats.
-    raised_regions: the (tiles, variant) pairs that raise_region will raise, for the fence gates. flows: landmark tile ->
+    raised_regions: the (tiles, variant) pairs that raise_region will raise, for the fence gates and the ridges at ledge tops. flows: landmark tile ->
     (dist, toward, turn) to keep from when its region finished, rather than working them out from the map."""
     MAP = tiles or globals()["MAP"]
     water_tiles = []
@@ -295,7 +295,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     # Fence gates round farm and village groups (fence_gates.py).
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
-    gates = fg.fence_gates(terrains, raised, [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)])
+    all_ledges = [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)]
+    gates = fg.fence_gates(terrains, raised, all_ledges)
+    ledge_tops = cliffs.ledge_tops(all_ledges)
     streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
@@ -395,8 +397,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             for where, i in parts:
                 place(templates, f"{name}_mountain_{where}", col, at, math.radians(60 * i))
             # In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
-            # None within two steps of a landmark (clear ground), nor where steps run (they'd bury them).
-            if len(parts) >= 2 and dist.get((q, r), 3) > 2 and f"{kit}_steps_centre" not in templates:
+            # None within two steps of a landmark (clear ground), nor where steps run (they'd bury them), nor where a ledge comes out.
+            if len(parts) >= 2 and dist.get((q, r), 3) > 2 and f"{kit}_steps_centre" not in templates and (q, r) not in ledge_tops:
                 place(templates, f"{name}_ridge_knot", col, at)
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
@@ -811,7 +813,7 @@ if __name__ == "__main__":
                 tiles_map = {**ring, **{t: (lm if t == lm_at else variant) for t in region}}
                 hk.empty_scene()
                 templates = load_templates(tiles)
-                build_map(templates, tiles=tiles_map)
+                build_map(templates, tiles=tiles_map, raised_regions=[(region, variant)])
                 col = bpy.data.collections["map"]
                 climbs = raise_region(templates, col, tiles_map, [(region, variant)])
                 tile_report(col, f"{short} {size}")
@@ -1151,7 +1153,7 @@ if __name__ == "__main__":
         # walkable land beside it, and the rise halfway through.
         prefix = "trial_" if "trial" in flags else ""
 
-        def scene(stem, tiles_map, regions, progress=1.0, flows=None, foot=False):
+        def scene(stem, tiles_map, regions, progress=1.0, flows=None, foot=False, top=False):
             if flags.get("only") and stem not in flags["only"].split(","):
                 return
             hk.empty_scene()
@@ -1164,6 +1166,14 @@ if __name__ == "__main__":
             centre = sum((hk.tile_position(*t) for r_, _ in regions for t in r_), Vector()) / sum(len(r_) for r_, _ in regions)
             stage(centre + Vector((0, -1.5, 2.0)), 66 if len(regions) == 1 else 88, 50)
             render(f"{prefix}{stem}")
+            if top:  # where each ledge comes out, from above the plateau
+                cam = bpy.context.scene.camera
+                cam.data.lens = 24
+                for k, (t, i) in enumerate(climbs):
+                    out, along = hk.edge_normal(i + 1), hk.edge_normal(i + 1 + 1.5)
+                    exit_ = hk.tile_position(*t) + out * vr.LEDGE_X + along * vr.climb_heights()[2] + Vector((0, 0, vr.RAISE))
+                    look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
+                    render(f"{prefix}{stem}_{'abcdefgh'[k]}_top")
             if foot:  # the gate in front of a ledge's foot, from behind the gate
                 cam = bpy.context.scene.camera
                 cam.data.lens = 24
@@ -1200,6 +1210,11 @@ if __name__ == "__main__":
             scene(stem, {**{t: low for t in FLOW_RING}, **{t: (lm if t == LANDMARK_AT else up) for t in LANDMARK_REGION}},
                   [(LANDMARK_REGION, up)], foot=True)
         scene("hills_fenced_foot_raised", fenced, [(LANDMARK_REGION, "snowy_peaks")], foot=True)
+        # A big region, so most tiles are far enough from the landmark for ridges: no ridges where a ledge comes out.
+        big = [(q, r) for q in range(-3, 4) for r in range(-3, 4) if abs(q + r) <= 3]
+        rim = {t: "plains" for b_ in big for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in big}
+        for stem, up, lm in (("hills_snowy_big_raised", "snowy_peaks", "yeticave"), ("hills_volcanic_big_raised", "volcanic_peaks", "salamanderden")):
+            scene(stem, {**rim, **{t: (lm if t == (-3, 3) else up) for t in big}}, [(big, up)], top=True)
         sys.exit(0)
     if "hills-t2" in flags:
         # Hills tier 2 and class variant: each region flowing into its landmark, and a close-up; monastery's paths.
