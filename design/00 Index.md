@@ -128,7 +128,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
 - [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
 - [ ] New: Legendary odds; minor landmark odds per placed tile
-- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills and village done by Nov 2, 2026)
+- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills, village and river done by Nov 2, 2026)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
 - [ ] New: class quests: what the task rewards; Rogue's manor in a bayou
@@ -167,6 +167,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: raised hills regions: effect on reaching landmarks; a region ringed by river needs crossing gear or boats (see Multiplayer & tech, Map & exploration → Obstacles)
 - [ ] New: giant enemies taking more than one cell: footprints and grid rules (see Classes & combat)
 - [ ] New: combat map generation: how a fight lays out cells and props from the tile and variant
+- [ ] New: crossing water: Athletics check failure cost, raft price and whether it's used up, and how a raft looks and moves on the map (see Map & exploration → Obstacles)
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
