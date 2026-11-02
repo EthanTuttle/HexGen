@@ -1,8 +1,9 @@
-"""Reference version of the engines' raised regions: highlands, snowy peaks, volcanic peaks and monastery heights stand
-on a cliff, with narrow ledges climbing it (design/06 -> Tile build). Every cliff piece stays inside its own tile's edge
+"""Reference version of the engines' raised regions: snowy peaks and volcanic peaks stand on a cliff, with narrow ledges
+climbing it; RAISED lists them, and every other hills variant stays at ground level (design/06 -> Tile build). Every cliff piece stays inside its own tile's edge
 line, so neighbours are untouched.
 
-Once a region finishes, and again whenever a tile of hills terrain joins it (any other tile stays low):
+Once a region finishes, and again whenever a tile of hills terrain joins it (any other tile stays low, and so does a
+ground-level hills region beside it):
 1. Every piece on the region's tiles is placed RAISE higher, and their bases are left out: the ground covers the tile.
 2. outer_edges(): every edge facing a tile that isn't raised gets <variant>_cliff_edge (or _cliff_edge_b, by
    hash01(q * 6 + i, r, 8)) at ground level, turned by 60 * i degrees, and its wedge becomes <variant>_edge_rim. An edge
@@ -19,7 +20,7 @@ Plain Python, so the engines can copy it.
 import ground_cover as gc
 
 NEIGHBOURS = gc.NEIGHBOURS
-RAISED = ("highlands", "snowy_peaks", "volcanic_peaks", "monastery_heights")
+RAISED = ("snowy_peaks", "volcanic_peaks")  # the variants that rise when their region finishes; no other has cliff pieces
 UNWALKABLE = {"river"}  # as in fence_gates.py
 NOT_CLEAR = {"forest", "farmland", "village"}  # trees or a fence between the foot and the land beyond it
 

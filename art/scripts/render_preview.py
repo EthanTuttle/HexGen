@@ -742,8 +742,7 @@ if __name__ == "__main__":
         # Raised regions (cliffs.py): 7 and 12 tiles from the map camera, from the foot of the cliff looking up, and a
         # close-up of a ledge. --only picks variants; --trial renders under a scratch name.
         prefix = "trial_" if "trial" in flags else ""
-        for short, variant, lm in (("snowy", "snowy_peaks", "yeticave"), ("volcanic", "volcanic_peaks", "salamanderden"),
-                                   ("highlands", "highlands", "clanhall"), ("monastery", "monastery_heights", "library")):
+        for short, variant, lm in (("snowy", "snowy_peaks", "yeticave"), ("volcanic", "volcanic_peaks", "salamanderden")):
             if flags.get("only") and short not in flags["only"].split(","):
                 continue
             for size, region, lm_at, view, far in (("7", LANDMARK_REGION, LANDMARK_AT, Vector((0.5, -1.5, 2.0)), 62),
@@ -876,6 +875,12 @@ if __name__ == "__main__":
         scene("hills_noway_raised", river, [(LANDMARK_REGION, "snowy_peaks")])
         scene("hills_snowy_rising_raised", base, [(LANDMARK_REGION, "snowy_peaks")], 0.5)
         fenced = {**{t: "farmland" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        # Ground-level hills beside a raised region: all the land round it, so every ledge's foot faces them.
+        for stem, low in (("hills_snowy_beside_highlands_raised", "highlands"), ("hills_snowy_beside_tier0_raised", "hills"),
+                          ("hills_volcanic_beside_monastery_raised", "monastery_heights")):
+            up, lm = ("volcanic_peaks", "salamanderden") if "volcanic" in stem else ("snowy_peaks", "yeticave")
+            scene(stem, {**{t: low for t in FLOW_RING}, **{t: (lm if t == LANDMARK_AT else up) for t in LANDMARK_REGION}},
+                  [(LANDMARK_REGION, up)], foot=True)
         scene("hills_fenced_foot_raised", fenced, [(LANDMARK_REGION, "snowy_peaks")], foot=True)
         sys.exit(0)
     if "hills-t2" in flags:

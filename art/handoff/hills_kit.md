@@ -1,8 +1,8 @@
-# Hills kit hand-off (tiles_v45)
+# Hills kit hand-off (tiles_v47)
 
 This kit holds tier 0 hills, highlands with the Clan Hall (tier 1), cold snowy peaks with the Yeti Cave and volcanic peaks with the Salamander Den (tier 2), and monastery heights with the Library (class variant). Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v45.blend`.
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v47.blend`.
 - **Path data and effect points:** in the glb as node extras, and in `art/export/tiles_paths.json`.
 - **Looks and flows:** `design/07 Presentation.md` → Art direction → Region variant looks and Landmark tiles.
 - **Engine rules:** `design/06 Multiplayer & tech.md` → Tile build.
@@ -92,12 +92,12 @@ Before the raise, landmarks stay under 4.2: Yeti Cave 3.95, Salamander Den 3.95,
 
 ## Raised regions
 
-Ethan chose this at height 5 (design/06 → Tile build). `highlands`, `snowy_peaks`, `volcanic_peaks` and `monastery_heights` stand on a cliff, with ledges climbing it. Plain `hills` doesn't. Everything stays inside the region's own edge line, so neighbours are untouched. The smooth lift in tiles_v42 (`art/scripts/massif.py`) is not the plan.
+Ethan chose this at height 5 (design/06 → Tile build). Only `snowy_peaks` and `volcanic_peaks` stand on a cliff, with ledges climbing it: `cliffs.RAISED` is the list. Plain `hills`, `highlands` and `monastery_heights` stay at ground level, with the looks Ethan approved in tiles_v41. Their pieces and path data in tiles_v47 are identical to tiles_v41's (checked piece by piece: vertices, colours, path data, including `steps_centre`, `steps_rise` and `library_centre`), and they have no cliff, rim or ledge pieces. Everything stays inside the region's own edge line, so neighbours are untouched. The smooth lift in tiles_v42 (`art/scripts/massif.py`) is not the plan.
 
-Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_cliffs.py` (see Which ledges) and `render_preview.raise_region`. Previews, for `snowy`, `volcanic`, `highlands`, `monastery`:
+Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_cliffs.py` (see Which ledges) and `render_preview.raise_region`. Previews, for `snowy` and `volcanic` (the `highlands` and `monastery` `_raised` previews are left from when they rose, and no longer apply):
 - **Regions:** `hills_<variant>_7_raised_v3.png`, `_12_raised_v3`, `_low_raised_v3` (from the foot of a cliff), `_climb_raised_v3` (a ledge, its route in red).
 - **Every ledge, in the 7- and 12-tile regions:** `hills_<variant>_<7|12><a|b|c>_foot_raised_v1` (low, from the land in front of the foot) and `_top_raised_v1` (from above the plateau). These are new, so they start at v1.
-- **Scenes:** `hills_snowy_added_before_raised_v2`, `hills_snowy_added_after_raised_v3`, `hills_touching_raised_v2`, `hills_noway_raised_v2`, `hills_snowy_rising_raised_v2`, `hills_fenced_foot_raised_v1`, `hills_fenced_foot_raised_foot_v1`.
+- **Scenes:** `hills_snowy_added_before_raised_v2`, `hills_snowy_added_after_raised_v3`, `hills_touching_raised_v2`, `hills_noway_raised_v2`, `hills_snowy_rising_raised_v2`, `hills_fenced_foot_raised_v1`, `hills_fenced_foot_raised_foot_v1`, `hills_snowy_beside_highlands_raised_v1`, `hills_snowy_beside_tier0_raised_v1`, `hills_volcanic_beside_monastery_raised_v1` (each with a `_foot_v1`).
 
 **The rule: one height per region, and cliff pieces per outer edge.** No vertex shifting or baking:
 
@@ -112,7 +112,7 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
    | `i` | `<variant>_cliff_path_mid` | `<variant>_edge_climb` |
    | `i + 1` (comes out here) | `<variant>_cliff_path_top` | `<variant>_edge_climb_top` |
 
-   No pinnacle at corners `i - 1`, `i` and `i + 1` (the last would stand where the ledge comes out). On monastery, also place `steps_centre` on edge `i + 1` (`steps_rise` on the Library's tile).
+   No pinnacle at corners `i - 1`, `i` and `i + 1` (the last would stand where the ledge comes out).
 5. **Ground cover:** none on raised tiles, including tufts fading in from neighbours.
 
 **Which ledges:** one outer edge in six, at least two, ranked by `hash01(q * 6 + i, r, 15)`. All three edges must be outer, and the foot must be open; at most one per tile, never on tiles side by side.
@@ -150,10 +150,8 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 | --- | --- | --- | --- | --- |
 | `snowy_peaks` | 4,212 | 220 | 20 | 284 |
 | `volcanic_peaks` | 3,650 | 170 | 10 | 247 |
-| `highlands` | 4,659 | 180 | 10 | 320 |
-| `monastery_heights` | 4,348 | 170 | 10 | 247 |
 
-`cliff_path_low` is 134 to 164, `_mid` 130, `_top` 131. `edge_climb_low`, `edge_climb` and `edge_climb_top` are 180 each (`edge_climb_top` 222 on monastery). Outer wedges now hold fewer props than `edge_other`: a pine, a pond and a grass patch on snowy, a stump and a shrub on volcanic, heather and an outcrop on highlands, a shaped pine on monastery.
+`cliff_path_low` is 134 to 164, `_mid` 130, `_top` 131. `edge_climb_low`, `edge_climb` and `edge_climb_top` are 180 each. Outer wedges now hold fewer props than `edge_other`: a pine, a pond and a grass patch on snowy, a stump and a shrub on volcanic.
 
 **The rise:** the region comes up over a few seconds, its tile pieces from the ground and cliffs from below it. Both move by the same amount, so the cliff's lip stays on the ground. `raise_region(progress=0.5)` shows it halfway. The engine needs:
 - **At the start:** swap wedges to rim and climb pieces and remove bases. For that moment a thin trench shows where the ground now stops short of the edge line, which the dust should cover.
@@ -163,6 +161,11 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 - **Path data:** only valid at the end, so no walking during the rise.
 
 **Tiles added later:** a tile of hills terrain beside a finished raised region joins it and rises, taking the region's variant. Any other tile stays low. Run `outer_edges`, `outer_corners` and `climbs` again. In the preview, the same ledges survive. A ledge whose edges stop being outer, or whose foot stops being open, is re-picked.
+
+**Ground-level hills beside a raised region:** a `highlands`, `monastery_heights` or plain `hills` tile stays low beside the cliff. It uses `edge_other` on that edge, shares no mountain with the raised tile, and counts as open land for a foot. The foot's ground meets it at the same height. Previews: `hills_snowy_beside_highlands_raised_v1`, `hills_snowy_beside_tier0_raised_v1`, `hills_volcanic_beside_monastery_raised_v1`, each with `_foot_v1`. Trouble, none of it fixed, as the low tiles keep their approved looks:
+- **Which region a new tile joins isn't decided:** a hills tile touching both a raised region and a ground-level one could rise or stay low. The rule above says it joins the raised one, which would leave the low region beside it unjoined, so this needs a decision from Ethan.
+- **Props and mountains near a foot:** the low tile's props aren't told about the foot, so a monastery garden bed, a rock or a tier 0 hills tree can stand right in front of it, and the low tiles' own ranges can crowd it. The route up isn't cut off in these three scenes, but `test_cliffs.py` doesn't check props or mountains on low tiles. `cliffs.NOT_CLEAR` could also make feet avoid hills, as they avoid forest, if Ethan wants that.
+- **At map zoom:** a ring of low hills round a plateau makes a wall of mountains round the cliff, which hides its foot and competes with it. A real region will rarely be ringed like this.
 - **Keep the old tiles' trails and turn:** the region's existing tiles keep the trails, near and mid pieces and landmark turn they got when it finished. Only the new tile gets its own, from `landmark_flow.extend(tile, dist, toward)`, which leaves the old distances as they are. Otherwise a landmark can swing round when a tile is added. `hills_snowy_added_after_raised_v3` shows this: the Yeti Cave's mouth stays as it was in `hills_snowy_added_before_raised_v2`.
 
 **Two raised regions touching:** they join as one plateau (Ethan's choice, design/06): no cliff between them, at one height (`hills_touching_raised_v2`). They use `edge_other` there, so the ground dips to the join. Each has its own ledges, on land that isn't raised. If one has none, the party can still cross from the other, since the ground joins.
