@@ -165,6 +165,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Godot on iPhone frame rate~~ (Nov 1, 2026: 120 fps on the 15 Pro; target set to 120 where possible, never below 60)
 - [ ] New: combat boards on sloped ground follow the slope; what height does in combat (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks; a region ringed by river needs crossing gear or boats (see Multiplayer & tech, Map & exploration → Obstacles)
+- [ ] New: combat map generation: how a fight lays out cells and props from the tile and variant
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
