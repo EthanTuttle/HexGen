@@ -371,6 +371,17 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 	for c in tiles:
 		if finished.has(c):
 			joined = maxi(joined, finished[c])
+	# A hills tile touching a raised region always joins it and rises, so low hills don't stand beside one (DOCS:
+	# design/06 -> Tile build); the newer one if it touches two.
+	var up := -1
+	for c in tiles:
+		if not finished.has(c):
+			for n in Hex.NEIGHBOURS:
+				var g: int = finished.get(c + n, -1)
+				if g >= 0 and regions[g].variant in Cliffs.RAISED:
+					up = maxi(up, g)
+	if up >= 0:
+		joined = up
 	if joined >= 0:
 		# A tile added to a finished region just expands it (the newer region if it touches two). Finished
 		# regions that touch stay separate (DOCS: Merging finished regions), so only unfinished tiles join.

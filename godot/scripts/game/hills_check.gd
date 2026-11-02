@@ -1,6 +1,6 @@
 class_name HillsCheck
 extends Node
-## Checks the hills kit (tiles v45) in the game (`-- --hillscheck`, add `--shots` for screens/hills_*.png): tier 0, the
+## Checks the hills kit (tiles v47) in the game (`-- --hillscheck`, add `--shots` for screens/hills_*.png): tier 0, the
 ## range rules, each raised region's cliffs, ledges and heights, the rise and what it carries, routes up, across and
 ## down, tiles added later, touching regions, a region with no way up, fenced feet, and a fight on raised ground.
 ## Prints HILLS OK / HILLS FAIL lines, then HILLS DONE. A test aid only.
@@ -86,6 +86,7 @@ func _run() -> void:
 	await _check_rise()
 	await _check_added()
 	await _check_touching()
+	await _check_touching_both()
 	await _check_no_way()
 	await _check_fenced_foot()
 	print("HILLS DONE: %d failed" % failed)
@@ -441,11 +442,13 @@ func _watched_walk(goal: Vector2i, what: String, shots_as: String) -> Dictionary
 			var near_h := 0.0
 			for line in lines:
 				for q in line:
+					if q.z > Variants.RAISE:
+						continue   # where it's come out on the plateau, walked past by anyone crossing it
 					var d := Vector2(q.x, q.y).distance_to(at)
 					if d < near:
 						near = d
 						near_h = q.z
-			if near < 0.12:
+			if near < 0.12 and map.raised.has(tile):
 				off_ledge = maxf(off_ledge, absf(y - near_h))
 			tilt = maxf(tilt, rad_to_deg((m.up as Vector3).angle_to(Vector3.UP)))
 			if absf(y - last_y[k]) > jump:
@@ -816,6 +819,45 @@ func _raised_at_once(tiles: Array[Vector2i], variant: String, landmark: Vector2i
 		game.order[t] = game.order.size()
 	map.retile(changes)
 	return region
+
+
+## A hills tile touching both a raised region and a newer ground-level one joins the raised one and rises. The old
+## low region stays low: only tiles join, and finished regions stay separate.
+func _check_touching_both() -> void:
+	var map := game.map
+	var a := Vector2i(-20, 12)
+	_land(a + Vector2i(1, 0), 4)
+	_connect(a + Vector2i(1, 0) + Vector2i(-3, -2))
+	var up_tiles: Array[Vector2i] = [a, a + Vector2i(0, -1), a + Vector2i(-1, 0), a + Vector2i(-1, 1), a + Vector2i(0, 1)]
+	var low_tiles: Array[Vector2i] = [a + Vector2i(2, 0), a + Vector2i(2, -1), a + Vector2i(3, -1), a + Vector2i(3, 0), a + Vector2i(2, 1)]
+	var ru := _raised_at_once(up_tiles, "volcanic_peaks", a)
+	for t in low_tiles:
+		map.terrains.erase(t)
+		map.tile_node(t).free()
+		map._tile_nodes.erase(t)
+		game._debug_fill.erase(t)
+	var rl := game.new_region("hills", low_tiles, "highlands", low_tiles[0])
+	game._set_flow(rl)
+	var changes := {}
+	for t in low_tiles:
+		changes[t] = game.region_look(rl, t)
+		game.order[t] = game.order.size()
+	map.retile(changes)
+	var bridge := a + Vector2i(1, 0)
+	map.terrains.erase(bridge)
+	map.tile_node(bridge).free()
+	map._tile_nodes.erase(bridge)
+	game._debug_fill.erase(bridge)
+	map.place(bridge, "hills")
+	game.order[bridge] = game.order.size()
+	game._check_region(bridge, "hills")
+	await _await_free()
+	_check(game.finished.get(bridge) == game.regions.find(ru) and map.terrains[bridge] == "volcanic_peaks", "a tile touching a raised region and a newer low one joins the raised one")
+	_check(map.raised.has(bridge) and map.tile_node(bridge).position.y == Variants.RAISE, "and rises")
+	_check(not map.raised.has(low_tiles[0]) and map.tile_node(low_tiles[0]).position.y == 0.0, "the low region stays low")
+	game.rig.frame(Hex.to3(Hex.tile_position(bridge.x, bridge.y), 3.0), 40.0, 50.0)
+	await _wait(0.2)
+	await _shot("95_tile_between_raised_and_low")
 
 
 ## Ringed by a river: no ledge, no route, a tap does nothing; land placed beside it... stays until there's a foot.

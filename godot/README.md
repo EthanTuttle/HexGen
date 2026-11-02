@@ -437,14 +437,14 @@ Tier 0 plains, rolling meadows with the Nomad Camp, steppe/battlefield with the 
 
 Debug: `-- --forest` and F9 now also spawn a 12-tile region of each plains variant, with the landmark on the rim so all the bands show. `-- --plainscheck` (add `--shots` for `screens/plains_*.png`) checks the bands, the turns, no trail pieces, the wedges, `no_cover`, `BENT`, lightning and the walks in and out. `tools/flow_check.gd` also compares `toward_edge` with the Python.
 
-## Hills kit (tiles v45)
+## Hills kit (tiles v47)
 
-Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave, volcanic peaks with the Salamander Den, and monastery heights with the Library, from `art/export/tiles.glb` and `art/handoff/hills_kit.md`. Only snowy and volcanic are raised (`Cliffs.RAISED`; design/06, Nov 2, 2026). Highlands and monastery heights stay at ground level, like tier 0, though the hand-off and `cliffs.py` still describe all four. Rules: `design/06` → Tile build, `design/07` → Landmark tiles, `design/02` → Obstacles.
+Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave, volcanic peaks with the Salamander Den, and monastery heights with the Library, from `art/export/tiles.glb` (tiles v47) and `art/handoff/hills_kit.md`. Only snowy and volcanic are raised (`Cliffs.RAISED`; design/06, Nov 2, 2026). Highlands and monastery heights stay at ground level, like tier 0. Rules: `design/06` → Tile build, `design/07` → Landmark tiles, `design/02` → Obstacles.
 
 - **Ranges:** `MapBoard._ranges` follows `render_preview.build_map`: no mountain on a landmark, beside one, on a trail edge, or shared across a cliff; no ridges or lone peaks within two steps of a landmark; no ridges on monastery. Trees only on `hills_edge_other_b`.
 - **Raised regions:** `cliffs.gd` is `cliffs.py`. A raised tile's node stands at height 5 and holds its cliffs as children at -5, so they come up together and end at ground level. Bases and ground cover go. `MapBoard._update_raised` works out cliffs, pinnacles and ledges again whenever land near a region changes.
 - **The rise:** `Game._rise` (`Rules.RISE_SECONDS`), with dust (`rise_dust.gd`) and camera shake. Cliffs are cut off below the board while it rises (`cliff_rise.gdshader`). The party rides up and nobody can walk until it ends.
-- **Later tiles:** a hills tile beside a raised region joins it and rises (`LandmarkFlow.extend` keeps the old trails and turn). Old tiles keep their pieces until the new tile is up, so nothing opens under them.
+- **Later tiles:** a hills tile touching a raised region always joins it and rises, even if it touches a newer low region too (`Game._check_region`; `LandmarkFlow.extend` keeps the old trails and turn). A finished low region it touches stays low. Old tiles keep their pieces until the new tile is up, so nothing opens under them.
 - **Routes:** a cliff can only be crossed by its ledge (`MapBoard.edge_open`). `PartyWalker._build_path` joins stretches of ground with the ledge's own path heights; on a ledge the party closes into single file and bases tilt up to 30° (`Rules.LEDGE_MAX_TILT_DEG`). Each mini knows which level it's on, and only a ledge changes that. Raised ground is on collision layer 2. `Game.path_to` avoids crossing a shared mountain where it can (`Rules.MOUNTAIN_EDGE_COST`), so routes take the passes.
 - **Gates:** `FenceGates.gates` takes raised tiles and climbs: never a gate onto a cliff, always one at a foot.
 - **Taps:** `Game.ground_point` tries raised ground's height first, so a tap picks the plateau you see.

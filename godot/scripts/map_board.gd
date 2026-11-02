@@ -673,8 +673,6 @@ func _build_tile(t: Vector2i) -> void:
 		if i in _outer.get(t, []):
 			var part: String = _ledges.get(t, {}).get(i, "")
 			edge = kit + {"low": "_edge_climb_low", "mid": "_edge_climb", "top": "_edge_climb_top", "": "_edge_rim"}[part]
-			if part == "top" and _kit.has(kit + "_steps_centre"):
-				Kit.place(node, _kit, kit + ("_steps_rise" if Variants.LANDMARKS.has(name) else "_steps_centre"), at, angle)
 		Kit.place(node, _kit, edge, at, angle)
 		if i in trails and _kit.has(kit + "_steps_centre"):   # the stair's flight on the centre, one per trail edge
 			if not Variants.LANDMARKS.has(name):

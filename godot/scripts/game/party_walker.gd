@@ -195,6 +195,9 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 			_arc(pts, c, Rules.ENTRANCE_RING, entrance if last_tile else out_dir.angle())
 			if last_tile:
 				_end_facing = entrance + PI   # facing the landmark
+				if graph.stand != null:       # came in by an edge with no drawn path: on along the entrance's line
+					_line(pts, graph.nodes[graph.stand])
+					_file_end = true
 			elif not onto_ledge:
 				_line(pts, c + out_dir * Hex.A)
 		else:
