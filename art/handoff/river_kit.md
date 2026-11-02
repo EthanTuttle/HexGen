@@ -137,7 +137,7 @@ Water, banks and dressing add a few hundred triangles to a tile, and every full 
 ## Still not working, or for Ethan to look at
 
 - **Not tested in an engine:** none of it has been tried in Godot.
-- **Rapids with no bridge spot:** of the 14 patterns of water neighbours, 5 never fit a bridge: no water neighbours, or water edges all side by side, or two pairs of them. A Troll Bridge can't stand there. See the questions for Ethan.
+- **Rapids with no bridge spot:** of the 14 patterns of water neighbours, 7 never fit a Troll Bridge: no water neighbours, water edges all side by side, or two pairs of them. Two more fit on only about half their seeds: one water edge, and two water edges two apart. A tile can't have one there. See the questions for Ethan.
 - **Raft under a bridge:** the raft's mast is about 2.1 high and the Troll Bridge's arch 1.5, so a raft on that line clips it.
 - **Colour at a join:** where great lake, rapids or still waters meet other water, the colour changes sharply at the tile's edge.
 - **Lair end-on:** `landmark_flow.turn` can face the cave away from the default camera. Turning the camera shows it.
