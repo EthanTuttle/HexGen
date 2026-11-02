@@ -64,6 +64,10 @@ Blender -b --factory-startup --python art/scripts/render_preview.py -- --farmlan
 # Stand-in minis: a line-up, on the combat board, and as a party on a map tile
 Blender -b --factory-startup --python art/scripts/render_standin_minis.py
 
+# Enemy minis (latest first draft, then a line-up, close-ups and boards)
+Blender -b --factory-startup --python art/scripts/build_enemy_minis.py
+Blender -b --factory-startup --python art/scripts/render_enemy_minis.py
+
 # A 6-second video of the map with moving water (add -- --still for one frame)
 Blender -b --factory-startup --python art/scripts/render_animation.py
 ```
@@ -88,6 +92,7 @@ Blender -b --factory-startup --python art/scripts/render_animation.py
 - **Combat cell:** flat-top, spaced 1.0 across the flats, drawn at 0.94 so a thin gap shows. A radius-4 board (61 cells) has a pointy-top outline the size of one map tile. Pieces: `cell_grass_a/b/c`, `cell_tree` (doesn't block), `cell_rock` (blocks).
 - **Minis:** about 1.3 tall, on a base that fills one combat cell.
 - **Stand-in minis** (`standin_minis_vN.blend`, exported as `export/standin_minis.glb`): super low-poly blockouts (70–290 triangles each) so the engines can test size and movement before the real minis exist. Each stands on a flat-top wooden hex base 0.9 across the flats and 0.08 tall, with a coloured ring and a notch on its front edge; the pivot is the base centre at ground level. They face −Y in Blender, which exports as +Z (glTF front, Unity forward, Godot `MODEL_FRONT`). Pieces: `standin_base` (no figure), `standin_hero` (1.3, sword raised), `standin_chelmsford` (1.3, snout, horns, tail, mace and shield), `standin_small` (1.0, halfling or small elf), `standin_fluffy` (the cat on all fours, about 0.6) and `standin_enemy` (1.3, spear, red ring). Only the 1.3 height comes from the docs; the other heights and the ring colours are test guesses.
+- **Enemy minis (`minis/enemies/enemy_minis_vN.blend`, `scripts/build_enemy_minis.py`; not exported until approved):** scripted low-poly, on the stand-ins' hex base (68 triangles of each count, pivot and facing the same), in the shared `kit` material. Pieces: `enemy_wolf`, `enemy_wolf_elite`, `enemy_spider`, `enemy_spider_elite`. An elite has a gold line inside the red ring. All are drafts for Ethan to judge.
 
 Terrains: plains, forest, farmland, river (river/lake) and village, plus (from tiles_v5) hills, swamp, desert and ruins. Colours are the mockup placeholders, set in one table (`PALETTE` in `scripts/hexkit.py`).
 
@@ -181,3 +186,4 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 - **Ground cover (from map_preview_v5):** scattered by `scripts/ground_cover.py` across the whole map from one world-space pattern: one jittered candidate point per 0.55 m cell, kept if a hash of the cell is below the terrain's density, which fades toward the neighbour's density within 1.6 m of a tile edge. Points in water or on a river bank are skipped. Densities per terrain are placeholders at the top of the file.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).
+- **enemy_minis_v4** (`minis/enemies/`): first pass of wolves and giant spiders, plain and elite, for review. v1–v3 are earlier rounds of the same pass.
