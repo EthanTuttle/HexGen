@@ -129,7 +129,7 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 - **Foot:** about the middle of edge `i - 1`, where it widens toward the land in front. Before it, that edge is plain cliff, with a rock wall closing the ledge's end, so nothing leads the eye along the wall into a neighbouring cliff.
 - **Width:** 1.05 clear, against a mini's base of 1.0. Rock only goes back into the cliff, never out over it.
 - **Headroom:** open sky.
-- **Slope:** about 29°, up from 26°, since starting mid-edge leaves less run. From the edge line to about 5.3.
+- **Slope:** about 29°, up from 26°, since starting mid-edge leaves less run. From the edge line to about 5.2.
 - **Length:** about 9.4.
 
 **Path data:** `cliff_path_low`, `_mid` and `_top` each have a `paths` line with real heights from the ground, as they stand at z = 0. Their ends coincide once placed. `low`'s starts on the edge line, 0.13 back from the edge's midpoint and 0.13 above the ground. Link it straight out to the tile on edge `i - 1`, then along its usual route. `edge_climb_top`'s runs from where the ledge comes out, back round to the wedge's inner end, in the raised frame like any wedge: a sharp turn onto the plateau. On monastery that joins the hub as usual, and the Library uses its spoke for that edge. These are the only ways up: nothing else on a cliff edge joins the route graph.
