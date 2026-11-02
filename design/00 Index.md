@@ -128,7 +128,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
 - [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
 - [ ] New: Legendary odds; minor landmark odds per placed tile
-- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills and village done by Nov 2, 2026)
+- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills, village and river done by Nov 2, 2026)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
 - [ ] New: class quests: what the task rewards; Rogue's manor in a bayou
@@ -164,9 +164,11 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
 - [x] ~~Godot on iPhone frame rate~~ (Nov 1, 2026: 120 fps on the 15 Pro; target set to 120 where possible, never below 60)
 - [ ] New: combat boards on sloped ground follow the slope; what height does in combat (see Classes & combat)
-- [ ] New: raised hills regions: effect on reaching landmarks; a region ringed by river needs crossing gear or boats (see Multiplayer & tech, Map & exploration → Obstacles)
-- [ ] New: giant enemies taking more than one cell: footprints and grid rules (see Classes & combat)
+- [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
+- [ ] New: giant enemies (3 or 7 cells): grid rules (see Classes & combat)
 - [ ] New: combat map generation: how a fight lays out cells and props from the tile and variant
+- [x] ~~Crossing water~~ (settled Nov 2, 2026: Athletics check, a failure costs the whole party HP but they still cross; a permanent raft from the River Port; see Map & exploration → Obstacles)
+- [ ] New: HP lost on a failed crossing, raft price, and how the raft looks on the map
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)

@@ -373,51 +373,152 @@ def river(p, rng, kind):
         tuft(p, rng, at)
 
 
-def cobbles(p, rng, inside, bounds, count):
+def cobbles(p, rng, inside, bounds, count, z=0.015):
     """Scattered darker paving stones on the cobbled ground."""
     for at in hk.scatter(rng, inside, count, 0.42, bounds):
         stone = hk.hex_corners(rng.uniform(0.14, 0.2), pointy=True)
-        p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], 0.015, "cobble_dark")
+        p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], z, "cobble_dark")
+
+
+# Village streets (design/06 -> Tile build; which edge gets which: village_streets.py). A small square at the middle,
+# a street wedge only where the edge has a street. All wedge props stay beyond X0 so a landmark's centre fits, and the
+# centre's own houses stand on the corner lines between the streets, so they're clear whichever streets a tile has.
+STREET_MAIN = 0.6  # half the width of a main street (the party's single file, with room to spare)
+STREET_SIDE = 0.45  # half the width of a side street: the same as a farm's lane, which it meets
+STREET_X0 = 0.9  # streets start inside the square
+SQUARE_R = 1.3
+CORNER_R = 2.55  # how far out the centre's houses stand, on the corner lines
+ROW_X = 3.35  # the houses along a street
+ALLEY_X = 2.75  # a short alley off the street, between the centre's house and the row. Only a look
+
+
+TOWN = dict(street="street", stone="cobble_dark", alley="cobble_dark", garden="plains")  # a town kit's ground colours
+
+
+def cottage(p, rng, at, w, d, spin):
+    """A one-storey house, w along its ridge. Most are cream; some are a warmer plaster, and a few roofs are browner."""
+    h = rng.uniform(0.62, 0.8)
+    p.box(at, (w, d, h), rng.choice(("wall", "wall", "wall_warm")), spin=spin)
+    p.gable_roof(at, w + 0.12, d + 0.16, 0.5, rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
+
+
+def strip(p, half, x0=STREET_X0, x1=X1, mat="street", z=0.02):
+    p.flat([Vector((x0, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((x0, half, 0))], z, mat)
+
+
+def stone_shape(rng, look):
+    """A paving stone's outline; with look's blotch, an irregular patch (the slums' damp ground)."""
+    corners = hk.hex_corners(rng.uniform(0.14, 0.2) * look.get("stone_size", 1), pointy=True)
+    return [c * rng.uniform(0.7, 1.25) for c in corners] if look.get("blotch") else corners
+
+
+def street_stones(p, rng, half, count=5, look=TOWN):
+    """Darker stones on the street (a kit can have fewer, bigger ones: the slums' puddles)."""
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.1) and abs(q.y) < half - 0.2, look.get("stones", count), 0.42, hk.WEDGE_BOUNDS):
+        stone = stone_shape(rng, look)
+        p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], 0.03, look["stone"])
+
+
+def alleys(p, half, look=TOWN):
+    """Short alleys off the street toward the corner lines, where they meet the next wedge's alley."""
+    for sd in (-1, 1):
+        y1 = ALLEY_X * TAN30 - 0.04
+        p.flat([Vector((ALLEY_X - 0.09, sd * half, 0)), Vector((ALLEY_X + 0.09, sd * half, 0)),
+                Vector((ALLEY_X + 0.09, sd * y1, 0)), Vector((ALLEY_X - 0.09, sd * y1, 0))][::sd], 0.018, look["alley"])
+
+
+def corner_spot(k, r=CORNER_R):
+    a = math.radians(30 + 60 * k)
+    return Vector((math.cos(a), math.sin(a), 0)) * r, a
+
+
+def town_square(p, rng, home, slots, extra=None, look=TOWN):
+    """A town tile's centre: the square, and on each corner line what slots says: "house", "well" or "tree", or
+    anything extra(k, slot) handles. The hub joins the square to every street on the tile; the middle stays clear."""
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(SQUARE_R, pointy=True)][::-1], 0.025, look["street"])
+    for at in hk.scatter(rng, lambda q: q.length < SQUARE_R * 0.8 and q.length > 0.5, look.get("stones", 6), 0.42, hk.CENTRE_BOUNDS):
+        stone = stone_shape(rng, look)
+        p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], 0.033, look["stone"])
+    for k, slot in enumerate(slots):
+        at, a = corner_spot(k)
+        if slot == "house":
+            home(p, rng, at, 0.85, 0.55, a + math.pi / 2)
+        elif slot == "well":
+            at, _ = corner_spot(k, 2.05)
+            p.cylinder(at, 0.26, 0.38, "rock", segments=8)
+            p.cylinder(at, 0.19, 0.02, "water", segments=8, z=0.38)
+            for sd in (-1, 1):
+                p.box(at + Vector((sd * 0.2, 0, 0)), (0.04, 0.04, 0.8), "trunk")
+            p.box(at, (0.5, 0.3, 0.04), "roof", z=0.8)
+        elif slot == "tree":
+            tree(p, rng, corner_spot(k, 2.6)[0])
+        elif extra:
+            extra(k, slot)
+    p.hub = Vector((0, 0, 0))
+
+
+def town_street(p, rng, home, half, sides=("house", "house"), look=TOWN):
+    """A street to the edge, with the row on each side (+Y first); a side that isn't "house" is the caller's to fill."""
+    strip(p, half, mat=look["street"])
+    street_stones(p, rng, half, look=look)
+    alleys(p, half, look)
+    for sd, side in zip((1, -1), sides):
+        if side == "house":
+            home(p, rng, Vector((ROW_X, sd * (half + 0.13 + 0.36), 0)), 0.85, 0.72, 0.0)
+    p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+
+
+def town_block(p, rng, home, inner=True, look=TOWN):
+    """A joined edge with no street: houses run on into the neighbour, an alley between them. One lies along the edge's
+    middle line and one across it, so where two blocks meet they don't make a grid. inner: the house toward the middle
+    (not on a landmark tile, whose yard lies there)."""
+    if inner:
+        home(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
+    strip(p, 0.12, x0=2.65, mat=look["alley"], z=0.018)
+    home(p, rng, Vector((3.25, 0.64, 0)), 0.98, 0.8, 0.0)
+    home(p, rng, Vector((3.3, -0.62, 0)), 0.8, 0.92, math.pi / 2)
+
+
+def town_garden(p, rng, gate, look=TOWN):
+    """Gardens along the fence: hedges and a little fruit tree, kept clear of where a gate's street runs."""
+    garden = 2.75
+    p.flat(band(garden, X1), 0.015, look["garden"])
+    clear = 0.75 if gate else 0.0
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.15, x1=BORDER_X - 0.25, margin=0.2)
+                         and abs(q.y) > clear, 3, 0.5, hk.WEDGE_BOUNDS):
+        p.blob(at, 0.22, "hedge", squash=0.8)
+
+
+def town_edge(p, rng, kind, home, look=TOWN):
+    """The wedges every town kit shares: side street, block, fence with its garden, and gate."""
+    if kind == "edge_side":
+        town_street(p, rng, home, STREET_SIDE, look=look)
+    elif kind in ("edge_block", "edge_block_lm"):
+        town_block(p, rng, home, kind == "edge_block", look)
+    elif kind == "edge_gate":
+        town_garden(p, rng, True, look)
+        strip(p, GATE_HALF - 0.02, mat=look["street"])
+        street_stones(p, rng, GATE_HALF - 0.02, 4, look)
+        farm_gate(p, rng)
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
+    else:  # a house toward the middle (not on a landmark tile), then the garden and the fence
+        if kind != "edge_other_lm":
+            home(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
+        town_garden(p, rng, False, look)
+        edge_border(p, rng)
 
 
 def village(p, rng, kind):
-    """Cobbled ground; streets and houses run on into neighbouring villages, gardens close off the rest, with
-    gates on some edges (fence_gates.py) where the street runs out through the garden."""
-    if kind == "edge_gate":  # the garden strip and fence, with a cobbled street out through a gate
-        garden = X0 + 0.6 * (X1 - X0)
-        p.flat(band(garden, X1), 0.015, "plains")
-        p.flat([Vector((garden - 0.05, -0.36, 0)), Vector((X1, -0.36, 0)), Vector((X1, 0.36, 0)),
-                Vector((garden - 0.05, 0.36, 0))], 0.02, "cobble")
-        cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15) and abs(q.y) < 0.5,
-                hk.WEDGE_BOUNDS, 4)
-        house(p, rng, Vector((X0 + 0.6, 0.95, 0)), math.radians(90))
-        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=BORDER_X - 0.25, margin=0.2)
-                             and abs(q.y) > 0.65, 2, 0.5, hk.WEDGE_BOUNDS):
-            p.blob(at, 0.22, "hedge", squash=0.8)
-        farm_gate(p, rng)
-        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
-        return
+    """Cobbled ground with a square at the middle and streets to the neighbours; houses line them and cottages stand on
+    the corners. Gardens and a fence close off the rest, with gates on some edges (fence_gates.py)."""
     if kind == "centre":
-        cobbles(p, rng, lambda q: hk.in_centre(q, margin=0.2) and q.length > 0.9, hk.CENTRE_BOUNDS, 14)
-        p.cylinder(Vector((0, 0, 0)), 0.3, 0.45, "rock", segments=8)  # well
-        for at, spin in ((Vector((-0.9, 0.9, 0)), 0.3), (Vector((0.95, 0.6, 0)), -0.5), (Vector((-0.2, -1.2, 0)), 1.4)):
-            house(p, rng, at, spin)
-        return  # no hub: straight lines from the middle would cross the houses (centre street lines: to do)
-    if kind == "same":
-        cobbles(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.15) and abs(q.y) < 0.5, hk.WEDGE_BOUNDS, 8)
-        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])  # the street runs on along the middle line
-        house(p, rng, Vector((X0 + 0.9, 1.0, 0)), 0.0)
-        house(p, rng, Vector((X1 - 0.8, -1.2, 0)), 0.0)
-        return
-    # a strip of garden inside the village's border
-    garden = X0 + 0.6 * (X1 - X0)
-    p.flat(band(garden, X1), 0.015, "plains")
-    cobbles(p, rng, lambda q: hk.in_edge_wedge(q, x1=garden - 0.2, margin=0.15), hk.WEDGE_BOUNDS, 4)
-    house(p, rng, Vector((X0 + 0.55, 0.35, 0)), math.radians(90))
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=garden + 0.2, x1=BORDER_X - 0.25, margin=0.2),
-                         3, 0.5, hk.WEDGE_BOUNDS):
-        p.blob(at, 0.22, "hedge", squash=0.8)
-    edge_border(p, rng)
+        town_square(p, rng, cottage, ("house", "house", "well", "house", "house", "house"))
+    elif kind == "centre_b":
+        town_square(p, rng, cottage, ("house", "tree", "house", "house", "tree", "house"))
+    elif kind == "same":
+        town_street(p, rng, cottage, STREET_MAIN)
+    else:
+        town_edge(p, rng, kind, cottage)
 
 
 # --- Hills -------------------------------------------------------------------
@@ -851,6 +952,7 @@ def build():
         base(terrain, col)
         kinds = ("centre", "same", "other") + (("corner",) if terrain in CORNERS else ())
         kinds += ("edge_gate",) if terrain in BORDERED else ()
+        kinds += ("centre_b", "edge_side", "edge_block") if terrain == "village" else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += ("centre_b",) if terrain == "plains" else ()
         kinds += ("centre_b", "edge_same_b", "edge_other_b") if terrain == "hills" else ()

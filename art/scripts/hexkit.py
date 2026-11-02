@@ -54,6 +54,39 @@ PALETTE = {
     "road": "#CDB58A",
     "cobble": "#BCB2A4",
     "cobble_dark": "#A69C8E",
+    "street": "#DACFBB",
+    "wall_warm": "#E8CFA6",
+    "roof_brown": "#8F5A42",
+    "banner_guild": "#3F6C9B",
+    "stone_block": "#A3A6A8",
+    "stone_block_dark": "#85898C",
+    "keep_stone": "#C2C4C2",
+    "wall_stone_light": "#B6B8B8",
+    "slate": "#5F6B78",
+    "slate_dark": "#515C68",
+    "banner_fort": "#A33A35",
+    # the slums' ground: tan (Ethan's pick, Nov 2, 2026); env HEX_SLUM builds the options he chose from (SLUM_GROUND below)
+    "mud_ground": "#CDB48A",
+    "mud_street": "#B59C73",
+    "mud_dark": "#A38A63",
+    "mud_damp": "#BFA67E",
+    "weed_ground": "#A3AE78",
+    "weed": "#6F8A45",
+    "shack_a": "#9C7B55",
+    "shack_b": "#7E6547",
+    "roof_tin": "#7E7468",
+    "patch_red": "#A8483A",
+    "patch_ochre": "#C9973F",
+    "patch_teal": "#4F8A83",
+    "patch_brown": "#7A5F45",
+    "lantern_red": "#E5432D",
+    "cream_stone": "#EDE3CC",
+    "stone_pale_col": "#E3DBC8",
+    "slate_blue": "#5E7A9A",
+    "pale_paving": "#B7BF9F",
+    "patch_cream": "#CDBE9F",
+    "lawn": "#8FBF6A",
+    "brass": "#C9A24A",
     "fence": "#8A6446",
     "rock": "#A9A39A",
     "rock_dark": "#8F897F",
@@ -241,7 +274,11 @@ PALETTE = {
 # lava (volcanic cracks, craters, the den) pulses and glows. snow_ground and ash_ground are hills ground, faded like
 # hill_grass.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
+SLUM_GROUND = {"tan": ("#CDB48A", "#B59C73", "#A38A63", "#BFA67E"),
+               "clay": ("#D2A566", "#BE9458", "#A9804A", "#C69C60"),
+               "dun": ("#B9B083", "#A0976A", "#8D8559", "#ABA277")}
+PALETTE.update(zip(("mud_ground", "mud_street", "mud_dark", "mud_damp"), SLUM_GROUND[os.environ.get("HEX_SLUM", "tan")]))
+OWN_MATERIAL = {"lantern_red", "water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3

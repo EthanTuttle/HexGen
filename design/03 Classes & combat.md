@@ -667,7 +667,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 ## Open questions
 
-- [ ] **New (Nov 2, 2026):** giant enemies that take up more than one cell (Ethan): footprint shapes, and how they move, get targeted and block on the grid
+- [ ] **New (Nov 2, 2026):** giant enemies take up 3 cells (a triangle) or 7 cells (a flower) (chosen Nov 2, 2026): how they move, get targeted and block on the grid
 - [ ] **New (Nov 1, 2026):** combat boards on raised or sloped ground follow the slope, with cells stepping with the ground (Ethan's pick), so height needs combat rules: does it affect movement, line of sight, reach or hit chance?
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
 - [x] ~~Which companion chimes in when several are proficient, and how it combines with Silver Tongue~~ (settled Oct 28, 2026: highest score, then party order; Silver Tongue's reflip first, automatically; see Checks outside combat)
