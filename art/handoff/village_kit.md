@@ -46,7 +46,7 @@ Every piece sits on `base_village`, with its top in `cobble`. Triangle counts ar
 | `market_town` | centre 804, centre_b 756, centre_near 1,284, edge_same 400, edge_side 204, edge_trail 576, edge_block 144, edge_block_lm 100, edge_other 236, edge_other_lm 192, edge_gate 416 |
 | `tradinghouse` | centre 1,200 |
 
-**Phone budget:** a full village tile is about 1,400 triangles or less, and a typical market town tile about 2,000. The worst case is a near tile with six trail edges, 4,740, just under deep forest's 4,816. That needs every neighbour's trail to pass through one tile, so it should be rare. Each tile is still seven pieces, so draw calls don't change, but towns have far more buildings than other terrain, so a big town is worth a phone run.
+**Phone budget:** a full village tile is about 1,400 triangles or less, and a typical market town tile about 2,600. The worst case is a near tile with six trail edges, 4,740, just under deep forest's 4,816. That needs every neighbour's trail to pass through one tile, so it should be rare. Each tile is still seven pieces, so draw calls don't change, but towns have far more buildings than other terrain, so a big town is worth a phone run.
 
 ## Path data
 
