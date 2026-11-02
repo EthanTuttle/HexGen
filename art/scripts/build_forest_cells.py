@@ -8,7 +8,8 @@ The combat camera comes first. Three kinds of cell, told apart by their colour a
   cell_<variant>_cover                darker ground; trees stand on its corners
   cell_<variant>_block_a / _b         stony ground filled by a mass under a mini's height
 Pieces placed on top of cells:
-  tree_<variant>_a / _b / _c          a slim tree, its pivot on a cell corner
+  tree_<variant>_a / _b / _c          a slim tree about half map height, its pivot on a cell corner
+  tree_<variant>_tall_a / _b / _c     a tree of map height, the same way (fey wood also _d to _f); the camera turns, so it may hide cells
   dark_wood_web                       an orb web between two trees one cell apart, its pivot midway between them
   fey_wood_ring                       a fairy ring round seven cells, its pivot on the middle cell
   board_under                         soil plate the size of a map tile under the 61 cells; it shows in the gaps
@@ -16,7 +17,7 @@ Pieces placed on top of cells:
 
 A mini's base reaches 0.52 from a cell's centre and a corner is 0.577 away, so a thin trunk on a corner never cuts a base.
 Trees go on every second corner of a cover cell, the same set on every cell, so neighbouring cover cells share trees.
-Trees are about half the height of the map tile's trees, so they don't hide the cell behind them.
+Which height a map uses is the map's choice, as long as every cell shows from some camera angle (render_forest_maps.py checks).
 """
 import math
 import os
@@ -119,7 +120,7 @@ def round_tree(p, rng, h, leaf):
     rock(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.14, 0.18, leaf, h - 0.14)
 
 
-def dead_tree(p, rng, h, bark):
+def dead_tree(p, rng, h, bark, reach=1.0):
     """Bare and thin. Its trunk stays straight up to the height of a web's anchors, then leans; its limbs stay high."""
     at = Vector((0, 0, 0))
     mid = at + Vector((0, 0, 1.15))
@@ -131,21 +132,21 @@ def dead_tree(p, rng, h, bark):
     for k in range(4):
         base = mid.lerp(top, rng.uniform(0.0, 0.7)) - Vector((0, 0, 0.1))
         a = a0 + k * 1.57 + rng.uniform(-0.35, 0.35)
-        tip = base + Vector((math.cos(a), math.sin(a), rng.uniform(0.4, 0.9))).normalized() * rng.uniform(0.38, 0.6)
+        tip = base + Vector((math.cos(a), math.sin(a), rng.uniform(0.4, 0.9))).normalized() * rng.uniform(0.38, 0.6) * reach
         vr.spike(p, base, tip, 0.03, bark)
 
 
-def broadleaf(p, rng, h, gold):
-    """Heartwood's wide canopy, kept small and flat, high over a mini's head."""
+def broadleaf(p, rng, h, gold, wide=1.0):
+    """Heartwood's wide canopy, kept small and flat, high over a mini's head; wide spreads it, for the map-height tree."""
     at = Vector((0, 0, 0))
     p.cylinder(at, 0.065, h * 0.72, "trunk_old", segments=5)
     p.cone(at, 0.1, 0.22, "trunk_old", segments=5)
     z = h * 0.8
-    vr.lump(p, at, 0.28, "leaf_green", z=z + 0.08, squash=0.6)
+    vr.lump(p, at, 0.28 * wide, "leaf_green", z=z + 0.08, squash=0.6)
     a0 = rng.uniform(0, 6.3)
     for k in range(3):
-        q = Vector((math.cos(a0 + k * 2.09), math.sin(a0 + k * 2.09), 0)) * 0.2
-        vr.lump(p, q, 0.2, "leaf_gold" if gold and k == 0 else ("leaf_green_dark", "leaf_green")[k % 2], z=z, squash=0.65)
+        q = Vector((math.cos(a0 + k * 2.09), math.sin(a0 + k * 2.09), 0)) * 0.2 * wide
+        vr.lump(p, q, 0.2 * wide, "leaf_gold" if gold and k == 0 else ("leaf_green_dark", "leaf_green")[k % 2], z=z, squash=0.65)
 
 
 TREES = {
@@ -157,6 +158,33 @@ TREES = {
                   lambda p, r: dead_tree(p, r, 1.5, "bark_grey")],
     "heartwood": [lambda p, r: broadleaf(p, r, 1.6, True), lambda p, r: broadleaf(p, r, 1.75, False),
                   lambda p, r: broadleaf(p, r, 1.5, False)],
+}
+
+
+def tall_pine(p, rng, h):
+    """The map's deep forest pine is too wide for a cell corner: it would fill the cell. This one keeps its height."""
+    at = Vector((0, 0, 0))
+    p.cylinder(at, 0.06, h * 0.25, "trunk", segments=4)
+    p.cone(at, h * 0.125, h * 0.42, "pine_deep", segments=5, z=h * 0.2, spin=rng.uniform(0, 1))
+    p.cone(at, h * 0.095, h * 0.38, "pine_deep", segments=5, z=h * 0.42, spin=rng.uniform(0, 1))
+    p.cone(at, h * 0.065, h * 0.3, "pine_deep", segments=5, z=h * 0.7, spin=rng.uniform(0, 1))
+
+
+def tall_fey(p, rng, h, leaf):
+    at = Vector((0, 0, 0))
+    p.cylinder(at, 0.06, h * 0.62, "trunk", segments=5)
+    rock(p, rng, at, h * 0.2, leaf, h * 0.72)
+    a = rng.uniform(0, 6.3)
+    rock(p, rng, Vector((math.cos(a), math.sin(a), 0)) * h * 0.11, h * 0.13, leaf, h * 0.88)
+
+
+TALL_TREES = {
+    "deep_forest": [lambda p, r: tall_pine(p, r, 3.1), lambda p, r: tall_pine(p, r, 3.5), lambda p, r: tall_pine(p, r, 2.7)],
+    "fey_wood": [lambda p, r: tall_fey(p, r, 2.6, "fey_teal"), lambda p, r: tall_fey(p, r, 2.9, "leaf"), lambda p, r: tall_fey(p, r, 2.5, "fey_rose"),
+                 lambda p, r: tall_fey(p, r, 2.8, "leaf_dark"), lambda p, r: tall_fey(p, r, 2.6, "fey_violet"), lambda p, r: tall_fey(p, r, 2.5, "leaf")],
+    "dark_wood": [lambda p, r: dead_tree(p, r, 3.0, "bark_dark", 1.5), lambda p, r: dead_tree(p, r, 3.4, "bark_black", 1.5),
+                  lambda p, r: dead_tree(p, r, 2.7, "bark_grey", 1.5)],
+    "heartwood": [lambda p, r: broadleaf(p, r, 3.0, True, 1.7), lambda p, r: broadleaf(p, r, 3.3, False, 1.8), lambda p, r: broadleaf(p, r, 2.8, False, 1.6)],
 }
 
 
@@ -248,6 +276,10 @@ def build():
         cell(f"cell_{v}_cover", f"cell_{v}_cover").finish(col)
         for k, tree in enumerate(TREES[v]):
             p = hk.Piece(f"tree_{v}_{'abcdef'[k]}")
+            tree(p, hk.seeded(p.name))
+            p.finish(col)
+        for k, tree in enumerate(TALL_TREES[v]):
+            p = hk.Piece(f"tree_{v}_tall_{'abcdef'[k]}")
             tree(p, hk.seeded(p.name))
             p.finish(col)
         for k in "ab":
