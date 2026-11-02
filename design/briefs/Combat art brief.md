@@ -31,16 +31,16 @@ Wolves and giant spiders. The enemy roster is still open, so these are the first
 
 Previews: a line-up beside a stand-in hero, close-ups, and on the board from the combat camera.
 
-## First job: forest combat maps
+## Forest combat maps
 
-A board is radius 4 (61 flat-top cells, 1.0 across the flats) and looks like the tile it grew from.
+Changed Nov 2, 2026: a fight is an animated zoom into the hex, but it really happens on a separate map outside that hex. Combat maps are custom built to look interesting and give their own tactical challenges, themed to the terrain and variant.
 
-- Forest ground cells and blocking or cover cells (trees, rocks). Check 07 and 03 for what blocks movement.
-- Variant props: deep forest, fey wood, dark wood and heartwood, matching their approved looks.
-- Every cell must read clearly from the combat camera: trees must not hide minis or cells, and blocked cells must look blocked. This matters more than richness.
-- How the board joins the map tile when it grows, and its soil sides.
+- A map is radius 4 (61 flat-top cells, 1.0 across the flats) unless Ethan changes that.
+- Build several distinct layouts per forest variant, each with a clear tactical idea (a choke point, a clearing, cover lanes), reusing the cell and prop kit. Say what the idea of each is.
+- Every cell must read clearly from the combat camera: nothing should hide minis or cells, and blocked cells must look blocked. This matters more than richness.
+- The board sits on the combat backdrop, with its soil sides. The zoom into the hex is an engine animation.
 
-Previews: one board per variant from the combat camera with minis on it, plus the kit laid out.
+Previews: each map from the combat camera with minis on it, plus the kit laid out.
 
 ## Report back
 
