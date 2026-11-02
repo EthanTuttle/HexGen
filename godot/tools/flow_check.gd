@@ -41,6 +41,21 @@ func _init() -> void:
 			var p: PackedStringArray = key.split(",")
 			var mine: Array = gates.get(Vector2i(int(p[0]), int(p[1])), [])
 			ok = ok and mine == c.gates[key].map(func(x): return int(x))
+		var town := {}
+		for row in c.town:
+			town[Vector2i(row[0], row[1])] = row[2]
+		var trails := {}
+		for t in region:
+			for i in LandmarkFlow.trail_edges(t, f.toward):
+				trails[[t, i]] = true
+		var st := VillageStreets.streets(town, trails)
+		ok = ok and st.size() == c.town_streets.size()
+		for key in c.town_streets:
+			var p: PackedStringArray = key.split(",")
+			var mine: Dictionary = st.get(Vector2i(int(p[0]), int(p[1])), {})
+			ok = ok and mine.size() == c.town_streets[key].size()
+			for e in c.town_streets[key]:
+				ok = ok and mine.get(int(e)) == c.town_streets[key][e]
 		if c.has("raised"):
 			ok = _raised_ok(c.raised) and ok
 		if not ok:

@@ -13,7 +13,8 @@ const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highland
 const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
 	"farmland": ["haunted_homesteads", "raided_farms", "cider_orchards"],
 	"plains": ["battlefield", "stormy_plains", "tourney_fields"],
-	"hills": ["snowy_peaks", "volcanic_peaks", "monastery_heights"]}
+	"hills": ["snowy_peaks", "volcanic_peaks", "monastery_heights"],
+	"village": ["fortified_town", "slums", "scholars_town"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
@@ -21,7 +22,9 @@ const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark
 	"raided_farms": ["Bandit-raided farms", "Militia Barn"], "cider_orchards": ["Cider orchards", "Harvest Festival"],
 	"battlefield": ["Steppe/battlefield", "Old Battlefield"], "stormy_plains": ["Stormy plains", "Thunderbird Nest"],
 	"tourney_fields": ["Tourney fields", "Training Grounds"], "snowy_peaks": ["Cold, snowy peaks", "Yeti Cave"],
-	"volcanic_peaks": ["Volcanic peaks", "Salamander Den"], "monastery_heights": ["Monastery heights", "Library"]}
+	"volcanic_peaks": ["Volcanic peaks", "Salamander Den"], "monastery_heights": ["Monastery heights", "Library"],
+	"fortified_town": ["Fortified town", "Keep"], "slums": ["Slums", "Black Market"],
+	"scholars_town": ["Scholars' town", "College"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
@@ -29,7 +32,8 @@ const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "da
 	"raided_farms": "militiabarn", "cider_orchards": "harvestfestival", "meadows": "nomadcamp",
 	"battlefield": "oldbattlefield", "stormy_plains": "thunderbirdnest", "tourney_fields": "traininggrounds",
 	"highlands": "clanhall", "snowy_peaks": "yeticave", "volcanic_peaks": "salamanderden",
-	"monastery_heights": "library"}
+	"monastery_heights": "library", "market_town": "tradinghouse", "fortified_town": "keep", "slums": "blackmarket",
+	"scholars_town": "college"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
@@ -37,12 +41,13 @@ const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "f
 	"militiabarn": "raided_farms", "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
 	"oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields",
 	"clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks",
-	"library": "monastery_heights"}
+	"library": "monastery_heights", "tradinghouse": "market_town", "keep": "fortified_town", "blackmarket": "slums",
+	"college": "scholars_town"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
 	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
-	"library"]
+	"library", "tradinghouse", "keep", "blackmarket", "college"]
 
 ## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
 const RAISE := 5.0
@@ -64,7 +69,9 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"oldbattlefield": "steppe", "thunderbirdnest": "stormy", "traininggrounds": "mown",
 	"greatwindmill": "plains", "abandonedbarn": "haunted", "militiabarn": "raided", "harvestfestival": "orchard_grass",
 	"snowy_peaks": "snow_ground", "volcanic_peaks": "ash_ground", "monastery_heights": "hill_grass",
-	"clanhall": "highland_grass", "yeticave": "snow_ground", "salamanderden": "ash_ground", "library": "hill_grass"}
+	"clanhall": "highland_grass", "yeticave": "snow_ground", "salamanderden": "ash_ground", "library": "hill_grass",
+	"fortified_town": "cobble", "slums": "mud_ground", "scholars_town": "pale_paving", "tradinghouse": "cobble",
+	"keep": "cobble", "blackmarket": "mud_ground", "college": "pale_paving"}
 
 static var _base := {}
 

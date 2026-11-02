@@ -112,6 +112,10 @@ func _ready() -> void:
 		var fm := FarmCheck.new()
 		fm.game = self
 		add_child(fm)
+	elif "--towncheck" in OS.get_cmdline_user_args():
+		var tc := TownCheck.new()
+		tc.game = self
+		add_child(tc)
 	elif "--hillscheck" in OS.get_cmdline_user_args():
 		var hc := HillsCheck.new()
 		hc.game = self
@@ -489,6 +493,7 @@ const DEBUG_PLAINS_SHAPE := [Vector2i(1, -1), Vector2i(0, 0), Vector2i(1, 0), Ve
 	Vector2i(0, -1), Vector2i(1, 1), Vector2i(0, 2), Vector2i(-1, 2), Vector2i(-2, 2), Vector2i(-2, 1)]   # its landmark first
 const DEBUG_HILLS := {"highlands": Vector2i(10, -6), "snowy_peaks": Vector2i(11, -13), "volcanic_peaks": Vector2i(-12, 2),
 	"monastery_heights": Vector2i(-10, 12)}   # 12 tiles each, raised, with plains laid to them
+const DEBUG_TOWNS := {"fortified_town": Vector2i(5, -12), "slums": Vector2i(4, 11), "scholars_town": Vector2i(-7, -11)}   # 12 tiles each, like plains
 const DEBUG_HILLS_T0 := Vector2i(9, 2)    # tier 0: a hills group, and one lone tile beside it
 const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
 const DEBUG_FARMS := Vector2i(3, 3)      # tier 0: farmland in the middle and half the ring, village the other half
@@ -535,6 +540,24 @@ func spawn_forest_regions() -> void:
 			changes[x] = region_look(region, x)
 			order[x] = order.size()
 		_debug_road(DEBUG_HILLS[v] + Vector2i(-3, 3), changes)
+	for v: String in DEBUG_TOWNS:
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_PLAINS_SHAPE:
+			tiles.append(DEBUG_TOWNS[v] + s)
+		if tiles.any(func(x): return map.terrains.has(x) or changes.has(x)):
+			continue
+		var region := new_region("village", tiles, v, tiles[0])
+		_set_flow(region)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
+		_debug_road(DEBUG_TOWNS[v] + Vector2i(-3, 3), changes)
+		if v == "fortified_town":   # a plain village and a farm against its walls
+			for x: Vector2i in [DEBUG_TOWNS[v] + Vector2i(2, -1), DEBUG_TOWNS[v] + Vector2i(2, 0), DEBUG_TOWNS[v] + Vector2i(1, 2)]:
+				if not changes.has(x) and not map.terrains.has(x):
+					changes[x] = "farmland" if x == DEBUG_TOWNS[v] + Vector2i(1, 2) else "village"
+					order[x] = order.size()
+					_debug_fill[x] = true
 	for k in 7:
 		var x: Vector2i = DEBUG_HILLS_T0 + (Vector2i.ZERO if k == 6 else Hex.NEIGHBOURS[k])
 		if not map.terrains.has(x) and not changes.has(x):

@@ -85,6 +85,29 @@ static func crater_smoke() -> GPUParticles3D:
 	return _particles("crater|smoke", [Vector3.ZERO], 4, 2.6, _smoke(), Vector3(0.06, 0.3, 0), 0.12)
 
 
+## A town's chimneys on one tile: a thin wisp at each point (village kit -> Materials and effects), one node for them all.
+static func town_smoke(points: Array) -> GPUParticles3D:
+	var img := Image.create(points.size(), 1, false, Image.FORMAT_RGBF)
+	for k in points.size():
+		var v: Vector3 = points[k]
+		img.set_pixel(k, 0, Color(v.x, v.y, v.z))
+	var pm: ParticleProcessMaterial = _particles("town|smoke", [Vector3.ZERO], 1, 2.0, _smoke(), Vector3(0.04, 0.25, 0), 0.08).process_material.duplicate()
+	pm.emission_point_texture = ImageTexture.create_from_image(img)
+	pm.emission_point_count = points.size()
+	pm.scale_min = 0.25
+	pm.scale_max = 0.5
+	var p := GPUParticles3D.new()
+	p.amount = points.size() * 2
+	p.lifetime = 2.0
+	p.preprocess = 2.0
+	p.randomness = 0.4
+	p.process_material = pm
+	p.draw_pass_1 = _smoke()
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.visibility_aabb = AABB(Vector3(-5, -1, -5), Vector3(10, 7, 10))
+	return p
+
+
 ## A low flame: an orange billboard, bright and additive.
 static func _fire() -> Mesh:
 	if _fire_mesh == null:

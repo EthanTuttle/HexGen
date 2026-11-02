@@ -92,7 +92,7 @@ func _check_gates(map: MapBoard) -> void:
 			if gate and (not fence or near == null or Variants.is_water(near) or not _has(t, kit + "_edge_gate", i)):
 				ok = false
 				print("  bad gate on %s edge %d" % [t, i])
-			if not gate and _has(t, kit + "_edge_gate", i):
+			if not gate and fence and _has(t, kit + "_edge_gate", i):   # a wall's gatehouse on a joined edge isn't a fence gate
 				ok = false
 				print("  stray gate piece on %s edge %d" % [t, i])
 	_check(ok and total > 0, "%d gates: each has its gate piece and walkable land beyond, and no stray gates" % total)
@@ -351,8 +351,7 @@ func _walk_watching(tiles: Array[Vector2i], what: String) -> void:
 	for p in route:
 		var t := GroundCover.tile_at(p)
 		var kit := Variants.wedges_of(map.terrains.get(t, ""))
-		# Only the tiles whose paths join up all the way: village and market town centres have none yet.
-		if map.gates.has(t) and not kit in ["village", "market_town"]:
+		if map.gates.has(t):
 			var d := map.path_graph(t).distance_to_paths(p)
 			if d > worst:
 				worst = d
@@ -373,7 +372,7 @@ func _walk_watching(tiles: Array[Vector2i], what: String) -> void:
 			if t != last[k]:
 				_crossing(map, last[k], t, p)
 				last[k] = t
-			if map.gates.has(t) and not Variants.wedges_of(map.terrains[t]) in ["village", "market_town"]:
+			if map.gates.has(t):
 				off_path = maxf(off_path, map.path_graph(t).distance_to_paths(p))
 	_check(off_path <= LANE, "%s: every mini stays on the lanes on farm tiles (at most %.2f m off)" % [what, off_path])
 	await _wait(Rules.SETTLE_SECONDS + 0.2)

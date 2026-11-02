@@ -43,6 +43,8 @@ const PALETTE := {
 	"haunted": "#8C937C", "raided": "#94A06A", "orchard_grass": "#7FAE57", "window_faint": "#E6D79A",
 	# hills variants (hexkit.COLOURS, tiles v45)
 	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A",
+	# town variants (hexkit.COLOURS, tiles v50)
+	"mud_ground": "#CDB48A", "pale_paving": "#B7BF9F", "lantern_red": "#E5432D",
 }
 
 

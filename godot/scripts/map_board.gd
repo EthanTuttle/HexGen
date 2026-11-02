@@ -70,6 +70,7 @@ var raised := {}                       # every raised tile -> true
 var raised_regions := {}               # key -> the tiles of that raised region
 var lift := {}                         # raised tile -> how high it stands now (Variants.RAISE, once it's up)
 var tiles_built := 0                   # counts tiles built, so anything remembering what stands where can tell
+var streets := {}                      # village tile -> {edge: "main" or "side"} (VillageStreets)
 var party_at = null                    # the party's tile: on raised ground it always has a ledge down (Cliffs.forced_climb)
 var climbs := []                       # every region's Cliffs.climbs(), [tile, i]
 var _outer := {}                       # raised tile -> its edges with a cliff
@@ -78,6 +79,7 @@ var _ledges := {}                      # raised tile -> {edge -> "low", "mid" or
 var _links := {}                       # Vector4i(a, b) of two neighbours -> the [tile, i] climb between them
 var _shape := {}                       # raised tile -> what its cliffs were built from, to spot changes
 var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
+var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
 var _clip_mats := {}                   # surface material -> its cut-off version while a region rises
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
@@ -110,6 +112,7 @@ func build(map := MAP) -> void:
 	for t: Vector2i in terrains:
 		_set_ground(t)
 	_update_gates()
+	_update_streets()
 	_update_water()
 	for t: Vector2i in terrains:
 		_build_tile(t)
@@ -148,6 +151,7 @@ func retile(changes: Dictionary) -> void:
 		_update_water()
 	touched.merge(_update_raised())
 	touched.merge(_update_gates())
+	touched.merge(_update_streets())
 	for t: Vector2i in touched:
 		_build_tile(t)
 	for t: Vector2i in touched:
@@ -183,11 +187,31 @@ func _update_gates() -> Dictionary:
 	return changed
 
 
-## Whether a party can step between neighbours a and b: fences are only crossed through a gate (DOCS: Walking), and
-## a cliff only by its ledge.
+## Works out the village streets; returns the tiles whose streets changed, as they need rebuilding.
+func _update_streets() -> Dictionary:
+	var by_terrain := {}
+	var trails := {}
+	for t: Vector2i in terrains:
+		by_terrain[t] = Variants.terrain_of(terrains[t])
+		if by_terrain[t] == VillageStreets.VILLAGE:
+			for i in LandmarkFlow.trail_edges(t, flow_toward):
+				trails[[t, i]] = true
+	var now := VillageStreets.streets(by_terrain, trails)
+	var changed := {}
+	for t: Vector2i in now:
+		if now[t] != streets.get(t):
+			changed[t] = true
+	streets = now
+	return changed
+
+
+## Whether a party can step between neighbours a and b: fences are only crossed through a gate (DOCS: Walking), a
+## cliff only by its ledge, and from one village tile to the next only by a street.
 func edge_open(a: Vector2i, b: Vector2i) -> bool:
 	if raised.has(a) != raised.has(b):
 		return not climb_between(a, b).is_empty()
+	if streets.has(a) and streets.has(b):
+		return streets[a].has(Hex.NEIGHBOURS.find(b - a))
 	if gates.has(a) == gates.has(b):
 		return true
 	var fenced := a if gates.has(a) else b
@@ -566,6 +590,9 @@ func _setup_materials() -> void:
 	_faint = _glow.duplicate() as StandardMaterial3D
 	_faint.albedo_color = Hex.colour("window_faint")
 	_faint.emission = Hex.colour("window_faint")
+	_lantern_red = _glow.duplicate() as StandardMaterial3D
+	_lantern_red.albedo_color = Hex.colour("lantern_red")
+	_lantern_red.emission = Hex.colour("lantern_red")
 	_lava = _glow.duplicate() as StandardMaterial3D
 	_lava.albedo_color = Hex.colour("lava")
 	_lava.emission = Hex.colour("lava")
@@ -581,6 +608,7 @@ func _setup_materials() -> void:
 				"web": mesh.surface_set_material(k, _web)
 				"window_faint": mesh.surface_set_material(k, _faint)
 				"lava": mesh.surface_set_material(k, _lava)
+				"lantern_red": mesh.surface_set_material(k, _lantern_red)
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
@@ -662,7 +690,7 @@ func _build_tile(t: Vector2i) -> void:
 		Kit.place(node, _kit, "windmill_small", at + Variants.SMALL_MILL_SPOT.rotated(spin))
 	if name == "greatwindmill":
 		node.add_child(_sails(at, spin))
-	var farm_fx := FarmFx.for_piece(name + centre, at, turn)
+	var farm_fx := FarmFx.for_piece(name + centre, at, turn) if terrain != "village" else null   # towns: _town_smoke
 	if farm_fx:
 		node.add_child(farm_fx)
 	if terrain == "desert":
@@ -692,6 +720,13 @@ func _build_tile(t: Vector2i) -> void:
 			for part in parts:
 				Kit.place(node, _kit, name + "_ridge_" + part[0], at, deg_to_rad(60.0 * part[1]))
 	var kit := Variants.wedges_of(name)   # a centre-only landmark takes its variant's wedges
+	# Stone walls in place of the fence, at the edges of the region itself (fortified town): a neighbour that's a plain
+	# village or farm is walled off too, so it doesn't carry the border on.
+	var walled: bool = _kit.has(kit + "_border_join_l")
+	var kin := []
+	for i in 6:
+		var near = terrains.get(t + Hex.NEIGHBOURS[i])
+		kin.append(joined[i] and (not walled or Variants.wedges_of(near) == kit))
 	var trails := LandmarkFlow.trail_edges(t, flow_toward)
 	for i in 6:
 		var angle := deg_to_rad(60.0 * i)
@@ -706,11 +741,14 @@ func _build_tile(t: Vector2i) -> void:
 			elif i != landmark_turns.get(t, 0):   # the entrance edge's steps are in the landmark's own piece
 				Kit.place(node, _kit, kit + "_steps_rise", at, angle)
 		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-		if terrain in BORDERED and joined[i]:
-			if not joined[(i + 1) % 6]:
-				Kit.place(node, _kit, "border_join_l", at, angle)
-			if not joined[posmod(i - 1, 6)]:
-				Kit.place(node, _kit, "border_join_r", at, angle)
+		if terrain in BORDERED and kin[i]:
+			var join := kit + "_border_join" if walled else "border_join"
+			if not kin[(i + 1) % 6]:
+				Kit.place(node, _kit, join + "_l", at, angle)
+			if not kin[posmod(i - 1, 6)]:
+				Kit.place(node, _kit, join + "_r", at, angle)
+	if terrain == "village":
+		_town_smoke(node, at)
 	if terrain in ["hills", "desert"]:
 		_add_ground_collision(node, terrain == "hills", high)
 	if high:
@@ -753,6 +791,21 @@ func ridge_wall(t: Vector2i, a: int, b: int) -> bool:
 		elif at > span:
 			right = true
 	return left and right
+
+
+## A town tile's chimneys, from its centre and wedges, in one particle node.
+func _town_smoke(node: Node3D, at: Vector2) -> void:
+	var points := []
+	for mi in node.get_children():
+		if mi is MeshInstance3D and mi.has_meta("piece"):
+			for e in Kit.path_data(mi.get_meta("piece")).get("effects", []):
+				if e.kind == "smoke":
+					var p: Vector2 = Vector2(e.at[0], -e.at[2]).rotated(mi.rotation.y) + at
+					points.append(Hex.to3(p, e.at[1]))
+	if not points.is_empty():
+		var fx := FarmFx.town_smoke(points)
+		fx.name = "town_smoke"
+		node.add_child(fx)
 
 
 ## Do tile t and its neighbour on edge i share a mountain? (render_preview.build_map: ranges)
@@ -802,6 +855,11 @@ func _sails(at: Vector2, spin: float) -> Spinner:
 ## or the alternate edge_same_b where the kit has one and hash01(q * 6 + i, r, 8) < 0.5; otherwise edge_other.
 func _edge_piece(t: Vector2i, name: String, kit: String, i: int, joined: bool, trails: Array) -> String:
 	var near = terrains.get(t + Hex.NEIGHBOURS[i])
+	if joined and _kit.has(kit + "_border_join_l") and Variants.wedges_of(near) != kit:
+		# A wall at the region's edge: a gatehouse where a street leaves it.
+		if streets[t].has(i):
+			return kit + "_edge_gate"
+		return kit + ("_edge_other_lm" if Variants.LANDMARKS.has(name) else "_edge_other")
 	if Variants.LANDMARKS.get(near) == name and _kit.has(name + "_edge_landmark"):
 		return name + "_edge_landmark"
 	if i in trails:
@@ -817,6 +875,13 @@ func _edge_piece(t: Vector2i, name: String, kit: String, i: int, joined: bool, t
 		return kit + "_edge_other_b"   # trees: a wedge facing other land is the only one clear of rock
 	if not joined and Variants.LANDMARKS.has(name) and _kit.has(kit + "_edge_other_lm"):
 		return kit + "_edge_other_lm"
+	if joined and _kit.has(kit + "_edge_block"):   # a town: a street only where this edge has one
+		match streets[t].get(i, ""):
+			"main": return kit + "_edge_same"
+			"side": return kit + "_edge_side"
+		if Variants.LANDMARKS.has(name) and _kit.has(kit + "_edge_block_lm"):
+			return kit + "_edge_block_lm"   # without the house toward the middle: the landmark's yard lies there
+		return kit + "_edge_block"
 	if joined and _kit.has(kit + "_edge_same_b") and GroundCover.hash01(t.x * 6 + i, t.y, 8) < 0.5:
 		return kit + "_edge_same_b"
 	return kit + ("_edge_same" if joined else "_edge_other")
@@ -993,6 +1058,7 @@ func _process(delta: float) -> void:
 		_fey.emission_energy_multiplier = 0.15 + 1.6 * night   # PLACEHOLDER: "glow softly at night"
 		_window.emission_energy_multiplier = 0.4 + 3.0 * night  # PLACEHOLDER: warm light inside
 		_faint.emission_energy_multiplier = 0.1 + 0.9 * night   # PLACEHOLDER: dimmer than the windows
+		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
 		_lava.emission_energy_multiplier = (0.75 + 0.25 * sin(TAU * _time / 4.0)) * (0.8 + 2.0 * night)   # PLACEHOLDER: pulses slowly, glows at night
 		ForestFx.set_night(night)
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)

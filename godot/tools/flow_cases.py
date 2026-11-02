@@ -2,7 +2,7 @@
     python3 -I godot/tools/flow_cases.py art/scripts /tmp/flow_cases.json"""
 import sys, json, random
 sys.path.insert(0, sys.argv[1])
-import landmark_flow as lf, ground_cover as gc, fence_gates as fg, cliffs
+import landmark_flow as lf, ground_cover as gc, fence_gates as fg, cliffs, village_streets as vs
 rnd = random.Random(4)
 cases = []
 for n in range(300):
@@ -30,6 +30,14 @@ for n in range(300):
                 terrains.setdefault((t[0] + dq, t[1] + dr), rnd.choice(kinds))
     cases[-1]["terrains"] = [[q, r, k] for (q, r), k in terrains.items()]
     cases[-1]["gates"] = {f"{q},{r}": e for (q, r), e in fg.fence_gates(terrains).items()}
+    # village streets, on the same terrains with more village and farm
+    town = dict(terrains)
+    for t in sorted(region):
+        if rnd.random() < 0.7:
+            town[t] = rnd.choice(["village", "village", "farmland"])
+    tr = [(t, i) for t in sorted(region) for i in lf.trail_edges(t, toward)]
+    cases[-1]["town"] = [[q, r, k] for (q, r), k in town.items()]
+    cases[-1]["town_streets"] = {f"{q},{r}": {str(i): v for i, v in e.items()} for (q, r), e in vs.streets(town, tr).items()}
     # raised regions: cliffs, ledges and the gates beside them
     raised = {t for t in region if rnd.random() < 0.6}
     if raised:

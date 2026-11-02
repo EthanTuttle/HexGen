@@ -201,9 +201,8 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 			elif not onto_ledge:
 				_line(pts, c + out_dir * Hex.A)
 		else:
-			# Where a step crosses a landmark trail edge, or a wedge has a drawn path but the tile's centre has none yet
-			# (village centres: for now the route bends through the middle, between the streets' inner ends), the route
-			# runs along the wedge's middle line from near the centre to the edge's middle.
+			# Where a step crosses a landmark trail edge, or a wedge has a drawn path that the centre's paths don't join,
+			# the route runs along the wedge's middle line from near the centre to the edge's middle.
 			if graph.edge_inner.has(in_edge):
 				_line(pts, graph.edge_inner[in_edge])
 			elif k > 0 and map.trail_edge(seq[k - 1], t):

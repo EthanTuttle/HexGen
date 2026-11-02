@@ -109,6 +109,7 @@ func _forest_perf() -> void:
 	game.minute = 10.0   # by day, for the walk
 	await _walk_to_mill(game, vp)
 	await _hills_perf(game, vp)
+	await _town_perf(game, vp)
 	_say("FOREST PERF DONE")
 
 
@@ -183,6 +184,17 @@ func _hills_perf(game: Game, vp: RID) -> void:
 			await _shot_as("hills_rising")
 	_say("HILLS PERF the rise, with the tiles' change before it: %.1f fps, worst frame %.1f ms over %.1f s" % [frames / ((last - t0) / 1e6), worst, (last - t0) / 1e6])
 	await _shot_as("hills_risen")
+
+
+## The towns, the busiest common tiles: each 12-tile town at the opening zoom.
+func _town_perf(game: Game, vp: RID) -> void:
+	for v: String in Game.DEBUG_TOWNS:
+		var c: Vector2i = Game.DEBUG_TOWNS[v]
+		game.rig.frame(Hex.to3(Hex.tile_position(c.x, c.y)), 58.0, 50.0)
+		await get_tree().create_timer(2.0).timeout
+		var m := await _measure(vp, 5.0)
+		_say("TOWN PERF %s at the opening zoom: %.1f fps, worst frame %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms" % [v, m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu])
+		await _shot_as("town_%s" % v)
 
 
 ## Walks the party to the Great Windmill, measuring the walk, and logs how it stops on the narrow path.

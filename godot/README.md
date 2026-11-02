@@ -313,7 +313,7 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
 | Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
-| Landmarks | Forest, farmland, plains and hills regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
+| Landmarks | Forest, farmland, plains, hills and village regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
 | Tier 2 roll | Forest: fey wood, dark wood or heartwood. Farmland: haunted homesteads, bandit-raided farms or cider orchards. Plains: steppe/battlefield, stormy plains or tourney fields. Evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
 | Walking on trails | A trail starts 1.2 m from a tile's centre (`TRAIL_INNER`); the party stops 2.2 m from a landmark's centre, at its entrance (`ENTRANCE_RING`) | Not in the art hand-off |
 | Plains effects | Lightning every 4–9 s on a random stormy tile, 0.16 s long (`lightning.gd`); the gust ripple's size and speed (`shaders/grass.gdshader`); crackle sparks (`farm_fx.gd`) | The docs give the effects, not their numbers |
@@ -321,6 +321,8 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Hills walking | Ledge tilt limit 30°, single file from 1.2 m either side, 1.5 m kept in from a lip, 1.75 m round a hills landmark, a mountain edge counts as 4 steps (`Rules`) | The kit gives the slope and ring; the rest is tuned by eye |
 | Tier 2 roll (hills) | Snowy, volcanic or monastery, evenly | The lean from neighbours isn't set, as for other terrains |
 | Lava | Pulses over 4 s, brighter at night (`MapBoard._process`) | The kit asks for it with no numbers |
+| Town effects | Each chimney's wisp: 2 particles, 2 s (`FarmFx.town_smoke`); `lantern_red` 0.3 by day, 3.8 at night (`map_board.gd`) | The kit says a thin wisp and a night glow, with no numbers |
+| Tier 2 roll (village) | Fortified, slums or scholars' town, evenly | The lean from neighbours isn't set, as for other terrains |
 | Round a plains landmark | The party circles 3 m out (`Rules.ROUND_LANDMARK`), then comes in along the entrance's line | The kit's entrance paths don't join anything, so the route has to reach them on its own |
 | Farm effects | Fire, smoke and crows at the art's effect points: counts, colours, sizes, speeds (`farm_fx.gd`); the sails' speed (`Rules.SAIL_SPEED`); the barn's faint glow, 0.1 by day to 1.0 at night (`map_board.gd`) | The hand-off gives the points, not the look |
 | Stopping on farm tiles | The tile's middle where the spokes meet, a landmark's approach end, a cider orchard's hub | The docs say routes keep to paths, not where a party stops |
@@ -437,6 +439,17 @@ Tier 0 plains, rolling meadows with the Nomad Camp, steppe/battlefield with the 
 
 Debug: `-- --forest` and F9 now also spawn a 12-tile region of each plains variant, with the landmark on the rim so all the bands show. `-- --plainscheck` (add `--shots` for `screens/plains_*.png`) checks the bands, the turns, no trail pieces, the wedges, `no_cover`, `BENT`, lightning and the walks in and out. `tools/flow_check.gd` also compares `toward_edge` with the Python.
 
+## Village kit (tiles v50)
+
+Tier 0 villages with streets, market towns with the Trading House, fortified towns with the Keep, slums with the Black Market, and scholars' towns with the College, from `art/export/tiles.glb` and `art/handoff/village_kit.md`. Rules: `design/06` → Tile build, `design/07` → Landmark tiles.
+
+- **Streets:** `village_streets.gd` is `village_streets.py`, worked out in `MapBoard._update_streets` whenever the map changes. A joined edge uses `edge_same`, `edge_side` or `edge_block` by its street. Each centre's `hub` joins the streets, so routes stay on them, and the old bend through the tile's middle is gone. The party stops on the hub in its single-file line (the hub is `PLACEHOLDER`: the kit suggests it, the docs don't say).
+- **Moving:** two touching village tiles with no street between them can't be crossed directly (`MapBoard.edge_open`), so the party goes round by another street.
+- **Walls:** the fortified town's walls and gatehouses, including against a plain village or farm, and its own border joins with towers (`_edge_piece`, `_build_tile`'s `walled` and `kin`).
+- **Effects:** `lantern_red` glows at night. All a town tile's chimneys share one particle node with a thin wisp each (`FarmFx.town_smoke`).
+
+Debug: `-- --forest` and F9 also spawn 12-tile fortified, slum and scholars' towns, with a plain village and a farm against the walls. `-- --towncheck` (add `--shots` for `screens/town_*.png`) checks streets, wedges, centres, walls and effects, and walks a party through each town and out by its gates.
+
 ## Hills kit (tiles v47)
 
 Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave, volcanic peaks with the Salamander Den, and monastery heights with the Library, from `art/export/tiles.glb` (tiles v47) and `art/handoff/hills_kit.md`. Only snowy and volcanic are raised (`Cliffs.RAISED`; design/06, Nov 2, 2026). Highlands and monastery heights stay at ground level, like tier 0. Rules: `design/06` → Tile build, `design/07` → Landmark tiles, `design/02` → Obstacles.
@@ -459,8 +472,9 @@ Debug: `-- --forest` and F9 also spawn a 12-tile region of each variant (snowy a
 
 ### Waiting for the phone
 
-No phone runs until the Engine Planner says the phone is plugged in and unlocked. Waiting for it, all in the forest perf run (`HEXGEN_FORESTPERF`; `HILLS PERF` lines, `hills_*.png`):
+No phone runs until the Engine Planner says the phone is plugged in and unlocked. Waiting for it, top item first, all but the first in the forest perf run (`HEXGEN_FORESTPERF`; `HILLS PERF` lines, `hills_*.png`):
 
+- **Big towns:** far more buildings per tile than other terrain (the kit asks for a phone run). `TOWN PERF` lines, `town_*.png`.
 - The whole bigger spawn with hills, by day and at night; last measured before plains and hills (120 fps at 1,590 draw calls).
 - A view over the raised regions at the opening zoom and zoomed all the way out.
 - Working out a route up, climbing a ledge, and a real rise with the party on it, the worst frame of each.
@@ -660,7 +674,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
   - Ask before deciding anything the docs don't cover, and mark stand-ins `PLACEHOLDER` in code and in Placeholders above.
   - Check every on-screen string against the Standing rule: screen text.
 - **Tests:**
-  - `--hillscheck --quit` prints `HILLS DONE: 0 failed`; `python3 -I art/scripts/test_cliffs.py` checks the Python rule.
+  - `--towncheck --quit` prints `TOWN DONE: 0 failed`; `--hillscheck --quit` prints `HILLS DONE: 0 failed`; `python3 -I art/scripts/test_cliffs.py` checks the Python rule.
   - Run all five before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`) , `--farmcheck --shots --quit` (`FARM DONE: 0 failed`) and `--plainscheck --shots --quit` (`PLAINS DONE: 0 failed`).
   - The demo once stalled after its coin shot (Nov 1) and didn't on the rerun. If it hangs, rerun it before hunting a bug.
 - **Art:** `godot/art/*.glb` link to `art/export/`. After the art changes, run `godot --headless --path godot --import` so the new pieces, and any new `class_name` scripts, load. New colours go in `Hex.PALETTE` (copied from `hexkit.COLOURS`). New variants go in `variants.gd`. New `ground_cover.py` entries go in `ground_cover.gd`.
