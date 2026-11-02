@@ -64,7 +64,8 @@ Decided Oct 22, 2026 (replaces "some terrain, such as a ravine, is impassable wi
 - **Crossing:** three ways. Gear made for that obstacle always works. A traversal check can also get the party across, at a cost if it fails (e.g. HP or time). Or the party walks around.
 - **Who crosses:** one party member leads with the check (e.g. ties off a rope) and the rest follow.
 - **Bridges on rapids** (decided Oct 31, 2026): some tiles of a Rapids region (river tier 2) have a bridge. Walking over it crosses the river with no check, and the party's route uses it. Rapids tiles without a bridge stay an obstacle. Other rivers don't get bridges.
-- Which terrain gets which obstacles, the crossing gear items, and each obstacle's failure cost: in progress.
+- **Raised regions and water** (decided Nov 2, 2026): a raised hills region with a river all round has no way up until crossing gear or boats are set up, which are part of the open items below.
+- Which terrain gets which obstacles, the crossing gear items (and any boats), and each obstacle's failure cost: in progress.
 
 ## Clustered regions
 
