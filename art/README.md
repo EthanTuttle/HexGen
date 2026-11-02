@@ -180,3 +180,5 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 - **Ground cover (from map_preview_v5):** scattered by `scripts/ground_cover.py` across the whole map from one world-space pattern: one jittered candidate point per 0.55 m cell, kept if a hash of the cell is below the terrain's density, which fades toward the neighbour's density within 1.6 m of a tile edge. Points in water or on a river bank are skipped. Densities per terrain are placeholders at the top of the file.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).
+
+**Village streets (tiles_v46):** every town tile has a small square at its middle and a street wedge only where the edge has a street (`scripts/village_streets.py`); all else is houses, gardens and fences. `scripts/test_streets.py` and `scripts/check_town.py` check the rule and the pieces. Hand-off: `handoff/village_kit.md`.

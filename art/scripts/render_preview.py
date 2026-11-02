@@ -22,6 +22,7 @@ import fence_gates as fg  # noqa: E402
 import json  # noqa: E402
 import sand  # noqa: E402
 import variants as vr  # noqa: E402
+import village_streets as vs  # noqa: E402
 import water as wt  # noqa: E402
 
 # Pointy-top axial (q, r) -> terrain. Two forests touch, a river runs into a lake, villages join.
@@ -188,6 +189,11 @@ HILLS_MAP = {(-1, 0): "hills", (0, 0): "hills", (0, -1): "hills", (-1, 1): "hill
              (3, -1): "plains", (3, 0): "plains", (1, 2): "farmland", (0, -2): "plains", (1, -2): "hills"}
 HIGHLANDS_MAP = {**FLOW_RING, **{t: ("clanhall" if t == LANDMARK_AT else "highlands") for t in LANDMARK_REGION}}
 
+# Village tier 0: a group of tiles in a loose shape with farms joined to it, and other land round it; market town's region.
+VILLAGE_MAP = {**FLOW_RING, (0, 0): "village", (1, 0): "village", (0, 1): "village", (-1, 1): "village", (-1, 0): "village",
+               (0, -1): "village", (1, -1): "farmland", (2, -1): "farmland", (-1, 2): "farmland"}
+MARKET_MAP = {**FLOW_RING, **{t: ("tradinghouse" if t == LANDMARK_AT else "market_town") for t in LANDMARK_REGION}}
+
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
                 for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
@@ -259,6 +265,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
     gates = fg.fence_gates(terrains, raised, [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)])
+    streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -357,6 +364,10 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
+            elif joined[i] and f"{kit}_edge_block" in templates:  # a town: a street only where this edge has one
+                edge = f"{kit}_{dict(main='edge_same', side='edge_side').get(streets[(q, r)].get(i), 'edge_block')}"
+                if edge == f"{kit}_edge_block" and name in vr.LANDMARKS and f"{kit}_edge_block_lm" in templates:
+                    edge = f"{kit}_edge_block_lm"  # without the house toward the middle: the landmark's yard lies there
             place(templates, edge, col, at, math.radians(60 * i))
             if i in trails and f"{kit}_steps_centre" in templates:  # the stair's flight on the centre, one per trail edge
                 if name not in vr.LANDMARKS:
@@ -778,6 +789,45 @@ if __name__ == "__main__":
                     exit_ = centre + out * vr.LEDGE_X + along * vr.climb_heights()[2] + Vector((0, 0, vr.RAISE))
                     look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
                     render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_top_raised")
+        sys.exit(0)
+    if "village" in flags:
+        # Village streets: a tier 0 group with farms beside it, with the paths drawn; market town flowing into the Trading
+        # House, with the paths drawn; low close-ups of a street, a gate and the landmark.
+        prefix = "trial_" if "trial" in flags else ""
+        el = math.radians(38)
+
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(f"{prefix}{stem}")
+
+        def look(at, a, dist, elev=el, lift=0.6):
+            cam = bpy.context.scene.camera
+            cam.location = at + Vector((dist * math.cos(elev) * math.cos(a), dist * math.cos(elev) * math.sin(a), lift + dist * math.sin(elev)))
+            cam.rotation_euler = (math.pi / 2 - elev, 0, a + math.pi / 2)
+
+        for stem, tiles_map, focus, dist in (("village_t0", VILLAGE_MAP, Vector((0.5, -0.8, 0)), 58),
+                                             ("village_market", MARKET_MAP, Vector((0.5, -0.8, 0)), 54)):
+            for paths in (True, False):
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                if paths:
+                    draw_paths(bpy.data.collections["map"], templates)
+                stage(focus, dist, 50)
+                shot(f"{stem}_{'paths' if paths else 'map'}")
+            if stem == "village_t0":
+                ax = vs.axis(0, 0)  # along the main street, low, from the middle of the tile looking out
+                look(hk.tile_position(0, 0) + hk.edge_normal(ax) * 7.5, math.radians(60 * ax), 8, math.radians(28), 0.4)
+                shot("village_street_closeup")
+                g = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})
+                t, edges = next((t, e) for t, e in sorted(g.items()) if e and tiles_map[t] == "village")
+                a = math.radians(60 * edges[0])
+                look(hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3, a + math.pi, 9)
+                shot("village_gate_closeup")
+            else:
+                d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in ("market_town", "tradinghouse")), LANDMARK_AT)
+                look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
+                shot("village_tradinghouse_closeup")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no
