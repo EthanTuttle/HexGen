@@ -64,9 +64,9 @@ Decided Oct 22, 2026 (replaces "some terrain, such as a ravine, is impassable wi
 - **Crossing:** three ways. Gear made for that obstacle always works. A traversal check can also get the party across, at a cost if it fails (e.g. HP or time). Or the party walks around.
 - **Who crosses:** one party member leads with the check (e.g. ties off a rope) and the rest follow.
 - **Bridges on rapids** (decided Oct 31, 2026): some tiles of a Rapids region (river tier 2) have a bridge. Walking over it crosses the river with no check, and the party's route uses it. Rapids tiles without a bridge stay an obstacle. Other rivers don't get bridges.
-- **Crossing water** (decided Nov 2, 2026): a party can attempt to cross a river or lake with an Athletics check. A **raft**, bought at the River Port (river delta's location), lets the party traverse water with no check. Failure cost, raft price and whether it's used up: in progress.
-- **Raised regions and water** (decided Nov 2, 2026): a raised hills region with a river all round has no way up until crossing gear or boats are set up, which are part of the open items below.
-- Which terrain gets which obstacles, the crossing gear items (and any boats), and each obstacle's failure cost: in progress.
+- **Crossing water** (decided Nov 2, 2026): a party can attempt to cross a river or lake with an Athletics check. A **raft**, bought at the River Port (river delta's location), lets the party traverse water with no check. On a failed check the party still crosses, and the whole party loses some HP (amount: to tune in playtesting). The raft is a permanent one-off purchase (price: with gold prices). On-water sites: Meditation Rock's stepping stones are free to walk; Lake Serpent's Lair needs a check or a raft.
+- **Raised regions and water** (decided Nov 2, 2026): a raised hills region's ledge foot may open onto a river or lake tile, which the party reaches by check or raft, stepping off at the foot.
+- Which terrain gets which obstacles, the crossing gear items, and each obstacle's failure cost: in progress.
 
 ## Clustered regions
 
