@@ -1,17 +1,17 @@
-# Village kit hand-off (tiles_v49; tiles_v50 is being tried: see the end)
+# Village kit hand-off (tiles_v50)
 
 This kit holds tier 0 villages with the street layout, market towns with the Trading House (tier 1), fortified towns with the Keep and slums with the Black Market (tier 2), and scholars' towns with the College (class variant). Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v49.blend`.
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v50.blend`.
 - **Path data, effect points:** in the glb as node extras, and in `art/export/tiles_paths.json`.
 - **Looks:** `design/07 Presentation.md` → Art direction → Region variant looks and Landmark tiles.
 - **Engine rules:** `design/06 Multiplayer & tech.md` → Tile build.
 - **Previews:**
   - **Tier 0:** `art/preview/village_t0_map_v1.png`, `village_t0_paths_v1.png`, `village_street_closeup_v1.png`, `village_gate_closeup_v1.png`.
   - **Market town:** `village_market_map_v2.png`, `village_market_paths_v1.png`, `village_tradinghouse_closeup_v2.png`.
-  - **Fortified town:** `village_fortified_map_v2.png`, `village_fortified_paths_v2.png`, `village_fortified_12_map_v1.png`, `village_fortified_join_map_v2.png`, `village_keep_closeup_v2.png`.
-  - **Slums:** `village_slums_map_v2.png`, `village_slums_paths_v2.png`, `village_blackmarket_closeup_v2.png`.
-  - **Scholars' town:** `village_scholars_map_v1.png`, `village_scholars_paths_v1.png`, `village_college_closeup_v1.png`.
+  - **Fortified town:** `village_fortified_map_v3.png`, `village_fortified_paths_v3.png`, `village_fortified_12_map_v2.png`, `village_fortified_join_map_v3.png`, `village_keep_closeup_v3.png`, and the Keep alone: `village_keep_alone_{front,corner,side,back,map,low}_v1.png`.
+  - **Slums:** `village_slums_map_v3.png`, `village_slums_paths_v3.png`, `village_blackmarket_closeup_v3.png`. The ground options Ethan chose from: `village_slums_ground_{tan,clay,dun}_{map,closeup}_v1.png`. He picked tan.
+  - **Scholars' town:** `village_scholars_map_v1.png`, `village_scholars_paths_v2.png`, `village_college_closeup_v1.png`.
 - **In the previews, smoke is a stand-in** (`render_preview.draw_effects`, `thin=True`). The engine draws its own.
 
 ## Streets: `art/scripts/village_streets.py`
@@ -61,16 +61,20 @@ Reference: `art/scripts/render_preview.py` → `build_map`.
 | --- | --- | --- | --- |
 | `village` | centre 332, centre_b 300 | edge_same 176, edge_side 176 | edge_block 72, edge_other 212, edge_gate 416 |
 | `market_town` | centre 804, centre_b 756, centre_near 1,284 | edge_same 400, edge_side 204, edge_trail 576 | edge_block 144, edge_block_lm 100, edge_other 236, edge_other_lm 192, edge_gate 416 |
-| `fortified_town` | centre 524, centre_b 508, centre_mid 784, centre_near 1,248 | edge_same 176, edge_side 176, edge_trail 372 | edge_block 72, edge_block_lm 52, edge_other 248, edge_other_lm 228, edge_gate 524, border_join_l / _r 96 |
-| `slums` | centre 876, centre_b 878, centre_near 884 | edge_same 376, edge_side 280, edge_trail 400 | edge_block 190, edge_block_lm 100, edge_other 410, edge_other_lm 352, edge_gate 356 |
+| `fortified_town` | centre 504, centre_b 508, centre_mid 764, centre_near 1,168 | edge_same 176, edge_side 176, edge_trail 352 | edge_block 72, edge_block_lm 52, edge_other 248, edge_other_lm 228, edge_gate 524, border_join_l / _r 96 |
+| `slums` | centre 954, centre_b 906, centre_near 820 | edge_same 368, edge_side 260, edge_trail 392 | edge_block 190, edge_block_lm 100, edge_other 410, edge_other_lm 352, edge_gate 336 |
 | `scholars_town` | centre 536, centre_b 596, centre_near 604 | edge_same 176, edge_side 156, edge_trail 292 | edge_block 120, edge_block_lm 140, edge_other 212, edge_other_lm 192, edge_gate 396 |
 
 | Landmark | On | Triangles |
 | --- | --- | --- |
 | `tradinghouse` | `market_town` | centre 864 |
-| `keep` | `fortified_town` | centre 1,200 |
+| `keep` | `fortified_town` | centre 1,568 |
 | `blackmarket` | `slums` | centre 1,470 |
 | `college` | `scholars_town` | centre 1,263 |
+
+**Ground:** `mud_ground` is a warm dry tan, #CDB48A (Ethan's pick), with `mud_street` #B59C73 and faint damp patches, `mud_damp`, rather than puddles. `hexkit.SLUM_GROUND` keeps the other two options, built with env `HEX_SLUM=clay` or `dun`.
+
+**The Keep:** curtain walls 1.9 and round towers 2.95, about two-thirds, with battlements, slit windows and a flag on each tower (flag tips about 4.1). A square gatehouse with a round arch rises just above the walls, to about 2.5. The arch is about 1.5 at its top, above a mini's 1.3. `render_preview.py -- --keep-alone` renders it on its own.
 
 **The flows:** all use the streets.
 
@@ -104,14 +108,14 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 | `paths` | `edge_same`, `edge_side`, `edge_trail`, `edge_gate` | The street, along the wedge's middle line from x 1.754 to the edge midpoint (x 3.897). `edge_block` and `edge_other` have none. |
 | `hub` | every town centre | The tile's middle, kept clear. Also a natural place for the party to stop (not in the docs yet). |
 | `paths`, `spokes` | `tradinghouse_centre` | The approach from edge 0 to the arcade, and a spoke per edge, used only where that edge's wedge has a path. Edges 1 and 5 cross the square; 2, 3 and 4 walk round the hall. |
-| `paths`, `spokes` | `keep_centre`, `blackmarket_centre`, `college_centre` | The approach from edge 0 (through the great gate to the courtyard, along the lane, or to the colonnade), a ring round the landmark (`variants.town_ring`), and a spoke from each edge's inner end out to the ring, used only where that edge's wedge has a path. |
+| `paths`, `spokes` | `keep_centre`, `blackmarket_centre`, `college_centre` | The approach from edge 0 (through the great gate to the courtyard, along the lane, or to the colonnade), a ring round the landmark (`variants.town_ring`, 2.05 out at each edge's street and 2.3 or 2.6 at the corners), and a short spoke from each edge's inner end out to the ring, used only where that edge's wedge has a path. |
 
 **Street widths:** main 1.2, side 0.9 (a farm lane's width), a fence gate's about 0.8, and a wall gate's 1.1. The Black Market's lane is about 0.96, the one narrow way. A party's single file fits all of them, but a stopped party's spread-out cluster may overlap houses, as on farm lanes.
 
 ## Checks
 
 - **`art/scripts/test_streets.py`:** random shapes. Both sides of every edge agree, there are no streets to nowhere, each group is one network, and main streets stay on an axis. 20,000 shapes, 155,043 village tiles, 0 failures, about 2 streets a tile.
-- **`art/scripts/check_town.py`:** run in Blender. Nothing up to a mini's height stands on any street a piece could meet, and no landmark route passes within 0.15 of anything standing, with any wedge round it. 0 failures on all five kits and four landmarks. It found real overlaps before I fixed them: eaves over the streets, a tree's crown and a stall beside a route.
+- **`art/scripts/check_town.py`:** run in Blender. Nothing up to a mini's height stands on any street a piece could meet, and no landmark route passes within 0.1 of anything standing, with any wedge round it. Run as `check_town.py -- <kit> <landmark>`, separate arguments: the result line shows the landmark in brackets, and a kit name with a space in it means nothing was checked. 0 failures on all five kits and four landmarks on tiles_v50. It samples along the sides of round shapes at ground level. The 0.1 is on a route's centre line, so a mini's own width is still the engine's to handle, and the Keep's towers stand about 0.1 from where four street ends arrive.
 
 ## Still not working, or for Ethan to look at
 
@@ -120,11 +124,6 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 - **A tile with one street:** it ends at its square, a small cul-de-sac. There's nothing to connect it to, so this can't be avoided.
 - **Gates ignore the main street:** a gate can sit beside a main street's end rather than on it, because `fence_gates.py`'s ranking is unchanged.
 - **Region of near tiles:** in a 7-tile region most tiles are close to the landmark, so the flow's props are thick nearly everywhere. The thinning shows only in bigger regions (`village_fortified_12_map_v1.png`).
-- **Keep's courtyard:** you can see into it from the map camera, but from the entrance the gate and front towers hide much of it.
-- **Slum roofs:** the grey-brown tin is the closest colour to the lighter ground. Walls and the brown roofs carry the contrast.
-- **Puddles:** flat blue shapes on the street, a few on each piece. One can sit partly past a street's edge.
-- **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_ground`, `puddle`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.
-
-## tiles_v50 (being tried, not final)
-
-The Keep is rebuilt (1,568 triangles) and the slums' ground colour is waiting on Ethan's pick. This doc gets its full update after that.
+- **Keep's courtyard:** with walls this tall, the map camera sees the inner wall faces and a strip of the floor, including the well, not the whole yard.
+- **Slum roofs:** the tin is still a grey-brown. Ethan approved it as it stands; it could be warmed if the tan ever needs it.
+- **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_damp`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.

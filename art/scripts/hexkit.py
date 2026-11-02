@@ -65,7 +65,7 @@ PALETTE = {
     "slate": "#5F6B78",
     "slate_dark": "#515C68",
     "banner_fort": "#A33A35",
-    # the slums' ground: env HEX_SLUM picks an option when building a trial (SLUM_GROUND below); tan unless Ethan picks another
+    # the slums' ground: tan (Ethan's pick, Nov 2, 2026); env HEX_SLUM builds the options he chose from (SLUM_GROUND below)
     "mud_ground": "#CDB48A",
     "mud_street": "#B59C73",
     "mud_dark": "#A38A63",
