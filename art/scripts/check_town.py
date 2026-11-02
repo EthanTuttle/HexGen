@@ -149,7 +149,11 @@ def main():
         solid = standing(objs["serpentlair_centre"])
         for line in wt.lair_routes(0).values():
             check("lair", solid, line + [wt.LAIR_STOP])
-        STAND = 0.4  # Meditation Rock's top is walked on; its stone stacks and willow aren't
+        STAND = 0.4  # Meditation Rock's top is walked on; its stone stacks aren't
+        top = max(v.co.z for v in objs["meditationrock_centre"].data.vertices)
+        if top > 1.2:  # its stone stacks are the tallest thing on it: anything higher is a tree
+            bad += 1
+            print("TREE ON MEDITATION ROCK", round(top, 2))
         for mask in itertools.product((False, True), repeat=6):
             if all(mask):
                 continue

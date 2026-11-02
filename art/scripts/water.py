@@ -669,8 +669,8 @@ STONE_GAP = 0.52  # between stepping stones
 def rock_routes(water, seed, widths=None):
     """Meditation Rock's routes, in the tile's frame: (land, floats, stones, turn). Each stretch of land edges has one line of stepping stones to the rock,
     from its middle edge. land[e]: from land edge e's midpoint along the tile's rim of land, if it needs to, then over the stones to the rock's middle.
-    floats[e]: from water edge e's midpoint to the rock's rim. stones: (point, radius). turn: 60 degree steps for the piece, its willow at its back, clear of
-    every line of stones. The rock only rolls with a land neighbour (design/02), so turn is None without one."""
+    floats[e]: from water edge e's midpoint to the rock's rim. stones: (point, radius). turn: 60 degree steps for the piece, +X toward the first line of
+    stones. The rock only rolls with a land neighbour (design/02), so turn is None without one."""
     outlines = tile_water(water, seed, widths, "still_waters")[0]
     rng = random.Random(f"{seed}-rock")
     land, stones = {}, []
@@ -711,8 +711,7 @@ def rock_routes(water, seed, widths=None):
             for m in (range(j, pos) if j < pos else range(j - 1, pos - 1, -1)):
                 way.append(mul(corner(run[m]), 1 - 0.5 / R))
             land[e] = way + [rim(main)] + line
-    turn = next((t % 6 for t in (mains[0], mains[0] + 1, mains[0] - 1, mains[0] + 2, mains[0] - 2) if (t + 3) % 6 not in mains), mains[0])
-    return land, floats, stones, turn
+    return land, floats, stones, mains[0]
 
 
 # --- 9. Props on water tiles ---------------------------------------------------------
@@ -732,6 +731,21 @@ def at_shore(curve, u):
     k = max(1, min(len(curve) - 2, int((len(curve) - 1) * u)))
     tan = sub(curve[k + 1], curve[k - 1])
     return curve[k], math.atan2(tan[0], -tan[1])  # water is on the curve's left
+
+
+def landmark_fits(name, water, seed, widths=None):
+    """Whether this water tile can become the landmark (design/02): the River Port and Meditation Rock need a land neighbour, the Troll Bridge a
+    bridge spot. Other landmarks fit anywhere. When a region finishes, pick its landmark's tile from the ones that fit."""
+    if name in ("riverport", "meditationrock"):
+        return not all(water)
+    if name == "trollbridge":
+        return bridge_spot(water, seed, widths, TROLL_HALF) is not None
+    return True
+
+
+def raft_can_enter(name):
+    """A raft can't run rapids (design/02): a party can still cross them on foot, by bridge or Athletics check."""
+    return FAMILY.get(name) != "rapids"
 
 
 def tile_props(water, seed, widths=None, style=None, near=0, landmark=False):

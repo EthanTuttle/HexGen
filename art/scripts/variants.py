@@ -4277,12 +4277,11 @@ def troll_bridge(p, rng, kind):
 
 
 def meditation_rock(p, rng, kind):
-    """Still waters' Meditation Rock: a broad smooth rock out on the water, one willow at its back trailing into the water, and balanced stone stacks. The stepping
+    """Still waters' Meditation Rock: a broad smooth rock out on the water with balanced stone stacks, and no tree (design/07). The stepping
     stones are the engine's (water.rock_routes): +X faces the first line of them. The party stops in the middle of the rock."""
     for at, top, r0, r1 in ((0.0, 0.16, 1.45, 1.28), (0.16, 0.34, 1.28, 0.82)):
         frustum(p, Vector((0, 0, at)), Vector((0, 0, top)), r0, r1, "smooth_stone", segments=12)
-    willow(p, rng, Vector((-1.05, 0.2, 0.16)), -0.8, 1.45)
-    for x, y, n, r in ((0.56, 0.33, 5, 0.15), (0.0, -0.66, 4, 0.14), (0.0, 0.66, 3, 0.11)):  # between the lines of stones, which come in at 60 degree steps
+    for x, y, n, r in ((0.56, 0.33, 7, 0.19), (0.0, -0.66, 6, 0.18), (0.0, 0.66, 5, 0.16)):  # between the lines of stones, which come in at 60 degree steps
         stone_stack(p, rng, Vector((x, y, 0.34)), n=n, r=r)
     p.no_cover.append((Vector((0, 0, 0)), 1.6))
 

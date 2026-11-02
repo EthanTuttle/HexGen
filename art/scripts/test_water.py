@@ -2,7 +2,7 @@
 start at the edge midpoints so they meet the neighbour's, and a landing's shore point is on land's side of the water with a
 water point after it. Delta routes keep clear of the islands. Also, for each water variant: both tiles on an edge get the same water there;
 everything drawn over the water stays in its tile; a bridge's ends and walks are on land; Meditation Rock's stones reach land from the rock
-on every land stretch; the Serpent's Lair's lines reach its landing; the River Port's water stays in front of its quay, walled wherever land meets it.
+on every land stretch and it has no tree; the Troll Bridge fits just where it has a spot; rafts stay off rapids; the Serpent's Lair's lines reach its landing; the River Port's water stays in front of its quay, walled wherever land meets it.
 Plain Python: python3 art/scripts/test_water.py [seeds]. Exits 1 on a failure.
 """
 import itertools
@@ -113,6 +113,13 @@ def main():
                 for p, r in st:
                     if not wt.inside_tile(p, r):
                         fail("stone outside its tile", mask, seed)
+                if any(prop == "still_willow" for near in (0, 1, 2) for prop, _, _ in wt.tile_props(m, seed, widths, "still_waters", near, True)):
+                    fail("tree on the rock's tile", mask, seed)
+            if wt.landmark_fits("meditationrock", m, seed) == all(m) or wt.landmark_fits("riverport", m, seed) == all(m):
+                fail("land neighbour rule", mask, seed)
+            widths = [wt.RAPIDS_WIDTH if x else wt.RIVER_WIDTH for x in m]
+            if wt.landmark_fits("trollbridge", m, seed, widths) != (wt.bridge_spot(m, seed, widths, wt.TROLL_HALF) is not None):
+                fail("troll rule", mask, seed)
             # The River Port: no water behind its quay, nothing out of its tile, and a wall wherever land meets water
             widths = [wt.DELTA_WIDTH if x else wt.RIVER_WIDTH for x in m]
             t = wt.port_turn(m, seed)
@@ -131,6 +138,9 @@ def main():
                 pt = wt.turned((wt.QUAY_X + 0.05, y), t)
                 if wt.inside_tile(pt, 0.05) and wt.in_water(outs, pt) and not any(wt.seg_dist(pt, a, b) < 0.2 for a, b in port_walls):
                     fail("port water with no wall", mask, seed, t, y)
+    for name, ok in (("rapids", False), ("trollbridge", False), ("delta", True), ("riverport", True), ("great_lake", True), ("serpentlair", True), ("still_waters", True), ("meditationrock", True), ("river", True)):
+        if wt.raft_can_enter(name) != ok:
+            fail("raft rule", name)
     # The Serpent's Lair: all six lines keep to the tile and end at the landing
     for t in range(6):
         for i, line in wt.lair_routes(t).items():

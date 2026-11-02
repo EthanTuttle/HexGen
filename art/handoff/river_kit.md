@@ -1,13 +1,13 @@
-# River kit hand-off, rounds 1 and 2 (tiles_v52)
+# River kit hand-off, rounds 1 and 2 (tiles_v53)
 
-This kit holds tier 0 river and lake, river delta and the River Port (tier 1), routes on water, the party's raft, and from round 2 great lake, rapids and still waters with their landmarks. Ethan approved round 1 apart from the port's ground, which is fixed here. He hasn't seen round 2.
+This kit holds tier 0 river and lake, river delta and the River Port (tier 1), routes on water, the party's raft, and from round 2 great lake, rapids and still waters with their landmarks. Ethan has approved rounds 1 and 2, with the changes from his round 2 feedback built here: no tree on Meditation Rock's tile, and the rules for rapids below. He hasn't seen the rock without its tree.
 
-- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v52.blend`.
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v53.blend`.
 - **Water reference:** `art/scripts/water.py`. Every change below is plain Python to copy.
 - **Looks:** `design/07 Presentation.md` → Water flows freely, Region variant looks, Landmark tiles. **Rules:** `design/02 Map & exploration.md` → Obstacles.
 - **Previews, round 1:** `art/preview/river_t0_map_v1.png`, `river_t0_paths_v1.png`, `river_delta_paths_v1.png`, `river_raft_map_v1.png`, `river_raft_closeup_v1.png`.
 - **Previews, the port's ground:** `river_delta_map_v2.png`, `river_delta_map_turned_v1.png`, `river_riverport_closeup_v2.png`, `river_riverport_closeup_back_v1.png`, `river_port_gate_map_v2.png`, `river_port_gate_closeup_v2.png`.
-- **Previews, round 2:** `river_lake_*`, `river_rapids_*` and `river_still_*`, each `_map_v1`, `_turned_v1`, `_paths_v1`, `_closeup_v1` and `_closeup_b_v1`. In the `_paths` maps, red is the route on water and yellow a walk on land.
+- **Previews, round 2:** `river_lake_*`, `river_rapids_*` and `river_still_*`, each `_map_v1`, `_turned_v1`, `_paths_v1`, `_closeup_v1` and `_closeup_b_v1`, and `river_still_*_v2` for the rock with no tree. In the `_paths` maps, red is the route on water and yellow a walk on land.
 
 ## What changes in `water.py`
 
@@ -34,7 +34,7 @@ Water tiles have no pieces, so there's no path data in the glb for them: the rou
   - Lakes, ponds and junctions run straight to the hub.
 - **`landings` → `lands[i]`:** for each land edge `i`: the edge's midpoint, the shore point on the way to the hub, and a point just in the water. A party walks to the shore point, steps in there, and floats to the hub.
 - **Land side:** the land tile's own route still has to reach that edge's midpoint. Most land has the usual curved route. Farm and village edges facing water are fences with no gate, because `fence_gates.py` is unchanged, so a party leaves those groups by a gate and walks to another shore.
-- **The water itself** is still an obstacle: the engine only uses these lines when the party has a raft or has passed its Athletics check.
+- **The water itself** is still an obstacle: the engine only uses these lines when the party has a raft or has passed its Athletics check. A raft can't enter rapids or the Troll Bridge's tile (`raft_can_enter(name)`), but an Athletics crossing can: it uses the same lines.
 
 ## The raft: `raft` (464 triangles)
 
@@ -73,7 +73,7 @@ The harbour needs the same shader treatment as other water. All of this is in `a
 
 **Effects:** `smoke` at the tavern's chimney. `window_glow` on the row. `ground_cover.py`: `riverport` now has density 0.3, like a delta, and `no_cover` circles over the paving only, so the grass and flowers carry on round the town. It takes its shape from `water.cover_shape`.
 
-**Rolling** (design/02): the port and Meditation Rock only roll on a water tile with a land neighbour. Parties leave fenced groups by land gates, so there are no gates onto water, and `fence_gates.py` is unchanged.
+**Rolling** (design/02): the port and Meditation Rock only roll on a water tile with a land neighbour: `landmark_fits`, under Picking a landmark's tile. Parties leave fenced groups by land gates, so there are no gates onto water, and `fence_gates.py` is unchanged.
 
 ## Round 2: great lake, rapids, still waters
 
@@ -107,19 +107,29 @@ Turned by `landmark_flow.turn`: the cave faces edge 0, with a low shelf in front
 - **Dressing:** wrecked boats, a great rib cage standing in the water, bones on the shelf, and two coils of the serpent behind the rock.
 - **On the way:** `lake_wreck`, `lake_coil` and `lake_fin` get more common toward it.
 
+### Picking a landmark's tile
+
+When a region finishes, pick its landmark's tile at random from the tiles where `landmark_fits(name, water, seed, widths)` is true, leaving out any with a minor landmark (design/02):
+
+| Landmark | Fits where |
+| --- | --- |
+| River Port, Meditation Rock | The tile has a land neighbour |
+| Troll Bridge | `bridge_spot(water, seed, widths, TROLL_HALF)` finds a spot |
+| Lake Serpent's Lair | Any tile of its region |
+
 ### Troll Bridge: `trollbridge_centre` (1,392)
 
 Placed where `bridge_spot(water, seed, widths, TROLL_HALF)` says, at its angle, not `landmark_flow.turn`. A big mossy arch, with shade under it, a dark hollow in the side of one abutment with bones before it, and a toll post with a sign and a skull at the far end.
 
-### Meditation Rock: `meditationrock_centre` (544)
+### Meditation Rock: `meditationrock_centre` (520)
 
-A broad smooth rock with one willow at its back and three balanced stacks. Turn it by `rock_routes`' `turn`.
+A broad smooth rock with three balanced stacks, and no tree on its tile (`tile_props(landmark=True)` leaves out `still_willow`). Turn it by `rock_routes`' `turn`.
 
 `rock_routes(water, seed, widths)` gives `(land, floats, stones, turn)`:
 - **Stones:** each stretch of land edges gets one line of stepping stones from its middle edge to the rock. They're drawn with the water, `add_water(landmark=True)`, as low round stones at the water's level, free to walk.
 - **`land[e]`:** from land edge `e` along the tile's rim of land, if it needs to, then over the stones to the rock's middle.
 - **`floats[e]`:** from water edge `e` to the rock's rim, for a raft or a wader.
-- **Turn:** keeps the willow off every line of stones.
+- **Turn:** points the piece's +X along the first line of stones. The stacks stand between the lines, whichever way it's turned.
 
 ## Triangles
 
@@ -127,21 +137,21 @@ Water, banks and dressing add a few hundred triangles to a tile, and every full 
 
 ## Checks
 
-- **`art/scripts/test_water.py 20`:** all 64 sets of water neighbours, 20 seeds each, all five water styles: 19,200 route lines and as many landings, 18,861 props, 1,225 bridges (602 Troll), 5,672 stepping stones, 3,756 port walls, 0 failures. It checks that routes stay in the water, both tiles on an edge agree, water, islands and props stay in the tile, a bridge's ends and walks are on land, every land edge has a way to Meditation Rock, and the port has no water behind its quay and a wall wherever land meets water.
-- **The test catches faults:** on a copy of `water.py`, leaving out the port's clipping gave 70 failures at one seed, no port walls 418, and rapids that turn into lakes 21.
+- **`art/scripts/test_water.py 20`:** all 64 sets of water neighbours, 20 seeds each, all five water styles: 19,200 route lines and as many landings, 18,861 props, 1,225 bridges (602 Troll), 5,672 stepping stones, 3,756 port walls, 0 failures. It checks that routes stay in the water, both tiles on an edge agree, water, islands and props stay in the tile, a bridge's ends and walks are on land, every land edge has a way to Meditation Rock, the rock's tile has no willow, `landmark_fits` and `raft_can_enter` follow the rules, and the port has no water behind its quay and a wall wherever land meets water.
+- **The test catches faults:** on a copy of `water.py`, leaving out the port's clipping gave 70 failures at one seed, no port walls 418, and rapids that turn into lakes 21, and allowing willows on the rock's tile 63.
 - **`art/scripts/check_town.py -- port`:** every port route clears the port's buildings, props and boats by 0.1. 0 failures. This caught the mooring posts standing on the quay's walking line, now moved into the wall.
-- **`art/scripts/check_town.py -- water`:** 209 lines: the Lair's routes, Meditation Rock's walks on every set of neighbours, and the Troll Bridge's path and walks against its toll post and hollow. 0 failures. The bones lying flat on the Lair's shelf count as walked over.
+- **`art/scripts/check_town.py -- water`:** 209 lines: the Lair's routes, Meditation Rock's walks on every set of neighbours, and the Troll Bridge's path and walks against its toll post and hollow. It also fails if anything on the rock's piece stands taller than its stacks, which would be a tree. 0 failures. The bones lying flat on the Lair's shelf count as walked over.
 - **By eye:** the port's ground is flush and in its tile, from the default camera and turned 150°.
 - **Previously passing:** `test_streets.py`, `test_cliffs.py` and `check_town.py -- market_town tradinghouse` still pass.
 
 ## Still not working, or for Ethan to look at
 
 - **Not tested in an engine:** none of it has been tried in Godot.
-- **Rapids with no bridge spot:** of the 14 patterns of water neighbours, 7 never fit a Troll Bridge: no water neighbours, water edges all side by side, or two pairs of them. Two more fit on only about half their seeds: one water edge, and two water edges two apart. A tile can't have one there. See the questions for Ethan.
-- **Raft under a bridge:** the raft's mast is about 2.1 high and the Troll Bridge's arch 1.5, so a raft on that line clips it.
+- **Rapids with no bridge spot:** of the 14 patterns of water neighbours, 7 never fit a Troll Bridge: no water neighbours, water edges all side by side, or two pairs of them. Two more fit on only about half their seeds: one water edge, and two water edges two apart.
+- **A finished region with nowhere to put the Troll Bridge:** see the questions for Ethan. In random test regions of 7 tiles, counting only their own tiles as water, about 21–31% had no tile that fits (14–25% at 12 tiles). A shorter bridge doesn't help: at the ordinary bridge's length it's still 30%, because the limit is the pattern of neighbours.
+- **A Troll Bridge whose neighbours change:** see the questions for Ethan. The spot depends on the water neighbours, and a region can still grow. Adding one water neighbour to a tile with a spot removes the spot about half the time (52%), and it can move otherwise. `bridge_spot` would then return None for a bridge that's already there.
 - **Colour at a join:** where great lake, rapids or still waters meet other water, the colour changes sharply at the tile's edge.
 - **Lair end-on:** `landmark_flow.turn` can face the cave away from the default camera. Turning the camera shows it.
-- **Rock's willow:** from some turns it stands in front of the rock from the default camera (`river_still_map_v1.png`), though the stones stay clear.
 - **`render_animation.py`:** not updated for the styles or the port's clipping. It's a preview tool only.
 - **Port end-on:** `port_turn` faces the water, so from the default camera the row can be seen end-on (`river_delta_map_v1.png`), when it reads less well than face-on (`river_riverport_closeup_v1.png`). Turning the camera shows it.
 - **Lakes:** a delta region that forms triangles of tiles turns into a lake with scattered islands, not channels.
@@ -151,7 +161,5 @@ Water, banks and dressing add a few hundred triangles to a tile, and every full 
 
 ## Questions for Ethan (not decided)
 
-1. **Where a Troll Bridge can roll:** only on a rapids tile with a bridge spot, the way the port needs a land neighbour?
-2. **Rafts and rapids:** can a raft or a wader cross rapids? design/02 says tiles with no bridge "stay an obstacle", while Crossing water covers rivers in general. The routes and landings are there either way.
-3. **Under a bridge:** should a raft lower its sail, or just pass through?
-4. **Meditation Rock's stones:** one line per stretch of land edges is my proposal, so a party always has a way on. A tile with land on two sides gets two lines.
+1. **No tile fits a Troll Bridge:** design/02 gives every finished region its landmark, and also says the Troll Bridge only rolls where a bridge fits. What happens when a finished rapids region has no such tile?
+2. **A later water neighbour takes away the spot:** what happens to a Troll Bridge that's already standing there?
