@@ -108,7 +108,81 @@ func _forest_perf() -> void:
 	game.set_process(true)
 	game.minute = 10.0   # by day, for the walk
 	await _walk_to_mill(game, vp)
+	await _hills_perf(game, vp)
 	_say("FOREST PERF DONE")
+
+
+## The hills: a view over the raised regions, a ledge climb, and a real rise, with the frame cost of each.
+func _hills_perf(game: Game, vp: RID) -> void:
+	var map := game.map
+	game.set_process(true)
+	var snowy := {}
+	for g in game.regions:
+		if g.variant == "snowy_peaks":
+			snowy = g
+	var lm: Vector2i = snowy.landmark_tile
+	game.rig.frame(Hex.to3(Hex.tile_position(lm.x, lm.y), 6.0), 58.0, 50.0)
+	await get_tree().create_timer(2.0).timeout
+	var m := await _measure(vp, 5.0)
+	_say("HILLS PERF over the snowy region at the opening zoom: %.1f fps, worst frame %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms" % [m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu])
+	await _shot_as("hills_opening")
+	game.rig.frame(Hex.to3(Hex.tile_position(lm.x, lm.y), 6.0), Rules.DAY_MAX_ZOOM, 50.0)
+	await get_tree().create_timer(2.0).timeout
+	m = await _measure(vp, 5.0)
+	_say("HILLS PERF zoomed all the way out over the raised regions: %.1f fps, worst frame %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms" % [m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu])
+	await _shot_as("hills_zoomed_out")
+	# A ledge climb, from the foot of one of its ledges to the landmark.
+	var climb: Array = map.climbs.filter(func(c): return c[0] in snowy.tiles)[0]
+	var foot := Cliffs.beside(climb[0], climb[1] - 1)
+	game.party_tile = foot
+	game.party_node.place_at(foot)
+	map.party_moved(foot)
+	game.rig.frame(game.party_node.centre(), 30.0, 50.0)
+	await get_tree().create_timer(0.5).timeout
+	var t0 := Time.get_ticks_usec()
+	var route := game.path_to(lm)
+	game.party_node.route_preview(route)
+	_say("HILLS PERF working out the route up: %.1f ms" % ((Time.get_ticks_usec() - t0) / 1000.0))
+	game.walk_to(lm)
+	m = await _measure(vp, 4.0)
+	_say("HILLS PERF climbing a ledge: %.1f fps, worst frame %.1f ms, draw calls %d" % [m.fps, m.worst, m.calls])
+	await _shot_as("hills_climbing")
+	while game.busy:
+		await get_tree().process_frame
+	# A real rise, with the party on it: seven tiles on spare land.
+	var c := Vector2i(16, 10)
+	var tiles: Array[Vector2i] = [c]
+	for n in Hex.NEIGHBOURS:
+		tiles.append(c + n)
+	var land := {}
+	game._debug_road(c + Vector2i(-2, 0), land)
+	for t in tiles:
+		land[t] = "hills"
+		game.order[t] = game.order.size()
+	map.retile(land)
+	game.party_tile = c
+	game.party_node.place_at(c)
+	map.party_moved(c)
+	game.rig.frame(Hex.to3(Hex.tile_position(c.x, c.y), 2.0), 40.0, 50.0)
+	await get_tree().create_timer(1.0).timeout
+	var region := game.new_region("hills", tiles, "volcanic_peaks", tiles[1])
+	t0 = Time.get_ticks_usec()
+	game._transform(tiles, region, c)
+	var frames := 0
+	var worst := 0.0
+	var last := Time.get_ticks_usec()
+	var shot := false
+	while game.busy:
+		await get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		worst = maxf(worst, (now - last) / 1000.0)
+		last = now
+		frames += 1
+		if not shot and map.lift.get(c, 0.0) > 2.5:
+			shot = true
+			await _shot_as("hills_rising")
+	_say("HILLS PERF the rise, with the tiles' change before it: %.1f fps, worst frame %.1f ms over %.1f s" % [frames / ((last - t0) / 1e6), worst, (last - t0) / 1e6])
+	await _shot_as("hills_risen")
 
 
 ## Walks the party to the Great Windmill, measuring the walk, and logs how it stops on the narrow path.

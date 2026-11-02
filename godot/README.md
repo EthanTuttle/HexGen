@@ -452,7 +452,20 @@ Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave,
 - **Effects:** one smoke per crater, merged across tiles (`MapBoard._update_smoke`); lava pulses and glows at night.
 - **Combat:** no new rules. A fight on a raised tile uses the usual flat board and returns the party to the plateau. Boards that follow the slope wait on the open question in `design/03`.
 
+- **A way down:** a party on raised ground always has one ledge down, shown even if none qualifies (`Cliffs.forced_climb`, the engine's own; `MapBoard.party_moved`). It can end in a river, and it goes when the party has left.
+- **Round rock:** routes keep 0.95 m from rock (a base reaches 0.62 m). Rock is dear to the route search, not forbidden, so a way is always found, and it may use a neighbouring hills tile on the same level (`PartyWalker._search`). The tile path avoids shared mountains and ridges that wall one way across a tile off from another (`Game.path_to`, `MapBoard.ridge_wall`). A ledge can come out in a pocket that ridges and mountains wall off, and then the party has to cross rock: only art or a rule can fix that (the check prints `HILLS WALLED`).
+
 Debug: `-- --forest` and F9 also spawn a 12-tile region of each variant (snowy and volcanic raised), a tier 0 hills group and a lone tile. `-- --hillscheck` (add `--shots` for `screens/hills_*.png`) checks all of the above, the rise, added tiles, touching regions, no way up and fenced feet.
+
+### Waiting for the phone
+
+No phone runs until the Engine Planner says the phone is plugged in and unlocked. Waiting for it, all in the forest perf run (`HEXGEN_FORESTPERF`; `HILLS PERF` lines, `hills_*.png`):
+
+- The whole bigger spawn with hills, by day and at night; last measured before plains and hills (120 fps at 1,590 draw calls).
+- A view over the raised regions at the opening zoom and zoomed all the way out.
+- Working out a route up, climbing a ledge, and a real rise with the party on it, the worst frame of each.
+- Touch on the plateau: tapping raised ground on a real screen.
+- How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
 ## Terrains and region variants (tiles v13)
 

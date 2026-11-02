@@ -88,3 +88,25 @@ static func _walkable(e: Array, terrains: Dictionary) -> bool:
 
 static func _clear(e: Array, terrains: Dictionary) -> bool:
 	return _walkable(e, terrains) and not terrains[beside(e[0], e[1] - 1)] in NOT_CLEAR
+
+
+## A party on raised ground always has one ledge down, shown even if none qualifies (design/06 -> Tile build), when
+## nothing on its plateau has one. plateau: the raised tiles it can walk to. The best [t, i]: a foot onto walkable land,
+## then water, then an empty slot, then by the usual rank; open in front if it can be. [] if no three outer edges run
+## together anywhere. The engine's own: cliffs.py has no such rule yet.
+static func forced_climb(plateau: Array, terrains: Dictionary, raised: Dictionary) -> Array:
+	var outer := {}
+	for e in outer_edges(plateau, raised):
+		outer[e] = true
+	var best := []
+	var best_key := []
+	for e in outer:
+		if not outer.has([e[0], posmod(e[1] - 1, 6)]) or not outer.has([e[0], (e[1] + 1) % 6]):
+			continue
+		var front = terrains.get(beside(e[0], e[1] - 1))
+		var kind := 2 if front == null else 1 if front in UNWALKABLE else 0
+		var key := [kind, 0 if foot_is_open(e[0], e[1], raised) else 1, _rank(e)]
+		if best.is_empty() or key < best_key:
+			best = e
+			best_key = key
+	return best

@@ -85,7 +85,9 @@ const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover
 const WADE_DEPTH := 0.07                 # m a mini sinks in a ford
 const FOOTPRINT_SECONDS := 14.0          # how long a footprint stays in the sand
 # DOCS: the route goes round peaks, mountains and ridges, staying on the hills' grass.
-const MOUNTAIN_CLEARANCE := 0.7          # m the route keeps from a peak, mountain or ridge (a base is 0.52 m to its corners)
+const ON_ROCK_COST := 40.0                # PLACEHOLDER: how much dearer a route's step is on rock, or within the clearance of it
+const NEAR_ROCK_COST := 8.0
+const MOUNTAIN_CLEARANCE := 0.95         # m the route keeps from a peak, mountain or ridge (a base is 0.52 m to its corners)
 const ROUTE_GRID := 0.25                 # m between the points the detour is searched on (not a look)
 # DOCS: each mini's base tilts to lie flat on the slope, like a real mini on a sloped board, never cutting in.
 const BASE_MARGIN := 0.04                # m past a base's rim that the ground is felt for (its tilt and height)
@@ -109,6 +111,7 @@ const LEDGE_NARROW := 1.2                # PLACEHOLDER: metres before and after 
 const CAMERA_CLEAR := 1.5                # PLACEHOLDER: metres the camera keeps above raised ground at close zoom
 const CLIMB_TOP_RUN := 1.71              # edge_climb_top's path: plan length and how much it rises (hills kit)
 const CLIMB_TOP_RISE := 0.785
+const RIDGE_WALL_COST := 12               # PLACEHOLDER: and to avoid crossing a ridge across a tile
 const MOUNTAIN_EDGE_COST := 4            # PLACEHOLDER: how many steps a route will go round to avoid crossing a shared mountain
 const LEDGE_EASE := 6.0                  # PLACEHOLDER: m/s a mini's height catches up stepping onto a ledge
 const PEEL_LINE := 0.15                  # PLACEHOLDER: how near the file's line the new route must run to count as the same line

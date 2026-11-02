@@ -69,6 +69,8 @@ var _graphs := {}                      # tile -> its drawn paths (TilePaths), bu
 var raised := {}                       # every raised tile -> true
 var raised_regions := {}               # key -> the tiles of that raised region
 var lift := {}                         # raised tile -> how high it stands now (Variants.RAISE, once it's up)
+var tiles_built := 0                   # counts tiles built, so anything remembering what stands where can tell
+var party_at = null                    # the party's tile: on raised ground it always has a ledge down (Cliffs.forced_climb)
 var climbs := []                       # every region's Cliffs.climbs(), [tile, i]
 var _outer := {}                       # raised tile -> its edges with a cliff
 var _corners := {}                     # raised tile -> its corners with a pinnacle
@@ -215,16 +217,22 @@ func _update_raised() -> Dictionary:
 		var region: Array = raised_regions[key]
 		for e in Cliffs.outer_edges(region, raised):
 			_outer.get_or_add(e[0], []).append(e[1])
-		var own := Cliffs.climbs(region, by_terrain, raised)
-		climbs.append_array(own)
-		for c in own:
-			var t: Vector2i = c[0]
-			var i: int = c[1]
-			_ledges[t] = {posmod(i - 1, 6): "low", i: "mid", (i + 1) % 6: "top"}
-			var low := Cliffs.beside(t, i - 1)
-			_links[Vector4i(t.x, t.y, low.x, low.y)] = c
-			_links[Vector4i(low.x, low.y, t.x, t.y)] = c
-		for e in Cliffs.outer_corners(region, raised):
+		climbs.append_array(Cliffs.climbs(region, by_terrain, raised))
+	if party_at != null and raised.has(party_at):
+		var plateau := _plateau(party_at)
+		if not climbs.any(func(c): return c[0] in plateau):
+			var down := Cliffs.forced_climb(plateau, by_terrain, raised)
+			if not down.is_empty():
+				climbs.append(down)
+	for c in climbs:
+		var t: Vector2i = c[0]
+		var i: int = c[1]
+		_ledges[t] = {posmod(i - 1, 6): "low", i: "mid", (i + 1) % 6: "top"}
+		var low := Cliffs.beside(t, i - 1)
+		_links[Vector4i(t.x, t.y, low.x, low.y)] = c
+		_links[Vector4i(low.x, low.y, t.x, t.y)] = c
+	for key in raised_regions:
+		for e in Cliffs.outer_corners(raised_regions[key], raised):
 			# No pinnacle at corners i - 1, i and i + 1 of a ledge: the same keys as its edges.
 			if not _ledges.get(e[0], {}).has(e[1]):
 				_corners.get_or_add(e[0], []).append(e[1])
@@ -236,6 +244,34 @@ func _update_raised() -> Dictionary:
 		if _shape[t] != before.get(t):
 			changed[t] = true
 	return changed
+
+
+## The raised tiles joined to t.
+func _plateau(t: Vector2i) -> Array:
+	var out: Array = [t]
+	var seen := {t: true}
+	var k := 0
+	while k < out.size():
+		for n in Hex.NEIGHBOURS:
+			var c: Vector2i = out[k] + n
+			if raised.has(c) and not seen.has(c):
+				seen[c] = true
+				out.append(c)
+		k += 1
+	return out
+
+
+## The party has stopped on a tile: its way down, if it needs one, shows, and one it has left behind goes.
+func party_moved(t: Vector2i) -> void:
+	party_at = t
+	if raised_regions.is_empty():
+		return
+	var touched := _update_raised()
+	touched.merge(_update_gates())
+	for c: Vector2i in touched:
+		_build_tile(c)
+		_add_cover(c)
+	_update_smoke()
 
 
 ## Registers a region as raised and standing (the debug spawn: it needs no rise). Call before retiling it.
@@ -584,6 +620,7 @@ func _set_ground(t: Vector2i) -> void:
 
 
 func _build_tile(t: Vector2i) -> void:
+	tiles_built += 1
 	if _tile_nodes.has(t):
 		_tile_nodes[t].free()
 	_graphs.erase(t)
@@ -642,21 +679,10 @@ func _build_tile(t: Vector2i) -> void:
 		# One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
 		# meet; otherwise half on each edge shared with one other hills tile. A landmark has none of this, its
 		# neighbours leave it out, and no mountain stands on a trail edge, so the range opens into a pass.
-		var ranged := []
-		var triple := []
-		for i in 6:
-			ranged.append(_ranges(t, i))
-		for i in 6:   # corner i: between edges i and i + 1; every copy of the third must be drawn
-			triple.append(ranged[i] and ranged[(i + 1) % 6] and _ranges(t + Hex.NEIGHBOURS[i], (i + 2) % 6))
 		var clear_near: bool = flow_dist.get(t, 3) > 2
-		if not Variants.LANDMARKS.has(name) and not ranged.has(true) and clear_near:
+		if not Variants.LANDMARKS.has(name) and clear_near and not range(6).any(func(i): return _ranges(t, i)):
 			Kit.place(node, _kit, name + "_peak", at)
-		var parts := []
-		for i in 6:
-			if triple[i]:
-				parts.append(["corner", i])
-			elif ranged[i] and not triple[posmod(i - 1, 6)]:
-				parts.append(["edge", i])
+		var parts := _mountain_parts(t)
 		for part in parts:
 			Kit.place(node, _kit, name + "_mountain_" + part[0], at, deg_to_rad(60.0 * part[1]))
 		# In bigger groups the mountains join into a range: ridges from this tile's middle to each of them. None
@@ -689,6 +715,44 @@ func _build_tile(t: Vector2i) -> void:
 		_add_ground_collision(node, terrain == "hills", high)
 	if high:
 		_add_cliffs(t, node, kit, at)
+
+
+## The shared mountains on tile t: ["corner", i] where corner i has one, ["edge", i] where edge i has.
+func _mountain_parts(t: Vector2i) -> Array:
+	var ranged := []
+	var triple := []
+	for i in 6:
+		ranged.append(_ranges(t, i))
+	for i in 6:   # corner i: between edges i and i + 1; every copy of the third must be drawn
+		triple.append(ranged[i] and ranged[(i + 1) % 6] and _ranges(t + Hex.NEIGHBOURS[i], (i + 2) % 6))
+	var parts := []
+	for i in 6:
+		if triple[i]:
+			parts.append(["corner", i])
+		elif ranged[i] and not triple[posmod(i - 1, 6)]:
+			parts.append(["edge", i])
+	return parts
+
+
+## Whether ridges wall edge a of tile t off from edge b: ridges run from the middle out to each mountain, so one on
+## each side of the way between them makes a wall (hills kit -> Still not working: far ridges).
+func ridge_wall(t: Vector2i, a: int, b: int) -> bool:
+	var name = terrains.get(t)
+	if Variants.terrain_of(name) != "hills" or flow_dist.get(t, 3) <= 2 or _kit.has(Variants.wedges_of(name) + "_steps_centre"):
+		return false
+	var parts := _mountain_parts(t)
+	if parts.size() < 2:
+		return false
+	var left := false
+	var right := false
+	var span := float(posmod(b - a, 6))
+	for part in parts:
+		var at := fposmod(float(part[1]) + (0.5 if part[0] == "corner" else 0.0) - a, 6.0)
+		if at > 0.0 and at < span:
+			left = true
+		elif at > span:
+			right = true
+	return left and right
 
 
 ## Do tile t and its neighbour on edge i share a mountain? (render_preview.build_map: ranges)

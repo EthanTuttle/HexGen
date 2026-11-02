@@ -444,6 +444,7 @@ func _set_flow(region: Dictionary) -> void:
 ## A raised region comes up over a few seconds with dust and shaking, carrying the party, and nobody walks until it's
 ## done (DOCS: design/06 -> Raised hills regions; hills kit -> The rise). Also when a later hills tile joins it.
 func _rise(region: Dictionary) -> void:
+	map.party_at = party_tile
 	var r := map.begin_rise(regions.find(region), region.tiles)
 	if r.rising.is_empty():
 		map.finish_rise(r)
@@ -700,33 +701,42 @@ func add_encounter(t: Vector2i, persistent: bool, dropped: Array = []) -> void:
 # --- Walking -----------------------------------------------------------------
 
 func path_to(goal: Vector2i) -> Array[Vector2i]:
-	var came := {party_tile: party_tile}
-	var cost := {party_tile: 0}
-	var todo: Array[Vector2i] = [party_tile]
+	# Each tile is reached by a particular edge, because ridges can wall one way across a tile off from another.
+	var start := Vector3i(party_tile.x, party_tile.y, -1)
+	var came := {}
+	var cost := {start: 0}
+	var todo: Array[Vector3i] = [start]
+	var end = null
 	while not todo.is_empty():
 		var best := 0
 		for k in todo.size():
 			if cost[todo[k]] < cost[todo[best]]:
 				best = k
-		var c: Vector2i = todo.pop_at(best)
+		var at: Vector3i = todo.pop_at(best)
+		var c := Vector2i(at.x, at.y)
 		if c == goal:
+			end = at
 			break
 		for i in 6:
 			var m: Vector2i = c + Hex.NEIGHBOURS[i]
-			if map.terrains.has(m) and map.edge_open(c, m):   # fences only through a gate
-				# A shared mountain stands on the edge: the party goes round by the passes where it can.
-				var step: int = Rules.MOUNTAIN_EDGE_COST if map._ranges(c, i) else 1
-				if cost[c] + step < cost.get(m, 1 << 30):
-					cost[m] = cost[c] + step
-					came[m] = c
-					if not m in todo:
-						todo.append(m)
+			if not map.terrains.has(m) or not map.edge_open(c, m):   # fences only through a gate
+				continue
+			# A shared mountain stands on the edge, or ridges across the tile: the party goes round where it can.
+			var step: int = Rules.MOUNTAIN_EDGE_COST if map._ranges(c, i) else 1
+			if at.z >= 0 and map.ridge_wall(c, at.z, i):
+				step += Rules.RIDGE_WALL_COST
+			var next := Vector3i(m.x, m.y, (i + 3) % 6)
+			if cost[at] + step < cost.get(next, 1 << 30):
+				cost[next] = cost[at] + step
+				came[next] = at
+				if not next in todo:
+					todo.append(next)
 	var path: Array[Vector2i] = []
-	if not came.has(goal):
+	if end == null or end == start:
 		return path
-	var c := goal
-	while c != party_tile:
-		path.push_front(c)
+	var c: Vector3i = end
+	while c != start:
+		path.push_front(Vector2i(c.x, c.y))
 		c = came[c]
 	return path
 
@@ -757,6 +767,7 @@ func walk_to(goal: Vector2i) -> void:
 	await party_node.walk(path)
 	party_node.entered.disconnect(on_step)
 	party_tile = path[-1]
+	map.party_moved(party_tile)
 	if encounters.has(party_tile):
 		_encounter_tile = party_tile
 		hud.show_encounter(Rules.NAMES[land(party_tile)], "ask", [])
@@ -833,6 +844,7 @@ func start_fight(t: Vector2i) -> void:
 	map.visible = true
 	if not won:
 		party_tile = Rules.START_TILE
+	map.party_moved(party_tile)
 	party_node.place_at(party_tile)
 	party_node.visible = true
 	hud.visible = true

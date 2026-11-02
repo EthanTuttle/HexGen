@@ -38,7 +38,9 @@ var _tile := Vector2i.ZERO
 var _idle_in := 6.0
 var _footprints: Array[MeshInstance3D] = []
 var _entered := {}                      # tiles the hero has stepped onto this walk (a detour can cross back)
-var _blocked := {}                      # grid point -> on or too near a mountain (this walk's detours)
+var _rock_at := {}                       # grid point -> what its rock adds to a step's cost, till the map changes
+var _rock_version := -1
+var _ledge_tops := PackedVector2Array() # where this stretch meets a ledge
 const JOIN := 5                         # route samples (about 1.2 m) either side of a blocked stretch
 
 ## The hero's spot relative to the cluster's centre, and the cluster's spot on its tile (Minis.PARTY_OFFSET).
@@ -81,7 +83,6 @@ func centre() -> Vector3:
 ## Stands the cluster on a tile at once (start of play, back at camp after a wipe).
 func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 	_tile = tile
-	_blocked.clear()
 	_file_end = false
 	_tail = PackedVector2Array()
 	var spot := _stand_spot(tile, angle)
@@ -139,7 +140,6 @@ func walk(tiles: Array[Vector2i]) -> void:
 # --- The route ----------------------------------------------------------------------
 
 func _build_path(tiles: Array[Vector2i]) -> void:
-	_blocked.clear()
 	var hero: Vector3 = members[0].node.position
 	var pts := PackedVector2Array([Vector2(hero.x, -hero.z)])
 	var route := PackedVector2Array()       # what's finished: stretches rounded past the mountains, and ledges
@@ -247,7 +247,12 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 ## ground without a step.
 func _add_stretch(route: PackedVector2Array, heights: PackedFloat32Array, pts: PackedVector2Array, allowed: Dictionary,
 		start_top: Vector3, end_top: Vector3) -> void:
+	_ledge_tops.clear()
+	for top: Vector3 in [start_top, end_top]:
+		if top != Vector3.INF:
+			_ledge_tops.append(Vector2(top.x, top.y))
 	var done := _round_mountains(pts, allowed)
+	_ledge_tops.clear()
 	var from := heights.size()
 	route.append_array(done)
 	for _n in done.size():
@@ -433,16 +438,11 @@ func _set_path(pts: PackedVector2Array, heights: PackedFloat32Array) -> void:
 # curved route above bends through each hex's middle and the middle of each edge, which is just where the hills
 # put a lone tile's peak and the mountains between joined tiles. Wherever the curve runs onto one (or too near
 # it), that stretch is searched again on a fine grid within the route's own tiles, and the way round it is
-# straightened and smoothed. Where there's no way round, the curve is kept.
+# straightened and smoothed. Rock is dear to that search, not forbidden, so where there is no way round it crosses as little as it can.
 
 ## Whether a plan point is on a peak, mountain or ridge, or within the clearance of one.
 func blocked(p: Vector2) -> bool:
-	if map.near_lip(p) or _on_mountain(p):
-		return true
-	for k in 12:
-		if _on_mountain(p + Vector2.from_angle(k * TAU / 12.0) * Rules.MOUNTAIN_CLEARANCE):
-			return true
-	return false
+	return _grid_cost(Vector2i((p / Rules.ROUTE_GRID).round())) != 0.0
 
 
 func _on_mountain(p: Vector2) -> bool:
@@ -451,10 +451,35 @@ func _on_mountain(p: Vector2) -> bool:
 	return not hit.is_empty() and (hit.collider as Object).get_meta("mountain", false)
 
 
+## What a grid point adds to a step's cost: nothing where it's clear, a little within the clearance of rock, a lot on
+## it. Below zero past a cliff's lip, which is never walked on, except where a ledge comes out. Rock is felt once and
+## remembered until the map changes.
+func _grid_cost(c: Vector2i) -> float:
+	var p := Vector2(c) * Rules.ROUTE_GRID
+	if map.near_lip(p):
+		var by_ledge := false
+		for top in _ledge_tops:
+			by_ledge = by_ledge or p.distance_to(top) < Rules.CLIMB_TOP_RUN + 0.3
+		if not by_ledge:
+			return -1.0
+	if _rock_version != map.tiles_built:
+		_rock_version = map.tiles_built
+		_rock_at.clear()
+	if not _rock_at.has(c):
+		var at := 0.0
+		if _on_mountain(p):
+			at = Rules.ON_ROCK_COST
+		else:
+			for k in 8:
+				if _on_mountain(p + Vector2.from_angle(k * TAU / 8.0) * Rules.MOUNTAIN_CLEARANCE):
+					at = Rules.NEAR_ROCK_COST
+					break
+		_rock_at[c] = at
+	return _rock_at[c]
+
+
 func _grid_blocked(c: Vector2i) -> bool:
-	if not _blocked.has(c):
-		_blocked[c] = blocked(Vector2(c) * Rules.ROUTE_GRID)
-	return _blocked[c]
+	return _grid_cost(c) != 0.0
 
 
 func _round_mountains(pts: PackedVector2Array, allowed: Dictionary) -> PackedVector2Array:
@@ -483,34 +508,57 @@ func _round_mountains(pts: PackedVector2Array, allowed: Dictionary) -> PackedVec
 	var at := 0
 	for span in spans:
 		out.append_array(pts.slice(at, span[0] + 1))
-		var way := PackedVector2Array()
-		if not blocked(pts[span[0]]) and not blocked(pts[span[1]]):
-			way = _search(pts[span[0]], pts[span[1]], allowed)
-		# No way round (or the ends themselves are blocked): keep the curve.
+		var way := _search(pts[span[0]], pts[span[1]], allowed)
+		# Nothing found within the search's budget: keep the curve.
 		out.append_array(_smooth(way) if way.size() >= 2 else pts.slice(span[0] + 1, span[1] + 1))
 		at = span[1] + 1
 	out.append_array(pts.slice(at))
 	return out
 
 
-## The shortest way between two clear points on the grid, staying in the route's tiles and off the mountains.
+## The cheapest way between two points on the grid, staying in the route's tiles or the hills beside them. Rock isn't
+## forbidden, only dear, so the way keeps clear wherever it can and crosses as little as it must where it can't.
 func _search(from: Vector2, to: Vector2, allowed: Dictionary) -> PackedVector2Array:
+	var wider := allowed.duplicate()
+	for t: Vector2i in allowed:   # round by a neighbouring hills tile, on the same level, if that's the way past
+		if Variants.terrain_of(map.terrains.get(t)) == "hills":
+			for n in Hex.NEIGHBOURS:
+				var o: Vector2i = t + n
+				if Variants.terrain_of(map.terrains.get(o)) == "hills" and map.raised.has(o) == map.raised.has(t):
+					wider[o] = true
 	var g := Rules.ROUTE_GRID
 	var a := Vector2i((from / g).round())
 	var b := Vector2i((to / g).round())
-	var open := {a: (Vector2(b - a)).length()}
 	var cost := {a: 0.0}
 	var came := {}
+	var heap: Array = [[(Vector2(b - a)).length(), a]]   # a binary heap of [estimate, cell]
 	var steps := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
 		Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	var budget := 20000
-	while not open.is_empty() and budget > 0:
+	while not heap.is_empty() and budget > 0:
 		budget -= 1
-		var c: Vector2i = open.keys()[0]
-		for k in open:
-			if open[k] < open[c]:
-				c = k
-		open.erase(c)
+		var top: Array = heap[0]
+		var tail: Array = heap.pop_back()
+		if not heap.is_empty():
+			heap[0] = tail
+			var k := 0
+			while true:
+				var l := k * 2 + 1
+				var r := l + 1
+				var least := k
+				if l < heap.size() and heap[l][0] < heap[least][0]:
+					least = l
+				if r < heap.size() and heap[r][0] < heap[least][0]:
+					least = r
+				if least == k:
+					break
+				var swap: Array = heap[k]
+				heap[k] = heap[least]
+				heap[least] = swap
+				k = least
+		var c: Vector2i = top[1]
+		if top[0] > cost[c] + Vector2(b - c).length() + 1e-3:
+			continue   # an old entry: a cheaper way here has been found since
 		if c == b:
 			if not came.has(c):
 				return PackedVector2Array([from, to])
@@ -523,13 +571,20 @@ func _search(from: Vector2, to: Vector2, allowed: Dictionary) -> PackedVector2Ar
 			return way
 		for d: Vector2i in steps:
 			var n := c + d
-			if n != b and (not allowed.has(GroundCover.tile_at(Vector2(n) * g)) or _grid_blocked(n)):
+			var dear := 0.0 if n == b else _grid_cost(n)
+			if dear < 0.0 or (n != b and not wider.has(GroundCover.tile_at(Vector2(n) * g))):
 				continue
-			var nc: float = cost[c] + Vector2(d).length()
+			var nc: float = cost[c] + Vector2(d).length() * (1.0 + dear)
 			if nc < cost.get(n, INF):
 				cost[n] = nc
 				came[n] = c
-				open[n] = nc + Vector2(b - n).length()
+				heap.append([nc + Vector2(b - n).length(), n])
+				var k := heap.size() - 1
+				while k > 0 and heap[(k - 1) / 2][0] > heap[k][0]:
+					var swap: Array = heap[k]
+					heap[k] = heap[(k - 1) / 2]
+					heap[(k - 1) / 2] = swap
+					k = (k - 1) / 2
 	return PackedVector2Array()
 
 
