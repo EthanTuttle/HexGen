@@ -65,10 +65,11 @@ PALETTE = {
     "slate": "#5F6B78",
     "slate_dark": "#515C68",
     "banner_fort": "#A33A35",
-    "mud_ground": "#B8B3A6",
-    "mud_street": "#9E998C",
-    "mud_dark": "#8C8779",
-    "puddle": "#8EA6AE",
+    # the slums' ground: env HEX_SLUM picks an option when building a trial (SLUM_GROUND below); tan unless Ethan picks another
+    "mud_ground": "#CDB48A",
+    "mud_street": "#B59C73",
+    "mud_dark": "#A38A63",
+    "mud_damp": "#BFA67E",
     "weed_ground": "#A3AE78",
     "weed": "#6F8A45",
     "shack_a": "#9C7B55",
@@ -273,6 +274,10 @@ PALETTE = {
 # lava (volcanic cracks, craters, the den) pulses and glows. snow_ground and ash_ground are hills ground, faded like
 # hill_grass.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
+SLUM_GROUND = {"tan": ("#CDB48A", "#B59C73", "#A38A63", "#BFA67E"),
+               "clay": ("#D2A566", "#BE9458", "#A9804A", "#C69C60"),
+               "dun": ("#B9B083", "#A0976A", "#8D8559", "#ABA277")}
+PALETTE.update(zip(("mud_ground", "mud_street", "mud_dark", "mud_damp"), SLUM_GROUND[os.environ.get("HEX_SLUM", "tan")]))
 OWN_MATERIAL = {"lantern_red", "water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 

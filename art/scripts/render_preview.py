@@ -808,6 +808,40 @@ if __name__ == "__main__":
                     look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
                     render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_top_raised")
         sys.exit(0)
+    if "keep-alone" in flags:
+        # The Keep on its own, on a bare tile, from several angles: its proportions without the town round it.
+        prefix = "trial_" if "trial" in flags else ""
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        col = hk.new_collection("map")
+        base = place(templates, "base_village", col, Vector((0, 0, 0)))
+        place(templates, "keep_centre", col, Vector((0, 0, 0)))
+        stage(Vector((0, 0, 1.0)), 14, 50)
+        cam = bpy.context.scene.camera
+        for stem, ang, elev, dist in (("front", 0, 25, 13), ("corner", 45, 30, 13), ("side", 90, 25, 13), ("back", 180, 30, 13),
+                                      ("map", -60, 50, 15), ("low", 20, 8, 11)):
+            a_, e_ = math.radians(ang), math.radians(elev)
+            cam.location = Vector((dist * math.cos(e_) * math.cos(a_), dist * math.cos(e_) * math.sin(a_), 1.2 + dist * math.sin(e_)))
+            look_at(cam, cam.location, Vector((0, 0, 1.2)))
+            render(f"{prefix}village_keep_alone_{stem}")
+        sys.exit(0)
+    if "slum-option" in flags:
+        # One ground option for the slums (build with env HEX_SLUM): the region at map zoom and a low look along a street.
+        opt = flags["slum-option"]
+        prefix = "trial_" if "trial" in flags else ""
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        build_map(templates, tiles=TOWN_T2["blackmarket"])
+        draw_effects(bpy.data.collections["map"], templates, thin=True)
+        stage(Vector((0.5, -0.8, 0)), 54, 50)
+        render(f"{prefix}village_slums_ground_{opt}_map")
+        cam = bpy.context.scene.camera
+        el = math.radians(35)
+        at = hk.tile_position(0, 0)
+        cam.location = at + Vector((0, -11 * math.cos(el), 1.0 + 11 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, 0)
+        render(f"{prefix}village_slums_ground_{opt}_closeup")
+        sys.exit(0)
     if "village" in flags:
         # Village streets: a tier 0 group with farms beside it, with the paths drawn; market town flowing into the Trading
         # House, with the paths drawn; low close-ups of a street, a gate and the landmark.

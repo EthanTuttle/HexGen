@@ -129,6 +129,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v50:** village round 4: the Keep rebuilt to castle proportions (curtain walls two-thirds of tower height, an arched gatehouse); `--keep-alone` renders it on its own. Slums ground is being tried: tan in this kit, with `HEX_SLUM=clay` or `dun` building the others, and damp patches instead of puddles. `check_town.py` now also samples along edges at ground level; town landmarks' rings fixed.
 - **tiles_v49:** village round 3: fortified town has no banner poles inside, only banners on outer walls and flags on the Keep, which is taller and lighter; smithies, armouries, wagons, barrels, hay and stables thicken toward it (`centre_mid`). Slums on lighter grey mud with puddles, weeds, vegetable plots and scraggly trees. Full hand-off: `handoff/village_kit.md`.
 - **tiles_v48:** village round 2: `fortified_town` + `keep` (stone walls, gatehouses, `border_join_l`/`_r` of its own), `slums` + `blackmarket`, `scholars_town` + `college`. The Trading House loses the two stalls in front of its door. Previews: `preview/village_*`.
 - **tiles_v46:** village round 1. Every town tile has a small square at its middle and a street wedge only where the edge has a street (`scripts/village_streets.py`); market town with the Trading House. `scripts/test_streets.py` and `scripts/check_town.py` check the rule and the pieces. Hand-off: `handoff/village_kit.md`.

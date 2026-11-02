@@ -406,10 +406,16 @@ def strip(p, half, x0=STREET_X0, x1=X1, mat="street", z=0.02):
     p.flat([Vector((x0, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((x0, half, 0))], z, mat)
 
 
+def stone_shape(rng, look):
+    """A paving stone's outline; with look's blotch, an irregular patch (the slums' damp ground)."""
+    corners = hk.hex_corners(rng.uniform(0.14, 0.2) * look.get("stone_size", 1), pointy=True)
+    return [c * rng.uniform(0.7, 1.25) for c in corners] if look.get("blotch") else corners
+
+
 def street_stones(p, rng, half, count=5, look=TOWN):
     """Darker stones on the street (a kit can have fewer, bigger ones: the slums' puddles)."""
     for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.1) and abs(q.y) < half - 0.2, look.get("stones", count), 0.42, hk.WEDGE_BOUNDS):
-        stone = hk.hex_corners(rng.uniform(0.14, 0.2) * look.get("stone_size", 1), pointy=True)
+        stone = stone_shape(rng, look)
         p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], 0.03, look["stone"])
 
 
@@ -431,7 +437,7 @@ def town_square(p, rng, home, slots, extra=None, look=TOWN):
     anything extra(k, slot) handles. The hub joins the square to every street on the tile; the middle stays clear."""
     p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(SQUARE_R, pointy=True)][::-1], 0.025, look["street"])
     for at in hk.scatter(rng, lambda q: q.length < SQUARE_R * 0.8 and q.length > 0.5, look.get("stones", 6), 0.42, hk.CENTRE_BOUNDS):
-        stone = hk.hex_corners(rng.uniform(0.14, 0.2) * look.get("stone_size", 1), pointy=True)
+        stone = stone_shape(rng, look)
         p.flat([at + Vector((c.x, c.y, 0)) for c in stone][::-1], 0.033, look["stone"])
     for k, slot in enumerate(slots):
         at, a = corner_spot(k)

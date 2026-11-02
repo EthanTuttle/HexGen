@@ -15,7 +15,7 @@ from mathutils import Vector
 ART = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 MAIN, SIDE, X1 = 0.6, 0.45, 3.897
 STAND, HEAD = 0.05, 1.0  # what counts as standing in the way: above the paving, below a mini's head
-CLEAR = 0.15  # how far a route's line stays from anything standing
+CLEAR = 0.1  # how far a route's line stays from anything standing (its centre line: a mini's width is the engine's to handle)
 
 
 def standing(obj, z_rot=0.0):
@@ -28,6 +28,11 @@ def standing(obj, z_rot=0.0):
         for v in vs:
             if STAND <= v.z <= HEAD or min(u.z for u in vs) < STAND:
                 out.append(Vector((v.x * c - v.y * s_, v.x * s_ + v.y * c)))
+        if len(vs) > 2 and min(u.z for u in vs) < STAND:  # and between the corners along the ground, so a round tower's sides count
+            for u, w in zip(vs, vs[1:] + vs[:1]):
+                if u.z < STAND and w.z < STAND:
+                    m = (u + w) / 2
+                    out.append(Vector((m.x * c - m.y * s_, m.x * s_ + m.y * c)))
     return out
 
 

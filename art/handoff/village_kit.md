@@ -1,4 +1,4 @@
-# Village kit hand-off (tiles_v49)
+# Village kit hand-off (tiles_v49; tiles_v50 is being tried: see the end)
 
 This kit holds tier 0 villages with the street layout, market towns with the Trading House (tier 1), fortified towns with the Keep and slums with the Black Market (tier 2), and scholars' towns with the College (class variant). Everything below can be followed from the repo alone.
 
@@ -124,3 +124,7 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 - **Slum roofs:** the grey-brown tin is the closest colour to the lighter ground. Walls and the brown roofs carry the contrast.
 - **Puddles:** flat blue shapes on the street, a few on each piece. One can sit partly past a street's edge.
 - **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_ground`, `puddle`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.
+
+## tiles_v50 (being tried, not final)
+
+The Keep is rebuilt (1,568 triangles) and the slums' ground colour is waiting on Ethan's pick. This doc gets its full update after that.
