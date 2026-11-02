@@ -37,7 +37,7 @@ Changed Nov 2, 2026: a fight is an animated zoom into the hex, but it really hap
 
 - A map is radius 4 (61 flat-top cells, 1.0 across the flats) unless Ethan changes that.
 - Build several distinct layouts per forest variant, each with a clear tactical idea (a choke point, a clearing, cover lanes), reusing the cell and prop kit. Say what the idea of each is.
-- Every cell must read clearly from the combat camera: nothing should hide minis or cells, and blocked cells must look blocked. This matters more than richness.
+- The combat camera rotates, so tall obstacles such as map-height trees are fine, as long as every cell can be seen from at least one angle of the rotation. Check this for each map (a test would be good). Blocked cells must look blocked.
 - The board sits on the combat backdrop, with its soil sides. The zoom into the hex is an engine animation.
 
 Previews: each map from the combat camera with minis on it, plus the kit laid out.
