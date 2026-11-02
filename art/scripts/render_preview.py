@@ -103,7 +103,7 @@ WINDMILL_MAP = {**{k: v for k, v in FLOW_RING.items()},
                 **{t: ("greatwindmill" if t == LANDMARK_AT else "windmill_country") for t in LANDMARK_REGION}}
 
 
-def draw_effects(col, templates):
+def draw_effects(col, templates, thin=False):
     """Stand-ins for the engine's effects at each placed piece's effect points: a fire (orange cone), smoke (a
     grey column) or circling crows (black specks), so a preview shows where they go."""
     bpy.context.view_layer.update()
@@ -122,6 +122,10 @@ def draw_effects(col, templates):
             elif e["kind"] == "fire":
                 p.cone(at, 0.14, 0.32, "ember", segments=5)
             elif e["kind"] == "smoke":
+                if thin:  # a town's many chimneys: a thin wisp each
+                    for k in range(3):
+                        p.blob(at + Vector((0.04 * k, 0.03 * k, 0)), 0.07 + 0.015 * k, "rock_light", z=0.1 + 0.2 * k)
+                    continue
                 for k in range(4):
                     p.blob(at + Vector((0.08 * k, 0.05 * k, 0)), 0.16 + 0.05 * k, "rock_light", z=0.4 + 0.42 * k)
             else:
@@ -196,6 +200,9 @@ MARKET_MAP = {**FLOW_RING, **{t: ("tradinghouse" if t == LANDMARK_AT else "marke
 
 TOWN_T2 = {lm: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
            for lm, v in (("keep", "fortified_town"), ("blackmarket", "slums"), ("college", "scholars_town"))}
+# A bigger fortified town, to show its works thinning away from the Keep.
+FORT_12_MAP = {**{t: FLOW_RING.get(t, "plains") for r_ in DENSITY_REGION for t in ((r_[0] + dq, r_[1] + dr) for dq, dr in hk.NEIGHBOURS)},
+               **{t: ("keep" if t == (0, 1) else "fortified_town") for t in DENSITY_REGION}}
 # A fortified town's walls meeting a plain village and farms: gatehouses where streets leave the region.
 FORT_JOIN_MAP = {**FLOW_RING, (0, 0): "fortified_town", (1, 0): "fortified_town", (0, 1): "fortified_town", (-1, 1): "village",
                  (-1, 0): "village", (0, -1): "farmland", (1, -1): "keep", (1, 1): "farmland"}
@@ -821,11 +828,13 @@ if __name__ == "__main__":
                                              ("village_fortified", TOWN_T2["keep"], Vector((0.5, -0.8, 0)), 54),
                                              ("village_slums", TOWN_T2["blackmarket"], Vector((0.5, -0.8, 0)), 54),
                                              ("village_scholars", TOWN_T2["college"], Vector((0.5, -0.8, 0)), 54),
-                                             ("village_fortified_join", FORT_JOIN_MAP, Vector((0.5, -0.8, 0)), 58)):
+                                             ("village_fortified_join", FORT_JOIN_MAP, Vector((0.5, -0.8, 0)), 58),
+                                             ("village_fortified_12", FORT_12_MAP, DENSITY_VIEW, 74)):
             for paths in (True, False):
                 hk.empty_scene()
                 templates = load_templates(tiles)
                 build_map(templates, tiles=tiles_map)
+                draw_effects(bpy.data.collections["map"], templates, thin=True)
                 if paths:
                     draw_paths(bpy.data.collections["map"], templates)
                 stage(focus, dist, 50)
@@ -840,8 +849,8 @@ if __name__ == "__main__":
                 look(hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3, a + math.pi, 9)
                 shot("village_gate_closeup")
             else:
-                lm = tiles_map.get(LANDMARK_AT)
-                if lm in vr.LANDMARKS:
+                lm = tiles_map.get(LANDMARK_AT)  # (only the 7-tile maps have it there)
+                if lm in vr.LANDMARKS and stem in ("village_market", "village_fortified", "village_slums", "village_scholars"):
                     d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (vr.LANDMARKS[lm], lm)), LANDMARK_AT)
                     look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
                     shot(f"village_{lm}_closeup")
