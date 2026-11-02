@@ -214,7 +214,7 @@ def turf_bothy(p, rng, at, spin):
 
 RAISE = float(os.environ.get("HEX_RAISE", 5.0))
 CLIFF_KINDS = ("cliff_edge", "cliff_edge_b", "cliff_corner", "cliff_path_low", "cliff_path_mid", "cliff_path_top", "edge_rim", "edge_climb",
-               "edge_climb_top")
+               "edge_climb_low", "edge_climb_top")
 CLIFF_LOOK = {  # rock shades; what dusts the top; streaks down the face; the ledge's surface
     "highlands": dict(rock=("rock", "rock_dark"), top=None, streak="highland_grass", ledge="road", gullies=False),
     "snowy_peaks": dict(rock=("ice_rock", "ice_rock_dark"), top="snow_light", streak="snow_light", ledge="print", gullies=False),
@@ -228,7 +228,8 @@ LEDGE_X = X1 - LEDGE  # the ledge's back wall, and where the ground stops above 
 RIM_INSET = 0.9  # how far in from the edge line the lip of a plain cliff is at its middle; at the corners, 0
 RIM_COLS = 10
 RIM_ROWS = 9  # the rows of a hills wedge, so the rim's sides meet the wedge beside it exactly
-LEDGE_END = 8  # the column of edge_climb_top's lip where the ledge comes out on the ground
+LEDGE_END = 9  # the column of edge_climb_top's lip where the ledge comes out on the ground
+FOOT_COL = 4  # the column where the ledge's front starts on the edge line, past the plain cliff; its back starts one further on
 
 
 def ground_z(x, v):
@@ -266,33 +267,39 @@ def wall_faces(grid):
     return faces
 
 
-def cliff_edge(p, rng, look):
+def cliff_edge(p, rng, look, cols=RIM_COLS):
     """A rock face wholly inside the edge line: its foot on the line, under the ground, leaning back to the rim's lip, its
-    two ends straight up the tile's corners. Broken up by inward gullies, never outward, and tall rocks."""
+    two ends straight up the tile's corners. Broken up by inward gullies, never outward, and tall rocks. With fewer cols,
+    only that part of the edge, from its start, for the plain part of a ledge's first piece."""
     rows = 5
     grid = []
     for r in range(rows + 1):
         t = r / rows
         row = []
-        for c in range(RIM_COLS + 1):
+        for c in range(cols + 1):
             v = col_v(c)
             lip = rim_x(v)
             q = Vector((X1, v * X1 * TAN30, CLIFF_FOOT)).lerp(Vector((lip, v * lip * TAN30, RAISE + ground_z(lip, v))), t)
-            if 0 < r < rows and abs(v) < 1:
+            if 0 < r < rows and abs(v) < 1 and c < cols:
                 env = 1 - abs(v) ** 6
                 q.x -= env * (rng.uniform(0.05, 0.6) + (0.3 if look["gullies"] and c % 2 else 0.0))
                 q.y += env * rng.uniform(-0.12, 0.12)
                 q.z += env * rng.uniform(-0.3, 0.3)
             row.append(p.bm.verts.new(q))
         grid.append(row)
-    paint_wall(p, rng, wall_faces(grid), rows, look, {c: rng.randint(1, rows - 1) for c in rng.sample(range(RIM_COLS), 2)})
+    paint_wall(p, rng, wall_faces(grid), rows, look, {c: rng.randint(1, rows - 1) for c in rng.sample(range(cols), 2 if cols == RIM_COLS else 1)})
+    ymax = col_v(cols) * HALF_EDGE - 0.45
     for y in (-1.75 + rng.uniform(-0.1, 0.25), rng.uniform(-0.75, -0.2), rng.uniform(0.2, 0.75), 1.75 - rng.uniform(-0.1, 0.25)):
+        if y > ymax:
+            continue
         # tall rocks inside the line, some reaching above the lip, so the skyline is broken
         tip = Vector((X1 - 0.55, y + rng.uniform(-0.15, 0.15), RAISE * rng.uniform(0.75, 1.0) + rng.uniform(0.2, 1.4)))
         spike(p, Vector((X1 - 0.34, y, CLIFF_FOOT)), tip, 0.34, look["rock"][rng.randrange(2)], segments=5)
         if look["top"]:
             spike(p, Vector((X1 - 0.34, y, CLIFF_FOOT)).lerp(tip, 0.8), tip + Vector((0, 0, 0.02)), 0.09, look["top"], segments=5)
     for y in (rng.uniform(-1.5, -0.3), rng.uniform(0.3, 1.5)):  # broken stone on the lip
+        if y > ymax:
+            continue
         x = rim_x(y / (X1 * TAN30))
         lump(p, Vector((x + 0.02, y, RAISE + ground_z(x, y / (x * TAN30)))), rng.uniform(0.2, 0.32), look["top"] or look["rock"][0], squash=0.8)
 
@@ -307,57 +314,79 @@ def cliff_corner(p, rng, look):
         spike(p, base.lerp(top, 0.75) + Vector((0, 0, CLIFF_FOOT * 0.25)), top + Vector((0, 0, 0.02)), 0.13, look["top"], segments=5)
 
 
+def foot_y():
+    """How far along the first edge the party steps onto the ledge, on the edge line: about its middle."""
+    return HALF_EDGE * (col_v(FOOT_COL) * 0.3 + col_v(FOOT_COL + 1) * 0.7)
+
+
 def climb_heights():
     """The ledge's height at the ends of its three pieces, and its height per unit along. It goes round the tile on a
-    line LEDGE / 2 in from the edge."""
+    line LEDGE / 2 in from the edge, from the foot near the middle of the first edge."""
     xm = X1 - LEDGE / 2
     side = 2 * xm * TAN30
     v_end = col_v(LEDGE_END)
     y_end = v_end * LEDGE_X * TAN30
     top = RAISE + ground_z(LEDGE_X, v_end)
-    length = 2 * side + side / 2 + y_end
+    low = -foot_y() + side / 2
+    length = low + side + side / 2 + y_end
     per = top / length
-    return (0.0, side * per, 2 * side * per, top), per, y_end
+    return (0.0, low * per, (low + side) * per, top), per, y_end
 
 
 def cliff_path(p, rng, look, which):
     """One of three pieces of a ledge cut into the cliff, a mini wide, climbing round a tile's corners inside its edge line,
-    with its back wall going up to the ground and its front down to the foot. Path data has real heights."""
+    with its back wall going up to the ground and its front down to the foot. The first piece starts with plain cliff; the
+    ledge starts after it, wide open to the neighbour straight out from the edge. Path data has real heights."""
     zs, per, y_end = climb_heights()
     k = ("low", "mid", "top").index(which)
     z0, z1 = zs[k], zs[k + 1]
+    first = FOOT_COL if which == "low" else 0
     last = LEDGE_END if which == "top" else RIM_COLS
     hi, ho = LEDGE_X * TAN30, HALF_EDGE
     top_y = y_end if which == "top" else hi
 
+    def height(c):
+        return z0 + (z1 - z0) * (c - first) / (last - first)
+
     def inner(c):
         v = col_v(c)
-        return Vector((LEDGE_X, v * LEDGE_X * TAN30, z0 + (z1 - z0) * c / last))
+        return Vector((LEDGE_X, v * LEDGE_X * TAN30, height(c)))
 
     def outer(c):
         y = -ho + ((y_end if which == "top" else ho) + ho) * c / last
-        return Vector((X1, y, z0 + (z1 - z0) * c / last))
+        if which == "low" and c == first:  # on the plain cliff's last column, which leans back from the edge line
+            v = col_v(c)
+            base = Vector((X1, v * X1 * TAN30, CLIFF_FOOT))
+            lip = Vector((rim_x(v), v * rim_x(v) * TAN30, RAISE + ground_z(rim_x(v), v)))
+            return base.lerp(lip, (z0 - CLIFF_FOOT) / (lip.z - CLIFF_FOOT))
+        return Vector((X1, y, height(c)))
 
     # The ledge, then the wall behind it; rocks only go back into the cliff, so the ledge keeps its width.
-    for c in range(last):
+    back = first + 1 if which == "low" else first
+    if which == "low":
+        cliff_edge(p, rng, look, FOOT_COL)
+        f = p.bm.faces.new([p.bm.verts.new(q) for q in (outer(first), outer(back), inner(back))])
+        f.material_index = p._slot(look["ledge"])
+        p.surface.add(f)
+    for c in range(back, last):
         f = p.bm.faces.new([p.bm.verts.new(q) for q in (inner(c), outer(c), outer(c + 1), inner(c + 1))])
         f.material_index = p._slot(look["ledge"])
         p.surface.add(f)
     grid = []
     for r in range(4):
         row = []
-        for c in range(last + 1):
+        for c in range(back, last + 1):
             q = inner(c)
             zt = RAISE + ground_z(LEDGE_X, col_v(c))
             q.z += (zt - q.z) * r / 3
-            if r in (1, 2) and 0 < c < last:
+            if r in (1, 2) and back < c < last:
                 q.x -= rng.uniform(0.04, 0.3)
                 q.z += rng.uniform(-0.12, 0.12)
             row.append(p.bm.verts.new(q))
         grid.append(row)
-    paint_wall(p, rng, wall_faces(grid), 3, look, {rng.randrange(last): 2})
+    paint_wall(p, rng, wall_faces(grid), 3, look, {rng.randrange(last - back): 2})
     # The front, from the ledge's edge down to the foot, and on past the ledge's end on the last piece.
-    cols = [outer(c) for c in range(last + 1)]
+    cols = [outer(c) for c in range(first, last + 1)]
     if which == "top":
         cols += [Vector((X1, y_end + (ho - y_end) * m / 2, zs[3] + (RAISE - zs[3]) * m / 2)) for m in (1, 2)]
     grid = []
@@ -365,8 +394,10 @@ def cliff_path(p, rng, look, which):
         row = []
         for c, q in enumerate(cols):
             pt = Vector((q.x, q.y, CLIFF_FOOT + (q.z - CLIFF_FOOT) * share))
+            if which == "low" and c == 0:  # stays on that column, down to the edge line
+                pt = Vector((X1, q.y * X1 / q.x, CLIFF_FOOT)).lerp(q, share)
             if r in (1, 2) and 0 < c < len(cols) - 1:  # back into the rock, under the ledge
-                pt.x -= rng.uniform(0.08, 0.5)
+                pt.x -= rng.uniform(0.08, 0.5) * min(1.0, q.z + 0.3)
                 pt.z += rng.uniform(-0.2, 0.2) * min(1.0, q.z)
             row.append(p.bm.verts.new(pt))
         grid.append(row)
@@ -374,23 +405,28 @@ def cliff_path(p, rng, look, which):
     xm = X1 - LEDGE / 2
     mid = xm * TAN30
     if which == "low":
-        y = -HALF_EDGE + 0.35  # where the party steps up from the neighbour's side, on the edge line
-        p.paths.append([Vector((X1, y, z0 + (z1 - z0) * (y + ho) / (2 * ho))), Vector((xm, -mid + 0.3, 0.3 * per)), Vector((xm, mid, z1))])
-        # The start's end wall, from the edge line back to the ledge's back wall, up to the ground.
-        top_o, top_i = RAISE + 0.01, RAISE + ground_z(LEDGE_X, 1)
+        # The party steps up on the edge line, from straight out in front; the path then turns along the ledge.
+        foot = outer(first).lerp(outer(back), 0.7)  # foot_y()
+        foot.x = X1
+        p.paths.append([foot, Vector((xm, foot.y + 0.5, foot.z + 0.5 * per)), Vector((xm, mid, z1))])
+        # The ledge's end wall, from the plain cliff's last column back to the ledge's back wall, up to the ground.
+        v = col_v(first)
+        lip = Vector((rim_x(v), v * rim_x(v) * TAN30, RAISE + ground_z(rim_x(v), v)))
+        wall_top = Vector((LEDGE_X, col_v(back) * LEDGE_X * TAN30, RAISE + ground_z(LEDGE_X, col_v(back))))
         side = []
         for r in range(4):
             share = r / 3
-            jag = 0.14 if 0 < r < 3 else 0.0
-            side.append([p.bm.verts.new((X1, -ho, CLIFF_FOOT + (top_o - CLIFF_FOOT) * share)),
-                         p.bm.verts.new((X1 - LEDGE / 2 - rng.uniform(0, jag), -(ho + hi) / 2 + rng.uniform(0, jag), CLIFF_FOOT + ((top_o + top_i) / 2 - CLIFF_FOOT) * share)),
-                         p.bm.verts.new((LEDGE_X, -hi, CLIFF_FOOT + (top_i - CLIFF_FOOT) * share))])
+            a = outer(first).lerp(lip, share)
+            b = inner(back).lerp(wall_top, share)
+            m = a.lerp(b, 0.5)
+            if 0 < r < 3:  # back into the rock, away from the ledge
+                m += Vector((rng.uniform(-0.12, 0), rng.uniform(-0.25, 0), 0))
+            side.append([p.bm.verts.new(a), p.bm.verts.new(m), p.bm.verts.new(b)])
         paint_wall(p, rng, wall_faces(side), 3, look, {})
-        spike(p, Vector((X1 - 0.5, -ho + 0.05, CLIFF_FOOT)), Vector((X1 - 0.5, -ho + 0.1, RAISE + rng.uniform(1.2, 2.0))), 0.42, look["rock"][0], segments=5)
     elif which == "mid":
         p.paths.append([Vector((xm, -mid, z0)), Vector((xm, mid, z1))])
     else:
-        p.paths.append([Vector((xm, -mid, z0)), Vector((xm, y_end, z1)), Vector((LEDGE_X, y_end, z1))])
+        p.paths.append([Vector((xm, -mid, z0)), Vector((xm, y_end, z1)), Vector((LEDGE_X, y_end, z1))])  # edge_climb_top goes on from here
         # Past the ledge's end, the ground closes over it, back down to the corner.
         ring = [p.bm.verts.new((X1, y_end, zs[3])), p.bm.verts.new((X1, ho, RAISE + 0.01))]
         for c in range(RIM_COLS, LEDGE_END - 1, -1):
@@ -441,7 +477,7 @@ def rim_props(p, rng, variant):
 
 def edge_climb(p, rng, look, ground, variant, top):
     """The wedge above a ledge: its outer ground stops at the ledge's back wall."""
-    clipped_ground(p, ground, look, lambda v: LEDGE_X, round(RIM_ROWS * (LEDGE_X - X0) / (X1 - X0)))
+    clipped_ground(p, ground, look, lambda v: LEDGE_X, RIM_ROWS)
     if top:
         v = col_v(LEDGE_END)
         p.paths.append([Vector((LEDGE_X, v * LEDGE_X * TAN30, ground_z(LEDGE_X, v))), Vector((X0, 0, bt.H0))])
@@ -463,6 +499,9 @@ def cliff_piece(p, rng, kind, variant):
     elif kind == "edge_rim":
         clipped_ground(p, ground, look, rim_x, RIM_ROWS)
         rim_props(p, rng, variant)
+    elif kind == "edge_climb_low":  # above the ledge's first piece: the plain cliff's rim up to the foot, then the ledge's back wall
+        split = col_v(FOOT_COL) + 1e-6
+        clipped_ground(p, ground, look, lambda v: rim_x(v) if v <= split else LEDGE_X, RIM_ROWS)
     else:
         edge_climb(p, rng, look, ground, variant, kind == "edge_climb_top")
 

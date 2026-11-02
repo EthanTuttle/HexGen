@@ -419,7 +419,7 @@ def raise_region(templates, col, tiles_map, regions, progress=1.0):
                 place(templates, f"{variant}_{'steps_centre' if tiles_map[t] == variant else 'steps_rise'}", col, centres[t],
                       math.radians(60 * ((i + 1) % 6)))
         for t, i in cliffs.outer_edges(region, raised):
-            swap(t, i, f"{variant}_edge_{ {'low': 'climb', 'mid': 'climb', 'top': 'climb_top'}[ledge[(t, i)]] if (t, i) in ledge else 'rim'}")
+            swap(t, i, f"{variant}_edge_{ {'low': 'climb_low', 'mid': 'climb', 'top': 'climb_top'}[ledge[(t, i)]] if (t, i) in ledge else 'rim'}")
     for obj in list(col.objects):
         if obj.name != "ground_cover" and tile_of(obj) in raised:
             if obj.get("piece", "").startswith("base_"):
@@ -456,7 +456,7 @@ def raise_region(templates, col, tiles_map, regions, progress=1.0):
         skip = set()
         for t, i in (c for c in all_climbs if c[0] in region):
             ledge[(t, (i - 1) % 6)], ledge[(t, i)], ledge[(t, (i + 1) % 6)] = "low", "mid", "top"
-            skip |= {(t, (i - 1) % 6), (t, i)}
+            skip |= {(t, (i - 1) % 6), (t, i), (t, (i + 1) % 6)}
         for t, i in cliffs.outer_edges(region, raised):
             kind = f"cliff_path_{ledge[(t, i)]}" if (t, i) in ledge else "cliff_edge_b" if gc.hash01(t[0] * 6 + i, t[1], 8) < 0.5 else "cliff_edge"
             place(templates, f"{variant}_{kind}", col, centres[t] + Vector((0, 0, low)), math.radians(60 * i))
@@ -756,6 +756,20 @@ if __name__ == "__main__":
                     draw_paths(col, templates)
                     look_at(cam, mid + n * 13 + Vector((0, 0, vr.RAISE * 0.5 + 6)), mid + Vector((0, 0, vr.RAISE * 0.45)))
                     render(f"{prefix}hills_{short}_climb_raised")
+                # Every ledge's foot, low, from the land in front of it with the wall running away, and its top from the plateau.
+                cam.data.lens = 24
+                if size != "7":
+                    draw_paths(col, templates)
+                for k, (t, i) in enumerate(climbs):
+                    centre = hk.tile_position(*t)
+                    out, along = hk.edge_normal(i - 1), hk.edge_normal(i - 1 + 1.5)
+                    foot = centre + out * vr.X1 + along * vr.foot_y()
+                    look_at(cam, foot + out * 5.5 - along * 2.8 + Vector((0, 0, 1.3)), foot + along * 1.2 + Vector((0, 0, 1.3)))
+                    render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_foot_raised")
+                    out, along = hk.edge_normal(i + 1), hk.edge_normal(i + 1 + 1.5)
+                    exit_ = centre + out * vr.LEDGE_X + along * vr.climb_heights()[2] + Vector((0, 0, vr.RAISE))
+                    look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
+                    render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_top_raised")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no
