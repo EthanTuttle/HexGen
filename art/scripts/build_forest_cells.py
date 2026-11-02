@@ -1,0 +1,254 @@
+"""Builds the forest combat kit and saves it as art/combat/combat_cells_vN.blend, with the first draft's cells kept beside it.
+
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/build_forest_cells.py
+
+The combat camera comes first. Three kinds of cell, told apart by their colour as well as what stands on them:
+  cell_<variant>_ground_a / _b / _c   open ground in three tints, flat
+  cell_<variant>_litter               open ground with a flat mark, lower than a mini's base
+  cell_<variant>_cover                darker ground; trees stand on its corners
+  cell_<variant>_block_a / _b         stony ground filled by a mass under a mini's height
+Pieces placed on top of cells:
+  tree_<variant>_a / _b / _c          a slim tree, its pivot on a cell corner
+  dark_wood_web                       an orb web between two trees one cell apart, its pivot midway between them
+  fey_wood_ring                       a fairy ring round seven cells, its pivot on the middle cell
+  board_under                         soil plate the size of a map tile under the 61 cells; it shows in the gaps
+
+A mini's base reaches 0.52 from a cell's centre and a corner is 0.577 away, so a thin trunk on a corner never cuts a base.
+Trees go on every second corner of a cover cell, the same set on every cell, so neighbouring cover cells share trees.
+Trees are about half the height of the map tile's trees, so they don't hide the cell behind them.
+"""
+import math
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bmesh  # noqa: E402
+import bpy  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
+
+import build_combat_cells as first_draft  # noqa: E402
+import build_tiles as tiles  # noqa: E402
+import hexkit as hk  # noqa: E402
+import variants as vr  # noqa: E402
+
+GAP = first_draft.GAP
+VARIANTS = ["deep_forest", "fey_wood", "dark_wood", "heartwood"]
+CORNERS = hk.hex_corners(hk.CELL_RADIUS, pointy=False)
+TREE_CORNERS = (0, 2, 4)  # every second corner; the rest of the board's corners stay clear
+FLOWER = [(0, 0), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
+
+
+def mix(a, b, share):
+    ca, cb = [[int(h[i:i + 2], 16) for i in (1, 3, 5)] for h in (a, b)]
+    return "#" + "".join(f"{round(x + (y - x) * share):02X}" for x, y in zip(ca, cb))
+
+
+for v in VARIANTS:
+    g = hk.PALETTE[v]
+    hk.PALETTE.update({f"cell_{v}_a": g, f"cell_{v}_b": mix(g, "#FFFFFF", 0.05), f"cell_{v}_c": mix(g, "#000000", 0.05),
+                       f"cell_{v}_cover": mix(g, "#10201A", 0.38), f"cell_{v}_block": mix(g, "#8F897F", 0.5),
+                       f"cell_{v}_mark": mix(g, "#10201A", 0.2)})
+hk.PALETTE.update({"cell_heartwood_mark": hk.PALETTE["moss"], "rock_shade": "#76716A", "bone_old": "#C4BEAD"})
+
+
+def cell(name, colour):
+    p = hk.Piece(name)
+    outline = hk.hex_corners(hk.CELL_RADIUS * GAP, pointy=False)[::-1]
+    p.prism(outline, -0.08, 0.0, colour, side_mat="soil_light")
+    return p
+
+
+def patch(p, rng, at, r, mat):
+    """A flat, uneven mark on the ground."""
+    ring = [at + Vector((math.cos(k * 2 * math.pi / 6), math.sin(k * 2 * math.pi / 6), 0)) * r * rng.uniform(0.7, 1.1) for k in range(6)]
+    p.flat(ring, 0.006, mat)
+
+
+# --- Blocked cells: a mass filling the cell, under a mini's height, so what stands behind it still shows ---------------
+
+def rock(p, rng, at, r, mat, z, squash=1.0):
+    """A boulder: a coarse lump pushed out of round, so it doesn't look like a die."""
+    m = Matrix.Translation(at + Vector((0, 0, z))) @ Matrix.Diagonal((1, 1, squash, 1))
+    verts = bmesh.ops.create_icosphere(p.bm, subdivisions=0, radius=r, matrix=m)["verts"]
+    for v in verts:
+        v.co += Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1))) * r * 0.16
+    p._paint(verts, mat)
+
+
+def boulders(p, rng, main="rock", side="rock_dark", top=None, tall=0.34):
+    a0 = rng.uniform(0, 6.3)
+    rock(p, rng, Vector((0.03, 0, 0)), 0.4, main, tall, 0.95)
+    if top:
+        vr.lump(p, Vector((0.03, 0, 0)), 0.3, top, z=tall + 0.27, squash=0.5)
+    for k in range(3):
+        a = a0 + k * 2.1
+        rock(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.27, rng.uniform(0.2, 0.26), side, 0.12, 0.85)
+
+
+def thicket(p, rng):
+    """Dark wood's bramble filling the whole cell, with thorns standing out of it."""
+    vr.lump(p, Vector((0, 0, 0)), 0.42, "bramble_leaf", z=0.22, squash=0.75)
+    for k in range(5):
+        a = k * 1.26 + rng.uniform(-0.2, 0.2)
+        vr.lump(p, Vector((math.cos(a), math.sin(a), 0)) * 0.26, 0.2, "bramble_leaf", z=0.14, squash=0.9)
+    for k in range(9):
+        a, up = k * 0.7 + rng.uniform(-0.2, 0.2), rng.uniform(0.35, 1.0)
+        d = Vector((math.cos(a), math.sin(a), up)).normalized()
+        base = Vector((0, 0, 0.3))
+        vr.spike(p, base, base + d * rng.uniform(0.52, 0.66), 0.035, "bramble")
+
+
+# --- Trees: slim, about half the map tile's height, nothing near a mini's head except thin limbs -----------------------
+
+def slim_pine(p, rng, h, mat="pine_deep"):
+    at = Vector((0, 0, 0))
+    p.cylinder(at, 0.05, h * 0.4, "trunk", segments=4)
+    p.cone(at, 0.21, h * 0.46, mat, segments=5, z=h * 0.34, spin=rng.uniform(0, 1))
+    p.cone(at, 0.15, h * 0.4, mat, segments=5, z=h * 0.6, spin=rng.uniform(0, 1))
+
+
+def round_tree(p, rng, h, leaf):
+    at = Vector((0, 0, 0))
+    p.cylinder(at, 0.05, h * 0.6, "trunk", segments=4)
+    a = rng.uniform(0, 6.3)
+    rock(p, rng, at, 0.28, leaf, h - 0.32, 1.0)
+    rock(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.14, 0.18, leaf, h - 0.14)
+
+
+def dead_tree(p, rng, h, bark):
+    """Bare and thin. Its trunk stays straight up to the height of a web's anchors, then leans; its limbs stay high."""
+    at = Vector((0, 0, 0))
+    mid = at + Vector((0, 0, 1.15))
+    lean = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), 0)).normalized() * rng.uniform(0.05, 0.22)
+    top = mid + Vector((0, 0, h - 1.15)) + lean
+    vr.frustum(p, at, mid, 0.055, 0.04, bark, segments=4)
+    vr.spike(p, mid, top, 0.04, bark, segments=4)
+    a0 = rng.uniform(0, 6.3)
+    for k in range(4):
+        base = mid.lerp(top, rng.uniform(0.0, 0.7)) - Vector((0, 0, 0.1))
+        a = a0 + k * 1.57 + rng.uniform(-0.35, 0.35)
+        tip = base + Vector((math.cos(a), math.sin(a), rng.uniform(0.4, 0.9))).normalized() * rng.uniform(0.38, 0.6)
+        vr.spike(p, base, tip, 0.03, bark)
+
+
+def broadleaf(p, rng, h, gold):
+    """Heartwood's wide canopy, kept small and flat, high over a mini's head."""
+    at = Vector((0, 0, 0))
+    p.cylinder(at, 0.065, h * 0.72, "trunk_old", segments=5)
+    p.cone(at, 0.1, 0.22, "trunk_old", segments=5)
+    z = h * 0.8
+    vr.lump(p, at, 0.28, "leaf_green", z=z + 0.08, squash=0.6)
+    a0 = rng.uniform(0, 6.3)
+    for k in range(3):
+        q = Vector((math.cos(a0 + k * 2.09), math.sin(a0 + k * 2.09), 0)) * 0.2
+        vr.lump(p, q, 0.2, "leaf_gold" if gold and k == 0 else ("leaf_green_dark", "leaf_green")[k % 2], z=z, squash=0.65)
+
+
+TREES = {
+    "deep_forest": [lambda p, r: slim_pine(p, r, 1.6), lambda p, r: slim_pine(p, r, 1.85), lambda p, r: slim_pine(p, r, 1.4)],
+    "fey_wood": [lambda p, r: round_tree(p, r, 1.3, "fey_teal"), lambda p, r: round_tree(p, r, 1.45, "leaf"),
+                 lambda p, r: round_tree(p, r, 1.25, "fey_rose"), lambda p, r: round_tree(p, r, 1.4, "leaf_dark"),
+                 lambda p, r: round_tree(p, r, 1.3, "fey_violet"), lambda p, r: round_tree(p, r, 1.25, "leaf")],
+    "dark_wood": [lambda p, r: dead_tree(p, r, 1.7, "bark_dark"), lambda p, r: dead_tree(p, r, 1.9, "bark_black"),
+                  lambda p, r: dead_tree(p, r, 1.5, "bark_grey")],
+    "heartwood": [lambda p, r: broadleaf(p, r, 1.6, True), lambda p, r: broadleaf(p, r, 1.75, False),
+                  lambda p, r: broadleaf(p, r, 1.5, False)],
+}
+
+
+def litter(p, rng, v):
+    if v == "deep_forest":  # needles gathered in dark patches
+        patch(p, rng, Vector((-0.12, 0.08, 0)), 0.26, f"cell_{v}_mark")
+        patch(p, rng, Vector((0.2, -0.16, 0)), 0.15, f"cell_{v}_mark")
+    elif v == "fey_wood":  # the ground only; the colour stays with the ring and the trees
+        patch(p, rng, Vector((-0.1, 0.12, 0)), 0.2, f"cell_{v}_mark")
+        patch(p, rng, Vector((0.2, -0.12, 0)), 0.14, f"cell_{v}_mark")
+    elif v == "dark_wood":  # old bones lying flat, under a base's height
+        for at, spin, n in ((Vector((-0.17, 0.14, 0)), 0.5, 0.3), (Vector((0.14, 0.2, 0)), 2.4, 0.2), (Vector((0.05, -0.17, 0)), 1.2, 0.26)):
+            p.log(at, 0.02, n, "bone_old", spin=spin, z=0.02, segments=4)
+    else:  # moss
+        patch(p, rng, Vector((0.1, 0.1, 0)), 0.24, f"cell_{v}_mark")
+        patch(p, rng, Vector((-0.2, -0.14, 0)), 0.13, f"cell_{v}_mark")
+
+
+def fairy_ring(p, rng):
+    """Mushrooms on the corners round a flower of seven cells: no base ever cuts them."""
+    seen = {}
+    for q, r in FLOWER:
+        for c in CORNERS:
+            at = hk.cell_position(q, r) + c
+            key = (round(at.x, 2), round(at.y, 2))
+            seen[key] = (seen.get(key, (0, None))[0] + 1, at)
+    for count, at in seen.values():
+        if count == 1:
+            vr.fey_mushroom(p, rng, at, 0.85)
+
+
+def web(p, rng):
+    vr.orb_web(p, rng, Vector((-0.5, 0, 1.3)), Vector((0.5, 0, 1.3)), sag=0.02)
+
+
+def board_under(p):
+    outline = hk.hex_corners(hk.TILE_RADIUS, pointy=True)[::-1]
+    p.prism(outline, -0.3, -0.07, "soil_dark", side_mat="soil_light")
+    p.prism(outline, hk.SOIL_BOTTOM, -0.3, "soil_dark")
+
+
+def build():
+    hk.empty_scene()
+    old = hk.new_collection("cells")
+    for tint in ("a", "b", "c"):
+        first_draft.cell(f"cell_grass_{tint}", f"cell_grass_{tint}", old).finish(old)
+    p = first_draft.cell("cell_tree", "cell_grass_b", old)
+    tiles.tree(p, hk.seeded("cell_tree"), Vector((0, 0, 0)))
+    p.finish(old)
+    p = first_draft.cell("cell_rock", "cell_grass_a", old)
+    p.blob(Vector((0.03, -0.02, 0)), 0.36, "rock", squash=0.75)
+    p.blob(Vector((-0.2, 0.18, 0)), 0.18, "rock", squash=0.7)
+    p.finish(old)
+
+    col = hk.new_collection("forest")
+    for v in VARIANTS:
+        for tint in "abc":
+            cell(f"cell_{v}_ground_{tint}", f"cell_{v}_{tint}").finish(col)
+        p = cell(f"cell_{v}_litter", f"cell_{v}_a")
+        litter(p, hk.seeded(p.name), v)
+        p.finish(col)
+        cell(f"cell_{v}_cover", f"cell_{v}_cover").finish(col)
+        for k, tree in enumerate(TREES[v]):
+            p = hk.Piece(f"tree_{v}_{'abcdef'[k]}")
+            tree(p, hk.seeded(p.name))
+            p.finish(col)
+        for k in "ab":
+            p = cell(f"cell_{v}_block_{k}", f"cell_{v}_block")
+            rng = hk.seeded(p.name)
+            if v == "dark_wood" and k == "b":
+                thicket(p, rng)
+            elif v == "deep_forest":
+                boulders(p, rng, "rock_dark", "rock_shade", top="moss" if k == "a" else None)
+            elif v == "heartwood":
+                boulders(p, rng, top="moss", tall=0.26)
+            elif v == "dark_wood":
+                boulders(p, rng, "rock_shade", "bark_grey")
+            else:
+                boulders(p, rng, tall=0.34 if k == "a" else 0.26)
+            p.finish(col)
+    p = hk.Piece("fey_wood_ring")
+    fairy_ring(p, hk.seeded(p.name))
+    p.finish(col)
+    p = hk.Piece("dark_wood_web")
+    web(p, hk.seeded(p.name))
+    p.finish(col)
+    p = hk.Piece("board_under")
+    board_under(p)
+    p.finish(col)
+    for o in sorted(col.objects, key=lambda o: o.name):
+        o.data.calc_loop_triangles()
+        print("TRIS", o.name, len(o.data.loop_triangles))
+    path = hk.next_version(os.path.join(hk.ART, "combat"), "combat_cells")
+    bpy.ops.wm.save_as_mainfile(filepath=path)
+    print("SAVED", path)
+
+
+if __name__ == "__main__":
+    build()
