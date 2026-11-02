@@ -184,6 +184,6 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 - **tiles_v4:** farms as four wheat plots (2×2, turned 30°) with dirt paths and tracks; farms link to villages; one wooden fence round farms and villages, with `border_join_l` / `border_join_r` pieces.
 - **tiles_v3:** grass tufts and flowers taken out of the plains pieces (now engine ground cover, see below); trees no longer leave bare lines along the borders between a tile's pieces.
 - **Ground cover (from map_preview_v5):** scattered by `scripts/ground_cover.py` across the whole map from one world-space pattern: one jittered candidate point per 0.55 m cell, kept if a hash of the cell is below the terrain's density, which fades toward the neighbour's density within 1.6 m of a tile edge. Points in water or on a river bank are skipped. Densities per terrain are placeholders at the top of the file.
+- **enemy_minis_v4** (`minis/enemies/`): first pass of wolves and giant spiders, plain and elite, for review. v1–v3 are earlier rounds of the same pass.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).
-- **enemy_minis_v4** (`minis/enemies/`): first pass of wolves and giant spiders, plain and elite, for review. v1–v3 are earlier rounds of the same pass.
