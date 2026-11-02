@@ -68,6 +68,10 @@ Blender -b --factory-startup --python art/scripts/render_standin_minis.py
 Blender -b --factory-startup --python art/scripts/build_enemy_minis.py
 Blender -b --factory-startup --python art/scripts/render_enemy_minis.py
 
+# Giant enemies on footprint-shaped bases (build, then a line-up and boards)
+Blender -b --factory-startup --python art/scripts/build_giant_minis.py
+Blender -b --factory-startup --python art/scripts/render_giant_minis.py
+
 # A 6-second video of the map with moving water (add -- --still for one frame)
 Blender -b --factory-startup --python art/scripts/render_animation.py
 ```
@@ -93,6 +97,7 @@ Blender -b --factory-startup --python art/scripts/render_animation.py
 - **Minis:** about 1.3 tall, on a base that fills one combat cell.
 - **Stand-in minis** (`standin_minis_vN.blend`, exported as `export/standin_minis.glb`): super low-poly blockouts (70–290 triangles each) so the engines can test size and movement before the real minis exist. Each stands on a flat-top wooden hex base 0.9 across the flats and 0.08 tall, with a coloured ring and a notch on its front edge; the pivot is the base centre at ground level. They face −Y in Blender, which exports as +Z (glTF front, Unity forward, Godot `MODEL_FRONT`). Pieces: `standin_base` (no figure), `standin_hero` (1.3, sword raised), `standin_chelmsford` (1.3, snout, horns, tail, mace and shield), `standin_small` (1.0, halfling or small elf), `standin_fluffy` (the cat on all fours, about 0.6) and `standin_enemy` (1.3, spear, red ring). Only the 1.3 height comes from the docs; the other heights and the ring colours are test guesses.
 - **Enemy minis (`minis/enemies/enemy_minis_vN.blend`, `scripts/build_enemy_minis.py`; not exported until approved):** scripted low-poly, on the stand-ins' hex base (68 triangles of each count, pivot and facing the same), in the shared `kit` material. Pieces: `enemy_wolf`, `enemy_wolf_elite`, `enemy_spider`, `enemy_spider_elite`. An elite has a gold line inside the red ring. All are drafts for Ethan to judge.
+- **Giant minis (`minis/enemies/giant_minis_vN.blend`, `scripts/build_giant_minis.py`; a look test, not exported):** the plain wolf and spider resized onto bases shaped to 2, 3 or 7 cells. The pivot is the footprint's middle, so an edge, a corner or a cell centre; a `footprint` property lists the cells. Grid rules are open (`design/03 Classes & combat.md`).
 
 Terrains: plains, forest, farmland, river (river/lake) and village, plus (from tiles_v5) hills, swamp, desert and ruins. Colours are the mockup placeholders, set in one table (`PALETTE` in `scripts/hexkit.py`).
 
@@ -185,5 +190,6 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 - **tiles_v3:** grass tufts and flowers taken out of the plains pieces (now engine ground cover, see below); trees no longer leave bare lines along the borders between a tile's pieces.
 - **Ground cover (from map_preview_v5):** scattered by `scripts/ground_cover.py` across the whole map from one world-space pattern: one jittered candidate point per 0.55 m cell, kept if a hash of the cell is below the terrain's density, which fades toward the neighbour's density within 1.6 m of a tile edge. Points in water or on a river bank are skipped. Densities per terrain are placeholders at the top of the file.
 - **enemy_minis_v4** (`minis/enemies/`): first pass of wolves and giant spiders, plain and elite, for review. v1–v3 are earlier rounds of the same pass.
+- **giant_minis_v1** (`minis/enemies/`): giant wolf on 2, 3 and 7 cells and giant spider on 3 and 7 cells, for review.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).

@@ -162,6 +162,12 @@ def enemy_base(p, elite):
 def wolf(col, elite=False):
     p = hk.Piece("enemy_wolf_elite" if elite else "enemy_wolf")
     enemy_base(p, elite)
+    wolf_shape(p, elite)
+    return p.finish(col)
+
+
+def wolf_shape(p, elite=False):
+    """The wolf itself, without a base (build_giant_minis.py resizes it)."""
     back, coat, belly = ("elite_back", "elite_coat", "elite_belly") if elite else ("wolf_back", "wolf", "wolf_belly")
     sx, sy, sz = (1.14, 1.02, 1.16) if elite else (1.0, 1.0, 1.0)
 
@@ -232,7 +238,6 @@ def wolf(col, elite=False):
             for s in (-1, 1):
                 r = at(s * 0.035, y, z)
                 hk.spike_up(p, r, r + Vector((s * 0.03, height * 0.75, height)), width, "elite_mane", segments=3)
-    return p.finish(col)
 
 
 # --- Spider -----------------------------------------------------------------
@@ -243,9 +248,18 @@ def tip_reach(angle):
     return SIDE * 0.93 / math.cos(nearest)
 
 
+LEG_ANGLES = (27, 62, 112, 152)
+
+
 def spider(col, elite=False):
     p = hk.Piece("enemy_spider_elite" if elite else "enemy_spider")
     enemy_base(p, elite)
+    spider_shape(p, elite)
+    return p.finish(col)
+
+
+def spider_shape(p, elite=False, reach_of=tip_reach, angles=LEG_ANGLES):
+    """The spider itself, without a base. reach_of(angle): how far a foot may stand from the centre that way."""
     body, back = ("spider_elite_body", "spider_elite_back") if elite else ("spider_body", "spider_back")
     band, mark = ("spider_elite_band", "spider_elite_mark") if elite else ("spider_band", "spider_mark")
     grow = 1.18 if elite else 1.0
@@ -288,10 +302,10 @@ def spider(col, elite=False):
     # Eight legs, each with a high knee, then down to a point on the base. Angles from straight ahead (-Y).
     # The elite lifts its front pair, threatening; the plain one keeps all eight feet down.
     for s in (-1, 1):
-        for i, ang in enumerate((27, 62, 112, 152)):
+        for i, ang in enumerate(angles):
             a = math.radians(-90 + s * ang)
             d = Vector((math.cos(a), math.sin(a), 0))
-            reach = tip_reach(a) * (1.0 if not elite else 1.06)
+            reach = reach_of(a) * (1.0 if not elite else 1.06)
             root = at(-0.15 + 0.055 * i, 0.235) + Vector((s * 0.075, 0, 0))
             knee_z = (0.50, 0.555, 0.54, 0.50)[i] * (1.08 if elite else 1.0)
             if elite and i == 0:
@@ -310,7 +324,6 @@ def spider(col, elite=False):
         limb(p, palp, [0.016, 0.015, 0.0], [body, band], sides=3)
         for ex, ez in ((0.018, 0.0), (0.038, -0.012)):
             p.box(at(-0.245, 0.244 + ez, s * ex), (0.013, 0.012, 0.013), "eye_red" if elite else "eye_amber")
-    return p.finish(col)
 
 
 def triangles(obj):
