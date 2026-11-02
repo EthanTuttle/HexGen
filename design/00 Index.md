@@ -165,7 +165,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Godot on iPhone frame rate~~ (Nov 1, 2026: 120 fps on the 15 Pro; target set to 120 where possible, never below 60)
 - [ ] New: combat boards on sloped ground follow the slope; what height does in combat (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
-- [ ] New: giant enemies taking more than one cell: footprints and grid rules (see Classes & combat)
+- [ ] New: giant enemies (3 or 7 cells): grid rules (see Classes & combat)
 - [ ] New: combat map generation: how a fight lays out cells and props from the tile and variant
 - [x] ~~Crossing water~~ (settled Nov 2, 2026: Athletics check, a failure costs the whole party HP but they still cross; a permanent raft from the River Port; see Map & exploration → Obstacles)
 - [ ] New: HP lost on a failed crossing, raft price, and how the raft looks on the map
