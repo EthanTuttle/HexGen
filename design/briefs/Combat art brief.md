@@ -27,7 +27,7 @@ Wolves and giant spiders. The enemy roster is still open, so these are the first
 - True scale. Minis stand on the same hex base as the stand-ins, with the pivot at the base centre at ground level and the same facing. Oversized creatures may need more than one cell: flag it rather than deciding.
 - No animation. Minis are moved whole (hop, recoil), so a pose has to read on its own from the combat camera.
 - Variation: try a plain and an elite version, for Ethan to judge.
-- Report triangles per mini. Up to 8 enemies can be on a phone screen, so keep them light; propose a budget.
+- Report triangles per mini. How many enemies a fight can hold isn't decided, so keep them light for the phone and propose a budget.
 
 Previews: a line-up beside a stand-in hero, close-ups, and on the board from the combat camera.
 
