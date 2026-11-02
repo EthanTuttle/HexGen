@@ -515,9 +515,6 @@ def highlands(p, rng, kind):
     paths: open moor, so the flow to the Clan Hall is by what thickens toward it: way-cairns beside the trail edges
     (nothing drawn on the ground), and on the centre's +X side, which turns to face the hall, a clan banner and cairn
     two steps out (centre_mid), a herder's bothy and banners one step out (centre_near)."""
-    if kind in CLIFF_KINDS:
-        cliff_piece(p, rng, kind, "highlands")
-        return
     if kind in bt.MOUNTAINS:
         bt.mountain(p, rng, kind, scale=HIGHLAND_PEAKS, grass="highland_grass")
         return
@@ -3105,9 +3102,6 @@ def monastery_heights(p, rng, kind):
     """Stone steps and switchbacks with low walls climb between tiles along the trails (there's a way from every tile
     to the Library), under strings of prayer flags; neat terraced herb gardens and a few shaped pines. The flow: the
     stair is the way, and gardens, pines and flags thicken toward the Library."""
-    if kind in CLIFF_KINDS:
-        cliff_piece(p, rng, kind, "monastery_heights")
-        return
     if kind in bt.MOUNTAINS:
         bt.mountain(p, rng, kind)
         return
@@ -3213,13 +3207,13 @@ VARIANTS = {
     "snowy_peaks": ("hills", snowy_peaks, "snow_ground", HILL_KINDS + CLIFF_KINDS),
     "volcanic_peaks": ("hills", volcanic_peaks, "ash_ground", HILL_KINDS + CLIFF_KINDS),
     "monastery_heights": ("hills", monastery_heights, "hill_grass",
-                          HILL_KINDS[:-1] + ("steps_centre", "steps_rise") + CLIFF_KINDS),
+                          HILL_KINDS[:-1] + ("steps_centre", "steps_rise")),
     "battlefield": ("plains", battlefield, "steppe", PLAINS_KINDS),
     "stormy_plains": ("plains", stormy_plains, "stormy", ("centre_b", "centre_mid", "centre_near")),
     "tourney_fields": ("plains", tourney_fields, "mown", ("centre_b", "centre_mid", "centre_near")),
     "highlands": ("hills", highlands, "highland_grass",
                   tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS + ("centre_b", "centre_mid", "centre_near", "edge_same_b", "edge_trail",
-                                                          "edge_trail_in") + CLIFF_KINDS),
+                                                          "edge_trail_in")),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
                           "centre_near", "edge_other_lm")),
