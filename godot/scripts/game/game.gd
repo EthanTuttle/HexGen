@@ -517,7 +517,8 @@ func spawn_forest_regions() -> void:
 			continue
 		var region := new_region("hills", tiles, v, tiles[0])
 		_set_flow(region)
-		map.set_raised(regions.size() - 1, tiles)
+		if v in Cliffs.RAISED:
+			map.set_raised(regions.size() - 1, tiles)
 		for x in tiles:
 			changes[x] = region_look(region, x)
 			order[x] = order.size()

@@ -439,7 +439,7 @@ Debug: `-- --forest` and F9 now also spawn a 12-tile region of each plains varia
 
 ## Hills kit (tiles v45)
 
-Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave, volcanic peaks with the Salamander Den, and monastery heights with the Library, from `art/export/tiles.glb` and `art/handoff/hills_kit.md`. Rules: `design/06` → Tile build, `design/07` → Landmark tiles, `design/02` → Obstacles.
+Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave, volcanic peaks with the Salamander Den, and monastery heights with the Library, from `art/export/tiles.glb` and `art/handoff/hills_kit.md`. Only snowy and volcanic are raised (`Cliffs.RAISED`; design/06, Nov 2, 2026). Highlands and monastery heights stay at ground level, like tier 0, though the hand-off and `cliffs.py` still describe all four. Rules: `design/06` → Tile build, `design/07` → Landmark tiles, `design/02` → Obstacles.
 
 - **Ranges:** `MapBoard._ranges` follows `render_preview.build_map`: no mountain on a landmark, beside one, on a trail edge, or shared across a cliff; no ridges or lone peaks within two steps of a landmark; no ridges on monastery. Trees only on `hills_edge_other_b`.
 - **Raised regions:** `cliffs.gd` is `cliffs.py`. A raised tile's node stands at height 5 and holds its cliffs as children at -5, so they come up together and end at ground level. Bases and ground cover go. `MapBoard._update_raised` works out cliffs, pinnacles and ledges again whenever land near a region changes.
@@ -452,7 +452,7 @@ Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave,
 - **Effects:** one smoke per crater, merged across tiles (`MapBoard._update_smoke`); lava pulses and glows at night.
 - **Combat:** no new rules. A fight on a raised tile uses the usual flat board and returns the party to the plateau. Boards that follow the slope wait on the open question in `design/03`.
 
-Debug: `-- --forest` and F9 also spawn a 12-tile raised region of each variant, a tier 0 hills group and a lone tile. `-- --hillscheck` (add `--shots` for `screens/hills_*.png`) checks all of the above, the rise, added tiles, touching regions, no way up and fenced feet.
+Debug: `-- --forest` and F9 also spawn a 12-tile region of each variant (snowy and volcanic raised), a tier 0 hills group and a lone tile. `-- --hillscheck` (add `--shots` for `screens/hills_*.png`) checks all of the above, the rise, added tiles, touching regions, no way up and fenced feet.
 
 ## Terrains and region variants (tiles v13)
 

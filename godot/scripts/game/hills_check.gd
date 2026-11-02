@@ -6,6 +6,7 @@ extends Node
 ## Prints HILLS OK / HILLS FAIL lines, then HILLS DONE. A test aid only.
 
 const VARIANTS := ["highlands", "snowy_peaks", "volcanic_peaks", "monastery_heights"]
+const AT_GROUND := ["highlands", "monastery_heights"]
 
 var game: Game
 var shots := false
@@ -68,12 +69,17 @@ func _run() -> void:
 	var map := game.map
 	_check_tier0(map)
 	_check_ranges(map)
-	for v in VARIANTS:
+	for v in Cliffs.RAISED:
 		_check_cliffs(map, v)
+	for v in AT_GROUND:
+		_check_at_ground(map, v)
 	_check_smoke(map)
 	await _pictures(map)
-	for v in VARIANTS:
+	for v in Cliffs.RAISED:
 		await _walk_up(map, v)
+	for v in AT_GROUND:
+		await _walk_at_ground(map, v)
+	await _check_low_tile_joins(map)
 	await _check_camera(map)
 	await _check_fight(map)
 	await _perf_views(map)
@@ -132,6 +138,81 @@ func _check_ranges(map: MapBoard) -> void:
 			if piece.ends_with("_peak") and map.flow_dist.get(t, 3) <= 2:
 				ok = false
 	_check(ok and parts > 0, "range rules: %d mountain and ridge parts, none on a landmark, a trail edge, a cliff or (ridges, peaks) near a landmark" % parts)
+
+
+## Highlands and monastery heights stay at ground level, with their bases and no cliff pieces at all.
+func _check_at_ground(map: MapBoard, v: String) -> void:
+	var g := _region(v)
+	var ok := true
+	for t: Vector2i in g.tiles:
+		ok = ok and not map.raised.has(t) and map.tile_node(t).position.y == 0.0 and _cliff_pieces(t).is_empty()
+		ok = ok and _pieces(t).any(func(p): return p.get_meta("piece") == "base_hills")
+		ok = ok and not _pieces(t).any(func(p): return "_edge_rim" in p.get_meta("piece") or "_edge_climb" in p.get_meta("piece"))
+	_check(ok, "%s: at ground level, with bases, no cliffs, rims or ledges" % v)
+	_check(not map.climbs.any(func(c): return c[0] in g.tiles), "%s: no ledges" % v)
+	var lm: Vector2i = g.landmark_tile
+	var near_ok := true
+	for t: Vector2i in g.tiles:
+		if map.flow_dist.get(t) == 1:
+			near_ok = near_ok and _has(_pieces(t), v + "_centre_near", LandmarkFlow.toward_edge(t, map.flow_toward))
+	_check(near_ok, "%s: near centres turned toward the landmark" % v)
+	if v == "monastery_heights":
+		var steps := true
+		for t: Vector2i in g.tiles:
+			for i in LandmarkFlow.trail_edges(t, map.flow_toward):
+				if t != lm:
+					steps = steps and _has(_pieces(t), v + "_steps_centre", i)
+				elif i != map.landmark_turns[lm]:
+					steps = steps and _has(_pieces(t), v + "_steps_rise", i)
+		_check(steps, "monastery heights: steps on every trail edge, except the Library's entrance")
+
+
+## Walks into a ground-level region to its landmark's entrance and out again, on the low land throughout.
+func _walk_at_ground(map: MapBoard, v: String) -> void:
+	var g := _region(v)
+	var lm: Vector2i = g.landmark_tile
+	var reach := true
+	for t: Vector2i in g.tiles:
+		reach = reach and not game.path_to(t).is_empty()
+	_check(reach, "%s: every tile can be reached" % v)
+	await _watched_walk(lm, "%s: to the landmark" % v, "")
+	var graph := map.path_graph(lm)
+	var hero := game.party_node.centre()
+	var door: Vector2 = graph.nodes[graph.stand]
+	_check(Vector2(hero.x, -hero.z).distance_to(door) < 0.5, "%s: the party stops at the entrance (%.2f m off)" % [v, Vector2(hero.x, -hero.z).distance_to(door)])
+	_check(absf(hero.y - (_stand_height(map, lm) - Variants.RAISE)) < 0.45, "%s: at the entrance's height: mini %.2f" % [v, hero.y])
+	game.rig.frame(hero, 16.0, 40.0, -90.0 - rad_to_deg(map.entrance_angle(lm)))
+	await _wait(0.5)
+	await _shot("6%d_party_at_%s" % [VARIANTS.find(v), map.terrains[lm]])
+	game.rig.frame(hero, 58.0, 50.0)
+	await _wait(0.2)
+	await _shot("6%d_game_camera_party_on_%s" % [VARIANTS.find(v), v])
+	var far := lm
+	for t: Vector2i in g.tiles:
+		if map.flow_dist.get(t, 0) > map.flow_dist.get(far, 0):
+			far = t
+	await _watched_walk(far, "%s: out across it" % v, "")
+
+
+## A hills tile beside a ground-level region joins it and stays low, with no rise.
+func _check_low_tile_joins(map: MapBoard) -> void:
+	var g := _region("highlands")
+	var spot := Vector2i.ZERO
+	for e in Cliffs.outer_edges(g.tiles, map.raised):
+		var n: Vector2i = Cliffs.beside(e[0], e[1])
+		if n != game.party_tile and game._debug_fill.has(n) and map.terrains.get(n) == "plains":
+			spot = n
+			break
+	map.terrains.erase(spot)
+	map.tile_node(spot).free()
+	map._tile_nodes.erase(spot)
+	game._debug_fill.erase(spot)
+	map.place(spot, "hills")
+	game.order[spot] = game.order.size()
+	game._check_region(spot, "hills")
+	await _await_free()
+	_check(map.terrains[spot] == "highlands" and game.finished.get(spot) == game.regions.find(g), "a hills tile beside highlands joins it")
+	_check(not map.raised.has(spot) and map.tile_node(spot).position.y == 0.0, "and stays at ground level")
 
 
 ## Every outer edge has its cliff and rim; no bases, no cover; a ledge's three parts; the geometry of test_cliffs.py.
@@ -248,7 +329,7 @@ func _pictures(map: MapBoard) -> void:
 			await _wait(0.2)
 			await _shot("%02d_game_camera_%s_%d" % [n, v, int(yaw)])
 			n += 1
-		game.rig.frame(Hex.to3(Hex.tile_position(lm.x, lm.y), 7.0), 18.0, 40.0, -90.0 - rad_to_deg(map.entrance_angle(lm)))
+		game.rig.frame(Hex.to3(Hex.tile_position(lm.x, lm.y), 2.0 + map.lift.get(lm, 0.0)), 18.0, 40.0, -90.0 - rad_to_deg(map.entrance_angle(lm)))
 		await _wait(0.2)
 		await _shot("%02d_landmark_%s" % [n, map.terrains[lm]])
 		n += 1
@@ -411,7 +492,7 @@ func _check_camera(map: MapBoard) -> void:
 	_check(lowest > 0.0, "fully zoomed in over a plateau, the camera clears the tallest mountain by %.2f m" % lowest)
 	await _shot("65_closest_zoom_on_plateau")
 	# The low tile on the far side of a region, where the plateau comes between the camera and the party.
-	var r := _region("highlands")
+	var r := _region("volcanic_peaks")
 	var best := Vector2i.ZERO
 	var y := -INF
 	for e in Cliffs.outer_edges(r.tiles, map.raised):
@@ -681,7 +762,7 @@ func _check_touching() -> void:
 	var ta: Array[Vector2i] = [a, a + Vector2i(0, -1), a + Vector2i(0, 1), a + Vector2i(-1, 0), a + Vector2i(-1, 1)]
 	var tb: Array[Vector2i] = [b, b + Vector2i(0, -1), b + Vector2i(0, 1), b + Vector2i(1, 0), b + Vector2i(1, -1)]
 	_connect(a + Vector2i(1, 0) + Vector2i(-4, 4))
-	var ra := _raised_at_once(ta, "highlands", a)
+	var ra := _raised_at_once(ta, "snowy_peaks", a)
 	var rb := _raised_at_once(tb, "volcanic_peaks", b)
 	# The tile between them: joins the newer region, and rises.
 	var bridge := a + Vector2i(1, 0)
@@ -700,7 +781,7 @@ func _check_touching() -> void:
 	_check(not _cliff_pieces(a).any(func(p): return _steps(p) == a_edge), "no cliff where the two regions touch")
 	_check(map.tile_node(a).position.y == map.tile_node(between).position.y, "they stand at one height")
 	# Edge pieces there dip to the join.
-	_check(_has(_pieces(a), "highlands_edge_other", a_edge), "edge_other at the join")
+	_check(_has(_pieces(a), "snowy_peaks_edge_other", a_edge), "edge_other at the join")
 	_check(not a_edge in LandmarkFlow.trail_edges(a, map.flow_toward), "no trail runs from one region into the other")
 	var own_a := map.climbs.filter(func(c): return c[0] in ra.tiles)
 	var own_b := map.climbs.filter(func(c): return c[0] in rb.tiles)
@@ -790,7 +871,7 @@ func _check_fenced_foot() -> void:
 	map.retile(round_)
 	for t in round_:
 		game._debug_fill[t] = true
-	var r := _raised_at_once(tiles, "monastery_heights", c)
+	var r := _raised_at_once(tiles, "volcanic_peaks", c)
 	var own := map.climbs.filter(func(x): return x[0] in tiles)
 	_check(not own.is_empty(), "fenced all round: a ledge still shows")
 	var gate_at_foot := true

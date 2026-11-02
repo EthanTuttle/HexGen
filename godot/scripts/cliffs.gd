@@ -4,7 +4,9 @@ extends RefCounted
 ## build; art/handoff/hills_kit.md -> Raised regions). Worked out when a region finishes, and again whenever land near
 ## it changes.
 
-const RAISED := ["highlands", "snowy_peaks", "volcanic_peaks", "monastery_heights"]
+## Only these stand on cliffs (DOCS: design/06 -> Tile build, Nov 2, 2026); cliffs.py's list still has four, and
+## highlands and monastery heights have the pieces if that changes.
+const RAISED := ["snowy_peaks", "volcanic_peaks"]
 const UNWALKABLE := ["river"]                        # as in FenceGates
 const NOT_CLEAR := ["forest", "farmland", "village"] # trees or a fence between the foot and the land beyond it
 
