@@ -129,6 +129,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v48:** village round 2: `fortified_town` + `keep` (stone walls, gatehouses, `border_join_l`/`_r` of its own), `slums` + `blackmarket`, `scholars_town` + `college`. The Trading House loses the two stalls in front of its door. Previews: `preview/village_*`.
 - **tiles_v46:** village round 1. Every town tile has a small square at its middle and a street wedge only where the edge has a street (`scripts/village_streets.py`); market town with the Trading House. `scripts/test_streets.py` and `scripts/check_town.py` check the rule and the pieces. Hand-off: `handoff/village_kit.md`.
 - **tiles_v1:** the first draft; rivers as wide as a tile edge, villages on sand.
 - **tiles_v2:** narrow river channels from a small pond, a corner piece that opens clumps into lakes, villages on cobblestone with garden strips at their borders.

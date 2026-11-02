@@ -194,6 +194,12 @@ VILLAGE_MAP = {**FLOW_RING, (0, 0): "village", (1, 0): "village", (0, 1): "villa
                (0, -1): "village", (1, -1): "farmland", (2, -1): "farmland", (-1, 2): "farmland"}
 MARKET_MAP = {**FLOW_RING, **{t: ("tradinghouse" if t == LANDMARK_AT else "market_town") for t in LANDMARK_REGION}}
 
+TOWN_T2 = {lm: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
+           for lm, v in (("keep", "fortified_town"), ("blackmarket", "slums"), ("college", "scholars_town"))}
+# A fortified town's walls meeting a plain village and farms: gatehouses where streets leave the region.
+FORT_JOIN_MAP = {**FLOW_RING, (0, 0): "fortified_town", (1, 0): "fortified_town", (0, 1): "fortified_town", (-1, 1): "village",
+                 (-1, 0): "village", (0, -1): "farmland", (1, -1): "keep", (1, 1): "farmland"}
+
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
                 for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
@@ -347,10 +353,15 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 place(templates, f"{name}_ridge_knot", col, at)
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
+        walled = f"{kit}_border_join_l" in templates  # stone walls in place of the fence, at the region's edges
+        kin = [joined[k] and (not walled or vr.wedges_of(MAP.get((q + hk.NEIGHBOURS[k][0], r + hk.NEIGHBOURS[k][1]))) == kit) for k in range(6)]
         for i in range(6):
             edge = f"{kit}_edge_{'same' if joined[i] else 'other'}"
             near = MAP.get((q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1]))
-            if vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
+            neighbour = near and vr.wedges_of(near)
+            if walled and joined[i] and neighbour != kit:  # a wall at the region's edge: a gatehouse where a street leaves it
+                edge = f"{kit}_edge_gate" if i in streets[(q, r)] else f"{kit}_edge_other{'_lm' if name in vr.LANDMARKS else ''}"
+            elif vr.LANDMARKS.get(near) == name and f"{name}_edge_landmark" in templates:
                 edge = f"{name}_edge_landmark"  # a variant's edge toward its landmark: its look carries on
             elif i in trails and (f"{name}_edge_trail" in templates or f"{kit}_edge_trail" in templates):  # a trail toward the landmark: the landmark's own trail piece, or its kit's
                 edge = f"{name}_edge_trail" if f"{name}_edge_trail" in templates else f"{kit}_edge_trail"
@@ -375,11 +386,12 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
                     place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-            if terrain in BORDERED and joined[i] and "border_join_l" in templates:
-                if not joined[(i + 1) % 6]:
-                    place(templates, "border_join_l", col, at, math.radians(60 * i))
-                if not joined[(i - 1) % 6]:
-                    place(templates, "border_join_r", col, at, math.radians(60 * i))
+            if terrain in BORDERED and kin[i] and "border_join_l" in templates:
+                join = f"{kit}_border_join" if walled else "border_join"
+                if not kin[(i + 1) % 6]:
+                    place(templates, f"{join}_l", col, at, math.radians(60 * i))
+                if not kin[(i - 1) % 6]:
+                    place(templates, f"{join}_r", col, at, math.radians(60 * i))
     # Small ground cover across the whole map, the way the engines will scatter it.
     # Circles the pieces keep the ground cover off (burns, yards), in world space.
     bpy.context.view_layer.update()
@@ -805,7 +817,11 @@ if __name__ == "__main__":
             cam.rotation_euler = (math.pi / 2 - elev, 0, a + math.pi / 2)
 
         for stem, tiles_map, focus, dist in (("village_t0", VILLAGE_MAP, Vector((0.5, -0.8, 0)), 58),
-                                             ("village_market", MARKET_MAP, Vector((0.5, -0.8, 0)), 54)):
+                                             ("village_market", MARKET_MAP, Vector((0.5, -0.8, 0)), 54),
+                                             ("village_fortified", TOWN_T2["keep"], Vector((0.5, -0.8, 0)), 54),
+                                             ("village_slums", TOWN_T2["blackmarket"], Vector((0.5, -0.8, 0)), 54),
+                                             ("village_scholars", TOWN_T2["college"], Vector((0.5, -0.8, 0)), 54),
+                                             ("village_fortified_join", FORT_JOIN_MAP, Vector((0.5, -0.8, 0)), 58)):
             for paths in (True, False):
                 hk.empty_scene()
                 templates = load_templates(tiles)
@@ -824,9 +840,11 @@ if __name__ == "__main__":
                 look(hk.tile_position(*t) + Vector((math.cos(a), math.sin(a), 0)) * 3.3, a + math.pi, 9)
                 shot("village_gate_closeup")
             else:
-                d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in ("market_town", "tradinghouse")), LANDMARK_AT)
-                look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
-                shot("village_tradinghouse_closeup")
+                lm = tiles_map.get(LANDMARK_AT)
+                if lm in vr.LANDMARKS:
+                    d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (vr.LANDMARKS[lm], lm)), LANDMARK_AT)
+                    look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
+                    shot(f"village_{lm}_closeup")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no

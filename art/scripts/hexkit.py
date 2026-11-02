@@ -58,6 +58,30 @@ PALETTE = {
     "wall_warm": "#E8CFA6",
     "roof_brown": "#8F5A42",
     "banner_guild": "#3F6C9B",
+    "stone_block": "#A3A6A8",
+    "stone_block_dark": "#85898C",
+    "wall_stone_light": "#B6B8B8",
+    "slate": "#5F6B78",
+    "slate_dark": "#515C68",
+    "banner_fort": "#A33A35",
+    "mud_ground": "#8F7E64",
+    "mud_street": "#75654F",
+    "mud_dark": "#66573F",
+    "shack_a": "#A68B6A",
+    "shack_b": "#8E7A60",
+    "roof_tin": "#7E7468",
+    "patch_red": "#A8483A",
+    "patch_ochre": "#C9973F",
+    "patch_teal": "#4F8A83",
+    "patch_brown": "#7A5F45",
+    "lantern_red": "#E5432D",
+    "cream_stone": "#EDE3CC",
+    "stone_pale_col": "#E3DBC8",
+    "slate_blue": "#5E7A9A",
+    "pale_paving": "#B7BF9F",
+    "patch_cream": "#CDBE9F",
+    "lawn": "#8FBF6A",
+    "brass": "#C9A24A",
     "fence": "#8A6446",
     "rock": "#A9A39A",
     "rock_dark": "#8F897F",
@@ -245,7 +269,7 @@ PALETTE = {
 # lava (volcanic cracks, craters, the den) pulses and glows. snow_ground and ash_ground are hills ground, faded like
 # hill_grass.
 # web (the dark wood's webs) is thin and see-through: its own material blends at WEB_ALPHA, shown from both sides.
-OWN_MATERIAL = {"water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
+OWN_MATERIAL = {"lantern_red", "water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
