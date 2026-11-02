@@ -24,8 +24,8 @@ BLEND = 1.6
 DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
            "hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
            # tier 1 region variants
-           "deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0, "tradinghouse": 0.0, "riverport": 0.0, "fortified_town": 0.0, "keep": 0.0, "slums": 0.0, "blackmarket": 0.0, "scholars_town": 0.0, "college": 0.0,
-           "delta": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
+           "deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0, "tradinghouse": 0.0, "riverport": 0.3, "fortified_town": 0.0, "keep": 0.0, "slums": 0.0, "blackmarket": 0.0, "scholars_town": 0.0, "college": 0.0,
+           "delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
            # tier 2 and class variants
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
            # landmark tiles
@@ -43,7 +43,7 @@ TUFT = {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefi
 NO_FLOWERS = {"dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
               "tourney_fields", "traininggrounds"}
 BENT = {"stormy_plains", "thunderbirdnest"}  # tufts lean hard one way (+X in world space), the wind's direction
-WATER = {"river", "delta", "riverport"}
+WATER = {"river"} | set(wt.FAMILY)
 FLOWERS = ["flower", "flower_pink", "flower_white", "flower_blue"]
 
 R = wt.R
@@ -159,8 +159,7 @@ def add_ground_cover(piece, terrains, clear=()):
     for (q, r), t in terrains.items():
         if t in WATER:
             near = [terrains.get((q + dq, r + dr)) for dq, dr in NEIGHBOURS]
-            outlines, shores, _, _ = wt.tile_water([n in WATER for n in near], f"{q},{r}", wt.edge_widths(t, near))
-            water_shapes[(q, r)] = (outlines, shores)
+            water_shapes[(q, r)] = wt.cover_shape(t, near, f"{q},{r}")
     for kind, x, y, (ix, iy) in scatter(terrains, water_shapes, clear):
         rng = random.Random(hash01(ix, iy, 4))
         at = Vector((x, y, 0))

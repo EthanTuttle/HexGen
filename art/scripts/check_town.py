@@ -50,6 +50,7 @@ def seg_dist(p, a, b):
 
 
 def main():
+    global STAND
     args = sys.argv[sys.argv.index("--") + 1:]
     files = glob.glob(os.path.join(ART, "tiles", "tiles_v*.blend"))
     path = max(files, key=lambda f: int(re.search(r"_v(\d+)\.blend$", f).group(1)))
@@ -109,7 +110,6 @@ def main():
         import itertools
         import variants as vr
         import water as wt
-        global STAND
         STAND = 0.2  # the quay's lip and steps are walked over
         solid = standing(objs["riverport_centre"])
         for part, (_, hub) in vr.LANDMARK_PARTS.items():
@@ -129,6 +129,43 @@ def main():
                     if hit is not None:
                         bad += 1
                         print("ROUTE TOUCHES port", tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
+    if kit == "water":  # round 2: the Serpent's Lair's lines, Meditation Rock's walks and the Troll Bridge's path, against their own pieces
+        import itertools
+        import water as wt
+        lines_ = 0
+
+        def check(name, solid, line):
+            nonlocal bad, lines_
+            lines_ += 1
+            for a, b in zip(line, line[1:]):
+                a2, b2 = Vector(a), Vector(b)
+                hit = next((q for q in solid if seg_dist(q, a2, b2) < CLEAR), None)
+                if hit is not None:
+                    bad += 1
+                    print("ROUTE TOUCHES", name, tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
+                    return
+
+        STAND = 0.25  # the Lair's shelf, and the bones lying flat on it, are walked over
+        solid = standing(objs["serpentlair_centre"])
+        for line in wt.lair_routes(0).values():
+            check("lair", solid, line + [wt.LAIR_STOP])
+        STAND = 0.4  # Meditation Rock's top is walked on; its stone stacks and willow aren't
+        for mask in itertools.product((False, True), repeat=6):
+            if all(mask):
+                continue
+            widths = [wt.STILL_WIDTH if x else wt.RIVER_WIDTH for x in mask]
+            land, _, _, t = wt.rock_routes(list(mask), "0,0", widths)
+            solid = standing(objs["meditationrock_centre"], math.radians(60 * t))
+            for line in land.values():
+                check("rock", solid, line)
+        STAND = 0.05
+        beside = [q for q in standing(objs["trollbridge_centre"]) if abs(q.y) > 0.75]  # the toll post, the hollow and the bones, not the bridge itself
+        check("troll", beside, [(-wt.TROLL_HALF, 0), (wt.TROLL_HALF, 0)])
+        for s_ in (1, -1):  # a walk arriving at either end, from any side
+            for ang in range(-60, 61, 30):
+                a = math.radians(ang)
+                check("troll", beside, [(s_ * (wt.TROLL_HALF + 2 * math.cos(a)), 2 * math.sin(a)), (s_ * wt.TROLL_HALF, 0)])
+        print(f"{lines_} route lines")
     print("TOWN CHECK", kit, landmarks, os.path.basename(path), bad, "failures")
     sys.exit(1 if bad else 0)
 

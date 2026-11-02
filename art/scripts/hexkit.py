@@ -45,6 +45,15 @@ PALETTE = {
     "field_c": "#9DBF5E",
     "hedge": "#4F7A33",
     "water": "#86BEDB",
+    "water_deep": "#5E9CC7",
+    "water_fast": "#9CCFE3",
+    "water_still": "#93CFC7",
+    "foam": "#F4FAF8",
+    "wave_light": "#8FC2DE",
+    "water_shade": "#4A6F86",
+    "serpent": "#3E6F6B",
+    "net": "#C8BEA0",
+    "smooth_stone": "#BDB9AB",
     "bank": "#C9B58A",
     "reed": "#6E8F3E",
     "lily": "#5E9E4E",
@@ -279,7 +288,7 @@ SLUM_GROUND = {"tan": ("#CDB48A", "#B59C73", "#A38A63", "#BFA67E"),
                "clay": ("#D2A566", "#BE9458", "#A9804A", "#C69C60"),
                "dun": ("#B9B083", "#A0976A", "#8D8559", "#ABA277")}
 PALETTE.update(zip(("mud_ground", "mud_street", "mud_dark", "mud_damp"), SLUM_GROUND[os.environ.get("HEX_SLUM", "tan")]))
-OWN_MATERIAL = {"lantern_red", "water", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
+OWN_MATERIAL = {"lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3

@@ -129,6 +129,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v52:** river round 2. Great lake with Lake Serpent's Lair, rapids with bridges and the Troll Bridge, still waters with Meditation Rock (`water.py` styles, `tile_props`, `bridge_spot`, `lair_routes`, `rock_routes`; `variants.PROP_PIECES`). The River Port's ground plate is gone: its water stops at the quay (`port_shape`), its paving lies flush, and stone walls meet the water (`port_walls`). See `handoff/river_kit.md`.
 - **tiles_v51 (same kit, later):** `cliffs.climbs`: a ledge's foot may open onto water when nothing else is available.
 - **tiles_v51:** river round 1. Routes on water and landings (`water.water_routes`, `landings`), a wider delta with islands the route swings round, the River Port (`riverport_centre`, its boats, `riverport_watergate`, `water.port_water`, `port_routes`, `port_turn`), the party's `raft`. `scripts/test_water.py`. Hand-off: `handoff/river_kit.md`.
 - **tiles_v50:** village round 4: the Keep rebuilt to castle proportions (curtain walls two-thirds of tower height, an arched gatehouse); `--keep-alone` renders it on its own. Slums ground is tan, Ethan's pick (`HEX_SLUM=clay` or `dun` builds the others), with damp patches instead of puddles. Hand-off: `handoff/village_kit.md`. `check_town.py` now also samples along edges at ground level; town landmarks' rings fixed.
