@@ -207,6 +207,16 @@ FORT_12_MAP = {**{t: FLOW_RING.get(t, "plains") for r_ in DENSITY_REGION for t i
 FORT_JOIN_MAP = {**FLOW_RING, (0, 0): "fortified_town", (1, 0): "fortified_town", (0, 1): "fortified_town", (-1, 1): "village",
                  (-1, 0): "village", (0, -1): "farmland", (1, -1): "keep", (1, 1): "farmland"}
 
+# River/lake tier 0: a lake, a river out of it with a bend and a fork, a spring, and a pond, among other land.
+RIVER_T0_MAP = {**FLOW_RING, (0, 0): "river", (1, 0): "river", (0, 1): "river", (-1, 1): "river", (-1, 0): "plains", (1, -1): "farmland",
+                (0, -1): "plains", (-1, 2): "river", (-2, 3): "river", (-2, 2): "plains", (0, 2): "plains", (2, -1): "river", (3, -1): "river", (2, 0): "plains", (-2, 0): "river"}
+RAFT_AT = (-1, 2)
+PORT_GATE_MAP = {**FLOW_RING, (1, 0): "plains", (0, -1): "plains", (-1, 2): "plains", (0, 2): "plains", (1, -1): "delta",
+                 (2, -2): "delta", (-1, 0): "plains", (0, 1): "plains", (-1, 1): "delta", (-2, 2): "delta", (0, 0): "riverport"}
+DELTA_MAP = {**FLOW_RING, (1, 0): "plains", (-1, 1): "plains", (0, -1): "plains", (-1, 2): "plains", (0, 2): "delta", (0, 3): "plains",
+             (1, 2): "plains", (-1, 3): "plains", (-2, 0): "delta", (-3, 0): "plains", (-3, 1): "plains", (-2, -1): "plains",
+             **{t: ("riverport" if t == LANDMARK_AT else "delta") for t in [(0, 0), (-1, 0), (0, 1), (1, -1)]}}
+
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
                 for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
@@ -295,10 +305,21 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
             mask = [vr.terrain_of(n) == "river" if n else False for n in near]
             p = hk.Piece(f"water_{q}_{r}")
+            port = wt.port_turn(mask, f"{q},{r}") if name in vr.LANDMARK_CENTRES else None
+            band = dist.get((q, r), 0) if dist.get((q, r), 0) in (1, 2) else 0
             wt.add_water(p, mask, f"{q},{r}", plates=not animated, boats=not animated,
-                         widths=wt.edge_widths(name, near), delta=name == "delta")
+                         widths=wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near]), delta=kit == "delta", near=band, port=port)
             p.finish(col, at)
             water_tiles.append((q, r, at, mask))
+            if port is not None:  # the port's piece, its boats, and a water gate on each back edge with water beyond it
+                spin = math.radians(60 * port)
+                place(templates, f"{name}_centre", col, at, spin)
+                for part, (_, hub) in vr.LANDMARK_PARTS.items():
+                    if part.startswith(f"{name}_"):
+                        place(templates, part, col, at + Matrix.Rotation(spin, 3, "Z") @ hub, spin)
+                for k in (2, 3, 4):
+                    if mask[(k + port) % 6]:
+                        place(templates, f"{name}_watergate", col, at, math.radians(60 * (k + port)))
             continue
         centre = "centre"
         if dist.get((q, r)) == 1 and f"{name}_centre_near" in templates:
@@ -807,6 +828,105 @@ if __name__ == "__main__":
                     exit_ = centre + out * vr.LEDGE_X + along * vr.climb_heights()[2] + Vector((0, 0, vr.RAISE))
                     look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
                     render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_top_raised")
+        sys.exit(0)
+    if "river" in flags:
+        # River/lake round 1: tier 0 with the water routes and landings, the delta flowing to the River Port, the port up close,
+        # and the party's raft on a river at map zoom and close to.
+        prefix = "trial_" if "trial" in flags else ""
+
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(f"{prefix}{stem}")
+
+        def water_lines(tiles_map):
+            """The routes on water (red), and each landing's walk from the edge to the shore and in (yellow)."""
+            p = hk.Piece("water_routes")
+            land_ = lambda t: hk.tile_position(*t)
+            for (q, r), name in tiles_map.items():
+                if vr.terrain_of(name) != "river":
+                    continue
+                near = [tiles_map.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
+                mask = [vr.terrain_of(n) == "river" if n else False for n in near]
+                kit = vr.wedges_of(name)
+                widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
+                at, seed = hk.tile_position(q, r), f"{q},{r}"
+
+                def line(pts, mat):
+                    for a, b in zip(pts, pts[1:]):
+                        vr.frustum(p, at + Vector((a[0], a[1], 0.16)), at + Vector((b[0], b[1], 0.16)), 0.05, 0.05, mat, segments=4)
+                if name in vr.LANDMARK_CENTRES:
+                    t = wt.port_turn(mask, seed)
+                    walk, floats = wt.port_routes(mask, t)
+                    for l_ in walk.values():
+                        line(l_, "lantern")
+                    for l_ in floats.values():
+                        line(l_, "path_debug")
+                    line([wt.turned(wt.PORT_FLOAT, t), wt.turned(wt.PORT_STOP, t)], "path_debug")
+                    continue
+                _, lines = wt.water_routes(mask, seed, widths, kit == "delta")
+                for l_ in lines.values():
+                    line(l_, "path_debug")
+                for e, s, w_ in wt.landings(mask, seed, widths, kit == "delta").values():
+                    line([e, s, w_], "lantern")
+            p.finish(bpy.data.collections["map"])
+
+        def seat_party(at, ang, kinds=("standin_hero", "standin_chelmsford", "standin_small", "standin_fluffy")):
+            """The raft on the water with four stand-in minis on its seats."""
+            col = bpy.data.collections["map"]
+            raft_t = templates["raft"]
+            place({"raft": raft_t}, "raft", col, at, ang)
+            minis = load_templates(max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1))))
+            for seat, kind in zip(json.loads(raft_t["effects"]), kinds):
+                x, y, z = seat["at"]
+                pos = Matrix.Rotation(ang, 3, "Z") @ Vector((x, -z, y))
+                o = place(minis, kind, col, at + pos, ang + math.pi / 2)
+
+        for stem, tiles_map, focus, dist in (("river_t0", RIVER_T0_MAP, Vector((0, -0.5, 0)), 62), ("river_delta", DELTA_MAP, Vector((0.5, -0.8, 0)), 56)):
+            for paths in (True, False):
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                draw_effects(bpy.data.collections["map"], templates, thin=True)
+                if paths:
+                    water_lines(tiles_map)
+                stage(focus, dist, 50)
+                shot(f"{stem}_{'paths' if paths else 'map'}")
+            if stem == "river_delta":
+                t = wt.port_turn([vr.terrain_of(tiles_map.get((LANDMARK_AT[0] + dq, LANDMARK_AT[1] + dr))) == "river" if tiles_map.get((LANDMARK_AT[0] + dq, LANDMARK_AT[1] + dr)) else False for dq, dr in hk.NEIGHBOURS], f"{LANDMARK_AT[0]},{LANDMARK_AT[1]}")
+                a_, el = math.radians(60 * t), math.radians(35)
+                cam = bpy.context.scene.camera
+                at = hk.tile_position(*LANDMARK_AT)
+                cam.location = at + Vector((13 * math.cos(el) * math.cos(a_), 13 * math.cos(el) * math.sin(a_), 1.5 + 13 * math.sin(el)))
+                cam.rotation_euler = (math.pi / 2 - el, 0, a_ + math.pi / 2)
+                shot("river_riverport_closeup")
+        # the port with water behind it as well as in front: its water gate
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        build_map(templates, tiles=PORT_GATE_MAP)
+        stage(Vector((0.5, -0.8, 0)), 50, 50)
+        shot("river_port_gate_map")
+        hub_t = (0, 0)
+        mask = [vr.terrain_of(PORT_GATE_MAP.get((hub_t[0] + dq, hub_t[1] + dr))) == "river" if PORT_GATE_MAP.get((hub_t[0] + dq, hub_t[1] + dr)) else False for dq, dr in hk.NEIGHBOURS]
+        t = wt.port_turn(mask, "0,0")
+        back = next((k + t) % 6 for k in (2, 3, 4) if mask[(k + t) % 6])
+        n_ = hk.edge_normal(back)
+        cam = bpy.context.scene.camera
+        at = hk.tile_position(*hub_t) + n_ * 3.9
+        look_at(cam, at + n_ * 6.5 + Vector((0, 0, 4.5)), at + Vector((0, 0, 0.5)))
+        shot("river_port_gate_closeup")
+        # the raft on the river: at map zoom, then close to
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        build_map(templates, tiles=RIVER_T0_MAP)
+        hub, lines = wt.water_routes([vr.terrain_of(RIVER_T0_MAP.get((RAFT_AT[0] + dq, RAFT_AT[1] + dr))) == "river" if RIVER_T0_MAP.get((RAFT_AT[0] + dq, RAFT_AT[1] + dr)) else False for dq, dr in hk.NEIGHBOURS], f"{RAFT_AT[0]},{RAFT_AT[1]}")
+        l_ = next(iter(lines.values()))
+        at = hk.tile_position(*RAFT_AT) + Vector((hub[0], hub[1], 0.03))
+        seat_party(at, math.atan2(l_[-2][1] - hub[1], l_[-2][0] - hub[0]))
+        stage(Vector((0, -0.5, 0)), 62, 50)
+        shot("river_raft_map")
+        cam = bpy.context.scene.camera
+        look_at(cam, at + Vector((5, -7, 5)), at + Vector((0, 0, 0.6)))
+        shot("river_raft_closeup")
         sys.exit(0)
     if "keep-alone" in flags:
         # The Keep on its own, on a bare tile, from several angles: its proportions without the town round it.

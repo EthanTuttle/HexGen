@@ -22,11 +22,12 @@ import random
 R = 4.5                         # tile corner radius (hexkit.TILE_RADIUS)
 A = R * math.sqrt(3) / 2        # tile apothem
 RIVER_WIDTH = 1.5
-DELTA_WIDTH = 2.6               # river delta (tier 1 river variant): wider, with sandy islands
+DELTA_WIDTH = 3.0               # river delta (tier 1 river variant): wider, with sandy islands
 LAKE_MARGIN = 0.25              # share of an edge kept as shore next to a non-water corner
 MEANDER = 0.9                   # how far a river's middle may sway sideways
 WOBBLE = 0.18                   # lake shore wobble
 SAMPLES = 18                    # points per curve
+SWERVE = 1.12                   # how far a delta's route swings round each island (they sit at 0.3 and 0.7 along the channel)
 
 
 # --- Small vector helpers (tuples, so this ports easily) ---------------------
@@ -123,7 +124,8 @@ def circle(centre, radius, rng, wobble, n=20):
 def edge_widths(own, neighbours):
     """River width at each edge: a delta's width only where both tiles are delta, so the two always agree.
     own and neighbours[i] are terrain or variant names."""
-    return [DELTA_WIDTH if own == "delta" and n == "delta" else RIVER_WIDTH for n in neighbours]
+    delta = ("delta", "riverport")
+    return [DELTA_WIDTH if own in delta and n in delta else RIVER_WIDTH for n in neighbours]
 
 
 def tile_water(water, seed, widths=None):
@@ -268,9 +270,19 @@ def dressing(outlines, shores, kind, seed):
     return reeds, rocks, lilies, jetties, boats
 
 
-def delta_dressing(outlines, shores, kind, seed):
+def swung(mid):
+    """A delta channel's route: its middle line, swinging to one side of the first island and the other side of the second."""
+    n, out = len(mid) - 1, []
+    for k, pt in enumerate(mid):
+        tan = sub(mid[min(k + 1, n)], mid[max(k - 1, 0)])
+        out.append(add(pt, mul((-tan[1], tan[0]), SWERVE * math.sin(2 * math.pi * k / n) / (length(tan) or 1))))
+    return out
+
+
+def delta_dressing(outlines, shores, kind, seed, near=0):
     """River delta extras: sandy islands splitting the channel, and a busier waterway (more boats, a jetty
-    with cargo crates). Returns (islands, boats, jetties): outlines, (point, angle) and (point, angle)."""
+    with cargo crates). near: 1 one step from the River Port, 2 two steps, else 0: the waterway gets busier toward it.
+    Returns (islands, boats, jetties): outlines, (point, angle) and (point, angle)."""
     rng = random.Random(f"{seed}-delta")
     islands, boats, jetties = [], [], []
     if kind == "river" and len(shores) == 2:
@@ -281,18 +293,23 @@ def delta_dressing(outlines, shores, kind, seed):
         for k in (round(n * 0.3), round(n * 0.7)):
             tan = sub(mid[k + 1], mid[k - 1])
             ang = math.atan2(tan[1], tan[0])
-            long_, wide = rng.uniform(1.1, 1.5), rng.uniform(0.32, 0.45)
+            long_, wide = rng.uniform(1.1, 1.5), rng.uniform(0.42, 0.58)
             islands.append([add(mid[k], (math.cos(ang) * long_ * math.cos(t) - math.sin(ang) * wide * math.sin(t),
                                          math.sin(ang) * long_ * math.cos(t) + math.cos(ang) * wide * math.sin(t)))
                             for t in (2 * math.pi * j / 14 for j in range(14))])
-        for k in (round(n * 0.12), round(n * 0.5)):  # boats in the side channels and below the islands
+        route = swung(mid)
+        islands = [isl for isl in islands if not any(point_in(isl, p) for p in route)]  # on a tight bend, the route comes first
+        # boats at the channel's sides, clear of the route (water_routes), more of them toward the port
+        spots = [(round(n * 0.5), 1.0), (round(n * 0.12), -0.85)] + ([(round(n * 0.88), 0.85)] if near else [])
+        spots += [(round(n * 0.5), -1.0)] if near == 1 else []
+        for k, off in spots:
             tan = sub(mid[k + 1], mid[k - 1])
-            side = mul((-tan[1], tan[0]), 0.55 / (length(tan) or 1)) if k == round(n * 0.5) else (0, 0)
-            boats.append((add(mid[k], side), math.atan2(tan[1], tan[0])))
-        k = n // 2
-        tan = sub(a[k + 1], a[k - 1])
-        inward = mul((-tan[1], tan[0]), 1 / (length(tan) or 1))
-        jetties.append((a[k], math.atan2(inward[1], inward[0])))
+            boats.append((add(mid[k], mul((-tan[1], tan[0]), off / (length(tan) or 1))), math.atan2(tan[1], tan[0])))
+        for curve, k in [(a, n // 2)] + ([(b, n // 2)] if near == 1 else []):  # jetties on the bank, a second near the port
+            sgn = 1 if curve is a else -1
+            tan = sub(curve[k + 1], curve[k - 1])
+            inward = mul((-tan[1] * sgn, tan[0] * sgn), 1 / (length(tan) or 1))
+            jetties.append((curve[k], math.atan2(inward[1], inward[0])))
     elif kind == "lake" and outlines:
         poly = outlines[0]
         for _ in range(80):
@@ -305,13 +322,148 @@ def delta_dressing(outlines, shores, kind, seed):
     return islands, boats, jetties
 
 
+# --- 5. Routes on water and landings ----------------------------------------------
+# Water is an obstacle (design/02 -> Obstacles): a party crosses it on a raft, or by an Athletics check, or walks round.
+# When it does cross, it uses these lines, and it steps in and out at the landings. Nothing here is drawn.
+
+def water_routes(water, seed, widths=None, delta=False):
+    """(hub, lines): lines[i] is the route on the water from edge i's midpoint to the hub, for each water edge i. They meet at
+    the hub, and at each edge's midpoint with the neighbour's line. A river's lines follow the channel's middle, so its
+    bends stay in the water; a delta's swing round its islands. Lakes, ponds and junctions run straight to the hub."""
+    outlines, shores, kind, ends = tile_water(water, seed, widths)
+    mids = {i: mul(normal(i), A) for i in range(6) if water[i]}
+    if kind == "river" and len(shores) == 2:
+        a, b = shores[0], shores[1][::-1]
+        mid = [mul(add(p, q), 0.5) for p, q in zip(a, b)]
+        n = len(mid) - 1
+        if delta:
+            mid = swung(mid)
+        mid = mid[::3] if n % 3 == 0 else mid
+        h = len(mid) // 2
+        e0, e1 = ends[0][0], ends[1][0]
+        return mid[h], {e0: [mids[e0]] + mid[1:h + 1], e1: [mids[e1]] + mid[-2:h - 1:-1]}
+    if kind == "pond" or kind == "spring":
+        ring = shores[-1][:-1]
+        hub = mul(tuple(map(sum, zip(*ring))), 1 / len(ring))
+    elif kind == "river":  # a junction: where the channels meet
+        pts = list(mids.values())
+        hub = mul(tuple(map(sum, zip(*pts))), 1 / len(pts)) if not any(point_in(o, (0, 0)) for o in outlines) else (0, 0)
+    else:
+        hub = (0, 0) if any(point_in(o, (0, 0)) for o in outlines) else mul(tuple(map(sum, zip(*mids.values()))), 1 / len(mids))
+    return hub, {i: [p, hub] for i, p in mids.items()}
+
+
+def in_water(outlines, p):
+    return any(point_in(o, p) for o in outlines)
+
+
+def landings(water, seed, widths=None, delta=False):
+    """lands[i] for each edge i with no water neighbour: (edge midpoint, shore point, point in the water). A party on the land
+    beyond edge i walks from the midpoint to the shore, steps in there, and floats to the hub: that's where it steps in
+    and out. The bank round each shore point is kept clear of reeds and rocks (clear_of_landings)."""
+    outlines = tile_water(water, seed, widths)[0]
+    hub, _ = water_routes(water, seed, widths, delta)
+    lands = {}
+    for i in range(6):
+        if water[i]:
+            continue
+        p = mul(normal(i), A)
+        d = sub(hub, p)
+        s = next((add(p, mul(d, k / 80)) for k in range(81) if in_water(outlines, add(p, mul(d, k / 80)))), hub)
+        lands[i] = (p, s, add(s, mul(d, min(0.35 / (length(d) or 1), 1.0))))
+    return lands
+
+
+def clear_of_landings(points, lands, r=0.5):
+    return [p for p in points if all(length(sub(p, s)) > r for _, s, _ in lands.values())]
+
+
+def seg_dist(p, a, b):
+    d = sub(b, a)
+    t = max(0.0, min(1.0, dot(sub(p, a), d) / (dot(d, d) or 1)))
+    return length(sub(p, add(a, mul(d, t))))
+
+
+def clear_of_routes(spots, lines, r=0.75):
+    """Boats and jetties ((point, angle) pairs) that stay off the routes. A jetty reaches into the water, so test its tip too."""
+    return [s for s in spots if all(seg_dist(s[0], a, b) > r for line in lines.values() for a, b in zip(line, line[1:]))]
+
+
+# --- 6. The River Port -------------------------------------------------------------
+# Its tile counts as water for its neighbours and for tile_water, so nothing round it changes. The port's ground (a piece,
+# variants.river_port) lies over the back of the tile and hides whatever water is there, and the engine adds a harbour in
+# front of the quay. In the piece's frame the quay faces +X, and the harbour is toward edge 0. Water coming in on a back
+# edge stops at the port's edge, at a stone water gate (the piece riverport_watergate, placed on that edge).
+
+QUAY_X = 0.9
+HARBOUR = (2.2, 2.85)  # how far the harbour reaches out from the quay's middle, and along it
+PORT_STOP = (0.62, 0)  # on the quay, where the party stops; the land routes all end here
+PORT_FLOAT = (2.3, 0)  # in the harbour, where the water routes all end
+GATE_STEPS = 0.6  # how far along a back edge a water gate's steps are from the edge's midpoint
+
+
+def port_turn(water, seed):
+    """How many 60 degree steps to turn the port (anticlockwise, as landmark_flow.turn): the harbour faces as much water as it
+    can, and the town's back as much land, so a party on foot can reach it. Ties by the tile's seed."""
+    rng = random.Random(f"{seed}-port")
+    best, turn = None, 0
+    for t in range(6):
+        front = sum(water[(t + k) % 6] for k in (-1, 0, 1))
+        back = sum(not water[(t + k) % 6] for k in (2, 3, 4))
+        score = (2 * front + 3 * min(back, 1) + back, rng.random())
+        if best is None or score > best:
+            best, turn = score, t
+    return turn
+
+
+def turned(p, t):
+    a = math.radians(60 * t)
+    return (p[0] * math.cos(a) - p[1] * math.sin(a), p[0] * math.sin(a) + p[1] * math.cos(a))
+
+
+def port_water(t):
+    """The harbour's outline and its shore, in the tile's frame, for the port turned t steps."""
+    arc = [(QUAY_X + HARBOUR[0] * math.cos(a), HARBOUR[1] * math.sin(a))
+           for a in (math.radians(-90 + 180 * k / 24) for k in range(25))]
+    outline = [(QUAY_X - 0.3, -HARBOUR[1])] + arc + [(QUAY_X - 0.3, HARBOUR[1])]
+    return [turned(p, t) for p in outline], [turned(p, t) for p in arc]
+
+
+def port_routes(water, t):
+    """The port's routes, in the tile's frame: (land, floats). land[i] walks from a land edge i's midpoint to PORT_STOP, or for
+    a back edge with water, from the water gate. floats[i] floats from a front water edge i's midpoint to PORT_FLOAT, and
+    PORT_FLOAT joins PORT_STOP at the quay's steps. Edges are the tile's real edges."""
+    land, floats = {}, {}
+    alley = [(-1.55, 0), PORT_STOP]
+    for k in range(6):
+        i = (k + t) % 6
+        mid = mul(normal(k), A)  # in the piece's frame
+        if k in (2, 3, 4):
+            line = [mid] + alley
+            if water[i]:  # up the water gate's steps, beside its arch
+                along = (-normal(k)[1], normal(k)[0])
+                step = add(mul(normal(k), A - 0.6), mul(along, GATE_STEPS))
+                line = [mid, step, (alley[0][0], step[1] * 0.9)] + alley
+        elif water[i]:
+            floats[i] = [turned(p, t) for p in ([mid, PORT_FLOAT] if k == 0 else [mid, (2.8, 1.7 if k == 1 else -1.7), PORT_FLOAT])]
+            continue
+        elif k == 0:
+            line = [mid, (3.3, 1.9), (2.2, 3.1), (0.62, 3.05), PORT_STOP]
+        else:
+            sd = 1 if k == 1 else -1
+            line = [mid, (2.2, 3.1 * sd), (0.62, 3.05 * sd), PORT_STOP]
+        land[i] = [turned(p, t) for p in line]
+    return land, floats
+
+
 # --- Blender: turn the shapes into a piece -----------------------------------
 
-def add_water(piece, water, seed, plates=True, boats=True, widths=None, delta=False):
+def add_water(piece, water, seed, plates=True, boats=True, widths=None, delta=False, near=0, port=None):
     """Adds one tile's water, banks and dressing to a hexkit.Piece.
     plates=False leaves out the flat water (an animated render builds its own); boats=False leaves out
     the boats, so they can be separate objects that bob. widths: river width per edge (edge_widths()).
-    delta adds the river delta's islands, boats, jetty and crates. Returns the boat positions."""
+    delta adds the river delta's islands, boats, jetty and crates, more of them with near (delta_dressing).
+    port: the River Port's turn: water and banks only, plus the harbour; its ground and props are a piece. Returns the boat positions."""
     from mathutils import Vector
 
     def v(p):
@@ -321,10 +473,23 @@ def add_water(piece, water, seed, plates=True, boats=True, widths=None, delta=Fa
     for curve in shores:
         for quad in bank_strip(curve, 0.22):
             piece.flat([v(p) for p in quad], 0.025, "bank")
+    if port is not None:
+        harbour, arc = port_water(port)
+        for quad in bank_strip(arc[::-1], 0.22):
+            piece.flat([v(p) for p in quad], 0.026, "bank")
+        outlines = outlines + [harbour]
     if plates:
         for poly in outlines:
             piece.flat([v(p) for p in poly], 0.03, "water")
+    if port is not None:
+        return []
     reeds, rocks, lilies, jetties, boat_spots = dressing(outlines, shores, kind, seed)
+    lands = landings(water, seed, widths, delta)
+    reeds, rocks = clear_of_landings(reeds, lands), clear_of_landings(rocks, lands)
+    _, lines = water_routes(water, seed, widths, delta)
+    boat_spots = clear_of_routes(boat_spots, lines)
+    jetties = clear_of_routes([(add(p, mul((math.cos(a), math.sin(a)), 1.1)), a) for p, a in jetties], lines, 0.45)
+    jetties = [(sub(p, mul((math.cos(a), math.sin(a)), 1.1)), a) for p, a in jetties]
     rng = random.Random(f"{seed}-props")
     for p in reeds:
         for _ in range(3):
@@ -341,8 +506,9 @@ def add_water(piece, water, seed, plates=True, boats=True, widths=None, delta=Fa
             post = add(tip, mul((math.cos(ang), math.sin(ang)), 0.6 * s))
             piece.cylinder(v(post), 0.05, 0.2, "trunk")
     if delta:
-        islands, more_boats, more_jetties = delta_dressing(outlines, shores, kind, seed)
-        boat_spots = boat_spots + more_boats
+        islands, more_boats, more_jetties = delta_dressing(outlines, shores, kind, seed, near)
+        boat_spots = boat_spots + clear_of_routes(more_boats, lines)
+        more_jetties = clear_of_routes(more_jetties, lines, 0.45)
         for poly in islands:
             piece.flat([v(p) for p in poly], 0.036, "sandbar")
             for p in poly[::5]:

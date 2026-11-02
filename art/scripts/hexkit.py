@@ -58,6 +58,7 @@ PALETTE = {
     "wall_warm": "#E8CFA6",
     "roof_brown": "#8F5A42",
     "banner_guild": "#3F6C9B",
+    "timber_light": "#C8A579",
     "stone_block": "#A3A6A8",
     "stone_block_dark": "#85898C",
     "keep_stone": "#C2C4C2",

@@ -982,6 +982,11 @@ def build():
         p = hk.Piece(name)
         builder(p, hk.seeded(name))
         p.finish(col, location=at)
+    col = hk.new_collection("props")  # pieces the engine places on their own: the party's raft, a port's water gate
+    for name, builder in variants.PROP_PIECES.items():
+        p = hk.Piece(name)
+        builder(p, hk.seeded(name))
+        p.finish(col)
     col = hk.new_collection("borders")
     for name, side in (("border_join_l", 1), ("border_join_r", -1)):
         p = hk.Piece(name)

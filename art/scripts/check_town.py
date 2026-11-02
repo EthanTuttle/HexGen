@@ -12,6 +12,8 @@ import sys
 import bpy
 from mathutils import Vector
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 ART = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 MAIN, SIDE, X1 = 0.6, 0.45, 3.897
 STAND, HEAD = 0.05, 1.0  # what counts as standing in the way: above the paving, below a mini's head
@@ -34,6 +36,11 @@ def standing(obj, z_rot=0.0):
                     m = (u + w) / 2
                     out.append(Vector((m.x * c - m.y * s_, m.x * s_ + m.y * c)))
     return out
+
+
+def standing_all(obj):
+    """Everything on a boat below head height: it floats, so its parts don't reach the ground."""
+    return [Vector((v.co.x, v.co.y)) for v in obj.data.vertices if v.co.z <= HEAD]
 
 
 def seg_dist(p, a, b):
@@ -98,6 +105,30 @@ def main():
                     if hit is not None and (a - b).length > 0:
                         bad += 1
                         print("ROUTE TOUCHES", name, tuple(round(c, 2) for c in hit), "on", tuple(round(c, 2) for c in a), tuple(round(c, 2) for c in b))
+    if kit == "port":  # the River Port's routes (water.port_routes) against its piece and boats, with land or water on each edge
+        import itertools
+        import variants as vr
+        import water as wt
+        global STAND
+        STAND = 0.2  # the quay's lip and steps are walked over
+        solid = standing(objs["riverport_centre"])
+        for part, (_, hub) in vr.LANDMARK_PARTS.items():
+            if part.startswith("riverport_"):
+                solid += [q + hub.to_2d() for q in standing_all(objs[part])]
+        seen = set()
+        for mask in itertools.product((False, True), repeat=6):
+            land, floats = wt.port_routes(list(mask), 0)
+            for line in list(land.values()) + list(floats.values()) + [[wt.PORT_FLOAT, wt.PORT_STOP]]:
+                for a, b in zip(line, line[1:]):
+                    key = (a, b)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    a2, b2 = Vector(a), Vector(b)
+                    hit = next((q for q in solid if seg_dist(q, a2, b2) < CLEAR), None)
+                    if hit is not None:
+                        bad += 1
+                        print("ROUTE TOUCHES port", tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
     print("TOWN CHECK", kit, landmarks, os.path.basename(path), bad, "failures")
     sys.exit(1 if bad else 0)
 

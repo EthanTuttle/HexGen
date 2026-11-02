@@ -3886,6 +3886,154 @@ def college(p, rng, kind):
 LANDMARK_CENTRES.update(keep=keep, blackmarket=black_market, college=college)
 
 
+# --- River: raft and River Port -----------------------------------------------------
+
+def raft(p, rng):
+    """The party's raft: a long line of lashed logs with cross-beams, and a short mast at the back with a square striped sail so
+    it reads at map zoom. Forward is +X. seat effect points: where up to four minis stand, one behind the other as they walk
+    (the engine moves the raft with them and bobs it). It floats at z = 0, the water's level."""
+    length, n = 3.5, 8
+    for k in range(n):
+        y = -0.6 + 1.2 * k / (n - 1)
+        p.log(Vector((rng.uniform(-0.1, 0.1), y, 0)), 0.085, length, rng.choice(("trunk", "timber", "trunk")), spin=0.0, z=0.07)
+    for x in (-1.45, -0.5, 0.5, 1.45):
+        p.box(Vector((x, 0, 0)), (0.12, 1.38, 0.05), "timber", z=0.14)
+        for y in (-0.48, 0.48):
+            p.box(Vector((x, y, 0)), (0.15, 0.06, 0.06), "rope", z=0.13)
+    mast = Vector((-1.45, 0, 0))
+    p.box(mast, (0.09, 0.09, 2.05), "timber", z=0.14)
+    p.box(mast + Vector((0.02, 0, 0)), (0.05, 1.45, 0.05), "timber", z=2.05)
+    for k in range(4):
+        p.box(mast + Vector((0.04, -0.54 + 0.36 * k, 0)), (0.02, 0.36, 1.1), ("awning_a", "awning_b")[k % 2], z=0.95)
+    frustum(p, mast + Vector((-0.1, 0.5, 0.2)), mast + Vector((-0.7, 0.62, 0.42)), 0.03, 0.03, "timber", segments=4)  # the steering oar
+    p.box(mast + Vector((-0.78, 0.63, 0.4)), (0.28, 0.03, 0.12), "timber")
+    for x, y in ((1.2, 0.14), (0.45, -0.14), (-0.3, 0.14), (-1.0, -0.14)):
+        p.effects.append(("seat", Vector((x, y, 0.17))))
+
+
+def water_gate(p, rng):
+    """Where water reaches the River Port on a back edge: a stone wall across the edge, with an arch the water runs into, and steps
+    up through the wall beside it, where a raft lands (water.GATE_STEPS), with paving on to the port. In edge 0's frame."""
+    x = X1 - 0.12
+    arcade(p, x + 0.12, -1.25, 0.25, 1, 0.8, 0.24, "stone_tan")
+    p.flat([Vector((x - 0.12, -1.0, 0)), Vector((X1, -1.0, 0)), Vector((X1, 0.0, 0)), Vector((x - 0.12, 0.0, 0))], 0.056, "water")  # into the arch
+    p.box(Vector((x, -0.5, 0)), (0.26, 1.56, 0.06), "stone_block_dark", z=0.8)
+    p.box(Vector((x - 0.11, -0.5, 0)), (0.02, 1.2, 0.72), "pit_dark", z=0.03)
+    p.box(Vector((x, 1.1, 0)), (0.24, 0.3, 0.8), "stone_tan")
+    p.box(Vector((x, 1.1, 0)), (0.26, 0.34, 0.06), "stone_block_dark", z=0.8)
+    for k in range(4):  # steps up from the water, through the gap, down on to the paving
+        p.box(Vector((X1 - 0.08 - 0.14 * k, 0.6, 0)), (0.14, 0.62, 0.1 + 0.05 * k), "stone_block")
+    strip_x0 = 2.0
+    p.flat([Vector((strip_x0, 0.28, 0)), Vector((X1 - 0.5, 0.28, 0)), Vector((X1 - 0.5, 0.92, 0)), Vector((strip_x0, 0.92, 0))], 0.06, "street")
+
+
+def dock_house(p, rng, y, w, h, wall, roof, depth=1.3):
+    """A tall narrow house on the quay, its gable to the water, with windows up its front, a door and a jutting top storey."""
+    x = -0.55
+    at = Vector((x, y, 0))
+    p.box(at, (depth, w, h), wall)
+    p.box(at, (depth + 0.05, w + 0.05, 0.05), "timber", z=h * 0.36)
+    p.box(at, (depth + 0.05, w + 0.05, 0.05), "timber", z=h * 0.7)
+    p.gable_roof(at, depth + 0.16, w + 0.12, 0.72, roof, z=h)
+    front = x + depth / 2 + 0.01
+    p.box(Vector((front, y, 0)), (0.02, 0.26, 0.56), "timber", z=0.12)
+    for z in (h * 0.42, h * 0.76):
+        for dy in ((-w * 0.24, w * 0.24) if w > 0.75 else (0,)):
+            p.box(Vector((front, y + dy, 0)), (0.02, 0.17, 0.26), "window_glow", z=z)
+
+
+def cog(p, rng):
+    """A cargo boat with a mast and a furled sail, moored along the quay. Its long side is along Y."""
+    for x, y, w, d in ((0, 0, 0.56, 1.6), (0, 0.9, 0.34, 0.3), (0, -0.9, 0.34, 0.3)):
+        p.box(Vector((x, y, 0)), (w, d, 0.3), "trunk", z=0.03)
+    p.box(Vector((0, 0, 0)), (0.44, 1.5, 0.05), "boat", z=0.33)
+    p.box(Vector((0, 0.1, 0)), (0.07, 0.07, 1.6), "timber", z=0.33)
+    p.box(Vector((0, 0.1, 0)), (0.1, 0.9, 0.12), "sail", z=1.42)
+    p.box(Vector((0, -0.45, 0)), (0.3, 0.3, 0.24), "crate", z=0.38)
+    p.box(Vector((0.03, 0.55, 0)), (0.26, 0.26, 0.2), "crate", z=0.38)
+
+
+def barge(p, rng):
+    """A low flat barge heaped with crates and barrels, moored along the quay."""
+    p.box(Vector((0, 0, 0)), (0.6, 1.3, 0.2), "trunk", z=0.03)
+    p.box(Vector((0, 0, 0)), (0.5, 1.2, 0.04), "crate", z=0.23)
+    for y, h in ((-0.42, 0.28), (-0.1, 0.34), (0.22, 0.24)):
+        p.box(Vector((rng.uniform(-0.05, 0.05), y, 0)), (0.28, 0.28, h), "crate", z=0.27, spin=rng.uniform(-0.2, 0.2))
+    p.cylinder(Vector((0.08, 0.46, 0)), 0.1, 0.24, "trunk", segments=8, z=0.27)
+
+
+def river_port(p, rng, kind):
+    """River delta's River Port: a row of tall dockside houses and a tavern facing a stone quay on +X, boats alongside (separate
+    pieces, so they can bob), a crane, cargo, and rafts for sale. Its ground hides the back of the tile; the engine adds
+    the harbour in front (water.port_water). An alley through the row joins the back to the quay."""
+    q = 0.9  # water.QUAY_X
+    y_end = 3.3
+    # the ground over the back of the tile, hiding the water beneath, and the paved town on it
+    p.flat([Vector((q, -4.34, 0)), Vector((q, 4.34, 0)), Vector((0, 4.5, 0)), Vector((-X1, 2.25, 0)), Vector((-X1, -2.25, 0)), Vector((0, -4.5, 0))][::-1], 0.05, "plains")
+    p.prism([Vector((q, -y_end, 0)), Vector((q, y_end, 0)), Vector((-2.0, y_end, 0)), Vector((-2.0, -y_end, 0))], 0.0, 0.11, "street", side_mat="stone_tan")
+    bt.cobbles(p, rng, lambda t: 0.25 < t.x < 0.8 and abs(t.y) < y_end - 0.2, hk.CENTRE_BOUNDS, 0, z=0.12)
+    p.box(Vector((q - 0.04, 0, 0)), (0.12, y_end * 2, 0.16), "stone_block_dark")  # the quay's lip
+    for y in (-2.65, -0.9, 0.9, 2.65):
+        p.cylinder(Vector((q - 0.08, y, 0)), 0.05, 0.3, "trunk", segments=6, z=0.11)  # mooring posts
+    # the steps down to the water, where a raft lands
+    for k in range(3):
+        p.box(Vector((q + 0.1 + 0.14 * k, 0, 0)), (0.14, 0.9, 0.1 - 0.03 * k), "stone_tan", z=0.03)
+    # the row: tall narrow houses either side of an alley, the tavern wider, with a lit front and a sign
+    walls = (("wall_warm", "roof"), ("cream_stone", "slate"), ("wall", "roof_brown"), ("patch_ochre", "roof"), ("stone_tan", "slate"))
+    for k, (y, w, h) in enumerate(((-2.95, 0.72, 2.1), (-2.2, 0.72, 2.6), (-1.45, 0.72, 2.25), (-0.72, 0.68, 2.75))):
+        dock_house(p, rng, y, w, h, *walls[k])
+    dock_house(p, rng, 2.9, 0.78, 2.5, *walls[4])
+    tav, tw = 1.45, 1.95
+    p.box(Vector((-0.55, tav, 0)), (1.3, tw, 2.15), "timber_light")
+    for z in (0.75, 1.5):
+        p.box(Vector((-0.55, tav, 0)), (1.36, tw + 0.05, 0.06), "timber", z=z)
+    p.gable_roof(Vector((-0.55, tav, 0)), tw + 0.12, 1.5, 0.75, "roof", z=2.15, spin=math.pi / 2)
+    front = 0.11
+    for dy in (-0.68, -0.22, 0.22, 0.68):
+        p.box(Vector((front, tav + dy, 0)), (0.02, 0.26, 0.3), "window_glow", z=1.05)
+        if abs(dy) > 0.3:
+            p.box(Vector((front, tav + dy, 0)), (0.02, 0.26, 0.3), "window_glow", z=0.32)
+    p.box(Vector((front, tav, 0)), (0.02, 0.36, 0.62), "timber", z=0.11)
+    p.box(Vector((0.26, tav + 0.0, 0)), (0.3, 0.04, 0.04), "timber", z=1.0)  # the sign
+    p.box(Vector((0.36, tav + 0.0, 0)), (0.03, 0.3, 0.26), "banner_guild", z=0.72)
+    p.cylinder(Vector((-0.55, tav - 0.5, 0)), 0.1, 0.5, "rock_dark", segments=6, z=2.5)
+    p.effects.append(("smoke", Vector((-0.55, tav - 0.5, 3.1))))
+    # tables out in front of the tavern
+    for dy in (-0.55, 0.45):
+        p.cylinder(Vector((0.34, tav + dy, 0)), 0.14, 0.03, "trunk", segments=8, z=0.42)
+        p.box(Vector((0.34, tav + dy, 0)), (0.05, 0.05, 0.31), "trunk", z=0.11)
+    # the crane at the far end, unloading the barge
+    c = Vector((0.3, -2.2, 0))
+    p.box(c, (0.16, 0.16, 1.9), "timber", z=0.11)
+    p.box_rot(c + Vector((0.5, 0, 1.87)), (1.25, 0.08, 0.08), "timber", Matrix.Rotation(-0.35, 3, "Y"))
+    frustum(p, c + Vector((1.07, 0, 2.09)), c + Vector((1.07, 0, 1.25)), 0.012, 0.012, "rope", segments=3)
+    p.box(c + Vector((1.07, 0, 0)), (0.26, 0.26, 0.22), "crate", z=1.03)
+    # cargo on the quay, rafts for sale at the near end: two stacked and one afloat, with a sign
+    for at, s in ((Vector((0.28, -2.75, 0)), 0.2), (Vector((0.3, -1.6, 0)), -0.15), (Vector((0.3, -1.25, 0)), 0.3)):
+        p.box(at, (0.3, 0.3, 0.26), "crate", z=0.11, spin=s)
+    p.cylinder(Vector((0.3, -3.05, 0)), 0.12, 0.3, "trunk", segments=8, z=0.11)
+    for k in range(2):
+        for j in range(5):
+            p.log(Vector((0.27, 2.25 + 0.5 * (j / 4 - 0.5), 0)), 0.05, 0.44, "trunk", spin=0.0, z=0.16 + 0.11 * k)
+    p.box(Vector((0.3, 2.68, 0)), (0.04, 0.04, 0.75), "timber", z=0.11)
+    p.box(Vector((0.3, 2.68, 0)), (0.03, 0.44, 0.24), "sail", z=0.66)
+    p.no_cover.append((Vector((-1.2, 0, 0)), 4.6))
+
+
+def afloat_raft(p, rng):
+    """A raft for sale, moored: the party's raft without its sail."""
+    for k in range(5):
+        p.log(Vector((rng.uniform(-0.05, 0.05), -0.36 + 0.18 * k, 0)), 0.07, 1.25, "trunk", spin=0.0, z=0.06)
+    for x in (-0.42, 0.42):
+        p.box(Vector((x, 0, 0)), (0.09, 0.85, 0.04), "timber", z=0.12)
+
+
+PROP_PIECES = {"raft": raft, "riverport_watergate": water_gate}
+LANDMARK_CENTRES.update(riverport=river_port)
+LANDMARK_PARTS.update(riverport_cog=(cog, Vector((1.28, 1.35, 0))), riverport_barge=(barge, Vector((1.3, -1.85, 0))),
+                      riverport_raft=(afloat_raft, Vector((1.62, -0.72, 0))))
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -3936,6 +4084,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
              "clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks", "library": "monastery_heights",
              "tradinghouse": "market_town",
+             "riverport": "delta",
              "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
