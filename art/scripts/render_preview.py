@@ -226,9 +226,11 @@ def place(templates, name, col, at, angle=0.0):
     return obj
 
 
-def build_map(templates, animated=False, tiles=None):
+def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=None):
     """Places the test map. With animated=True, water tiles get banks and dressing only and are
-    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats."""
+    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats.
+    raised_regions: the (tiles, variant) pairs that raise_region will raise, for the fence gates. flows: landmark tile ->
+    (dist, toward, turn) to keep from when its region finished, rather than working them out from the map."""
     MAP = tiles or globals()["MAP"]
     water_tiles = []
     col = hk.new_collection("map")
@@ -236,7 +238,11 @@ def build_map(templates, animated=False, tiles=None):
     # the region is known; here it's the connected group of the variant's tiles round the landmark.
     dist, toward, turns = {}, {}, {}
     for lm_at, lm in MAP.items():
-        if lm in vr.LANDMARKS:
+        if flows and lm_at in flows:
+            d, t, turns[lm_at] = flows[lm_at]
+            dist.update(d)
+            toward.update(t)
+        elif lm in vr.LANDMARKS:
             region, todo = {lm_at}, [lm_at]
             while todo:
                 q, r = todo.pop()
@@ -250,7 +256,9 @@ def build_map(templates, animated=False, tiles=None):
             toward.update(t)
             turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
     # Fence gates round farm and village groups (fence_gates.py).
-    gates = fg.fence_gates({k: vr.terrain_of(n) for k, n in MAP.items()})
+    raised = set(t for tiles_, _ in raised_regions for t in tiles_)
+    terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
+    gates = fg.fence_gates(terrains, raised, [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)])
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -776,10 +784,12 @@ if __name__ == "__main__":
         # walkable land beside it, and the rise halfway through.
         prefix = "trial_" if "trial" in flags else ""
 
-        def scene(stem, tiles_map, regions, progress=1.0):
+        def scene(stem, tiles_map, regions, progress=1.0, flows=None, foot=False):
+            if flags.get("only") and stem not in flags["only"].split(","):
+                return
             hk.empty_scene()
             templates = load_templates(tiles)
-            build_map(templates, tiles=tiles_map)
+            build_map(templates, tiles=tiles_map, raised_regions=regions, flows=flows)
             col = bpy.data.collections["map"]
             climbs = raise_region(templates, col, tiles_map, regions, progress)
             print("CLIMBS", stem, climbs)
@@ -787,12 +797,26 @@ if __name__ == "__main__":
             centre = sum((hk.tile_position(*t) for r_, _ in regions for t in r_), Vector()) / sum(len(r_) for r_, _ in regions)
             stage(centre + Vector((0, -1.5, 2.0)), 66 if len(regions) == 1 else 88, 50)
             render(f"{prefix}{stem}")
+            if foot:  # the gate in front of a ledge's foot, from behind the gate
+                cam = bpy.context.scene.camera
+                cam.data.lens = 24
+                draw_paths(col, templates)
+                t, i = climbs[0]
+                out, along = hk.edge_normal(i - 1), hk.edge_normal(i - 1 + 1.5)
+                at = hk.tile_position(*t) + out * vr.X1 + along * vr.foot_y()
+                look_at(cam, at + out * 6 - along * 2.5 + Vector((0, 0, 3.5)), at + along * 1.0 + Vector((0, 0, 1.0)))
+                render(f"{prefix}{stem}_foot")
 
         base = {**FLOW_RING, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
         before = {t: n for t, n in base.items() if t not in ((-2, 1), (0, 2))}
         scene("hills_snowy_added_before_raised", before, [(LANDMARK_REGION, "snowy_peaks")])
         added = LANDMARK_REGION + [(-2, 1)]
-        scene("hills_snowy_added_after_raised", {**before, (-2, 1): "snowy_peaks", (0, 2): "forest"}, [(added, "snowy_peaks")])
+        # The old tiles keep their trails and the landmark its turn; only the added tile gets its own (landmark_flow.extend).
+        old_dist, old_toward = lf.flow(set(LANDMARK_REGION), LANDMARK_AT)
+        old_turn = lf.turn(LANDMARK_AT, old_dist, old_toward)
+        lf.extend((-2, 1), old_dist, old_toward)
+        scene("hills_snowy_added_after_raised", {**before, (-2, 1): "snowy_peaks", (0, 2): "forest"}, [(added, "snowy_peaks")],
+              flows={LANDMARK_AT: (old_dist, old_toward, old_turn)})
         second = [(q + 3, r) for q, r in LANDMARK_REGION]
         both = {**FLOW_RING, **{t: "plains" for s_ in second for t in ((s_[0] + dq, s_[1] + dr) for dq, dr in hk.NEIGHBOURS)},
                 **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION},
@@ -801,6 +825,8 @@ if __name__ == "__main__":
         river = {**{t: "river" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
         scene("hills_noway_raised", river, [(LANDMARK_REGION, "snowy_peaks")])
         scene("hills_snowy_rising_raised", base, [(LANDMARK_REGION, "snowy_peaks")], 0.5)
+        fenced = {**{t: "farmland" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        scene("hills_fenced_foot_raised", fenced, [(LANDMARK_REGION, "snowy_peaks")], foot=True)
         sys.exit(0)
     if "hills-t2" in flags:
         # Hills tier 2 and class variant: each region flowing into its landmark, and a close-up; monastery's paths.

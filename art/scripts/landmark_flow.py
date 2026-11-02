@@ -50,6 +50,20 @@ def flow(region, landmark):
     return dist, toward
 
 
+def extend(tile, dist, toward):
+    """A tile added to a finished region (cliffs.py): the old tiles keep their distances, trails and the landmark's
+    turn, and only the new tile gets a distance and toward step, into its nearest neighbour, ties by the same hash.
+    Changes dist and toward in place. Does nothing if no neighbour is in the region."""
+    q, r = tile
+    near = [(q + dq, r + dr) for dq, dr in NEIGHBOURS if (q + dq, r + dr) in dist]
+    if not near:
+        return
+    d = min(dist[n] for n in near)
+    closer = [n for n in near if dist[n] == d]
+    dist[tile] = d + 1
+    toward[tile] = closer[int(gc.hash01(q, r, 9) * len(closer))]
+
+
 def trail_edges(tile, toward):
     """The edges i of `tile` that are trail edges: its own toward step, and any neighbour's step into it."""
     q, r = tile

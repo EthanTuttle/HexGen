@@ -1,6 +1,7 @@
 """Checks cliffs.climbs() on random region shapes, by the geometry rather than by the rule's own terms: every ledge's foot
 must open onto a walkable neighbour straight ahead, with no other cliff section in front of or beside it, and its top must
-come out on the region's own ground. Plain Python: python3 art/scripts/test_cliffs.py [shapes] [seed]. Exits 1 on a failure.
+come out on the region's own ground. Fence gates must never open onto a cliff except at a foot, always open at a foot, and
+every fenced group with walkable low land beside it must have a gate onto that land. Plain Python: python3 art/scripts/test_cliffs.py [shapes] [seed]. Exits 1 on a failure.
 """
 import math
 import os
@@ -9,6 +10,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 import cliffs
+import fence_gates as fg
 import ground_cover as gc
 
 X1 = 3.897  # the edge line, from a tile's middle
@@ -81,6 +83,41 @@ def check(region, terrains, raised, climb, foot_y=FOOT_Y):
     return wrong
 
 
+def check_gates(terrains, raised, shown):
+    """Returns what's wrong with the fence gates beside a raised region."""
+    wrong = []
+    gates = fg.fence_gates(terrains, raised, shown)
+    feet = {(cliffs.beside(t, i - 1), (i + 2) % 6) for t, i in shown}
+    for t, edges in gates.items():
+        for k in edges:
+            if cliffs.beside(t, k) in raised and (t, k) not in feet:
+                wrong.append(f"gate of {t} on edge {k} opens onto a cliff")
+    for t, k in feet:
+        if t in gates and k not in gates[t]:
+            wrong.append(f"{t} is in front of a foot with no gate on edge {k}")
+
+    def onto_land(t, k):
+        n = cliffs.beside(t, k)
+        return n not in raised and n in terrains and terrains[n] not in fg.FENCED and terrains[n] not in fg.UNWALKABLE
+
+    seen = set()
+    for start in gates:
+        if start in seen:
+            continue
+        group, todo = {start}, [start]
+        while todo:
+            t = todo.pop()
+            for k in range(6):
+                n = cliffs.beside(t, k)
+                if n in gates and n not in group:
+                    group.add(n)
+                    todo.append(n)
+        seen |= group
+        if any(onto_land(t, k) for t in group for k in range(6)) and not any(onto_land(t, k) for t in group for k in gates[t]):
+            wrong.append(f"fenced group at {start} has land beside it and no gate onto it")
+    return wrong
+
+
 def blob(rng, size):
     """A connected shape: grown from one tile, with a bias that makes long arms and hooks some of the time."""
     tiles = {(0, 0)}
@@ -118,7 +155,7 @@ def main(shapes=20000, seed=1):
             dq, dr = rng.randint(-8, 8), rng.randint(-8, 8)
             raised |= {(q + dq, r + dr) for q, r in blob(rng, rng.randint(1, 15))}
         fill = rng.choice((0.3, 0.8, 1.0))
-        land = rng.choice((("plains",), ("plains", "forest", "farmland", "hills"), ("plains", "river"), ("river", "river", "river", "plains")))
+        land = rng.choice((("plains",), ("plains", "forest", "farmland", "hills"), ("plains", "river"), ("river", "river", "river", "plains"), ("farmland", "village", "farmland", "plains")))
         terrains = {t: "hills" for t in raised}
         for t in around(raised):
             if rng.random() < fill:
@@ -128,6 +165,8 @@ def main(shapes=20000, seed=1):
         for c in shown:
             for w in check(region, terrains, raised, c):
                 failures.append((sorted(region), c, w))
+        for w in check_gates(terrains, raised, shown):
+            failures.append((sorted(region), "gates", w))
         if not shown:
             low = [t for t in around(region) - raised if terrains.get(t, "river") not in cliffs.UNWALKABLE]
             if low:

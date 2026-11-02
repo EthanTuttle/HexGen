@@ -97,7 +97,7 @@ Ethan chose this at height 5 (design/06 → Tile build). `highlands`, `snowy_pea
 Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_cliffs.py` (see Which ledges) and `render_preview.raise_region`. Previews, for `snowy`, `volcanic`, `highlands`, `monastery`:
 - **Regions:** `hills_<variant>_7_raised_v3.png`, `_12_raised_v3`, `_low_raised_v3` (from the foot of a cliff), `_climb_raised_v3` (a ledge, its route in red).
 - **Every ledge, in the 7- and 12-tile regions:** `hills_<variant>_<7|12><a|b|c>_foot_raised_v1` (low, from the land in front of the foot) and `_top_raised_v1` (from above the plateau). These are new, so they start at v1.
-- **Scenes:** `hills_snowy_added_before_raised_v2`, `hills_snowy_added_after_raised_v2`, `hills_touching_raised_v2`, `hills_noway_raised_v2`, `hills_snowy_rising_raised_v2`.
+- **Scenes:** `hills_snowy_added_before_raised_v2`, `hills_snowy_added_after_raised_v3`, `hills_touching_raised_v2`, `hills_noway_raised_v2`, `hills_snowy_rising_raised_v2`, `hills_fenced_foot_raised_v1`, `hills_fenced_foot_raised_foot_v1`.
 
 **The rule: one height per region, and cliff pieces per outer edge.** No vertex shifting or baking:
 
@@ -118,18 +118,24 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 **Which ledges:** one outer edge in six, at least two, ranked by `hash01(q * 6 + i, r, 15)`. All three edges must be outer, and the foot must be open; at most one per tile, never on tiles side by side.
 - **Open foot (`cliffs.foot_is_open`):** the tile on edge `i - 1`, straight ahead of the foot, isn't raised, and nor are the three tiles beyond it. So a low tile in a pocket or a one-tile gap gets no foot.
 - **Concave corners are allowed:** on a compact region every candidate has one at its far corner, so rejecting them would leave no ledges. The foot starts about the middle of the edge instead, with plain cliff before it, so the other cliff is beside and behind it, about 2 away, never in front.
-- **What shows:** a taken ledge shows only while the tile in front of its foot is walkable and clear, meaning not fenced and not forest. If that leaves none, the clear one with the lowest hash shows, then the walkable one. So a fenced farm or a forest in front is only used when there's nothing else. A fenced tile used this way needs a gate on that edge, which `fence_gates.py` doesn't know about yet. The clear rule is my proposal, for Ethan to confirm.
+- **What shows:** a taken ledge shows only while the tile in front of its foot is walkable and clear, meaning not fenced and not forest. If that leaves none, the clear one with the lowest hash shows, then the walkable one. So a fenced farm or a forest in front is only used when there's nothing else (Ethan's choice, design/06).
+
+**Fence gates (`fence_gates.fence_gates(terrains, raised, climbs)`):** run `climbs()` first, for every raised region, and pass all raised tiles and all climbs.
+- **Never onto a cliff:** an edge facing a raised tile doesn't count as walkable land, so it stays fence. Run it again when a region rises or changes, because a gate that now faces a cliff goes back to fence.
+- **Always at a foot:** a fenced tile in front of a foot gets a gate on the edge facing it, `(i + 2) % 6`, added to whatever else it has. The gate's track ends at the edge's midpoint, 0.13 from the foot's route point, so they meet (`hills_fenced_foot_raised_v1`, `hills_fenced_foot_raised_foot_v1`).
+- **Way out over land:** the group's fallback gate is worked out without the foot's gate, so a way up never stands in for a way out over land.
 
 **The test:** `python3 art/scripts/test_cliffs.py [shapes] [seed]`, plain Python, exits 1 on a failure. It checks by geometry, not by the rule's own terms, on random shapes: blobs, long arms, rings round a low tile, and second raised regions nearby. It also checks itself: the old foot at the far end of an edge has to fail.
 - **Foot:** straight ahead lies the tile on edge `i - 1`, low and walkable. No cliff section within 8 straight out, within 4 at 45° either way, or nearer than 1.5.
 - **Top:** comes out on the tile's own ground.
-- **Result at 20,000 shapes:** 44,098 ledges, 0 failures. 508 shapes had no walkable land beside them, so no way up, as decided. 1,370 had some walkable land but none in front of a possible foot, so they wait for more land; none of those had walkable land all round.
+- **Gates:** none opens onto a cliff except at a foot, every fenced tile in front of a foot has its gate there, and every fenced group with walkable low land beside it has a gate onto that land.
+- **Result at 20,000 shapes:** 40,581 ledges, 0 failures. 403 shapes had no walkable land beside them, so no way up, as decided. 1,097 had some walkable land but none in front of a possible foot, so they wait for more land; none of those had walkable land all round.
 
 **The ledge:** cut into the cliff, climbing round the tile's corners in one long run rather than switchbacks, which is what let it fit inside the line.
 - **Foot:** about the middle of edge `i - 1`, where it widens toward the land in front. Before it, that edge is plain cliff, with a rock wall closing the ledge's end, so nothing leads the eye along the wall into a neighbouring cliff.
 - **Width:** 1.05 clear, against a mini's base of 1.0. Rock only goes back into the cliff, never out over it.
 - **Headroom:** open sky.
-- **Slope:** about 29°, up from 26°, since starting mid-edge leaves less run. From the edge line to about 5.2.
+- **Slope:** about 29°, up from 26°, since starting mid-edge leaves less run. From the edge line to about 5.2. **This is just past the 28° max tilt for mini bases, so the engine needs to allow it on ledges.**
 - **Length:** about 9.4.
 
 **Path data:** `cliff_path_low`, `_mid` and `_top` each have a `paths` line with real heights from the ground, as they stand at z = 0. Their ends coincide once placed. `low`'s starts on the edge line, 0.13 back from the edge's midpoint and 0.13 above the ground. Link it straight out to the tile on edge `i - 1`, then along its usual route. `edge_climb_top`'s runs from where the ledge comes out, back round to the wedge's inner end, in the raised frame like any wedge: a sharp turn onto the plateau. On monastery that joins the hub as usual, and the Library uses its spoke for that edge. These are the only ways up: nothing else on a cliff edge joins the route graph.
@@ -157,8 +163,7 @@ Reference: `art/scripts/cliffs.py`, plain Python to copy, `art/scripts/test_clif
 - **Path data:** only valid at the end, so no walking during the rise.
 
 **Tiles added later:** a tile of hills terrain beside a finished raised region joins it and rises, taking the region's variant. Any other tile stays low. Run `outer_edges`, `outer_corners` and `climbs` again. In the preview, the same ledges survive. A ledge whose edges stop being outer, or whose foot stops being open, is re-picked.
-- **Keep the old tiles' trails and turn:** the region's existing tiles keep the trails, near and mid pieces and landmark turn they got when it finished. Only the new tile gets its own, from `landmark_flow.flow` with the old tiles' distances left as they are. Otherwise a landmark can swing round when a tile is added.
-- **The preview doesn't do this yet:** `hills_snowy_added_after_raised_v2` works the flow out again, so the Yeti Cave's mouth turns away there. That turn is the preview's shortcut, not the rule.
+- **Keep the old tiles' trails and turn:** the region's existing tiles keep the trails, near and mid pieces and landmark turn they got when it finished. Only the new tile gets its own, from `landmark_flow.extend(tile, dist, toward)`, which leaves the old distances as they are. Otherwise a landmark can swing round when a tile is added. `hills_snowy_added_after_raised_v3` shows this: the Yeti Cave's mouth stays as it was in `hills_snowy_added_before_raised_v2`.
 
 **Two raised regions touching:** they join as one plateau (Ethan's choice, design/06): no cliff between them, at one height (`hills_touching_raised_v2`). They use `edge_other` there, so the ground dips to the join. Each has its own ledges, on land that isn't raised. If one has none, the party can still cross from the other, since the ground joins.
 
@@ -220,7 +225,6 @@ Every landmark's entrance is on edge 0, and each has a line from edge 0's inner 
 - **Interior highlands:** a far tile in a very big range can still reach about 4,965, though not an outer one, and I didn't trim it.
 - **Cliff feet:** kept inside the line, they follow the hex edge, so the foot is straighter than a real cliff's.
 - **One handedness:** a ledge always climbs anticlockwise from edge `i - 1`, so it needs walkable land on that one side. A mirrored set would give regions with little land round them more ways up, for six more pieces per variant.
-- **Fence gates facing a cliff:** `fence_gates.py` counts a raised tile as walkable, so a gate can open onto a cliff. It needs the raised tiles passed in. It also needs to give a gate to a fenced tile in front of a ledge's foot.
 - **Lone trees near a foot:** plains' lone trees stay where their tile puts them, so one stands near a foot in the 12-tile views. It isn't in the way, but it does stand in front of the plain cliff.
 - **Not tested in an engine:** the raised regions, cliff pieces and the rise, the range rules, `steps_*` placement, `lava`, the fades, smoke merging and routes round rock haven't been tried in Godot yet.
 - **Placeholder colours:** the new ground and prop colours are placeholders where design/07 doesn't name them.
