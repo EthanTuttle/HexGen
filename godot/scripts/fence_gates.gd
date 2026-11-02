@@ -7,9 +7,9 @@ const FENCED := ["farmland", "village"]   # terrains inside the fence (their var
 const UNWALKABLE := ["river"]             # water: rivers and lakes
 
 
-## terrains: tile -> terrain (variants and landmarks already turned into their terrain). Returns tile -> the
-## edges of that fenced tile that show a gate.
-static func gates(terrains: Dictionary) -> Dictionary:
+## terrains: tile -> terrain (variants and landmarks already turned into their terrain). raised: all raised tiles.
+## climbs: every raised region's Cliffs.climbs(). Returns tile -> the edges of that fenced tile that show a gate.
+static func gates(terrains: Dictionary, raised := {}, climbs := []) -> Dictionary:
 	var out := {}
 	var fence := {}
 	for t: Vector2i in terrains:
@@ -23,7 +23,7 @@ static func gates(terrains: Dictionary) -> Dictionary:
 		var ranked := edges.duplicate()
 		ranked.sort_custom(func(a, b): return _rank(t, a) < _rank(t, b))
 		var take := ranked.slice(0, 2 if GroundCover.hash01(t.x, t.y, 12) < 0.35 else 1)
-		out[t] = take.filter(func(i): return _walkable(terrains.get(t + Hex.NEIGHBOURS[i])))
+		out[t] = take.filter(func(i): return _walkable(terrains, raised, t + Hex.NEIGHBOURS[i]))
 	# Every group gets a way out.
 	var seen := {}
 	for start: Vector2i in fence:
@@ -46,12 +46,18 @@ static func gates(terrains: Dictionary) -> Dictionary:
 		var best_edge := -1
 		for t in group:
 			for i: int in fence[t]:
-				if _walkable(terrains.get(t + Hex.NEIGHBOURS[i])) and _rank(t, i) < best:
+				if _walkable(terrains, raised, t + Hex.NEIGHBOURS[i]) and _rank(t, i) < best:
 					best = _rank(t, i)
 					best_tile = t
 					best_edge = i
 		if best_edge >= 0:
 			out[best_tile] = [best_edge]
+	# A fenced tile in front of a ledge's foot always gets a gate on the edge facing it.
+	for c in climbs:
+		var front: Vector2i = Cliffs.beside(c[0], c[1] - 1)
+		var facing: int = (c[1] + 2) % 6
+		if fence.has(front) and not facing in out[front]:
+			out[front].append(facing)
 	return out
 
 
@@ -59,5 +65,5 @@ static func _rank(t: Vector2i, i: int) -> float:
 	return GroundCover.hash01(t.x * 6 + i, t.y, 11)
 
 
-static func _walkable(terrain) -> bool:
-	return terrain != null and not terrain in UNWALKABLE
+static func _walkable(terrains: Dictionary, raised: Dictionary, n: Vector2i) -> bool:
+	return not raised.has(n) and terrains.get(n) != null and not terrains[n] in UNWALKABLE

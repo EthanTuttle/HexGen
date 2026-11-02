@@ -65,6 +65,7 @@ func _ready() -> void:
 	clock.sun_blend_seconds = Rules.SUN_BLEND_SECONDS
 
 	map.time_of_day = clock
+	rig.floor_at = map.camera_floor
 	add_child(map)
 	map.place(Rules.START_TILE, Rules.START_TERRAIN)
 	order[Rules.START_TILE] = 0
@@ -111,6 +112,10 @@ func _ready() -> void:
 		var fm := FarmCheck.new()
 		fm.game = self
 		add_child(fm)
+	elif "--hillscheck" in OS.get_cmdline_user_args():
+		var hc := HillsCheck.new()
+		hc.game = self
+		add_child(hc)
 	elif "--plainscheck" in OS.get_cmdline_user_args():
 		var pc := PlainsCheck.new()
 		pc.game = self
@@ -425,6 +430,40 @@ func _set_flow(region: Dictionary) -> void:
 	map.set_flow(region.tiles, region.landmark_tile)
 
 
+## A raised region comes up over a few seconds with dust and shaking, carrying the party, and nobody walks until it's
+## done (DOCS: design/06 -> Raised hills regions; hills kit -> The rise). Also when a later hills tile joins it.
+func _rise(region: Dictionary) -> void:
+	var r := map.begin_rise(regions.find(region), region.tiles)
+	if r.rising.is_empty():
+		map.finish_rise(r)
+		return
+	party_node.gather()
+	var carried: bool = r.rising.has(party_tile)
+	var dust := PackedVector2Array()
+	for t: Vector2i in r.rising:
+		var c := Hex.tile_position(t.x, t.y)
+		for i: int in map._outer.get(t, []):
+			var along := Water.normal(i).orthogonal()
+			for u in [-1.5, 0.0, 1.5]:
+				dust.append(c + Water.normal(i) * Hex.A + along * u)
+	RiseDust.start(map, dust, Rules.RISE_SECONDS)
+	var t := 0.0
+	var y := 0.0
+	while t < Rules.RISE_SECONDS:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		var u := clampf(t / Rules.RISE_SECONDS, 0.0, 1.0)
+		var now := Variants.RAISE * smoothstep(0.0, 1.0, u)
+		map.set_lift(r.rising, now)
+		if carried:
+			party_node.lift_by(now - y)
+		y = now
+		rig.shake = Rules.RISE_SHAKE * minf(1.0, (1.0 - u) * 4.0)
+	rig.shake = 0.0
+	map.finish_rise(r)
+	party_node.settle_up()
+
+
 ## Debug (`-- --forest`, or F9 on PC): a finished 7-tile region of each forest and farmland variant, each with its
 ## landmark on a random tile, plus a market town and a tier 0 farm and village group, around the start with plains
 ## between, made at once by the same rules as a region finishing.
@@ -436,6 +475,9 @@ const DEBUG_PLAINS := {"meadows": Vector2i(0, 6), "battlefield": Vector2i(0, -7)
 	"tourney_fields": Vector2i(-5, 6)}   # 12 tiles each (DEBUG_PLAINS_SHAPE), so the density bands show
 const DEBUG_PLAINS_SHAPE := [Vector2i(1, -1), Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
 	Vector2i(0, -1), Vector2i(1, 1), Vector2i(0, 2), Vector2i(-1, 2), Vector2i(-2, 2), Vector2i(-2, 1)]   # its landmark first
+const DEBUG_HILLS := {"highlands": Vector2i(10, -6), "snowy_peaks": Vector2i(11, -13), "volcanic_peaks": Vector2i(-12, 2),
+	"monastery_heights": Vector2i(-10, 12)}   # 12 tiles each, raised, with plains laid to them
+const DEBUG_HILLS_T0 := Vector2i(9, 2)    # tier 0: a hills group, and one lone tile beside it
 const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
 const DEBUG_FARMS := Vector2i(3, 3)      # tier 0: farmland in the middle and half the ring, village the other half
 
@@ -467,6 +509,28 @@ func spawn_forest_regions() -> void:
 		for x in tiles:
 			changes[x] = region_look(region, x)
 			order[x] = order.size()
+	for v: String in DEBUG_HILLS:
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_PLAINS_SHAPE:
+			tiles.append(DEBUG_HILLS[v] + s)
+		if tiles.any(func(x): return map.terrains.has(x) or changes.has(x)):
+			continue
+		var region := new_region("hills", tiles, v, tiles[0])
+		_set_flow(region)
+		map.set_raised(regions.size() - 1, tiles)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
+		_debug_road(DEBUG_HILLS[v] + Vector2i(-3, 3), changes)
+	for k in 7:
+		var x: Vector2i = DEBUG_HILLS_T0 + (Vector2i.ZERO if k == 6 else Hex.NEIGHBOURS[k])
+		if not map.terrains.has(x) and not changes.has(x):
+			changes[x] = "hills"
+			order[x] = order.size()
+			_debug_fill[x] = true
+	changes[DEBUG_HILLS_T0 + Vector2i(3, 0)] = "hills"
+	_debug_fill[DEBUG_HILLS_T0 + Vector2i(3, 0)] = true
+	_debug_road(DEBUG_HILLS_T0 + Vector2i(-2, 0), changes)
 	for k in 7:
 		var x: Vector2i = DEBUG_FARMS + (Vector2i.ZERO if k == 6 else Hex.NEIGHBOURS[k])
 		if not map.terrains.has(x):
@@ -487,6 +551,20 @@ func spawn_forest_regions() -> void:
 	_refresh()
 
 
+## Debug: plains from this tile back toward the start until they meet land, so the party can walk there.
+func _debug_road(from: Vector2i, changes: Dictionary) -> void:
+	var t := from
+	while not map.terrains.has(t) and not changes.has(t):
+		changes[t] = "plains"
+		order[t] = order.size()
+		_debug_fill[t] = true
+		var best: Vector2i = t + Hex.NEIGHBOURS[0]
+		for n in Hex.NEIGHBOURS:
+			if Rules.hex_distance(t + n, Rules.START_TILE) < Rules.hex_distance(best, Rules.START_TILE):
+				best = t + n
+		t = best
+
+
 ## A finished region's tiles change to its variant's look (DOCS: Exploration screen -> Cluster goals; no rim),
 ## and its landmark tile to the landmark's. Tier 2 regions without art keep their terrain's look for now.
 ## PLACEHOLDER transition: a wave spreading from the tile that finished it; each tile sinks flat into the
@@ -498,6 +576,20 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 	var todo := tiles.filter(func(c): return map.terrains[c] != region_look(region, c))
 	if todo.is_empty():
 		return
+	if region.variant in Cliffs.RAISED:   # old tiles keep their trails and turn; only a new tile gets its own
+		var dist := {}   # this region's only: a trail never runs into a region it touches
+		var toward := {}
+		for c in tiles:
+			if map.flow_dist.has(c):
+				dist[c] = map.flow_dist[c]
+				if map.flow_toward.has(c):
+					toward[c] = map.flow_toward[c]
+		for _k in todo.size():
+			for c in todo:
+				if not dist.has(c):
+					LandmarkFlow.extend(c, dist, toward)
+		map.flow_dist.merge(dist, true)
+		map.flow_toward.merge(toward, true)
 	todo.sort_custom(func(a, b): return Rules.hex_distance(a, from) < Rules.hex_distance(b, from))
 	busy = true
 	const SINK := 0.22
@@ -519,6 +611,8 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		tw.tween_interval(k * STEP * 0.6)
 		tw.tween_property(node, "scale:y", 1.0, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await get_tree().create_timer((todo.size() - 1) * STEP * 0.6 + 0.45).timeout
+	if region.variant in Cliffs.RAISED:
+		await _rise(region)
 	busy = false
 	_refresh()
 
@@ -563,7 +657,7 @@ func markers() -> Array:
 
 
 func _tile_top(t: Vector2i) -> Vector3:
-	return Hex.to3(Hex.tile_position(t.x, t.y), 1.2)
+	return Hex.to3(Hex.tile_position(t.x, t.y), 1.2 + map.lift.get(t, 0.0))
 
 
 # --- Encounters --------------------------------------------------------------
@@ -595,16 +689,26 @@ func add_encounter(t: Vector2i, persistent: bool, dropped: Array = []) -> void:
 
 func path_to(goal: Vector2i) -> Array[Vector2i]:
 	var came := {party_tile: party_tile}
+	var cost := {party_tile: 0}
 	var todo: Array[Vector2i] = [party_tile]
 	while not todo.is_empty():
-		var c: Vector2i = todo.pop_front()
+		var best := 0
+		for k in todo.size():
+			if cost[todo[k]] < cost[todo[best]]:
+				best = k
+		var c: Vector2i = todo.pop_at(best)
 		if c == goal:
 			break
-		for n in Hex.NEIGHBOURS:
-			var m: Vector2i = c + n
-			if map.terrains.has(m) and not came.has(m) and map.edge_open(c, m):   # fences only through a gate
-				came[m] = c
-				todo.append(m)
+		for i in 6:
+			var m: Vector2i = c + Hex.NEIGHBOURS[i]
+			if map.terrains.has(m) and map.edge_open(c, m):   # fences only through a gate
+				# A shared mountain stands on the edge: the party goes round by the passes where it can.
+				var step: int = Rules.MOUNTAIN_EDGE_COST if map._ranges(c, i) else 1
+				if cost[c] + step < cost.get(m, 1 << 30):
+					cost[m] = cost[c] + step
+					came[m] = c
+					if not m in todo:
+						todo.append(m)
 	var path: Array[Vector2i] = []
 	if not came.has(goal):
 		return path
@@ -861,7 +965,8 @@ func pick(t) -> void:
 		while n <= dots and d + seg >= length * n / dots:
 			var mi := MeshInstance3D.new()
 			mi.mesh = dot
-			mi.position = Hex.to3(route[k - 1].lerp(route[k], (length * n / dots - d) / maxf(seg, 1e-4)), 0.3)
+			var at := route[k - 1].lerp(route[k], (length * n / dots - d) / maxf(seg, 1e-4))
+			mi.position = Hex.to3(at, party_node.height_on_route(k) + 0.3)
 			mi.scale = Vector3.ONE * (1.6 if n == dots else 1.0)
 			add_child(mi)
 			_path_marks.append(mi)
@@ -875,6 +980,11 @@ func ground_point(screen: Vector2) -> Vector2:
 	var d := cam.project_ray_normal(screen)
 	if absf(d.y) < 1e-4:
 		return Vector2(INF, INF)
+	# Raised ground stands in the way of what's behind it, so try its height first.
+	if not map.raised.is_empty():
+		var high := o + d * ((Variants.RAISE + 1.0 - o.y) / d.y)
+		if map.raised.has(GroundCover.tile_at(Vector2(high.x, -high.z))):
+			return Vector2(high.x, -high.z)
 	var p := o + d * (-o.y / d.y)
 	return Vector2(p.x, -p.z)
 

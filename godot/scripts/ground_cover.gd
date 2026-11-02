@@ -20,7 +20,10 @@ const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, 
 	# farmland tier 2 (farm pieces hold their own, like farmland)
 	"haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0,
 	# plains tier 2 and class variant
-	"battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05}
+	"battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05,
+	# hills variants and landmarks (their pieces hold their own)
+	"snowy_peaks": 0.0, "volcanic_peaks": 0.0, "monastery_heights": 0.0, "clanhall": 0.0, "yeticave": 0.0,
+	"salamanderden": 0.0, "library": 0.0}
 ## Tuft colour where it isn't the usual grass_ink; terrains in NO_FLOWERS get tufts instead of flowers.
 const TUFT := {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
 	"oldbattlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "thunderbirdnest": "tuft_storm"}

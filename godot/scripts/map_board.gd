@@ -65,6 +65,18 @@ var gates := {}                        # fenced tile -> the edges that show a ga
 var lightning: Lightning               # stormy plains' strikes
 var _faint: StandardMaterial3D         # the Abandoned Barn's light through its boards
 var _graphs := {}                      # tile -> its drawn paths (TilePaths), built when asked for
+## Raised regions (Cliffs; art/handoff/hills_kit.md -> Raised regions).
+var raised := {}                       # every raised tile -> true
+var raised_regions := {}               # key -> the tiles of that raised region
+var lift := {}                         # raised tile -> how high it stands now (Variants.RAISE, once it's up)
+var climbs := []                       # every region's Cliffs.climbs(), [tile, i]
+var _outer := {}                       # raised tile -> its edges with a cliff
+var _corners := {}                     # raised tile -> its corners with a pinnacle
+var _ledges := {}                      # raised tile -> {edge -> "low", "mid" or "top"}
+var _links := {}                       # Vector4i(a, b) of two neighbours -> the [tile, i] climb between them
+var _shape := {}                       # raised tile -> what its cliffs were built from, to spot changes
+var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
+var _clip_mats := {}                   # surface material -> its cut-off version while a region rises
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
 
@@ -79,6 +91,11 @@ static func variant_map() -> Dictionary:
 
 ## Joined for edge pieces: the same terrain (a region variant counts as its terrain), or linked terrains.
 static func linked(a, b) -> bool:
+	if a != null and b != null:
+		var ka := Variants.wedges_of(a)
+		var kb := Variants.wedges_of(b)
+		if ka != kb and (ka in Cliffs.RAISED or kb in Cliffs.RAISED):
+			return false   # a raised region shares no mountain with the land below it
 	var ta := Variants.terrain_of(a)
 	var tb := Variants.terrain_of(b)
 	return tb != "" and (ta == tb or (ta in BORDERED and tb in BORDERED))
@@ -127,11 +144,13 @@ func retile(changes: Dictionary) -> void:
 					water_changed = true
 	if water_changed:
 		_update_water()
+	touched.merge(_update_raised())
 	touched.merge(_update_gates())
 	for t: Vector2i in touched:
 		_build_tile(t)
 	for t: Vector2i in touched:
 		_add_cover(t)
+	_update_smoke()
 	_update_lightning()
 	_build_slots()
 	if "--perf" in OS.get_cmdline_user_args():
@@ -153,7 +172,7 @@ func _update_gates() -> Dictionary:
 	var by_terrain := {}
 	for t: Vector2i in terrains:
 		by_terrain[t] = Variants.terrain_of(terrains[t])
-	var now := FenceGates.gates(by_terrain)
+	var now := FenceGates.gates(by_terrain, raised, climbs)
 	var changed := {}
 	for t: Vector2i in now:
 		if now[t] != gates.get(t, []):
@@ -162,13 +181,219 @@ func _update_gates() -> Dictionary:
 	return changed
 
 
-## Whether a party can step between neighbours a and b: fences are only crossed through a gate (DOCS: Walking).
+## Whether a party can step between neighbours a and b: fences are only crossed through a gate (DOCS: Walking), and
+## a cliff only by its ledge.
 func edge_open(a: Vector2i, b: Vector2i) -> bool:
+	if raised.has(a) != raised.has(b):
+		return not climb_between(a, b).is_empty()
 	if gates.has(a) == gates.has(b):
 		return true
 	var fenced := a if gates.has(a) else b
 	var other := b if gates.has(a) else a
 	return Hex.NEIGHBOURS.find(other - fenced) in gates[fenced]
+
+
+## Works out which tiles are raised, their cliffs and ledges; returns the raised tiles whose cliffs changed.
+func _update_raised() -> Dictionary:
+	var before := _shape
+	_shape = {}
+	raised.clear()
+	climbs.clear()
+	_outer.clear()
+	_corners.clear()
+	_ledges.clear()
+	_links.clear()
+	for key in raised_regions:
+		for t: Vector2i in raised_regions[key]:
+			raised[t] = true
+	if raised.is_empty():
+		return {}
+	var by_terrain := {}
+	for t: Vector2i in terrains:
+		by_terrain[t] = Variants.terrain_of(terrains[t])
+	for key in raised_regions:
+		var region: Array = raised_regions[key]
+		for e in Cliffs.outer_edges(region, raised):
+			_outer.get_or_add(e[0], []).append(e[1])
+		var own := Cliffs.climbs(region, by_terrain, raised)
+		climbs.append_array(own)
+		for c in own:
+			var t: Vector2i = c[0]
+			var i: int = c[1]
+			_ledges[t] = {posmod(i - 1, 6): "low", i: "mid", (i + 1) % 6: "top"}
+			var low := Cliffs.beside(t, i - 1)
+			_links[Vector4i(t.x, t.y, low.x, low.y)] = c
+			_links[Vector4i(low.x, low.y, t.x, t.y)] = c
+		for e in Cliffs.outer_corners(region, raised):
+			# No pinnacle at corners i - 1, i and i + 1 of a ledge: the same keys as its edges.
+			if not _ledges.get(e[0], {}).has(e[1]):
+				_corners.get_or_add(e[0], []).append(e[1])
+	var changed := {}
+	for t: Vector2i in raised:
+		_shape[t] = [_outer.get(t, []).duplicate(), _corners.get(t, []).duplicate(), _ledges.get(t, {}).duplicate()]
+		_shape[t][0].sort()
+		_shape[t][1].sort()
+		if _shape[t] != before.get(t):
+			changed[t] = true
+	return changed
+
+
+## Registers a region as raised and standing (the debug spawn: it needs no rise). Call before retiling it.
+func set_raised(key: Variant, tiles: Array) -> void:
+	raised_regions[key] = tiles.duplicate()
+	for t: Vector2i in tiles:
+		lift[t] = Variants.RAISE
+
+
+## A region starts to rise, or grows. Its new tiles are built on their cliffs at the bottom of the rise; other raised
+## tiles whose cliffs change keep their old pieces until finish_rise, so nothing opens up under them meanwhile.
+## Returns {rising, later}.
+func begin_rise(key: Variant, tiles: Array) -> Dictionary:
+	raised_regions[key] = tiles.duplicate()
+	var rising := tiles.filter(func(t): return not lift.has(t))
+	var changed := _update_raised()
+	var low := _update_gates()
+	for t: Vector2i in rising:
+		lift[t] = 0.0
+		changed.erase(t)
+		low.erase(t)
+		_build_tile(t)
+		_clip_cliffs(t, true)
+	for t: Vector2i in low:
+		changed.erase(t)
+		_build_tile(t)
+		_add_cover(t)
+	_update_smoke()
+	return {rising = rising, later = changed.keys()}
+
+
+func set_lift(tiles: Array, y: float) -> void:
+	for t: Vector2i in tiles:
+		lift[t] = y
+		tile_node(t).position.y = y
+
+
+func finish_rise(r: Dictionary) -> void:
+	set_lift(r.rising, Variants.RAISE)
+	for t: Vector2i in r.rising:
+		_clip_cliffs(t, false)
+	for t: Vector2i in r.later:
+		_build_tile(t)
+	_update_smoke()
+
+
+## Cuts a rising tile's cliff pieces off below the board's soil, or stops.
+func _clip_cliffs(t: Vector2i, on: bool) -> void:
+	var cliffs := tile_node(t).get_node_or_null("cliffs")
+	if cliffs == null:
+		return
+	for mi: MeshInstance3D in cliffs.get_children():
+		for k in mi.mesh.get_surface_count():
+			mi.set_surface_override_material(k, _clip_of(mi.mesh.surface_get_material(k), t) if on else null)
+
+
+func _clip_of(m: Material, t: Vector2i) -> ShaderMaterial:
+	var key = [m, terrains[t]] if m == _ground else m
+	if not _clip_mats.has(key):
+		var c := ShaderMaterial.new()
+		c.shader = load("res://shaders/cliff_rise.gdshader")
+		var tint := Color.WHITE
+		if m == _ground:
+			tint = Hex.colour(Variants.GROUND[terrains[t]])
+		elif m is BaseMaterial3D and not (m as BaseMaterial3D).vertex_color_use_as_albedo:
+			tint = (m as BaseMaterial3D).albedo_color
+		c.set_shader_parameter("tint", tint)
+		_clip_mats[key] = c
+	return _clip_mats[key]
+
+
+## The climb between neighbours a and b ([tile, i]: its ledge rounds edges i - 1, i and i + 1 of tile), or [].
+func climb_between(a: Vector2i, b: Vector2i) -> Array:
+	return _links.get(Vector4i(a.x, a.y, b.x, b.y), [])
+
+
+## The ledge of a climb from the foot up to where it comes out on the plateau: (plan x, plan y, height) with its corners
+## rounded, sampled like the route's curves.
+func ledge_line(t: Vector2i, i: int) -> PackedVector3Array:
+	var kit := Variants.wedges_of(terrains[t])
+	var at := Hex.tile_position(t.x, t.y)
+	var corners := PackedVector3Array()
+	var turn := i - 1
+	for part in ["_cliff_path_low", "_cliff_path_mid", "_cliff_path_top"]:
+		for poly in Kit.path_data(kit + part).paths:
+			for p in poly:
+				var plan := at + Vector2(p[0], -p[2]).rotated(deg_to_rad(60.0 * turn))
+				var q := Vector3(plan.x, plan.y, p[1])
+				if corners.is_empty() or corners[-1].distance_to(q) > 0.05:
+					corners.append(q)
+		turn += 1
+	var out := PackedVector3Array([corners[0]])
+	for k in range(1, corners.size()):
+		var a := corners[k - 1]
+		var b := corners[k]
+		var r := minf(Rules.PATH_CORNER, a.distance_to(b) * 0.4)
+		var to := b - (b - a).normalized() * r if k < corners.size() - 1 else b
+		_ledge_run(out, to)
+		if k < corners.size() - 1:
+			var c := corners[k + 1]
+			var off := b + (c - b).normalized() * minf(Rules.PATH_CORNER, b.distance_to(c) * 0.4)
+			var from := out[-1]
+			for u in range(1, 7):
+				var w := u / 6.0
+				out.append(from.lerp(b, w).lerp(b.lerp(off, w), w))
+	return out
+
+
+static func _ledge_run(out: PackedVector3Array, to: Vector3) -> void:
+	var from := out[-1]
+	var n := maxi(1, ceili(from.distance_to(to) / 0.25))
+	for k in range(1, n + 1):
+		out.append(from.lerp(to, float(k) / n))
+
+
+## Whether a plan point on raised ground is too near a cliff's lip to walk or stand on.
+func near_lip(p: Vector2) -> bool:
+	var t := GroundCover.tile_at(p)
+	if not raised.has(t):
+		return false
+	var local := p - Hex.tile_position(t.x, t.y)
+	for i: int in _outer.get(t, []):
+		if Hex.A - local.dot(Water.normal(i)) < Rules.LIP_CLEAR:
+			return true
+	return false
+
+
+## How high a camera over this plan point must stay to clear the ground and what stands on it.
+func camera_floor(p: Vector2) -> float:
+	return Variants.RAISE + 5.45 if raised.has(GroundCover.tile_at(p)) else 0.0   # the kit's tallest: snowy's corner mountain
+
+
+## One smoke per crater: a volcano's parts on two or three tiles each carry its point (hills kit -> Effects).
+func _update_smoke() -> void:
+	var seen := {}
+	for t: Vector2i in _tile_nodes:
+		if terrains.get(t) != "volcanic_peaks":
+			continue
+		var node: Node3D = _tile_nodes[t]
+		for c in node.get_children():
+			if c.name.begins_with("crater_smoke"):
+				c.free()
+		var at := Hex.tile_position(t.x, t.y)
+		for mi in node.get_children():
+			if not (mi is MeshInstance3D and mi.has_meta("piece")):
+				continue
+			for e in Kit.path_data(mi.get_meta("piece")).get("effects", []):
+				if e.kind != "smoke":
+					continue
+				var p: Vector2 = Vector2(e.at[0], -e.at[2]).rotated(mi.rotation.y) + at
+				var key := Vector2i((p * 5.0).round())
+				if seen.has(key):
+					continue
+				seen[key] = true
+				var fx := FarmFx.crater_smoke()
+				fx.name = "crater_smoke"
+				fx.position = Hex.to3(p, e.at[1])
+				node.add_child(fx)
 
 
 ## Tile t's drawn paths (empty where its pieces have no path data).
@@ -185,9 +410,12 @@ func path_graph(t: Vector2i) -> TilePaths:
 
 
 ## Whether the edge between neighbours a and b is a landmark trail edge with a drawn trail. Plains variants have
-## no trail pieces: they flow by density, so the party keeps its usual curved route there.
+## no trail pieces: they flow by density, so the party keeps its usual curved route there. Hills trail pieces only
+## show the way; monastery's have path data, which the route follows anyway.
 func trail_edge(a: Vector2i, b: Vector2i) -> bool:
 	if not (flow_toward.get(a) == b or flow_toward.get(b) == a):
+		return false
+	if Variants.terrain_of(terrains.get(a)) == "hills":
 		return false
 	return _has_trail(terrains.get(a)) or _has_trail(terrains.get(b))
 
@@ -198,6 +426,8 @@ func _has_trail(name) -> bool:
 
 ## The ground cover of tile t, kept off its and its neighbours' pieces' no_cover circles (plans, world space).
 func _add_cover(t: Vector2i) -> void:
+	if raised.has(t):
+		return   # raised ground holds no cover, not even tufts fading in from neighbours
 	var clear := []
 	for c: Vector2i in [t, t + Hex.NEIGHBOURS[0], t + Hex.NEIGHBOURS[1], t + Hex.NEIGHBOURS[2], t + Hex.NEIGHBOURS[3],
 			t + Hex.NEIGHBOURS[4], t + Hex.NEIGHBOURS[5]]:
@@ -273,7 +503,7 @@ func _setup_materials() -> void:
 	for mesh: Mesh in _kit.values():
 		for k in mesh.get_surface_count():
 			var name := Kit.material_name(mesh, k)
-			if name in ["hill_grass", "highland_grass"]:
+			if name in ["hill_grass", "highland_grass", "snow_ground", "ash_ground"]:
 				# tiles v10: the hills pieces' ground (they cover the base slab) fades like the base slabs' tops
 				mesh.surface_set_material(k, _ground)
 				continue
@@ -300,6 +530,9 @@ func _setup_materials() -> void:
 	_faint = _glow.duplicate() as StandardMaterial3D
 	_faint.albedo_color = Hex.colour("window_faint")
 	_faint.emission = Hex.colour("window_faint")
+	_lava = _glow.duplicate() as StandardMaterial3D
+	_lava.albedo_color = Hex.colour("lava")
+	_lava.emission = Hex.colour("lava")
 	_web = StandardMaterial3D.new()
 	_web.albedo_color = Color(Hex.colour("web"), 0.3)   # hexkit.WEB_ALPHA
 	_web.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -311,6 +544,7 @@ func _setup_materials() -> void:
 				"window_glow": mesh.surface_set_material(k, _window)
 				"web": mesh.surface_set_material(k, _web)
 				"window_faint": mesh.surface_set_material(k, _faint)
+				"lava": mesh.surface_set_material(k, _lava)
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
@@ -362,8 +596,11 @@ func _build_tile(t: Vector2i) -> void:
 	var name: String = terrains[t]
 	var terrain := Variants.terrain_of(name)
 	var at := Hex.tile_position(t.x, t.y)
-	var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
-	base.set_surface_override_material(0, _ground)
+	var high := raised.has(t)
+	node.position.y = lift.get(t, 0.0)
+	if not high:   # raised ground covers the tile, and a base's soil would stick out of the cliff
+		var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
+		base.set_surface_override_material(0, _ground)
 	if terrain == "river":
 		return
 	var centre := "_centre"
@@ -403,22 +640,28 @@ func _build_tile(t: Vector2i) -> void:
 		joined.append(linked(name, terrains.get(t + n)))
 	if terrain == "hills":
 		# One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
-		# meet; otherwise half on each edge shared with one other hills tile.
+		# meet; otherwise half on each edge shared with one other hills tile. A landmark has none of this, its
+		# neighbours leave it out, and no mountain stands on a trail edge, so the range opens into a pass.
+		var ranged := []
 		var triple := []
 		for i in 6:
-			triple.append(joined[i] and joined[(i + 1) % 6])   # corner i: between edges i and i + 1
-		if not joined.has(true):
+			ranged.append(_ranges(t, i))
+		for i in 6:   # corner i: between edges i and i + 1; every copy of the third must be drawn
+			triple.append(ranged[i] and ranged[(i + 1) % 6] and _ranges(t + Hex.NEIGHBOURS[i], (i + 2) % 6))
+		var clear_near: bool = flow_dist.get(t, 3) > 2
+		if not Variants.LANDMARKS.has(name) and not ranged.has(true) and clear_near:
 			Kit.place(node, _kit, name + "_peak", at)
 		var parts := []
 		for i in 6:
 			if triple[i]:
 				parts.append(["corner", i])
-			elif joined[i] and not triple[posmod(i - 1, 6)]:
+			elif ranged[i] and not triple[posmod(i - 1, 6)]:
 				parts.append(["edge", i])
 		for part in parts:
 			Kit.place(node, _kit, name + "_mountain_" + part[0], at, deg_to_rad(60.0 * part[1]))
-		# In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
-		if parts.size() >= 2:
+		# In bigger groups the mountains join into a range: ridges from this tile's middle to each of them. None
+		# within two steps of a landmark (clear ground), nor where steps run (they'd bury them).
+		if parts.size() >= 2 and clear_near and not _kit.has(Variants.wedges_of(name) + "_steps_centre"):
 			Kit.place(node, _kit, name + "_ridge_knot", at)
 			for part in parts:
 				Kit.place(node, _kit, name + "_ridge_" + part[0], at, deg_to_rad(60.0 * part[1]))
@@ -427,7 +670,17 @@ func _build_tile(t: Vector2i) -> void:
 	for i in 6:
 		var angle := deg_to_rad(60.0 * i)
 		var edge := _edge_piece(t, name, kit, i, joined[i], trails)
+		if i in _outer.get(t, []):
+			var part: String = _ledges.get(t, {}).get(i, "")
+			edge = kit + {"low": "_edge_climb_low", "mid": "_edge_climb", "top": "_edge_climb_top", "": "_edge_rim"}[part]
+			if part == "top" and _kit.has(kit + "_steps_centre"):
+				Kit.place(node, _kit, kit + ("_steps_rise" if Variants.LANDMARKS.has(name) else "_steps_centre"), at, angle)
 		Kit.place(node, _kit, edge, at, angle)
+		if i in trails and _kit.has(kit + "_steps_centre"):   # the stair's flight on the centre, one per trail edge
+			if not Variants.LANDMARKS.has(name):
+				Kit.place(node, _kit, kit + "_steps_centre", at, angle)
+			elif i != landmark_turns.get(t, 0):   # the entrance edge's steps are in the landmark's own piece
+				Kit.place(node, _kit, kit + "_steps_rise", at, angle)
 		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
 		if terrain in BORDERED and joined[i]:
 			if not joined[(i + 1) % 6]:
@@ -435,7 +688,35 @@ func _build_tile(t: Vector2i) -> void:
 			if not joined[posmod(i - 1, 6)]:
 				Kit.place(node, _kit, "border_join_r", at, angle)
 	if terrain in ["hills", "desert"]:
-		_add_ground_collision(node)
+		_add_ground_collision(node, terrain == "hills", high)
+	if high:
+		_add_cliffs(t, node, kit, at)
+
+
+## Do tile t and its neighbour on edge i share a mountain? (render_preview.build_map: ranges)
+func _ranges(t: Vector2i, i: int) -> bool:
+	var n: Vector2i = t + Hex.NEIGHBOURS[i]
+	var a = terrains.get(t)
+	var b = terrains.get(n)
+	return linked(a, b) and not i in LandmarkFlow.trail_edges(t, flow_toward) and not Variants.LANDMARKS.has(a) \
+			and not Variants.LANDMARKS.has(b)
+
+
+## The cliffs round a raised tile, at ground level whatever height the tile stands at: they're children of the tile's
+## node at -RAISE, so they come up with it, and their lip stays on its ground.
+func _add_cliffs(t: Vector2i, node: Node3D, kit: String, at: Vector2) -> void:
+	if not _outer.has(t):
+		return
+	var cliffs := Node3D.new()
+	cliffs.name = "cliffs"
+	cliffs.position.y = -Variants.RAISE
+	node.add_child(cliffs)
+	for i: int in _outer[t]:
+		var part: String = _ledges.get(t, {}).get(i, "")
+		var piece := "_cliff_path_" + part if part != "" else "_cliff_edge_b" if GroundCover.hash01(t.x * 6 + i, t.y, 8) < 0.5 else "_cliff_edge"
+		Kit.place(cliffs, _kit, kit + piece, at, deg_to_rad(60.0 * i))
+	for i: int in _corners.get(t, []):
+		Kit.place(cliffs, _kit, kit + "_cliff_corner", at, deg_to_rad(60.0 * i))
 
 
 ## The Great Windmill's sails, at its hub (variants.MILL_HUB) turned with the landmark, spinning about their own X.
@@ -470,6 +751,8 @@ func _edge_piece(t: Vector2i, name: String, kit: String, i: int, joined: bool, t
 			return kit + "_edge_trail"
 	if not joined and i in gates.get(t, []) and _kit.has(kit + "_edge_gate"):
 		return kit + "_edge_gate"
+	if not joined and _kit.has(kit + "_edge_other_b") and GroundCover.hash01(t.x * 6 + i, t.y, 8) < 0.5:
+		return kit + "_edge_other_b"   # trees: a wedge facing other land is the only one clear of rock
 	if not joined and Variants.LANDMARKS.has(name) and _kit.has(kit + "_edge_other_lm"):
 		return kit + "_edge_other_lm"
 	if joined and _kit.has(kit + "_edge_same_b") and GroundCover.hash01(t.x * 6 + i, t.y, 8) < 0.5:
@@ -484,14 +767,14 @@ func _edge_piece(t: Vector2i, name: String, kit: String, i: int, joined: bool, t
 static var _shapes := {}
 
 
-func _add_ground_collision(node: Node3D) -> void:
+func _add_ground_collision(node: Node3D, hills: bool, high: bool) -> void:
 	for c in node.get_children():
 		if not c is MeshInstance3D:
 			continue
 		var mi := c as MeshInstance3D
 		var n: String = mi.get_meta("piece", String(mi.name))   # not the node name: repeats are renamed
-		var whole := n == "sand" or "_peak" in n or "_mountain_" in n or "_ridge_" in n
-		if not whole and not (n.begins_with("hills_") or n.begins_with("highlands_")):
+		var whole := n == "sand" or n.ends_with("_peak") or "_mountain_" in n or "_ridge_" in n
+		if not whole and not hills:
 			continue
 		var key := [mi.mesh, whole]
 		if not _shapes.has(key):
@@ -515,6 +798,7 @@ func _add_ground_collision(node: Node3D) -> void:
 		var cs := CollisionShape3D.new()
 		cs.shape = _shapes[key]
 		body.set_meta("mountain", whole and n != "sand")   # the party walks round these (PartyWalker.blocked)
+		body.collision_layer = 2 if high else 1            # raised ground, felt only by a mini up there
 		body.add_child(cs)
 		mi.add_child(body)
 
@@ -647,6 +931,7 @@ func _process(delta: float) -> void:
 		_fey.emission_energy_multiplier = 0.15 + 1.6 * night   # PLACEHOLDER: "glow softly at night"
 		_window.emission_energy_multiplier = 0.4 + 3.0 * night  # PLACEHOLDER: warm light inside
 		_faint.emission_energy_multiplier = 0.1 + 0.9 * night   # PLACEHOLDER: dimmer than the windows
+		_lava.emission_energy_multiplier = (0.75 + 0.25 * sin(TAU * _time / 4.0)) * (0.8 + 2.0 * night)   # PLACEHOLDER: pulses slowly, glows at night
 		ForestFx.set_night(night)
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 	var s := _time

@@ -41,6 +41,8 @@ const PALETTE := {
 	# tier 2 farmland variants (hexkit.COLOURS, tiles v34)
 	"steppe": "#B4B97C", "stormy": "#8FC4A6", "mown": "#B9DE8E", "tuft_steppe": "#8E9A5C", "tuft_storm": "#62A488",
 	"haunted": "#8C937C", "raided": "#94A06A", "orchard_grass": "#7FAE57", "window_faint": "#E6D79A",
+	# hills variants (hexkit.COLOURS, tiles v45)
+	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A",
 }
 
 

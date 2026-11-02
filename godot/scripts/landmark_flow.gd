@@ -35,6 +35,22 @@ static func flow(region: Array, landmark: Vector2i) -> Dictionary:
 	return {dist = dist, toward = toward}
 
 
+## A tile added to a finished raised region: the old tiles keep their distances, trails and the landmark's turn, and
+## only the new tile gets a distance and toward step, into its nearest neighbour, ties by the same hash. Changes dist
+## and toward in place. Does nothing if no neighbour is in the region.
+static func extend(tile: Vector2i, dist: Dictionary, toward: Dictionary) -> void:
+	var near := []
+	for n in Hex.NEIGHBOURS:
+		if dist.has(tile + n):
+			near.append(tile + n)
+	if near.is_empty():
+		return
+	var d: int = near.map(func(n): return dist[n]).min()
+	var closer := near.filter(func(n): return dist[n] == d)
+	dist[tile] = d + 1
+	toward[tile] = closer[int(GroundCover.hash01(tile.x, tile.y, 9) * closer.size())]
+
+
 ## The edges i of `tile` that are trail edges: its own toward step, and any neighbour's step into it.
 static func trail_edges(tile: Vector2i, toward: Dictionary) -> Array:
 	var out := []

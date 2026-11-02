@@ -80,6 +80,11 @@ static func _particles(key: String, points: Array, each: int, life: float, mesh:
 	return p
 
 
+## One crater's smoke, at a volcano's shared point (MapBoard keeps one per crater).
+static func crater_smoke() -> GPUParticles3D:
+	return _particles("crater|smoke", [Vector3.ZERO], 4, 2.6, _smoke(), Vector3(0.06, 0.3, 0), 0.12)
+
+
 ## A low flame: an orange billboard, bright and additive.
 static func _fire() -> Mesh:
 	if _fire_mesh == null:

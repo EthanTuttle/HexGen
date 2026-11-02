@@ -19,6 +19,9 @@ var target := Vector3.ZERO
 var focus := Vector2(422, 195)
 var yaw_deg := 0.0                        # 0 = looking north, from the south
 var home := {}
+var floor_at := Callable()                # plan point -> how high the camera must stay there (raised regions)
+var shake := 0.0                          # metres: a region rising (PLACEHOLDER look)
+var _floor_lift := 0.0
 
 signal player_moved_camera
 
@@ -80,7 +83,8 @@ func ease_to(at: Vector3, dist: float, yaw: float) -> void:
 	_tween.tween_property(self, "yaw_deg", yaw, 0.45)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_lift_over_floor(delta)
 	_apply()
 
 
@@ -88,12 +92,28 @@ func _apply() -> void:
 	var el := deg_to_rad(pitch_deg)
 	var yaw := deg_to_rad(yaw_deg)
 	var flat := distance * cos(el)
-	camera.position = target + Vector3(-sin(yaw) * flat, distance * sin(el), cos(yaw) * flat)
+	camera.position = target + Vector3(-sin(yaw) * flat, distance * sin(el) + _floor_lift, cos(yaw) * flat)
 	camera.look_at(target, Vector3.UP)
 	# Shift the view so the target lands on `focus` (pixels of the 844-wide layout -> metres at the target).
 	var k := 2.0 * distance * tan(deg_to_rad(camera.fov) * 0.5) / 844.0
 	camera.h_offset = (422.0 - focus.x) * k
 	camera.v_offset = -(195.0 - focus.y) * k
+	if shake > 0.0:
+		camera.h_offset += randf_range(-shake, shake)
+		camera.v_offset += randf_range(-shake, shake)
+
+
+## Close in over raised ground, the camera glides up rather than going through a mountain.
+func _lift_over_floor(delta: float) -> void:
+	if not floor_at.is_valid():
+		return
+	var el := deg_to_rad(pitch_deg)
+	var yaw := deg_to_rad(yaw_deg)
+	var flat := distance * cos(el)
+	var at := Vector2(target.x - sin(yaw) * flat, -(target.z + cos(yaw) * flat))
+	var least: float = floor_at.call(at) + Rules.CAMERA_CLEAR
+	var want := 0.0 if least <= Rules.CAMERA_CLEAR else maxf(0.0, least - (target.y + distance * sin(el)))
+	_floor_lift = move_toward(_floor_lift, want, delta * 12.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -24,6 +24,7 @@ var facing := -PI / 2                   # the cluster's facing (plan angle) whil
 
 var _path := PackedVector2Array()       # the route, densely sampled
 var _len := PackedFloat32Array()        # distance along it at each sample
+var _heights := PackedFloat32Array()    # the ground's height at each sample where it's known (a ledge), else NAN
 var _s := 0.0                           # how far along the hero is
 var _trail: Array[Vector2] = []         # (time, s) of the hero, for the companions to follow
 var _s0 := 0.0                          # where the hero starts on the route (after the file's tail, below)
@@ -63,7 +64,7 @@ func setup(board: MapBoard, tile: Vector2i) -> void:
 		members.append({node = node, tilt = tilt, body = body,
 				radius = maxf(box.size.x, box.size.z) * 0.5,   # the base's corners (it fills a combat cell)
 				offset = (Hex.cell_position(c.x, c.y) - HERO_CELL) * Rules.STAND_SPREAD,
-				phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0, from = 0.0, leg = PackedVector2Array(), join = 0.0})
+				phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0, high = false, from = 0.0, leg = PackedVector2Array(), join = 0.0})
 	place_at(tile)
 
 
@@ -92,6 +93,7 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 		m.yaw = m.node.rotation.y
 		m.up = Vector3.UP
 		m.squeeze = 1.0
+		m.high = map.raised.has(GroundCover.tile_at(p))
 		_stand_on(m, p, _feel(m, p), 1.0, true)
 		_rock(m, 0.0, 0.0)
 
@@ -108,7 +110,11 @@ func walk(tiles: Array[Vector2i]) -> void:
 			# The followers stand behind the hero on the last route's end, and set off along it.
 			var whole := _tail.duplicate()
 			whole.append_array(_path)
-			_set_path(whole)
+			var heights := PackedFloat32Array()
+			for _k in _tail.size():
+				heights.append(NAN)
+			heights.append_array(_heights)
+			_set_path(whole, heights)
 			_s0 = _len[_tail.size() - 1]
 		else:
 			_file_start = false
@@ -136,6 +142,10 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 	_blocked.clear()
 	var hero: Vector3 = members[0].node.position
 	var pts := PackedVector2Array([Vector2(hero.x, -hero.z)])
+	var route := PackedVector2Array()       # what's finished: stretches rounded past the mountains, and ledges
+	var ledge_top := Vector3.INF            # the ledge this stretch has just come up
+	var heights := PackedFloat32Array()
+	var allowed := {_tile: true}
 	var seq: Array[Vector2i] = [_tile]
 	seq.append_array(tiles)
 	var last := seq.size() - 1
@@ -143,37 +153,41 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 	for k in seq.size():
 		var t := seq[k]
 		var c := Hex.tile_position(t.x, t.y)
-		var in_dir := Vector2.ZERO if k == 0 else (Hex.tile_position(seq[k - 1].x, seq[k - 1].y) - c).normalized()
-		var out_dir := Vector2.ZERO if k == last else (Hex.tile_position(seq[k + 1].x, seq[k + 1].y) - c).normalized()
+		# A ledge comes out on edge i + 1 of its tile, wherever its foot is (hills kit -> The ledge).
+		var climb_in: Array = map.climb_between(seq[k - 1], t) if k > 0 else []
+		var climb_out: Array = map.climb_between(t, seq[k + 1]) if k < last else []
+		var from_ledge: bool = not climb_in.is_empty() and climb_in[0] == t
+		var onto_ledge: bool = not climb_out.is_empty() and climb_out[0] == t
+		var in_edge: int = (climb_in[1] + 1) % 6 if from_ledge else Hex.NEIGHBOURS.find(seq[k - 1] - t) if k > 0 else -1
+		var out_edge: int = (climb_out[1] + 1) % 6 if onto_ledge else Hex.NEIGHBOURS.find(seq[k + 1] - t) if k < last else -1
+		var in_dir := Vector2.ZERO if k == 0 else Vector2.from_angle(deg_to_rad(60.0 * in_edge))
+		var out_dir := Vector2.ZERO if k == last else Vector2.from_angle(deg_to_rad(60.0 * out_edge))
 		var graph := map.path_graph(t)
 		var last_tile := k == last
+		var entrance := map.entrance_angle(t)
 		# DOCS (Exploration screen -> Walking): on tiles with drawn paths the route follows them.
-		var way := _way_on_paths(graph, pts[-1], k, seq, last_tile)
+		var way := _way_on_paths(graph, pts[-1], k, in_edge, out_edge, last_tile)
 		if not way.is_empty():
 			_along(pts, way)
 			if last_tile:
 				_end_facing = (way[-1] - way[-2]).angle() if way.size() > 1 else facing
-				_file_end = not graph.edge_node.is_empty()
-			continue
-		if graph.stand != null and graph.edge_node.is_empty():
-			# A landmark with an entrance but no drawn way to it (the plains' landmarks): the usual curved route to
-			# the tile, then round outside the camp or arena to the entrance and in; out the same way.
-			var door := map.entrance_angle(t)
-			var round_r := Rules.ROUND_LANDMARK
+				_file_end = graph.edge_node.size() > graph.climb_edges
+		elif graph.stand != null and graph.edge_node.size() == graph.climb_edges and not is_nan(entrance):
+			# A landmark with an entrance but no drawn way to it (the plains' and hills' landmarks): the usual curved
+			# route to the tile, then round outside the camp or rise to the entrance and in; out the same way.
+			var round_r := Rules.LANDMARK_RING if Variants.terrain_of(map.terrains[t]) == "hills" else Rules.ROUND_LANDMARK
 			if k == 0:
-				_line(pts, c + Vector2.from_angle(door) * round_r)
+				_line(pts, c + Vector2.from_angle(entrance) * round_r)
 			else:
 				_line(pts, c + in_dir * round_r)
-			_arc(pts, c, round_r, door if last_tile else out_dir.angle())
+			_arc(pts, c, round_r, entrance if last_tile else out_dir.angle())
 			if last_tile:
 				_line(pts, graph.nodes[graph.stand])
-				_end_facing = door + PI
+				_end_facing = entrance + PI
 				_file_end = true
-			else:
+			elif not onto_ledge:
 				_line(pts, c + out_dir * Hex.A)
-			continue
-		var entrance := map.entrance_angle(t)
-		if not is_nan(entrance):
+		elif not is_nan(entrance):
 			# A landmark tile: in to its entrance ring, round it to the entrance (to stop) or to the way out, so the
 			# party never walks through the landmark itself.
 			if k > 0:
@@ -181,44 +195,77 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 			_arc(pts, c, Rules.ENTRANCE_RING, entrance if last_tile else out_dir.angle())
 			if last_tile:
 				_end_facing = entrance + PI   # facing the landmark
-			else:
+			elif not onto_ledge:
 				_line(pts, c + out_dir * Hex.A)
-			continue
-		# Where a step crosses a landmark trail edge, or a wedge has a drawn path but the tile's centre has none yet
-		# (village centres: for now the route bends through the middle, between the streets' inner ends), the route
-		# runs along the wedge's middle line from near the centre to the edge's middle.
-		var in_edge := Hex.NEIGHBOURS.find(seq[k - 1] - t) if k > 0 else -1
-		if graph.edge_inner.has(in_edge):
-			_line(pts, graph.edge_inner[in_edge])
-		elif k > 0 and map.trail_edge(seq[k - 1], t):
-			_line(pts, c + in_dir * Rules.TRAIL_INNER)
-		if last_tile:
-			var spot := _stand_spot(t, (anchor(t) - c).angle())
-			_quad(pts, c, spot[0])
-			_end_facing = spot[1]
-			continue
-		var out_edge := Hex.NEIGHBOURS.find(seq[k + 1] - t)
-		if graph.edge_inner.has(out_edge):
-			_quad(pts, c, graph.edge_inner[out_edge])
-			_line(pts, c + out_dir * Hex.A)
-		elif map.trail_edge(t, seq[k + 1]):
-			_quad(pts, c, c + out_dir * Rules.TRAIL_INNER)
-			_line(pts, c + out_dir * Hex.A)
 		else:
-			_quad(pts, c, c + out_dir * Hex.A)   # bends through the hex to the middle of the edge it crosses
-	var allowed := {_tile: true}
-	for t in tiles:
-		allowed[t] = true
-	_set_path(_round_mountains(pts, allowed))
+			# Where a step crosses a landmark trail edge, or a wedge has a drawn path but the tile's centre has none yet
+			# (village centres: for now the route bends through the middle, between the streets' inner ends), the route
+			# runs along the wedge's middle line from near the centre to the edge's middle.
+			if graph.edge_inner.has(in_edge):
+				_line(pts, graph.edge_inner[in_edge])
+			elif k > 0 and map.trail_edge(seq[k - 1], t):
+				_line(pts, c + in_dir * Rules.TRAIL_INNER)
+			if last_tile:
+				var spot := _stand_spot(t, (anchor(t) - c).angle())
+				_quad(pts, c, spot[0])
+				_end_facing = spot[1]
+			elif graph.edge_inner.has(out_edge):
+				_quad(pts, c, graph.edge_inner[out_edge])
+				if not onto_ledge:
+					_line(pts, c + out_dir * Hex.A)
+			elif map.trail_edge(t, seq[k + 1]):
+				_quad(pts, c, c + out_dir * Rules.TRAIL_INNER)
+				_line(pts, c + out_dir * Hex.A)
+			else:
+				_quad(pts, c, c + out_dir * Hex.A)   # bends through the hex to the middle of the edge it crosses
+		if last_tile:
+			break
+		if climb_out.is_empty():
+			allowed[seq[k + 1]] = true
+			continue
+		# Up or down a ledge: the only way, and its heights are the kit's own.
+		var ledge := map.ledge_line(climb_out[0], climb_out[1])
+		if onto_ledge:
+			ledge.reverse()
+		_line(pts, Vector2(ledge[0].x, ledge[0].y))
+		_add_stretch(route, heights, pts, allowed, Vector3.INF, ledge[0] if onto_ledge else Vector3.INF)
+		for q in ledge:
+			route.append(Vector2(q.x, q.y))
+			heights.append(q.z)
+		pts = PackedVector2Array([Vector2(ledge[-1].x, ledge[-1].y)])
+		ledge_top = ledge[-1] if not onto_ledge else Vector3.INF
+		allowed = {seq[k + 1]: true}
+	_add_stretch(route, heights, pts, allowed, ledge_top, Vector3.INF)
+	_set_path(route, heights)
+
+
+## Adds a stretch of ground to the route, rounded past the mountains. Where it starts or ends at a ledge's top, its
+## last straight run onto the plateau (edge_climb_top's path) keeps to the kit's heights too, so the ledge meets the
+## ground without a step.
+func _add_stretch(route: PackedVector2Array, heights: PackedFloat32Array, pts: PackedVector2Array, allowed: Dictionary,
+		start_top: Vector3, end_top: Vector3) -> void:
+	var done := _round_mountains(pts, allowed)
+	var from := heights.size()
+	route.append_array(done)
+	for _n in done.size():
+		heights.append(NAN)
+	for top: Vector3 in [start_top, end_top]:
+		if top == Vector3.INF:
+			continue
+		var at := Vector2(top.x, top.y)
+		for k in done.size():
+			var d := done[k].distance_to(at)
+			if d <= Rules.CLIMB_TOP_RUN:
+				heights[from + k] = top.z + Rules.CLIMB_TOP_RISE * d / Rules.CLIMB_TOP_RUN
 
 
 ## The way along a tile's drawn paths from where the route has got to, to the next edge's middle or (on the last
 ## tile) its stopping point; empty if the paths don't connect them, and the tile falls back on the curves.
-func _way_on_paths(graph: TilePaths, from: Vector2, k: int, seq: Array[Vector2i], last_tile: bool) -> PackedVector2Array:
+func _way_on_paths(graph: TilePaths, from: Vector2, k: int, in_edge: int, out_edge: int, last_tile: bool) -> PackedVector2Array:
 	if graph.nodes.is_empty():
 		return PackedVector2Array()
-	var a: int = graph.edge_node.get(Hex.NEIGHBOURS.find(seq[k - 1] - seq[k]), -1) if k > 0 else graph.nearest(from)
-	var b = graph.stand if last_tile else graph.edge_node.get(Hex.NEIGHBOURS.find(seq[k + 1] - seq[k]), -1)
+	var a: int = graph.edge_node.get(in_edge, -1) if k > 0 else graph.nearest(from)
+	var b = graph.stand if last_tile else graph.edge_node.get(out_edge, -1)
 	if a < 0 or b == null or b < 0:
 		return PackedVector2Array()
 	return graph.route(a, b)
@@ -246,6 +293,11 @@ func route_preview(tiles: Array[Vector2i]) -> PackedVector2Array:
 	_end_facing = end
 	_file_end = file
 	return _path
+
+
+## The ground's height at sample k of the last route built (route_preview).
+func height_on_route(k: int) -> float:
+	return _heights[k] if not is_nan(_heights[k]) else ground(_path[k])
 
 
 ## Where the hero turns back past the stopped file (leaving a landmark by the way it came in), the followers don't
@@ -365,8 +417,9 @@ static func _arc(pts: PackedVector2Array, centre: Vector2, radius: float, to: fl
 		pts.append(centre + Vector2.from_angle(a0 + turn * u) * lerpf(from.length(), radius, u))
 
 
-func _set_path(pts: PackedVector2Array) -> void:
+func _set_path(pts: PackedVector2Array, heights: PackedFloat32Array) -> void:
 	_path = pts
+	_heights = heights
 	_len = PackedFloat32Array([0.0])
 	for k in range(1, pts.size()):
 		_len.append(_len[-1] + pts[k].distance_to(pts[k - 1]))
@@ -381,7 +434,7 @@ func _set_path(pts: PackedVector2Array) -> void:
 
 ## Whether a plan point is on a peak, mountain or ridge, or within the clearance of one.
 func blocked(p: Vector2) -> bool:
-	if _on_mountain(p):
+	if map.near_lip(p) or _on_mountain(p):
 		return true
 	for k in 12:
 		if _on_mountain(p + Vector2.from_angle(k * TAU / 12.0) * Rules.MOUNTAIN_CLEARANCE):
@@ -563,6 +616,18 @@ func _point_at(s: float) -> Vector2:
 	return _path[i - 1].lerp(_path[i], (s - a) / maxf(b - a, 1e-5))
 
 
+## The ground's height `s` along the route on a ledge; NAN elsewhere, where the minis feel for it.
+func _height_at(s: float) -> float:
+	var i := _len.bsearch(clampf(s, 0.0, _len[-1]))
+	if i <= 0:
+		return _heights[0]
+	if i >= _len.size():
+		return _heights[-1]
+	if is_nan(_heights[i - 1]) or is_nan(_heights[i]):
+		return NAN
+	return lerpf(_heights[i - 1], _heights[i], (s - _len[i - 1]) / maxf(_len[i] - _len[i - 1], 1e-5))
+
+
 func _angle_at(s: float) -> float:
 	var a := _point_at(minf(s, _len[-1] - 0.2))
 	var b := _point_at(minf(s + 0.2, _len[-1]))
@@ -646,22 +711,31 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 	# Its own spot must be clear of the mountains (the route's clearance is measured from the route line, and a
 	# companion walks beside it): pushed in toward the route as far as it takes, spreading back out slowly.
 	var squeeze := minf(1.0, m.squeeze + delta * Rules.SQUEEZE_RATE)
+	var height := _height_at(s) if m.leg.is_empty() or s >= m.join else NAN
 	if map.gates.has(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses
 		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 2.0)
+	elif not is_nan(_height_at(s + Rules.LEDGE_NARROW)) or not is_nan(_height_at(s - Rules.LEDGE_NARROW)):
+		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 3.0)   # a ledge is one base wide
 	var on_route := _member_at(m, s)
 	var p: Vector2 = on_route + side * squeeze
-	var felt := _feel(m, p)
-	if felt.mountain and squeeze > m.squeeze:
-		squeeze = m.squeeze
-		p = on_route + side * squeeze
-		felt = _feel(m, p)
-	while felt.mountain and squeeze > 0.0:
-		squeeze = maxf(0.0, squeeze - 0.25)
-		p = on_route + side * squeeze
-		felt = _feel(m, p)
-	m.squeeze = squeeze
-	var wet := in_water(p)
-	_stand_on(m, p, felt, delta, false, Rules.WADE_DEPTH if wet else 0.0)
+	var wet := false
+	if not is_nan(height):
+		p = on_route
+		m.squeeze = squeeze
+		_stand_on_ledge(m, p, s, height, delta)
+	else:
+		var felt := _feel(m, p)
+		if felt.mountain and squeeze > m.squeeze:
+			squeeze = m.squeeze
+			p = on_route + side * squeeze
+			felt = _feel(m, p)
+		while felt.mountain and squeeze > 0.0:
+			squeeze = maxf(0.0, squeeze - 0.25)
+			p = on_route + side * squeeze
+			felt = _feel(m, p)
+		m.squeeze = squeeze
+		wet = in_water(p)
+		_stand_on(m, p, felt, delta, false, Rules.WADE_DEPTH if wet else 0.0)
 	# The waddle: rock side to side with the distance slid; each rock is a footstep.
 	var moved := Vector2(old.x, old.z).distance_to(Vector2(m.node.position.x, m.node.position.z))
 	var speed := clampf(moved / maxf(delta, 1e-4) / Rules.WALK_SPEED, 0.0, 1.0)
@@ -679,9 +753,16 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 ## collision, MapBoard), otherwise the flat tile top at 0.
 func ground(p: Vector2) -> float:
 	var space := get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(Hex.to3(p, 40.0), Hex.to3(p, -2.0))
+	var q := PhysicsRayQueryParameters3D.create(Hex.to3(p, 40.0), Hex.to3(p, -2.0), _level(p))
 	var hit := space.intersect_ray(q)
-	return maxf(0.0, (hit.position as Vector3).y) if not hit.is_empty() else 0.0
+	if hit.is_empty():
+		return Variants.RAISE if map.raised.has(GroundCover.tile_at(p)) else 0.0
+	return maxf(0.0, (hit.position as Vector3).y)
+
+
+## Which collision layer a mini at p stands on: raised ground, or the low land (MapBoard._add_ground_collision).
+func _level(p: Vector2) -> int:
+	return 2 if map.raised.has(GroundCover.tile_at(p)) else 1
 
 
 ## Feels the ground under a mini's base at `p`, as it faces now: the height just past each corner of its hex
@@ -693,11 +774,13 @@ func _feel(m: Dictionary, p: Vector2) -> Dictionary:
 	var turn := node.rotation.y   # the base's local x axis as a plan angle
 	var at := PackedVector3Array()
 	var on := false
+	var level := 2 if m.high else 1   # a mini changes level only on a ledge, whichever tile its edge is over
 	for k in 13:
 		var r: float = (m.radius if k % 2 == 1 else m.radius * 0.866) + Rules.BASE_MARGIN
 		var o := Vector2.ZERO if k == 0 else Vector2.from_angle(turn + (k - 1) * TAU / 12.0) * r
-		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Hex.to3(p + o, 40.0), Hex.to3(p + o, -2.0)))
-		var y := 0.0
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Hex.to3(p + o, 40.0), Hex.to3(p + o, -2.0), level))
+		# Nothing under a corner: flat land, or on raised ground past the lip, where the middle's height stands in.
+		var y := 0.0 if level == 1 else at[0].y if k > 0 else Variants.RAISE
 		if not hit.is_empty():
 			y = maxf(0.0, (hit.position as Vector3).y)
 			on = on or (hit.collider as Object).get_meta("mountain", false)
@@ -729,7 +812,7 @@ func _stand_on(m: Dictionary, p: Vector2, felt: Dictionary, k: float, snap := fa
 	var most := deg_to_rad(Rules.MAX_TILT_DEG)
 	if want.angle_to(Vector3.UP) > most:
 		want = Vector3.UP.slerp(want, most / want.angle_to(Vector3.UP))
-	var up: Vector3 = want if snap else (m.up as Vector3).slerp(want, minf(1.0, k * Rules.TILT_RATE)).normalized()
+	var up: Vector3 = want if snap or (m.up as Vector3).is_equal_approx(want) else (m.up as Vector3).slerp(want, minf(1.0, k * Rules.TILT_RATE)).normalized()
 	m.up = up
 	var y := -INF
 	for q in at:   # the tilted base's height over each point, so none of them is above it
@@ -739,6 +822,23 @@ func _stand_on(m: Dictionary, p: Vector2, felt: Dictionary, k: float, snap := fa
 	if not snap:
 		y = maxf(y, lerpf(old.y, y, minf(1.0, k * Rules.HEIGHT_RATE)))
 	m.node.position = Hex.to3(p, y)
+	_tilt(m)
+
+
+## Sets a mini on a ledge: at the kit's height, its base lying along the slope (about 29 degrees: hills kit).
+func _stand_on_ledge(m: Dictionary, p: Vector2, s: float, height: float, k: float) -> void:
+	var before := _height_at(s - 0.15)
+	var after := _height_at(s + 0.15)
+	var rise := ((after if not is_nan(after) else height) - (before if not is_nan(before) else height)) / 0.3
+	var along := Vector2.from_angle(_angle_at(s))
+	var want := Vector3(-along.x * rise, 1.0, along.y * rise).normalized()
+	var most := deg_to_rad(Rules.LEDGE_MAX_TILT_DEG)
+	if want.angle_to(Vector3.UP) > most:
+		want = Vector3.UP.slerp(want, most / want.angle_to(Vector3.UP))
+	if not (m.up as Vector3).is_equal_approx(want):
+		m.up = (m.up as Vector3).slerp(want, minf(1.0, k * Rules.TILT_RATE)).normalized()
+	m.high = height > Variants.RAISE * 0.5
+	m.node.position = Hex.to3(p, move_toward(m.node.position.y, height, k * Rules.LEDGE_EASE))
 	_tilt(m)
 
 
@@ -777,6 +877,44 @@ static func yaw_of(angle: float) -> float:
 ## An offset from the south-facing frame turned to face `angle`.
 static func _turned(offset: Vector2, angle: float) -> Vector2:
 	return offset.rotated(angle + PI / 2)
+
+
+# --- A region rising under the party -------------------------------------------------------
+
+## Before a region rises: anyone standing across the line between raised and low comes in to the hero's side of it.
+func gather() -> void:
+	_file_end = false
+	_tail = PackedVector2Array()
+	var hero: Vector3 = members[0].node.position
+	var at := Vector2(hero.x, -hero.z)
+	var up := map.raised.has(_tile)
+	for m in members:
+		var p := Vector2(m.node.position.x, -m.node.position.z)
+		var u := 1.0
+		while u > 0.0 and map.raised.has(GroundCover.tile_at(p)) != up:
+			u -= 0.1
+			p = at.lerp(Vector2(m.node.position.x, -m.node.position.z), u)
+		m.node.position = Hex.to3(p, m.node.position.y)
+
+
+## Carries the party up with the ground.
+func lift_by(dy: float) -> void:
+	for m in members:
+		m.node.position.y += dy
+
+
+## After a rise: on the new ground, or moved off a lip or a mountain that has appeared.
+func settle_up() -> void:
+	for m in members:
+		var p := Vector2(m.node.position.x, -m.node.position.z)
+		m.high = map.raised.has(GroundCover.tile_at(p))
+		var felt := _feel(m, p)
+		if felt.mountain or map.near_lip(p):
+			place_at(_tile, facing)
+			return
+	for m in members:
+		var p := Vector2(m.node.position.x, -m.node.position.z)
+		_stand_on(m, p, _feel(m, p), 1.0, true)
 
 
 # --- Arrival and standing ----------------------------------------------------------------

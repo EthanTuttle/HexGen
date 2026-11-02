@@ -12,30 +12,40 @@ const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highland
 ## pool too). Terrains not listed have no tier 2 art yet and keep their terrain's look.
 const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
 	"farmland": ["haunted_homesteads", "raided_farms", "cider_orchards"],
-	"plains": ["battlefield", "stormy_plains", "tourney_fields"]}
+	"plains": ["battlefield", "stormy_plains", "tourney_fields"],
+	"hills": ["snowy_peaks", "volcanic_peaks", "monastery_heights"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
 	"heartwood": ["Heartwood", "Tree of Life"], "haunted_homesteads": ["Haunted homesteads", "Abandoned Barn"],
 	"raided_farms": ["Bandit-raided farms", "Militia Barn"], "cider_orchards": ["Cider orchards", "Harvest Festival"],
 	"battlefield": ["Steppe/battlefield", "Old Battlefield"], "stormy_plains": ["Stormy plains", "Thunderbird Nest"],
-	"tourney_fields": ["Tourney fields", "Training Grounds"]}
+	"tourney_fields": ["Tourney fields", "Training Grounds"], "snowy_peaks": ["Cold, snowy peaks", "Yeti Cave"],
+	"volcanic_peaks": ["Volcanic peaks", "Salamander Den"], "monastery_heights": ["Monastery heights", "Library"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
 	"heartwood": "treeoflife", "windmill_country": "greatwindmill", "haunted_homesteads": "abandonedbarn",
 	"raided_farms": "militiabarn", "cider_orchards": "harvestfestival", "meadows": "nomadcamp",
-	"battlefield": "oldbattlefield", "stormy_plains": "thunderbirdnest", "tourney_fields": "traininggrounds"}
+	"battlefield": "oldbattlefield", "stormy_plains": "thunderbirdnest", "tourney_fields": "traininggrounds",
+	"highlands": "clanhall", "snowy_peaks": "yeticave", "volcanic_peaks": "salamanderden",
+	"monastery_heights": "library"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
 	"spidernest": "dark_wood", "greatwindmill": "windmill_country", "abandonedbarn": "haunted_homesteads",
 	"militiabarn": "raided_farms", "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
-	"oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
+	"oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields",
+	"clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks",
+	"library": "monastery_heights"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
-	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds"]
+	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
+	"library"]
+
+## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
+const RAISE := 5.0
 
 ## Where the small mill stands in a centre_mill's yard (variants.SMALL_MILL_SPOT), and the Great Windmill's sails
 ## in its centre's frame (variants.MILL_HUB): plan x, y, then height.
@@ -52,7 +62,9 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass",
 	"battlefield": "steppe", "stormy_plains": "stormy", "tourney_fields": "mown", "nomadcamp": "plains",
 	"oldbattlefield": "steppe", "thunderbirdnest": "stormy", "traininggrounds": "mown",
-	"greatwindmill": "plains", "abandonedbarn": "haunted", "militiabarn": "raided", "harvestfestival": "orchard_grass"}
+	"greatwindmill": "plains", "abandonedbarn": "haunted", "militiabarn": "raided", "harvestfestival": "orchard_grass",
+	"snowy_peaks": "snow_ground", "volcanic_peaks": "ash_ground", "monastery_heights": "hill_grass",
+	"clanhall": "highland_grass", "yeticave": "snow_ground", "salamanderden": "ash_ground", "library": "hill_grass"}
 
 static var _base := {}
 

@@ -11,6 +11,7 @@ var links := {}          # node -> {node -> distance}
 var edge_node := {}      # edge i -> the node at the edge's middle, where its wedge has a path
 var edge_inner := {}     # edge i -> the wedge path's inner end
 var stand = null         # the node a party stops on: the landmark's entrance, the hub, or the tile's middle
+var climb_edges := 0     # how many of edge_node are a ledge's top, not a wedge's path out to its neighbour
 
 
 ## pieces: [piece name, its turn in 60 degree steps] for each centre and wedge on the tile, at plan point `at`.
@@ -21,7 +22,14 @@ static func build(pieces: Array, at: Vector2) -> TilePaths:
 		var data := Kit.path_data(p[0])
 		if data.is_empty():
 			continue
-		if "_edge_" in String(p[0]):
+		if String(p[0]).ends_with("_edge_climb_top"):
+			# Runs the other way from other wedges: from where the ledge comes out, in to the wedge's inner end.
+			for poly in data.paths:
+				g._add(poly, p[1], at)
+				g.edge_node[p[1]] = g._node(_plan(poly[0], p[1], at))
+				g.edge_inner[p[1]] = _plan(poly[-1], p[1], at)
+				g.climb_edges += 1
+		elif "_edge_" in String(p[0]):
 			for poly in data.paths:
 				g._add(poly, p[1], at)
 				if not poly.is_empty():

@@ -2,7 +2,7 @@
     python3 -I godot/tools/flow_cases.py art/scripts /tmp/flow_cases.json"""
 import sys, json, random
 sys.path.insert(0, sys.argv[1])
-import landmark_flow as lf, ground_cover as gc, fence_gates as fg
+import landmark_flow as lf, ground_cover as gc, fence_gates as fg, cliffs
 rnd = random.Random(4)
 cases = []
 for n in range(300):
@@ -30,5 +30,25 @@ for n in range(300):
                 terrains.setdefault((t[0] + dq, t[1] + dr), rnd.choice(kinds))
     cases[-1]["terrains"] = [[q, r, k] for (q, r), k in terrains.items()]
     cases[-1]["gates"] = {f"{q},{r}": e for (q, r), e in fg.fence_gates(terrains).items()}
+    # raised regions: cliffs, ledges and the gates beside them
+    raised = {t for t in region if rnd.random() < 0.6}
+    if raised:
+        comp = {sorted(raised)[0]}
+        grown = True
+        while grown:
+            grown = False
+            for t in sorted(raised - comp):
+                if any(cliffs.beside(t, k) in comp for k in range(6)):
+                    comp.add(t)
+                    grown = True
+        all_raised = set(raised)
+        for t in comp | (raised - comp):
+            terrains[t] = "hills"
+        fill = dict(terrains)
+        climbs = cliffs.climbs(comp, fill, all_raised)
+        cases[-1]["raised"] = {"region": sorted(comp), "all": sorted(all_raised), "terrains": [[q, r, k] for (q, r), k in fill.items()],
+            "outer": sorted(cliffs.outer_edges(comp, all_raised)), "corners": sorted(cliffs.outer_corners(comp, all_raised)),
+            "climbs": sorted(climbs),
+            "gates": {f"{q},{r}": e for (q, r), e in fg.fence_gates(fill, all_raised, climbs).items()}}
 json.dump(cases, open(sys.argv[2], "w"))
 print(len(cases), "cases")

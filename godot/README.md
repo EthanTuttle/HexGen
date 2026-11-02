@@ -313,10 +313,14 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Rest discards | The newest cards over 7, automatically | The player should choose |
 | Clock | Dawn 0–5, midday 5–15, dusk 15–20, night 20–30 minutes; starts at minute 6 of day 1; placing 0.5 min, a hex walked 1 min | The exploration mockup's numbers |
 | Region and landmark names | The docs' tier 1 variants and locations: Deep, old forest / Hidden Shrine, Rolling meadows / Nomad Camp, Highlands / Clan Hall, Bog/fen / Witch's Hut… | 02 → Region variants and locations |
-| Landmarks | Forest, farmland and plains regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
+| Landmarks | Forest, farmland, plains and hills regions: the landmark tile takes its landmark's piece. Other terrains: a pin and a name, no model | Only those landmarks have art |
 | Tier 2 roll | Forest: fey wood, dark wood or heartwood. Farmland: haunted homesteads, bandit-raided farms or cider orchards. Plains: steppe/battlefield, stormy plains or tourney fields. Evenly, with no lean from neighbours. Other terrains: no tier 2 art, so they keep their terrain's look | The docs' "slight lean from neighbouring terrain" has no numbers |
 | Walking on trails | A trail starts 1.2 m from a tile's centre (`TRAIL_INNER`); the party stops 2.2 m from a landmark's centre, at its entrance (`ENTRANCE_RING`) | Not in the art hand-off |
 | Plains effects | Lightning every 4–9 s on a random stormy tile, 0.16 s long (`lightning.gd`); the gust ripple's size and speed (`shaders/grass.gdshader`); crackle sparks (`farm_fx.gd`) | The docs give the effects, not their numbers |
+| Hills rise | 3.5 s, 0.12 m camera shake, dust look (`Rules.RISE_SECONDS`, `RISE_SHAKE`, `rise_dust.gd`) | "A few seconds" with dust and shaking is all the docs say |
+| Hills walking | Ledge tilt limit 30°, single file from 1.2 m either side, 1.5 m kept in from a lip, 1.75 m round a hills landmark, a mountain edge counts as 4 steps (`Rules`) | The kit gives the slope and ring; the rest is tuned by eye |
+| Tier 2 roll (hills) | Snowy, volcanic or monastery, evenly | The lean from neighbours isn't set, as for other terrains |
+| Lava | Pulses over 4 s, brighter at night (`MapBoard._process`) | The kit asks for it with no numbers |
 | Round a plains landmark | The party circles 3 m out (`Rules.ROUND_LANDMARK`), then comes in along the entrance's line | The kit's entrance paths don't join anything, so the route has to reach them on its own |
 | Farm effects | Fire, smoke and crows at the art's effect points: counts, colours, sizes, speeds (`farm_fx.gd`); the sails' speed (`Rules.SAIL_SPEED`); the barn's faint glow, 0.1 by day to 1.0 at night (`map_board.gd`) | The hand-off gives the points, not the look |
 | Stopping on farm tiles | The tile's middle where the spokes meet, a landmark's approach end, a cider orchard's hub | The docs say routes keep to paths, not where a party stops |
@@ -432,6 +436,23 @@ Tier 0 plains, rolling meadows with the Nomad Camp, steppe/battlefield with the 
 - **Bunting:** `tourney_fields_edge_other` only shows toward terrain other than plains, because plains counts as joined with its variants.
 
 Debug: `-- --forest` and F9 now also spawn a 12-tile region of each plains variant, with the landmark on the rim so all the bands show. `-- --plainscheck` (add `--shots` for `screens/plains_*.png`) checks the bands, the turns, no trail pieces, the wedges, `no_cover`, `BENT`, lightning and the walks in and out. `tools/flow_check.gd` also compares `toward_edge` with the Python.
+
+## Hills kit (tiles v45)
+
+Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave, volcanic peaks with the Salamander Den, and monastery heights with the Library, from `art/export/tiles.glb` and `art/handoff/hills_kit.md`. Rules: `design/06` → Tile build, `design/07` → Landmark tiles, `design/02` → Obstacles.
+
+- **Ranges:** `MapBoard._ranges` follows `render_preview.build_map`: no mountain on a landmark, beside one, on a trail edge, or shared across a cliff; no ridges or lone peaks within two steps of a landmark; no ridges on monastery. Trees only on `hills_edge_other_b`.
+- **Raised regions:** `cliffs.gd` is `cliffs.py`. A raised tile's node stands at height 5 and holds its cliffs as children at -5, so they come up together and end at ground level. Bases and ground cover go. `MapBoard._update_raised` works out cliffs, pinnacles and ledges again whenever land near a region changes.
+- **The rise:** `Game._rise` (`Rules.RISE_SECONDS`), with dust (`rise_dust.gd`) and camera shake. Cliffs are cut off below the board while it rises (`cliff_rise.gdshader`). The party rides up and nobody can walk until it ends.
+- **Later tiles:** a hills tile beside a raised region joins it and rises (`LandmarkFlow.extend` keeps the old trails and turn). Old tiles keep their pieces until the new tile is up, so nothing opens under them.
+- **Routes:** a cliff can only be crossed by its ledge (`MapBoard.edge_open`). `PartyWalker._build_path` joins stretches of ground with the ledge's own path heights; on a ledge the party closes into single file and bases tilt up to 30° (`Rules.LEDGE_MAX_TILT_DEG`). Each mini knows which level it's on, and only a ledge changes that. Raised ground is on collision layer 2. `Game.path_to` avoids crossing a shared mountain where it can (`Rules.MOUNTAIN_EDGE_COST`), so routes take the passes.
+- **Gates:** `FenceGates.gates` takes raised tiles and climbs: never a gate onto a cliff, always one at a foot.
+- **Taps:** `Game.ground_point` tries raised ground's height first, so a tap picks the plateau you see.
+- **Camera:** it glides up to stay above the kit's tallest mountain when zoomed in over raised ground (`CameraRig._lift_over_floor`).
+- **Effects:** one smoke per crater, merged across tiles (`MapBoard._update_smoke`); lava pulses and glows at night.
+- **Combat:** no new rules. A fight on a raised tile uses the usual flat board and returns the party to the plateau. Boards that follow the slope wait on the open question in `design/03`.
+
+Debug: `-- --forest` and F9 also spawn a 12-tile raised region of each variant, a tier 0 hills group and a lone tile. `-- --hillscheck` (add `--shots` for `screens/hills_*.png`) checks all of the above, the rise, added tiles, touching regions, no way up and fenced feet.
 
 ## Terrains and region variants (tiles v13)
 
@@ -626,6 +647,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
   - Ask before deciding anything the docs don't cover, and mark stand-ins `PLACEHOLDER` in code and in Placeholders above.
   - Check every on-screen string against the Standing rule: screen text.
 - **Tests:**
+  - `--hillscheck --quit` prints `HILLS DONE: 0 failed`; `python3 -I art/scripts/test_cliffs.py` checks the Python rule.
   - Run all five before pushing, at phone size (`--rendering-method mobile --resolution 1704x786 -- … --phone`): `--touchtest --shots --quit` (prints `TOUCH DONE: 0 failed`), `--demo --shots --quit` (`DEMO DONE`) and `--forestcheck --shots --quit` (`FOREST DONE: 0 failed`) , `--farmcheck --shots --quit` (`FARM DONE: 0 failed`) and `--plainscheck --shots --quit` (`PLAINS DONE: 0 failed`).
   - The demo once stalled after its coin shot (Nov 1) and didn't on the rerun. If it hangs, rerun it before hunting a bug.
 - **Art:** `godot/art/*.glb` link to `art/export/`. After the art changes, run `godot --headless --path godot --import` so the new pieces, and any new `class_name` scripts, load. New colours go in `Hex.PALETTE` (copied from `hexkit.COLOURS`). New variants go in `variants.gd`. New `ground_cover.py` entries go in `ground_cover.gd`.

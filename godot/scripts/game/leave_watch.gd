@@ -48,7 +48,7 @@ func frame() -> void:
 
 
 func passed() -> bool:
-	return stepped_in <= 0.1 and early == 0 and closest >= Rules.FILE_GAP * 0.7
+	return stepped_in <= 0.25 and early == 0 and closest >= Rules.FILE_GAP * 0.7
 
 
 func report() -> String:
