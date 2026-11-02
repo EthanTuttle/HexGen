@@ -12,6 +12,7 @@ The delta and the wasteland change the shared water and sand instead (water.py, 
 only carry what sits beside them.
 """
 import math
+import os
 
 import bmesh
 from mathutils import Matrix, Vector
@@ -172,25 +173,351 @@ def nomad_camp(p, rng, kind):
 
 # --- Hills: highlands -----------------------------------------------------------
 
-HIGHLAND_PEAKS = 1.25  # mountains this much taller than plain hills
+HIGHLAND_PEAKS = 1.12  # mountains this much taller than plain hills
 
 
-def heather(p, rng, at, kind):
-    for _ in range(7):
-        q = at + Vector((rng.uniform(-0.45, 0.45), rng.uniform(-0.35, 0.35), 0))
-        q.z = bt.height_at(q, kind)
-        p.blob(q, rng.uniform(0.12, 0.2), "heather", squash=0.5)
+def heather(p, rng, at, kind, n=7, spread=0.5):
+    """A drift of purple heather lying on the ground."""
+    for _ in range(n):
+        q = bt.on_ground(at + Vector((rng.uniform(-spread, spread), rng.uniform(-spread * 0.8, spread * 0.8), 0)), kind)
+        lump(p, q, rng.uniform(0.14, 0.24), "heather", squash=0.45)
 
 
-def cairn(p, rng, at):
+def cairn(p, rng, at, big=False):
+    k = 1.5 if big else 1.0
     z = 0.0
     for r in (0.24, 0.19, 0.14, 0.09):
-        p.blob(at, r, rng.choice(["rock_light", "rock"]), z=z + r * 0.6, squash=0.7)
-        z += r * 1.1
+        lump(p, at, r * k, rng.choice(["rock", "rock_dark"]), z=z + r * k * 0.6, squash=0.7)
+        z += r * k * 1.1
+
+
+def clan_banner(p, at, h=1.9, cloth="clan_a", band="clan_b"):
+    """A clan's banner on a pole: whole cloths on two crossbars at right angles, so turning a piece can't leave them
+    edge-on, each with a band across it."""
+    p.box(at, (0.07, 0.07, h), "trunk_old")
+    for spin in (0.0, -math.pi / 2):
+        mid = at + turn(Vector((0, 0.24, 0)), spin)
+        p.box(mid, (0.03, 0.46, 0.03), "trunk_old", z=h - 0.06, spin=spin)
+        p.box(mid, (0.025, 0.4, 0.7), cloth, z=h - 0.76, spin=spin)
+        p.box(mid, (0.03, 0.42, 0.1), band, z=h - 0.44, spin=spin)
+
+
+def turf_bothy(p, rng, at, spin):
+    """A low stone herder's hut under a turf roof, its door toward +X of its own turn."""
+    p.box(at, (0.5, 0.72, 0.36), "rock", spin=spin)
+    p.gable_roof(at, 0.84, 0.64, 0.3, "turf", z=0.36, spin=spin + math.pi / 2)
+    p.box(at + turn(Vector((0.25, 0, 0)), spin), (0.04, 0.2, 0.28), "mill_door", spin=spin)
+
+
+# Raised regions (cliffs.py): the pieces round the edge of a region that stands on a cliff. They stand on the ground, at
+# the tile's position; the region's own pieces are placed RAISE higher.
+
+RAISE = float(os.environ.get("HEX_RAISE", 5.0))
+CLIFF_KINDS = ("cliff_edge", "cliff_edge_b", "cliff_corner", "cliff_path_low", "cliff_path_mid", "cliff_path_top", "edge_rim", "edge_climb",
+               "edge_climb_low", "edge_climb_top")
+CLIFF_LOOK = {  # rock shades; what dusts the top; streaks down the face; the ledge's surface
+    "highlands": dict(rock=("rock", "rock_dark"), top=None, streak="highland_grass", ledge="road", gullies=False),
+    "snowy_peaks": dict(rock=("ice_rock", "ice_rock_dark"), top="snow_light", streak="snow_light", ledge="print", gullies=False),
+    "volcanic_peaks": dict(rock=("basalt", "basalt_dark"), top=None, streak="lava", ledge="stone_pale", gullies=True),
+    "monastery_heights": dict(rock=("rock_light", "rock"), top=None, streak="hill_grass", ledge="stone_step", gullies=False),
+}
+CLIFF_FOOT = -0.6  # down to the bottom of the board's soil, so a cliff beside an empty slot is closed too
+HALF_EDGE = hk.TILE_RADIUS / 2
+LEDGE = 1.05  # a path's width; a mini's base is 1.0 across
+LEDGE_X = X1 - LEDGE  # the ledge's back wall, and where the ground stops above it
+RIM_INSET = 0.9  # how far in from the edge line the lip of a plain cliff is at its middle; at the corners, 0
+RIM_COLS = 10
+RIM_ROWS = 9  # the rows of a hills wedge, so the rim's sides meet the wedge beside it exactly
+LEDGE_END = 9  # the column of edge_climb_top's lip where the ledge comes out on the ground
+FOOT_COL = 4  # the column where the ledge's front starts on the edge line, past the plain cliff; its back starts one further on
+
+
+def ground_z(x, v):
+    return bt.hill_height(x, abs(v), "other") + 0.01
+
+
+def col_v(c):
+    return -1 + 2 * c / RIM_COLS
+
+
+def rim_x(v):
+    return X1 - RIM_INSET * (1 - abs(v) ** 4)
+
+
+def paint_wall(p, rng, faces, rows, look, streaks):
+    """faces: (verts, row, column). Two rock shades, the top dusted, streaks running down from the top."""
+    for verts, r, c in faces:
+        f = p.bm.faces.new(verts)
+        mat = look["rock"][0 if rng.random() < 0.6 else 1]
+        if look["top"] and r >= rows - 1 - (rng.random() < 0.3):
+            mat = look["top"]
+        if c in streaks and r >= rows - streaks[c]:
+            mat = look["streak"]
+        f.material_index = p._slot(mat)
+        p.surface.add(f)
+
+
+def wall_faces(grid):
+    faces = []
+    for r in range(len(grid) - 1):
+        for c in range(len(grid[0]) - 1):
+            a, b, d, e = grid[r][c], grid[r][c + 1], grid[r + 1][c + 1], grid[r + 1][c]
+            faces.append(((a, b, d), r, c))
+            faces.append(((a, d, e), r, c))
+    return faces
+
+
+def cliff_edge(p, rng, look, cols=RIM_COLS):
+    """A rock face wholly inside the edge line: its foot on the line, under the ground, leaning back to the rim's lip, its
+    two ends straight up the tile's corners. Broken up by inward gullies, never outward, and tall rocks. With fewer cols,
+    only that part of the edge, from its start, for the plain part of a ledge's first piece."""
+    rows = 5
+    grid = []
+    for r in range(rows + 1):
+        t = r / rows
+        row = []
+        for c in range(cols + 1):
+            v = col_v(c)
+            lip = rim_x(v)
+            q = Vector((X1, v * X1 * TAN30, CLIFF_FOOT)).lerp(Vector((lip, v * lip * TAN30, RAISE + ground_z(lip, v))), t)
+            if 0 < r < rows and abs(v) < 1 and c < cols:
+                env = 1 - abs(v) ** 6
+                q.x -= env * (rng.uniform(0.05, 0.6) + (0.3 if look["gullies"] and c % 2 else 0.0))
+                q.y += env * rng.uniform(-0.12, 0.12)
+                q.z += env * rng.uniform(-0.3, 0.3)
+            row.append(p.bm.verts.new(q))
+        grid.append(row)
+    paint_wall(p, rng, wall_faces(grid), rows, look, {c: rng.randint(1, rows - 1) for c in rng.sample(range(cols), 2 if cols == RIM_COLS else 1)})
+    ymax = col_v(cols) * HALF_EDGE - 0.45
+    for y in (-1.75 + rng.uniform(-0.1, 0.25), rng.uniform(-0.75, -0.2), rng.uniform(0.2, 0.75), 1.75 - rng.uniform(-0.1, 0.25)):
+        if y > ymax:
+            continue
+        # tall rocks inside the line, some reaching above the lip, so the skyline is broken
+        tip = Vector((X1 - 0.55, y + rng.uniform(-0.15, 0.15), RAISE * rng.uniform(0.75, 1.0) + rng.uniform(0.2, 1.4)))
+        spike(p, Vector((X1 - 0.34, y, CLIFF_FOOT)), tip, 0.34, look["rock"][rng.randrange(2)], segments=5)
+        if look["top"]:
+            spike(p, Vector((X1 - 0.34, y, CLIFF_FOOT)).lerp(tip, 0.8), tip + Vector((0, 0, 0.02)), 0.09, look["top"], segments=5)
+    for y in (rng.uniform(-1.5, -0.3), rng.uniform(0.3, 1.5)):  # broken stone on the lip
+        if y > ymax:
+            continue
+        x = rim_x(y / (X1 * TAN30))
+        lump(p, Vector((x + 0.02, y, RAISE + ground_z(x, y / (x * TAN30)))), rng.uniform(0.2, 0.32), look["top"] or look["rock"][0], squash=0.8)
+
+
+def cliff_corner(p, rng, look):
+    """A pinnacle where the region's edge turns outward, inside the line, above the lip."""
+    corner = hk.hex_corners(hk.TILE_RADIUS, pointy=True)[1]
+    base = corner * (1 - 0.6 / hk.TILE_RADIUS)
+    top = corner * (1 - 1.1 / hk.TILE_RADIUS) + Vector((0, 0, RAISE + rng.uniform(1.4, 2.4)))
+    spike(p, base + Vector((0, 0, CLIFF_FOOT)), top, 0.5, look["rock"][0], segments=5)
+    if look["top"]:
+        spike(p, base.lerp(top, 0.75) + Vector((0, 0, CLIFF_FOOT * 0.25)), top + Vector((0, 0, 0.02)), 0.13, look["top"], segments=5)
+
+
+def foot_y():
+    """How far along the first edge the party steps onto the ledge, on the edge line: about its middle."""
+    return HALF_EDGE * (col_v(FOOT_COL) * 0.3 + col_v(FOOT_COL + 1) * 0.7)
+
+
+def climb_heights():
+    """The ledge's height at the ends of its three pieces, and its height per unit along. It goes round the tile on a
+    line LEDGE / 2 in from the edge, from the foot near the middle of the first edge."""
+    xm = X1 - LEDGE / 2
+    side = 2 * xm * TAN30
+    v_end = col_v(LEDGE_END)
+    y_end = v_end * LEDGE_X * TAN30
+    top = RAISE + ground_z(LEDGE_X, v_end)
+    low = -foot_y() + side / 2
+    length = low + side + side / 2 + y_end
+    per = top / length
+    return (0.0, low * per, (low + side) * per, top), per, y_end
+
+
+def cliff_path(p, rng, look, which):
+    """One of three pieces of a ledge cut into the cliff, a mini wide, climbing round a tile's corners inside its edge line,
+    with its back wall going up to the ground and its front down to the foot. The first piece starts with plain cliff; the
+    ledge starts after it, wide open to the neighbour straight out from the edge. Path data has real heights."""
+    zs, per, y_end = climb_heights()
+    k = ("low", "mid", "top").index(which)
+    z0, z1 = zs[k], zs[k + 1]
+    first = FOOT_COL if which == "low" else 0
+    last = LEDGE_END if which == "top" else RIM_COLS
+    hi, ho = LEDGE_X * TAN30, HALF_EDGE
+    top_y = y_end if which == "top" else hi
+
+    def height(c):
+        return z0 + (z1 - z0) * (c - first) / (last - first)
+
+    def inner(c):
+        v = col_v(c)
+        return Vector((LEDGE_X, v * LEDGE_X * TAN30, height(c)))
+
+    def outer(c):
+        y = -ho + ((y_end if which == "top" else ho) + ho) * c / last
+        if which == "low" and c == first:  # on the plain cliff's last column, which leans back from the edge line
+            v = col_v(c)
+            base = Vector((X1, v * X1 * TAN30, CLIFF_FOOT))
+            lip = Vector((rim_x(v), v * rim_x(v) * TAN30, RAISE + ground_z(rim_x(v), v)))
+            return base.lerp(lip, (z0 - CLIFF_FOOT) / (lip.z - CLIFF_FOOT))
+        return Vector((X1, y, height(c)))
+
+    # The ledge, then the wall behind it; rocks only go back into the cliff, so the ledge keeps its width.
+    back = first + 1 if which == "low" else first
+    if which == "low":
+        cliff_edge(p, rng, look, FOOT_COL)
+        f = p.bm.faces.new([p.bm.verts.new(q) for q in (outer(first), outer(back), inner(back))])
+        f.material_index = p._slot(look["ledge"])
+        p.surface.add(f)
+    for c in range(back, last):
+        f = p.bm.faces.new([p.bm.verts.new(q) for q in (inner(c), outer(c), outer(c + 1), inner(c + 1))])
+        f.material_index = p._slot(look["ledge"])
+        p.surface.add(f)
+    grid = []
+    for r in range(4):
+        row = []
+        for c in range(back, last + 1):
+            q = inner(c)
+            zt = RAISE + ground_z(LEDGE_X, col_v(c))
+            q.z += (zt - q.z) * r / 3
+            if r in (1, 2) and back < c < last:
+                q.x -= rng.uniform(0.04, 0.3)
+                q.z += rng.uniform(-0.12, 0.12)
+            row.append(p.bm.verts.new(q))
+        grid.append(row)
+    paint_wall(p, rng, wall_faces(grid), 3, look, {rng.randrange(last - back): 2})
+    # The front, from the ledge's edge down to the foot, and on past the ledge's end on the last piece.
+    cols = [outer(c) for c in range(first, last + 1)]
+    if which == "top":
+        cols += [Vector((X1, y_end + (ho - y_end) * m / 2, zs[3] + (RAISE - zs[3]) * m / 2)) for m in (1, 2)]
+    grid = []
+    for r, share in enumerate((0.0, 0.3, 0.65, 1.0)):
+        row = []
+        for c, q in enumerate(cols):
+            pt = Vector((q.x, q.y, CLIFF_FOOT + (q.z - CLIFF_FOOT) * share))
+            if which == "low" and c == 0:  # stays on that column, down to the edge line
+                pt = Vector((X1, q.y * X1 / q.x, CLIFF_FOOT)).lerp(q, share)
+            if r in (1, 2) and 0 < c < len(cols) - 1:  # back into the rock, under the ledge
+                pt.x -= rng.uniform(0.08, 0.5) * min(1.0, q.z + 0.3)
+                pt.z += rng.uniform(-0.2, 0.2) * min(1.0, q.z)
+            row.append(p.bm.verts.new(pt))
+        grid.append(row)
+    paint_wall(p, rng, wall_faces(grid), 3, dict(look, top=None), {rng.randrange(len(cols) - 1): 2} if look["streak"] != "snow_light" else {})
+    xm = X1 - LEDGE / 2
+    mid = xm * TAN30
+    if which == "low":
+        # The party steps up on the edge line, from straight out in front; the path then turns along the ledge.
+        foot = outer(first).lerp(outer(back), 0.7)  # foot_y()
+        foot.x = X1
+        p.paths.append([foot, Vector((xm, foot.y + 0.5, foot.z + 0.5 * per)), Vector((xm, mid, z1))])
+        # The ledge's end wall, from the plain cliff's last column back to the ledge's back wall, up to the ground.
+        v = col_v(first)
+        lip = Vector((rim_x(v), v * rim_x(v) * TAN30, RAISE + ground_z(rim_x(v), v)))
+        wall_top = Vector((LEDGE_X, col_v(back) * LEDGE_X * TAN30, RAISE + ground_z(LEDGE_X, col_v(back))))
+        side = []
+        for r in range(4):
+            share = r / 3
+            a = outer(first).lerp(lip, share)
+            b = inner(back).lerp(wall_top, share)
+            m = a.lerp(b, 0.5)
+            if 0 < r < 3:  # back into the rock, away from the ledge
+                m += Vector((rng.uniform(-0.12, 0), rng.uniform(-0.25, 0), 0))
+            side.append([p.bm.verts.new(a), p.bm.verts.new(m), p.bm.verts.new(b)])
+        paint_wall(p, rng, wall_faces(side), 3, look, {})
+    elif which == "mid":
+        p.paths.append([Vector((xm, -mid, z0)), Vector((xm, mid, z1))])
+    else:
+        p.paths.append([Vector((xm, -mid, z0)), Vector((xm, y_end, z1)), Vector((LEDGE_X, y_end, z1))])  # edge_climb_top goes on from here
+        # Past the ledge's end, the ground closes over it, back down to the corner.
+        ring = [p.bm.verts.new((X1, y_end, zs[3])), p.bm.verts.new((X1, ho, RAISE + 0.01))]
+        for c in range(RIM_COLS, LEDGE_END - 1, -1):
+            v = col_v(c)
+            ring.append(p.bm.verts.new((LEDGE_X, v * LEDGE_X * TAN30, RAISE + ground_z(LEDGE_X, v))))
+        f = p.bm.faces.new(ring)
+        f.material_index = p._slot(look["top"] or VARIANT_GROUND_OF[id(look)])
+        p.surface.add(f)
+        bmesh.ops.triangulate(p.bm, faces=[f])
+
+
+def clipped_ground(p, ground, look, xend, rows):
+    """A wedge's outer ground up to x = xend(v) instead of the edge line, the same height as an edge_other wedge."""
+    grid = []
+    for a in range(rows + 1):
+        row = []
+        for c in range(RIM_COLS + 1):
+            v = col_v(c)
+            x = X0 + (xend(v) - X0) * a / rows
+            row.append(p.bm.verts.new((x, v * x * TAN30, ground_z(x, v))))
+        grid.append(row)
+    for a in range(rows):
+        for b in range(RIM_COLS):
+            for tri in ((grid[a][b], grid[a + 1][b], grid[a + 1][b + 1]), (grid[a][b], grid[a + 1][b + 1], grid[a][b + 1])):
+                f = p.bm.faces.new(tri)
+                f.normal_update()
+                f.material_index = p._slot(look["rock"][0] if f.normal.z < 0.6 else ground)
+                p.surface.add(f)
+
+
+def rim_props(p, rng, variant):
+    """A few of edge_other's props, all clear of the lip, so an outer tile stays light."""
+    def at(x, y):
+        return bt.on_ground(Vector((x, y, 0)), "other")
+    if variant == "snowy_peaks":
+        snow_pine(p, rng, at(X0 + 0.7, -0.7))
+        frozen_pond(p, at(X0 + 0.65, 0.6), 0.3)
+        lump(p, at(X0 + 1.1, 1.0), 0.4, "hill_grass", squash=0.12)
+    elif variant == "volcanic_peaks":
+        burnt_stump(p, rng, at(X0 + 0.7, -0.7))
+        red_shrub(p, rng, at(X0 + 0.7, 0.65))
+    elif variant == "highlands":
+        heather(p, rng, Vector((X0 + 0.7, 0.3, 0)), "other", n=3, spread=0.35)
+        bt.outcrop(p, rng, Vector((X0 + 0.75, -0.75, 0)), "other", 0.55)
+    else:
+        shaped_pine(p, rng, at(X0 + 0.7, -0.7))
+
+
+def edge_climb(p, rng, look, ground, variant, top):
+    """The wedge above a ledge: its outer ground stops at the ledge's back wall."""
+    clipped_ground(p, ground, look, lambda v: LEDGE_X, RIM_ROWS)
+    if top:
+        v = col_v(LEDGE_END)
+        p.paths.append([Vector((LEDGE_X, v * LEDGE_X * TAN30, ground_z(LEDGE_X, v))), Vector((X0, 0, bt.H0))])
+        if variant == "monastery_heights":  # stone steps are its look, up here too
+            stone_flight(p, rng, [Vector((LEDGE_X, v * LEDGE_X * TAN30, 0)), Vector((X0, 0, 0))],
+                         lambda q: bt.hill_height(q.x, min(1.0, abs(q.y) / (q.x * TAN30)), "other") + 0.02)
+
+
+def cliff_piece(p, rng, kind, variant):
+    look = CLIFF_LOOK[variant]
+    ground = VARIANT_GROUND[variant]
+    if kind in ("cliff_edge", "cliff_edge_b"):
+        cliff_edge(p, rng, look)
+    elif kind == "cliff_corner":
+        cliff_corner(p, rng, look)
+    elif kind.startswith("cliff_path_"):
+        VARIANT_GROUND_OF[id(look)] = ground
+        cliff_path(p, rng, look, kind[len("cliff_path_"):])
+    elif kind == "edge_rim":
+        clipped_ground(p, ground, look, rim_x, RIM_ROWS)
+        rim_props(p, rng, variant)
+    elif kind == "edge_climb_low":  # above the ledge's first piece: the plain cliff's rim up to the foot, then the ledge's back wall
+        split = col_v(FOOT_COL) + 1e-6
+        clipped_ground(p, ground, look, lambda v: rim_x(v) if v <= split else LEDGE_X, RIM_ROWS)
+    else:
+        edge_climb(p, rng, look, ground, variant, kind == "edge_climb_top")
+
+
+VARIANT_GROUND_OF = {}
+VARIANT_GROUND = {"highlands": "highland_grass", "snowy_peaks": "snow_ground", "volcanic_peaks": "ash_ground", "monastery_heights": "hill_grass"}
 
 
 def highlands(p, rng, kind):
-    """Purple heather and cairns; more bare rock, no trees, a grey-green grass; taller, rockier peaks."""
+    """Purple heather drifts, cairns and grouped bare rock on grey-green grass, no trees; taller, rockier peaks. No
+    paths: open moor, so the flow to the Clan Hall is by what thickens toward it: way-cairns beside the trail edges
+    (nothing drawn on the ground), and on the centre's +X side, which turns to face the hall, a clan banner and cairn
+    two steps out (centre_mid), a herder's bothy and banners one step out (centre_near)."""
+    if kind in CLIFF_KINDS:
+        cliff_piece(p, rng, kind, "highlands")
+        return
     if kind in bt.MOUNTAINS:
         bt.mountain(p, rng, kind, scale=HIGHLAND_PEAKS, grass="highland_grass")
         return
@@ -198,21 +525,40 @@ def highlands(p, rng, kind):
         # Lower and narrower than the peaks' scale, so the heather slopes between the peaks stay in view.
         bt.ridge(p, rng, kind, scale=0.8, half=1.05)
         return
-    if kind == "centre":
-        bt.hill_surface(p, range(6), 0, X0, kind, grass="highland_grass", rock_slope=0.78)
-        inside, bounds = (lambda q: hk.in_centre(q, 0.3) and q.length > 1.0), hk.CENTRE_BOUNDS
-    else:
-        bt.hill_surface(p, [0], X0, X1, kind, grass="highland_grass", rock_slope=0.78)
-        inside, bounds = (lambda q: hk.in_edge_wedge(q, margin=0.45)), hk.WEDGE_BOUNDS
-    pts = hk.scatter(rng, inside, 6, 0.9, bounds)
-    for k, at in enumerate(pts):
-        at.z = bt.height_at(at, kind)
-        if k < 2:
-            heather(p, rng, at, kind)
-        elif k == 2 and kind != "same":
-            cairn(p, rng, at)
+    if kind.startswith("centre"):
+        bt.hill_surface(p, range(6), 0, X0, "centre", grass="highland_grass", rock_slope=0.7)
+        q0, q5 = bt.field_spot(0, 1.3), bt.field_spot(5, 1.3)
+        if kind == "centre":
+            heather(p, rng, bt.field_spot(1, 1.25), kind)
+            bt.outcrop(p, rng, bt.field_spot(4, 1.25), kind, 0.8)
+        elif kind == "centre_b":
+            heather(p, rng, bt.field_spot(3, 1.25), kind)
+            cairn(p, rng, bt.on_ground(bt.field_spot(0, 1.3), kind))
+        elif kind == "centre_mid":
+            heather(p, rng, bt.field_spot(2, 1.3), kind)
+            cairn(p, rng, bt.on_ground(q5, kind), big=True)
+            clan_banner(p, bt.on_ground(q0, kind))
         else:
-            p.blob(at, rng.uniform(0.2, 0.36), rng.choice(["rock", "rock_dark"]), squash=0.7)
+            heather(p, rng, bt.field_spot(2, 1.3), kind)
+            heather(p, rng, bt.field_spot(3, 1.3), kind)
+            turf_bothy(p, rng, bt.on_ground(q5, kind) + Vector((0, 0, -0.03)), 0.0)
+            clan_banner(p, bt.on_ground(q0, kind), 2.2)
+            clan_banner(p, bt.on_ground(bt.field_spot(1, 1.3), kind), 1.8)
+        return
+    bt.hill_surface(p, [0], X0, X1, bt.surface_kind(kind), grass="highland_grass", rock_slope=0.7)
+    if kind == "same":
+        heather(p, rng, Vector((X0 + 1.1, -0.95, 0)), kind)
+        bt.outcrop(p, rng, Vector((X0 + 1.0, 0.9, 0)), kind)
+    elif kind == "edge_same_b":
+        heather(p, rng, Vector((X0 + 1.0, 0.95, 0)), kind, 9, 0.6)
+    elif kind == "edge_trail":  # one way-cairn per trail edge, on the farther tile's side
+        cairn(p, rng, bt.on_ground(Vector((X0 + 1.2, 0.72, 0)), kind), big=True)
+        heather(p, rng, Vector((X0 + 1.0, -0.95, 0)), kind)
+    elif kind == "edge_trail_in":
+        heather(p, rng, Vector((X0 + 1.1, 0.95, 0)), kind, 9)
+    else:
+        heather(p, rng, Vector((X0 + 0.8, -0.6, 0)), kind)
+        bt.outcrop(p, rng, Vector((X0 + 0.9, 0.75, 0)), kind, 0.8)
 
 
 # --- Farmland: windmill country -------------------------------------------------
@@ -2351,14 +2697,529 @@ LANDMARK_CENTRES.update(oldbattlefield=old_battlefield, thunderbirdnest=thunderb
                         traininggrounds=training_grounds)
 
 
+# --- Landmark: the Clan Hall (highlands) -------------------------------------------------------------------
+# A hills landmark stands on its own levelled top, with no mountain or ridge on its tile: its neighbours leave it out
+# when they work out their mountains, tiles within two steps draw no ridges, and no mountain stands on a trail
+# edge (render_preview.build_map), so the range opens into a pass leading to the door.
+CLAN_TOP = 1.4  # the height of the hall's level top
+
+
+def clan_top(d):
+    return CLAN_TOP + (bt.H0 - CLAN_TOP) * bt.smooth(1.5, X0, d)
+
+
+def clan_hall(p, rng, kind):
+    """Highlands' Clan Hall: a long timber-and-stone hall on a rocky-edged rise, under a turf roof with smoke from a
+    central vent (an effect point), carved doorposts at its gable door on edge 0, clan banners either side."""
+    bt.hill_surface(p, range(6), 0, X0, "centre", grass="highland_grass", rock_slope=0.4, height=clan_top)
+    z = Vector((0, 0, CLAN_TOP))
+    at = z + Vector((-0.1, 0, 0))
+    length, width = 2.7, 1.4
+    p.box(at, (length + 0.1, width + 0.1, 0.26), "rock_dark")  # the stone footing
+    p.box(at, (length, width, 0.6), "stand_b", z=0.26)
+    for k in range(7):  # upright timbers down the long walls
+        x = -length / 2 + 0.05 + (length - 0.1) * k / 6
+        for sd in (-1, 1):
+            p.box(at + Vector((x, sd * (width / 2 + 0.015), 0)), (0.09, 0.04, 0.6), "trunk_old", z=0.26)
+    p.gable_roof(at, length + 0.28, width + 0.42, 1.05, "turf", z=0.86)
+    p.box(at, (length + 0.3, 0.1, 0.07), "rock", z=1.87)  # stones along the ridge
+    p.box(at, (0.3, 0.26, 0.2), "rock_dark", z=1.85)  # the smoke vent
+    p.effects.append(("smoke", at + Vector((0, 0, 2.1))))
+    front = at + Vector((length / 2 + 0.02, 0, 0))
+    for sd in (-1, 1):  # the gable's front, boarded
+        p.box(front + Vector((0, sd * 0.42, 0)), (0.05, 0.56, 0.6), "trunk_old", z=0.26)
+    p.box(front, (0.05, 0.3, 0.56), "mill_door", z=0.26)
+    gable = [front + Vector((0.045, y, zz)) for y, zz in ((-0.72, 0.86), (0.72, 0.86), (0, 1.87))]
+    f = p.bm.faces.new([p.bm.verts.new(q) for q in gable])
+    f.material_index = p._slot("trunk_old")
+    p.surface.add(f)
+    for sd in (-1, 1):  # carved doorposts: taller than the door, banded, a carved head on top
+        post = front + Vector((0.1, sd * 0.24, 0))
+        frustum(p, post, post + Vector((0, 0, 1.18)), 0.075, 0.06, "gate_wood", segments=6)
+        for zz in (0.42, 0.72):
+            p.cylinder(post, 0.085, 0.05, "hay", segments=6, z=zz)
+        lump(p, post, 0.11, "gate_wood", z=1.24)
+    for x, y, h in ((1.38, 0.9, 2.6), (1.38, -0.9, 2.6)):
+        clan_banner(p, z + Vector((x, y, 0)), h)
+    for k in (2, 3):  # outcrops on the rise's back, so it reads as a ridge
+        bt.outcrop(p, rng, bt.field_spot(k, 1.5), "centre", 0.7)
+    # Paths: up from edge 0 to the door, and round the hall on the rise, to come to the door from any side.
+    door = z + Vector((1.3, 0, 0))
+    p.paths.append([Vector((X0, 0, bt.H0)), door])
+    ring = [Vector((math.cos(math.radians(30 * i)), math.sin(math.radians(30 * i)), 0)) * 1.72 for i in range(12)]
+    ring = [q + Vector((0, 0, clan_top(bt.hex_depth(q)))) for q in ring]
+    p.paths.append(ring + [ring[0]])
+
+
+LANDMARK_CENTRES["clanhall"] = clan_hall
+
+
+# --- Hills tier 2 and class variant -------------------------------------------------------------------------
+# All keep the mound, the shared mountains and the range rules round a landmark (render_preview.build_map). Far centres
+# hold only low things, since ridges can run through them; trees and stumps stand on edge_other, the only wedge
+# no mountain or ridge can reach, and on the band centres (centre_mid, centre_near), which have no ridges.
+HILL_KINDS = tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS + ("centre_b", "centre_mid", "centre_near", "edge_trail", "edge_trail_in")
+
+
+def level_top(top):
+    """A landmark's levelled rise: flat at height top out to d 1.5, down to the wedges' H0 at the centre's edge."""
+    return lambda d: top + (bt.H0 - top) * bt.smooth(1.5, X0, d)
+
+
+def rise_ring(height, r=1.72):
+    """A round walk at radius r on a landmark's rise, 12 points, so it clears what stands inside it."""
+    ring = [Vector((math.cos(math.radians(30 * i)), math.sin(math.radians(30 * i)), 0)) * r for i in range(12)]
+    ring = [q + Vector((0, 0, height(bt.hex_depth(q)))) for q in ring]
+    return ring + [ring[0]]
+
+
+def strip(p, pts, widths, ground, mat):
+    """A strip draped on the ground along points pts (x, y), its width changing along it (0 makes a point)."""
+    prev = None
+    for k, a in enumerate(pts):
+        b, c = pts[max(k - 1, 0)], pts[min(k + 1, len(pts) - 1)]
+        d = (c - b).normalized()
+        side = Vector((-d.y, d.x, 0)) * widths[k] / 2
+        l, r = a + side, a - side
+        l.z, r.z = ground(l), ground(r)
+        row = (p.bm.verts.new(r), p.bm.verts.new(l))
+        if prev:
+            f = p.bm.faces.new((prev[0], row[0], row[1], prev[1]))
+            f.material_index = p._slot(mat)
+            p.surface.add(f)
+        prev = row
+
+
+def line_pts(a, b, n):
+    return [a.lerp(b, k / n) for k in range(n + 1)]
+
+
+def surface_of(kind):
+    """The ground height function on a piece of this kind, a little above it."""
+    return lambda q: bt.height_at(q, bt.surface_kind(kind)) + 0.02
+
+
+# Cold, snowy peaks
+
+SNOW_PEAKS = 1.22
+
+
+def snow_pine(p, rng, at, h=None):
+    """A pine with snow on its upper boughs."""
+    h = h or rng.uniform(1.5, 2.1)
+    p.cylinder(at, 0.09, h * 0.22, "trunk")
+    p.cone(at, h * 0.27, h * 0.5, "pine_deep", z=h * 0.18, spin=rng.uniform(0, 1))
+    p.cone(at, h * 0.2, h * 0.42, "snow_light", z=h * 0.45, spin=rng.uniform(0, 1))
+    p.cone(at, h * 0.13, h * 0.3, "snow_light", z=h * 0.7, spin=rng.uniform(0, 1))
+
+
+def frozen_pond(p, at, r):
+    """Ice in a hollow: a low flat lens with a pale rim."""
+    lump(p, at, r * 1.15, "snow_light", z=-0.02, squash=0.09)
+    lump(p, at, r, "ice", z=0.0, squash=0.11)
+
+
+# A left foot pointing along +X, length 1: heel and sole either side of the pinched arch, then the toes, big toe on the
+# inside. Each part is a convex outline.
+FOOT_HEEL = ((-0.08, -0.1), (-0.08, 0.17), (-0.3, 0.18), (-0.45, 0.13), (-0.5, 0.0), (-0.45, -0.13), (-0.3, -0.17))
+FOOT_SOLE = ((-0.08, -0.1), (0.1, -0.22), (0.2, -0.26), (0.28, -0.2), (0.28, 0.22), (0.18, 0.27), (-0.08, 0.17))
+FOOT_TOES = ((0.42, -0.17, 0.095), (0.41, -0.01, 0.065), (0.38, 0.11, 0.06), (0.33, 0.22, 0.055))
+
+
+def footprint(p, at, spin, ground, left=True, length=0.95):
+    """A huge print pressed into the snow, draped on the ground point by point: heel, sole and toes. Lifted just
+    enough that a hump in the ground under a plate doesn't bury it."""
+    toes = [[(x + r * math.cos(k * math.tau / 5), y + r * math.sin(k * math.tau / 5)) for k in range(5)] for x, y, r in FOOT_TOES]
+    plates = [[at + turn(Vector((x * length, (y if left else -y) * length, 0)), spin) for x, y in outline]
+              for outline in [FOOT_HEEL, FOOT_SOLE] + toes]
+    lift = 0.03  # the ground's facets stand a little off its height function
+    for pts in plates:
+        mid = sum(pts, Vector((0, 0, 0))) / len(pts)
+        z_mid = sum(ground(q) for q in pts) / len(pts)
+        lift = max(lift, ground(mid) - z_mid, *(ground(q.lerp(mid, 0.5)) - (ground(q) + z_mid) / 2 for q in pts))
+    for pts in plates:
+        face = p.bm.faces.new([p.bm.verts.new((q.x, q.y, ground(q) + lift)) for q in (pts if left else pts[::-1])])
+        face.material_index = p._slot("print")
+        p.surface.add(face)
+
+
+def print_line(p, a, b, ground):
+    """Big footprints walking from a to b, a long stride apart, left then right."""
+    n = max(1, round((b - a).length / 1.07))
+    spin = math.atan2(b.y - a.y, b.x - a.x)
+    side = turn(Vector((0, 0.24, 0)), spin)
+    for k in range(n):
+        left = k % 2 == 0
+        footprint(p, a.lerp(b, (k + 0.5) / n) + side * (1 if left else -1), spin, ground, left)
+
+
+def snowy_peaks(p, rng, kind):
+    """Snow over the whole tile, grass only in patches near edges facing other land, snow-dusted pines, ice rocks,
+    frozen ponds; taller, jagged mountains. No paths: the flow to the Yeti Cave is its huge footprints along the
+    trail edges, walking toward the cave, and pines thinning to gnawed bones on the tiles next to it."""
+    if kind in CLIFF_KINDS:
+        cliff_piece(p, rng, kind, "snowy_peaks")
+        return
+    if kind in bt.MOUNTAINS:
+        bt.mountain(p, rng, kind, scale=SNOW_PEAKS, grass="snow_ground", rock=("ice_rock", "ice_rock_dark"), cap="snow_light",
+                    jag=1.7)
+        return
+    if kind in bt.RIDGE_KINDS:
+        bt.ridge(p, rng, kind, scale=1.1, half=1.2, rock=("ice_rock", "ice_rock_dark"), crest="snow_light")
+        return
+    ice = ("ice_rock", "ice_rock_dark")
+    ground = surface_of(kind)
+    if kind.startswith("centre"):
+        bt.hill_surface(p, range(6), 0, X0, "centre", grass="snow_ground", cliff="ice_rock", rock_slope=0.6)
+        if kind == "centre":
+            bt.outcrop(p, rng, bt.field_spot(1, 1.3), kind, 0.8, ice)
+        elif kind == "centre_b":
+            frozen_pond(p, bt.on_ground(bt.field_spot(4, 1.1), kind), 0.5)
+        elif kind == "centre_mid":
+            snow_pine(p, rng, bt.on_ground(bt.field_spot(2, 1.3), kind))
+            bones(p, rng, bt.on_ground(bt.field_spot(5, 1.15), kind))
+            print_line(p, Vector((0.25, 0, 0)), Vector((X0, 0, 0)), ground)
+        elif kind == "centre_near":
+            bones(p, rng, bt.on_ground(bt.field_spot(0, 1.2), kind))
+            bones(p, rng, bt.on_ground(bt.field_spot(5, 1.2), kind))
+            bones(p, rng, bt.on_ground(bt.field_spot(3, 1.1), kind), skull=False)
+            print_line(p, Vector((0.25, 0, 0)), Vector((X0, 0, 0)), ground)
+        return
+    bt.hill_surface(p, [0], X0, X1, bt.surface_kind(kind), grass="snow_ground", cliff="ice_rock", rock_slope=0.6)
+    if kind == "edge_trail":
+        print_line(p, Vector((X0, 0, 0)), Vector((X1, 0, 0)), ground)
+    elif kind == "edge_trail_in":
+        print_line(p, Vector((X1, 0, 0)), Vector((X0, 0, 0)), ground)
+    elif kind == "same":
+        bt.outcrop(p, rng, Vector((X0 + 1.05, 0.9, 0)), kind, 0.8, ice)
+    elif kind == "other":  # the wood's edge, clear of any rock: pines, and grass showing near the edge
+        for q in (Vector((X0 + 0.8, -0.9, 0)), Vector((X0 + 1.2, -0.65, 0))):
+            snow_pine(p, rng, bt.on_ground(q, kind))
+        for y in (-0.9, 0.35, 1.2):
+            lump(p, bt.on_ground(Vector((X1 - 0.5, y, 0)), kind), 0.48, "hill_grass", squash=0.12)
+        frozen_pond(p, bt.on_ground(Vector((X0 + 1.0, 0.7, 0)), kind), 0.38)
+
+
+YETI_TOP = 1.3
+
+
+def crag(p, rng, top, mats, peak=True):
+    """A heap of rock on a landmark's rise, tall at the back, its open front toward +X. Returns the mouth's point."""
+    for x, y, r, zz in ((-0.45, 0, 1.0, 0.25), (-0.15, 0.82, 0.68, 0.2), (-0.15, -0.82, 0.68, 0.2), (-0.8, 0.55, 0.72, 0.3),
+                        (-0.8, -0.55, 0.72, 0.3), (0.32, 0.72, 0.5, 0.15), (0.32, -0.72, 0.5, 0.15), (-0.5, 0.2, 0.72, 1.05),
+                        (-0.5, -0.3, 0.62, 1.3), (0.05, 0, 0.5, 0.9)):
+        lump(p, Vector((x, y, top)), r, rng.choice(mats), z=zz, squash=1.0)
+    if peak:  # jagged spires on top
+        for x, y, h in ((-0.55, 0.25, 1.35), (-0.5, -0.35, 1.05), (-0.95, 0.05, 0.85)):
+            spike(p, Vector((x, y, top + 1.3)), Vector((x + 0.06, y, top + 1.3 + h)), 0.32, mats[0], segments=5)
+    return Vector((0.6, 0, top))
+
+
+def rough_mouth(p, rng, mouth, mats):
+    """Rocks round a cave mouth, so its edges are jagged rather than a doorway: over the top and down each side."""
+    for y, z, r in ((-0.42, 1.08, 0.32), (0.0, 1.16, 0.34), (0.42, 1.08, 0.32), (-0.68, 0.72, 0.3), (0.68, 0.72, 0.3),
+                    (-0.72, 0.28, 0.32), (0.72, 0.28, 0.32)):
+        lump(p, mouth + Vector((0.12, y, z)), r, rng.choice(mats))
+
+
+def yeti_cave(p, rng, kind):
+    """Snowy peaks' Yeti Cave: a heap of jagged ice rock, a black cave mouth on edge 0 with icicles like teeth top and
+    bottom, huge footprints coming out of it, gnawed bones outside."""
+    height = level_top(YETI_TOP)
+    bt.hill_surface(p, range(6), 0, X0, "centre", grass="snow_ground", cliff="ice_rock", rock_slope=0.4, height=height)
+    mouth = crag(p, rng, YETI_TOP, ("ice_rock", "ice_rock_dark"))
+    p.box(mouth, (0.34, 1.05, 1.05), "cave_dark")
+    lip = mouth + Vector((0.2, 0, 1.05))
+    rough_mouth(p, rng, mouth, ("ice_rock", "ice_rock_dark"))
+    lump(p, lip + Vector((-0.2, 0, 0.32)), 0.6, "snow_light", squash=0.28)
+    for k, y in enumerate((-0.44, -0.22, 0.0, 0.22, 0.44)):  # upper teeth
+        spike(p, lip + Vector((0, y, -0.1)), lip + Vector((0, y, -0.1 - (0.55 if k % 2 else 0.4))), 0.1, "ice", segments=4)
+    for y in (-0.34, -0.11, 0.11, 0.34):  # lower teeth
+        q = mouth + Vector((0.2, y, 0.0))
+        spike(p, q, q + Vector((0, 0, 0.33)), 0.09, "ice", segments=4)
+    ground = lambda q: height(bt.hex_depth(q)) + 0.02  # noqa: E731
+    print_line(p, Vector((1.66, 0, 0)), Vector((1.0, 0, 0)), lambda q: ground(q) + 0.05)
+    for q, skull in ((Vector((1.15, 0.72, YETI_TOP)), True), (Vector((1.2, -0.75, YETI_TOP)), True), (Vector((0.85, 1.05, YETI_TOP)), False)):
+        bones(p, rng, q, skull=skull)
+    p.paths.append([Vector((X0, 0, bt.H0)), mouth + Vector((0.3, 0, 0))])
+    p.paths.append(rise_ring(height))
+
+
+# Volcanic peaks
+
+BASALT = ("basalt", "basalt_dark")
+
+
+def lava_cracks(p, rng, pts, width, ground):
+    """A jagged glowing crack through points pts, narrowing to a point at each end."""
+    fine = []
+    for a, b in zip(pts, pts[1:]):
+        fine += line_pts(a, b, 2)[:-1]
+    fine.append(pts[-1])
+    n = len(fine) - 1
+    strip(p, fine, [width * (1 - abs(2 * k / n - 1) ** 2) + 0.005 for k in range(n + 1)], ground, "lava")
+
+
+def burnt_stump(p, rng, at):
+    frustum(p, at, at + Vector((rng.uniform(-0.05, 0.05), 0.03, rng.uniform(0.3, 0.55))), 0.1, 0.05, "char", segments=5)
+
+
+def red_shrub(p, rng, at):
+    for x, y, r in ((0, 0, 0.2), (0.17, 0.08, 0.14), (-0.13, 0.1, 0.13)):
+        lump(p, at + Vector((x, y, 0)), r, "shrub_red", z=r * 0.6, squash=0.8)
+
+
+def volcanic_peaks(p, rng, kind):
+    """Grey ash ground on dark basalt slopes split by glowing cracks; cones with smoking craters; burnt stumps and a
+    few red shrubs. No paths: the flow to the Salamander Den is the cracks themselves: on the trail edges one long
+    bright crack runs tile to tile, the ways joining toward the den, and they widen close to it."""
+    if kind in CLIFF_KINDS:
+        cliff_piece(p, rng, kind, "volcanic_peaks")
+        return
+    if kind in bt.MOUNTAINS:
+        bt.mountain(p, rng, kind, scale=1.05, grass="ash_ground", rock=BASALT, jag=0.35, crater=True)
+        return
+    if kind in bt.RIDGE_KINDS:
+        bt.ridge(p, rng, kind, scale=0.8, half=1.05, rock=BASALT)
+        return
+    ground = surface_of(kind)
+    if kind.startswith("centre"):
+        bt.hill_surface(p, range(6), 0, X0, "centre", grass="ash_ground", cliff="basalt", rock_slope=0.68)
+        V = lambda x, y: Vector((x, y, 0))  # noqa: E731
+        if kind == "centre":
+            lava_cracks(p, rng, [V(-1.3, 0.5), V(-0.7, 0.8), V(-0.3, 0.45), V(0.25, 0.9)], 0.13, ground)
+        elif kind == "centre_b":
+            lava_cracks(p, rng, [V(0.4, -1.1), V(0.8, -0.5), V(1.25, -0.6)], 0.12, ground)
+            bt.outcrop(p, rng, bt.field_spot(2, 1.3), kind, 0.75, BASALT)
+        else:
+            near = kind == "centre_near"
+            w = 0.26 if near else 0.18
+            lava_cracks(p, rng, [V(-0.2, 0.08), V(0.45, -0.07), V(1.1, 0.07), V(X0 + 0.04, 0)], w, ground)
+            lava_cracks(p, rng, [V(0.5, 0), V(0.9, 0.6), V(1.3, 0.72)], w * 0.6, ground)
+            burnt_stump(p, rng, bt.on_ground(bt.field_spot(2, 1.3), kind))
+            red_shrub(p, rng, bt.on_ground(bt.field_spot(3, 1.3), kind))
+            if near:
+                lava_cracks(p, rng, [V(0.5, 0), V(0.85, -0.6), V(1.3, -0.72)], w * 0.6, ground)
+                burnt_stump(p, rng, bt.on_ground(bt.field_spot(4, 1.25), kind))
+        return
+    bt.hill_surface(p, [0], X0, X1, bt.surface_kind(kind), grass="ash_ground", cliff="basalt", rock_slope=0.68)
+    V = lambda x, y: Vector((x, y, 0))  # noqa: E731
+    if kind in ("edge_trail", "edge_trail_in"):  # one long crack, from the middle of the centre's edge to this edge's
+        lava_cracks(p, rng, [V(X0 - 0.04, 0), V(X0 + 0.7, 0.13), V(X0 + 1.3, -0.12), V(X1 + 0.04, 0)], 0.2, ground)
+    elif kind == "same":
+        lava_cracks(p, rng, [V(X0 + 0.5, 0.75), V(X0 + 1.1, 1.1), V(X0 + 1.5, 0.85)], 0.11, ground)
+    elif kind == "other":
+        burnt_stump(p, rng, bt.on_ground(V(X0 + 0.85, -0.85), kind))
+        burnt_stump(p, rng, bt.on_ground(V(X0 + 1.1, -0.55), kind))
+        red_shrub(p, rng, bt.on_ground(V(X0 + 1.0, 0.75), kind))
+        lava_cracks(p, rng, [V(X0 + 0.3, 0.1), V(X0 + 0.9, 0.2), V(X0 + 1.3, 0.05)], 0.1, ground)
+
+
+DEN_TOP = 1.3
+
+
+def salamander_den(p, rng, kind):
+    """Volcanic peaks' Salamander Den: a heap of basalt with a cave mouth on edge 0 glowing orange from within, a lava
+    stream running out of it to the centre's edge, where a trail's crack carries on, and glittering ore in the walls.
+    The way in stands to one side of the stream."""
+    height = level_top(DEN_TOP)
+    bt.hill_surface(p, range(6), 0, X0, "centre", grass="ash_ground", cliff="basalt", rock_slope=0.4, height=height)
+    mouth = crag(p, rng, DEN_TOP, BASALT)
+    p.box(mouth, (0.34, 1.05, 1.05), "cave_dark")
+    p.box(mouth + Vector((0.16, 0, 0)), (0.08, 0.72, 0.74), "lava")
+    rough_mouth(p, rng, mouth, BASALT)
+    ground = lambda q: height(bt.hex_depth(q)) + 0.09  # noqa: E731
+    V = lambda x, y: Vector((x, y, 0))  # noqa: E731
+    pts = [V(0.72, 0.05), V(1.0, 0.16), V(1.3, 0.08), V(1.6, 0.03), V(X0 + 0.02, 0)]
+    strip(p, pts, [0.42, 0.4, 0.34, 0.26, 0.2], ground, "lava")
+    for x, y, zz, a in ((0.6, 0.72, 0.35, 0.6), (0.5, 0.95, 0.65, 1.0), (0.65, -0.72, 0.45, -0.6), (0.48, -0.98, 0.75, -1.0),
+                        (0.15, 0.55, 1.05, 0.5), (0.15, -0.4, 1.15, -0.4), (0.05, 0.0, 1.35, 0.0)):  # ore in the walls
+        q = Vector((x, y, DEN_TOP + zz))
+        spike(p, q, q + Vector((math.cos(a) * 0.26, math.sin(a) * 0.26, 0.12)), 0.08, "ore", segments=4)
+    p.effects += [("smoke", Vector((-0.55, 0.25, DEN_TOP + 2.7)))]
+    p.paths.append([Vector((X0, -0.45, height(X0))), mouth + Vector((0.3, -0.3, 0))])
+    p.paths.append(rise_ring(height))
+
+
+# Monastery heights (class variant): stone steps and switchbacks really are its look, so it has paths.
+
+SWITCHBACK = ((X0, 0.0), (X0 + 0.72, 0.5), (X0 + 1.42, -0.42), (X1, 0.0))
+LIBRARY_TOP = 1.4
+
+
+def stone_flight(p, rng, pts, ground, w=0.44):
+    """Stone steps along points pts, each slab level and standing proud of the ground, a landing at each turn."""
+    def slab(q, size, spin):
+        p.box(Vector((q.x, q.y, ground(q) - 0.03)), size, "stone_step", spin=spin)
+
+    for k in range(1, len(pts) - 1):
+        d = (pts[k + 1] - pts[k]).normalized() + (pts[k] - pts[k - 1]).normalized()
+        slab(pts[k], (w + 0.04, w + 0.14, 0.11), math.atan2(d.y, d.x))
+    for j, (a, b) in enumerate(zip(pts, pts[1:])):
+        length = (b - a).length
+        inset0 = 0.0 if j == 0 else (w / 2 + 0.06) / length
+        inset1 = 0.0 if j == len(pts) - 2 else (w / 2 + 0.06) / length
+        n = max(1, round(length * (1 - inset0 - inset1) / 0.25))
+        spin = math.atan2((b - a).y, (b - a).x)
+        for k in range(n):
+            slab(a.lerp(b, inset0 + (1 - inset0 - inset1) * (k + 0.5) / n), (0.2, w, 0.1), spin)
+
+
+def low_wall(p, a, b, ground):
+    """A low stone wall from a to b, stepped to follow the ground."""
+    n = max(1, round((b - a).length / 0.5))
+    spin = math.atan2((b - a).y, (b - a).x)
+    for k in range(n):
+        q = a.lerp(b, (k + 0.5) / n)
+        p.box(Vector((q.x, q.y, ground(q) - 0.06)), ((b - a).length / n + 0.02, 0.1, 0.3), "rock_light", spin=spin)
+
+
+def herb_terraces(p, rng, at, spin, kind):
+    """Neat herb gardens on three stepped terraces, walled in stone, the rows green and lilac."""
+    g = bt.height_at(at, bt.surface_kind(kind))
+    for k in range(3):
+        q = at + turn(Vector((-0.27 + 0.27 * k, 0, 0)), spin)
+        q.z = g - 0.05
+        hh = 0.26 - 0.1 * k
+        p.box(q, (0.28, 0.82, hh), "rock_light", spin=spin)
+        p.box(q, (0.2, 0.72, 0.05), ("herb_a", "herb_b", "herb_a")[k], z=hh, spin=spin)
+
+
+def shaped_pine(p, rng, at):
+    """A pruned pine: a leaning trunk and flat clouds of needles."""
+    top = at + Vector((0.12, 0.05, 1.05))
+    frustum(p, at, top, 0.09, 0.05, "trunk_old")
+    for q, r in ((top, 0.34), (at + Vector((-0.2, 0, 0.72)), 0.25), (at + Vector((0.32, -0.08, 0.62)), 0.22)):
+        lump(p, q, r, "pine_deep", squash=0.42)
+
+
+def flag_poles(p, rng, a, b, ground, h=1.2):
+    """Small coloured prayer flags on a line between two poles."""
+    a, b = Vector((a.x, a.y, ground(a))), Vector((b.x, b.y, ground(b)))
+    for q in (a, b):
+        p.box(q, (0.05, 0.05, h), "trunk_old")
+    bunting(p, rng, a, b, h - 0.03, sag=0.12)
+
+
+def monastery_heights(p, rng, kind):
+    """Stone steps and switchbacks with low walls climb between tiles along the trails (there's a way from every tile
+    to the Library), under strings of prayer flags; neat terraced herb gardens and a few shaped pines. The flow: the
+    stair is the way, and gardens, pines and flags thicken toward the Library."""
+    if kind in CLIFF_KINDS:
+        cliff_piece(p, rng, kind, "monastery_heights")
+        return
+    if kind in bt.MOUNTAINS:
+        bt.mountain(p, rng, kind)
+        return
+    if kind in bt.RIDGE_KINDS:
+        bt.ridge(p, rng, kind)
+        return
+    ground = surface_of(kind)
+    if kind in ("steps_centre", "steps_rise"):  # one flight per trail edge, placed by the engine: to the tile's middle,
+        if kind == "steps_centre":              # or up a landmark's rise
+            stone_flight(p, rng, line_pts(Vector((0.4, 0, 0)), Vector((X0, 0, 0)), 3), lambda q: bt.height_at(q, "centre") + 0.02)
+        else:
+            h = level_top(LIBRARY_TOP)
+            stone_flight(p, rng, [Vector((X0, 0, 0)), Vector((1.5, 0, 0))], lambda q: h(bt.hex_depth(q)) + 0.1)
+        return
+    if kind.startswith("centre"):
+        bt.hill_surface(p, range(6), 0, X0, "centre")
+        p.hub = Vector((0, 0, bt.HPEAK))
+        p.cylinder(Vector((0, 0, bt.HPEAK - 0.08)), 0.52, 0.12, "stone_step", segments=8)  # a landing, where the stairs meet
+        if kind == "centre":
+            herb_terraces(p, rng, bt.field_spot(1, 1.25), math.radians(90), kind)
+        elif kind == "centre_b":
+            shaped_pine_low = bt.on_ground(bt.field_spot(4, 1.2), kind)
+            p.box(shaped_pine_low, (0.34, 0.34, 0.14), "rock_light")
+            lump(p, shaped_pine_low, 0.14, "pine_deep", z=0.2, squash=0.8)
+        elif kind == "centre_mid":
+            herb_terraces(p, rng, bt.field_spot(0, 1.25), math.radians(30), kind)
+            shaped_pine(p, rng, bt.on_ground(bt.field_spot(5, 1.3), kind))
+        else:
+            herb_terraces(p, rng, bt.field_spot(0, 1.25), math.radians(30), kind)
+            herb_terraces(p, rng, bt.field_spot(5, 1.25), math.radians(-30), kind)
+            shaped_pine(p, rng, bt.on_ground(bt.field_spot(1, 1.3), kind))
+            shaped_pine(p, rng, bt.on_ground(bt.field_spot(4, 1.3), kind))
+            flag_poles(p, rng, bt.field_spot(2, 1.35), bt.field_spot(3, 1.35), ground)
+        return
+    bt.hill_surface(p, [0], X0, X1, bt.surface_kind(kind))
+    if kind == "edge_trail":  # the switchback, its walls on the outside of the turns, flags across it
+        pts = [Vector((x, y, 0)) for x, y in SWITCHBACK]
+        stone_flight(p, rng, pts, ground)
+        low_wall(p, Vector((X0 + 0.42, 0.74, 0)), Vector((X0 + 1.02, 0.8, 0)), ground)
+        low_wall(p, Vector((X0 + 1.14, -0.68, 0)), Vector((X0 + 1.72, -0.66, 0)), ground)
+        flag_poles(p, rng, Vector((X0 + 0.42, 0.98, 0)), Vector((X0 + 0.4, -0.72, 0)), ground)
+        p.paths.append([Vector((x, y, bt.height_at(Vector((x, y, 0)), "same") + 0.04)) for x, y in SWITCHBACK])
+    elif kind == "other":
+        shaped_pine(p, rng, bt.on_ground(Vector((X0 + 0.9, -0.85, 0)), kind))
+        herb_terraces(p, rng, Vector((X0 + 0.95, 0.65, 0)), math.radians(90), kind)
+    elif kind == "same":
+        bt.outcrop(p, rng, Vector((X0 + 1.05, 0.9, 0)), kind, 0.7)
+
+
+def library(p, rng, kind):
+    """Monastery heights' Library: a tiered stone monastery with tiled roofs on a levelled rise, a walled front with a
+    big gate at the top of the steps on edge 0, a bell tower in the court, prayer flags from the tower to the gate."""
+    height = level_top(LIBRARY_TOP)
+    bt.hill_surface(p, range(6), 0, X0, "centre", rock_slope=0.4, height=height)
+    z = Vector((0, 0, LIBRARY_TOP))
+    p.prism([z + Vector((c.x, c.y, 0)) for c in hk.hex_corners(1.68, pointy=True)][::-1], 0.0, 0.03, "stone_pale")
+    # three tiers climbing toward the back, each with broad tiled eaves
+    for x, size, z0, h in ((-0.4, 1.8, 0.03, 0.6), (-0.6, 1.3, 0.95, 0.5), (-0.72, 0.85, 1.75, 0.42)):
+        at = z + Vector((x, 0, 0))
+        p.box(at, (size, size, h), "stone_pale", z=z0)
+        p.box(at, (size * 0.55, size + 0.02, h * 0.3), "stone_dark", z=z0 + h * 0.35)  # a band of windows
+        p.box(at, (size + 0.34, size + 0.34, 0.05), "temple_roof_dark", z=z0 + h)
+        p.cone(at, (size + 0.34) * 0.71, 0.32, "temple_roof", segments=4, z=z0 + h + 0.05, spin=math.pi / 4)
+    # the walled front with the big gate on edge 0
+    wx = 1.08
+    for sd in (-1, 1):
+        p.box(z + Vector((wx, sd * 0.84, 0)), (0.14, 0.9, 0.62), "stone_pale")
+        pillar = z + Vector((wx, sd * 0.38, 0))
+        p.box(pillar, (0.24, 0.2, 1.15), "stone_dark")
+    gate = z + Vector((wx, 0, 0))
+    p.box(gate, (0.24, 1.0, 0.16), "stone_dark", z=1.1)
+    p.box(gate, (0.46, 1.24, 0.05), "temple_roof_dark", z=1.26)
+    p.gable_roof(gate, 1.24, 0.46, 0.28, "temple_roof", z=1.31, spin=math.pi / 2)
+    p.box(gate + Vector((-0.04, 0, 0)), (0.05, 0.54, 0.95), "gate_wood")  # the doors, red, standing shut
+    # the steps from the centre's edge up to the gate
+    stone_flight(p, rng, [Vector((X0, 0, 0)), Vector((1.2, 0, 0))], lambda q: height(bt.hex_depth(q)) + 0.08, 0.66)
+    # the bell tower in the court
+    t = z + Vector((0.72, -0.96, 0))
+    p.box(t, (0.42, 0.42, 1.55), "stone_pale")
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p.box(t + Vector((sx * 0.16, sy * 0.16, 0)), (0.07, 0.07, 0.46), "stone_dark", z=1.55)
+    lump(p, t, 0.11, "bell", z=1.75, squash=1.1)
+    p.box(t, (0.56, 0.56, 0.05), "temple_roof_dark", z=2.0)
+    p.cone(t, 0.4, 0.36, "temple_roof", segments=4, z=2.05, spin=math.pi / 4)
+    bunting(p, rng, t + Vector((0, 0.2, 0)), gate + Vector((0, -0.45, 0)), 1.5, sag=0.1)
+    p.paths.append([Vector((X0, 0, bt.H0)), gate + Vector((-0.2, 0, 0))])
+    ring = rise_ring(height, 1.74)
+    p.paths.append(ring)
+    for i in range(6):  # where a trail edge's flight comes up the rise, to the walk round the walls
+        a = math.radians(60 * i)
+        out = Vector((math.cos(a), math.sin(a), 0))
+        p.spokes[i] = [out * X0 + Vector((0, 0, bt.H0)), ring[2 * i]]
+
+
+LANDMARK_CENTRES.update(yeticave=yeti_cave, salamanderden=salamander_den, library=library)
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
     "meadows": ("plains", meadows, "plains", ("centre_b", "centre_mid", "centre_near")),
+    "snowy_peaks": ("hills", snowy_peaks, "snow_ground", HILL_KINDS + CLIFF_KINDS),
+    "volcanic_peaks": ("hills", volcanic_peaks, "ash_ground", HILL_KINDS + CLIFF_KINDS),
+    "monastery_heights": ("hills", monastery_heights, "hill_grass",
+                          HILL_KINDS[:-1] + ("steps_centre", "steps_rise") + CLIFF_KINDS),
     "battlefield": ("plains", battlefield, "steppe", PLAINS_KINDS),
     "stormy_plains": ("plains", stormy_plains, "stormy", ("centre_b", "centre_mid", "centre_near")),
     "tourney_fields": ("plains", tourney_fields, "mown", ("centre_b", "centre_mid", "centre_near")),
-    "highlands": ("hills", highlands, "highland_grass", tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS),
+    "highlands": ("hills", highlands, "highland_grass",
+                  tuple(bt.MOUNTAINS) + bt.RIDGE_KINDS + ("centre_b", "centre_mid", "centre_near", "edge_same_b", "edge_trail",
+                                                          "edge_trail_in") + CLIFF_KINDS),
     "windmill_country": ("farmland", windmill_country, "plains",
                          ("centre_b", "centre_mill", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in",
                           "centre_near", "edge_other_lm")),
@@ -2390,6 +3251,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "spidernest": "dark_wood", "greatwindmill": "windmill_country",
              "abandonedbarn": "haunted_homesteads", "militiabarn": "raided_farms",
              "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
+             "clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks", "library": "monastery_heights",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})

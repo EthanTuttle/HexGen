@@ -10,12 +10,14 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bmesh  # noqa: E402
 import bpy  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 import ground_cover as gc  # noqa: E402
 import landmark_flow as lf  # noqa: E402
+import cliffs  # noqa: E402
 import fence_gates as fg  # noqa: E402
 import json  # noqa: E402
 import sand  # noqa: E402
@@ -142,7 +144,7 @@ def draw_paths(col, templates):
         for line in lines:
             for a, b in zip(line, line[1:]):
                 d = b - a
-                p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+                vr.frustum(p, a + Vector((0, 0, 0.14)), b + Vector((0, 0, 0.14)), 0.05, 0.05, "path_debug", segments=4)
         key = (round(m.translation.x, 1), round(m.translation.y, 1))
         for i, line in json.loads(src.get("path_spokes", "{}")).items():
             tiles.setdefault(key, {}).setdefault("spokes", []).append((int(i), [m @ Vector((x, -z, y)) for x, y, z in line]))
@@ -154,12 +156,11 @@ def draw_paths(col, templates):
         for i, line in t.get("spokes", []):
             if any((e - line[0]).length < 0.05 for e in t.get("ends", [])):
                 for a, b in zip(line, line[1:]):
-                    d = b - a
-                    p.box((a + b) / 2, (d.length + 0.06, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+                    vr.frustum(p, a + Vector((0, 0, 0.14)), b + Vector((0, 0, 0.14)), 0.05, 0.05, "path_debug", segments=4)
         for e in t.get("ends", []) if "hub" in t else []:
             d = e - t["hub"]
             if d.length < 2.2:  # a wedge path's inner end on this tile
-                p.box((e + t["hub"]) / 2, (d.length, 0.07, 0.04), "path_debug", z=0.12, spin=math.atan2(d.y, d.x))
+                vr.frustum(p, e + Vector((0, 0, 0.14)), t["hub"] + Vector((0, 0, 0.14)), 0.05, 0.05, "path_debug", segments=4)
     p.finish(col)
 
 # Plains tier 0: a group of plains among forest, farms, a village and hills, to judge it beside full tiles.
@@ -180,6 +181,13 @@ def density_map(variant, landmark):
 
 MEADOWS_MAP = density_map("meadows", "nomadcamp")
 
+# Hills tier 0 beside full forests and farms: a group, a pair and a lone tile.
+HILLS_MAP = {(-1, 0): "hills", (0, 0): "hills", (0, -1): "hills", (-1, 1): "hills", (1, 0): "hills", (0, 1): "hills",
+             (2, -1): "plains", (1, -1): "forest", (-1, -1): "forest", (-2, 1): "plains", (-2, 0): "plains",
+             (-1, 2): "farmland", (0, 2): "farmland", (1, 1): "plains", (2, 0): "hills", (2, 1): "hills",
+             (3, -1): "plains", (3, 0): "plains", (1, 2): "farmland", (0, -2): "plains", (1, -2): "hills"}
+HIGHLANDS_MAP = {**FLOW_RING, **{t: ("clanhall" if t == LANDMARK_AT else "highlands") for t in LANDMARK_REGION}}
+
 # Farmland tier 2: each variant's 7-tile region with its landmark on an outer tile, ringed by plains and forest.
 FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in LANDMARK_REGION}}
                 for v, lm in (("haunted_homesteads", "abandonedbarn"), ("raided_farms", "militiabarn"),
@@ -192,6 +200,8 @@ BORDERED = {"farmland", "village"}
 
 def linked(a, b):
     """Joined for edge pieces: the same terrain (a region variant counts as its terrain), or linked terrains."""
+    if b and vr.wedges_of(a) != vr.wedges_of(b) and (vr.wedges_of(a) in cliffs.RAISED or vr.wedges_of(b) in cliffs.RAISED):
+        return False  # a raised region shares no mountain with the land below it
     a, b = vr.terrain_of(a), vr.terrain_of(b) if b else b
     return a == b or frozenset((a, b)) in LINKED
 
@@ -216,9 +226,11 @@ def place(templates, name, col, at, angle=0.0):
     return obj
 
 
-def build_map(templates, animated=False, tiles=None):
+def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=None):
     """Places the test map. With animated=True, water tiles get banks and dressing only and are
-    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats."""
+    returned as (q, r, position, mask) so the animation can build moving water and bobbing boats.
+    raised_regions: the (tiles, variant) pairs that raise_region will raise, for the fence gates. flows: landmark tile ->
+    (dist, toward, turn) to keep from when its region finished, rather than working them out from the map."""
     MAP = tiles or globals()["MAP"]
     water_tiles = []
     col = hk.new_collection("map")
@@ -226,7 +238,11 @@ def build_map(templates, animated=False, tiles=None):
     # the region is known; here it's the connected group of the variant's tiles round the landmark.
     dist, toward, turns = {}, {}, {}
     for lm_at, lm in MAP.items():
-        if lm in vr.LANDMARKS:
+        if flows and lm_at in flows:
+            d, t, turns[lm_at] = flows[lm_at]
+            dist.update(d)
+            toward.update(t)
+        elif lm in vr.LANDMARKS:
             region, todo = {lm_at}, [lm_at]
             while todo:
                 q, r = todo.pop()
@@ -240,7 +256,9 @@ def build_map(templates, animated=False, tiles=None):
             toward.update(t)
             turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
     # Fence gates round farm and village groups (fence_gates.py).
-    gates = fg.fence_gates({k: vr.terrain_of(n) for k, n in MAP.items()})
+    raised = set(t for tiles_, _ in raised_regions for t in tiles_)
+    terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
+    gates = fg.fence_gates(terrains, raised, [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)])
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -292,19 +310,33 @@ def build_map(templates, animated=False, tiles=None):
         if terrain == "hills":
             # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
             # meet; otherwise half on each edge shared with one other hills tile.
-            triple = [joined[i] and joined[(i + 1) % 6] for i in range(6)]  # corner i: between edges i and i + 1
-            if not any(joined):
+            # A landmark has none of this, and its neighbours leave it out, so it keeps clear ground.
+            # No mountain on a trail edge either: the range opens into a pass along the way to the landmark.
+            def ranges(t, i):  # do tile t and its neighbour on edge i share a mountain?
+                n = (t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])
+                return (linked(MAP[t], MAP.get(n)) and i not in lf.trail_edges(t, toward)
+                        and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS)
+            ranged = [ranges((q, r), i) for i in range(6)]
+
+            def corner_shared(i):  # all three tiles round corner i must share: every copy of the third must be drawn
+                n = (q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1])
+                return ranged[i] and ranged[(i + 1) % 6] and ranges(n, (i + 2) % 6)
+            triple = [corner_shared(i) for i in range(6)]  # corner i: between edges i and i + 1
+            if name in vr.LANDMARKS:
+                ranged = triple = [False] * 6
+            elif not any(ranged) and dist.get((q, r), 3) > 2:
                 place(templates, f"{name}_peak", col, at)
             parts = []
             for i in range(6):
                 if triple[i]:
                     parts.append(("corner", i))
-                elif joined[i] and not triple[(i - 1) % 6]:
+                elif ranged[i] and not triple[(i - 1) % 6]:
                     parts.append(("edge", i))
             for where, i in parts:
                 place(templates, f"{name}_mountain_{where}", col, at, math.radians(60 * i))
             # In bigger groups the mountains join into a range: ridges from this tile's middle to each of them.
-            if len(parts) >= 2:
+            # None within two steps of a landmark (clear ground), nor where steps run (they'd bury them).
+            if len(parts) >= 2 and dist.get((q, r), 3) > 2 and f"{kit}_steps_centre" not in templates:
                 place(templates, f"{name}_ridge_knot", col, at)
                 for where, i in parts:
                     place(templates, f"{name}_ridge_{where}", col, at, math.radians(60 * i))
@@ -319,11 +351,18 @@ def build_map(templates, animated=False, tiles=None):
                     edge = f"{kit}_edge_trail_in"  # the closer tile's side: carts heading in, toward the mill
             elif not joined[i] and i in gates.get((q, r), ()) and f"{kit}_edge_gate" in templates:
                 edge = f"{kit}_edge_gate"  # a gate in the fence, the track running out through it
+            elif not joined[i] and f"{kit}_edge_other_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
+                edge = f"{kit}_edge_other_b"  # trees: a wedge facing other land is the only one clear of rock
             elif not joined[i] and name in vr.LANDMARKS and f"{kit}_edge_other_lm" in templates:
                 edge = f"{kit}_edge_other_lm"  # the fence wedge without the lane fill: the landmark's yard lies there
             elif joined[i] and f"{kit}_edge_same_b" in templates and gc.hash01(q * 6 + i, r, 8) < 0.5:
                 edge = f"{kit}_edge_same_b"  # a second edge_same piece, alternated so the edges don't repeat
             place(templates, edge, col, at, math.radians(60 * i))
+            if i in trails and f"{kit}_steps_centre" in templates:  # the stair's flight on the centre, one per trail edge
+                if name not in vr.LANDMARKS:
+                    place(templates, f"{kit}_steps_centre", col, at, math.radians(60 * i))
+                elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
+                    place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
             if terrain in BORDERED and joined[i] and "border_join_l" in templates:
                 if not joined[(i + 1) % 6]:
@@ -351,6 +390,107 @@ def build_map(templates, animated=False, tiles=None):
         p.flat([c for c in hk.hex_corners(hk.TILE_RADIUS * 0.94, pointy=True)][::-1], 0.02, "slot")
         p.finish(col, hk.tile_position(q, r) - Vector((0, 0, 0.3)))
     return water_tiles
+
+
+def raise_region(templates, col, tiles_map, regions, progress=1.0):
+    """The engine's raised regions (cliffs.py). regions: (tiles, variant) pairs, all raised. progress: how far through the
+    rise, for a preview of it: tile pieces come up from the ground, cliffs from below it. Returns the climbs."""
+    bpy.context.view_layer.update()
+    centres = {t: hk.tile_position(*t) for t in tiles_map}
+    terrains = {t: vr.terrain_of(n) for t, n in tiles_map.items()}
+    raised = set(t for tiles, _ in regions for t in tiles)
+    all_climbs = []
+
+    def tile_of(obj):
+        return next((t for t, c in centres.items() if (c - obj.location).xy.length < 0.01), None)
+
+    def edge_piece(t, i):
+        for obj in col.objects:
+            if tile_of(obj) == t and "_edge_" in obj.get("piece", "") and round(math.degrees(obj.rotation_euler.z)) % 360 == 60 * i:
+                return obj
+
+    def swap(t, i, name):
+        obj = edge_piece(t, i)
+        obj.data = templates[name].data
+        obj["piece"] = name
+
+    for region, variant in regions:
+        region = set(region)
+        climbs = cliffs.climbs(region, terrains, raised)
+        all_climbs += climbs
+        ledge = {}
+        for t, i in climbs:
+            ledge[(t, (i - 1) % 6)] = "low"
+            ledge[(t, i)] = "mid"
+            ledge[(t, (i + 1) % 6)] = "top"
+            if f"{variant}_steps_centre" in templates:  # the stair carries on to the tile's landing, or up the landmark's rise
+                place(templates, f"{variant}_{'steps_centre' if tiles_map[t] == variant else 'steps_rise'}", col, centres[t],
+                      math.radians(60 * ((i + 1) % 6)))
+        for t, i in cliffs.outer_edges(region, raised):
+            swap(t, i, f"{variant}_edge_{ {'low': 'climb_low', 'mid': 'climb', 'top': 'climb_top'}[ledge[(t, i)]] if (t, i) in ledge else 'rim'}")
+    for obj in list(col.objects):
+        if obj.name != "ground_cover" and tile_of(obj) in raised:
+            if obj.get("piece", "").startswith("base_"):
+                bpy.data.objects.remove(obj)  # the ground covers the tile
+                continue
+            obj.location.z += vr.RAISE * progress
+        elif obj.name == "ground_cover":  # raised ground holds no cover: only tufts fading in from neighbours, which stay down
+            mesh = obj.data.copy()
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            seen, gone = set(), []
+            for v in bm.verts:
+                if v in seen:
+                    continue
+                seen.add(v)
+                isle = [v]
+                for u in isle:
+                    for e in u.link_edges:
+                        w = e.other_vert(u)
+                        if w not in seen:
+                            seen.add(w)
+                            isle.append(w)
+                mid = obj.matrix_world @ (sum((u.co for u in isle), Vector()) / len(isle))
+                if any(max((mid - centres[t]).dot(hk.edge_normal(k)) for k in range(6)) <= hk.TILE_APOTHEM for t in raised):
+                    gone += isle
+            bmesh.ops.delete(bm, geom=gone, context="VERTS")
+            bm.to_mesh(mesh)
+            bm.free()
+            obj.data = mesh
+    low = -vr.RAISE * (1 - progress)
+    for region, variant in regions:
+        region = set(region)
+        ledge = {}
+        skip = set()
+        for t, i in (c for c in all_climbs if c[0] in region):
+            ledge[(t, (i - 1) % 6)], ledge[(t, i)], ledge[(t, (i + 1) % 6)] = "low", "mid", "top"
+            skip |= {(t, (i - 1) % 6), (t, i), (t, (i + 1) % 6)}
+        for t, i in cliffs.outer_edges(region, raised):
+            kind = f"cliff_path_{ledge[(t, i)]}" if (t, i) in ledge else "cliff_edge_b" if gc.hash01(t[0] * 6 + i, t[1], 8) < 0.5 else "cliff_edge"
+            place(templates, f"{variant}_{kind}", col, centres[t] + Vector((0, 0, low)), math.radians(60 * i))
+        for t, i in cliffs.outer_corners(region, raised):
+            if (t, i) not in skip:
+                place(templates, f"{variant}_cliff_corner", col, centres[t] + Vector((0, 0, low)), math.radians(60 * i))
+    return all_climbs
+
+
+def tile_report(col, label):
+    """Triangles per tile, without the base, the way the budget counts them."""
+    bpy.context.view_layer.update()
+    per = {}
+    for obj in col.objects:
+        piece = obj.get("piece", "")
+        if not piece or piece.startswith("base_"):
+            continue
+        obj.data.calc_loop_triangles()
+        k = (round(obj.location.x, 1), round(obj.location.y, 1))
+        per[k] = per.get(k, 0) + len(obj.data.loop_triangles)
+    print(f"TRIS {label}: worst {max(per.values())}")
+
+
+def look_at(cam, eye, target):
+    cam.location = eye
+    cam.rotation_euler = (target - eye).to_track_quat("-Z", "Y").to_euler()
 
 
 def stage(target, distance, elevation_deg, lens=50):
@@ -562,6 +702,158 @@ if __name__ == "__main__":
             place(templates, f"tourney_fields_{piece}", col, Vector((0, 0, 0)))
             stage(Vector((0, 0, 0)), 15, 42)
             render(f"plains_t2_tourney_stations_{piece}")
+        sys.exit(0)
+    if "hills" in flags:
+        # Hills tier 0 beside full tiles, then highlands flowing into the Clan Hall, with a close-up.
+        def hills_map(tiles_map, stem, target, paths=False):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map)
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates)
+            if paths:
+                draw_paths(col, templates)
+            stage(target, 54, 50)
+            render(stem)
+        hills_map(HILLS_MAP, "hills_t0", Vector((3, 0, 0)))
+        hills_map(HIGHLANDS_MAP, "hills_highlands_landmark", Vector((0.5, -0.8, 0)))
+        region = [t for t, n in HIGHLANDS_MAP.items() if n in ("highlands", "clanhall")]
+        d, tw = lf.flow(set(region), LANDMARK_AT)
+        a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+        el = math.radians(38)
+        cam = bpy.context.scene.camera
+        cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
+                                                                2.2 + 16 * math.sin(el)))
+        cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+        render("hills_clanhall_closeup")
+        sys.exit(0)
+    if "raised" in flags:
+        # Raised regions (cliffs.py): 7 and 12 tiles from the map camera, from the foot of the cliff looking up, and a
+        # close-up of a ledge. --only picks variants; --trial renders under a scratch name.
+        prefix = "trial_" if "trial" in flags else ""
+        for short, variant, lm in (("snowy", "snowy_peaks", "yeticave"), ("volcanic", "volcanic_peaks", "salamanderden"),
+                                   ("highlands", "highlands", "clanhall"), ("monastery", "monastery_heights", "library")):
+            if flags.get("only") and short not in flags["only"].split(","):
+                continue
+            for size, region, lm_at, view, far in (("7", LANDMARK_REGION, LANDMARK_AT, Vector((0.5, -1.5, 2.0)), 62),
+                                                   ("12", DENSITY_REGION, (0, 1), DENSITY_VIEW + Vector((0, -1, 2.0)), 74)):
+                ring = {t: FLOW_RING.get(t, "plains") for r_ in region for t in
+                        ((r_[0] + dq, r_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in region}
+                tiles_map = {**ring, **{t: (lm if t == lm_at else variant) for t in region}}
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                col = bpy.data.collections["map"]
+                climbs = raise_region(templates, col, tiles_map, [(region, variant)])
+                tile_report(col, f"{short} {size}")
+                draw_effects(col, templates)
+                stage(view, far, 50)
+                print("CLIMBS", short, size, climbs)
+                render(f"{prefix}hills_{short}_{size}_raised")
+                cam = bpy.context.scene.camera
+                t, i = next(((t, i) for t, i in climbs if hk.edge_normal(i).y < 0.1), climbs[0])
+                n = hk.edge_normal(i)
+                mid = hk.tile_position(*t) + n * hk.TILE_APOTHEM
+                if size == "7":
+                    cam.data.lens = 24  # from the foot of a cliff, looking up, as the party would
+                    wall = min(cliffs.outer_edges(set(region)), key=lambda e: (hk.tile_position(*e[0]) + hk.edge_normal(e[1]) * hk.TILE_APOTHEM).y)
+                    side = hk.tile_position(*wall[0]) + hk.edge_normal(wall[1]) * hk.TILE_APOTHEM
+                    look_at(cam, side + Vector((0, -11, 1.0)), side + Vector((0, 8, vr.RAISE + 1.5)))
+                    render(f"{prefix}hills_{short}_low_raised")
+                    cam.data.lens = 36  # the ledge, its route drawn
+                    draw_paths(col, templates)
+                    look_at(cam, mid + n * 13 + Vector((0, 0, vr.RAISE * 0.5 + 6)), mid + Vector((0, 0, vr.RAISE * 0.45)))
+                    render(f"{prefix}hills_{short}_climb_raised")
+                # Every ledge's foot, low, from the land in front of it with the wall running away, and its top from the plateau.
+                cam.data.lens = 24
+                if size != "7":
+                    draw_paths(col, templates)
+                for k, (t, i) in enumerate(climbs):
+                    centre = hk.tile_position(*t)
+                    out, along = hk.edge_normal(i - 1), hk.edge_normal(i - 1 + 1.5)
+                    foot = centre + out * vr.X1 + along * vr.foot_y()
+                    look_at(cam, foot + out * 5.5 - along * 2.8 + Vector((0, 0, 1.3)), foot + along * 1.2 + Vector((0, 0, 1.3)))
+                    render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_foot_raised")
+                    out, along = hk.edge_normal(i + 1), hk.edge_normal(i + 1 + 1.5)
+                    exit_ = centre + out * vr.LEDGE_X + along * vr.climb_heights()[2] + Vector((0, 0, vr.RAISE))
+                    look_at(cam, exit_ - out * 1.5 - along * 7.5 + Vector((0, 0, 6.5)), exit_ + along * 0.5 - Vector((0, 0, 1.5)))
+                    render(f"{prefix}hills_{short}_{size}{'abcdef'[k]}_top_raised")
+        sys.exit(0)
+    if "raised-scenes" in flags:
+        # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no
+        # walkable land beside it, and the rise halfway through.
+        prefix = "trial_" if "trial" in flags else ""
+
+        def scene(stem, tiles_map, regions, progress=1.0, flows=None, foot=False):
+            if flags.get("only") and stem not in flags["only"].split(","):
+                return
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles=tiles_map, raised_regions=regions, flows=flows)
+            col = bpy.data.collections["map"]
+            climbs = raise_region(templates, col, tiles_map, regions, progress)
+            print("CLIMBS", stem, climbs)
+            draw_effects(col, templates)
+            centre = sum((hk.tile_position(*t) for r_, _ in regions for t in r_), Vector()) / sum(len(r_) for r_, _ in regions)
+            stage(centre + Vector((0, -1.5, 2.0)), 66 if len(regions) == 1 else 88, 50)
+            render(f"{prefix}{stem}")
+            if foot:  # the gate in front of a ledge's foot, from behind the gate
+                cam = bpy.context.scene.camera
+                cam.data.lens = 24
+                draw_paths(col, templates)
+                t, i = climbs[0]
+                out, along = hk.edge_normal(i - 1), hk.edge_normal(i - 1 + 1.5)
+                at = hk.tile_position(*t) + out * vr.X1 + along * vr.foot_y()
+                look_at(cam, at + out * 6 - along * 2.5 + Vector((0, 0, 3.5)), at + along * 1.0 + Vector((0, 0, 1.0)))
+                render(f"{prefix}{stem}_foot")
+
+        base = {**FLOW_RING, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        before = {t: n for t, n in base.items() if t not in ((-2, 1), (0, 2))}
+        scene("hills_snowy_added_before_raised", before, [(LANDMARK_REGION, "snowy_peaks")])
+        added = LANDMARK_REGION + [(-2, 1)]
+        # The old tiles keep their trails and the landmark its turn; only the added tile gets its own (landmark_flow.extend).
+        old_dist, old_toward = lf.flow(set(LANDMARK_REGION), LANDMARK_AT)
+        old_turn = lf.turn(LANDMARK_AT, old_dist, old_toward)
+        lf.extend((-2, 1), old_dist, old_toward)
+        scene("hills_snowy_added_after_raised", {**before, (-2, 1): "snowy_peaks", (0, 2): "forest"}, [(added, "snowy_peaks")],
+              flows={LANDMARK_AT: (old_dist, old_toward, old_turn)})
+        second = [(q + 3, r) for q, r in LANDMARK_REGION]
+        both = {**FLOW_RING, **{t: "plains" for s_ in second for t in ((s_[0] + dq, s_[1] + dr) for dq, dr in hk.NEIGHBOURS)},
+                **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION},
+                **{t: ("salamanderden" if t == (4, -1) else "volcanic_peaks") for t in second}}
+        scene("hills_touching_raised", both, [(LANDMARK_REGION, "snowy_peaks"), (second, "volcanic_peaks")])
+        river = {**{t: "river" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        scene("hills_noway_raised", river, [(LANDMARK_REGION, "snowy_peaks")])
+        scene("hills_snowy_rising_raised", base, [(LANDMARK_REGION, "snowy_peaks")], 0.5)
+        fenced = {**{t: "farmland" for t in FLOW_RING}, **{t: ("yeticave" if t == LANDMARK_AT else "snowy_peaks") for t in LANDMARK_REGION}}
+        scene("hills_fenced_foot_raised", fenced, [(LANDMARK_REGION, "snowy_peaks")], foot=True)
+        sys.exit(0)
+    if "hills-t2" in flags:
+        # Hills tier 2 and class variant: each region flowing into its landmark, and a close-up; monastery's paths.
+        el = math.radians(38)
+        for short, variant, lm, with_paths in (("snowy", "snowy_peaks", "yeticave", False),
+                                               ("volcanic", "volcanic_peaks", "salamanderden", False),
+                                               ("monastery", "monastery_heights", "library", True)):
+            if "snowy-only" in flags and short != "snowy":
+                continue
+            tiles_map = {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else variant) for t in LANDMARK_REGION}}
+            for paths in ((True, False) if with_paths else (False,)):
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                build_map(templates, tiles=tiles_map)
+                col = bpy.data.collections["map"]
+                draw_effects(col, templates)
+                if paths:
+                    draw_paths(col, templates)
+                stage(Vector((0.5, -0.8, 0)), 54, 50)
+                render(f"hills_t2_{short}_{'paths' if paths else 'landmark'}")
+            d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (variant, lm)), LANDMARK_AT)
+            a = math.radians(60 * lf.turn(LANDMARK_AT, d, tw))
+            cam = bpy.context.scene.camera
+            cam.location = hk.tile_position(*LANDMARK_AT) + Vector((16 * math.cos(el) * math.cos(a), 16 * math.cos(el) * math.sin(a),
+                                                                    2.2 + 16 * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, a + math.pi / 2)
+            render(f"hills_t2_{lm}_closeup")
         sys.exit(0)
     if "farmland-t2" in flags:
         # Farmland tier 2: each region flowing into its landmark (with the engine's effects stood in), the same

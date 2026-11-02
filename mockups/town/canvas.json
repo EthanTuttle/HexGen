@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-10-28T18:00:00Z"
  },
- "title": "Heads or Hexes · Town (working)",
+ "title": "Heads or Hexes \u00b7 Town (working)",
  "launch": {
   "view": "canvas"
  },
@@ -15,7 +15,7 @@
    "y": 0,
    "w": 844,
    "h": 390,
-   "title": "Town v1a · scene, then panels: the camera holds on the town hex, services are option cards, each opens its own panel. Town name, greeting, gold, prices and quests are placeholders",
+   "title": "Town v1a \u00b7 scene, then panels: the camera holds on the town hex, services are option cards, each opens its own panel. Town name, greeting, gold, prices and quests are placeholders",
    "is_interactive": true,
    "radius": 28
   },
@@ -24,7 +24,7 @@
    "y": 0,
    "w": 844,
    "h": 390,
-   "title": "Town v1b · town hub: a menu screen with a button per service, the same panels",
+   "title": "Town v1b \u00b7 town hub: a menu screen with a button per service, the same panels",
    "is_interactive": true,
    "radius": 28
   },
@@ -33,7 +33,7 @@
    "y": 0,
    "w": 844,
    "h": 390,
-   "title": "Town v1c · straight to services: walking onto the town opens a pop-up over the map listing its services, each opens its panel",
+   "title": "Town v1c \u00b7 straight to services: walking onto the town opens a pop-up over the map listing its services, each opens its panel",
    "is_interactive": true,
    "radius": 28
   },
@@ -42,7 +42,7 @@
    "y": 1520,
    "w": 844,
    "h": 390,
-   "title": "Town v2a · shop as the shopkeeper's counter: the scene stays, the shopkeeper's line on top, items on a wooden counter along the bottom; tapping one opens the gear screen's item pop-up with Buy or Sell. Shopkeeper, lines and prices are placeholders",
+   "title": "Town v2a \u00b7 shop as the shopkeeper's counter: the scene stays, the shopkeeper's line on top, items on a wooden counter along the bottom; tapping one opens the gear screen's item pop-up with Buy or Sell. Shopkeeper, lines and prices are placeholders",
    "is_interactive": true,
    "radius": 28
   },
@@ -51,7 +51,7 @@
    "y": 1520,
    "w": 844,
    "h": 390,
-   "title": "Town v2b · shop as two trays: the shop's stock and the shared inventory side by side; drag an item across, or tap it and use the button between, to buy or sell. No tabs",
+   "title": "Town v2b \u00b7 shop as two trays: the shop's stock and the shared inventory side by side; drag an item across, or tap it and use the button between, to buy or sell. No tabs",
    "is_interactive": true,
    "radius": 28
   },
@@ -60,7 +60,7 @@
    "y": 1520,
    "w": 844,
    "h": 390,
-   "title": "Town v2c · shop as shelf cards: each item is a big card (rarity band, icon, name, price) dealt in a row that scrolls sideways; tapping one turns it over to show its details and Buy",
+   "title": "Town v2c \u00b7 shop as shelf cards: each item is a big card (rarity band, icon, name, price) dealt in a row that scrolls sideways; tapping one turns it over to show its details and Buy",
    "is_interactive": true,
    "radius": 28
   },
@@ -69,7 +69,7 @@
    "y": 1520,
    "w": 844,
    "h": 390,
-   "title": "Town v2d · inn as the innkeeper's menu: the innkeeper's line on top, services as cards with their price on the band (Rest the night, and [Inn extra] for later inn services). Resting dims to night and back, then the results show in the line",
+   "title": "Town v2d \u00b7 inn as the innkeeper's menu: the innkeeper's line on top, services as cards with their price on the band (Rest the night, and [Inn extra] for later inn services). Resting dims to night and back, then the results show in the line",
    "is_interactive": true,
    "radius": 28
   },
@@ -78,7 +78,7 @@
    "y": 1520,
    "w": 844,
    "h": 390,
-   "title": "Town v2e · a night at the inn: the board becomes the inn's interior (bar, hearth, tables), the party gathers at a table, companions trade banter lines (placeholders), mugs go up, night falls and morning comes, then the results",
+   "title": "Town v2e \u00b7 a night at the inn: the board becomes the inn's interior (bar, hearth, tables), the party gathers at a table, companions trade banter lines (placeholders), mugs go up, night falls and morning comes, then the results",
    "is_interactive": true,
    "radius": 28
   },
@@ -87,7 +87,7 @@
    "y": 760,
    "w": 844,
    "h": 390,
-   "title": "Linked · Exploration v8b (copied; Debug → Town v1a / v1b / v1c opens each variant, and Leave or Back comes back here)",
+   "title": "Linked \u00b7 Exploration v8b (copied; Debug \u2192 Town v1a / v1b / v1c opens each variant, and Leave or Back comes back here)",
    "is_interactive": true,
    "radius": 28
   },
@@ -96,7 +96,7 @@
    "y": 760,
    "w": 844,
    "h": 390,
-   "title": "Linked · Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
+   "title": "Linked \u00b7 Character & gear v8d (copied; opened by the equipment button; Back to map returns to the exploration copy)",
    "is_interactive": true,
    "radius": 28
   },
@@ -105,7 +105,7 @@
    "y": 2280,
    "w": 844,
    "h": 390,
-   "title": "Town v3a · the town square: walking in swaps the board for the town's own hexes (well, market stall, quest board post, the inn at the back, houses); each card matches a place. With the chosen shop (v2a counter) and inn (v2e night at the bar, ending in v1's rest results)",
+   "title": "Town v3a \u00b7 the town square: walking in swaps the board for the town's own hexes (well, market stall, quest board post, the inn at the back, houses); each card matches a place. With the chosen shop (v2a counter) and inn (v2e night at the bar, ending in v1's rest results)",
    "is_interactive": true,
    "radius": 28
   },
@@ -114,7 +114,7 @@
    "y": 2280,
    "w": 844,
    "h": 390,
-   "title": "Town v3b · v3a, and the stall, the quest board post and the inn glow and can be tapped; the party walks there first (from the cards too)",
+   "title": "Town v3b \u00b7 v3a, and the stall, the quest board post and the inn glow and can be tapped; the party walks there first (from the cards too)",
    "is_interactive": true,
    "radius": 28
   },
@@ -123,7 +123,7 @@
    "y": 2280,
    "w": 844,
    "h": 390,
-   "title": "Town v3c · v3b plus life: townsfolk wander the square (tap one for a [Townsfolk line] or [Rumour]) and smoke rises from the chimneys",
+   "title": "Town v3c \u00b7 v3b plus life: townsfolk wander the square (tap one for a [Townsfolk line] or [Rumour]) and smoke rises from the chimneys",
    "is_interactive": true,
    "radius": 28
   },
@@ -132,7 +132,7 @@
    "y": 3040,
    "w": 844,
    "h": 390,
-   "title": "Town v4 · v3a (chosen) with the camera: drag to pan, pinch to zoom, twist to rotate, wheel and right-drag on PC, the nav button beside equipment. A quick tap moves the bar banter on. Entering or leaving the inn, or opening the shop counter, eases the camera back to frame it",
+   "title": "Town v4 \u00b7 v3a (chosen) with the camera: drag to pan, pinch to zoom, twist to rotate, wheel and right-drag on PC, the nav button beside equipment. A quick tap moves the bar banter on. Entering or leaving the inn, or opening the shop counter, eases the camera back to frame it",
    "is_interactive": true,
    "radius": 28
   },
@@ -141,7 +141,7 @@
    "y": 3040,
    "w": 844,
    "h": 390,
-   "title": "Linked · Exploration v8b (copied; Debug → Town v4 opens v4, and Leave comes back here)",
+   "title": "Linked \u00b7 Exploration v8b (copied; Debug \u2192 Town v4 opens v4, and Leave comes back here)",
    "is_interactive": true,
    "radius": 28
   },
@@ -150,7 +150,7 @@
    "y": 3040,
    "w": 844,
    "h": 390,
-   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "title": "Linked \u00b7 Character & gear v8d (copied; opened by the equipment button)",
    "is_interactive": true,
    "radius": 28
   },
@@ -159,7 +159,7 @@
    "y": 3800,
    "w": 844,
    "h": 390,
-   "title": "Town v5a · the nav button's camera buttons fan out as a small honeycomb above it, over the open board, clear of the cards; a tap on the board closes them",
+   "title": "Town v5a \u00b7 the nav button's camera buttons fan out as a small honeycomb above it, over the open board, clear of the cards; a tap on the board closes them",
    "is_interactive": true,
    "radius": 28
   },
@@ -168,7 +168,7 @@
    "y": 3800,
    "w": 844,
    "h": 390,
-   "title": "Town v5b · the camera buttons sit in a small wood tray that pops up above the nav button, on top of everything; a tap on the board closes it",
+   "title": "Town v5b \u00b7 the camera buttons sit in a small wood tray that pops up above the nav button, on top of everything; a tap on the board closes it",
    "is_interactive": true,
    "radius": 28
   },
@@ -177,7 +177,7 @@
    "y": 3800,
    "w": 844,
    "h": 390,
-   "title": "Town v5c · the camera buttons open to the right as before, and while they're open the card row (town cards, the shop counter, the inn's cards) slides right to make room",
+   "title": "Town v5c \u00b7 the camera buttons open to the right as before, and while they're open the card row (town cards, the shop counter, the inn's cards) slides right to make room",
    "is_interactive": true,
    "radius": 28
   },
@@ -186,7 +186,7 @@
    "y": 3800,
    "w": 844,
    "h": 390,
-   "title": "Linked · Exploration v8b (copied; Debug → Town v5a / v5b / v5c opens each, and Leave comes back here)",
+   "title": "Linked \u00b7 Exploration v8b (copied; Debug \u2192 Town v5a / v5b / v5c opens each, and Leave comes back here)",
    "is_interactive": true,
    "radius": 28
   },
@@ -195,7 +195,7 @@
    "y": 3800,
    "w": 844,
    "h": 390,
-   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "title": "Linked \u00b7 Character & gear v8d (copied; opened by the equipment button)",
    "is_interactive": true,
    "radius": 28
   },
@@ -204,7 +204,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Town v6a · v5a's fan moved in to hug the nav button: up-right of it, two above, one to its right, over the cards",
+   "title": "Town v6a \u00b7 v5a's fan moved in to hug the nav button: up-right of it, two above, one to its right, over the cards",
    "is_interactive": true,
    "radius": 28
   },
@@ -213,7 +213,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Town v6b · v5b's tray moved down to sit right on the nav button, its tail pointing at it",
+   "title": "Town v6b \u00b7 v5b's tray moved down to sit right on the nav button, its tail pointing at it",
    "is_interactive": true,
    "radius": 28
   },
@@ -222,7 +222,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Linked · Exploration v8b (copied; Debug → Town v6a / v6b opens each, and Leave comes back here)",
+   "title": "Linked \u00b7 Exploration v8b (copied; Debug \u2192 Town v6a / v6b opens each, and Leave comes back here)",
    "is_interactive": true,
    "radius": 28
   },
@@ -231,7 +231,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "title": "Linked \u00b7 Character & gear v8d (copied; opened by the equipment button)",
    "is_interactive": true,
    "radius": 28
   },
@@ -240,7 +240,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Town v6c · the nav button sits between Quests and equipment, the three hexes touching in a zig-zag; opened, the camera buttons fan out against it on the right (v6a's fan)",
+   "title": "Town v6c \u00b7 the nav button sits between Quests and equipment, the three hexes touching in a zig-zag; opened, the camera buttons fan out against it on the right (v6a's fan)",
    "is_interactive": true,
    "radius": 28
   },
@@ -249,7 +249,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Linked · Exploration v8b (copied; Debug → Town v6a / v6b / v6c opens each, and Leave from v6c comes back here)",
+   "title": "Linked \u00b7 Exploration v8b (copied; Debug \u2192 Town v6a / v6b / v6c opens each, and Leave from v6c comes back here)",
    "is_interactive": true,
    "radius": 28
   },
@@ -258,7 +258,7 @@
    "y": 4560,
    "w": 844,
    "h": 390,
-   "title": "Linked · Character & gear v8d (copied; opened by v6c's equipment button)",
+   "title": "Linked \u00b7 Character & gear v8d (copied; opened by v6c's equipment button)",
    "is_interactive": true,
    "radius": 28
   },
@@ -267,7 +267,7 @@
    "y": 5320,
    "w": 844,
    "h": 390,
-   "title": "Town v7 · v6c (standard) with the new-item and new-quest dots moved to the top left of their buttons, and the rest's results card centred on the screen",
+   "title": "Town v7 \u00b7 v6c (standard) with the new-item and new-quest dots moved to the top left of their buttons, and the rest's results card centred on the screen",
    "is_interactive": true,
    "radius": 28
   },
@@ -276,7 +276,7 @@
    "y": 5320,
    "w": 844,
    "h": 390,
-   "title": "Linked · Exploration v8b (copied; Debug → Town v7 opens v7, and Leave comes back here)",
+   "title": "Linked \u00b7 Exploration v8b (copied; Debug \u2192 Town v7 opens v7, and Leave comes back here)",
    "is_interactive": true,
    "radius": 28
   },
@@ -285,7 +285,43 @@
    "y": 5320,
    "w": 844,
    "h": 390,
-   "title": "Linked · Character & gear v8d (copied; opened by the equipment button)",
+   "title": "Linked \u00b7 Character & gear v8d (copied; opened by the equipment button)",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v8a-SwapInScene.dc.html": {
+   "x": 0,
+   "y": 6090,
+   "w": 844,
+   "h": 390,
+   "title": "Town v8a \u00b7 Swap party at the inn, in the scene: a Swap party card beside Rest the night. Waiting companions (stand-ins: Kris and Dolmund) sit at the inn's tables as tokens. While swapping, tap a waiting companion, then a party member (or a glowing empty seat) to swap them; the picked token bobs and its name shows in the top panel. Wait here sends a picked party member to wait. Slots can be empty",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v8b-SwapColumns.dc.html": {
+   "x": 924,
+   "y": 6090,
+   "w": 844,
+   "h": 390,
+   "title": "Town v8b \u00b7 Swap party at the inn, two columns with details: the party (the hero locked, then 3 slots) on the left, those waiting at the inn in the middle, and the picked companion's card on the right (portrait, subtitle, where they are). Tap one in each column to swap; Wait at the inn benches a party member; empty slots allowed",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v8c-SwapDrag.dc.html": {
+   "x": 1848,
+   "y": 6090,
+   "w": 844,
+   "h": 390,
+   "title": "Town v8c \u00b7 Swap party at the inn, drag between rows: the party row (the hero locked, then 3 slots) over a dashed waiting row. Drag a portrait onto another to swap, or onto the waiting row to bench them; tapping one then the other works too",
+   "is_interactive": true,
+   "radius": 28
+  },
+  "Town-v9-SwapDetails.dc.html": {
+   "x": 0,
+   "y": 6860,
+   "w": 844,
+   "h": 390,
+   "title": "Town v9 \u00b7 v8b (chosen) with no duplicated info: the party and waiting rows show only portrait and name; race, class and level live in the details card, which gets more room (bigger portrait, spaced name, subtitle and where-chip, the action pinned to the bottom, \"Tap a companion\" when nothing is picked)",
    "is_interactive": true,
    "radius": 28
   }
@@ -321,62 +357,80 @@
   "Ref-Gear-v8d-ForV6.dc.html",
   "Town-v7-Tweaks.dc.html",
   "Ref-Explore-v8b-ForV7.dc.html",
-  "Ref-Gear-v8d-ForV7.dc.html"
+  "Ref-Gear-v8d-ForV7.dc.html",
+  "Town-v8a-SwapInScene.dc.html",
+  "Town-v8b-SwapColumns.dc.html",
+  "Town-v8c-SwapDrag.dc.html",
+  "Town-v9-SwapDetails.dc.html"
  ],
  "notes": {
   "v1": {
    "x": 0,
    "y": -250,
-   "text": "v1 · three ways into a town. Try the Shop (Buy and Sell), the Inn and the Quest board",
+   "text": "v1 \u00b7 three ways into a town. Try the Shop (Buy and Sell), the Inn and the Quest board",
    "kind": "title1",
    "maxW": 2692
   },
   "refs": {
    "x": 0,
    "y": 510,
-   "text": "Linked screens · exploration (way in and out) and gear",
+   "text": "Linked screens \u00b7 exploration (way in and out) and gear",
    "kind": "title1",
    "maxW": 1768
   },
   "v2": {
    "x": 0,
    "y": 1270,
-   "text": "v2 · on v1a's scene: three shops (a–c) and two inns (d–e); the quest board stays as in v1",
+   "text": "v2 \u00b7 on v1a's scene: three shops (a\u2013c) and two inns (d\u2013e); the quest board stays as in v1",
    "kind": "title1",
    "maxW": 4540
   },
   "v3": {
    "x": 0,
    "y": 2030,
-   "text": "v3 · the whole town on a town-square board: shop v2a, inn v2e with v1's results, quest board v1",
+   "text": "v3 \u00b7 the whole town on a town-square board: shop v2a, inn v2e with v1's results, quest board v1",
    "kind": "title1",
    "maxW": 2692
   },
   "v4": {
    "x": 0,
    "y": 2790,
-   "text": "v4 · the town square with the camera, as in scenes",
+   "text": "v4 \u00b7 the town square with the camera, as in scenes",
    "kind": "title1",
    "maxW": 2692
   },
   "v5": {
    "x": 0,
    "y": 3550,
-   "text": "v5 · keeping the opened camera buttons clear of the cards: fan, pop-up tray, or the cards make room",
+   "text": "v5 \u00b7 keeping the opened camera buttons clear of the cards: fan, pop-up tray, or the cards make room",
    "kind": "title1",
    "maxW": 4540
   },
   "v6": {
    "x": 0,
    "y": 4310,
-   "text": "v6 · the fan and the tray moved in close to the nav button",
+   "text": "v6 \u00b7 the fan and the tray moved in close to the nav button",
    "kind": "title1",
    "maxW": 6388
   },
   "v7": {
    "x": 0,
    "y": 5070,
-   "text": "v7 · v6c's layout as standard, with the notification dots and the rest card fixed",
+   "text": "v7 \u00b7 v6c's layout as standard, with the notification dots and the rest card fixed",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v8": {
+   "x": 0,
+   "y": 5830,
+   "text": "v8 \u00b7 Swap party at the inn, three ways",
+   "kind": "title1",
+   "maxW": 2692
+  },
+  "v9": {
+   "x": 0,
+   "y": 6600,
+   "text": "v9 \u00b7 v8b chosen: details only in the card",
    "kind": "title1",
    "maxW": 2692
   }

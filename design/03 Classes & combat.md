@@ -6,7 +6,7 @@ Heroes and companions, races, ability scores, coin checks, tactical combat, clas
 
 ## Hero and companions
 
-- The player controls a hero plus companions. Up to 3 companions at once.
+- The player controls a hero plus companions. Up to 3 companions at once. **More can be recruited** (chosen Nov 1, 2026): a companion who doesn't fit in the party (a 4th recruit, or one dropped when a multiplayer guest joins) shows up only at inns and camps. **Party members are swapped only at inns and camps** (chosen Nov 1, 2026): a new action there opens a party screen (inn: [Presentation](07 Presentation.md) → Town screen; the camp screen isn't designed yet).
 - Companions are gained by recruiting in locations and as quest rewards.
 - Companions have full classes and gear, like the hero, and level up with the hero.
 - In tactical combat, the player controls companions directly.
@@ -667,6 +667,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 ## Open questions
 
+- [ ] **New (Nov 1, 2026):** combat boards on raised or sloped ground follow the slope, with cells stepping with the ground (Ethan's pick), so height needs combat rules: does it affect movement, line of sight, reach or hit chance?
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
 - [x] ~~Which companion chimes in when several are proficient, and how it combines with Silver Tongue~~ (settled Oct 28, 2026: highest score, then party order; Silver Tongue's reflip first, automatically; see Checks outside combat)
 - [x] ~~Each story companion's 2 proficiencies~~ (settled Oct 28, 2026: [World & story](01 World & story.md) → Companion proficiencies). Still open: the coins and heads needed per dialogue check
@@ -708,3 +709,4 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] **New:** the candidate card pool is stale. Ideas now used as real cards include Sweep, Lunge, Feint, Hook, Execute, Smite, Ground Pound, Brace, Vault, Volley, Heavy Bolt, Ricochet, Haymaker, Enchant Blade, Blink Strike, Illusory Double, Blink and Fireball. Prune them?
 - [x] ~~Which actions besides Move and the basic attack are repeatable?~~ (settled Oct 21, 2026: weapon cards, class cards and spells are once per turn by default; repeatable cards are marked where listed. See Combat)
 - [ ] **New (hex grid):** with 6 neighbours per hex, recheck cards that hit "every adjacent foe" (Cleave, Whirlwind Dance, Pocket Sand, Ground Pound, Zone of Steel), which can now reach up to 6 foes instead of 8 on squares. Also define "behind" and "flanked" on hexes (Backstab, Sneak Attack, Shadowstep, Panther beast), and how arcs and lines work, since lines only run cleanly in 6 directions (Sweeping Arc, Wide Chop, Piercing Throw, Aimed Shot capstone, Aurora's Wrath)
+- [x] ~~Where the party swap happens~~ (settled Nov 1, 2026: only at inns and camps). Still open: the party screen's layout (town mockup next) and the camp's version

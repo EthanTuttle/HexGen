@@ -60,7 +60,7 @@ Plain Python, like `ground_cover.py`. `fence_gates(terrains)` takes each tile's 
 
 1. **Fence:** farms and villages (and their variants) are fenced. The fence runs along every edge whose neighbour isn't farm or village.
 2. **Ranking:** each fenced tile ranks its own fence edges by `hash01(q * 6 + i, r, 11)` and takes the first. About a third of tiles take the first two (`hash01(q, r, 12) < 0.35`).
-3. **Walkable land only:** a taken edge shows its gate only while the land beyond is walkable: any placed land except rivers and lakes (`UNWALKABLE`).
+3. **Walkable land only:** a taken edge shows its gate only while the land beyond is walkable: any placed land except rivers and lakes (`UNWALKABLE`) and raised cliffs. A fenced tile in front of a raised region's ledge foot always gets a gate there (`art/handoff/hills_kit.md` → Raised regions).
 4. **A way out:** a group with no gate on walkable land gets one on its lowest-hash fence edge that faces walkable land.
 
 A gate edge uses `<variant>_edge_gate`: the fence with a gate, and the track or street running out through it to the edge's midpoint. On haunted homesteads the gate lies fallen and the fences are broken, but they have no walkable gaps. On raided farms the gate is smashed.

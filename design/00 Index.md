@@ -163,6 +163,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Night building in multiplayer~~ (settled Oct 23: each player's own controllable party's sight range)
 - [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
 - [x] ~~Godot on iPhone frame rate~~ (Nov 1, 2026: 120 fps on the 15 Pro; target set to 120 where possible, never below 60)
+- [ ] New: combat boards on sloped ground follow the slope; what height does in combat (see Classes & combat)
+- [ ] New: raised hills regions: effect on reaching landmarks; a region ringed by river needs crossing gear or boats (see Multiplayer & tech, Map & exploration → Obstacles)
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)
@@ -218,7 +220,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New (Nov 1): armour follow-ups: heavy's Move penalty size, categorised accessory stats, any damage reduction, easing heavy's costs; playtest heavy at level 1 (hit only on the long shot)
 - [x] ~~Character creator Look step~~ (settled Nov 1, 2026: v21a for now)
 - [x] ~~Character creator send-off~~ (settled Nov 1, 2026: v22b)
-- [ ] New: a guest's send-off
+- [x] ~~A guest's send-off~~ (settled Nov 1: Ready / Join, dropping in beside the host's hero; the last companion makes room)
+- [ ] New (Nov 1): Swap party at the inn: feedback on town v9 (v8b's two columns chosen; camp later) Guests not Ready at Begin drop in when they finish (settled)
 - [ ] New: onboarding: the tutorial's lesson order; timing against the mentors' stories; returning players and guests with no skipping (see Presentation → Onboarding)
 - [ ] New: names for the six starting quests
 - [ ] New: names for the unnamed racial passives (v8 working names)
@@ -267,9 +270,10 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Where the passives sit~~ (settled for now Oct 28: v8b, a sleeve on the party panel)
 - [x] ~~The game's name~~ (settled Nov 1: Heads or Hexes). Renamed in the docs and canvas titles Nov 1; the GitHub repo is still HexGen.
 - [x] ~~Title screen backdrop~~ (settled Nov 1: v1b, your last save)
-- [x] ~~Title screen~~ (final Nov 1: v8)
+- [x] ~~Title screen~~ (final Nov 1: v11)
 - [x] ~~App icon~~ (final Nov 1: v8) (Home-screen name settled Nov 1: Heads/Hexes.)
 - [x] ~~Autosaves with several heroes~~ (settled Nov 1: per hero, slots too)
 - [x] ~~What a save shows; the settings list; the join code~~ (settled Nov 1: name and level, place, save time; Audio and Accessibility, plus Multiplayer in a game; a 6-letter code shown there; 3 slots per hero)
-- [ ] New (Nov 1): what goes in each Settings section; a taken join code; removing a guest (settled Nov 1: the host switches multiplayer on and sets a lasting code on the title screen)
+- [x] ~~Settings contents; taken codes; removing a guest; who's connected~~ (settled Nov 1: Audio sliders, Accessibility text size / reduced motion / hold timing; codes rolled when hosting is switched on; the host can remove a guest; party panel tags, plus a pause menu panel later)
+- [ ] New (Nov 1): design a pause menu; where Remove guest sits and what a removed guest sees
 - [x] ~~Where the hosting switch goes~~ (settled Nov 1: v6a, Join becomes Multiplayer; v7 steadies it)
