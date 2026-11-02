@@ -12,6 +12,7 @@ Pieces placed on top of cells:
   dark_wood_web                       an orb web between two trees one cell apart, its pivot midway between them
   fey_wood_ring                       a fairy ring round seven cells, its pivot on the middle cell
   board_under                         soil plate the size of a map tile under the 61 cells; it shows in the gaps
+  board_plate                         soil plate following the outline of the 61 cells, for a separate combat map
 
 A mini's base reaches 0.52 from a cell's centre and a corner is 0.577 away, so a thin trunk on a corner never cuts a base.
 Trees go on every second corner of a cover cell, the same set on every cell, so neighbouring cover cells share trees.
@@ -66,20 +67,23 @@ def patch(p, rng, at, r, mat):
 
 # --- Blocked cells: a mass filling the cell, under a mini's height, so what stands behind it still shows ---------------
 
-def rock(p, rng, at, r, mat, z, squash=1.0):
-    """A boulder: a coarse lump pushed out of round, so it doesn't look like a die."""
+def rock(p, rng, at, r, mat, z, squash=1.0, top=None):
+    """A boulder: a coarse lump pushed out of round, so it doesn't look like a die. top: colour of its upward faces."""
     m = Matrix.Translation(at + Vector((0, 0, z))) @ Matrix.Diagonal((1, 1, squash, 1))
     verts = bmesh.ops.create_icosphere(p.bm, subdivisions=0, radius=r, matrix=m)["verts"]
     for v in verts:
         v.co += Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1))) * r * 0.16
     p._paint(verts, mat)
-
-
-def boulders(p, rng, main="rock", side="rock_dark", top=None, tall=0.34):
-    a0 = rng.uniform(0, 6.3)
-    rock(p, rng, Vector((0.03, 0, 0)), 0.4, main, tall, 0.95)
     if top:
-        vr.lump(p, Vector((0.03, 0, 0)), 0.3, top, z=tall + 0.27, squash=0.5)
+        for f in {f for v in verts for f in v.link_faces}:
+            f.normal_update()
+            if f.normal.z > 0.55:
+                f.material_index = p._slot(top)
+
+
+def boulders(p, rng, main="rock", side="rock_dark", top=None, tall=0.3):
+    a0 = rng.uniform(0, 6.3)
+    rock(p, rng, Vector((0.03, 0, 0)), 0.4, main, tall, 0.95, top)
     for k in range(3):
         a = a0 + k * 2.1
         rock(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.27, rng.uniform(0.2, 0.26), side, 0.12, 0.85)
@@ -194,6 +198,33 @@ def board_under(p):
     p.prism(outline, hk.SOIL_BOTTOM, -0.3, "soil_dark")
 
 
+def board_plate(p):
+    """The outer edge of the radius 4 board, walked corner to corner."""
+    edges = {}
+    for q in range(-4, 5):
+        for r in range(max(-4, -q - 4), min(4, -q + 4) + 1):
+            at = hk.cell_position(q, r)
+            for k in range(6):
+                a, b = at + CORNERS[k], at + CORNERS[(k + 1) % 6]
+                ka, kb = (round(a.x, 3), round(a.y, 3)), (round(b.x, 3), round(b.y, 3))
+                if (kb, ka) in edges:
+                    del edges[(kb, ka)]
+                else:
+                    edges[(ka, kb)] = a
+    after = {a: b for a, b in edges}
+    start = min(after)
+    loop, at = [], start
+    while True:
+        loop.append(Vector((at[0], at[1], 0)))
+        at = after[at]
+        if at == start:
+            break
+    if sum(a.x * b.y - b.x * a.y for a, b in zip(loop, loop[1:] + loop[:1])) < 0:
+        loop.reverse()
+    p.prism(loop, -0.3, -0.07, "soil_dark", side_mat="soil_light")
+    p.prism(loop, hk.SOIL_BOTTOM, -0.3, "soil_dark")
+
+
 def build():
     hk.empty_scene()
     old = hk.new_collection("cells")
@@ -231,7 +262,7 @@ def build():
             elif v == "dark_wood":
                 boulders(p, rng, "rock_shade", "bark_grey")
             else:
-                boulders(p, rng, tall=0.34 if k == "a" else 0.26)
+                boulders(p, rng, tall=0.3 if k == "a" else 0.26)
             p.finish(col)
     p = hk.Piece("fey_wood_ring")
     fairy_ring(p, hk.seeded(p.name))
@@ -241,6 +272,9 @@ def build():
     p.finish(col)
     p = hk.Piece("board_under")
     board_under(p)
+    p.finish(col)
+    p = hk.Piece("board_plate")
+    board_plate(p)
     p.finish(col)
     for o in sorted(col.objects, key=lambda o: o.name):
         o.data.calc_loop_triangles()
