@@ -420,7 +420,7 @@ def cliff_path(p, rng, look, which):
                 q.z += rng.uniform(-0.12, 0.12)
             row.append(p.bm.verts.new(q))
         grid.append(row)
-    paint_wall(p, rng, wall_faces(grid), 3, look, {rng.randrange(last - back): 2})
+    paint_wall(p, rng, wall_faces(grid), 3, look, {rng.randrange(1, last - back - 1): 2})
     # The front, from the ledge's edge down to the foot, and on past the ledge's end on the last piece.
     cols = [outer(c) for c in range(first, last + 1)]
     if which == "top":
@@ -437,7 +437,7 @@ def cliff_path(p, rng, look, which):
                 pt.z += rng.uniform(-0.2, 0.2) * min(1.0, q.z)
             row.append(p.bm.verts.new(pt))
         grid.append(row)
-    paint_wall(p, rng, wall_faces(grid), 3, dict(look, top=None), {rng.randrange(len(cols) - 1): 2} if look["streak"] != "snow_light" else {})
+    paint_wall(p, rng, wall_faces(grid), 3, dict(look, top=None), {rng.randrange(2, len(cols) - 3): 2} if look["streak"] != "snow_light" else {})  # off the ledge's corners
     xm = LEDGE_PATH
     mid = xm * TAN30
     if which == "low":

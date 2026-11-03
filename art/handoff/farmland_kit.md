@@ -1,4 +1,4 @@
-# Hay colour update (tiles_v61)
+# Hay colour update (tiles_v63)
 
 `hay` in hexkit's palette is now #D1B668, was #E3C45E: Ethan's one hay and straw colour for tiles and combat maps (design/07). It reaches Godot with the merged `art/export/tiles.glb`, and this kit is otherwise unchanged.
 
