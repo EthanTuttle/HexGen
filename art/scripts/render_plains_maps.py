@@ -37,8 +37,8 @@ import variants as vr  # noqa: E402
 fm.WALKABLE += "n"
 LINE_WALLS = {"battlefield", "tourney_fields"}  # L runs along any line of cells in these, and is a fallen trunk elsewhere
 BANDITS = {"w": "enemy_bandit_melee", "x": "enemy_bandit_ranged", "v": "enemy_bandit_elite", "W": "enemy_bandit_melee", "X": "enemy_bandit_ranged", "V": "enemy_bandit_elite"}
-UNDEAD = {"w": "enemy_skeleton", "x": "enemy_ghost", "v": "enemy_skeleton_elite", "X": "enemy_ghost"}
-TURNED = {"meadows_camp", "battlefield_camp", "stormy_plains_spire", "tourney_fields_lists"}
+UNDEAD = {"w": "enemy_skeleton", "x": "enemy_ghost", "v": "enemy_skeleton_elite", "X": "enemy_ghost", "W": "enemy_skeleton"}
+TURNED = {"meadows_tents", "battlefield_mound", "stormy_plains_outcrop", "tourney_fields_lists"}
 
 MAPS = {
     "meadows_herds": {"size": "wide oval", "idea": "Wide open grass with nothing to hide behind but herds, lone trees and drifts of tall flowers. Ranged shine here; the herds are the only walls.", "plan": """
@@ -71,18 +71,18 @@ T . c . D . . . c .
   h . s  
    k .   
     .    """},
-    "meadows_camp": {"size": "large oval", "idea": "A nomad camp: eight felt tents in a ring round the fire, with gaps between them. Fight through the ring, or hold a gap and let them come out one at a time.", "foes": BANDITS, "plan": """
+    "meadows_tents": {"size": "large oval", "idea": "Nomads' outlying tents and rug racks strung loosely across the grass, with a herd at one side. Short walls and no real line: every tent is a corner to step round.", "foes": BANDITS, "plan": """
    . . T . .   
-  I . . . . .  
- . . . N . . . 
-. . N . . N . .
- . . . v . . . 
-. . . w x . . .
- . N . Y . N . 
-. . . . . . . .
- . . . . . J . 
-. . N . . N . .
- . J . N . . . 
+  I . . w . .  
+ . . N . . . . 
+. . . J . v . .
+ . N . . . x . 
+. . . . . . N .
+ D . . c . . J 
+D . . c . . . .
+ D . . . N . . 
+. . J . . . . .
+ . N . . . . I 
   . . h k . .  
    T . s . T   """},
     "battlefield_palisade": {"size": "wide rectangle", "idea": "Two old palisade lines across the field, their gaps not lined up, so an advance has to zigzag from one breach to the next while ranged shoot along the lines.", "foes": BANDITS, "plan": """
@@ -98,18 +98,18 @@ L L L . L L . . L L
  . c . . . , . . . 
 . . . h . k . . . .
  . . , . s . . J . """},
-    "battlefield_camp": {"size": "large oval", "idea": "A ruined war camp: a broken palisade ring round a great collapsed tent. Enemies hold the inside, and the tent splits any fight in there in two.", "foes": UNDEAD, "plan": """
-   . . v . .   
-  . L L L . .  
- . L . . . L . 
-. L . . w . L .
- x . . Q . . . 
-. . I Q Q I . .
- w . . Q . . . 
-. . P Q Q . . .
- L . P Q . . L 
-. L P . . . L .
- . L . . . L . 
+    "battlefield_mound": {"size": "large oval", "idea": "A raised mound where an old fight ended, a ramp and a stair up its south side, and heaps of wreckage to the east. The dead hold the top; the heaps give a covered way round.", "foes": UNDEAD, "plan": """
+   . v . . .   
+  . . . w . .  
+ . J . . . D . 
+. . . . . D . .
+ x . . . . D . 
+. . H H . . . .
+ . H H H . . I 
+. . W H . . D .
+ . / H ^ . D . 
+. . . . J . D .
+ , . . . . . . 
   . h . k . .  
    . s . , .   """},
     "battlefield_graves": {"size": "rectangle", "idea": "Rows of old graves make long lanes running north and south. Easy to walk a lane, slow to change lanes, and the dead can be waiting in any of them.", "foes": UNDEAD, "plan": """
@@ -124,18 +124,18 @@ L L L . L L . . L L
  . . . J . . . . 
 . . h . k . s . .
  . . . c . . . . """},
-    "stormy_plains_spire": {"size": "medium hex", "idea": "The great rock spire fills the middle of the map and blocks everything behind it. The fight circles it, with split trees and boulders closing the ring in places.", "plan": """
+    "stormy_plains_outcrop": {"size": "medium hex", "idea": "A big rock outcrop fills the middle of the map and blocks everything behind it. The fight circles it, with split trees and boulders closing the ring in places.", "plan": """
     .    
    . v   
   T . .  
  . w , . 
 . . . . T
  R . . . 
-. . Q . .
- . Q Q . 
-. . Q . .
- . Q Q . 
-. . Q . x
+. . K . .
+ . K K . 
+. . K . .
+ . K K . 
+. . K . x
  , . . R 
 T . . . .
  . c . . 

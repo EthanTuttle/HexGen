@@ -1,11 +1,11 @@
-# Combat plains kit hand-off (combat_plains_v1, combat_maps_plains_v1)
+# Combat plains kit hand-off (combat_plains_v1, combat_maps_plains_v2)
 
 Twelve custom plains combat maps, three per variant, with their cell and prop kit. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest kit: see [combat_forest_kit.md](combat_forest_kit.md).
 
-- **Models:** `art/export/combat_plains.glb` (from `art/combat/combat_plains_v1.blend`), `art/export/combat_maps_plains.glb` (`art/combat/combat_maps_plains_v1.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_plains.glb` (from `art/combat/combat_plains_v1.blend`), `art/export/combat_maps_plains.glb` (`art/combat/combat_maps_plains_v2.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_plains.json`, the same format as `combat_maps.json`. `variant` is `meadows`, `battlefield`, `stormy_plains` or `tourney_fields`. Pieces come from `combat_plains.glb` or, for names starting `map_`, `combat_maps_plains.glb`.
 - **Scripts:** `art/scripts/build_plains_cells.py`, `art/scripts/render_plains_maps.py` (the plans, in readable text). It reuses the checks and export in `render_forest_maps.py`.
-- **Previews:** `art/preview/plains_maps_all_v1.png`, `plains_maps_<variant>_v1.png`, `plains_maps_turned_v1.png`, `plains_map_<map>_v1.png`, props `plains_obstacles_v1.png`.
+- **Previews:** `art/preview/plains_maps_all_v2.png`, `plains_maps_<variant>_v2.png`, `plains_maps_turned_v2.png`, `plains_map_<map>_v1.png`, props `plains_obstacles_v1.png`.
 
 ## Pieces
 
@@ -26,18 +26,18 @@ Palisades (battlefield) and tilt barriers (tourney) are `map_` pieces, one per c
 | --- | --- | --- | --- | --- |
 | `meadows_herds` | wide oval | 101 (87) | 6,426 | 4 |
 | `meadows_rise` | medium hex | 61 (54) | 4,540 | 4 |
-| `meadows_camp` | large oval | 89 (74) | 5,108 | 4 |
+| `meadows_tents` | large oval | 89 (73) | 5,258 | 3 |
 | `battlefield_palisade` | wide rectangle | 114 (82) | 6,526 | 4 |
-| `battlefield_camp` | large oval | 89 (64) | 4,214 | 7 |
+| `battlefield_mound` | large oval | 89 (80) | 5,226 | 3 |
 | `battlefield_graves` | rectangle | 93 (81) | 3,658 | 10 |
-| `stormy_plains_spire` | medium hex | 61 (49) | 2,886 | 8 |
+| `stormy_plains_outcrop` | medium hex | 61 (49) | 2,824 | 6 |
 | `stormy_plains_scarp` | rectangle | 102 (77) | 6,800 | 4 |
 | `stormy_plains_trunks` | wide oval | 101 (81) | 4,406 | 5 |
 | `tourney_fields_lists` | tall rectangle | 91 (70) | 3,412 | 6 |
 | `tourney_fields_camp` | large oval | 89 (71) | 3,550 | 5 |
 | `tourney_fields_range` | rectangle | 90 (71) | 4,352 | 3 |
 
-Each map's tactical idea is in the JSON. All are at least 5.5 cells deep. Herds, wreckage, graves, dummies and the rest count as obstacles in the plans, which nobody has decided; a herd that moves or scatters would be a rule. Enemy mixes are samples.
+Three maps per variant, as `design/07` sets it; plains have no drawn paths, so no path maps. No map is landmark-specific (07), so `fire`, `collapsed_7` and `spire_7` stay in the kit unused until landmarks are decided. Each map's tactical idea is in the JSON. All are at least 5.5 cells deep. Herds, wreckage, graves, dummies and the rest count as obstacles in the plans, which nobody has decided; a herd that moves or scatters would be a rule. Enemy mixes are samples.
 
 ## Not done
 
