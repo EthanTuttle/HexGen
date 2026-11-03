@@ -24,11 +24,11 @@ Ethan approved the desert on Nov 3, 2026. **Start here:** this section is what G
 
 **Budget and speed:** 41,439 triangles for a 12-tile canyon, about 3,450 a tile against 4,816. Before the lanes' final change, the worst tile measured 3,984; it hasn't been re-measured. Field and mesh took about 0.45 s in plain Python before the lanes, and GDScript should be slower, so run it off the main thread or a tile at a time. That's an estimate. Mesh and collision aren't built in Godot.
 
-## Open item: adding tiles to a finished canyon
+## Adding tiles to a finished canyon
 
-**This is unsolved, and nothing in the kit handles it.** design/02 says adding tiles to a finished region just expands it, but the canyon is generated from the whole region. Rerunning `open_edges` with one more tile reshuffles the maze, so walls would move under the party.
+**Nothing in the kit handles this.** Adding tiles to a finished region normally just expands it, but the canyon is generated from the whole region. Rerunning `open_edges` with one more tile reshuffles the maze, so walls would move under the party.
 
-**My proposal, for Ethan or the planner to decide:**
+**Ethan's call (design/02 → Canyon walls, trying it, Nov 3, 2026):** the steps below, with "a finished canyon can't grow" as the fallback if it doesn't work in play. It's not built yet.
 
 1. Save `openset` and `entrances` when the region finishes, and never regenerate them.
 2. A new tile opens onto one old neighbour, never the Echo Cave, and gets its own entrance on an edge facing outside.
@@ -64,7 +64,7 @@ The preview has no ground-colour fade at the canyon's edge, and that's also not 
 | `test_desert_lands.py` | Each lane's top on the land and foot on the floor, its width, the Stronghold's walk and deck width, on 6 random regions, and the ripples | 0 failures |
 | `check_town.py -- desert2` | Rays along the Stronghold's walk | 0 failures on v60 |
 | `render_preview.py --canyon-maze` | `RAMPS NOT JOINED` and `HOLES` for the rendered region | 0 |
-| `test_canyon_add.py` | The open item's proposal, rock heights only | Changes stay on touching tiles |
+| `test_canyon_add.py` | The steps for adding a tile, rock heights only | Changes stay on touching tiles |
 
 ## Previews
 
