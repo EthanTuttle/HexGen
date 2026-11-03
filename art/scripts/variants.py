@@ -217,19 +217,21 @@ CLIFF_KINDS = ("cliff_edge", "cliff_edge_b", "cliff_corner", "cliff_path_low", "
                "edge_climb_low", "edge_climb_top")
 CLIFF_LOOK = {  # rock shades; what dusts the top; streaks down the face; the ledge's surface
     "highlands": dict(rock=("rock", "rock_dark"), top=None, streak="highland_grass", ledge="road", gullies=False),
-    "snowy_peaks": dict(rock=("ice_rock", "ice_rock_dark"), top="snow_light", streak="snow_light", ledge="print", gullies=False),
-    "volcanic_peaks": dict(rock=("basalt", "basalt_dark"), top=None, streak="lava", ledge="stone_pale", gullies=True),
+    "snowy_peaks": dict(rock=("ice_rock", "ice_rock_dark"), top="snow_light", streak="snow_light", ledge="print", gullies=False, lane=("ledge_snow_a", "ledge_snow_b", "ledge_snow_c", "ledge_snow_d")),
+    "volcanic_peaks": dict(rock=("basalt", "basalt_dark"), top=None, streak="lava", ledge="stone_pale", gullies=True, lane=("ledge_ash_a", "ledge_ash_b", "ledge_ash_c", "ledge_ash_d")),
     "monastery_heights": dict(rock=("rock_light", "rock"), top=None, streak="hill_grass", ledge="stone_step", gullies=False),
 }
 CLIFF_FOOT = -0.6  # down to the bottom of the board's soil, so a cliff beside an empty slot is closed too
 HALF_EDGE = hk.TILE_RADIUS / 2
-LEDGE = 1.05  # a path's width; a mini's base is 1.0 across
+LEDGE = 1.16  # the cut's width, wall to edge line; a mini's base is 1.04 across
+LEDGE_LIP = 0.1  # of that, the broken lip along the outer edge, clear of a mini on the path
 LEDGE_X = X1 - LEDGE  # the ledge's back wall, and where the ground stops above it
+LEDGE_PATH = X1 - LEDGE_LIP - (LEDGE - LEDGE_LIP) / 2  # the walked line
 RIM_INSET = 0.9  # how far in from the edge line the lip of a plain cliff is at its middle; at the corners, 0
 RIM_COLS = 10
 RIM_ROWS = 9  # the rows of a hills wedge, so the rim's sides meet the wedge beside it exactly
 LEDGE_END = 9  # the column of edge_climb_top's lip where the ledge comes out on the ground
-FOOT_COL = 4  # the column where the ledge's front starts on the edge line, past the plain cliff; its back starts one further on
+FOOT_COL = 3  # the column where the ledge's front starts on the edge line, past the plain cliff; its back starts one further on
 
 
 def ground_z(x, v):
@@ -287,7 +289,8 @@ def cliff_edge(p, rng, look, cols=RIM_COLS):
                 q.z += env * rng.uniform(-0.3, 0.3)
             row.append(p.bm.verts.new(q))
         grid.append(row)
-    paint_wall(p, rng, wall_faces(grid), rows, look, {c: rng.randint(1, rows - 1) for c in rng.sample(range(cols), 2 if cols == RIM_COLS else 1)})
+    # streaks only on a whole edge, so the short part beside a ledge doesn't add to the ledge's own
+    paint_wall(p, rng, wall_faces(grid), rows, look, {c: rng.randint(1, rows - 1) for c in rng.sample(range(cols), 2)} if cols == RIM_COLS else {})
     ymax = col_v(cols) * HALF_EDGE - 0.45
     for y in (-1.75 + rng.uniform(-0.1, 0.25), rng.uniform(-0.75, -0.2), rng.uniform(0.2, 0.75), 1.75 - rng.uniform(-0.1, 0.25)):
         if y > ymax:
@@ -316,13 +319,13 @@ def cliff_corner(p, rng, look):
 
 def foot_y():
     """How far along the first edge the party steps onto the ledge, on the edge line: about its middle."""
-    return HALF_EDGE * (col_v(FOOT_COL) * 0.3 + col_v(FOOT_COL + 1) * 0.7)
+    return HALF_EDGE * (col_v(FOOT_COL) * 0.65 + col_v(FOOT_COL + 1) * 0.35)
 
 
 def climb_heights():
     """The ledge's height at the ends of its three pieces, and its height per unit along. It goes round the tile on a
     line LEDGE / 2 in from the edge, from the foot near the middle of the first edge."""
-    xm = X1 - LEDGE / 2
+    xm = LEDGE_PATH
     side = 2 * xm * TAN30
     v_end = col_v(LEDGE_END)
     y_end = v_end * LEDGE_X * TAN30
@@ -363,15 +366,48 @@ def cliff_path(p, rng, look, which):
 
     # The ledge, then the wall behind it; rocks only go back into the cliff, so the ledge keeps its width.
     back = first + 1 if which == "low" else first
+    lane = look.get("lane")
+
+    def tone(c):
+        """Worn rock at the foot, the ground's colour by the top, a little uneven."""
+        if not lane:
+            return look["ledge"]
+        share = height(c + 0.5) / zs[3] * len(lane) + rng.uniform(-0.45, 0.45)
+        return lane[max(0, min(len(lane) - 1, int(share)))]
+
+    def quad(pts, mat):
+        f = p.bm.faces.new([p.bm.verts.new(q) for q in pts])
+        f.material_index = p._slot(mat)
+        p.surface.add(f)
+
     if which == "low":
         cliff_edge(p, rng, look, FOOT_COL)
-        f = p.bm.faces.new([p.bm.verts.new(q) for q in (outer(first), outer(back), inner(back))])
-        f.material_index = p._slot(look["ledge"])
-        p.surface.add(f)
-    for c in range(back, last):
-        f = p.bm.faces.new([p.bm.verts.new(q) for q in (inner(c), outer(c), outer(c + 1), inner(c + 1))])
-        f.material_index = p._slot(look["ledge"])
-        p.surface.add(f)
+        quad((outer(first), outer(back), inner(back)), tone(first))
+    if not lane:
+        for c in range(back, last):
+            quad((inner(c), outer(c), outer(c + 1), inner(c + 1)), tone(c))
+    else:
+        # across it: wall, the walked path, a low broken lip, the edge. The lip dips to nothing here and there, and at the foot and the top, and always meets its neighbour piece at the same height.
+        share = (LEDGE - LEDGE_LIP) / LEDGE
+        rise = {c: (0.0 if rng.random() < 0.25 else rng.uniform(0.06, 0.22)) for c in range(back, last + 1)}
+        for c in (back, last):
+            rise[c] = 0.1
+        if which == "low":
+            rise[back] = rise[back + 1] = 0.0
+        if which == "top":
+            rise[last] = rise[last - 1] = 0.0
+
+        def path_edge(c):
+            return inner(c).lerp(outer(c), share)
+
+        def ridge(c):
+            return inner(c).lerp(outer(c), share + (1 - share) * 0.5) + Vector((0, 0, rise[c]))
+
+        for c in range(back, last):
+            quad((inner(c), path_edge(c), path_edge(c + 1), inner(c + 1)), tone(c))
+            mat = look["rock"][0]
+            quad((path_edge(c), ridge(c), ridge(c + 1), path_edge(c + 1)), mat)
+            quad((ridge(c), outer(c), outer(c + 1), ridge(c + 1)), mat)
     grid = []
     for r in range(4):
         row = []
@@ -402,11 +438,11 @@ def cliff_path(p, rng, look, which):
             row.append(p.bm.verts.new(pt))
         grid.append(row)
     paint_wall(p, rng, wall_faces(grid), 3, dict(look, top=None), {rng.randrange(len(cols) - 1): 2} if look["streak"] != "snow_light" else {})
-    xm = X1 - LEDGE / 2
+    xm = LEDGE_PATH
     mid = xm * TAN30
     if which == "low":
         # The party steps up on the edge line, from straight out in front; the path then turns along the ledge.
-        foot = outer(first).lerp(outer(back), 0.7)  # foot_y()
+        foot = outer(first).lerp(outer(back), 0.35)  # foot_y()
         foot.x = X1
         p.paths.append([foot, Vector((xm, foot.y + 0.5, foot.z + 0.5 * per)), Vector((xm, mid, z1))])
         # The ledge's end wall, from the plain cliff's last column back to the ledge's back wall, up to the ground.

@@ -1,3 +1,11 @@
+# Hay colour update (tiles_v61)
+
+`hay` in hexkit's palette is now #D1B668, was #E3C45E: Ethan's one hay and straw colour for tiles and combat maps (design/07). It reaches Godot with the merged `art/export/tiles.glb`, and this kit is otherwise unchanged.
+
+The palette entry is shared, so a few non-farm props change too: bunting, rugs, market goods and a few poles elsewhere in the kit. `build_farmland_cells.py` also uses it, so combat cells take the new colour the next time they're built.
+
+---
+
 # Farmland kit hand-off (tiles_v34)
 
 This kit holds tier 0 farmland and villages with their fence gates, windmill country with the Great Windmill (tier 1), and three tier 2 variants: haunted homesteads with the Abandoned Barn, bandit-raided farms with the Militia Barn, and cider orchards with the Harvest Festival. Everything below can be followed from the repo alone.
