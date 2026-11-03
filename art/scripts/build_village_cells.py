@@ -28,7 +28,7 @@ GROUND = {"village": "plains", "market_town": "cobble", "fortified_town": "town_
 BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "street"}
 hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
-hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "garrison": hk.PALETTE["banner_fort"], "coal": "#35322F", "ember": "#E2672A", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
+hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "garrison": hk.PALETTE["banner_fort"], "coal": "#35322F", "ember": "#E2672A", "bale": "#D1B668", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
                    "flower_red": "#D6455A", "flower_yellow": "#F0C53C", "cabbage": "#8DBB5A", "pumpkin": "#E0802A", "stack_band": fc.mix("#D1B668", "#6E5A3C", 0.5),
                    "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
@@ -102,7 +102,7 @@ def house_row(p, rng, make, cells=LINE3, eaves=(0.12, 0.16), tall=1.45):
         grown(p, (1, 1, tall), c, lambda c=c: make(p, rng, c, ONE_WIDE - eaves[0], ONE_DEEP - eaves[1], ROW_SPIN))
 
 
-def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False, paint="trunk", door_x=None, back_door=None, front_door=True, boxes=False, vines=(), back_windows=(0.0,), back_upper=(), back_boxes=(), back_vines=(), timber=False, awning=(), sign=None, courses=False):
+def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False, paint="trunk", door_x=None, back_door=None, front_door=True, boxes=False, vines=(), back_windows=(0.0,), back_upper=(), back_boxes=(), back_vines=(), timber=False, awning=(), sign=None, courses=False, banners=(), back_banners=()):
     """A cottage with a clear front: its door and shuttered windows on the south side, or in a gable's south end. Its back is laid out differently, as the camera turns all the way round, usually with no door. Flat quads on the walls, so they cost little.
     The rest varies it: wall height, roof pitch and colour, a chimney, a row of upper windows, a painted door and shutters, flower boxes (on the camera's side) and vines.
     door_x: the front door, along the wall; front_door False: none in the south wall, where a wing stands instead. back_door: a smaller door at the back, if any.
@@ -223,6 +223,14 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
         q = at + vr.turn(Vector((sign, -d / 2, 0)), spin)
         p.box(q + vr.turn(Vector((0, -0.09, 0)), spin), (0.03, 0.18, 0.03), "timber", z=floor - 0.1, spin=spin)
         p.box(q + vr.turn(Vector((0, -0.14, 0)), spin), (0.03, 0.14, 0.17), "paint_green", z=floor - 0.28, spin=spin)
+    for side, places in ((-1, banners), (1, back_banners)):  # cloths in the fortified town's one colour, along the wall or a gabled end
+        for x in places:
+            if end_door:
+                quad(side * w / 2, x, 0.1, 0.42, h - 0.08, "banner_fort", 0.01, True)
+                quad(side * w / 2, x, 0.1, 0.42, 0.5, "cheese", 0.012, True)
+            else:
+                quad(x, side * d / 2, 0.1, 0.42, h - 0.08, "banner_fort", 0.01)
+                quad(x, side * d / 2, 0.1, 0.42, 0.5, "cheese", 0.012)
     if not end_door and front_door:
         door(-0.12 * w if door_x is None else door_x, -d / 2)
     for y in (-d / 2, d / 2):
@@ -653,6 +661,13 @@ def yard_arrows(p, rng, at, spin=0.0):
         p.box(q, (0.05, 0.015, 0.06), "awning_b", z=0.58)
 
 
+def bale(p, at, spin, z=0.0):
+    """A hay bale with two bands of twine round it."""
+    p.box(at, (0.46, 0.3, 0.26), "bale", z=z, spin=spin)
+    for x in (-0.12, 0.12):
+        p.box(at + vr.turn(Vector((x, 0, 0)), spin), (0.03, 0.31, 0.27), "stack_band", z=z - 0.005, spin=spin)
+
+
 def yard_crate(p, rng, at, spin=0.0):
     p.box(at, (0.32, 0.32, 0.32), "crate", spin=spin + 0.4)
 
@@ -793,11 +808,34 @@ def wagon(p, rng):
 
 
 def stores(p, rng):
-    """Barrels, sacks and a crate unloaded for the garrison."""
-    barrel(p, Vector((0.2, 0.14, 0)))
-    barrel(p, Vector((0.26, -0.18, 0)), h=0.42)
-    sack(p, Vector((-0.2, 0.16, 0)), 0.17, 0.5)
-    p.box(Vector((-0.14, -0.2, 0)), (0.34, 0.34, 0.3), "crate", spin=0.3)
+    """Barrels, hay and a crate unloaded for the garrison."""
+    barrel(p, Vector((0.22, 0.14, 0)))
+    barrel(p, Vector((0.28, -0.18, 0)), h=0.42)
+    bale(p, Vector((-0.18, 0.14, 0)), 0.0)
+    bale(p, Vector((-0.18, 0.14, 0)), 0.25, z=0.26)
+    p.box(Vector((-0.12, -0.24, 0)), (0.28, 0.28, 0.26), "crate", spin=0.3)
+
+
+def hay(p, rng):
+    """Hay bales stacked in a pile."""
+    bale(p, Vector((-0.16, 0.14, 0)), 0.0)
+    bale(p, Vector((0.2, 0.08, 0)), 1.57)
+    bale(p, Vector((-0.1, -0.2, 0)), 0.1)
+    bale(p, Vector((0.0, 0.1, 0)), 0.5, z=0.26)
+
+
+def arms(p, rng):
+    """Shields on a rail, armour on its stand and a barrel of arrows, set out on the paving."""
+    yard_shields(p, rng, Vector((-0.02, 0.24, 0)))
+    yard_armour(p, rng, Vector((-0.24, -0.12, 0)))
+    yard_arrows(p, rng, Vector((0.26, -0.14, 0)))
+
+
+def smith_work(p, rng):
+    """An anvil, a coal bin and a grindstone out on the paving."""
+    yard_coal(p, rng, Vector((0.1, 0.24, 0)))
+    yard_anvil(p, rng, Vector((-0.24, -0.06, 0)))
+    yard_grindstone(p, rng, Vector((0.24, -0.2, 0)))
 
 
 def racks(p, rng):
@@ -810,6 +848,9 @@ def racks(p, rng):
 
 def tower(p, rng):
     grown(p, 1.3, ZERO, lambda: vr.wall_tower(p, ZERO, r=0.3, h=1.7))
+    for y in (-0.38, 0.38):
+        p.box(Vector((0, y, 0)), (0.3, 0.04, 0.86), "banner_fort", z=0.95)
+        p.box(Vector((0, y * 1.02, 0)), (0.3, 0.04, 0.08), "cheese", z=0.95)
 
 
 def slum_junk(p, rng):
@@ -891,17 +932,20 @@ KIT = {
     },
     "fortified_town": {
         # Plans use P, 5, 6 or D for a building on three cells, 2, 3 or 4 for one on four.
-        "P": ("stone_3_side", TRIANGLE, house(TRIANGLE, 1.08, 0.82, X3, h=1.02, pitch=0.5, wall="stone_block", courses=True, stone="flagstone", roof="slate", chimney=True, paint="garrison", door_x=0.3, back_windows=(-0.3, 0.05), yard=((yard_arrows, -0.42, -0.7, 0.0), (yard_broom, 0.0, -0.5, 0.0), (yard_rain_barrel, 0.86, 0.0, 0.0), (yard_logs, -0.36, 0.74, 0.0), (yard_small_pot, 0.04, 0.56, 0.0)))),
-        "5": ("stone_3_gable", TRIANGLE, house(TRIANGLE, 0.82, 1.0, X3, gable=True, h=1.0, pitch=0.58, wall="stone_block", courses=True, stone="flagstone", roof="slate_dark", paint="timber", back_windows=(0.22,), yard=((yard_shields, -0.39, -0.62, 0.0), (yard_barrels, 0.82, 0.0, math.pi / 2), (yard_rain_barrel, -0.54, 0.3, 0.0), (yard_log_wall, -0.38, 0.62, math.pi), (yard_small_pot, -0.32, 0.88, 0.0)))),
-        "6": ("stone_3_cross", TRIANGLE, house(TRIANGLE, 1.08, 0.8, X3, h=1.02, pitch=0.5, wing=(-0.22, 0.46, 0.74), front_door=False, wall="stone_block", courses=True, stone="flagstone", roof="slate", chimney=True, paint="garrison", back_windows=(-0.35, 0.2), yard=((yard_crate, 0.9, 0.02, 0.0), (yard_armour, -0.64, -0.5, math.pi / 2), (yard_small_pot, 0.14, -0.56, 0.0), (yard_spears, -0.34, 0.58, 0.0), (yard_small_pot, -0.34, 0.86, 0.0)))),
-        "D": ("smithy_3", TRIANGLE, house(TRIANGLE, 1.08, 0.82, X3, h=1.02, pitch=0.5, wall="stone_block_dark", courses=True, stone="flagstone", roof="slate_dark", paint="timber", door_x=0.3, back_door=0.3, back_windows=(-0.3,), yard=((yard_anvil, -0.38, -0.68, 0.0), (yard_forge, 0.86, 0.0, 0.0), (yard_quench, -0.52, 0.66, 0.0), (yard_coal, -0.1, 0.57, 0.0)))),
-        "2": ("stone_4_long", DIAMOND, house(DIAMOND, 1.7, 0.86, h=1.42, pitch=0.5, wall="stone_block", courses=True, stone="flagstone", door_x=-0.6, roof="slate", chimney=True, paint="garrison", upstairs=True, back_windows=(-0.5, 0.4), back_upper=(-0.1, 0.55), yard=((yard_bench, 0.0, -0.56, 0.0), (yard_arrows, 0.0, -0.82, 0.0), (yard_barrels, 1.06, 0.0, math.pi / 2), (yard_lantern, -1.0, -0.18, 0.0), (yard_broom, -0.98, 0.14, 0.0), (yard_log_wall, 0.0, 0.62, math.pi), (yard_small_pot, 0.0, 0.88, 0.0)))),
-        "3": ("armoury_4", DIAMOND, house(DIAMOND, 1.56, 0.86, h=1.1, pitch=0.5, wall="stone_block_dark", courses=True, stone="flagstone", door_x=-0.6, roof="slate_dark", chimney=True, paint="garrison", back_windows=(-0.2,), yard=((yard_spears, 0.0, -0.58, 0.0), (yard_arrows, 0.0, -0.84, 0.0), (yard_armour, 1.0, -0.12, 0.0), (yard_grindstone, 1.0, 0.24, 0.0), (yard_rain_barrel, -1.02, 0.0, 0.0), (yard_shields, 0.0, 0.6, math.pi), (yard_small_pot, 0.0, 0.88, 0.0)))),
-        "4": ("stone_4_gable", DIAMOND, house(DIAMOND, 0.8, 1.24, gable=True, h=1.1, pitch=0.62, wall="stone_block", courses=True, stone="flagstone", roof="slate", paint="timber", back_windows=(0.24,), yard=((yard_trough, 0.94, -0.02, math.pi / 2), (yard_logs, -0.92, -0.14, 0.0), (yard_arrows, -1.0, 0.24, 0.0), (yard_armour, -0.3, -0.58, math.pi / 2), (yard_small_pot, 0.31, -0.6, 0.0), (yard_crate, -0.24, 0.62, 0.0), (yard_small_pot, 0.3, 0.6, 0.0)))),
+        "P": ("stone_3_side", TRIANGLE, house(TRIANGLE, 1.08, 0.82, X3, h=1.02, pitch=0.5, wall="stone_block", courses=True, stone="flagstone", roof="slate", chimney=True, paint="garrison", door_x=0.3, banners=(-0.38,), back_windows=(-0.3, 0.05), back_banners=(0.35,), yard=((yard_arrows, -0.42, -0.7, 0.0), (yard_broom, 0.0, -0.5, 0.0), (yard_rain_barrel, 0.86, 0.0, 0.0), (yard_logs, -0.36, 0.74, 0.0), (yard_small_pot, 0.04, 0.56, 0.0)))),
+        "5": ("stone_3_gable", TRIANGLE, house(TRIANGLE, 0.82, 1.0, X3, gable=True, h=1.0, pitch=0.58, wall="stone_block", courses=True, stone="flagstone", roof="slate_dark", paint="paint_blue", banners=(-0.32, 0.32), back_windows=(0.22,), back_banners=(-0.2,), yard=((yard_shields, -0.39, -0.62, 0.0), (yard_barrels, 0.82, 0.0, math.pi / 2), (yard_rain_barrel, -0.54, 0.3, 0.0), (yard_log_wall, -0.38, 0.62, math.pi), (yard_small_pot, -0.32, 0.88, 0.0)))),
+        "6": ("stone_3_cross", TRIANGLE, house(TRIANGLE, 1.08, 0.8, X3, h=1.02, pitch=0.5, wing=(-0.22, 0.46, 0.74), front_door=False, wall="stone_block", courses=True, stone="flagstone", roof="slate", chimney=True, paint="paint_green", banners=(0.45,), back_windows=(-0.35, 0.2), back_banners=(-0.08,), yard=((yard_crate, 0.9, 0.02, 0.0), (yard_armour, -0.64, -0.5, math.pi / 2), (yard_small_pot, 0.14, -0.56, 0.0), (yard_spears, -0.34, 0.58, 0.0), (yard_small_pot, -0.34, 0.86, 0.0)))),
+        "D": ("smithy_3", TRIANGLE, house(TRIANGLE, 1.08, 0.82, X3, h=1.02, pitch=0.5, wall="stone_block_dark", courses=True, stone="flagstone", roof="slate_dark", paint="paint_teal", door_x=0.3, banners=(-0.38,), back_door=0.3, back_windows=(-0.3,), back_banners=(0.02,), yard=((yard_anvil, -0.38, -0.68, 0.0), (yard_forge, 0.86, 0.0, 0.0), (yard_quench, -0.52, 0.66, 0.0), (yard_coal, -0.1, 0.57, 0.0)))),
+        "2": ("stone_4_long", DIAMOND, house(DIAMOND, 1.7, 0.86, h=1.42, pitch=0.5, wall="stone_block", courses=True, stone="flagstone", door_x=-0.6, roof="slate", chimney=True, paint="paint_blue", upstairs=True, banners=(0.28, 0.7), back_windows=(-0.5, 0.4), back_upper=(-0.1, 0.55), back_banners=(0.2,), yard=((yard_bench, 0.0, -0.56, 0.0), (yard_arrows, 0.0, -0.82, 0.0), (yard_barrels, 1.06, 0.0, math.pi / 2), (yard_lantern, -1.0, -0.18, 0.0), (yard_broom, -0.98, 0.14, 0.0), (yard_log_wall, 0.0, 0.62, math.pi), (yard_small_pot, 0.0, 0.88, 0.0)))),
+        "3": ("armoury_4", DIAMOND, house(DIAMOND, 1.56, 0.86, h=1.1, pitch=0.5, wall="stone_block_dark", courses=True, stone="flagstone", door_x=-0.6, roof="slate_dark", chimney=True, paint="paint_blue", banners=(0.4, 0.65), back_windows=(-0.2,), back_banners=(0.3,), yard=((yard_spears, 0.0, -0.58, 0.0), (yard_arrows, 0.0, -0.84, 0.0), (yard_armour, 1.0, -0.12, 0.0), (yard_grindstone, 1.0, 0.24, 0.0), (yard_rain_barrel, -1.02, 0.0, 0.0), (yard_shields, 0.0, 0.6, math.pi), (yard_small_pot, 0.0, 0.88, 0.0)))),
+        "4": ("stone_4_gable", DIAMOND, house(DIAMOND, 0.8, 1.24, gable=True, h=1.1, pitch=0.62, wall="stone_block", courses=True, stone="flagstone", roof="slate", paint="paint_green", banners=(-0.36, 0.36), back_windows=(0.24,), back_banners=(-0.3,), yard=((yard_trough, 0.94, -0.02, math.pi / 2), (yard_logs, -0.92, -0.14, 0.0), (yard_arrows, -1.0, 0.24, 0.0), (yard_armour, -0.3, -0.58, math.pi / 2), (yard_small_pot, 0.31, -0.6, 0.0), (yard_crate, -0.24, 0.62, 0.0), (yard_small_pot, 0.3, 0.6, 0.0)))),
         "N": ("tower", SINGLE, tower),
         "Y": ("wagon", SINGLE, wagon),
         "J": ("stores", SINGLE, stores),
         "I": ("racks", SINGLE, racks),
+        "U": ("hay", SINGLE, hay),
+        "E": ("arms", SINGLE, arms),
+        "8": ("smith_work", SINGLE, smith_work),
     },
     "slums": {
         "P": ("shack_3", TRIANGLE, lambda p, r: building(p, r, vr.shack, eaves=(0.14, 0.16), tall=1.6)),

@@ -165,14 +165,14 @@ n n n n n n n n n
     "fortified_town_breach": {"size": "wide oval", "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.", "foes": BANDITS, "plan": """
   N . . . . . w .  
  . L . . . . . v . 
-. . L . . J . . . .
- P . L . . . . . . 
+. . N . . J . . . .
+ P . , . . . U . . 
 P . . N . . x . 2 .
- P . . , . . . 2 2 
-. . . . N . . . 2 .
- . I . . L . . . . 
+ P E . , . . . 2 2 
+. . . . N . . 8 2 .
+ . I . . L . E . . 
 . h . . . L . Y . .
- k s . . . , . . J 
+ k s J U . L . . J 
   . . . . . N . .  
 """},
     "fortified_town_yard": {"size": "medium hex", "idea": "A supply yard round a smithy, with wagons, stores and spear racks scattered about. Lots of small corners and no clear line.", "foes": BANDITS, "plan": """
@@ -183,9 +183,9 @@ P . . N . . x . 2 .
 . . D . J
  . . D . 
 Y . D . .
- J . . I 
-. . . . Y
- . , . 3 
+ J 8 . I 
+U . . . Y
+ . , E 3 
 6 . . 3 3
  6 . . 3 
 6 . . . .
@@ -200,7 +200,7 @@ Y . D . .
  L v L 
 L . . L
  . w . 
-. x . .
+U x . .
  . J . 
 Y . . P
  . . P 
@@ -212,19 +212,19 @@ I h . P
     "fortified_town_street": {"kind": "path", "size": "tall rectangle", "idea": "A cobbled street up the map between stone houses and a smithy, a supply wagon stuck in the middle of it. The wagon splits the street in two.", "foes": BANDITS, "plan": """
 . . n w .
  v n x . 
-. . n . .
+U E n . 8
  . n n 4 
 5 . n 4 4
  5 n n 4 
 5 . n . I
  J n n . 
 Y . Y . J
- . n n . 
+ . n n 8 
 D . n . P
  D n n P 
 D . n . P
  . n n . 
-. . n s I
+U . n s I
  k n n h 
 . . n . .
 """},
@@ -441,8 +441,9 @@ def line_wall(col, v, group):
         d, spin = b - a, math.atan2((b - a).y, (b - a).x)
         if v == "fortified_town":
             vr.stone_wall(p, a, b, h=1.5, thick=0.42)
-            if rng.random() < 0.3:
-                vr.fort_banner(p, a.lerp(b, 0.5) + Vector((-d.y, d.x, 0)).normalized() * -0.23, d, z=0.5)
+            if rng.random() < 0.7:  # on both faces, as the camera turns
+                for side in (-0.23, 0.23):
+                    vr.fort_banner(p, a.lerp(b, 0.5) + Vector((-d.y, d.x, 0)).normalized() * side, d, z=0.5)
         elif v == "slums":
             n = 4
             for k in range(n):
@@ -455,6 +456,17 @@ def line_wall(col, v, group):
                 p.box((a + b) / 2, (d.length, 0.06, 0.08), "trunk", z=z, spin=spin)
             for k in range(5):
                 p.box(a.lerp(b, (k + 1) / 6), (0.1, 0.1, 0.84), "boards", spin=spin)
+    p.finish(col)
+
+
+def join_towers(col, cells):
+    """A town wall runs right up to the towers beside its ends, so no daylight shows between them."""
+    p = hk.Piece("wall_to_towers")
+    for c, mark in cells.items():
+        if mark == "L":
+            for dq, dr in fm.NEIGHBOURS:
+                if cells.get((c[0] + dq, c[1] + dr)) == "N":
+                    vr.stone_wall(p, hk.cell_position(*c), hk.cell_position(c[0] + dq, c[1] + dr), h=1.5, thick=0.42)
     p.finish(col)
 
 
@@ -522,6 +534,8 @@ def build_map(t, col, name):
     if v == "market_town":
         for (q, r), mark in cells.items():
             assert mark not in "Y8E" or cells.get((q, r + 1), ".") in fm.WALKABLE, f"{name}: something stands in front of the stall at {(q, r)}"
+    if v == "fortified_town":
+        join_towers(col, cells)
     if v in HOUSE_MARKS:
         houses = {c for c, mark in cells.items() if mark in HOUSE_MARKS[v]}
         for c, mark in cells.items():
