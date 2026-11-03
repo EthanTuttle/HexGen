@@ -64,6 +64,19 @@ Blender -b --factory-startup --python art/scripts/render_preview.py -- --farmlan
 # Stand-in minis: a line-up, on the combat board, and as a party on a map tile
 Blender -b --factory-startup --python art/scripts/render_standin_minis.py
 
+# Enemy minis (latest first draft, then a line-up, close-ups and boards)
+Blender -b --factory-startup --python art/scripts/build_enemy_minis.py
+Blender -b --factory-startup --python art/scripts/render_enemy_minis.py
+
+# Giant enemies on footprint-shaped bases (build, then a line-up and boards)
+Blender -b --factory-startup --python art/scripts/build_giant_minis.py
+Blender -b --factory-startup --python art/scripts/render_giant_minis.py
+
+# Forest combat maps (build, then a board per variant, a turned view, the kit, and a board set into its map tiles)
+Blender -b --factory-startup --python art/scripts/build_forest_cells.py
+Blender -b --factory-startup --python art/scripts/render_forest_boards.py
+Blender -b --factory-startup --python art/scripts/render_forest_maps.py
+
 # A 6-second video of the map with moving water (add -- --still for one frame)
 Blender -b --factory-startup --python art/scripts/render_animation.py
 ```
@@ -88,6 +101,11 @@ Blender -b --factory-startup --python art/scripts/render_animation.py
 - **Combat cell:** flat-top, spaced 1.0 across the flats, drawn at 0.94 so a thin gap shows. A radius-4 board (61 cells) has a pointy-top outline the size of one map tile. Pieces: `cell_grass_a/b/c`, `cell_tree` (doesn't block), `cell_rock` (blocks).
 - **Minis:** about 1.3 tall, on a base that fills one combat cell.
 - **Stand-in minis** (`standin_minis_vN.blend`, exported as `export/standin_minis.glb`): super low-poly blockouts (70–290 triangles each) so the engines can test size and movement before the real minis exist. Each stands on a flat-top wooden hex base 0.9 across the flats and 0.08 tall, with a coloured ring and a notch on its front edge; the pivot is the base centre at ground level. They face −Y in Blender, which exports as +Z (glTF front, Unity forward, Godot `MODEL_FRONT`). Pieces: `standin_base` (no figure), `standin_hero` (1.3, sword raised), `standin_chelmsford` (1.3, snout, horns, tail, mace and shield), `standin_small` (1.0, halfling or small elf), `standin_fluffy` (the cat on all fours, about 0.6) and `standin_enemy` (1.3, spear, red ring). Only the 1.3 height comes from the docs; the other heights and the ring colours are test guesses.
+- **Enemy minis (`minis/enemies/enemy_minis_vN.blend`, `scripts/build_enemy_minis.py`; not exported until approved):** scripted low-poly, on the stand-ins' hex base (68 triangles of each count, pivot and facing the same), in the shared `kit` material. Pieces: `enemy_wolf`, `enemy_wolf_elite`, `enemy_spider`, `enemy_spider_elite`. An elite has a gold line inside the red ring. All are drafts for Ethan to judge.
+- **Giant minis (`minis/enemies/giant_minis_vN.blend`, `scripts/build_giant_minis.py`; a look test, not exported):** the plain wolf and spider resized onto bases shaped to 2, 3 or 7 cells. The pivot is the footprint's middle, so an edge, a corner or a cell centre; a `footprint` property lists the cells. Grid rules are open (`design/03 Classes & combat.md`).
+- **Forest combat cells (`combat/combat_cells_vN.blend`, `scripts/build_forest_cells.py`; not exported until approved):** per variant, flat open cells (`cell_<variant>_ground_a/b/c`, `_litter`), a darker `_cover` cell, and a stony `_block_a/b` cell filled by a mass 0.75 tall at most. Slim `tree_<variant>_*` pieces stand on cell corners, where a base can't cut them: every second corner of a cover cell, each corner once. `dark_wood_web` hangs between two trees one cell apart, `fey_wood_ring` goes round seven cells, and `board_under` is a tile-sized soil plate that shows in the gaps. Trees stand 1.25–1.9, about half the map tile's; `tree_<variant>_tall_*` (from v5) stand 2.5–3.5, map height, slimmer than the tile's so they fit a cell corner. `board_plate` (from combat_cells_v3) follows the outline of the 61 cells, for a separate combat map. From v4, moss on a rock is the colour of its upward faces, not a cap. The first draft's cells stay in the file. Rocks and brambles look blocked and trees look like cover, but what blocks or gives cover is still open.
+- **Forest obstacles (from combat_cells_v6):** full-bodied pieces sitting on whole cells, each with its cells in the `footprint` property: `ob_<variant>_tree_a/b/c`, `_grove_2/3/7`, `_log_2/3`, `_stump`, `_boulder_3`, plus `ob_fey_wood_stone`, `_mushrooms_3`, `ob_dark_wood_hollow_3`, `_thicket_3`, `ob_heartwood_great_7`, `_roots_3`. `cell_<variant>_brush` is walkable cover and `cell_<variant>_floor` flat stony ground. Earlier corner trees (`tree_<variant>_*`) stay in the file but the maps no longer use them.
+- **Forest combat maps (`scripts/render_forest_maps.py`, samples for Ethan to judge):** twelve plans, three per forest variant, 34 to 114 cells in varied shapes, each written as a top-down text plan with its tactical idea beside it. Rock shelves, cliffs and the soil plate take any shape, so each map makes its own (`shaped_piece`, `fc.plate`), saved in `combat/combat_maps_vN.blend` with `-- --export`, which also writes `export/combat_maps.json`. Hand-off: `handoff/combat_forest_kit.md`. The script checks that every walkable cell can be reached and shows from at least 2 of 12 camera angles, one of them a 60 degree rotate step (`-- --check`: rays from points on each cell, at the Godot prototype's combat tilt of 52 degrees and distance 22, minis left out; an obstacle's own cells aren't checked). `-- --kit` renders the obstacles laid out. Previews: `preview/forest_map_<map>_vN.png`, a few `_turned`, sheets `preview/forest_maps_<variant>_vN.png`, `preview/forest_obstacles_vN.png`.
 
 Terrains: plains, forest, farmland, river (river/lake) and village, plus (from tiles_v5) hills, swamp, desert and ruins. Colours are the mockup placeholders, set in one table (`PALETTE` in `scripts/hexkit.py`).
 
@@ -191,5 +209,8 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 - **tiles_v4:** farms as four wheat plots (2×2, turned 30°) with dirt paths and tracks; farms link to villages; one wooden fence round farms and villages, with `border_join_l` / `border_join_r` pieces.
 - **tiles_v3:** grass tufts and flowers taken out of the plains pieces (now engine ground cover, see below); trees no longer leave bare lines along the borders between a tile's pieces.
 - **Ground cover (from map_preview_v5):** scattered by `scripts/ground_cover.py` across the whole map from one world-space pattern: one jittered candidate point per 0.55 m cell, kept if a hash of the cell is below the terrain's density, which fades toward the neighbour's density within 1.6 m of a tile edge. Points in water or on a river bank are skipped. Densities per terrain are placeholders at the top of the file.
+- **enemy_minis_v4** (`minis/enemies/`): first pass of wolves and giant spiders, plain and elite, for review. v1–v3 are earlier rounds of the same pass.
+- **giant_minis_v1** (`minis/enemies/`): giant wolf on 2, 3 and 7 cells and giant spider on 3 and 7 cells, for review.
+- **combat_cells_v2** (`combat/`): forest combat kit for deep forest, fey wood, dark wood and heartwood, for review, with the first draft's cells kept.
 
 Still rough: the preview backdrop renders grey, not the pastel. The real backdrop is the engines' job (time of day).
