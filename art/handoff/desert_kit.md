@@ -5,7 +5,7 @@ This round holds tier 0 desert, dunes/wasteland and the Sandstone Sphinx. Ethan 
 - **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v55.blend`.
 - **Sand reference:** `art/scripts/sand.py`. Every change below is plain Python to copy, apart from `add_sand` and `wasteland_prop`, which build the Blender preview.
 - **Looks:** `design/07 Presentation.md` → Region variant looks, Landmark tiles.
-- **Previews:** `art/preview/desert_centre_7_map_v1.png` and `desert_centre_12_map_v1` (the Sphinx in the middle of its region), `desert_sphinx_face_v1`, `desert_sphinx_closeup_v2`, `desert_sphinx_closeup_b_v2`, `desert_sphinx_default_v2`, `desert_sphinx_routes_v2` (red is the route), `desert_waste_map_v2`, `desert_waste_turned_v2`, `desert_t0_map_v1`.
+- **Previews:** `art/preview/desert_centre_7_map_v1.png` and `desert_centre_12_map_v1` (the Sphinx in the middle of its region), `desert_sphinx_face_v1`, `desert_sphinx_closeup_v3` (`_v2` is a discarded try), `desert_sphinx_closeup_b_v2`, `desert_sphinx_default_v2`, `desert_sphinx_routes_v2` (red is the route), `desert_waste_map_v2`, `desert_waste_turned_v2`, `desert_t0_map_v1`.
 
 ## What changes in `sand.py`
 
