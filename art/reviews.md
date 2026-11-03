@@ -58,3 +58,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_map_market_town_aisles_v13.png` | approved | After shortening a row and moving the well to the bottom left; Market Town set done, merges with the rest of village |
 | 2026-11-03 | `art/preview/village_map_fortified_town_breach_v9.png` | rejected | Fortified set (with yard_v9, corner_v9, street_v9): more colour, hay bales, fuller maps; close the wall gap on Breach |
 | 2026-11-03 | `art/preview/village_wall_walk_wide_v2.png` | rejected | Not a wall yet; trial last, about 1.5 high with a double flight or ladder |
+| 2026-11-03 | `art/preview/canyon_mesa_before_after_v3.png` | approved | Rebuilt mesas, with `canyon_mesa_spots_a_v1`, `_b_v1`; small lower-band rims accepted |
