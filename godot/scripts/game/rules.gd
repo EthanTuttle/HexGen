@@ -85,6 +85,7 @@ const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover
 const WADE_DEPTH := 0.45                 # PLACEHOLDER: m a mini sinks crossing by check, to about its waist
 const WET_ROUTE_WEIGHT := 3.0            # PLACEHOLDER: on a water tile, a route prefers dry land by this much
 const CROSS_STEP_COST := 6               # PLACEHOLDER: a crossing counts as this many steps, so the party walks round if that's near
+const BANK_MARGIN := 1.0                 # PLACEHOLDER: m a way out can be longer than the nearest and still count as the nearest bank (a river's two banks are about level from its middle)
 const CROSS_HEADS := 2                   # PLACEHOLDER: heads the crossing's Athletics check needs (as the sword pull's in Social v9)
 const CROSS_FAIL_HP := 2                 # PLACEHOLDER: HP each member loses on a failed crossing (design/02: to tune); never below 1
 const RAFT_SETTLE := 0.5                 # PLACEHOLDER: s the party takes to settle on the raft's seats

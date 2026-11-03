@@ -39,6 +39,7 @@ var _span := -1                         # the one the hero is in, or -1
 var _landed := false                    # the raft has reached the far landing, and the party is getting off
 var _ride_t := 0.0                      # how long it has been riding
 var _riding := false                    # the party is carried on the raft, on its seats
+var free_out := -1.0                    # how far a party stopped in water wades to the nearest bank, with no check (-1: on land)
 var holding := false                    # stopped at the water's edge while the check flips (go_on carries on)
 var _on_raft := false                   # and it's still on it, stopped on the water
 var _raft_at := 0.0                     # distance along the route of the raft's bow while it waits at a landing
@@ -1068,9 +1069,24 @@ func _find_spans() -> void:
 		var wet := map.wet_at(_path[k])
 		var raft := wet and has_raft and Water.raft_can_enter(map.terrains.get(GroundCover.tile_at(_path[k])))
 		if wet and (_spans.is_empty() or _spans[-1].to < _len[maxi(k - 1, 0)] or _spans[-1].raft != raft):
-			_spans.append({from = _len[k], to = _len[k], raft = raft})
+			_spans.append({from = _len[k], to = _len[k], raft = raft, free = false})
 		elif wet:
 			_spans[-1].to = _len[k]
+	# Stopped in water, heading for the nearest bank: no check (DOCS: design/02 -> Crossing water).
+	if not _spans.is_empty() and not _spans[0].raft and free_out >= 0.0 and _spans[0].from <= _s0 + 0.01:
+		_spans[0].free = _spans[0].to < _len[-1] - 0.01 and _spans[0].to - _s0 <= free_out
+
+
+## How far a route starting in water runs before it reaches land: -1 if it starts on land, INF if it never does.
+func wet_start(points: PackedVector2Array) -> float:
+	if points.is_empty() or not map.wet_at(points[0]):
+		return -1.0
+	var d := 0.0
+	for k in range(1, points.size()):
+		if not map.wet_at(points[k]):
+			return d
+		d += points[k].distance_to(points[k - 1])
+	return INF
 
 
 ## The hero reaching water, on it, and leaving it.
@@ -1082,6 +1098,9 @@ func _cross_water(delta: float) -> void:
 			_landed = false
 			if span.raft:
 				_board(span)
+			elif span.free:
+				if _raft:
+					_raft.visible = false
 			else:
 				if _raft:
 					_raft.visible = false

@@ -839,10 +839,51 @@ func _cross_cost(t: Vector2i) -> int:
 
 ## Whether this route steps into water with no way over but the check: no raft, or rapids, which a raft can't run.
 func _needs_check(path: Array[Vector2i]) -> bool:
-	for p in party_node.route_preview(path):
-		if map.wet_at(p) and not (party_node.has_raft and Water.raft_can_enter(map.terrains.get(GroundCover.tile_at(p)))):
+	var points := party_node.route_preview(path)
+	var out := _bank_limit()
+	var wet := party_node.wet_start(points)
+	var free := out >= 0.0 and wet >= 0.0 and wet <= out
+	var left := not free
+	for p in points:
+		left = left or not map.wet_at(p)
+		if left and map.wet_at(p) and not (party_node.has_raft and Water.raft_can_enter(map.terrains.get(GroundCover.tile_at(p)))):
 			return true
 	return false
+
+
+## For a party stopped in water: how far it can wade and still be going to the nearest bank, which takes no check
+## (DOCS: design/02 -> Crossing water). -1 on land. Spreads over the water tile by tile to the first land it meets, and
+## measures the party's own routes there.
+func _bank_limit() -> float:
+	var hero: Vector3 = party_node.members[0].node.position
+	if not map.wet_at(Vector2(hero.x, -hero.z)):
+		return -1.0
+	var seen := {party_tile: true}
+	var ring: Array[Vector2i] = [party_tile]
+	while not ring.is_empty():
+		var banks: Array[Vector2i] = []
+		var next: Array[Vector2i] = []
+		for t in ring:
+			for n in Hex.NEIGHBOURS:
+				var c: Vector2i = t + n
+				if seen.has(c) or not map.terrains.has(c):
+					continue
+				seen[c] = true
+				if Variants.is_water(map.terrains[c]):
+					next.append(c)
+				else:
+					banks.append(c)
+		var best := INF
+		for c in banks:
+			var path := path_to(c)
+			if not path.is_empty():
+				var wet := party_node.wet_start(party_node.route_preview(path))
+				if wet >= 0.0:
+					best = minf(best, wet)
+		if best < INF:
+			return best + Rules.BANK_MARGIN
+		ring = next
+	return -1.0
 
 
 ## The check pop-up's top half, for the hero's Athletics check (DOCS: design/02 -> Crossing water; 07 -> Social
@@ -947,6 +988,7 @@ func _walk(path: Array[Vector2i]) -> void:
 	var on_step := func(t: Vector2i):
 		party_tile = t
 		_advance(Rules.STEP_MINUTES)
+	party_node.free_out = _bank_limit()
 	party_node.entered.connect(on_step)
 	party_node.waded.connect(_cross_check)
 	await party_node.walk(path)

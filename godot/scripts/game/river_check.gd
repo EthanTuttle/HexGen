@@ -436,6 +436,47 @@ func _popups(map: MapBoard) -> void:
 			await get_tree().process_frame
 			low = minf(low, w.members[0].node.position.y)
 		_check(game.party_tile == way[2] and low > -0.1, "walking round: there, and dry (lowest %.2f)" % low)
+	# Stopped in water: the nearest bank is free, a farther one isn't (design/02 -> Crossing water).
+	await _set_party(side[0])
+	game.debug_auto_cross = true
+	await _walk(river)
+	game.debug_auto_cross = false
+	var near_bank := _nearest_bank(map, river)
+	var hurt := _hp()
+	var wades := {n = 0}
+	var tally := func(): wades.n += 1
+	w.waded.connect(tally)
+	game.walk_to(near_bank)
+	await _wait(0.1)
+	_check(not check.visible and game.busy, "stopped in water: no prompt to the nearest bank")
+	while game.busy:
+		await get_tree().process_frame
+	await _wait(Rules.SETTLE_SECONDS)
+	w.waded.disconnect(tally)
+	_check(wades.n == 0 and _hp() == hurt and game.party_tile == near_bank, "stopped in water: to the nearest bank, no check (%d)" % wades.n)
+	var lake := Vector2i(99, 99)
+	for t: Vector2i in _region("great_lake").tiles:
+		if map.terrains[t] == "great_lake":
+			await _set_party(t)
+			if game._bank_limit() > 0.0:
+				lake = t
+				break
+	await _set_party(lake)
+	var limit := game._bank_limit()
+	var far := _farthest_bank(map, lake)
+	var far_wet: float = w.wet_start(w.route_preview(game.path_to(far))) if far != Vector2i(99, 99) else -1.0
+	_check(limit > 0.0, "mid-lake: the nearest bank is %.1f m away" % limit)
+	if far_wet > limit and far_wet < INF:
+		game.walk_to(far)
+		await _wait(0.1)
+		_check(check.visible, "mid-lake: a farther bank (%.1f m) still asks" % far_wet)
+		await _shot("88_far_bank")
+		_press(check, "Walk round" if _buttons(check).has("Walk round") else "Back")
+		while game.busy:
+			await get_tree().process_frame
+		await _wait(Rules.SETTLE_SECONDS)
+	else:
+		_check(false, "mid-lake: no farther bank to test (%.1f against %.1f)" % [far_wet, limit])
 	# The raft: bought at the counter, then no prompt; rapids still ask.
 	var port := _named(map, "riverport")
 	await _set_party(_land_beside(map, port)[0])
@@ -497,6 +538,37 @@ func _press(c: Control, label: String) -> void:
 			n.pressed.emit()
 			return
 	_check(false, "no %s button" % label)
+
+
+## The land beside this water tile that its party reaches with the shortest wade.
+func _nearest_bank(map: MapBoard, t: Vector2i) -> Vector2i:
+	var best := Vector2i(99, 99)
+	var least := INF
+	for n in Hex.NEIGHBOURS:
+		var c: Vector2i = t + n
+		if map.terrains.has(c) and not Variants.is_water(map.terrains[c]):
+			var path := game.path_to(c)
+			var wet := game.party_node.wet_start(game.party_node.route_preview(path)) if not path.is_empty() else INF
+			if wet >= 0.0 and wet < least:
+				least = wet
+				best = c
+	return best
+
+
+## The lake shore land that takes the longest wade from here and does reach land.
+func _farthest_bank(map: MapBoard, t: Vector2i) -> Vector2i:
+	var best := Vector2i(99, 99)
+	var most := -1.0
+	for w_tile: Vector2i in _region("great_lake").tiles:
+		for n in Hex.NEIGHBOURS:
+			var c: Vector2i = w_tile + n
+			if map.terrains.has(c) and not Variants.is_water(map.terrains[c]):
+				var path := game.path_to(c)
+				var wet := game.party_node.wet_start(game.party_node.route_preview(path)) if not path.is_empty() else -1.0
+				if wet > most and wet < INF:
+					most = wet
+					best = c
+	return best
 
 
 ## A way over a tier 0 river tile between two land tiles, with a dry way between them too: [from, river, to].
