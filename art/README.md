@@ -11,6 +11,27 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 | `export/` | `.glb` files the engines import; always the latest version |
 | `preview/` | Rendered test views, `*_vN.png` |
 
+## Finding the current version
+
+The most recent version is the working version, unless `reviews.md` says Ethan rejected it. Some older previews have numbers out of order (`forest_map_fey_wood_glades_v3` is older than `_v1`), so go by commit, not by the highest number:
+
+```bash
+git log --diff-filter=A --name-only --format= <branch> -- 'art/preview/*glades*' | head -1
+```
+
+Live work is usually on a branch, so name it, and make the pattern narrow, as a broad one also matches related views such as `_turned`. This only sees committed files.
+
+| To find | Look in |
+| --- | --- |
+| Newest render | The command above |
+| Ethan's verdicts | `reviews.md`: approved or rejected, by date. No entry means no verdict recorded |
+| Combat maps in use, and retired ones | `combat/maps/README.md`, with each map's current image beside it |
+| Live `.blend` | The highest `tiles_vN.blend` on that branch. Numbers there are in order |
+| Source of an export | `git show --name-only --format=%h $(git log -1 --format=%h -- art/export/tiles.glb)`, which shows the blend committed with it |
+| What Godot has | `handoff/<kit>_kit.md`, then `git diff --stat main claude/godot-prototype-0a3fde -- art/export art/handoff art/scripts` |
+
+If two branches add the same file name with different content, the merge stops with a conflict. Renumber one side.
+
 ## Rules for the art session
 
 New art assets are made in their own **Art Planning** session (set up Nov 1, 2026). These rules apply to that session, and to anyone else adding art.
@@ -18,7 +39,7 @@ New art assets are made in their own **Art Planning** session (set up Nov 1, 202
 - **The docs decide the look.** Build from the design docs: tier 1 and tier 2 variant looks are in `design/07 Presentation.md` → Art direction → Region variant looks, and the variants and their landmarks are in `design/02 Map & exploration.md`. Don't invent looks, names or rules. Where the docs leave a choice open, give Ethan 3–4 options with the question tool, or list them in the report.
 - **Hand-off goes through the planner session.** Report finished work to the session that started you, never to the Godot session directly. The planner shows Ethan the previews and passes approved kits to Godot.
 - **Ethan reviews previews before the engine sees them.** Each group gets Blender preview renders: the region-finished map (`render_preview.py -- --variants`, or a map staged for the group) and a close-up of each variant. Nothing counts as done until he approves it.
-- **Never overwrite.** Each change builds the next `tiles_vN.blend` and `preview/*_vN.png`. Older versions stay for reference. Add a line to **Versions** below for each new kit, and a section under **Units and pieces** for each new kind of piece.
+- **Never overwrite.** Each change builds the next `tiles_vN.blend` and `preview/*_vN.png`, one past the highest number. Older versions stay for reference. Add a line to **Versions** below for each new kit, and a section under **Units and pieces** for each new kind of piece.
 - **Keep the piece contract.** A variant has `<variant>_centre`, `<variant>_edge_same` and `<variant>_edge_other`, registered in `scripts/variants.py` (`VARIANTS`). It uses its terrain's base with the top recoloured, picks edge pieces by terrain (`terrain_of`), and keeps origins at the tile centre on the ground, with edge pieces facing +X. Pieces must join seamlessly with every neighbour, including other variants of the same terrain.
 - **Blend in, no rim.** A finished region changes to its variant's look but keeps blending into the land round it (`design/07 Presentation.md` → Exploration screen → Cluster goals).
 - **True scale.** Minis are about 1.3 tall on a base that fills one combat cell. Trees and props are sized against them, and mountains stay bigger than trees.

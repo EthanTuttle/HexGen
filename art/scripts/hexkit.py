@@ -7,6 +7,7 @@ import json
 import math
 import os
 import random
+import re
 
 import bmesh
 import bpy
@@ -558,13 +559,17 @@ def empty_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
+def next_number(folder, stem, ext):
+    """One past the highest version of stem in folder, counting lettered options, so numbers only go up."""
+    pattern = re.compile(rf"{re.escape(stem)}_v(\d+)[a-z]?\.{re.escape(ext)}")
+    found = [pattern.fullmatch(name) for name in os.listdir(folder)] if os.path.isdir(folder) else []
+    return max((int(m.group(1)) for m in found if m), default=0) + 1
+
+
 def next_version(folder, stem):
-    """Path for the next unused version, e.g. tiles_v3.blend. Never overwrites an earlier file."""
+    """Path for the next version, e.g. tiles_v3.blend. Never overwrites an earlier file."""
     os.makedirs(folder, exist_ok=True)
-    n = 1
-    while os.path.exists(os.path.join(folder, f"{stem}_v{n}.blend")):
-        n += 1
-    return os.path.join(folder, f"{stem}_v{n}.blend")
+    return os.path.join(folder, f"{stem}_v{next_number(folder, stem, 'blend')}.blend")
 
 
 def new_collection(name):

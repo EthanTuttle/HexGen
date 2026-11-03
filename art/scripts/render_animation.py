@@ -288,9 +288,7 @@ if __name__ == "__main__":
     scene = bpy.context.scene
     scene.render.resolution_x, scene.render.resolution_y = 1280, 800
     out = os.path.join(hk.ART, "preview")
-    n = 1
-    while os.path.exists(os.path.join(out, f"water_anim_v{n}.mp4")):
-        n += 1
+    n = hk.next_number(out, "water_anim", "mp4")
     path = os.path.join(out, f"water_anim_v{n}.mp4")
     stills = [a for a in sys.argv if a.startswith("--still")]
     if stills:  # one frame, for checking the look quickly (--still, or --still=FRAME)
