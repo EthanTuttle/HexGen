@@ -43,7 +43,7 @@ Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked
 
 ## Rough spots
 
-- **Water runs uphill where a gorge leads out.** Plain river or a lake is higher than the gorge, so the water can't fall both ways: going downstream, it climbs 1.2 at a shallow slope (about 17° at most through a tile). Upstream it reads as a cascade. Foam hides some of it, and a flow shader would show it. Options: accept it, or end the gorge at a rock face. It's Ethan's call.
+- **Water runs uphill where a gorge leads out.** Plain river or a lake is higher than the gorge, so the water can't fall both ways: going downstream, it climbs 1.2 through the join's tile. Upstream it reads as a cascade. On Athletics lines at a join, 95% of segments are 21.6° or less, but 39 of 3,456 pass 28°, the worst 31.4°, where a plain edge and a rapids edge sit side by side. Foam hides some of it, and a flow shader would show it. Options: accept it, or end the gorge at a rock face. It's Ethan's call.
 - **Walls lean more on the camera's side,** so from the default camera little water is hidden, and a turned camera sees less (`river_rapids_parties_turned_v1`).
 - **Lane plates:** seen from low, a lane's top is a flat plain surface (`river_rapids_low_v1`).
 - **Known in `test_gorge.py 6`, reported, not failed:** 16 land edges of 756 tiles have no way down: short land between two channels, so the party walks round. 69 sample points have rock above a walk, usually a mini's base against a wall on a bend, the worst 1.15.
