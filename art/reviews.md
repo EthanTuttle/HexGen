@@ -37,3 +37,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/ways_up_maps_v1.png` | approved | After fixing rock ledge and brush pokes, no further review |
 | 2026-11-03 | `art/preview/village_map_village_lanes_v7.png` | rejected | Village set round 2 (with green_v9, gardens_v7, street_v7): vary the houses; Lanes too plain |
 | 2026-11-03 | `art/preview/village_map_village_lanes_v9.png` | rejected | Village set round 3 (with green_v10, gardens_v8, street_v8): liked a lot, but unclear which cells near house corners are walkable |
+| 2026-11-03 | `art/preview/village_map_village_lanes_v12.png` | rejected | Stone foundations read well, but houses too thin; compare a chunky house on 3 cells with 4-cell footprints |
