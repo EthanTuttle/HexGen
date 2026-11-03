@@ -47,3 +47,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `godot/screens/desert_05_canyon_map.png` | rejected | On the Godot branch: top mesas have thin wall-like parts, especially near the canyon's edges; also check the art |
 | 2026-11-03 | `godot/screens/desert_30_silhouette_on.png` | rejected | On the Godot branch: silhouette must be solid, no inner overlaps |
 | 2026-11-03 | `art/preview/household_props_sheet_v2.png` | rejected | Yard things too small, brown and scattered; rework and add new sets; slight overhang fine |
+| 2026-11-03 | `art/preview/household_houses_v2.png` | rejected | With village_map_village_lanes_v18, lanes_turned_v18, green_v19, street_v17: more props at the back; 3_lean door hangs off and a case blocks it; 4_thatch flowers block the door |
