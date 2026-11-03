@@ -316,10 +316,10 @@
  },
  "market_town_aisles": {
   "cells": 85,
-  "idea": "Rows of stalls set in slanting aisles. Long runs along them, and a way across only at the end of each row.",
+  "idea": "Two long rows of stalls across the map, with crates and carts closing the gaps, one row open at its east end and one at its west. Long runs along them, and a way across only at the end of each row.",
   "kind": "terrain",
   "shape": "big square",
-  "walkable": 66
+  "walkable": 65
  },
  "market_town_row": {
   "cells": 37,

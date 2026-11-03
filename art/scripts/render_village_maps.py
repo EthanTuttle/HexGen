@@ -120,18 +120,18 @@ P . n 8 n n n E . 6
  . 2 . h k s . 3 . 
   . . . . . . . .  
 """},
-    "market_town_aisles": {"size": "big square", "idea": "Rows of stalls set in slanting aisles. Long runs along them, and a way across only at the end of each row.", "foes": BANDITS, "plan": """
+    "market_town_aisles": {"size": "big square", "idea": "Two long rows of stalls across the map, with crates and carts closing the gaps, one row open at its east end and one at its west. Long runs along them, and a way across only at the end of each row.", "foes": BANDITS, "plan": """
 . . . w . v .
- . E . . x . 
-I . . . D . Q
- I . . . D . 
-. I . . . D .
+ . . . . x . 
+Y 8 E Y 8 . .
+ J U Q J . . 
+. . . . . . .
  . , . . , . 
-. . Z . . . J
- . . Z . . . 
-J . . Z . I .
- . . . U . I 
-8 . . N . . I
+. . . . . . .
+ . E Y 8 E Y 
+. . J U J J J
+ . . . . . . 
+. . . N . . .
  . h . k s . 
 . . . . . . .
 """},

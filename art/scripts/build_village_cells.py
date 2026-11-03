@@ -704,13 +704,6 @@ def stall_at(p, rng, at, spin, kind="stall"):
     market_stall(p, rng, at, spin, *STALLS[kind])
 
 
-def stalls_row(kind):
-    def make(p, rng):
-        for c in fc.centres(LINE3):
-            stall_at(p, rng, c, math.radians(-30), kind)
-    return make
-
-
 def wares(p, rng):
     """Sacks, jars and cheese set out on the paving."""
     yard_sacks(p, rng, Vector((-0.1, 0.17, 0)))
@@ -821,9 +814,6 @@ KIT = {
         "Y": ("stall", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0)),
         "8": ("stall_blue", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0, "stall_blue")),
         "E": ("stall_green", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0, "stall_green")),
-        "I": ("stalls_3", LINE3, stalls_row("stall")),
-        "D": ("stalls_3_blue", LINE3, stalls_row("stall_blue")),
-        "Z": ("stalls_3_green", LINE3, stalls_row("stall_green")),
         "J": ("goods", SINGLE, goods),
         "U": ("wares", SINGLE, wares),
         "Q": ("cart", SINGLE, lambda p, r: bf.short_cart(p, r, "sack")),
