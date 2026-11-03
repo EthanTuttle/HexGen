@@ -73,6 +73,7 @@ func _run() -> void:
 	_check_effects(map)
 	_check_maze(map)
 	_check_rock(map)
+	_check_mesas()
 	_report_reference()
 	await _pictures(map)
 	await _perf(map)
@@ -941,6 +942,54 @@ static func _set_of(tiles: Array) -> Dictionary:
 	for t in tiles:
 		out[t] = true
 	return out
+
+
+## test_mesas.py's limits, on the anchored grid the game uses: the rebuilt mesas (art/handoff/desert_kit.md).
+func _check_mesas() -> void:
+	var rnd := RandomNumberGenerator.new()
+	rnd.seed = 24
+	var count := 0
+	var tiles := 0
+	var side := INF
+	var corner := 180.0
+	var gap := INF
+	var rim := INF
+	var edge := INF
+	var slowest := 0.0
+	var crossing := 0
+	for _n in 24:
+		var region: Array = [Vector2i(rnd.randi_range(-12, 12), rnd.randi_range(-12, 12))]
+		var size := rnd.randi_range(8, 14)
+		while region.size() < size:
+			var c: Vector2i = region[rnd.randi_range(0, region.size() - 1)] + Hex.NEIGHBOURS[rnd.randi_range(0, 5)]
+			if not c in region:
+				region.append(c)
+		var lm: Vector2i = region[rnd.randi_range(0, region.size() - 1)]
+		var t0 := Time.get_ticks_usec()
+		var f := Canyon.Field.new(region, lm, Sand.sphinx_turn(lm, region), true)
+		slowest = maxf(slowest, (Time.get_ticks_usec() - t0) / 1000.0)
+		count += f.mesas.size()
+		tiles += region.size()
+		for i in f.mesas.size():
+			var m: PackedVector2Array = f.mesas[i]
+			var pts := Array(m)
+			for k in m.size():
+				side = minf(side, m[k].distance_to(m[(k + 1) % m.size()]))
+				corner = minf(corner, Canyon._corner(pts, k))
+				rim = minf(rim, f._bilinear(f.land, m[k].x, m[k].y))
+				edge = minf(edge, f.edge_margin(m[k].x, m[k].y))
+				for j in range(k + 2, m.size()):
+					if (j + 1) % m.size() != k and Geometry2D.segment_intersects_segment(m[k], m[(k + 1) % m.size()], m[j], m[(j + 1) % m.size()]) != null:
+						crossing += 1
+			for j in range(i + 1, f.mesas.size()):
+				gap = minf(gap, Canyon.outline_gap(m, f.mesas[j]))
+	_check(side >= 0.45, "mesas: shortest side %.2f (at least 0.45)" % side)
+	_check(corner >= 60.0, "mesas: sharpest corner %.1f degrees (at least 60)" % corner)
+	_check(gap >= 0.9, "mesas: smallest gap %.2f (at least 0.9)" % gap)
+	_check(rim >= 0.42, "mesas: nearest the rim %.2f (at least 0.42)" % rim)
+	_check(edge >= 0.6, "mesas: nearest the region's edge %.2f (at least 0.6)" % edge)
+	_check(crossing == 0, "mesas: no outline crosses itself")
+	print("DESERT PERF mesas: %d on %d tiles (hand-off: 90 on 276); slowest Field %d ms in GDScript (plain Python, 12 tiles: 1.14 s)" % [count, tiles, slowest])
 
 
 func _place_and_time(map: MapBoard, add: Vector2i, _region_d: Dictionary) -> float:

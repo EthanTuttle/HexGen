@@ -497,7 +497,7 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - Touch on the plateau: tapping raised ground on a real screen.
 - The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
 - **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
-- **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (260 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
+- **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
@@ -558,6 +558,10 @@ Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (a
 | `fire`, `smoke` | `FarmFx` | As elsewhere |
 | Stall detector | `scripts/game/stall_watch.gd` | On any check, demo or touch run: prints `STALL` with the game's state after 60 s with nothing moving. Test output only |
 
+**Mesas (approved Nov 3, 2026; top of the hand-off):** `Field.mesas`, each one closed solid on the land, held in the mesh of the tile under its middle. The two lower bands are `Field.ridge` and `Field.land`, cut by `_terrace(tri, field)`. Walls now take their direction from which side the rock is, as in `canyon.py`, so the highest-corner test here earlier is gone. `Field.value` comes from those distances. One more corridor piece behind the Echo Cave's court. Growing: an old mesa stays unless a new corridor reaches it, new ones only stand on rebuilt tiles, and a tile holding a mesa that's gone is rebuilt too. The land line along a seam with an unrebuilt tile is the one that tile was built with (`seam_land`). `--desertcheck` holds `test_mesas.py`'s limits on the anchored grid (`_check_mesas`).
+
+**Mesa outlines against `canyon.py`:** same number of mesas in all 40 compared regions, and 41 of 128 outlines match corner for corner. The others differ by up to 0.6 m at a corner and 10% in area, because `straighten` picks among equal distances on the traced grid's steps, where only rounding decides, and the game's grid is anchored in any case. All stay inside the limits. 84 of 11,064 sampled rock heights differ by more than 0.01 bands, the worst by 0.38.
+
 **Where the engine differs from `canyon.py`:** a lane's quads each have one normal (`Piece.poly_one_normal`), as the preview's flat shading draws them, or their twist shows as triangles (before and after: `desert_09_lane_0_before_normals`, `desert_05_canyon_map_before_normals`; waiting for Ethan's approval). A wall's facing comes from the triangle's highest corner, not a test of the field beside it, and skirts are drawn on both sides. The preview renders both sides of every face, so neither shows there; here both showed the sky. Hulls (`_loft`) wind outward for the same reason.
 
 ### Adding a tile to a finished canyon (design/02 -> Canyon walls, trying it, Nov 3, 2026)
@@ -577,10 +581,10 @@ If it doesn't work in play, the agreed fallback is that a finished canyon can't 
 
 | | |
 | --- | --- |
-| The art's 12-tile region | 41,759 triangles, 3,479 a tile, worst tile 4,028 (hand-off: 41,439, about 3,450; budget 4,816). The difference is mainly the skirts' second side and different random stones |
-| Generating it | About 260 ms: field 69 ms, mesh 187 ms (plain Python about 450 ms; the hand-off expected GDScript to be slower, and it isn't) |
-| Finishing in play | Off the main thread. Worst frame while generating 9.4 ms; worst frame at the swap, with the retile, 12.9 ms; commit 3 ms |
-| Growing it in play | A new tile west of the region, 2 tiles rebuilt: field 135 ms (it works out the old one too, for the seams), mesh 37 ms, off the main thread; worst frame 13.1 ms. The cost rises with the region: 17 tiles took 190 ms and 124 ms |
+| The art's 12-tile region | 35,597 triangles, 2,966 a tile, worst tile 3,474 (hand-off: 35,531; budget 4,816) |
+| Generating it | About 680 ms: field 438 ms, mesh 236 ms (plain Python: `Field` alone 1.14 s; slowest `Field` in GDScript on 8 to 14 tiles, 813 ms, over twice what it was before mesas) |
+| Finishing in play | Off the main thread. Worst frame while generating 9.4 ms; worst frame at the swap, with the retile, about 14 ms; commit 8 ms |
+| Growing it in play | A new tile west of the region, 2 tiles rebuilt: field 639 ms (it works out the old one too, for the seams), mesh 53 ms, off the main thread; worst frame 10.9 to 13.5 ms |
 | Grow cases | 147 tiles added, 89 west or south of all the rest, 32 holes, among them all the entrances facing the hole: nothing cut off, no opening closed, none onto the Echo Cave, no old floor turned to rock. Rock changed only on touching tiles in these cases |
 | Worst other desert tile | 4,806 triangles, the Sphinx's |
 | Draw calls and triangles | Canyon at the opening zoom 274 and 183,000; badlands 1,104 and 489,000; oasis 516 and 333,000; wasteland 1,513 and 687,000, each with whatever else is in view of the debug map |

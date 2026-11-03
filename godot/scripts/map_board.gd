@@ -229,7 +229,7 @@ func start_canyon(region: Array, landmark: Vector2i) -> Dictionary:
 func start_canyon_growth(old_tiles: Array, new_tiles: Array, landmark: Vector2i) -> Dictionary:
 	var c: Dictionary = canyons[landmark]
 	var grown := {tiles = old_tiles.duplicate(), openset = c.openset, entrances = c.entrances,
-			grow = Canyon.grow(c.openset, c.entrances, old_tiles, new_tiles, landmark, terrains)}
+			mesas = c.mesas, grow = Canyon.grow(c.openset, c.entrances, old_tiles, new_tiles, landmark, terrains)}
 	var tiles := old_tiles + new_tiles
 	var turn: int = c.turn
 	var seed_value := GroundCover.hash01(new_tiles[0].x, new_tiles[0].y, 81)
@@ -262,7 +262,7 @@ func finish_canyon(job: Dictionary) -> void:
 
 func _keep_canyon(r: Dictionary) -> void:
 	var t0 := Time.get_ticks_usec()
-	var info := {openset = r.openset, entrances = r.entrances, landmark = r.landmark, turn = r.turn}
+	var info := {openset = r.openset, entrances = r.entrances, landmark = r.landmark, turn = r.turn, mesas = r.mesas}
 	for t: Vector2i in r.tiles:
 		canyons[t] = info
 		if r.pieces.has(t):

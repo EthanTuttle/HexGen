@@ -26,6 +26,7 @@ for n in range(40):
         if gc.tile_at(x, y) in region:
             pts.append([x, y, f.value(x, y)])
     c["values"] = pts
+    c["mesas"] = [[list(q) for q in m] for m in f.mesas]
     c["ramps"] = [{"tile": t, "edge": i, "line": [list(q) for q in cn.ramp_line(t, i, lm, turn)], "sections": [list(q) for q in cn.ramp_sections(t, i, f, lm, turn)]} for t, i in f.entrances]
     # desert lands on a map of the region's tiles, with a badlands or oasis landmark
     dist, _ = lf.flow(region, lm)

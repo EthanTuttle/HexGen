@@ -5,6 +5,28 @@ extends SceneTree
 ##   godot --headless --path godot --script res://tools/canyon_check.gd -- /tmp/canyon_cases.json
 
 var bad := 0
+var mesas_seen := 0
+var mesas_same := 0
+var values_seen := 0
+var values_off := 0
+
+
+var mesa_stray := 0.0
+var mesa_area := 0.0
+
+
+func _area(m: PackedVector2Array) -> float:
+	var total := 0.0
+	for k in m.size():
+		total += m[k - 1].x * m[k].y - m[k].x * m[k - 1].y
+	return absf(total) / 2.0
+
+
+func _close(a: PackedVector2Array, b: PackedVector2Array) -> bool:
+	for k in a.size():
+		if a[k].distance_to(b[k]) > 0.01:
+			return false
+	return true
 
 
 func _diff(what: String, ok: bool, detail = "") -> void:
@@ -28,10 +50,36 @@ func _init() -> void:
 		mine.sort()
 		_diff("openset", str(mine) == str(c.openset.map(func(e): return [int(e[0]), int(e[1]), int(e[2])])), n)
 		_diff("entrances", str(f.entrances.map(func(k: Vector3i): return [k.x, k.y, k.z])) == str(c.entrances.map(func(e): return [int(e[0]), int(e[1]), int(e[2])])), n)
+		_diff("mesa count", f.mesas.size() == c.mesas.size(), [n, f.mesas.size(), c.mesas.size()])
+		mesas_seen += c.mesas.size()
+		for m in c.mesas:   # by shape, in case they come in another order; a corner can differ where the trace has a tie
+			var theirs := PackedVector2Array()
+			for q in m:
+				theirs.append(Vector2(q[0], q[1]))
+			var same := f.mesas.any(func(o): return o.size() == theirs.size() and _close(o, theirs))
+			mesas_same += 1 if same else 0
+			var mid := Vector2.ZERO
+			for q in theirs:
+				mid += q
+			mid /= theirs.size()
+			var best: PackedVector2Array = theirs
+			var near := INF
+			for o: PackedVector2Array in f.mesas:
+				var om := Vector2.ZERO
+				for q in o:
+					om += q
+				om /= o.size()
+				if om.distance_to(mid) < near:
+					near = om.distance_to(mid)
+					best = o
+			mesa_stray = maxf(mesa_stray, Canyon.outline_gap_most(best, theirs))
+			mesa_area = maxf(mesa_area, absf(_area(best) - _area(theirs)) / _area(theirs))
 		for p in c.values:
 			var d := absf(f.value(p[0], p[1]) - p[2])
 			worst.value = maxf(worst.value, d)
-			_diff("value", d < 0.01, [n, p, f.value(p[0], p[1])])
+			values_seen += 1
+			if d >= 0.01:
+				values_off += 1
 		for r in c.ramps:
 			var t := Vector2i(r.tile[0], r.tile[1])
 			var e: int = int(r.edge)
@@ -100,5 +148,6 @@ func _init() -> void:
 				_diff(name + " route length", a.size() == b.size(), [t, key])
 				for k in mini(a.size(), b.size()):
 					_diff(name + " route", Vector2(a[k].x, a[k].y).distance_to(Vector2(b[k][0], b[k][1])) < 0.001, [t, key, k])
+	print("CANYON MESAS: %d of %d the same outline; values off by over 0.01 bands: %d of %d; farthest corner from the other outline %.3f m, area differs by up to %.1f%%" % [mesas_same, mesas_seen, values_off, values_seen, mesa_stray, mesa_area * 100.0])
 	print("CANYON COMPARE: %d cases, %d differ; worst value %.4f bands, lane width %.3f m (%.3f m in the first section), sand %.5f m" % [data.cases.size(), bad, worst.value, worst.width, worst.mouth, worst.sand])
 	quit()

@@ -20,6 +20,17 @@ const PATH_HALF := 0.62      # the walked path, within the lane
 const KERB := 0.07           # the rock shoulder stands this much above the path
 const LANE_REACH := 2.8      # how far a lane looks for a wall to run up to
 const LANE_OPEN := 0.92      # its half width on a side with no wall, where the rock stands lower than it
+const MESA_HALF := 0.68      # the rock above the land: no part of it is narrower than twice this
+const MESA_BACK := 0.8       # and it stands this far back from the region's edge
+const MESA_RIM := 0.57       # and this far back from the canyon's rim, so it has a real ledge
+const MESA_GAP := 1.05       # and two mesas are at least this far apart, or join
+const MESA_LEAST := 3.5      # and no mesa is smaller than this, in square metres
+const MESA_TRUE := 0.15      # how far an outline may stray from the rock it was traced from
+const MESA_SIDE := 0.5       # its shortest side, so no wall is a thin strip
+const MESA_CORNER := 70.0    # its sharpest corner, in degrees
+const RIDGE_HALF := 0.25     # the bottom band: no part of it is narrower than twice this
+const LAND_HALF := 0.4       # the band level with the land: no part of its top is narrower than twice this
+const LEDGE := 0.12          # each band stands at least this far back from the one below
 const STOP := Vector2(0.1, 0.0)  # the Echo Cave's stop, in its frame: +X toward the edge it faces
 const SOIL_TOP := -0.15      # hexkit: tile sides, light band, then dark band
 const SOIL_BOTTOM := -0.6
@@ -321,14 +332,21 @@ class Field:
 	var y0: float
 	var nx: int
 	var ny: int
-	var dist: PackedFloat32Array
-	var north: PackedFloat32Array
+	var dist: PackedFloat64Array
+	var north: PackedFloat64Array
+	var ridge: PackedFloat64Array   # distance from the bottom band's line: positive inside
+	var land: PackedFloat64Array    # and from the band level with the land
+	var mesas: Array = []      # each one's outline, anticlockwise (PackedVector2Array)
+	var lane_segs: Array = []
+	var dropped: Array = []    # old mesas a new corridor reached
 	var before: Field = null   # a canyon that has grown: the field its unrebuilt tiles were made from
 	var kept := {}             # those tiles
 
 	## anchored: the grid sits on the world's, so a tile that grows the region west or south can't shift it (canyon.py starts
 	## it at the region's corner, which is what the compare tool checks). maze: the saved maze, in place of working one out.
-	func _init(tiles: Array, lm: Vector2i, t: int, anchored := false, maze := {}) -> void:
+	## old: a canyon that has grown: its field, whose mesas stay unless a new corridor reaches them; rebuilt: the tiles that get new
+	## ones. given: mesas already worked out, for a field only there to be compared with.
+	func _init(tiles: Array, lm: Vector2i, t: int, anchored := false, maze := {}, old: Field = null, rebuilt: Array = [], given = null) -> void:
 		for c: Vector2i in tiles:
 			region[c] = true
 		landmark = lm
@@ -347,6 +365,8 @@ class Field:
 					segs.append([at + line[k - 1], at + line[k]])
 		var c_lm := Hex.tile_position(lm.x, lm.y)   # the court before the Echo Cave
 		segs.append([c_lm + Water.turned(Vector2(-0.2, 1.05), t), c_lm + Water.turned(Vector2(-0.2, -1.05), t)])
+		# and back behind the cave's mouth and its carvings, so no rock stands in front of them
+		segs.append([c_lm + Water.turned(Vector2(-1.0, 1.1), t), c_lm + Water.turned(Vector2(-1.0, -1.1), t)])
 		x0 = lo.x - 5.0
 		y0 = lo.y - 5.0
 		if anchored:
@@ -361,7 +381,7 @@ class Field:
 			for bx in range(int((minf(a.x, b.x) - x0) / 3.0) - 1, int((maxf(a.x, b.x) - x0) / 3.0) + 2):
 				for by in range(int((minf(a.y, b.y) - y0) / 3.0) - 1, int((maxf(a.y, b.y) - y0) / 3.0) + 2):
 					near.get_or_add(Vector2i(bx, by), []).append(s)
-		dist = PackedFloat32Array()
+		dist = PackedFloat64Array()
 		dist.resize(nx * ny)
 		for ix in nx:
 			var x := x0 + ix * Canyon.CELL
@@ -376,7 +396,7 @@ class Field:
 						best = d
 				dist[ix * ny + iy] = best
 		# How far north to the next corridor: down each column from the north.
-		var raw := PackedFloat32Array()
+		var raw := PackedFloat64Array()
 		raw.resize(nx * ny)
 		for ix in nx:
 			var run := 9.0
@@ -385,7 +405,7 @@ class Field:
 				raw[ix * ny + iy] = run
 		# Eased across columns, so a corridor's bends don't leave thin fins of rock.
 		const SPREAD := 4
-		north = PackedFloat32Array()
+		north = PackedFloat64Array()
 		north.resize(nx * ny)
 		for ix in nx:
 			for iy in ny:
@@ -393,8 +413,282 @@ class Field:
 				for j in range(maxi(0, ix - SPREAD), mini(nx, ix + SPREAD + 1)):
 					least = minf(least, raw[j * ny + iy])
 				north[ix * ny + iy] = least * 0.5 + raw[ix * ny + iy] * 0.5
+		_rock_bodies()
+		if given != null:
+			mesas = given
+			return
+		mesas = _mesa_outlines()
+		if old != null:   # a mesa is its own solid on top of the land, so one going leaves nothing to rejoin
+			var stay := []
+			for m: PackedVector2Array in old.mesas:
+				var holds := true
+				for q in m:
+					if _bilinear(land, q.x, q.y) < Canyon.MESA_RIM - Canyon.MESA_TRUE:
+						holds = false
+						break
+				if holds:
+					stay.append(m)
+				else:
+					dropped.append(m)
+			var fresh := stay.duplicate()
+			for m: PackedVector2Array in mesas:
+				var fits := true
+				for q in m:
+					if not GroundCover.tile_at(q) in rebuilt:
+						fits = false
+						break
+				if fits:
+					for other: PackedVector2Array in stay:
+						if Canyon.outline_gap(m, other) < Canyon.MESA_GAP - 2.0 * Canyon.MESA_TRUE:
+							fits = false
+							break
+				if fits:
+					fresh.append(m)
+			mesas = fresh
 
-	func _bilinear(grid: PackedFloat32Array, x: float, y: float) -> float:
+	## How far each grid point is from the nearest set cell, in metres: two sweeps, near enough to a true distance.
+	func _reach(cells: PackedByteArray) -> PackedFloat64Array:
+		const FAR := 99.0
+		var side := Canyon.CELL
+		var slant := Canyon.CELL * sqrt(2.0)
+		var s := ny + 2   # a border of far cells, so no sweep needs a bounds check
+		var out := PackedFloat64Array()
+		out.resize((nx + 2) * s)
+		out.fill(FAR)
+		for ix in nx:
+			var at := (ix + 1) * s + 1
+			var from := ix * ny
+			for iy in ny:
+				if cells[from + iy] != 0:
+					out[at + iy] = 0.0
+		for at in range(s + 1, (nx + 1) * s - 1):
+			var v := out[at]
+			if v != 0.0:
+				v = minf(v, minf(out[at - 1] + side, minf(out[at - s] + side, minf(out[at - s - 1] + slant, out[at - s + 1] + slant))))
+				out[at] = v if v < FAR else FAR
+		for at in range((nx + 1) * s - 2, s, -1):
+			var v := out[at]
+			if v != 0.0:
+				v = minf(v, minf(out[at + 1] + side, minf(out[at + s] + side, minf(out[at + s + 1] + slant, out[at + s - 1] + slant))))
+				out[at] = v if v < FAR else FAR
+		var res := PackedFloat64Array()
+		res.resize(nx * ny)
+		for ix in nx:
+			var at := (ix + 1) * s + 1
+			var to := ix * ny
+			for iy in ny:
+				res[to + iy] = out[at + iy]
+		return res
+
+	static func _inverted(cells: PackedByteArray) -> PackedByteArray:
+		var out := PackedByteArray()
+		out.resize(cells.size())
+		for k in cells.size():
+			out[k] = 0 if cells[k] != 0 else 1
+		return out
+
+	## Keeps what a disc of radius half can reach while staying inside high. The distance from its outline: positive inside.
+	func _body(high: PackedByteArray, half: float) -> PackedFloat64Array:
+		var worn := _reach(_inverted(high))
+		var core := PackedByteArray()
+		core.resize(high.size())
+		for k in high.size():
+			core[k] = 1 if worn[k] > half else 0
+		var far := _reach(core)
+		var kept_cells := PackedByteArray()
+		kept_cells.resize(high.size())
+		for k in high.size():
+			kept_cells[k] = 1 if far[k] <= half and high[k] != 0 else 0
+		var inside := _reach(_inverted(kept_cells))
+		var outside := _reach(kept_cells)
+		var out := PackedFloat64Array()
+		out.resize(high.size())
+		for k in high.size():
+			out[k] = inside[k] - outside[k]
+		return out
+
+	## The two lower bands, as distances from their lines. Outside the region the rock runs on by its corridors, so the rim isn't
+	## worn away from that side and a way in stays open.
+	func _rock_bodies() -> void:
+		var r := PackedByteArray()
+		var l := PackedByteArray()
+		r.resize(nx * ny)
+		l.resize(nx * ny)
+		for ix in nx:
+			var x := x0 + ix * Canyon.CELL
+			for iy in ny:
+				var v := slope(x, y0 + iy * Canyon.CELL)
+				r[ix * ny + iy] = 1 if v >= 1.0 else 0
+				l[ix * ny + iy] = 1 if v >= Canyon.TOP_LEVEL else 0
+		ridge = _body(r, Canyon.RIDGE_HALF)
+		land = _body(l, Canyon.LAND_HALF)
+
+	func _grown(cells: PackedByteArray, by: float) -> PackedByteArray:
+		var far := _reach(cells)
+		var out := PackedByteArray()
+		out.resize(cells.size())
+		for k in cells.size():
+			out[k] = 1 if far[k] <= by else 0
+		return out
+
+	func _opened(cells: PackedByteArray, half: float) -> PackedByteArray:
+		var worn := _reach(_inverted(cells))
+		var core := PackedByteArray()
+		core.resize(cells.size())
+		for k in cells.size():
+			core[k] = 1 if worn[k] > half else 0
+		return _grown(core, half)
+
+	## The connected parts of a grid, each a list of its cells' indices.
+	func _parts(cells: PackedByteArray) -> Array:
+		var seen := PackedByteArray()
+		seen.resize(cells.size())
+		var out := []
+		for start in cells.size():
+			if cells[start] == 0 or seen[start] != 0:
+				continue
+			var part := PackedInt32Array()
+			var stack := PackedInt32Array([start])
+			seen[start] = 1
+			while not stack.is_empty():
+				var k: int = stack[-1]
+				stack.resize(stack.size() - 1)
+				part.append(k)
+				var iy := k % ny
+				for n in [k + ny, k - ny, k + 1 if iy < ny - 1 else -1, k - 1 if iy > 0 else -1]:
+					if n >= 0 and n < cells.size() and cells[n] != 0 and seen[n] == 0:
+						seen[n] = 1
+						stack.append(n)
+			out.append(part)
+		return out
+
+	## Could a mesa stand here: on the land, back from the rim and the region's edge, off the lanes and clear of the Echo Cave's
+	## cliff. Lumpy, so its sides aren't parallel to any of those.
+	func _mesa_room(x: float, y: float) -> bool:
+		if not region.has(GroundCover.tile_at(Vector2(x, y))):
+			return false
+		var lump := 0.15 + 0.1 * sin(x * 1.4 + 1.7 * sin(y * 0.9)) * sin(y * 1.2 + 0.5) + 0.25 * Canyon.wobble(x, y)   # 0 to 0.3: they only ever stand further back
+		if edge_margin(x, y) - lump < Canyon.MESA_BACK or _bilinear(land, x, y) - lump < Canyon.MESA_RIM:
+			return false
+		var at := Vector2(x, y)
+		for s in lane_segs:
+			if Canyon.seg_dist(at, s[0], s[1]) < 1.75:
+				return false
+		var q := Water.turned(at - Hex.tile_position(landmark.x, landmark.y), -turn)
+		return not (q.x > -3.3 and q.x < 0.2 and absf(q.y) < 2.6)
+
+	## Each mesa's outline, a few straight sides, anticlockwise. The disc comes after the lumps, so nothing narrows it afterwards.
+	func _mesa_outlines() -> Array:
+		for e: Vector3i in entrances:
+			var c := Hex.tile_position(e.x, e.y)
+			var line := Canyon.line_to_junction(Vector2i(e.x, e.y), e.z, landmark, turn)
+			for k in range(1, line.size()):
+				lane_segs.append([line[k - 1] + c, line[k] + c])
+		var size := nx * ny
+		var room := PackedByteArray()
+		var high := PackedByteArray()
+		room.resize(size)
+		high.resize(size)
+		for ix in nx:
+			var x := x0 + ix * Canyon.CELL
+			for iy in ny:
+				var y := y0 + iy * Canyon.CELL
+				if _bilinear(land, x, y) > 0.0 and _mesa_room(x, y):
+					room[ix * ny + iy] = 1
+					high[ix * ny + iy] = 1 if rock(x, y) >= Canyon.TOP_LEVEL + 1 else 0
+		var kept_cells := _opened(high, Canyon.MESA_HALF)
+		# a gap too narrow to read as a gap closes up, where there's room
+		var wide := _grown(kept_cells, Canyon.MESA_GAP / 2.0 + Canyon.CELL)
+		var shut := _reach(_inverted(wide))
+		var closed := PackedByteArray()
+		closed.resize(size)
+		for k in size:
+			closed[k] = 1 if (kept_cells[k] != 0 or (shut[k] > Canyon.MESA_GAP / 2.0 + Canyon.CELL and room[k] != 0)) and room[k] != 0 else 0
+		kept_cells = _opened(closed, Canyon.MESA_HALF)
+		# any that are still too close (no room to join): the smaller gives way
+		var parts := _parts(kept_cells)
+		var order := range(parts.size())
+		order.sort_custom(func(a, b): return parts[a].size() > parts[b].size() or (parts[a].size() == parts[b].size() and a < b))
+		var taken := PackedByteArray()
+		taken.resize(size)
+		var least_cells: float = Canyon.MESA_LEAST / (Canyon.CELL * Canyon.CELL)
+		for n in order.size():
+			var part: PackedInt32Array = parts[order[n]]
+			var left := PackedByteArray()
+			left.resize(size)
+			var clear := 0
+			if n > 0:
+				var near := _reach(taken)
+				for k in part:
+					if near[k] >= Canyon.MESA_GAP + 2.0 * Canyon.MESA_TRUE:
+						left[k] = 1
+						clear += 1
+			else:
+				for k in part:
+					left[k] = 1
+				clear = part.size()
+			var subs: Array = _parts(_opened(left, Canyon.MESA_HALF)) if clear < part.size() else [part]
+			for sub: PackedInt32Array in subs:
+				if sub.size() >= least_cells:
+					for k in sub:
+						if left[k] != 0:
+							taken[k] = 1
+		var out := []
+		for part: PackedInt32Array in _parts(taken):
+			out.append(Canyon.straighten(_trace(part)))
+		return out
+
+	## The outer outline of one part of the grid: points midway between its cells and the rest, anticlockwise.
+	func _trace(part: PackedInt32Array) -> PackedVector2Array:
+		var cells := {}
+		for k in part:
+			cells[k] = true
+		var follow := {}   # corners, in half cells
+		for k in part:
+			var a := k / ny
+			var b := k % ny
+			var c := 2 * a
+			var d := 2 * b
+			if not (b >= 0 and cells.has(k + ny)):
+				follow.get_or_add(Vector2i(c + 1, d - 1), []).append(Vector2i(c + 1, d + 1))
+			if not (b < ny - 1 and cells.has(k + 1)):
+				follow.get_or_add(Vector2i(c + 1, d + 1), []).append(Vector2i(c - 1, d + 1))
+			if not cells.has(k - ny):
+				follow.get_or_add(Vector2i(c - 1, d + 1), []).append(Vector2i(c - 1, d - 1))
+			if not (b > 0 and cells.has(k - 1)):
+				follow.get_or_add(Vector2i(c - 1, d - 1), []).append(Vector2i(c + 1, d - 1))
+		var best: Array = []
+		while not follow.is_empty():
+			var start: Vector2i = follow.keys().min()
+			var ring := [start]
+			var q: Vector2i = follow[start].pop_back()
+			if follow[start].is_empty():
+				follow.erase(start)
+			while q != start:
+				ring.append(q)
+				var nxt: Vector2i = follow[q].pop_back()
+				if follow[q].is_empty():
+					follow.erase(q)
+				q = nxt
+			if ring.size() > best.size():
+				best = ring
+		var out := PackedVector2Array()
+		for q: Vector2i in best:
+			out.append(Vector2(x0 + q.x * 0.5 * Canyon.CELL, y0 + q.y * 0.5 * Canyon.CELL))
+		return out
+
+	## How far (x, y) is inside a mesa, or 0.
+	func mesa_depth(x: float, y: float) -> float:
+		var p := Vector2(x, y)
+		for m: PackedVector2Array in mesas:
+			if Water.point_in(m, p):
+				var best := INF
+				for k in m.size():
+					best = minf(best, Canyon.seg_dist(p, m[k - 1], m[k]))
+				return best
+		return 0.0
+
+	func _bilinear(grid: PackedFloat64Array, x: float, y: float) -> float:
 		var fx := minf(maxf((x - x0) / Canyon.CELL, 0.0), nx - 1.001)
 		var fy := minf(maxf((y - y0) / Canyon.CELL, 0.0), ny - 1.001)
 		var ix := int(fx)
@@ -416,18 +710,144 @@ class Field:
 				best = minf(best, Water.A - p.dot(Water.normal(i)))
 		return best
 
-	func value(x: float, y: float) -> float:
+	## The rock's height in bands before its top is worked out.
+	func rock(x: float, y: float, tall := true) -> float:
 		var d := _bilinear(dist, x, y)
 		var v := (d - Canyon.HALF_WIDTH + Canyon.wobble(x, y)) / Canyon.STEP_OUT
-		var cap := _bilinear(north, x, y) * Canyon.CAP_SLOPE + 0.6
-		var tall: float = Canyon.TOP_LEVEL + 0.4 + (Canyon.MAX_LEVEL - Canyon.TOP_LEVEL - 0.4) * (0.5 + 0.5 * sin(x * 0.61 + 0.8) * sin(y * 0.73 - 0.4))
-		v = minf(v, minf(cap, tall))
+		v = minf(v, _bilinear(north, x, y) * Canyon.CAP_SLOPE + 0.6)
+		if not tall:
+			return v
+		return minf(v, Canyon.TOP_LEVEL + 0.7 + (Canyon.MAX_LEVEL - Canyon.TOP_LEVEL - 0.7) * (0.5 + 0.5 * sin(x * 0.61 + 0.8) * sin(y * 0.73 - 0.4)))
+
+	## The rock before its bands are worked out, not clamped at the floor or above the land. Negative in a corridor.
+	func slope(x: float, y: float) -> float:
+		var plain := (_bilinear(dist, x, y) - Canyon.HALF_WIDTH + Canyon.wobble(x, y)) / Canyon.STEP_OUT
+		if not region.has(GroundCover.tile_at(Vector2(x, y))):
+			return plain
+		var v := rock(x, y, false)
 		var margin := edge_margin(x, y)
-		if margin < 0.6:   # level with the land outside, along the region's edge
-			v = minf(v, Canyon.TOP_LEVEL + 0.001 + maxf(0.0, margin - 0.25))
-			if v > Canyon.TOP_LEVEL - 0.001 or d > Canyon.HALF_WIDTH + Canyon.STEP_OUT * Canyon.TOP_LEVEL:
-				v = maxf(v, Canyon.TOP_LEVEL + 0.001)
-		return maxf(0.0, v)
+		if margin < 0.6:   # easing to a plain slope with no cap along the region's edge, so a wall meets it with no jump
+			v = v + (plain - v) * (1.0 - margin / 0.6)
+		return v
+
+	func ridge_at(x: float, y: float) -> float:
+		return _bilinear(ridge, x, y)
+
+	## Positive where the rock reaches the land. It always stands back from the band below, so every ledge is real.
+	func land_at(x: float, y: float) -> float:
+		return minf(_bilinear(land, x, y), ridge_at(x, y) - Canyon.LEDGE)
+
+	## The land line at a point of a tile being rebuilt: along an edge shared with a tile that isn't, the line that tile was built with.
+	func seam_land(x: float, y: float) -> float:
+		if before != null:
+			var t := GroundCover.tile_at(Vector2(x, y))
+			var p := Vector2(x, y) - Hex.tile_position(t.x, t.y)
+			for i in 6:
+				if absf(p.dot(Water.normal(i)) - Water.A) < 0.002 and (kept.has(t) or kept.has(t + Hex.NEIGHBOURS[i])):
+					return before._bilinear(before.land, x, y)
+		return _bilinear(land, x, y)
+
+	## The rock's height in bands, as the mesh has it: 0 on the floor, 1 and 2 on its ledges, 3 up on a mesa.
+	func value(x: float, y: float) -> float:
+		var a := ridge_at(x, y)
+		if a <= 0.0:
+			return maxf(0.0, 1.0 + a * 5.0)
+		var b := land_at(x, y)
+		if b <= 0.0:
+			return 1.0 + minf(0.999, a * 5.0)
+		var d := mesa_depth(x, y)
+		return Canyon.TOP_LEVEL + 1.0 + minf(0.9, d * 1.5) if d > 0.0 else Canyon.TOP_LEVEL + minf(0.9, b * 5.0)
+
+
+## The least distance between two outlines' corners and sides.
+static func outline_gap(m: PackedVector2Array, o: PackedVector2Array) -> float:
+	var best := INF
+	for p in m:
+		for k in o.size():
+			best = minf(best, seg_dist(p, o[k - 1], o[k]))
+	for p in o:
+		for k in m.size():
+			best = minf(best, seg_dist(p, m[k - 1], m[k]))
+	return best
+
+
+## The farthest any corner of m is from outline o, and the other way (for the compare tool).
+static func outline_gap_most(m: PackedVector2Array, o: PackedVector2Array) -> float:
+	var most := 0.0
+	for pair in [[m, o], [o, m]]:
+		for p: Vector2 in pair[0]:
+			var best := INF
+			for k in pair[1].size():
+				best = minf(best, seg_dist(p, pair[1][k - 1], pair[1][k]))
+			most = maxf(most, best)
+	return most
+
+
+static func _split(a: Vector2, run: Array, b: Vector2) -> Array:
+	var worst := 0.0
+	var at := 0
+	for k in run.size():
+		var d := seg_dist(run[k], a, b)
+		if d >= worst:
+			worst = d
+			at = k
+	if worst <= MESA_TRUE:
+		return []
+	return _split(a, run.slice(0, at), run[at]) + [run[at]] + _split(run[at], run.slice(at + 1), b)
+
+
+static func _corner(pts: Array, k: int) -> float:
+	var a: Vector2 = pts[k - 1]
+	var b: Vector2 = pts[k]
+	var c: Vector2 = pts[(k + 1) % pts.size()]
+	var u := a - b
+	var v := c - b
+	var l := u.length() * v.length()
+	return rad_to_deg(acos(clampf(u.dot(v) / (l if l != 0.0 else 1.0), -1.0, 1.0)))
+
+
+static func _corner_area(pts: Array, k: int) -> float:
+	var a: Vector2 = pts[k - 1]
+	var b: Vector2 = pts[k]
+	var c: Vector2 = pts[(k + 1) % pts.size()]
+	return absf((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+
+
+## A traced outline as a few straight sides: within MESA_TRUE of the trace, with no side under MESA_SIDE and no corner sharper than MESA_CORNER.
+static func straighten(ring_in: PackedVector2Array) -> PackedVector2Array:
+	var ring := Array(ring_in)
+	var far := 0
+	var most := -1.0
+	for k in ring.size():
+		var d: float = ring[0].distance_to(ring[k])
+		if d > most:
+			most = d
+			far = k
+	var pts: Array = [ring[0]] + _split(ring[0], ring.slice(1, far), ring[far]) + [ring[far]] + _split(ring[far], ring.slice(far + 1), ring[0])
+	while pts.size() > 5:
+		var sharp := -1
+		var least := MESA_CORNER
+		for k in pts.size():
+			var c := _corner(pts, k)
+			if c < least:
+				least = c
+				sharp = k
+		if sharp >= 0:
+			pts.remove_at(sharp)
+			continue
+		var drop := -1
+		var small := INF
+		for k in pts.size():
+			if pts[k].distance_to(pts[(k + 1) % pts.size()]) < MESA_SIDE:
+				for j in [k, (k + 1) % pts.size()]:
+					var area := _corner_area(pts, j)
+					if area < small:
+						small = area
+						drop = j
+		if drop < 0:
+			break
+		pts.remove_at(drop)
+	return PackedVector2Array(pts)
 
 
 ## The part of a polygon of (x, y, v) at or above level, and the contour edge, if it crosses: [part, edge or []].
@@ -448,35 +868,84 @@ static func _clip(poly: Array, level: float) -> Array:
 	return [out, edge if edge.size() == 2 else []]
 
 
-## Cut one triangle of (x, y, v) by the bands: [flats, walls]. flats: [level, poly]. walls: [level, a, b].
-static func _terrace(tri: Array) -> Array:
-	var v0: float = tri[0].z
-	var v1: float = tri[1].z
-	var v2: float = tri[2].z
-	var lo := int(minf(v0, minf(v1, v2)))
-	var hi := int(maxf(v0, maxf(v1, v2)))
-	if lo == hi:
-		return [[[lo, tri]], []]
+## One band's cut of a polygon whose values are that band's distance from its line: adds the flat it leaves at level - 1 and
+## the wall, and returns the part above.
+static func _band_cut(poly_in: Array, level: int, flats: Array, walls: Array) -> Array:
+	var poly := []
+	var flipped := []
+	for q: Vector3 in poly_in:
+		var z := q.z if q.z != 0.0 else 1e-6   # exactly on the line would count as both sides
+		poly.append(Vector3(q.x, q.y, z))
+		flipped.append(Vector3(q.x, q.y, -z))
+	var low: Array = _clip(flipped, 0.0)[0]
+	var cut := _clip(poly, 0.0)
+	var high: Array = cut[0]
+	if low.size() >= 3:
+		flats.append([level - 1, low])
+	if not cut[1].is_empty() and high.size() >= 3:
+		var a: Vector3 = cut[1][0]
+		var b: Vector3 = cut[1][1]
+		var mid := Vector2.ZERO
+		for q: Vector3 in high:
+			mid += Vector2(q.x, q.y)
+		mid /= high.size()
+		var left := (b.x - a.x) * (mid.y - a.y) - (b.y - a.y) * (mid.x - a.x) > 0
+		walls.append([level, a, b] if left else [level, b, a])
+	return high
+
+
+## Cut one triangle of (x, y, ridge) by the two lower bands: [flats, walls]. flats: [level, poly] to lie at that level's height.
+## walls: [level, a, b], upright from level - 1 to level, with the higher rock on the left going from a to b. Each band is cut
+## only from the one below, so its walls always stand on a ledge.
+static func _terrace(tri: Array, field: Field) -> Array:
 	var flats := []
 	var walls := []
-	var above: Array = tri
-	for level in range(lo + 1, hi + 1):
-		var flipped := []
-		for q: Vector3 in above:
-			flipped.append(Vector3(q.x, q.y, -q.z))
-		var keep: Array = _clip(flipped, -level)[0]   # the part below this level
-		if keep.size() >= 3:
-			flats.append([level - 1, keep])
-		var cut := _clip(above, level)
-		if not cut[1].is_empty():
-			walls.append([level, cut[1][0], cut[1][1]])
-		above = cut[0]
+	var above := _band_cut(tri, 1, flats, walls)
 	if above.size() >= 3:
-		flats.append([hi, above])
+		var ring := []   # its own value for the ridge, so its wall below always has a ledge on top
+		for q: Vector3 in above:
+			ring.append(Vector3(q.x, q.y, minf(field.seam_land(q.x, q.y), q.z - LEDGE)))
+		var crossings := 0
+		for k in ring.size():
+			if (ring[k].z >= 0.0) != (ring[k - 1].z >= 0.0):
+				crossings += 1
+		# a line that crosses more than once in here is cut a triangle at a time, so every piece of it gets its wall
+		var pieces := [ring]
+		if crossings > 2:
+			pieces = []
+			for k in range(1, ring.size() - 1):
+				pieces.append([ring[0], ring[k], ring[k + 1]])
+		for piece in pieces:
+			var top := _band_cut(piece, TOP_LEVEL, flats, walls)
+			if top.size() >= 3:
+				flats.append([TOP_LEVEL, top])
 	return [flats, walls]
 
 
-## The tile's triangles of (x, y, v), world space, anticlockwise: each sixth is a grid between the middle and an edge,
+## One mesa, as one solid: its sides running down onto the land and a flat top.
+static func _mesa(p: Piece, m: PackedVector2Array, cols: Dictionary) -> void:
+	var z1 := level_z(TOP_LEVEL + 1)
+	var z0 := level_z(TOP_LEVEL) - 0.02
+	var side: Color = cols[BAND[TOP_LEVEL + 1]]
+	for k in m.size():
+		var a := m[k - 1]
+		var b := m[k]
+		p.poly([Vector3(a.x, a.y, z0), Vector3(b.x, b.y, z0), Vector3(b.x, b.y, z1), Vector3(a.x, a.y, z1)], side)
+	var top: Color = cols[FLAT[TOP_LEVEL + 1]]
+	for t in Gorge._ear_clip(m):
+		p.tri(Vector3(m[t[0]].x, m[t[0]].y, z1), Vector3(m[t[1]].x, m[t[1]].y, z1), Vector3(m[t[2]].x, m[t[2]].y, z1), top)
+
+
+## The tile whose mesh holds a mesa: the one under its middle, or under its first corner if its middle is off the region.
+static func _mesa_owner(m: PackedVector2Array, field: Field) -> Vector2i:
+	var mid := Vector2.ZERO
+	for q in m:
+		mid += q
+	var t := GroundCover.tile_at(mid / m.size())
+	return t if field.region.has(t) else GroundCover.tile_at(m[0])
+
+
+## The tile's triangles of (x, y, ridge), world space, anticlockwise: each sixth is a grid between the middle and an edge,
 ## on points its neighbours share. Returned flat: three Vector3 to a triangle.
 static func tile_grid(t: Vector2i, field: Field) -> Array:
 	var c := Hex.tile_position(t.x, t.y)
@@ -517,8 +986,8 @@ static func _seam_value(t: Vector2i, p: Vector2, field: Field) -> float:
 	if field.before != null:
 		for i in 6:
 			if field.kept.has(t + Hex.NEIGHBOURS[i]) and absf(p.dot(Water.normal(i)) - Water.A) < 0.001:
-				return field.before.value(c.x + p.x, c.y + p.y)
-	return field.value(c.x + p.x, c.y + p.y)
+				return field.before.ridge_at(c.x + p.x, c.y + p.y)
+	return field.ridge_at(c.x + p.x, c.y + p.y)
 
 
 ## Cross-sections of an entrance's lane, top to foot, world space: [x, y, z, nx, ny, left, right], with (nx, ny) pointing
@@ -643,20 +1112,26 @@ static func _reach(field: Field, others: Array, p: Vector3, n: Vector2, sign: fl
 static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: float, grown := {}) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	var field: Field
+	var rebuilt: Array = [] if grown.is_empty() else grown.grow.rebuild.duplicate()
 	if grown.is_empty():
 		field = Field.new(tiles, landmark, turn, true)
 	else:
-		field = Field.new(tiles, landmark, turn, true, {openset = grown.grow.openset, entrances = grown.grow.entrances})
-		field.before = Field.new(grown.tiles, landmark, turn, true, {openset = grown.openset, entrances = grown.entrances})
+		var old := Field.new(grown.tiles, landmark, turn, true, {openset = grown.openset, entrances = grown.entrances}, null, [], grown.mesas)
+		field = Field.new(tiles, landmark, turn, true, {openset = grown.grow.openset, entrances = grown.grow.entrances}, old, grown.grow.rebuild)
+		field.before = old
+		for m: PackedVector2Array in field.dropped:   # the tile holding a mesa that's gone has to be rebuilt without it
+			var owner := _mesa_owner(m, old)
+			if not owner in rebuilt:
+				rebuilt.append(owner)
 		for t: Vector2i in tiles:
-			if not t in grown.grow.rebuild:
+			if not t in rebuilt:
 				field.kept[t] = true
 	var t1 := Time.get_ticks_usec()
 	var rng := PyRandom.new(seed_value)
 	var cols := {}
 	for key: String in Hex.PALETTE:
 		cols[key] = Color.html(Hex.PALETTE[key])
-	var ordered: Array = tiles.duplicate() if grown.is_empty() else grown.grow.rebuild.duplicate()
+	var ordered: Array = tiles.duplicate() if grown.is_empty() else rebuilt.duplicate()
 	ordered.sort()
 	var pieces := {}
 	for t: Vector2i in ordered:
@@ -670,6 +1145,10 @@ static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: fl
 	for t: Vector2i in ordered:
 		_rock(pieces[t], t, field, mouths, cols)
 		_skirts(pieces[t], t, field, cols)
+	for m: PackedVector2Array in field.mesas:   # each one solid, in one tile's mesh. A kept tile's mesh still has its own
+		var owner := _mesa_owner(m, field)
+		if pieces.has(owner):
+			_mesa(pieces[owner], m, cols)
 	var ramp_segs := []
 	for e: Vector3i in field.entrances:
 		var t := Vector2i(e.x, e.y)
@@ -686,20 +1165,20 @@ static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: fl
 		var c := Hex.tile_position(t.x, t.y)
 		for k in 6:
 			var w := c + Water.corner(k) * 0.72
-			if GroundCover.hash01(int(w.x * 3), int(w.y * 3), 79) < 0.35 and field.value(w.x, w.y) >= TOP_LEVEL + 1:
+			if GroundCover.hash01(int(w.x * 3), int(w.y * 3), 79) < 0.35 and field.value(w.x, w.y) >= TOP_LEVEL + 1.7:   # well inside a mesa
 				_crag(pieces[t], rng, Vector3(w.x, w.y, level_z(int(field.value(w.x, w.y)))), 0.32, 0.55, cols)
 	var triangles := 0
 	var per_tile := {}
 	for t: Vector2i in pieces:
 		per_tile[t] = pieces[t].triangles
 		triangles += pieces[t].triangles
-	return {openset = field.openset, entrances = field.entrances, landmark = landmark, turn = turn, tiles = tiles.duplicate(), pieces = pieces,
+	return {openset = field.openset, entrances = field.entrances, landmark = landmark, turn = turn, tiles = tiles.duplicate(), pieces = pieces, mesas = field.mesas,
 		triangles = triangles, per_tile = per_tile, field_ms = (t1 - t0) / 1000.0, mesh_ms = (Time.get_ticks_usec() - t1) / 1000.0}
 
 
 static func _rock(p: Piece, t: Vector2i, field: Field, mouths: PackedVector2Array, cols: Dictionary) -> void:
 	for tri in tile_grid(t, field):
-		var cut := _terrace(tri)
+		var cut := _terrace(tri, field)
 		for fl in cut[0]:
 			var poly: Array = fl[1]
 			if poly.size() < 3:
@@ -725,18 +1204,7 @@ static func _rock(p: Piece, t: Vector2i, field: Field, mouths: PackedVector2Arra
 			var b: Vector3 = wall[2]
 			var z1 := level_z(level)
 			var z0 := level_z(level - 1)
-			# The wall looks toward the lower side. Engine change: canyon.py tests the field beside the wall's middle, and the
-			# render shows both sides of a face. Here a face seen from behind is culled, and that test can be wrong along the
-			# triangle's own straight contour, so the triangle's highest corner says which side the rock is.
 			var m := Vector2((a.x + b.x) / 2.0, (a.y + b.y) / 2.0)
-			var top: Vector3 = tri[0]
-			for q: Vector3 in tri:
-				if q.z > top.z:
-					top = q
-			if (b.x - a.x) * (top.y - a.y) - (b.y - a.y) * (top.x - a.x) < 0.0:   # (b - a) x z looks right: rock on the left
-				var keep := a
-				a = b
-				b = keep
 			# Where a lane meets the land, the short walls beside it are in the land's colour, so they don't stand out against it.
 			var by_mouth := false
 			if level == TOP_LEVEL:
