@@ -4,13 +4,13 @@ No raised ground or stairs: the ways-up decision is still open.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_village_maps.py
 Pass names after -- to render only those maps, --check to run the checks without rendering, --sheets to redo the sheets from
-the newest renders, --close for close views, --kit for the props laid out, --wall for the wall-top trial, and --export for art/combat/combat_maps_village_vN.blend and
+the newest renders, --close for close views, --corner for a house corner beside a mini, --kit for the props laid out, --wall for the wall-top trial, and --export for art/combat/combat_maps_village_vN.blend and
 art/export/combat_maps_village.json. Uses the latest combat_village, enemy_minis, humanoid_minis and standin_minis.
 Writes art/preview/village_map_<map>_vN.png and the sheets village_maps_<variant>_vN.png, village_maps_all_vN.png.
 
 Letters as in render_forest_maps.py (. , c T O R and the minis). c is walkable garden, plot or lawn, n a street, also the paved part of a square, g an open gate in a fence,
 L a fence, town wall, patched fence or hedge (any line). Per variant:
-  village         P Y cottage (3, its kind picked in turn)   D cottages in a row (3)   T tree   N well   J goods   Q cart   I washing line
+  village         P Y cottage (2 touching on the slant, its kind picked in turn)   1 small cottage (1, its kind picked in turn)   D cottages in a row (3)   T tree   N well   J goods   Q cart   I washing line
   market_town     P townhouse (3)   D townhouses in a row (3)   Y stall   I stalls in a row (3)   J goods   N well
   fortified_town  P stone house (3)   D smithy (3)   N wall tower   Y supply wagon   J stores   I spear racks
   slums           P shack (3)   D shacks in a row (3)   T scraggly tree   J junk   N crates and a red lantern   I washing line
@@ -50,13 +50,13 @@ MAPS = {
  . . . . 
 P . x . T
  P . . P 
-P . . . P
- . . , P 
+1 . . . P
+ . . , 1 
 . . N . .
  , . . . 
 P . . . J
  P . . T 
-P . h . .
+1 . h . .
  s . k . 
   . . .  
    . T   
@@ -80,12 +80,12 @@ T . g . , T . L L .
  . . x . . . 
 P Y P . . c c
  P Y P . c c 
-P Y P . . c c
+1 1 1 . . c c
  . . . Q . N 
 J . . . . . .
  c c P Y P . 
 c c . P Y P .
- c I P Y P J 
+ c I 1 1 1 J 
 . . . . . . .
  . h k s . . 
 T . . . . . T
@@ -95,7 +95,7 @@ T . . . . . T
  v . w . 
 P . n . P
  P . . P 
-P . n . P
+1 . n . 1
  . . x . 
 . T n . .
  . . . J 
@@ -103,7 +103,7 @@ N . n . T
  . . . . 
 P . n . P
  P . . P 
-P . n . P
+1 . n . 1
  . . . . 
 . . n s .
  k h . . 
@@ -501,11 +501,12 @@ def build_map(t, col, name):
     fm.fit = fit
     gates(col, v, cells)
     if v == "village":  # no two cottages alike side by side: each map walks through the kit's kinds in turn
-        kinds = ["cottage_3", "cottage_3_thatch", "cottage_3_lean", "cottage_3_tall", "cottage_3_small"]
-        houses = sorted((o for o in col.objects if o.get("piece", "") in ("ob_village_cottage_3", "ob_village_cottage_3b")), key=lambda o: (-round(o.location.y), o.location.x))
-        for k, o in enumerate(houses):
-            name = f"ob_village_{kinds[k % len(kinds)]}"
-            o.data, o["piece"] = t[name].data, name
+        for kinds in (["cottage_2", "cottage_2_thatch", "cottage_2_lean", "cottage_2_tall"], ["cottage_1", "cottage_1_thatch"]):
+            names = {f"ob_village_{k}" for k in kinds}
+            houses = sorted((o for o in col.objects if o.get("piece") in names), key=lambda o: (-round(o.location.y), o.location.x))
+            for k, o in enumerate(houses):
+                piece = f"ob_village_{kinds[k % len(kinds)]}"
+                o.data, o["piece"] = t[piece].data, piece
     return cells
 
 
@@ -547,6 +548,16 @@ if __name__ == "__main__":
         sys.exit()
     if "--wall" in args:
         wall_walk()
+        sys.exit()
+    if "--corner" in args:  # a house's corner with a mini on the next cell
+        hk.empty_scene()
+        col = hk.new_collection("map")
+        t = templates()
+        cells = build_map(t, col, "village_green")
+        fm.place_minis(t, col, MAPS["village_green"], cells)
+        at = next(hk.cell_position(*c) for c, mark in cells.items() if mark == "s")
+        rp.stage(at + Vector((0, 0.6, 0.4)), 7.5, fm.PITCH)
+        rp.render("village_house_corner")
         sys.exit()
     if "--close" in args:
         shots = []

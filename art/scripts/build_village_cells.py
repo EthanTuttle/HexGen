@@ -83,6 +83,7 @@ FIT_LONG, FIT_DEEP, FIT_X = 1.45, 0.9, 0.165
 # A building on one cell: a near-square that fits inside the hexagon.
 ONE_WIDE, ONE_DEEP = 0.72, 0.72
 ROW_SPIN = math.radians(-120)  # a row's houses face south when the row runs north to south
+PAIR_SPIN = math.radians(-30)  # a house on two cells lies along them
 
 
 def building(p, rng, make, eaves=(0.12, 0.16), tall=1.5):
@@ -136,18 +137,46 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
             quad(x, 0.0, 0.08, 0.45, 0.69, "window_glow", 0.012, end=True)
 
 
-def cottage_like(**kw):
-    """A cottage on three cells: kw sets its size, inside the fit, and what fitted_cottage varies. shift moves it along its cells, lean adds a low shed on its east end."""
-    wide, deep = kw.pop("wide", FIT_LONG - 0.12), kw.pop("deep", FIT_DEEP - 0.1)
-    lean = kw.pop("lean", False)
+FOOTING = 0.07  # how high a house's foundation stands
+
+
+def footing(p, cells, h):
+    """A stone foundation over exactly these cells, its edge on the cells' own outline, so the blocked cells read as one shape."""
+    corners = fc.cell_loop(cells)
+    inset = hk.CELL_FLATS / 2 * (1 - fc.GAP)
+    outline = []
+    for k, q in enumerate(corners):
+        a, b = (q - corners[k - 1]).normalized(), (corners[(k + 1) % len(corners)] - q).normalized()
+        left_a, left_b = Vector((-a.y, a.x, 0)), Vector((-b.y, b.x, 0))
+        outline.append(q + (left_a + left_b) * (inset / (1 + left_a.dot(left_b))))
+    p.prism(outline, 0.0, h, "rock", side_mat="rock_dark")
+
+
+def on_footing(p, cells, make):
+    """A house on its foundation: whatever make adds stands on top of the stone."""
+    footing(p, cells, FOOTING)
+    n = len(p.bm.verts)
+    make()
+    for v in list(p.bm.verts)[n:]:
+        v.co.z += FOOTING
+
+
+def cottage_on(cells, wide, deep, spin=0.0, lean=False, **kw):
+    """A cottage on these cells, on their foundation, turned to lie along them. wide and deep are its walls: wide along its cells, and deep inside the narrow waist where two cells meet.
+    The rest is what fitted_cottage varies. lean swaps the far end of its length for a low shed."""
 
     def make(p, rng):
-        at = pc.mean(TRIANGLE) + Vector((FIT_X, 0, 0))
-        fitted_cottage(p, rng, at - Vector((0.17 if lean else 0, 0, 0)), wide - (0.34 if lean else 0), deep, 0.0, **kw)
-        if lean:
-            q = at + Vector((wide / 2 - 0.16, 0, 0))
-            p.box(q, (0.32, deep - 0.14, 0.62), "boards")
-            p.box_rot(q + Vector((0, 0, 0.7)), (0.46, deep - 0.04, 0.05), "roof_brown", Matrix.Rotation(0.32, 3, "Y"))
+        def house():
+            at = pc.mean(cells)
+            along = Vector((math.cos(spin), math.sin(spin), 0))
+            if not lean:
+                fitted_cottage(p, rng, at, wide, deep, spin, **kw)
+                return
+            fitted_cottage(p, rng, at - along * 0.17, wide - 0.34, deep, spin, **kw)
+            q = at + along * (wide / 2 - 0.16)
+            p.box(q, (0.32, deep - 0.08, 0.58), "boards", spin=spin)
+            p.box_rot(q + Vector((0, 0, 0.64)), (0.42, deep + 0.02, 0.05), "roof_brown", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.32, 3, "Y"))
+        on_footing(p, cells, house)
     return make
 
 
@@ -251,15 +280,15 @@ def fount(p, rng):
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_village_maps.py reads this.
 KIT = {
     "village": {
-        "P": ("cottage_3", TRIANGLE, lambda p, r: building(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
-        "Y": ("cottage_3b", TRIANGLE, lambda p, r: building(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
-        "1": ("cottage_3_thatch", TRIANGLE, cottage_like(wide=1.2, deep=0.78, h=0.82, pitch=0.78, roof="thatch")),
-        "2": ("cottage_3_tall", TRIANGLE, cottage_like(wide=1.15, deep=0.76, h=1.42, pitch=0.6, roof="roof_brown", wall="wall", chimney=True, upstairs=True)),
-        "3": ("cottage_3_lean", TRIANGLE, cottage_like(lean=True, roof="roof", wall="wall_warm", chimney=True)),
-        "4": ("cottage_3_small", TRIANGLE, cottage_like(wide=0.98, deep=0.72, h=0.78, pitch=0.5, roof="roof_brown", wall="wall_warm")),
+        "P": ("cottage_2", LINE2, cottage_on(LINE2, 1.32, 0.48, PAIR_SPIN, pitch=0.5, roof="roof", wall="wall")),
+        "Y": ("cottage_2_thatch", LINE2, cottage_on(LINE2, 1.2, 0.48, PAIR_SPIN, h=0.82, pitch=0.66, roof="thatch", wall="wall_warm")),
+        "2": ("cottage_2_tall", LINE2, cottage_on(LINE2, 1.2, 0.48, PAIR_SPIN, h=1.42, pitch=0.5, roof="roof_brown", wall="wall", chimney=True, upstairs=True)),
+        "3": ("cottage_2_lean", LINE2, cottage_on(LINE2, 1.34, 0.48, PAIR_SPIN, lean=True, pitch=0.5, roof="roof", wall="wall_warm", chimney=True)),
+        "1": ("cottage_1", SINGLE, cottage_on(SINGLE, 0.56, 0.56, PAIR_SPIN, h=0.78, pitch=0.46, roof="roof_brown", wall="wall_warm")),
+        "4": ("cottage_1_thatch", SINGLE, cottage_on(SINGLE, 0.56, 0.56, -PAIR_SPIN, h=0.74, pitch=0.6, roof="thatch", wall="wall")),
         "Q": ("cart", SINGLE, lambda p, r: grown(p, 1.3, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="thatch"))),
         "I": ("washing", SINGLE, washing),
-        "D": ("cottages_row", LINE3, lambda p, r: house_row(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
+        "D": ("cottages_row", LINE3, lambda p, r: on_footing(p, LINE3, lambda: house_row(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0))),
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
         "N": ("well", SINGLE, well),
         "J": ("goods", SINGLE, goods),
@@ -300,6 +329,15 @@ KIT = {
 }
 
 
+def check_inside(obj, cells):
+    """Nothing of a house, eaves included, reaches past the cells it blocks."""
+    centres = fc.centres(cells)
+    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
+    for v in obj.data.vertices:
+        q = Vector((v.co.x, v.co.y, 0))
+        assert any(all(abs((q - c).dot(n)) <= hk.CELL_FLATS / 2 + 0.002 for n in normals) for c in centres), f"{obj.name} reaches past its cells at {v.co}"
+
+
 def build():
     hk.empty_scene()
     col = hk.new_collection("village")
@@ -323,6 +361,9 @@ def build():
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
+    for mark, (kind, cells, _) in KIT["village"].items():
+        if kind.startswith("cottage"):
+            check_inside(bpy.data.objects[f"ob_village_{kind}"], cells)
     for o in sorted(col.objects, key=lambda o: o.name):
         o.data.calc_loop_triangles()
         print("TRIS", o.name, len(o.data.loop_triangles))
