@@ -123,17 +123,17 @@ P . n 8 n n n E . 6
     "market_town_aisles": {"size": "big square", "idea": "Two long rows of stalls across the map, with crates and carts closing the gaps, one row open at its east end and one at its west. Long runs along them, and a way across only at the end of each row.", "foes": BANDITS, "plan": """
 . . . w . v .
  . . . . x . 
-Y 8 E Y 8 . .
- J U Q J . . 
+Y 8 E Y . . .
+ J U Q . . . 
 . . . . . . .
  . , . . , . 
 . . . . . . .
  . E Y 8 E Y 
 . . J U J J J
  . . . . . . 
-. . . N . . .
- . h . k s . 
 . . . . . . .
+ . h . k s . 
+N . . . . . .
 """},
     "market_town_row": {"size": "small hex", "idea": "Townhouses pressing in on a tight little market. Two pinch points and little room to stand off.", "foes": BANDITS, "plan": """
    .   
@@ -144,8 +144,8 @@ P . . 5
 P . . 5
  . Y . 
 6 . . P
- 6 U P 
-6 . . P
+ 6 . P 
+6 . U P
  . h . 
   k s  
    .   
@@ -519,6 +519,9 @@ def build_map(t, col, name):
                 assert "cross" not in kind or abs(o.rotation_euler.z) < 0.1, f"{name}: {kind} turned away"
                 piece = f"ob_village_{kind}"
                 o.data, o["piece"] = t[piece].data, piece
+    if v == "market_town":
+        for (q, r), mark in cells.items():
+            assert mark not in "Y8E" or cells.get((q, r + 1), ".") in fm.WALKABLE, f"{name}: something stands in front of the stall at {(q, r)}"
     if v in HOUSE_MARKS:
         houses = {c for c, mark in cells.items() if mark in HOUSE_MARKS[v]}
         for c, mark in cells.items():
