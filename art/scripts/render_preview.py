@@ -292,6 +292,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             dist.update(d)
             toward.update(t)
             turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
+            if lm == "sandstonesphinx":
+                turns[lm_at] = sand.sphinx_turn(lm_at, region)
     # Fence gates round farm and village groups (fence_gates.py).
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
@@ -990,6 +992,18 @@ if __name__ == "__main__":
         draw_effects(bpy.data.collections["map"], templates, thin=True)
         stage(Vector((0.5, -0.8, 0)), 54, 50)
         shot("desert_t0_map")
+        # The Sphinx in the middle of its region, ruins thickening round it from all sides.
+        for stem, region in (("desert_centre_7_map", [(0, 0)] + [(dq, dr) for dq, dr in hk.NEIGHBOURS]),
+                             ("desert_centre_12_map", [(0, 0)] + [(dq, dr) for dq, dr in hk.NEIGHBOURS] + [(1, 1), (2, -1), (1, -2), (-1, 2), (-2, 1)])):
+            if flags.get("only") and stem not in flags["only"].split(","):
+                continue
+            around_ = {t: "plains" for b_ in region for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in region}
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles={**around_, **{t: "wasteland" for t in region}, (0, 0): "sandstonesphinx"})
+            draw_effects(bpy.data.collections["map"], templates, thin=True)
+            stage(Vector((0, -0.5, 1.0)), 54 if len(region) == 7 else 66, 50)
+            render(stem)
         wide = {t: "plains" for b_ in DENSITY_REGION for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in DENSITY_REGION}
         wide.update({t: "river" for t in ((2, -1), (2, 0)) if t in wide})
         waste = {**wide, **{t: "wasteland" for t in DENSITY_REGION}, LANDMARK_AT: "sandstonesphinx"}
@@ -1003,13 +1017,13 @@ if __name__ == "__main__":
         spin_cam(DENSITY_VIEW, 74, math.radians(150))
         shot("desert_waste_turned")
         d_, to_ = lf.flow(set(DENSITY_REGION), LANDMARK_AT)
-        t_ = lf.turn(LANDMARK_AT, d_, to_)
+        t_ = sand.sphinx_turn(LANDMARK_AT, set(DENSITY_REGION))
         at = hk.tile_position(*LANDMARK_AT)
         a_ = math.radians(60 * t_)
-        for stem, ang, far, el in (("desert_sphinx_closeup", a_ + 0.55, 15, 30), ("desert_sphinx_closeup_b", a_ + 2.4, 15, 42), ("desert_sphinx_default", -math.pi / 2, 16, 42)):
+        for stem, ang, far, el, lift in (("desert_sphinx_closeup", a_ + 0.55, 19, 28, 2.3), ("desert_sphinx_closeup_b", a_ + 2.4, 19, 40, 2.0), ("desert_sphinx_default", -math.pi / 2, 20, 42, 2.0), ("desert_sphinx_face", a_ + 0.25, 9, 12, 4.2)):
             el = math.radians(el)
             cam = bpy.context.scene.camera
-            cam.location = at + Vector((far * math.cos(el) * math.cos(ang), far * math.cos(el) * math.sin(ang), 1.5 + far * math.sin(el)))
+            cam.location = at + Vector((far * math.cos(el) * math.cos(ang), far * math.cos(el) * math.sin(ang), lift + far * math.sin(el)))
             cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
             shot(stem)
         terrains_ = dict(waste)

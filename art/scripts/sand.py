@@ -28,8 +28,8 @@ FADE = (0.3, 2.8)          # flat within 0.3 m of a non-desert edge, full height
 ND, NV = 14, 16            # grid samples across one sixth of a tile: depth, side to side (swells are 6.5 m long)
 PROP_CELL = 1.4
 LOOKS = {"desert": "desert", "wasteland": "wasteland", "sandstonesphinx": "wasteland"}  # the desert terrain, its variants and landmarks -> whose sand
-DUNE_H = 1.5  # the Sphinx's dune, at its crest
-SPHINX_STOP = (2.95, 0.0)  # where the party stops, facing the altar, on the piece's +X
+DUNE_H = 1.75  # the Sphinx's dune, at its crest
+SPHINX_STOP = (3.1, 0.0)  # where the party stops, facing the altar, on the piece's +X
 PROP_R = {"cactus": 0.35, "rock": 0.3, "bush": 0.25, "cracked": 0.0, "column": 1.1, "wall": 1.15, "statue": 1.2, "bones": 0.7, "deadtree": 0.45}  # how far a prop reaches from its point
 
 
@@ -99,7 +99,7 @@ def smooth(t):
 
 def rim(p):
     """1 in the middle of a tile, 0 at its edges: how much of a landmark's dune stands here. p is tile-local."""
-    return smooth((3.8 - max(wt.dot(p, wt.normal(i)) for i in range(6))) / 2.4)
+    return smooth((3.85 - wt.length(p)) / 2.4)  # round, so the dune has no creases
 
 
 def dune(p):
@@ -118,9 +118,18 @@ def surface_z(terrains, q, r, x, y, turn=0):
     return swell * (1 - rim(p)) + dune(wt.turned(p, -turn))
 
 
+def sphinx_turn(tile, region):
+    """How many 60 degree steps to turn the Sphinx: it faces a tile of its region, the one nearest the default map camera, so its face shows. The wasteland has no
+    trails to line up with, so this replaces landmark_flow.turn here."""
+    for k in (5, 4, 0, 3, 1, 2):
+        if (tile[0] + gc.NEIGHBOURS[k][0], tile[1] + gc.NEIGHBOURS[k][1]) in region:
+            return k
+    return 5
+
+
 def sphinx_routes(t):
     """routes[i] for all six edges, in the tile's frame, for the Sphinx turned t steps: from the edge's midpoint round the dune to SPHINX_STOP."""
-    ways = {0: [], 1: [], 2: [(0.7, 3.05), (2.15, 1.55)], 3: [(-3.45, 1.9), (-2.1, 3.0), (0.7, 3.05), (2.15, 1.55)]}
+    ways = {0: [], 1: [], 2: [(0.7, 3.05), (2.35, 1.75), (3.05, 0.85)], 3: [(-3.6, 1.7), (-2.1, 3.1), (0.7, 3.05), (2.35, 1.75), (3.05, 0.85)]}
     out = {}
     for k in range(6):
         sd = 1 if k <= 3 else -1

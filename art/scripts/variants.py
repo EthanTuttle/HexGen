@@ -4320,37 +4320,38 @@ def sandstone_sphinx(p, rng, kind):
     """Dunes/wasteland's Sandstone Sphinx: a huge statue facing +X with its back half under a dune (sand.dune, shaped with the sand), its face worn and its nose gone, with
     a small offering altar at its paws. The party stops before the altar (sand.sphinx_routes)."""
     courses = ("sphinx", "sphinx_dark", "sphinx", "sphinx_dark", "sphinx")
-    loft(p, [sphinx_ring(rng, x, w, h) for x, w, h in ((-2.3, 0.6, 0.7), (-1.7, 1.08, 1.75), (-1.0, 1.15, 1.9), (-0.3, 1.1, 2.05), (0.3, 0.98, 1.72), (0.72, 0.5, 0.85))], courses)
+    loft(p, [sphinx_ring(rng, x, w, h) for x, w, h in ((-2.5, 0.7, 0.9), (-1.9, 1.35, 2.3), (-1.1, 1.45, 2.55), (-0.3, 1.4, 2.8), (0.45, 1.25, 2.35), (1.0, 0.62, 1.1))], courses)
     for sd in (-1, 1):
         # a foreleg stretched out along the ground, then its paw with blunt toes
-        y = sd * 0.66
-        loft(p, [[Vector((x, y + sy * w, z)) for sy, z in ((-1, -0.3), (-1, h * 0.8), (-0.55, h), (0.55, h), (1, h * 0.8), (1, -0.3))] for x, w, h in ((-0.1, 0.38, 1.05), (0.6, 0.35, 0.68), (1.2, 0.34, 0.5))], ("sphinx_dark", "sphinx"))
-        p.box(Vector((1.38, y, 0)), (0.42, 0.74, 0.44), "sphinx_light", z=-0.1)
+        y = sd * 0.85
+        loft(p, [[Vector((x, y + sy * w, z)) for sy, z in ((-1, -0.3), (-1, h * 0.8), (-0.55, h), (0.55, h), (1, h * 0.8), (1, -0.3))] for x, w, h in ((0.0, 0.46, 1.35), (0.75, 0.43, 0.85), (1.35, 0.42, 0.62))], ("sphinx_dark", "sphinx"))
+        p.box(Vector((1.53, y, 0)), (0.42, 0.9, 0.54), "sphinx", z=-0.1)
         for k in (-1, 0, 1):
-            p.box(Vector((1.64, y + k * 0.24, 0)), (0.2, 0.2, 0.28), "sphinx", z=-0.05, spin=rng.uniform(-0.1, 0.1))
-    # the neck, then the headcloth: a low crown, wide wings beside the jaw, one of them broken away
-    frustum(p, Vector((-0.3, 0, 1.6)), Vector((0.05, 0, 2.75)), 0.86, 0.5, "sphinx_dark", segments=8)
+            p.box(Vector((1.82, y + k * 0.29, 0)), (0.2, 0.25, 0.34), "sphinx_dark", z=-0.05, spin=rng.uniform(-0.1, 0.1))
+    # the neck, then the headcloth: a high crown, wide wings beside the jaw, one of them broken away
+    frustum(p, Vector((-0.1, 0, 2.2)), Vector((0.35, 0, 3.75)), 1.05, 0.8, "sphinx_dark", segments=8)
+    head = 0.35
     cloth = []
-    for z, wl, wr, back, front in ((2.5, 0.6, 0.45, -0.5, 0.28), (2.78, 0.98, 0.62, -0.52, 0.42), (3.02, 0.9, 0.78, -0.5, 0.5), (3.3, 0.66, 0.66, -0.44, 0.54), (3.62, 0.54, 0.54, -0.34, 0.54), (3.92, 0.42, 0.42, -0.22, 0.46), (4.1, 0.26, 0.26, -0.1, 0.3)):
-        cloth.append([Vector((x, y * (wl if y < 0 else wr), z)) for x, y in ((back, -1), (back, 1), (front, 1), (front, -1))])
+    for z, wl, wr, back, front in ((3.3, 0.75, 0.6, -0.55, 0.45), (3.75, 1.38, 0.85, -0.62, 0.55), (4.15, 1.28, 1.1, -0.6, 0.6), (4.55, 0.95, 0.95, -0.52, 0.62), (4.95, 0.78, 0.78, -0.42, 0.62), (5.35, 0.6, 0.6, -0.28, 0.55), (5.6, 0.36, 0.36, -0.1, 0.34)):
+        cloth.append([Vector((head + x, y * (wl if y < 0 else wr), z)) for x, y in ((back, -1), (back, 1), (front, 1), (front, -1))])
     loft(p, cloth, ("sphinx_light", "sphinx", "sphinx_light", "sphinx", "sphinx_light", "sphinx"))
-    for sd, top in ((-1, 2.6), (1, 2.38)):  # the lappets on the chest, either side of the jaw
-        loft(p, [[Vector((x + dx, sd * y + dy, z)) for dy, dx in ((-0.13, 0), (0.13, 0), (0.13, 0.16), (-0.13, 0.16))] for x, y, z in ((0.5, 0.5, top), (0.62, 0.48, 2.0), (0.7, 0.46, 1.55))], ("sphinx_light", "sphinx"))
-    # the face: a wedge coming forward of the cloth, broad at the brow, narrow at the chin
+    for sd, low in ((-1, 2.35), (1, 2.85)):  # the lappets on the chest, from under the wings, one broken short
+        loft(p, [[Vector((x + dx, sd * 0.66 + dy, z)) for dy, dx in ((-0.16, 0), (0.16, 0), (0.16, 0.18), (-0.16, 0.18))] for x, z in ((0.82, 3.8), (0.8, 3.3), (0.78, 2.9), (0.72 + 0.1 * (low - 2.35), low))], ("sphinx_light", "sphinx", "sphinx_light"))
+    # the face: long and level, forward of the cloth, with a ridge down its middle so its planes catch the light; a heavy brow, and the nose broken off short
     face = []
-    for x, w, z0, z1 in ((0.4, 0.42, 2.5, 3.42), (0.68, 0.4, 2.46, 3.4), (0.88, 0.33, 2.56, 3.3), (0.98, 0.2, 2.68, 3.16)):
-        face.append([Vector((x, y * w, z0 if b else z1)) for y, b in ((-1, 1), (-1, 0), (1, 0), (1, 1))])
-    loft(p, face, ("sphinx_light",))
-    p.box(Vector((0.9, 0, 0)), (0.12, 0.62, 0.07), "sphinx_light", z=3.13, spin=0.02)  # the brow, worn away on one side
-    for y, w in ((-0.17, 0.15), (0.17, 0.12)):  # sunken eyes
-        p.box(Vector((0.92, y, 0)), (0.1, w, 0.06), "sphinx_shade", z=3.04)
-    p.box_rot(Vector((0.98, 0, 2.92)), (0.07, 0.12, 0.13), "sphinx", Matrix.Rotation(0.3, 3, "Y"))  # the stump of the nose
-    p.box(Vector((0.97, 0, 0)), (0.05, 0.2, 0.025), "sphinx_shade", z=2.76)  # the mouth
+    for z, w, xf in ((3.35, 0.34, 1.2), (3.55, 0.5, 1.3), (3.78, 0.58, 1.34), (3.93, 0.6, 1.3), (4.03, 0.62, 1.46), (4.3, 0.66, 1.4), (4.46, 0.68, 1.46), (4.85, 0.6, 1.2)):
+        face.append([Vector((x, y, z)) for x, y in ((0.5, -w), (xf - 0.2, -w * 0.74), (xf, 0), (xf - 0.2, w * 0.74), (0.5, w))])
+    loft(p, face, ("sphinx_dark", "sphinx", "sphinx", "sphinx_dark", "sphinx", "sphinx_dark", "sphinx"))
+    for sd in (-1, 1):  # narrow sunken eyes, slanting down to the nose
+        p.box_rot(Vector((1.3, sd * 0.3, 4.27)), (0.09, 0.3, 0.07), "sphinx_shade", Matrix.Rotation(sd * 0.15, 3, "X"))
+    p.box(Vector((1.3, 0, 0)), (0.07, 0.34, 0.03), "sphinx_shade", z=3.66)  # a straight, thin mouth
+    frustum(p, Vector((1.05, 0, 3.4)), Vector((1.12, 0, 2.95)), 0.13, 0.17, "sphinx_dark", segments=6)  # the stump of the royal beard
+    p.box(Vector((1.1, 0, 0)), (0.2, 0.18, 0.28), "sphinx_dark", z=4.82)  # the stump of the cobra on the brow
     # what fell from it
-    for x, y, r in ((1.0, 1.72, 0.22), (1.5, -1.42, 0.16), (0.6, -1.7, 0.26)):
+    for x, y, r in ((1.1, 2.0, 0.24), (1.2, -1.75, 0.17), (0.5, -2.0, 0.28)):
         lump(p, Vector((x, y, 0)), r, "sphinx", z=0.05, squash=0.7)
     # the altar: a stepped block, a cloth laid over it, a burning bowl, and jars left by those who came
-    at = Vector((2.2, 0, 0))
+    at = Vector((2.4, 0, 0))
     p.box(at, (0.72, 0.8, 0.2), "sandstone", z=-0.05)
     p.box(at, (0.5, 0.58, 0.32), "sphinx_light", z=0.15)
     p.box(at, (0.54, 0.26, 0.03), "offering", z=0.47)

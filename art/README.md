@@ -129,6 +129,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v55:** Sandstone Sphinx rebuilt: 5.6 high, a stern, regal, worn face, a round dune, `sand.sphinx_turn`. See `handoff/desert_kit.md`.
 - **tiles_v54:** desert round 1. Sandstone Sphinx (`sandstonesphinx_centre`; its dune and routes are in `sand.py`). Sand: gentler swells for mini tilt, props keep off routes, flat at any edge facing other sand, wasteland thickens toward the Sphinx. `scripts/test_sand.py`. See `handoff/desert_kit.md`.
 - **tiles_v53 (same kit, later):** `cliffs.ledge_tops`: no ridges on a tile where a ledge comes out. Pieces unchanged. See `handoff/hills_kit.md` → Range rules.
 - **tiles_v53:** river round 2 feedback. No tree on Meditation Rock's tile, its stacks larger so they read at map zoom. `water.landmark_fits` (the pick rule for River Port, Meditation Rock and Troll Bridge) and `water.raft_can_enter` (no rafts on rapids). See `handoff/river_kit.md`.

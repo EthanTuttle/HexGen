@@ -84,6 +84,11 @@ def main():
                         fail("prop out of its tile", t, kind, round(x, 2), round(y, 2))
             if name == "sandstonesphinx" and sand.props(terrains, *t, None):
                 fail("scattered props on the Sphinx's tile", t)
+    # the Sphinx faces a tile of its region, wherever it stands
+    for m in range(200):
+        region = {(0, 0)} | {gc.NEIGHBOURS[k] for k in range(6) if rng.random() < 0.5}
+        if len(region) > 1 and gc.NEIGHBOURS[sand.sphinx_turn((0, 0), region)] not in region:
+            fail("sphinx faces out of its region", sorted(region))
     # every route to the Sphinx from its edge's midpoint to the stop, whichever way it's turned
     for t in range(6):
         routes = sand.sphinx_routes(t)
