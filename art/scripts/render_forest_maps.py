@@ -485,7 +485,7 @@ if __name__ == "__main__":
             if name in TURNED:
                 rb.turn_camera(180, target)
                 rp.render(f"forest_map_{name}_turned")
-    if not only_check:
+    if not only_check and wanted == list(MAPS):
         for v in fc.VARIANTS:
             sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}")
         sheet([f"forest_map_{n}_turned" for n in MAPS if n in TURNED], "forest_maps_turned", 2)
