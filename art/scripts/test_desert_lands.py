@@ -118,6 +118,7 @@ if abs(line[0][2]) > 1e-6 or abs(line[-1][2] - dl.MESA_H) > 1e-6:
 # the canyon as chosen
 import canyon as cn
 import ground_cover as gc_
+import ground_cover as gc_
 rng3 = __import__("random").Random(21)
 tilt_max = lost = entr = 0
 for m in range(200):
@@ -160,6 +161,57 @@ for m in range(200):
 print("canyon ramps", entr, "steepest", round(tilt_max, 1), "; regions with a tile out of reach:", lost)
 if tilt_max > dl.RAMP_TILT:
     fail("canyon ramp too steep", round(tilt_max, 1))
+# the canyon's cut lanes on real regions: joined at both ends, on the route, wide enough, and not over anyone else's way
+import random as _r
+_rng = _r.Random(11)
+buried, buried_h = 0, 0.0
+for m in range(6):
+    region = {(0, 0)}
+    while len(region) < 12:
+        region.add(cn.neighbours(_rng.choice(sorted(region)))[_rng.randrange(6)])
+    landmark = _rng.choice(sorted(region))
+    field = cn.Field(region, landmark, _rng.randrange(6))
+    for t, i in field.entrances:
+        secs = cn.ramp_sections(t, i, field, landmark, field.turn)
+        c = gc_.tile_centre(*t)
+        line = cn.ramp_line(t, i, landmark, field.turn)
+        if math.dist(secs[0][:2], (line[0][0] + c[0], line[0][1] + c[1])) > 1e-3 or abs(secs[0][2]) > 1e-3:
+            fail("canyon lane top not on the land", t, i)
+        if abs(secs[-1][2] - cn.FLOOR) > 1e-3:
+            fail("canyon lane foot not on the floor", t, i)
+        for q in secs:
+            if min(q[5], q[6]) < cn.RAMP_HALF - 1e-6:
+                fail("canyon lane too narrow for a mini's base", t, i)
+        own = {(tuple(p_ + c_ for p_, c_ in zip(a[:2], c)), tuple(p_ + c_ for p_, c_ in zip(b[:2], c))) for a, b in zip(line, line[1:])}
+        for a, b in field.segs:
+            if (a, b) in own or (b, a) in own:
+                continue
+            for f in range(9):
+                w = (a[0] + (b[0] - a[0]) * f / 8, a[1] + (b[1] - a[1]) * f / 8)
+                for q in secs:
+                    along = (w[0] - q[0]) * -q[4] + (w[1] - q[1]) * q[3]
+                    across = (w[0] - q[0]) * q[3] + (w[1] - q[1]) * q[4]
+                    if abs(along) < 0.2 and -q[6] < across < q[5] and q[2] > cn.FLOOR + 0.2:
+                        buried += 1
+                        buried_h = max(buried_h, q[2] - cn.FLOOR)
+                        break
+print("points of other corridors under a lane by more than 0.2:", buried, "worst", round(buried_h, 2))
+# the Stronghold's walk is on its deck, then the mesa's top
+if dl.ramp_walk()[-1][:2] != dl.FORT_GATE or abs(dl.ramp_walk()[-1][2] - dl.MESA_H) > 1e-6:
+    fail("stronghold walk doesn't reach the gate")
+if not (dl.FORT_SIDE < dl.RAMP_TOP[1] - 0.45 and dl.RAMP_TOP[1] + 0.45 < dl.RAMP_OUT):
+    fail("stronghold deck too narrow for a mini's base")
+# the oasis's ripples: all one way, none on the pool's or the Bazaar's tile
+terr = {t: "oasis" for t in [(0, 0)] + list(gc_.NEIGHBOURS)}
+terr[(0, 0)] = "oasispool"
+terr[gc_.NEIGHBOURS[0]] = "oasisbazaar"
+rip = dl.oasis_ripples(terr)
+if not rip or len({r_[3] for r_ in rip}) != 1:
+    fail("oasis ripples not one way", len(rip))
+for piece, x, y, _ in rip:
+    if terr.get(gc_.tile_at(x, y)) != "oasis":
+        fail("oasis ripple off open sand", x, y)
+print("oasis ripples", len(rip))
 # oasis: the two tiles always touch, and neither is a taken tile
 rng2 = __import__("random").Random(9)
 import canyon_takes as _ct

@@ -300,6 +300,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
             if lm in ("sandstonesphinx", "echocave"):
                 turns[lm_at] = sand.sphinx_turn(lm_at, region)
+            if lm == "raiderstronghold":
+                turns[lm_at] = dl.STRONGHOLD_TURN
     # Fence gates round farm and village groups (fence_gates.py).
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
@@ -451,6 +453,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                     place(templates, f"{join}_r", col, at, math.radians(60 * i))
     for piece, x, y, deg in dl.badlands_features(MAP, dist):  # the badlands' mesas and camps, per tile corner
         place(templates, piece, col, Vector((x, y, 0)), math.radians(deg))
+    for piece, x, y, deg in dl.oasis_ripples(MAP):  # the oasis's ripples, one way across the region
+        place(templates, piece, col, Vector((x, y, 0.01)), math.radians(deg))
     # Small ground cover across the whole map, the way the engines will scatter it.
     # Circles the pieces keep the ground cover off (burns, yards), in world space.
     bpy.context.view_layer.update()
@@ -1264,6 +1268,19 @@ if __name__ == "__main__":
         rq = hk.tile_position(*field.entrances[0][0])
         view(rq + Vector((0, 0, -0.5)), 13, 30, math.radians(60 * field.entrances[0][1] + 40))
         shot("canyon_maze_ramp")
+        # each entrance's lane in the real rock: from the map camera close to, and low from inside the corridor looking up it toward the land
+        for k_, (t_, i_) in enumerate(field.entrances[:3]):
+            c_ = hk.tile_position(*t_)
+            rl_ = cn.ramp_line(t_, i_, lm_at, turn_)
+            mid_ = c_ + Vector((rl_[1][0], rl_[1][1], rl_[1][2]))
+            view(mid_, 14, 50, -math.pi / 2)
+            shot(f"canyon_lane_close_{k_}")
+            foot_ = c_ + Vector((rl_[2][0], rl_[2][1], rl_[2][2] + 0.9))
+            cam = bpy.context.scene.camera
+            cam.data.lens = 24
+            look_at(cam, foot_, mid_ + Vector((0, 0, 0.5)))
+            shot(f"canyon_lane_up_{k_}")
+            cam.data.lens = 50
         view(Vector((0, 0, -0.5)), 44, 6, -math.pi / 2)
         shot("canyon_maze_side")
         sys.exit(0)
@@ -1275,11 +1292,11 @@ if __name__ == "__main__":
         base = place(templates, "base_desert", col, Vector((0, 0, 0)))
         base.material_slots[0].link = "OBJECT"
         base.material_slots[0].material = hk.material("badlands_ground")
-        place(templates, "raiderstronghold_centre", col, Vector((0, 0, 0)))
+        place(templates, "raiderstronghold_centre", col, Vector((0, 0, 0)), math.radians(60 * dl.STRONGHOLD_TURN))
         draw_effects(col, templates, thin=True)
         stage(Vector((0, 0, 1.0)), 14, 50)
         cam = bpy.context.scene.camera
-        for stem, ang, elev, dist in (("front", -30, 25, 14), ("corner", 45, 30, 14), ("side", 120, 25, 14), ("back", 200, 30, 14), ("map", -90, 50, 16), ("low", -60, 8, 12)):
+        for stem, ang, elev, dist in (("front", -30, 25, 14), ("corner", 45, 30, 14), ("side", 120, 25, 14), ("back", 200, 30, 14), ("map", -90, 50, 16), ("low", -60, 8, 12), ("ramp", -110, 22, 10), ("ramp_low", -135, 5, 8)):
             a_, e_ = math.radians(ang), math.radians(elev)
             cam.location = Vector((dist * math.cos(e_) * math.cos(a_), dist * math.cos(e_) * math.sin(a_), 1.2 + dist * math.sin(e_)))
             look_at(cam, cam.location, Vector((0, 0, 1.4)))

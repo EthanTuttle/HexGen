@@ -4374,6 +4374,7 @@ LANDMARK_PARTS.update(riverport_cog=(cog, Vector((1.28, 1.35, 0))), riverport_ba
 # --- Desert round 2: badlands, oasis, canyon ------------------------------------------------
 
 import desert_lands as dl  # noqa: E402
+import ramp_parts as rp  # noqa: E402
 
 CORNER_R = 3.1  # how far from a tile's middle its corner props stand: clear of every route (sand.clear_of_routes)
 
@@ -4489,6 +4490,28 @@ def raider_camp(p, rng, at, spin):
     rag_post(p, rng, at + turn(Vector((0.55, -0.35, 0)), spin))
 
 
+class StrongholdRun(rp.Run):
+    """The Stronghold's timber ramp in its piece: s from the foot, d from the deck's open side in toward the mesa."""
+    run = dl.RAMP_END - dl.RAMP_FOOT[0]
+    deck_over = 0.0
+    inner_over = (0.0, 0.03)
+    rail_from = 1.0
+    flat_end = True
+    foot_stones = 0  # the walk from the north edge passes close by
+
+    def W(self, s, d, z):
+        return Vector((dl.RAMP_FOOT[0] + s, dl.RAMP_OUT - d, z))
+
+    def inner(self, s):
+        return dl.RAMP_OUT - dl.FORT_SIDE + 0.03
+
+    def path_z(self, s):
+        return dl.MESA_H * min(1.0, max(0.0, s) / (dl.RAMP_TOP[0] - dl.RAMP_FOOT[0]))
+
+    def on_floor(self, s, d):
+        return False
+
+
 def raider_stronghold(p, rng, kind):
     """Badlands' Raider Stronghold: a palisade fort on a long, angular mesa, reached by a straight ramp up its long side, which meets the ground at its foot and the top at its end (desert_lands.stronghold_routes). Spiked walls and flags of rags."""
     h = dl.MESA_H
@@ -4507,29 +4530,10 @@ def raider_stronghold(p, rng, kind):
     rings = [ring(-0.1, 1.0), ring(h * 0.45, 0.97), ring(h * 0.8, 0.94), ring(h, 0.93)]
     loft(p, rings, ("mesa_a", "mesa_b", "mesa_c"), cap_start=False, cap_end=False)
     p.bm.faces.new([p.bm.verts.new(q) for q in rings[-1]]).material_index = p._slot("mesa_top")
-    # the ramp: a solid strip along the straight side, from the ground to the top's height, flush against it
-    line = dl.ramp_line()
-    y_in, y_out = dl.FORT_SIDE, dl.RAMP_FOOT[1] + 0.42
-    for (x0, _, z0), (x1, _, z1) in zip(line, line[1:]):
-        for quad, mat in (([(x0, y_in, z0), (x0, y_out, z0), (x1, y_out, z1), (x1, y_in, z1)][::-1], "badlands_ground"), ):
-            f = p.bm.faces.new([p.bm.verts.new(Vector(q)) for q in quad])
-            f.material_index = p._slot(mat)
-            p.surface.add(f)
-        for b0, b1, mat in ((-0.1, h * 0.45, "mesa_a"), (h * 0.45, h * 0.8, "mesa_b"), (h * 0.8, h, "mesa_c")):
-            top0, top1 = min(z0, b1), min(z1, b1)
-            if top1 > b0 and top0 >= b0:
-                f = p.bm.faces.new([p.bm.verts.new(Vector(q)) for q in ((x0, y_out, b0), (x1, y_out, b0), (x1, y_out, top1), (x0, y_out, top0))][::-1])
-                f.material_index = p._slot(mat)
-                p.surface.add(f)
-        q = Vector((x1, y_out, z1))
-        hk.spike_up(p, q, q + Vector((0, 0.12, 0.4)), 0.035, "deadwood")
-    x_end = line[-1][0]  # the ramp's end: its wall comes down to the ground under the top
-    for quad in (((x_end, y_in, -0.1), (x_end, y_out, -0.1), (x_end, y_out, h), (x_end, y_in, h)),):
-        f = p.bm.faces.new([p.bm.verts.new(Vector(q)) for q in quad])
-        f.material_index = p._slot("mesa_b")
-        p.surface.add(f)
+    # the ramp: timber up the straight side, with a landing beside the gate
+    StrongholdRun(p, rng, ("mesa_b", "mesa_a", "mesa_c")).timber()
     # broken rock round the foot, on the sides the ramp isn't
-    for x, y, r_, h_ in ((-2.7, -1.15, 0.4, 1.1), (-1.6, -1.65, 0.34, 0.8), (0.1, -2.15, 0.42, 1.25), (1.9, -1.6, 0.36, 0.9), (2.95, -1.0, 0.3, 0.7), (2.95, 0.5, 0.34, 1.0), (-3.0, -0.05, 0.3, 0.8)):
+    for x, y, r_, h_ in ((-2.7, -1.15, 0.4, 1.1), (-1.6, -1.65, 0.34, 0.8), (0.1, -2.15, 0.42, 1.25), (1.9, -1.6, 0.36, 0.9), (2.95, -1.0, 0.3, 0.7), (2.95, 0.5, 0.34, 1.0), (-2.9, -0.05, 0.22, 0.8)):
         rough_crag(p, rng, Vector((x, y, 0)), r_, h_)
     # the fort: a palisade inside the mesa's edge, stakes leaning out, a gate near the ramp's top, a hut, a tent and a watch tower
     wall = [Vector((-2.05, -0.5, 0)), Vector((-1.75, -0.9, 0)), Vector((-0.75, -1.0, 0)), Vector((-0.3, -1.45, 0)), Vector((0.65, -1.35, 0)), Vector((1.1, -0.85, 0)), Vector((2.05, -0.95, 0)), Vector((2.35, -0.3, 0)), Vector((2.2, 0.5, 0)), Vector((2.35, 1.0, 0)), Vector((1.6, 1.0, 0)), Vector((-2.0, 1.0, 0)), Vector((-2.3, 0.4, 0))]
@@ -4610,18 +4614,17 @@ def camel(p, rng, at, spin):
     p.box(q + turn(Vector((0.22, 0, 0)), spin), (0.22, 0.09, 0.09), "camel", z=0.54, spin=spin)
 
 
-def sand_ripples(p, rng, inside, count):
-    """Wind ripples, all one way: long faint lines on the flat sand, which give the heat shimmer something to bend."""
-    for at in hk.scatter(rng, inside, count, 0.75, ((-3.9, 3.9), (-3.9, 3.9))):
-        p.box(at, (rng.uniform(0.7, 1.5), 0.05, 0.008), "oasis_ripple", spin=math.radians(25 + 90))
+def oasis_ripple_piece(length):
+    """A wind ripple along +X: a long faint line on the flat sand, placed by desert_lands.oasis_ripples."""
+    def build(p, rng):
+        p.box(Vector((0, 0, 0)), (length, 0.05, 0.008), "oasis_ripple")
+    return build
 
 
 def oasis(p, rng, kind):
-    """Open sand under shimmering heat, with ripples for the shimmer to bend and a few resting camels on the tiles next to the pool and the Bazaar. The pool's tile is the only green (oasis_pool_tile). No drawn paths and no tents."""
+    """Open sand under shimmering heat, with ripples for the shimmer to bend (placed across the region: desert_lands.oasis_ripples) and a few resting camels on the tiles next to the pool and the Bazaar. The pool's tile is the only green (oasis_pool_tile). No drawn paths and no tents."""
     if kind in ("same", "other"):
-        sand_ripples(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.2, inner=0.0) and abs(q.y) > 0.3, 4)
         return
-    sand_ripples(p, rng, lambda q: q.length < 1.6, 4)
     p.effects.append(("shimmer", Vector((0, 0, 0.3))))
     if kind == "centre_near":
         k = 1
@@ -4881,6 +4884,7 @@ def echo_cave(p, rng, kind):
 
 
 LANDMARK_CENTRES.update(raiderstronghold=raider_stronghold, oasisbazaar=oasis_bazaar, oasispool=oasis_pool_tile, echocave=echo_cave)
+PROP_PIECES.update({"oasis_ripple_short": oasis_ripple_piece(1.0), "oasis_ripple_long": oasis_ripple_piece(1.7)})
 PROP_PIECES.update({k: badlands_prop(k) for k in ("badlands_mesa_big", "badlands_mesa_mid", "badlands_mesa_low", "badlands_butte", "badlands_kite_big", "badlands_kite_mid", "badlands_kite_low", "badlands_camp", "badlands_wagon", "badlands_post")})
 
 

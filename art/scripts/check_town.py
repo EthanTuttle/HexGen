@@ -195,7 +195,7 @@ def main():
         for o in pieces:
             print(o.name, sum(len(f.vertices) - 2 for f in o.data.polygons))
         # every ramp in the kit: its surface is there under the whole walk, and it meets the ground at both ends
-        for name, line, foot_z in (("raiderstronghold", dl.ramp_line() + [(dl.RAMP_TOP[0], dl.FORT_SIDE - 0.1, dl.MESA_H), dl.stronghold_stop()], 0.0),
+        for name, line, foot_z in (("raiderstronghold", dl.ramp_walk(), 0.0),
                                    ("echocave", dl.echo_line(), 0.0)):
             o = objs[f"{name}_centre"]
             for a, b in zip(line, line[1:]):

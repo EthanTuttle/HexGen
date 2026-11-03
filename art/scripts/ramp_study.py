@@ -18,21 +18,16 @@ from mathutils.bvhtree import BVHTree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hexkit as hk
+from ramp_parts import Run
 
-hk.PALETTE.update({
-    "study_worn": "#C9A173", "study_worn_b": "#B48B5F", "study_worn_c": "#D7B487",
-    "study_worn_red": "#B98258", "study_worn_red_b": "#A36F49", "study_worn_red_c": "#C8946A",
-    "study_plank": "#A67E52", "study_plank_b": "#8C6A46", "study_plank_c": "#B8925F", "study_post": "#6B4F36", "study_rope": "#CDBB94",
-    "study_adobe": "#E0B98A", "study_adobe_b": "#CFA273", "study_adobe_c": "#EAC99C",
-})
 PI = math.pi
 TILT = 26.0  # the route's steepest; the minis' limit is 28
 WIDTH = 1.2  # the walkable lane
 COLOURS = {
     "canyon": dict(bands=[(0.0, 0.8, "canyon_rust"), (0.8, 1.55, "canyon_orange"), (1.55, 9.0, "canyon_cream")], top="canyon_top", floor="canyon_floor",
-                   worn=("study_worn", "study_worn_b", "study_worn_c"), rock=("canyon_side", "canyon_rust", "canyon_orange")),
+                   worn=("ramp_worn", "ramp_worn_b", "ramp_worn_c"), rock=("canyon_side", "canyon_rust", "canyon_orange")),
     "badlands": dict(bands=[(0.0, 0.85, "mesa_a"), (0.85, 1.6, "mesa_b"), (1.6, 9.0, "mesa_c")], top="mesa_top", floor="badlands_ground",
-                     worn=("study_worn_red", "study_worn_red_b", "study_worn_red_c"), rock=("mesa_b", "mesa_a", "mesa_c")),
+                     worn=("ramp_worn_red", "ramp_worn_red_b", "ramp_worn_red_c"), rock=("mesa_b", "mesa_a", "mesa_c")),
 }
 LANES = {"A": (0.68, 0.72), "B": (0.62, 0.72), "C": (-0.75, 0.7), "D": (-0.95, 0.7), "E": (-0.72, 0.7)}  # the lane's centre at the foot and at the top
 NAMES = {"A": "A cut path", "B": "B steps", "C": "C timber", "D": "D rubble", "E": "E dry stone"}
@@ -43,11 +38,10 @@ def smooth(t):
     return t * t * (3 - 2 * t)
 
 
-class Bench:
+class Bench(Run):
     def __init__(self, style, h, colour, bend=0.0):
         self.style, self.h, self.c, self.bend = style, h, COLOURS[colour], bend
-        self.rng = random.Random(f"{style}{h}{colour}")
-        self.p = hk.Piece(f"bench_{style}_{colour}_{h}")
+        super().__init__(hk.Piece(f"bench_{style}_{colour}_{h}"), random.Random(f"{style}{h}{colour}"), COLOURS[colour]["rock"])
         self.tris = {"ramp": 0, "wall": 0}
         self.cat = "wall"
         self.run = h / math.tan(math.radians(TILT)) + 0.5  # eased over 0.5 at each end, so the middle is at TILT
@@ -79,14 +73,10 @@ class Bench:
             y += k * over * math.sin(th)
         return Vector((x, y, z))
 
-    def poly(self, pts, mat):
-        if len(pts) < 3:
-            return
-        vs = [self.p.bm.verts.new(self.W(*q)) for q in pts]
-        f = self.p.bm.faces.new(vs)
-        f.material_index = self.p._slot(mat)
-        self.p.surface.add(f)
-        self.tris[self.cat] += len(pts) - 2
+    def poly(self, pts, mat, away=None):
+        if len(pts) >= 3:
+            self.tris[self.cat] += len(pts) - 2
+        super().poly(pts, mat, away)
 
     # the lane
     def path_z(self, s):
@@ -205,44 +195,6 @@ class Bench:
             for lo, hi, mat in self.bands():
                 self.poly([(s_, 0, lo), (s_, self.d1, lo), (s_, self.d1, hi), (s_, 0, hi)], mat)
 
-    # small parts
-    def chunk(self, s, d, z, r, h, mat, sides=5):
-        """A broken stone: a leaning, uneven frustum with no bottom."""
-        rng = self.rng
-        a0 = rng.uniform(0, 6.28)
-        lean = (rng.uniform(-0.25, 0.25) * r, rng.uniform(-0.25, 0.25) * r)
-        rad = [r * rng.uniform(0.7, 1.15) for _ in range(sides)]
-        low = [(s + rad[k] * math.cos(a0 + 6.283 * k / sides), d + rad[k] * math.sin(a0 + 6.283 * k / sides), z - 0.04) for k in range(sides)]
-        up = [(s + lean[0] + 0.62 * rad[k] * math.cos(a0 + 6.283 * k / sides), d + lean[1] + 0.62 * rad[k] * math.sin(a0 + 6.283 * k / sides), z + h * rng.uniform(0.8, 1.15)) for k in range(sides)]
-        for k in range(sides):
-            j = (k + 1) % sides
-            self.poly([low[k], low[j], up[j], up[k]], mat)
-        self.poly(up, mat)
-
-    def beam(self, a, b, r, mat, sides=4):
-        """A squared timber between two points, closed at the top end, with the ends hidden or sawn."""
-        a, b = Vector(a), Vector(b)
-        ax = (b - a).normalized()
-        u = ax.cross(Vector((0.01, 1, 0.3))).normalized()
-        v = ax.cross(u)
-        ring = lambda c: [tuple(c + r * (math.cos(6.283 * (k + 0.5) / sides) * u + math.sin(6.283 * (k + 0.5) / sides) * v)) for k in range(sides)]
-        ra, rb = ring(a), ring(b)
-        for k in range(sides):
-            j = (k + 1) % sides
-            self.poly([ra[k], ra[j], rb[j], rb[k]], mat)
-        self.poly(rb, mat)
-
-    def block(self, s0, s1, d0, d1, z0, z1, mat, skew=0.0, side=None):
-        """A rough block with its top and its two showing sides (front, facing -d, and both ends)."""
-        j = lambda: self.rng.uniform(-skew, skew)
-        t = [(s0 + j(), d0 + j(), z1 + j() * 0.5), (s1 + j(), d0 + j(), z1 + j() * 0.5), (s1 + j(), d1 + j(), z1 + j() * 0.5), (s0 + j(), d1 + j(), z1 + j() * 0.5)]
-        b = [(t[0][0], t[0][1], z0), (t[1][0], t[1][1], z0), (t[2][0], t[2][1], z0), (t[3][0], t[3][1], z0)]
-        self.poly(t, mat)
-        side = side or mat
-        self.poly([b[0], b[1], t[1], t[0]], side)
-        self.poly([b[1], b[2], t[2], t[1]], side)
-        self.poly([b[3], b[0], t[0], t[3]], side)
-
     def lane_surface(self, s_from, s_to, lanes=(0.0, 0.26, 0.74, 1.0), step=0.34):
         """The worn surface: three strips across, broken along its length into patches of uneven tone, with a loose, irregular edge."""
         worn = self.c["worn"]
@@ -265,21 +217,11 @@ class Bench:
         a, b = self.edge(s), self.inner(s)
         return [(s, a + (b - a) * c, z + (0.015 * self.rng.uniform(-1, 1) if 0 < c < 1 else 0)) for c in cuts]
 
-    def ground_marks(self):
-        """Loose stones beside the way at the foot and over the top."""
-        rng, c = self.rng, self.c
-        for k in range(6):
-            s_ = -rng.uniform(0.2, 1.4)
-            self.chunk(s_, self.centre(s_) + (1 if k % 2 else -1) * rng.uniform(0.72, 1.0), 0.0, rng.uniform(0.07, 0.14), rng.uniform(0.05, 0.13), c["rock"][k % 3], sides=4)
-            s_ = self.run + rng.uniform(0.3, 1.4)
-            self.chunk(s_, self.centre(s_) + rng.uniform(0.72, 1.0), self.h, rng.uniform(0.07, 0.14), rng.uniform(0.05, 0.13), c["rock"][k % 3], sides=4)
-
     # the styles
     def build(self):
         self.build_wall()
         self.cat = "ramp"
         getattr(self, "style_" + self.style)()
-        self.ground_marks()
         self.cat = "wall"
 
     def lip(self, s_from, s_to, every=0.42, keep=0.72, h_=(0.1, 0.24)):
@@ -300,82 +242,11 @@ class Bench:
             s = rng.uniform(0.3, self.run - 0.4)
             self.chunk(s, self.inner(s) + 0.1, self.path_z(s), rng.uniform(0.08, 0.13), rng.uniform(0.08, 0.16), self.c["rock"][k % 3])
 
-    def side_steps(self, s_list, build):
-        for s0, s1 in zip(s_list, s_list[1:]):
-            build(s0, s1)
-
     def style_B(self):
-        rng = self.rng
-        n = max(8, round(self.h / 0.19))
-        rise = self.h / n
-        depth = self.run / n
-        tones = ("study_adobe", "study_adobe_b", "study_adobe_c")
-        def at(z):
-            lo, hi = 0.0, self.run
-            for _ in range(24):
-                m = (lo + hi) / 2
-                lo, hi = (m, hi) if self.path_z(m) < z else (lo, m)
-            return lo
-        risers = [at((k + 0.5) * rise) for k in range(n)] + [self.run + 0.1]  # each tread straddles the route, so a mini's base is half a riser out at most
-        for k in range(n):
-            s0, s1 = risers[k], risers[k + 1]
-            z1 = (k + 1) * rise
-            mid = (s0 + s1) / 2
-            e, i = self.edge(mid), self.inner(mid)
-            tone = ("study_adobe", "study_adobe_c")[rng.randrange(2)]
-            self.block(s0, s1 + 0.03, e - 0.03, i + 0.1, max(0.0, z1 - rise * 1.5), z1, tone, skew=0.014, side="study_adobe_b")
-            if rng.random() < 0.55:  # a stone set in the tread's edge
-                self.chunk(s0 + 0.06, rng.uniform(e + 0.12, i - 0.12), z1 - 0.02, 0.07, 0.035, self.c["rock"][k % 3], sides=4)
+        self.steps()
 
     def style_C(self):
-        rng = self.rng
-        s = -0.05
-        planks = ("study_plank", "study_plank_b", "study_plank_c")
-        while s < self.run:
-            w = rng.uniform(0.2, 0.27)
-            s1 = min(self.run + 0.25, s + w)
-            z0, z1 = self.path_z(s), self.path_z(s1)
-            e = self.edge((s + s1) / 2) - rng.uniform(0.04, 0.12)
-            i = self.inner((s + s1) / 2) + rng.uniform(0.1, 0.2)
-            mat = planks[rng.randrange(3)]
-            t = 0.05
-            self.poly([(s, e, z0), (s1 - 0.02, e, z1), (s1 - 0.02, i, z1), (s, i, z0)], mat)
-            self.poly([(s, e, z0 - t), (s1 - 0.02, e, z1 - t), (s1 - 0.02, e, z1), (s, e, z0)], mat)
-            self.poly([(s1 - 0.02, e, z1), (s1 - 0.02, i, z1), (s1 - 0.02, i, z1 - t), (s1 - 0.02, e, z1 - t)], mat)
-            s = s1
-        # two long stringers under the planks, and bents standing on the floor
-        for f in (0.1, 0.9):
-            line = [(s_, self.edge(s_) + WIDTH * f, self.path_z(s_) - 0.1) for s_ in (0.05 + (self.run - 0.1) * k / 5 for k in range(6))]
-            for a, b in zip(line, line[1:]):
-                self.beam(a, b, 0.05, "study_post")
-        s = self.run * 0.2
-        step = self.run * 0.2
-        while s < self.run - 0.1:
-            z = self.path_z(s) - 0.12
-            a, b = (s, self.edge(s) + 0.1, z), (s, self.inner(s) - 0.1, z)
-            if z > 0.28:
-                self.beam((s, self.edge(s) - 0.05, z), (s, self.inner(s) + 0.05, z), 0.05, "study_post")  # the cap
-                ground_a = 0.0
-                self.beam((s, a[1] - 0.14, ground_a), a, 0.055, "study_post")
-                self.beam((s, b[1] + 0.02, ground_a if b[1] < 0 else self.path_z(s) * 0.0), b, 0.055, "study_post") if b[1] < 0.02 else None
-                self.beam((s, a[1] - 0.05, 0.05), (s, b[1], z - 0.02), 0.032, "study_plank_b")  # a brace
-                self.beam((s - step * 0.92, a[1], max(0.05, self.path_z(s - step) - 0.15)), (s, a[1], 0.08), 0.03, "study_plank_b") if s - step > 0.2 else None
-            s += step
-        # a rope rail on the outer side, on short posts
-        tops = []
-        s = 0.25
-        while s < self.run - 0.1:
-            e = self.edge(s) - 0.02
-            self.beam((s, e, self.path_z(s) - 0.15), (s, e, self.path_z(s) + 0.42), 0.035, "study_post")
-            tops.append((s, e, self.path_z(s) + 0.36))
-            s += self.run / 4.2
-        for a, b in zip(tops, tops[1:]):
-            m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2 - 0.07)
-            self.beam(a, m, 0.012, "study_rope", sides=3)
-            self.beam(m, b, 0.012, "study_rope", sides=3)
-        # stones the foot rests on
-        for k in range(4):
-            self.chunk(rng.uniform(-0.25, 0.25), self.edge(0) + WIDTH * (k + 0.5) / 4 + rng.uniform(-0.1, 0.1), 0.0, rng.uniform(0.08, 0.13), 0.06, self.c["rock"][k % 3], sides=4)
+        self.timber()
 
     def style_D(self):
         """A heap of broken rock: a rough grid of jittered points falling from the lane to the floor, wider than the lane, with blocks along both flanks."""
@@ -428,7 +299,6 @@ class Bench:
         rng = self.rng
         c = self.c
         self.lane_surface(-0.2, self.run + 0.2)
-        tones = ("rock", "rock_dark", "rock_light")
         if self.h > 2:  # the raiders' mesa: stone of its own rock
             tones = ("mesa_a", "mesa_a", "mesa_c")
         else:

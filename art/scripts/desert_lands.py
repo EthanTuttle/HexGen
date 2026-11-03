@@ -29,16 +29,23 @@ def polar(r, deg, z=0.0):
     return (r * math.cos(math.radians(deg)), r * math.sin(math.radians(deg)), z)
 
 
-# The Stronghold's mesa: long and angular, one straight side (y = FORT_SIDE) with the ramp running up it. Its outline at the foot, anticlockwise.
+# The Stronghold's mesa: long and angular, one straight side (y = FORT_SIDE) with the timber ramp running up it (chosen Nov 3, 2026). Its outline at the foot, anticlockwise.
 FORT_SIDE = 1.45
 FORT_OUTLINE = ((-2.75, -0.55), (-2.2, -1.25), (-1.1, -1.35), (-0.55, -1.95), (0.75, -1.8), (1.35, -1.2), (2.4, -1.35), (2.85, -0.45), (2.6, 0.5), (2.75, FORT_SIDE), (-2.45, FORT_SIDE), (-2.85, 0.6))
-RAMP_FOOT, RAMP_TOP = (-3.15, 1.85), (2.3, 1.85)  # the ramp's middle line, along the straight side
+RAMP_FOOT, RAMP_TOP = (-2.85, 1.96), (1.9, 1.96)  # the ramp's middle line, along the straight side; it reaches the top's height at RAMP_TOP, then runs on flat as a landing
+STRONGHOLD_TURN = 3  # on the map its ramp side faces the default camera (a proposal: the Stronghold has no trail to line up with here)
+RAMP_OUT, RAMP_END = 2.5, 2.7  # the deck's open side, and where its landing stops
 FORT_GATE = (2.0, 0.95)  # the stop: in the gate, on the top
 
 
 def ramp_line(steps=8):
-    """The Stronghold's ramp, foot to top: straight up the mesa's long side, reaching the top's height at its end, where the walk steps sideways onto the top."""
+    """The Stronghold's ramp, foot to top: straight up the mesa's long side, reaching the top's height at its landing, where the walk steps sideways onto the top."""
     return [(RAMP_FOOT[0] + (RAMP_TOP[0] - RAMP_FOOT[0]) * k / steps, RAMP_FOOT[1], MESA_H * k / steps) for k in range(steps + 1)]
+
+
+def ramp_walk():
+    """The walk on the ramp, from its foot to the gate."""
+    return ramp_line() + [(2.0, RAMP_TOP[1], MESA_H), (2.0, FORT_SIDE, MESA_H), stronghold_stop()]
 
 
 def turned(line, t):
@@ -51,12 +58,13 @@ def stronghold_stop():
 
 def stronghold_routes(t=0):
     """From each edge round the mesa to the ramp's foot, up it, and sideways onto the top to the gate."""
-    back = [(-3.5, 0.9), (-3.45, 1.85)]
+    back = [(-3.5, 0.9), (-3.45, RAMP_FOOT[1])]
     low = [(2.4, -2.6), (0.0, -2.7), (-2.3, -2.4), (-3.3, -1.4)]
-    ways = {0: [(3.4, -1.2)] + low + back, 1: [(-0.5, 2.8), (-2.6, 2.8), (-3.45, 2.35), (-3.45, 1.85)], 2: [(-2.6, 2.8), (-3.45, 2.35), (-3.45, 1.85)], 3: back, 4: [(-3.3, -1.4)] + back, 5: low[1:] + back}
+    north = [(-3.25, 2.62), (-3.45, RAMP_FOOT[1])]
+    ways = {0: [(3.4, -1.2)] + low + back, 1: [(-0.5, 3.12), (-2.0, 3.2)] + north, 2: north, 3: back, 4: [(-3.3, -1.4)] + back, 5: low[1:] + back}
     out = {}
     for k in range(6):
-        line = [(*wt.mul(wt.normal(k), wt.A), 0.0)] + [(x, y, 0.0) for x, y in ways[k]] + ramp_line() + [(RAMP_TOP[0], FORT_SIDE, MESA_H), stronghold_stop()]
+        line = [(*wt.mul(wt.normal(k), wt.A), 0.0)] + [(x, y, 0.0) for x, y in ways[k]] + ramp_walk()
         out[(k + t) % 6] = turned(line, t)
     return out
 
@@ -199,6 +207,37 @@ def badlands_features(terrains, dist):
 # --- Oasis: one pool tile, beside the Bazaar ------------------------------------------------
 
 POOL_RING = 3.0  # routes round the pool, on the pool tile
+
+
+RIPPLE_DEG = 25  # the wind's one way across any oasis region: world space, so no tile's turn shows
+
+
+def oasis_ripples(terrains):
+    """The oasis's wind ripples, world space, all one way across the region: (piece, x, y, degrees). In uneven rows; none on the pool's or the Bazaar's tile, nor crossing out of open oasis sand."""
+    import ground_cover as gc
+    open_sand = {t for t, name in terrains.items() if name == "oasis"}
+    if not open_sand:
+        return []
+    u, v = (math.cos(math.radians(RIPPLE_DEG)), math.sin(math.radians(RIPPLE_DEG))), (-math.sin(math.radians(RIPPLE_DEG)), math.cos(math.radians(RIPPLE_DEG)))
+    centres = [gc.tile_centre(*t) for t in open_sand]
+    reach = max(math.hypot(*c) for c in centres) + wt.R
+    out = []
+    rows = int(reach / 1.05) + 1
+    for r in range(-rows, rows + 1):
+        s = -reach + 1.6 * gc.hash01(r, 7, 43)
+        k = 0
+        while s < reach:
+            k += 1
+            h = gc.hash01(r, k, 44)
+            long_ = h > 0.55
+            ln = 1.7 if long_ else 1.0
+            off = (gc.hash01(r, k, 45) - 0.5) * 0.35
+            mid = (u[0] * (s + ln / 2) + v[0] * (r * 1.05 + off), u[1] * (s + ln / 2) + v[1] * (r * 1.05 + off))
+            ends = [(mid[0] + u[0] * ln * f, mid[1] + u[1] * ln * f) for f in (-0.5, 0.5)]
+            if gc.hash01(r, k, 46) < 0.72 and all(gc.tile_at(*q) in open_sand for q in ends + [mid]):
+                out.append(("oasis_ripple_long" if long_ else "oasis_ripple_short", mid[0], mid[1], RIPPLE_DEG))
+            s += ln + 0.5 + 1.3 * gc.hash01(r, k, 47)
+    return out
 
 
 def oasis_tiles(region, seed=0, taken=()):

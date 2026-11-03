@@ -1,15 +1,29 @@
+# Desert kit hand-off, round 5 (tiles_v60)
+
+Ethan's ramp picks (design/07) are in, and the oasis ripple fix. None of it has been tried in Godot, and Ethan hasn't seen it in place. Rounds below still hold, except where this says otherwise.
+
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v60.blend`.
+- **Canyon entrances (`canyon.py`, still region-level, not in the kit):** `ramp_sections` gives each lane's cross-sections, and `build` makes the worn path, low broken kerbs, rock shoulders and stones. The middle line and route are still `ramp_line`, so nothing changes for walking. The rock field isn't altered: the lane runs to the walls, and where rock stands lower than it, the bands carry on up to its edge. It starts square to the tile's edge, and its colour runs from the floor's at its foot to the land's at its top. 41,810 triangles for 12 tiles, worst tile 3,984.
+- **Raider Stronghold:** the wedge is gone. `StrongholdRun` (variants.py) builds `ramp_parts.Run.timber` up the straight side, with a landing beside the gate. The walk is `desert_lands.ramp_walk()`, and `stronghold_routes` uses it; those routes moved (foot at x = -2.85, y = 1.96, tilt 25.8°). 1,916 triangles.
+- **Proposal, not canon:** `desert_lands.STRONGHOLD_TURN = 3` turns it on the map so the ramp faces the default camera, as the Sphinx's turn does. Its ramp is hidden behind the mesa otherwise. Render_preview uses it; Godot should too if Ethan keeps it.
+- **Oasis ripples:** no longer in the tile pieces. `desert_lands.oasis_ripples(terrains)` returns (piece, x, y, degrees) in world space for `oasis_ripple_short` and `_long`, all at 25°, none on the pool's or Bazaar's tile.
+
+**Rough spot:** a lane's narrow foot can sit over part of another corridor where the two leave the junction at a shallow angle. In 6 test regions, 13 sampled points were more than 0.2 under a lane, the worst 0.52, so a mini on that other corridor would clip into it for a short stretch. Not fixed.
+
+**For Combat Art:** `art/scripts/ramp_parts.py` has `Run.timber` and `Run.steps`; subclass `Run` and set `run`, `edge`, `inner`, `path_z` and `W`. `art/scripts/ramp_study.py` is a working example (`Bench`), and writes `ramp_study_*` sheets. Colours are `ramp_plank*`, `ramp_post`, `ramp_rope` and `ramp_adobe*` in hexkit.
+
+**Checks:** `test_desert_lands.py` checks each lane's top on the land and foot on the floor, its width, and the Stronghold's walk and deck width, on 6 random regions, and the ripples. `check_town.py -- desert2` casts rays along the Stronghold's walk. `render_preview.py --canyon-maze` reports `RAMPS NOT JOINED` and `HOLES` for the rendered region. All pass at 0.
+
+Previews in `art/preview/`: `canyon_maze_map_v5`, `canyon_maze_turned_v3`, `canyon_maze_low_v3`, `canyon_lane_close_0_v4`, `canyon_lane_close_1_v4`, `canyon_lane_close_2_v3`, `canyon_lane_up_*`, `badlands_stronghold_alone_ramp_v2`, `_ramp_low_v2`, `_map_v5`, `badlands_map_v4`, `oasis_map_v4`.
+
+---
+
 # Desert kit hand-off, round 4 (tiles_v59)
 
 This round holds the canyon as Ethan chose it (a maze walked on the floor), more wide badlands mesas, a rebuilt Raider Stronghold, and an open-sand oasis. None of it has been tried in Godot, and Ethan hasn't seen it. Rounds 3, 2 and 1 follow below: where they differ, this section is current. Take B and the old take A in `canyon_takes.py` are history; `canyon.py` borrows a few helpers from that file.
 
 - **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v59.blend`. The canyon isn't in it: `art/scripts/canyon.py` builds it per region (`render_preview.py --canyon-maze`).
 
-
-## Ramp study (not in the kit; waiting on Ethan's pick)
-
-`art/scripts/ramp_study.py` builds each style against a stand-in banded wall. Nothing from it is in the canyon or the Stronghold yet.
-Sheets: `art/preview/ramp_study_game_v5.png` (close, at the map camera's 50°), `ramp_study_map_v3.png` (a full map-distance frame, middle kept), `ramp_study_low_v4.png`, `ramp_study_bend_v3.png`, and `ramp_study_game_v3.png` for steps standing out from the wall instead of set in it.
-The study's walls are simplified, so carving a cut into `canyon.py`'s terraces is still unproven.
 
 ## Canyon
 
