@@ -1284,6 +1284,12 @@ if __name__ == "__main__":
             cam.data.lens = 50
         view(Vector((0, 0, -0.5)), 44, 6, -math.pi / 2)
         shot("canyon_maze_side")
+        # the top rock up close, round the region's rim, where it was thinnest
+        for name_, t_, el_, ang_ in (("north", (0, 2), 50, -90), ("east", (2, 0), 50, -90), ("south", (0, -2), 50, -90), ("west", (-2, 0), 50, -90), ("low_a", (1, 1), 22, -60), ("low_b", (-1, -1), 22, 120)):
+            if t_ not in region:
+                t_ = min(region, key=lambda u: math.dist(u, t_))
+            view(hk.tile_position(*t_) + Vector((0, 0, -0.5)), 20, el_, math.radians(ang_))
+            shot(f"canyon_mesa_{name_}")
         sys.exit(0)
     if "stronghold-alone" in flags:
         # The Raider Stronghold on its own, on a bare tile, from several angles.

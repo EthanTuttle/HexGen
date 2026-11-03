@@ -1,3 +1,34 @@
+# Canyon top rock, thin walls fixed
+
+Ethan rejected the top mesas for thin wall-like parts, especially near the canyon's edges (Godot's `desert_05_canyon_map.png`, and my renders showed the same). **Waiting on his OK.** This changes `canyon.py` only, no kit, and where the sections below describe the rock, this wins. Godot re-ports these parts of `Field`, `terrace` and `tile_grid`. The maze, routes, lanes' lines and Echo Cave are unchanged.
+
+**What was wrong:**
+- Rock above the land took whatever was left between corridors, the camera cap and a straight cut at 0.6 from the region's edge. That left straight slabs along edges, and slivers.
+- Heights clamped at the floor, at land level and near the edge pushed the band lines about at each mesh vertex, which made the teeth on rims.
+
+**What changed:**
+- `Field.body(high, half, least)`: keeps only what a disc of radius `half` can reach while staying inside `high`, and returns a distance from the outline. Two uses, in `rock_bodies`: the rock above the land (`MESA_HALF` 0.62, at least `MESA_LEAST` 3.5 m², at least `MESA_BACK` 0.85 from the region's edge, roughly), and the band level with the land (`LAND_HALF` 0.4).
+- `Field.slope`: the rock up to the land with no clamp at the floor or above it, negative in corridors. `tile_grid` samples this, and `terrace(tri, field)` cuts levels 1 and 2 from it. Then it cuts the top by `Field.outline`, so level 3's line comes from the outline alone.
+- `Field.value` stays the height everything else asks for, between 0 and 3.9, so lanes and dwellings read the rock as before. Crags on mesas now need 3.7, well inside one.
+
+| Measured, 30 random regions, 337 tiles (`test_mesas.py`) | Before | After |
+| --- | --- | --- |
+| Mesas | 816 | 184 |
+| Smallest | 0.01 m² | 3.42 m² |
+| Top rock a tile | 7.1 m² | 6.1 m² |
+| Area thinner than 1.0 m | 27.4% | 3.0%, corners only |
+| Biggest thin piece | 3.56 m² | 0.20 m² |
+| Nearer the edge than 0.75 m | 8.3% | 1.0% |
+| 12-tile preview, triangles | 41,439 | 38,336 |
+
+**Still true:** `test_desert_lands.py` 0 failures; ramps joined 0 failures and holes 0 in the 12-tile preview; `test_canyon_add.py` passes: a new tile changes rock only on tiles touching it, and no floor becomes rock. `reach` adds about 4 sweeps over the field's grid, which should be small, but I haven't timed it.
+
+**Rough spots:** a narrow slit can stay between two mesas (`canyon_mesa_south_v6`). The Echo Cave's cliff stands against a mesa on some turns (`canyon_mesa_east_v5`), which reads fine here. Crags are small on a big mesa.
+
+**Previews,** in `art/preview/`: `canyon_mesa_before_after_v2` (left before, right after), and close views `canyon_mesa_north`, `_east`, `_south`, `_west`, `_low_a`, `_low_b`: v1 is before and the latest is after. `canyon_maze_map_v13`, `canyon_maze_turned_v8`.
+
+---
+
 # Desert kit hand-off, final (tiles_v60)
 
 Ethan approved the desert on Nov 3, 2026. **Start here:** this section is what Godot builds, and where a round below differs, this wins. None of it has been tried in Godot.
