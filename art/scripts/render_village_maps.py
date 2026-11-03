@@ -112,7 +112,7 @@ P T n . .
     "market_town_square": {"size": "wide oval", "idea": "A paved square, stalls and a well in the middle of it, townhouses at its corners. Stalls stop movement but leave lanes all round them.", "foes": BANDITS, "plan": """
   . . . w . v . .  
  P U n n n n n J 6 
-P . n 8 n n E n . 6
+P . n 8 n n n E . 6
  P . n n x n n . 6 
 . . n n Y N 8 n . J
  . 2 n n n n n 3 . 
@@ -127,22 +127,22 @@ I . . . D . Q
  I . . . D . 
 . I . . . D .
  . , . . , . 
-. . Z . . I .
- . . Z . . I 
-J . . Z . . I
- . . . U . . 
-8 . . N . . J
+. . Z . . . J
+ . . Z . . . 
+J . . Z . I .
+ . . . U . I 
+8 . . N . . I
  . h . k s . 
 . . . . . . .
 """},
-    "market_town_row": {"size": "small hex", "idea": "Townhouses pressing in on a tight little market. Two pinch points and almost nowhere to stand off.", "foes": BANDITS, "plan": """
+    "market_town_row": {"size": "small hex", "idea": "Townhouses pressing in on a tight little market. Two pinch points and little room to stand off.", "foes": BANDITS, "plan": """
    .   
   v w  
  . x . 
 P . . 5
- P J 5 
+ P . 5 
 P . . 5
- U Y Q 
+ . Y . 
 6 . . P
  6 U P 
 6 . . P

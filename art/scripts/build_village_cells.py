@@ -28,7 +28,7 @@ GROUND = {"village": "plains", "market_town": "cobble", "fortified_town": "town_
 BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "street"}
 hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
-hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
+hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
                    "flower_red": "#D6455A", "flower_yellow": "#F0C53C", "cabbage": "#8DBB5A", "pumpkin": "#E0802A", "stack_band": fc.mix("#D1B668", "#6E5A3C", 0.5),
                    "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
@@ -536,12 +536,20 @@ def yard_cloth(p, rng, at, spin=0.0):
         p.log(q, 0.075, 0.34, c, spin=spin + math.pi / 2, z=z, segments=6)
 
 
+def sack(p, at, r, tall, open_top=False):
+    """A sack stood up: a burlap belly, tied at the neck with rope, or rolled open on a heap of grain."""
+    if open_top:
+        lathe(p, at, ((0.0, r * 0.85, "burlap"), (tall * 0.45, r, "burlap"), (tall * 0.85, r * 0.95, "burlap"), (tall * 0.9, r * 1.05, "burlap_light"), (tall, r * 1.0, "burlap_light")), "hay", segments=6)
+        p.blob(at, r * 0.72, "hay", z=tall, squash=0.45)
+    else:
+        lathe(p, at, ((0.0, r * 0.85, "burlap"), (tall * 0.4, r, "burlap"), (tall * 0.72, r * 0.72, "burlap_light"), (tall * 0.82, r * 0.34, "rope"), (tall * 0.88, r * 0.34, "burlap_light"), (tall, r * 0.55, "burlap_light")), segments=6)
+
+
 def yard_sacks(p, rng, at, spin=0.0):
-    """Fat sacks of grain, open at the top."""
-    for x, y, r in ((-0.15, 0.02, 0.15), (0.15, 0.03, 0.14), (0.0, -0.12, 0.13)):
-        q = at + vr.turn(Vector((x, y, 0)), spin)
-        p.blob(q, r, "sack", z=r * 0.95, squash=1.0)
-        lathe(p, q, ((r * 1.6, r * 0.5, "sack"), (r * 1.95, r * 0.55, "sack")), "hay", segments=5)
+    """Sacks of grain: two tied, and one rolled open on its heap."""
+    sack(p, at + vr.turn(Vector((-0.17, 0.05, 0)), spin), 0.15, 0.46)
+    sack(p, at + vr.turn(Vector((0.17, 0.06, 0)), spin), 0.14, 0.4)
+    sack(p, at + vr.turn(Vector((0.0, -0.12, 0)), spin), 0.13, 0.26, open_top=True)
 
 
 def yard_produce(p, rng, at, spin=0.0):
@@ -650,7 +658,33 @@ def goods(p, rng):
         p.cylinder(at, 0.15, 0.42, "trunk", segments=8)
 
 
-def market_stall(p, rng, at, spin, stripes=("awning_a", "awning_b"), goods=("fruit", "hay", "lily")):
+def fruit_goods(p, at, spin):
+    """Trays heaped with apples and oranges."""
+    for x, c in ((-0.2, "apple"), (0.2, "fruit")):
+        q = at + vr.turn(Vector((x, 0.0, 0)), spin)
+        p.box(q, (0.32, 0.28, 0.05), "boards", z=0.38, spin=spin)
+        for dx, dy, z in ((-0.07, -0.05, 0.47), (0.07, -0.04, 0.47), (0.0, 0.06, 0.48)):
+            p.blob(q + vr.turn(Vector((dx, dy, 0)), spin), 0.07, c, z=z, squash=0.95)
+
+
+def cloth_goods(p, at, spin):
+    """Folded cloth in two stacks, with rolls between them."""
+    for x, colours in ((-0.26, ("patch_red", "awning_b", "flower_yellow")), (0.26, ("paint_teal", "patch_ochre", "patch_red"))):
+        q = at + vr.turn(Vector((x, 0.0, 0)), spin)
+        for k, c in enumerate(colours):
+            p.box(q, (0.22, 0.24, 0.045), c, z=0.38 + 0.045 * k, spin=spin)
+    for x, z, c in ((-0.055, 0.44, "paint_blue"), (0.055, 0.44, "awning_b"), (0.0, 0.53, "paint_teal")):
+        p.log(at + vr.turn(Vector((x, 0.0, 0)), spin), 0.055, 0.28, c, spin=spin + math.pi / 2, z=z, segments=6)
+
+
+def pot_goods(p, at, spin):
+    """Pots and jars of glazed and plain clay."""
+    for x, y, h, r, c in ((-0.25, 0.02, 0.26, 0.085, "terracotta"), (0.0, 0.0, 0.18, 0.1, "paint_blue"), (0.25, 0.02, 0.22, 0.075, "terracotta")):
+        q = at + vr.turn(Vector((x, y, 0)), spin) + Vector((0, 0, 0.38))
+        lathe(p, q, ((0.0, r * 0.55, c), (h * 0.55, r, c), (h * 0.85, r * 0.55, c), (h, r * 0.7, c)), "soil_dark", segments=6)
+
+
+def market_stall(p, rng, at, spin, stripes=("awning_a", "awning_b"), goods=fruit_goods):
     """The tiles' stall, true to scale, with its own stripes and goods."""
     def make():
         p.box(at, (0.8, 0.4, 0.38), "crate", spin=spin)
@@ -659,12 +693,11 @@ def market_stall(p, rng, at, spin, stripes=("awning_a", "awning_b"), goods=("fru
                 p.box(at + vr.turn(Vector((dx, dy, 0)), spin), (0.04, 0.04, 0.9), "trunk", spin=spin)
         for k in range(4):
             p.box(at + vr.turn(Vector((-0.3 + 0.2 * k, 0, 0)), spin), (0.2, 0.55, 0.03), stripes[k % 2], z=0.9, spin=spin)
-        for k in range(3):
-            p.blob(at + vr.turn(Vector((-0.25 + 0.25 * k, 0.02, 0)), spin), 0.08, goods[k % len(goods)], z=0.42, squash=0.7)
+        goods(p, at, spin)
     grown(p, 1.28, at, make)
 
 
-STALLS = {"stall": (("awning_a", "awning_b"), ("fruit", "cabbage", "fruit")), "stall_blue": (("paint_blue", "awning_b"), ("patch_red", "flower_yellow", "paint_teal")), "stall_green": (("paint_green", "cheese"), ("apple", "apple", "cabbage"))}
+STALLS = {"stall": (("awning_a", "awning_b"), fruit_goods), "stall_blue": (("paint_blue", "awning_b"), cloth_goods), "stall_green": (("paint_green", "cheese"), pot_goods)}
 
 
 def stall_at(p, rng, at, spin, kind="stall"):

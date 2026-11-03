@@ -129,6 +129,14 @@ MARKET = [("cloth", bv.yard_cloth), ("grain sacks", bv.yard_sacks), ("produce", 
 
 if __name__ == "__main__":
     hk.empty_scene()
+    if "--stalls" in sys.argv:
+        hk.empty_scene()
+        close = [("grain sacks", bv.yard_sacks), ("wares", "ob_market_town_wares"), ("stall fruit", "ob_market_town_stall"), ("stall cloth", "ob_market_town_stall_blue"), ("stall pots", "ob_market_town_stall_green")]
+        YARD[:] = close
+        HOUSES[:] = []
+        measure(templates())
+        sheet(close, 3, (3.0, 3.8), 40, 15, "market_goods_close")
+        sys.exit()
     if "--market" in sys.argv:
         YARD[:] = MARKET
         HOUSES[:] = ["town_3_side", "town_3_gable", "town_3_cross", "town_4_long", "town_4_gable", "town_4_cross"]

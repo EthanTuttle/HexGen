@@ -323,10 +323,10 @@
  },
  "market_town_row": {
   "cells": 37,
-  "idea": "Townhouses pressing in on a tight little market. Two pinch points and almost nowhere to stand off.",
+  "idea": "Townhouses pressing in on a tight little market. Two pinch points and little room to stand off.",
   "kind": "terrain",
   "shape": "small hex",
-  "walkable": 20
+  "walkable": 23
  },
  "market_town_square": {
   "cells": 82,
