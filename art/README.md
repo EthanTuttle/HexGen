@@ -148,6 +148,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v58:** desert round 3. Badlands mesas per tile corner (`desert_lands.badlands_features`), Raider Stronghold rebuilt, one oasis pool tile beside the Bazaar (`oasis_tiles`), and two canyon takes for comparison (`scripts/canyon_takes.py`, `--canyon-takes`; not in the kit). Also fixes a helper name clash in tiles_v57 that moved props on other pieces. See `handoff/desert_kit.md`.
 - **tiles_v57:** desert round 2. Badlands with the Raider Stronghold, oasis with the Oasis Bazaar, canyon with the Echo Cave (rules and routes in `scripts/desert_lands.py`; `--desert2` previews; `test_desert_lands.py`, `check_town.py -- desert2`). See `handoff/desert_kit.md`.
 - **tiles_v56:** Sandstone Sphinx crouching: forelegs and paws clear of the dune, altar between the paws, 4.57 high; the dune pulled back to its haunches and routes round the paws. See `handoff/desert_kit.md`.
 - **tiles_v55:** Sandstone Sphinx rebuilt: 5.6 high, a stern, regal, worn face, a round dune, `sand.sphinx_turn`. See `handoff/desert_kit.md`.

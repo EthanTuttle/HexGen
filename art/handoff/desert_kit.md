@@ -1,3 +1,69 @@
+# Desert kit hand-off, round 3 (tiles_v58)
+
+This round holds two canyon takes for Ethan to compare, reworked badlands and a rebuilt Raider Stronghold, and the oasis with one pool tile. None of it has been tried in Godot, and Ethan hasn't seen it. Rounds 2 and 1 follow below: where they differ, this section is current.
+
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v58.blend`.
+- **Rules and routes:** `art/scripts/desert_lands.py` (badlands, oasis, Stronghold) and `art/scripts/canyon_takes.py` (the takes). The takes aren't in the kit: `render_preview.py --canyon-takes` builds them.
+- **Fix:** `tiles_v57` had a new helper named `corner_at` that replaced an older one of the same name in `variants.py`, moving props on the pieces that use it (about a dozen calls, among them weapon racks, hay bales and supply wagons). It's now `tile_corner_at`, and `tiles_v58` is right. Don't use `tiles_v57`.
+
+## Canyon: two takes
+
+Previews are in `art/preview/`: `canyon_take_a_*_v1.png` and `canyon_take_b_*_v1.png`, each with `map`, `turned`, `low`, `lower`, `cave` and `side`. A stand-in party stands in several spots at once, to show what's visible.
+
+| | Take A: walk the floor | Take B: one gorge, on top |
+| --- | --- | --- |
+| The land | The region sits at -1.9. Banded rock masses stand on tile corners and across edges | The rim stays at 0. One gorge, 2.6 deep, runs through a chain of tile middles and ends at the Echo Cave |
+| Hexes | Hidden inside the region: floor and rock run across edges | Hidden inside the region: one flat rim, and a gorge crossing edges off their midpoints |
+| Routes | New: every walk goes through the tile's middle. An edge facing outside is a ramp, 26° at its steepest | New on chain tiles: a shortest-path search over solid ground, using the bridge at the tile's middle. Other tiles keep the usual curves |
+| Minis | Each mass steps down on its +Y side at about the map camera's angle, so it hides little behind it. **Turn the camera and more is hidden** | Always in view on the rim. They go down only at the Echo Cave |
+| Echo Cave | A banded cliff in its tile, with the mouth at floor level | The gorge's rounded end, with the mouth in its wall, reached by a 25° ramp |
+
+**How they read, by eye:** take B reads as a real winding canyon. Take A's walls are chunky, more separate blocks than continuous walls, and its ramps are the weakest part: they still fan out in the outer tiles.
+
+**Open problems, if chosen:**
+
+- **Take A:** on 1 of the 36 Echo Cave routes tested, a back edge facing outside has a leg steeper than the limit. Rock masses are also fairly regular.
+- **Take B:**
+  - About 3% of walks on sampled chain tiles have no way across (20 of 600), because the gorge leaves a pocket. Those spots need a second bridge. The test counts these and doesn't fail on them.
+  - The mouth faces down the gorge, so it can't also face the camera. In `canyon_take_b_map_v1` it's mostly hidden; `canyon_take_b_cave_v1` shows it from the front.
+  - The gorge leaves a broad flat rim in the region's middle, broken only by crags.
+- **Both:** generated for a whole region when it finishes, so the engine needs the geometry code, not pieces. Take B's preview uses Blender's triangulation for the rim, so the engine would need its own. Adding tiles to a finished region isn't worked out yet. Triangle counts aren't checked for either take. The older `canyon_*` pieces stay in the kit, unused by the takes.
+
+Drum buttes are gone: `rough_crag` builds leaning, broken blocks.
+
+## Badlands
+
+`desert_lands.badlands_features(terrains, dist)` lists what stands at each tile corner: (piece, x, y, degrees). `centre` pieces now hold only cracked ground.
+
+- **Wide mesas across a corner:** `badlands_mesa_big`, `_mid` and `_low` need all three tiles round the corner to be badlands. Their lobes reach toward the three tiles' middles, and they pull in along tile edges, so they stay clear of every route.
+- **Elsewhere:** a corner with other terrain gets `badlands_small` or `badlands_butte` set back inside the tile.
+- **Spacing:** a slow pattern over the world leaves some stretches open, so mesas aren't evenly spaced.
+- **Toward the Stronghold:** camps, wagons and posts appear at corners near it. Nothing stands on the Stronghold's own corners.
+
+**Rough spot:** in a small region few corners have three badlands tiles and aren't the Stronghold's, so the 12-tile preview shows only about two wide mesas. The rest are smaller ones along the edges. Bigger regions will show more.
+
+### Raider Stronghold (`raiderstronghold_centre`)
+
+Rebuilt: an irregular mesa 2.3 high, a ramp that winds about 195° round it at 17.5° at its steepest, with stakes on its lip, broken rock at the foot, and a palisade following the mesa's edge. `desert_lands.stronghold_routes(t)` gives (x, y, z) from each edge, always round the same way to the ramp's foot, then up to the gate. Previews, on a bare tile: `badlands_stronghold_alone_front_v1`, `_corner_v1`, `_side_v1`, `_back_v1`, `_map_v1`, `_low_v1`.
+
+**Rough spot:** better than the drum, but from some sides the mesa is still rounder than a natural one.
+
+## Oasis
+
+One pool tile per region, with the Bazaar next to it. The rest is open sand, with tents, rugs and camels thickening toward both.
+
+- **How the two tiles are picked:** `desert_lands.oasis_tiles(region, seed, taken)` returns (Bazaar, pool). The Bazaar is any tile with a free neighbour in the region, by hash. The pool is that neighbour with the most region neighbours of its own, so it sits away from the region's edge when it can.
+- **Minor landmarks:** tiles in `taken` hold a minor landmark and aren't used.
+- **At the region's edge:** nothing special. Either tile can sit on the edge, using `edge_other` wedges like any other tile. If tiles are added later, the two stay where they are.
+- **The pool tile:** `oasispool_centre` is registered as a landmark, with the oasis's wedges. Its pool fills the tile's middle, so walks use `desert_lands.pool_route(i, j)`: in to a ring at radius 3.0, round it the short way, and out. It isn't river water, so Crossing water doesn't apply.
+- **For the design docs:** design/02 says a region converts one tile. The oasis now converts two.
+- **Previews:** `oasis_map_v2`, `oasis_turned_v2`, `oasis_landmark_v2`.
+
+## Checks
+
+- **`art/scripts/test_desert_lands.py`:** landmark routes, mesa outlines against every usual curve, the oasis's two tiles on 300 random regions, the pool ring, and take A's ramps on 40 regions (26.0° at most). 0 failures, with the takes' known problems above counted rather than failed. It takes about a minute.
+- **`art/scripts/check_town.py -- desert2`:** nothing standing within 0.1 of a usual route on any wedge or centre, or on the badlands pieces set back in a corner, and the landmarks' routes against their pieces. 0 failures.
+
 # Desert kit hand-off, round 2 (tiles_v57)
 
 This round holds badlands with the Raider Stronghold, oasis with the Oasis Bazaar, and canyon with the Echo Cave. None of it has been tried in Godot, and Ethan hasn't seen it. Round 1 follows below.

@@ -161,8 +161,24 @@ def main():
                             bad += 1
                             print("ROUTE TOUCHES", o.name, tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a))
                             break
+        # the badlands' pieces set back in a tile's corner, as badlands_features places them, against every usual route
+        for name in ("badlands_small", "badlands_butte", "badlands_camp", "badlands_wagon", "badlands_post"):
+            pts = standing(objs[name])
+            for k_ in range(6):
+                ca = math.radians(60 * k_ + 30)
+                at = Vector((3.2 * math.cos(ca), 3.2 * math.sin(ca)))
+                turn_ = ca + math.pi
+                world_ = [at + Vector((q.x * math.cos(turn_) - q.y * math.sin(turn_), q.x * math.sin(turn_) + q.y * math.cos(turn_))) for q in pts]
+                for line in sd.ROUTES:
+                    lines_ += 1
+                    for a, b in zip(line, line[1:]):
+                        a2, b2 = Vector(a), Vector(b)
+                        hit = next((q for q in world_ if seg_dist(q, a2, b2) < CLEAR), None)
+                        if hit is not None:
+                            bad += 1
+                            print("ROUTE TOUCHES", name, k_, tuple(round(c_, 2) for c_ in hit))
+                            break
         for name, routes in (("raiderstronghold", dl.stronghold_routes(0)), ("oasisbazaar", dl.bazaar_routes(0)), ("echocave", dl.echo_routes(0))):
-            STAND = 0.05
             solid = standing(objs[f"{name}_centre"])
             for line in routes.values():
                 lines_ += 1
