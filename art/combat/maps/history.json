@@ -76,6 +76,13 @@
   "shape": "square-ish rectangle",
   "walkable": 47
  },
+ "dark_wood_furrow": {
+  "cells": 107,
+  "idea": "A furrow worn by something dragged, strewn with bones, runs the length of the map to a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait where it ends.",
+  "kind": "path",
+  "shape": "tall oval",
+  "walkable": 87
+ },
  "dark_wood_maze": {
   "cells": 61,
   "idea": "Two bramble walls with gaps at opposite ends: a winding walk for melee, while ranged may shoot straight across if brambles don't stop sight.",
@@ -146,6 +153,13 @@
   "shape": "small hex",
   "walkable": 19
  },
+ "deep_forest_stone_path": {
+  "cells": 111,
+  "idea": "An old stone path winding through pines, with mossy marker stones beside it. The path is the only long clear run; the pines break up everything to either side.",
+  "kind": "path",
+  "shape": "big square",
+  "walkable": 92
+ },
  "fey_wood_crescent": {
   "cells": 37,
   "idea": "A narrow crescent round a stand of trees, on a small hex. Enemies at one tip, party at the other, and the way across is hidden until you round it.",
@@ -166,6 +180,13 @@
   "kind": "terrain",
   "shape": "not recorded",
   "walkable": 46
+ },
+ "fey_wood_lights": {
+  "cells": 94,
+  "idea": "A line of glowing caps weaves across the map through the trees, with giant mushrooms at its far end. Both sides come at each other along the lights or cut the corners between them.",
+  "kind": "path",
+  "shape": "long wide rectangle",
+  "walkable": 78
  },
  "fey_wood_ring": {
   "cells": 61,
@@ -243,6 +264,13 @@
   "kind": "terrain",
   "shape": "not recorded",
   "walkable": 44
+ },
+ "heartwood_prayer_path": {
+  "cells": 121,
+  "idea": "A lantern-lit prayer path up the map, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.",
+  "kind": "path",
+  "shape": "tall rectangle",
+  "walkable": 100
  },
  "heartwood_ridge": {
   "cells": 61,
