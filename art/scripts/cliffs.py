@@ -15,6 +15,7 @@ ground-level hills region beside it):
    foot is near the middle of edge i - 1, facing straight out into the neighbour there; the first part of that edge is
    plain cliff, so a neighbouring cliff at that corner stays beside the foot, not in front of it. Their path data joins
    up; it's the only way up. test_cliffs.py checks the rule on random region shapes.
+5. ledge_tops(): no ridges on a tile where a ledge comes out (design/06), so run climbs() before placing ridges. Its mountains stay.
 Plain Python, so the engines can copy it.
 """
 import ground_cover as gc
@@ -48,13 +49,19 @@ def foot_is_open(t, i, raised):
     return ahead not in raised and all(beside(ahead, k) not in raised for k in (i - 2, i - 1, i))
 
 
+def ledge_tops(climbs_):
+    """The tiles where these ledges come out: they have no ridges, so a party arriving at the top has an opening."""
+    return {t for t, _ in climbs_}
+
+
 def climbs(region, terrains, raised=()):
     """Which climbs show: (t, i) runs round edges i - 1, i and i + 1 of tile t, all outer, with its foot on edge i - 1.
     Only those whose foot is open count. One outer edge in six is taken, by hash, at most one per tile and never on tiles
     side by side. A taken one shows only while the land in front of its foot is walkable and clear: not fenced, and not
     forest, whose trees would stand in front of it. If that leaves none, the clear one with the lowest hash shows, then the
-    walkable one, so a region with walkable land in front of a possible foot can always be reached. Otherwise there's
-    no way up yet."""
+    walkable one, so a region with walkable land in front of a possible foot can always be reached. Failing that, the one with
+    the lowest hash whose foot opens onto a placed river or lake tile, reached by a check or a raft (design/02 -> Crossing
+    water), so a region ringed by water always has a way up. Otherwise there's no way up yet: nothing is placed there."""
     raised = set(raised) | set(region)
 
     def walkable(t, i):
@@ -72,4 +79,5 @@ def climbs(region, terrains, raised=()):
             break
         if all(t != t2 and t2 not in [beside(t, k) for k in range(6)] for t2, _ in taken):
             taken.append((t, i))
-    return [e for e in taken if clear(*e)] or [e for e in ranked if clear(*e)][:1] or [e for e in ranked if walkable(*e)][:1]
+    return [e for e in taken if clear(*e)] or [e for e in ranked if clear(*e)][:1] or [e for e in ranked if walkable(*e)][:1] \
+        or [e for e in ranked if terrains.get(beside(e[0], e[1] - 1)) in UNWALKABLE][:1]

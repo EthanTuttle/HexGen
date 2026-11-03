@@ -35,7 +35,8 @@ Previews: a line-up beside a stand-in hero, close-ups, and on the board from the
 
 Changed Nov 2, 2026: a fight is an animated zoom into the hex, but it really happens on a separate map outside that hex. Combat maps are custom built to look interesting and give their own tactical challenges, themed to the terrain and variant.
 
-- A map is radius 4 (61 flat-top cells, 1.0 across the flats) unless Ethan changes that.
+- Maps vary in size and shape for more dynamic scenes (Ethan, Nov 2, 2026); cells are flat-top, 1.0 across the flats.
+- Don't hold back on trees: full-bodied trees, not thin poles standing between hexes. Obstacles should be varied and can be big, spanning several cells: groves, fallen trunks, big boulders, cliffs, stumps, ruins.
 - Build several distinct layouts per forest variant, each with a clear tactical idea (a choke point, a clearing, cover lanes), reusing the cell and prop kit. Say what the idea of each is.
 - The combat camera rotates, so tall obstacles such as map-height trees are fine, as long as every cell can be seen from at least one angle of the rotation. Check this for each map (a test would be good). Blocked cells must look blocked.
 - The board sits on the combat backdrop, with its soil sides. The zoom into the hex is an engine animation.
