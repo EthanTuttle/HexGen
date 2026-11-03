@@ -167,7 +167,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
 - [ ] New: giant enemies (3 or 7 cells): grid rules (see Classes & combat)
 - [ ] New: what players do at each landmark, which then decides its battle maps (dungeon-like landmarks may have several, peaceful ones such as shops none)
-- [ ] New: custom combat maps: how many per terrain and variant, size range (forest set is 34–114 cells; check how long maps feel in play), and how a fight picks one
+- [ ] New: custom combat maps: size range (forest set is 37–114 cells; check how long maps feel in play). Count settled Nov 2, 2026: 3 per variant, plus 1 path map if it has roads
 - [x] ~~Crossing water~~ (settled Nov 2, 2026: Athletics check, a failure costs the whole party HP but they still cross; a permanent raft from the River Port; see Map & exploration → Obstacles)
 - [ ] New: HP lost on a failed crossing, raft price, and how the raft looks on the map
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)

@@ -42,7 +42,7 @@ Changed Nov 2, 2026: a fight is an animated zoom into the hex, but it really hap
 - The combat camera rotates, so tall obstacles such as map-height trees are fine, as long as every cell can be seen from at least one angle of the rotation. Check this for each map (a test would be good). Blocked cells must look blocked.
 - The board sits on the combat backdrop, with its soil sides. The zoom into the hex is an engine animation.
 
-- Terrains with drawn paths also get themed, hand-built path maps round their roads and structures (farm tracks and gates, town streets and squares, trails, bridges). A fight on such a tile rolls from both sets. No landmark-specific maps yet.
+- Terrains with drawn paths also get themed, hand-built path maps round their roads and structures (farm tracks and gates, town streets and squares, trails, bridges). A fight on such a tile rolls from both sets. Count: 3 terrain maps per variant, plus 1 path map if the variant has roads. No landmark-specific maps yet.
 
 Previews: each map from the combat camera with minis on it, plus the kit laid out.
 
