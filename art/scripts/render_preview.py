@@ -365,7 +365,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         if terrain == "desert":
             # The sand is shaped in world space, the way the engines will.
             p = hk.Piece(f"sand_{q}_{r}")
-            sand.add_sand(p, MAP, q, r)
+            sand.add_sand(p, MAP, q, r, dist.get((q, r)), turns.get((q, r), 0))
             p.finish(col, at)
         joined = [linked(name, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
         trails = lf.trail_edges((q, r), toward)
@@ -969,6 +969,58 @@ if __name__ == "__main__":
         cam = bpy.context.scene.camera
         look_at(cam, at + Vector((5, -7, 5)), at + Vector((0, 0, 0.6)))
         shot("river_raft_closeup")
+        sys.exit(0)
+    if "desert" in flags:
+        # Tier 0 desert, and dunes/wasteland flowing by density to the Sandstone Sphinx. --only picks shots.
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(stem)
+
+        def spin_cam(focus_, dist_, ang):
+            el = math.radians(50)
+            cam = bpy.context.scene.camera
+            cam.location = focus_ + Vector((dist_ * math.cos(el) * math.cos(ang), dist_ * math.cos(el) * math.sin(ang), dist_ * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
+
+        ring = {t: ("river" if t in ((2, -1), (2, 0)) else "ruins" if t == (-2, 0) else "plains") for t in FLOW_RING}
+        t0 = {**ring, **{t: "desert" for t in LANDMARK_REGION}}
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        build_map(templates, tiles=t0)
+        draw_effects(bpy.data.collections["map"], templates, thin=True)
+        stage(Vector((0.5, -0.8, 0)), 54, 50)
+        shot("desert_t0_map")
+        wide = {t: "plains" for b_ in DENSITY_REGION for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in DENSITY_REGION}
+        wide.update({t: "river" for t in ((2, -1), (2, 0)) if t in wide})
+        waste = {**wide, **{t: "wasteland" for t in DENSITY_REGION}, LANDMARK_AT: "sandstonesphinx"}
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        build_map(templates, tiles=waste)
+        col = bpy.data.collections["map"]
+        draw_effects(col, templates, thin=True)
+        stage(DENSITY_VIEW + Vector((0, -1, 0)), 74, 50)
+        shot("desert_waste_map")
+        spin_cam(DENSITY_VIEW, 74, math.radians(150))
+        shot("desert_waste_turned")
+        d_, to_ = lf.flow(set(DENSITY_REGION), LANDMARK_AT)
+        t_ = lf.turn(LANDMARK_AT, d_, to_)
+        at = hk.tile_position(*LANDMARK_AT)
+        a_ = math.radians(60 * t_)
+        for stem, ang, far, el in (("desert_sphinx_closeup", a_ + 0.55, 15, 30), ("desert_sphinx_closeup_b", a_ + 2.4, 15, 42), ("desert_sphinx_default", -math.pi / 2, 16, 42)):
+            el = math.radians(el)
+            cam = bpy.context.scene.camera
+            cam.location = at + Vector((far * math.cos(el) * math.cos(ang), far * math.cos(el) * math.sin(ang), 1.5 + far * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
+            shot(stem)
+        terrains_ = dict(waste)
+        p = hk.Piece("routes_overlay")
+        for line in sand.sphinx_routes(t_).values():
+            pts = [Vector((at.x + x, at.y + y, sand.surface_z(terrains_, *LANDMARK_AT, at.x + x, at.y + y, t_) + 0.1)) for x, y in line]
+            for a, b in zip(pts, pts[1:]):
+                vr.frustum(p, a, b, 0.05, 0.05, "path_debug", segments=4)
+        p.finish(col)
+        stage(at, 34, 50)
+        shot("desert_sphinx_routes")
         sys.exit(0)
     if "river2" in flags:
         # River/lake round 2 (and the River Port's ground): each variant at map zoom with its routes, and its landmark close to.

@@ -4290,6 +4290,79 @@ PROP_PIECES = {"raft": raft, "riverport_watergate": water_gate, "lake_hut": fish
                "lake_coil": lake_coil, "lake_fin": lake_fin, "lake_wreck": lake_wreck, "rapids_fall": rapids_fall, "rapids_bridge": rapids_bridge,
                "still_willow": still_willow, "still_stack": still_stack, "still_stones": still_stones}
 LANDMARK_CENTRES.update(riverport=river_port, serpentlair=serpent_lair, trollbridge=troll_bridge, meditationrock=meditation_rock)
+
+
+# --- Desert: Sandstone Sphinx ------------------------------------------------------------
+
+def loft(p, rings, mats, cap_start=True, cap_end=True):
+    """A hull through rings of points, each the same length, painted course by course: mats[k] for the faces between rings k and k + 1."""
+    rows = [[p.bm.verts.new(q) for q in ring] for ring in rings]
+    n = len(rows[0])
+    def face(vs, mat):
+        f = p.bm.faces.new(vs)
+        f.material_index = p._slot(mat)
+    for k in range(len(rows) - 1):
+        for j in range(n):
+            face([rows[k][j], rows[k + 1][j], rows[k + 1][(j + 1) % n], rows[k][(j + 1) % n]], mats[k % len(mats)])
+    if cap_start:
+        face(rows[0][::-1], mats[0])
+    if cap_end:
+        face(rows[-1], mats[-1])
+
+
+def sphinx_ring(rng, x, w, h, foot=-0.3):
+    """A cross-section of the body at x: half width w, height h, chipped a little."""
+    j = lambda: rng.uniform(-0.05, 0.05)  # noqa: E731
+    return [Vector((x + j(), y * w, z * h + j() if z > 0 else foot)) for y, z in ((-1, 0), (-1, 0.55), (-0.72, 0.88), (-0.3, 1.0), (0.3, 1.0), (0.72, 0.88), (1, 0.55), (1, 0))]
+
+
+def sandstone_sphinx(p, rng, kind):
+    """Dunes/wasteland's Sandstone Sphinx: a huge statue facing +X with its back half under a dune (sand.dune, shaped with the sand), its face worn and its nose gone, with
+    a small offering altar at its paws. The party stops before the altar (sand.sphinx_routes)."""
+    courses = ("sphinx", "sphinx_dark", "sphinx", "sphinx_dark", "sphinx")
+    loft(p, [sphinx_ring(rng, x, w, h) for x, w, h in ((-2.3, 0.6, 0.7), (-1.7, 1.08, 1.75), (-1.0, 1.15, 1.9), (-0.3, 1.1, 2.05), (0.3, 0.98, 1.72), (0.72, 0.5, 0.85))], courses)
+    for sd in (-1, 1):
+        # a foreleg stretched out along the ground, then its paw with blunt toes
+        y = sd * 0.66
+        loft(p, [[Vector((x, y + sy * w, z)) for sy, z in ((-1, -0.3), (-1, h * 0.8), (-0.55, h), (0.55, h), (1, h * 0.8), (1, -0.3))] for x, w, h in ((-0.1, 0.38, 1.05), (0.6, 0.35, 0.68), (1.2, 0.34, 0.5))], ("sphinx_dark", "sphinx"))
+        p.box(Vector((1.38, y, 0)), (0.42, 0.74, 0.44), "sphinx_light", z=-0.1)
+        for k in (-1, 0, 1):
+            p.box(Vector((1.64, y + k * 0.24, 0)), (0.2, 0.2, 0.28), "sphinx", z=-0.05, spin=rng.uniform(-0.1, 0.1))
+    # the neck, then the headcloth: a low crown, wide wings beside the jaw, one of them broken away
+    frustum(p, Vector((-0.3, 0, 1.6)), Vector((0.05, 0, 2.75)), 0.86, 0.5, "sphinx_dark", segments=8)
+    cloth = []
+    for z, wl, wr, back, front in ((2.5, 0.6, 0.45, -0.5, 0.28), (2.78, 0.98, 0.62, -0.52, 0.42), (3.02, 0.9, 0.78, -0.5, 0.5), (3.3, 0.66, 0.66, -0.44, 0.54), (3.62, 0.54, 0.54, -0.34, 0.54), (3.92, 0.42, 0.42, -0.22, 0.46), (4.1, 0.26, 0.26, -0.1, 0.3)):
+        cloth.append([Vector((x, y * (wl if y < 0 else wr), z)) for x, y in ((back, -1), (back, 1), (front, 1), (front, -1))])
+    loft(p, cloth, ("sphinx_light", "sphinx", "sphinx_light", "sphinx", "sphinx_light", "sphinx"))
+    for sd, top in ((-1, 2.6), (1, 2.38)):  # the lappets on the chest, either side of the jaw
+        loft(p, [[Vector((x + dx, sd * y + dy, z)) for dy, dx in ((-0.13, 0), (0.13, 0), (0.13, 0.16), (-0.13, 0.16))] for x, y, z in ((0.5, 0.5, top), (0.62, 0.48, 2.0), (0.7, 0.46, 1.55))], ("sphinx_light", "sphinx"))
+    # the face: a wedge coming forward of the cloth, broad at the brow, narrow at the chin
+    face = []
+    for x, w, z0, z1 in ((0.4, 0.42, 2.5, 3.42), (0.68, 0.4, 2.46, 3.4), (0.88, 0.33, 2.56, 3.3), (0.98, 0.2, 2.68, 3.16)):
+        face.append([Vector((x, y * w, z0 if b else z1)) for y, b in ((-1, 1), (-1, 0), (1, 0), (1, 1))])
+    loft(p, face, ("sphinx_light",))
+    p.box(Vector((0.9, 0, 0)), (0.12, 0.62, 0.07), "sphinx_light", z=3.13, spin=0.02)  # the brow, worn away on one side
+    for y, w in ((-0.17, 0.15), (0.17, 0.12)):  # sunken eyes
+        p.box(Vector((0.92, y, 0)), (0.1, w, 0.06), "sphinx_shade", z=3.04)
+    p.box_rot(Vector((0.98, 0, 2.92)), (0.07, 0.12, 0.13), "sphinx", Matrix.Rotation(0.3, 3, "Y"))  # the stump of the nose
+    p.box(Vector((0.97, 0, 0)), (0.05, 0.2, 0.025), "sphinx_shade", z=2.76)  # the mouth
+    # what fell from it
+    for x, y, r in ((1.0, 1.72, 0.22), (1.5, -1.42, 0.16), (0.6, -1.7, 0.26)):
+        lump(p, Vector((x, y, 0)), r, "sphinx", z=0.05, squash=0.7)
+    # the altar: a stepped block, a cloth laid over it, a burning bowl, and jars left by those who came
+    at = Vector((2.2, 0, 0))
+    p.box(at, (0.72, 0.8, 0.2), "sandstone", z=-0.05)
+    p.box(at, (0.5, 0.58, 0.32), "sphinx_light", z=0.15)
+    p.box(at, (0.54, 0.26, 0.03), "offering", z=0.47)
+    p.box(at + Vector((0.27, 0, 0)), (0.02, 0.26, 0.2), "offering", z=0.28)
+    p.cylinder(at, 0.15, 0.09, "sphinx_shade", segments=7, z=0.5)
+    p.cone(at, 0.09, 0.12, "ember", segments=5, z=0.59)
+    for y, r, h in ((0.56, 0.08, 0.26), (-0.55, 0.07, 0.2), (-0.42, 0.05, 0.14)):
+        p.cylinder(at + Vector((-0.08, y, 0)), r, h, "offering" if h > 0.25 else "sphinx_dark", segments=6, z=-0.04)
+    p.effects.append(("smoke", at + Vector((0, 0, 0.7))))
+
+
+LANDMARK_CENTRES["sandstonesphinx"] = sandstone_sphinx
 LANDMARK_PARTS.update(riverport_cog=(cog, Vector((1.28, 1.35, 0))), riverport_barge=(barge, Vector((1.3, -1.85, 0))),
                       riverport_raft=(afloat_raft, Vector((1.62, -0.72, 0))))
 
@@ -4348,7 +4421,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks", "library": "monastery_heights",
              "tradinghouse": "market_town",
              "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids", "meditationrock": "still_waters",
-             "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
+             "sandstonesphinx": "wasteland", "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})

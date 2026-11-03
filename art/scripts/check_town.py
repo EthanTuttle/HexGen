@@ -129,6 +129,18 @@ def main():
                     if hit is not None:
                         bad += 1
                         print("ROUTE TOUCHES port", tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
+    if kit == "sand":  # the Sandstone Sphinx's routes against its piece
+        import sand as sd
+        solid = standing(objs["sandstonesphinx_centre"])
+        routes = sd.sphinx_routes(0)
+        for line in routes.values():
+            for a, b in zip(line, line[1:]):
+                a2, b2 = Vector(a), Vector(b)
+                hit = next((q for q in solid if seg_dist(q, a2, b2) < CLEAR), None)
+                if hit is not None:
+                    bad += 1
+                    print("ROUTE TOUCHES sphinx", tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
+        print(f"{len(routes)} route lines, {len(solid)} points; top", round(max(v.co.z for v in objs["sandstonesphinx_centre"].data.vertices), 2))
     if kit == "water":  # round 2: the Serpent's Lair's lines, Meditation Rock's walks and the Troll Bridge's path, against their own pieces
         import itertools
         import water as wt
