@@ -683,7 +683,7 @@ def export(maps, build, load, variant_of, stem):
         json.dump(data, fh, separators=(",", ":"), sort_keys=True)
         fh.write("\n")
     print("EXPORTED", out)
-    mc.write()
+    mc.write(prune=True)
 
 
 if __name__ == "__main__":

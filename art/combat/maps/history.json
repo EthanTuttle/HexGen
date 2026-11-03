@@ -7,11 +7,11 @@
   "walkable": 64
  },
  "battlefield_graves": {
-  "cells": 93,
-  "idea": "Rows of old graves make long lanes running north and south. Easy to walk a lane, slow to change lanes, and the dead can be waiting in any of them.",
+  "cells": 99,
+  "idea": "A long narrow stretch of old field, rows of graves running up it in staggered blocks, with banners among them. Easy to walk a lane, slow to change lanes, and the dead can be waiting in any of them.",
   "kind": "terrain",
-  "shape": "rectangle",
-  "walkable": 81
+  "shape": "tall rectangle",
+  "walkable": 87
  },
  "battlefield_heaps": {
   "cells": 99,
@@ -29,17 +29,17 @@
  },
  "battlefield_mound": {
   "cells": 37,
-  "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side. Nowhere is far from the top, so the fight is over who stands on it.",
+  "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side, a banner at its foot. Nowhere is far from the top, so the fight is over who stands on it.",
   "kind": "terrain",
   "shape": "small hex",
   "walkable": 36
  },
  "battlefield_palisade": {
-  "cells": 114,
-  "idea": "Two old palisade lines across the field, their gaps not lined up, so an advance has to zigzag from one breach to the next while ranged shoot along the lines.",
+  "cells": 108,
+  "idea": "Two old palisade lines across a wide field, their gaps not lined up, with banners, wreckage and a collapsed tent between and behind them. An advance has to zigzag from one breach to the next while ranged shoot along the lines.",
   "kind": "terrain",
-  "shape": "wide rectangle",
-  "walkable": 82
+  "shape": "big oval",
+  "walkable": 74
  },
  "dark_wood_bend": {
   "cells": 88,
@@ -267,7 +267,7 @@
  },
  "tourney_fields_lists": {
   "cells": 90,
-  "idea": "Jousting lists: a tilt barrier down the middle with one crossing, and bunting fences closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.",
+  "idea": "Jousting lists: a tilt barrier down the middle with one crossing, and stands closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.",
   "kind": "terrain",
   "shape": "tall rectangle",
   "walkable": 68

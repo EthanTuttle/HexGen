@@ -169,16 +169,6 @@ def wreck_3(p, rng, cells):
     vr.rusted_helmet(p, rng, at + Vector((0, 0, 0.36)))
 
 
-def battle_line(p, rng, a, b):
-    """A stretch of an old battle line between two cell middles: spears still standing, and shields stuck upright among them."""
-    d = b - a
-    spin = math.atan2(d.y, d.x)
-    for t in (0.2, 0.5, 0.8):
-        vr.spear(p, rng, a.lerp(b, t), broken=rng.random() < 0.35)
-    for t in (0.33, 0.67):
-        p.box_rot(a.lerp(b, t) + Vector((0, 0, 0.28)), (0.42, 0.06, 0.56), "shield_wood", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "X"))
-
-
 def banner_pole(p, rng):
     p.cone(ZERO, 0.38, 0.34, "war_earth", segments=6)
     vr.spear(p, rng, Vector((0.22, 0.1, 0)), broken=True)
@@ -240,19 +230,6 @@ def stands(p, rng, cells):
         p.box(q + d * 0.16, (0.3, 0.03, 0.55), "banner", z=1.32, spin=spin)
 
 
-def bunting_fence(p, rng, cells):
-    """A low rail with poles and a cord of flags, roping off a lane along a line of cells."""
-    at = fc.centres(cells)
-    for c in at:
-        p.box(c, (0.14, 0.14, 1.75), "wall")
-        vr.pennant_pole(p, c + Vector((0, 0, 1.75)), 0.3)
-    for a, b in zip(at, at[1:]):
-        d = b - a
-        p.box((a + b) / 2, (d.length, 0.1, 0.1), "trunk", z=0.62, spin=math.atan2(d.y, d.x))
-        p.box((a + b) / 2, (d.length, 0.08, 0.08), "trunk", z=0.3, spin=math.atan2(d.y, d.x))
-        vr.bunting(p, rng, a + Vector((0, 0, 0)), b, 1.62)
-
-
 def hay_foot(p, rng):
     fc.patch(p, rng, ZERO, 0.42, "lane_mown")
 
@@ -280,7 +257,6 @@ KIT = {
     "battlefield": {
         "D": ("wreck_3", TRIANGLE, lambda p, r: wreck_3(p, r, TRIANGLE)),
         "J": ("wreck", SINGLE, wreck_one),
-        # The Old Battlefield's own, kept for landmark fights, on no map yet:
         "I": ("banner", SINGLE, banner_pole),
         "P": ("collapsed_3", TRIANGLE, lambda p, r: collapsed(p, r, TRIANGLE, 0.85)),
         "Q": ("collapsed_7", FLOWER7, lambda p, r: collapsed(p, r, FLOWER7, 1.5)),
@@ -294,8 +270,7 @@ KIT = {
         "N": ("pavilion", SINGLE, lambda p, r: vr.pavilion(p, r, ZERO, 0.46, door_to=Vector((0, -1, 0)))),
         "P": ("pavilion_3", TRIANGLE, lambda p, r: vr.pavilion(p, r, mean(TRIANGLE), 0.82, cols=("ribbon_blue", "wall"), door_to=mean(TRIANGLE) + Vector((0, -1, 0)))),
         "Q": ("pavilion_7", FLOWER7, lambda p, r: vr.pavilion(p, r, ZERO, 1.3, door_to=Vector((0, -1, 0)))),
-        "D": ("bunting_3", LINE3, lambda p, r: bunting_fence(p, r, LINE3)),
-        "U": ("stands_3", LINE3, lambda p, r: stands(p, r, LINE3)),  # the Training Grounds' kind of stands: kept for landmark fights, on no map yet
+        "D": ("stands_3", LINE3, lambda p, r: stands(p, r, LINE3)),
         "J": ("butt", SINGLE, lambda p, r: (hay_foot(p, r), vr.archery_butt(p, r, ZERO, -math.pi / 2))),
         "I": ("dummy", SINGLE, lambda p, r: (hay_foot(p, r), vr.dummy(p, r, ZERO, 0.0))),
         "Y": ("quintain", SINGLE, lambda p, r: (hay_foot(p, r), vr.quintain(p, r, ZERO, 0.5))),

@@ -9,9 +9,9 @@ Writes art/preview/plains_map_<map>_vN.png and the sheets plains_maps_<variant>_
 
 Letters as in render_forest_maps.py (. , c T O R G L B K H ^ / and the minis), plus n bare ground (walkable), and per variant:
   meadows         D herd (3)   N felt tent   P big felt tent (3)   J rug rack   I spirit pole   Y fire
-  battlefield     D heap of wreckage (3)   J wreckage   L an old battle line of spears and shields (any line)
+  battlefield     D heap of wreckage (3)   J wreckage   I tattered banner   P collapsed tent (3)   Y row of graves (3 in a line)   L palisade (any line)
   stormy_plains   T split tree   G split trees (2 or 3)   Q rock spire with its nest (7)   L charred trunk (2 or 3 in a line)
-  tourney_fields  N pavilion   P big pavilion (3)   Q grand pavilion (7)   D bunting fence (3 in a line)   J archery butt   I dummy
+  tourney_fields  N pavilion   P big pavilion (3)   Q grand pavilion (7)   D stands (3 in a line)   J archery butt   I dummy
                   Y quintain   L tilt barrier (any line)   seven n cells in a flower get a roped ring
 
 A map's "foes" say which mini w, v and x stand for: samples, as enemy mixes aren't decided. Herds, wreckage and the rest count
@@ -38,7 +38,7 @@ fm.WALKABLE += "n"
 LINE_WALLS = {"battlefield", "tourney_fields"}  # L runs along any line of cells in these, and is a fallen trunk elsewhere
 BANDITS = {"w": "enemy_bandit_melee", "x": "enemy_bandit_ranged", "v": "enemy_bandit_elite", "W": "enemy_bandit_melee", "X": "enemy_bandit_ranged", "V": "enemy_bandit_elite"}
 UNDEAD = {"w": "enemy_skeleton", "x": "enemy_ghost", "v": "enemy_skeleton_elite", "X": "enemy_ghost", "W": "enemy_skeleton"}
-TURNED = {"meadows_tents", "battlefield_lines", "stormy_plains_outcrop", "tourney_fields_lists"}
+TURNED = {"meadows_tents", "battlefield_palisade", "stormy_plains_outcrop", "tourney_fields_lists"}
 
 MAPS = {
     "meadows_herds": {"size": "wide oval", "idea": "Wide open grass with nothing to hide behind but herds, lone trees and drifts of tall flowers. Ranged shine here; the herds are the only walls.", "plan": """
@@ -90,24 +90,24 @@ D . c . .
  . h k . 
 . T s . .
  . . . T """},
-    "battlefield_lines": {"size": "big oval", "idea": "Two old battle lines across a wide field, rows of spears and shields left standing, their gaps not lined up. An advance has to zigzag from one breach to the next while ranged shoot along the lines.", "foes": BANDITS, "plan": """
+    "battlefield_palisade": {"size": "big oval", "idea": "Two old palisade lines across a wide field, their gaps not lined up, with banners, wreckage and a collapsed tent between and behind them. An advance has to zigzag from one breach to the next while ranged shoot along the lines.", "foes": BANDITS, "plan": """
     . . v . w .    
    . , . x . . .   
-  . . . . J . . .  
+  . . . . I . . .  
  L L . L L L . L L 
 L L L . L L . . L L
  . . . , . . . D . 
-. J . . R . . D . .
+. . . . I . J D . .
  . L L L . L L D . 
 . . L L . . L L L .
- . c . . . , . . . 
-  . . h . k . . .  
-   , . s . . J .   
+ . c P . . , . . . 
+  . P h . k . . .  
+   , P s . . J .   
     . . . . . .    """},
-    "battlefield_mound": {"size": "small hex", "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side. Nowhere is far from the top, so the fight is over who stands on it.", "foes": UNDEAD, "plan": """
+    "battlefield_mound": {"size": "small hex", "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side, a banner at its foot. Nowhere is far from the top, so the fight is over who stands on it.", "foes": UNDEAD, "plan": """
    .   
   v .  
- w . J 
+ w . I 
 . . . .
  . H . 
 . H H .
@@ -118,29 +118,29 @@ L L L . L L . . L L
  . c . 
   h k  
    s   """},
-    "battlefield_heaps": {"size": "tall rectangle", "idea": "A long narrow stretch of old field, big heaps of war wreckage staggered up its length. A running fight from heap to heap, each one hiding the next stretch.", "foes": BANDITS, "plan": """
+    "battlefield_graves": {"size": "tall rectangle", "idea": "A long narrow stretch of old field, rows of graves running up it in staggered blocks, with banners among them. Easy to walk a lane, slow to change lanes, and the dead can be waiting in any of them.", "foes": UNDEAD, "plan": """
 . . v . .
  . w . . 
 . . . x .
+ . I . . 
+. Y . Y .
  . . . . 
-. D . . J
- D . . . 
-. D . . .
+. Y . Y .
  . . . . 
-. . R D .
- . . . D 
-. . . D .
- J . , . 
+. Y . Y .
+ . x . . 
+. . Y . .
+ J . . . 
+. . Y . .
+ . . . I 
+. . Y . .
+ . . . . 
 . . . . .
- . D . . 
-. . D . J
- . D . . 
-. . . . .
- J . . c 
-. . . . .
- . h k . 
-. . s . .
- . . , . """},
+ . c . . 
+. h . k .
+ . s . . 
+. . , . .
+ . . . . """},
     "stormy_plains_outcrop": {"size": "medium hex", "idea": "A big rock outcrop fills the middle of the map and blocks everything behind it. The fight circles it, with split trees and boulders closing the ring in places.", "plan": """
     .    
    . v   
@@ -188,7 +188,7 @@ T . . . G .
  . . h . . 
   k . s .  
    . T .   """},
-    "tourney_fields_lists": {"size": "tall rectangle", "idea": "Jousting lists: a tilt barrier down the middle with one crossing, and bunting fences closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.", "foes": BANDITS, "plan": """
+    "tourney_fields_lists": {"size": "tall rectangle", "idea": "Jousting lists: a tilt barrier down the middle with one crossing, and stands closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.", "foes": BANDITS, "plan": """
 D . v . D
  w . . x 
 D . L . D
@@ -244,8 +244,8 @@ def variant_of(name):
 
 
 def line_wall(col, v, group):
-    """An old battle line or a tilt barrier joining touching cells of a line."""
-    p = hk.Piece(f"{'battle_line' if v == 'battlefield' else 'barrier'}_{min(group)}")
+    """A palisade or tilt barrier joining touching cells of a line."""
+    p = hk.Piece(f"{'palisade' if v == 'battlefield' else 'barrier'}_{min(group)}")
     rng = hk.seeded(p.name)
     for c in sorted(group):
         a = hk.cell_position(*c)
@@ -254,13 +254,13 @@ def line_wall(col, v, group):
             if n in group:
                 b = hk.cell_position(*n)
                 if v == "battlefield":
-                    pc.battle_line(p, rng, a, b)
+                    vr.stakes(p, rng, a, b, 2, h=rng.uniform(0.8, 1.2), r=0.1)
                 else:
                     d = b - a
                     p.box((a + b) / 2, (d.length, 0.1, 0.1), "trunk", z=0.86, spin=math.atan2(d.y, d.x))
                     p.box((a + b) / 2, (d.length * 0.94, 0.2, 0.56), "banner" if (c[0] + c[1]) % 2 else "ribbon_blue", z=0.3, spin=math.atan2(d.y, d.x))
         if v == "battlefield":
-            vr.spear(p, rng, a)
+            vr.stakes(p, rng, a + Vector((-0.15, 0, 0)), a + Vector((0.15, 0, 0)), 1, h=1.05, r=0.1)
         else:
             p.box(a, (0.24, 0.24, 1.0), "trunk")
     p.finish(col)
