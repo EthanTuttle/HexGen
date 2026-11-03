@@ -16,7 +16,7 @@ import render_forest_boards as rb  # noqa: E402
 import render_forest_maps as fm  # noqa: E402
 import render_preview as rp  # noqa: E402
 
-ROWS = [["enemy_bandit_a", "enemy_bandit_b", "enemy_bandit_elite"], ["enemy_skeleton", "enemy_skeleton_elite", "enemy_zombie"],
+ROWS = [["enemy_bandit_melee", "enemy_bandit_ranged", "enemy_bandit_elite"], ["enemy_skeleton", "enemy_skeleton_elite", "enemy_zombie"],
         ["enemy_zombie_elite", "enemy_ghost", "enemy_ghost_elite"]]
 NAMES = [n for row in ROWS for n in row]
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     rp.stage(Vector((0, -0.3, 0.4)), 17, 42, lens=50)
     rp.render("humanoid_closeup")
     hk.empty_scene()
-    on_map(templates(), hk.new_collection("map"), "deep_forest_pocket", ["enemy_bandit_a", "enemy_bandit_elite", "enemy_bandit_b"])
+    on_map(templates(), hk.new_collection("map"), "deep_forest_pocket", ["enemy_bandit_melee", "enemy_bandit_elite", "enemy_bandit_ranged"])
     rp.render("humanoid_map_bandits")
     hk.empty_scene()
     on_map(templates(), hk.new_collection("map"), "dark_wood_bend", ["enemy_ghost_elite", "enemy_skeleton_elite", "enemy_zombie_elite"])
