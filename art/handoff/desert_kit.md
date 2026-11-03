@@ -4,7 +4,7 @@ This round holds two canyon takes for Ethan to compare, reworked badlands and a 
 
 - **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v58.blend`.
 - **Rules and routes:** `art/scripts/desert_lands.py` (badlands, oasis, Stronghold) and `art/scripts/canyon_takes.py` (the takes). The takes aren't in the kit: `render_preview.py --canyon-takes` builds them.
-- **Fix:** `tiles_v57` had a new helper named `corner_at` that replaced an older one of the same name in `variants.py`, moving props on the pieces that use it (about a dozen calls, among them weapon racks, hay bales and supply wagons). It's now `tile_corner_at`, and `tiles_v58` is right. Don't use `tiles_v57`.
+- **Fix:** `tiles_v57` had a new helper named `corner_at` that replaced an older one of the same name in `variants.py`, moving props on the pieces that use it (nine calls, among them weapon racks, hay bales and supply wagons). It's now `tile_corner_at`, and `tiles_v58` is right. Don't use `tiles_v57`.
 
 ## Canyon: two takes
 
