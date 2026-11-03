@@ -321,7 +321,7 @@ def line_wall(col, v, group):
         if v == "raided_farms":  # stakes in every cell, so a barricade of one cell still blocks it
             vr.stakes(p, rng, a + Vector((-0.26, 0.08, 0)), a + Vector((0.26, -0.08, 0)), 3, h=rng.uniform(0.85, 1.1), r=0.1)
         else:
-            p.box(a, (0.34, 0.34, 1.0), "boards" if haunted else "trunk")
+            p.box(a, (0.2, 0.2, 0.9), "boards" if haunted else "trunk")
         for dq, dr in fm.NEIGHBOURS[:3]:
             n = (c[0] + dq, c[1] + dr)
             if n not in group:
@@ -331,11 +331,11 @@ def line_wall(col, v, group):
             if v == "raided_farms":
                 vr.stakes(p, rng, a, b, 2, h=rng.uniform(0.8, 1.1), r=0.1)
                 continue
-            # Wide planks, so a fence running away from the camera still reads as one.
-            for z, keep in ((0.32, 0.8), (0.68, 0.6)):
+            # Planks wider than they are tall, so a fence running away from the camera still reads as one.
+            for z, keep in ((0.34, 0.8), (0.68, 0.6)):
                 if not haunted or rng.random() < keep:
                     sag = rng.uniform(-0.08, 0.04) if haunted else 0.0
-                    p.box((a + b) / 2, (d.length, 0.28, 0.14), "boards", z=z + sag, spin=math.atan2(d.y, d.x))
+                    p.box((a + b) / 2, (d.length, 0.17, 0.11), "boards", z=z + sag, spin=math.atan2(d.y, d.x))
     p.finish(col)
 
 
@@ -380,7 +380,8 @@ if __name__ == "__main__":
         make_sheets()
         sys.exit()
     if "--close" in args:
-        for name, at, dist in (("windmill_country_mill", (3.46, -3.2), 24), ("windmill_country_stacks", (4.33, -2.5), 13), ("raided_farms_barns", (3.8, -1.2), 13)):
+        for name, at, dist in (("windmill_country_mill", (3.46, -3.2), 24), ("windmill_country_stacks", (4.33, -2.5), 13), ("raided_farms_barns", (3.8, -1.2), 13),
+                               ("windmill_country_road", (3.46, -4.5), 12)):
             hk.empty_scene()
             col = hk.new_collection("map")
             t = templates()

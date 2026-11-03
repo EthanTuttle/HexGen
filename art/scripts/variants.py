@@ -587,11 +587,11 @@ def small_windmill(p, rng):
         p.box_rot(hub + rot @ Vector((0.05, 0, 0.78)), (0.04, 0.06, 1.4), "trunk", rot)
 
 
-def grain_cart(p, rng, at, spin, shafts=False):
+def grain_cart(p, rng, at, spin, shafts=False, load="hay"):
     """A two-wheeled cart piled with grain. shafts: a pair of shafts out in front (toward spin), so it reads
-    as heading that way."""
+    as heading that way. load: the pile's colour."""
     p.box(at, (0.7, 0.42, 0.22), "crate", z=0.22, spin=spin)
-    p.box(at, (0.6, 0.34, 0.12), "hay", z=0.44, spin=spin)
+    p.box(at, (0.6, 0.34, 0.12), load, z=0.44, spin=spin)
     side = turn(Vector((0, 1, 0)), spin)
     for s in (-1, 1):
         p.log(at + side * s * 0.24, 0.16, 0.05, "trunk", spin=spin + math.pi / 2, z=0.16)

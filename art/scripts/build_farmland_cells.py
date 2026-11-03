@@ -84,15 +84,25 @@ def dead_tree(p, rng, at, k=0):
 
 
 def haystack(p, rng, at):
-    """A proper field haystack: loose straw at its foot, a wide rounded dome of straw in two tones and a pole through it, a little under a mini's height."""
-    fc.patch(p, rng, at, 0.46, "stack_dark")
-    for z0, z1, r0, r1, mat in ((0.0, 0.3, 0.44, 0.5, "stack"), (0.3, 0.58, 0.5, 0.44, "stack_light"), (0.58, 0.8, 0.44, 0.28, "stack"), (0.8, 0.94, 0.28, 0.08, "stack_dark")):
-        vr.frustum(p, at + Vector((0, 0, z0)), at + Vector((0, 0, z1)), r0, r1, mat, segments=9)
-    p.box(at, (0.04, 0.04, 1.12), "trunk")
+    """A field haystack: a low, wide heap, broader than it is tall, of straw raked down from the top in uneven strips of two tones, with loose tufts round its foot."""
+    fc.patch(p, rng, at, 0.5, "stack_dark")
+    cuts = [0.0]
+    while cuts[-1] < 2 * math.pi - 0.5:
+        cuts.append(cuts[-1] + rng.uniform(0.3, 0.75))
+    cuts.append(2 * math.pi)
+    for a0, a1 in zip(cuts, cuts[1:]):
+        fat, mat = rng.uniform(0.95, 1.05), rng.choice(("stack", "stack", "stack_light"))
+        rings = [[at + Vector((math.cos(a) * r * fat * 1.05, math.sin(a) * r * fat * 0.9, z)) for a in (a0, a1)] for r, z in ((0.54, 0.0), (0.55, 0.13), (0.45, 0.29), (0.25, 0.4))]
+        verts = []
+        for (b0, b1), (t0, t1) in zip(rings, rings[1:]):
+            vs = [p.bm.verts.new(q) for q in (b0, b1, t1, t0)]
+            p.bm.faces.new(vs)
+            verts += vs
+        p._paint(verts, mat)
+    p.cone(at + Vector((rng.uniform(-0.03, 0.03), rng.uniform(-0.03, 0.03), 0)), 0.31, 0.15, "stack_light", segments=7, z=0.35, spin=rng.uniform(0, 3))
     for k in range(6):
-        a = k * 1.05 + rng.uniform(-0.2, 0.2)
-        q = at + Vector((math.cos(a), math.sin(a), 0)) * 0.42
-        p.cone(q, 0.07, 0.14, "stack_light", segments=3, spin=a)
+        a = k * 1.05 + rng.uniform(-0.25, 0.25)
+        p.cone(at + Vector((math.cos(a) * 0.54, math.sin(a) * 0.44, 0)), rng.uniform(0.07, 0.11), rng.uniform(0.05, 0.09), "stack_light", segments=4, spin=a)
 
 
 def burnt_barn(p, rng, at, spin, w, d, h):
@@ -173,7 +183,7 @@ KIT = {
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
         "Q": ("mill_7", FLOWER7, lambda p, r: mill(p, r, ZERO, 2.0)),
         "J": ("hay", SINGLE, lambda p, r: haystack(p, r, ZERO)),
-        "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True))),
+        "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="stack"))),
         "I": ("sacks", SINGLE, sack_pile),
     },
     "haunted_homesteads": {
@@ -192,7 +202,7 @@ KIT = {
     "cider_orchards": {
         "T": ("apple_tree", SINGLE, lambda p, r: apple_tree_big(p, r, ZERO)),
         "I": ("baskets", SINGLE, apple_stack),
-        "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True))),
+        "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="stack"))),
     },
 }
 
