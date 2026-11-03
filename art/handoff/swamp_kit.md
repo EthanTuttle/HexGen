@@ -10,7 +10,7 @@ Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Holl
 
 Routes between any two edges pass through each edge's midpoint and criss-cross the tile's middle, so water stays off them:
 
-- **Shared edge:** two lobes cross it at y = ±1.22, mirrored, so the neighbour's halves meet them. That leaves a dry neck about 1.5 wide through the edge's middle. A lobe's crossing never changes, whatever its shape further in, so any two swamp variants' edges meet in shape.
+- **Shared edge:** two lobes cross it at y = ±1.22, mirrored, so the neighbour's halves meet them. That leaves a dry neck about 1.2 wide between the banks, through the edge's middle. A lobe's crossing never changes, whatever its shape further in, so any two swamp variants' edges meet in shape.
 - **Edge facing other terrain:** closed pools stay inside the wedge.
 - **Tile's middle:** dry. Only small props stand there, in the gaps between routes (`CENTRE_R` 0.72).
 - **No water on a route:** the closest bank to any route's line is 0.53, and no bank comes within 0.35 of a landmark's ring.
@@ -91,7 +91,7 @@ Clearance from everything standing to a route's line: 0.15 in wedges and 0.1 in 
 - **Colours step at an edge** where two swamp variants' water meets.
 - **Wisp channels** kink where they cross an edge (`swamp_wisp_marsh_low_v1`, foreground).
 - **Bayou walkways:** rope-and-plank walkways only run from a shack down to its bank, about 35° and not walked. Shacks aren't joined across edges, because the alternate edge piece is picked per tile, and a half walkway could end in the air. Boardwalks on trails do the joining.
-- **Shacks and the Guild's door:** a mini's sword can reach the Guild's sign when standing at the stop. It's clear of the deck's middle, but close.
+- **Guild's sign:** it hangs close to where the party stops. It's clear of the walked line, but I checked it only by eye.
 - **Pit:** the lane is hard to read from the default camera when it's on the near side, and the ooze is very bright. The party's stop is out of sight on some turns.
 - **Witch's Hut, Guild:** the stop is at the top of the gangway, not at the door, so minis stay clear of the door and eaves.
 
