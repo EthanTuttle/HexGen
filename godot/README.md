@@ -497,6 +497,7 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - Touch on the plateau: tapping raised ground on a real screen.
 - The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (260 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
+- **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
 ## Desert kit (tiles v60)
