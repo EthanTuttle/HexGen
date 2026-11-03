@@ -59,3 +59,8 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_map_fortified_town_breach_v9.png` | rejected | Fortified set (with yard_v9, corner_v9, street_v9): more colour, hay bales, fuller maps; close the wall gap on Breach |
 | 2026-11-03 | `art/preview/village_wall_walk_wide_v2.png` | rejected | Not a wall yet; trial last, about 1.5 high with a double flight or ladder |
 | 2026-11-03 | `art/preview/canyon_mesa_before_after_v3.png` | approved | Rebuilt mesas, with `canyon_mesa_spots_a_v1`, `_b_v1`; small lower-band rims accepted |
+| 2026-11-03 | `art/preview/village_map_fortified_town_breach_v11.png` | rejected | With street_v11: taller map and longer top wall, two gaps stay; smaller house banners, fewer windows; clear a blocked door |
+| 2026-11-03 | `art/preview/village_map_fortified_town_breach_v12.png` | approved | Fortified set done, no objection raised; merges with the rest of village |
+| 2026-11-03 | `art/preview/village_map_slums_plots_v9.png` | rejected | Slums set (with shacks_v9, fences_v9, street_v9): flag-like tarp, more lopsided shacks, vegetable plots look terrible |
+| 2026-11-03 | `art/preview/swamp_bog_map_v1.png` | rejected | Swamp round 1, all variants: break the pool pattern, softer winding trails, denser swamp |
+| 2026-11-03 | `art/preview/village_map_slums_shacks_v11.png` | rejected | Slums round 2 (with plots_v11, fences_v11, street_v11): shacks look like tilted houses, like a bug; break up washing. Plots and tarp not objected to |
