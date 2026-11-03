@@ -36,7 +36,7 @@ Previews: a line-up beside a stand-in hero, close-ups, and on the board from the
 Changed Nov 2, 2026: a fight is an animated zoom into the hex, but it really happens on a separate map outside that hex. Combat maps are custom built to look interesting and give their own tactical challenges, themed to the terrain and variant.
 
 - Maps vary in overall size for more dynamic scenes; cells are flat-top, 1.0 across the flats. The cell base stays a simple, solid shape: never punch it into thin strips or holes. Props and terrain limit the fighting area, not the base's outline (Ethan, Nov 2, 2026).
-- Rock can be walkable high ground: thick, clearly stepped raised cells, with a way up (rules open in 03).
+- Rock can be walkable high ground: thick, clearly stepped raised cells, with a way up. Rules direction in 03: longer ranged range from high ground, and ascending or descending is its own action. No map thinner than the Gorge map, and that thin only with a reason in the scene (a cliff wall along it).
 - Don't hold back on trees: full-bodied trees, not thin poles standing between hexes. Obstacles should be varied and can be big, spanning several cells: groves, fallen trunks, big boulders, cliffs, stumps, ruins.
 - Build several distinct layouts per forest variant, each with a clear tactical idea (a choke point, a clearing, cover lanes), reusing the cell and prop kit. Say what the idea of each is.
 - The combat camera rotates, so tall obstacles such as map-height trees are fine, as long as every cell can be seen from at least one angle of the rotation. Check this for each map (a test would be good). Blocked cells must look blocked.
