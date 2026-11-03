@@ -35,6 +35,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [ ] New: cover on combat maps: whether crops and forest brush hide anyone (walkable with no rule for now; see Classes & combat)
 **World & story**
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
