@@ -743,6 +743,20 @@ func _silhouette(map: MapBoard) -> void:
 			plain_best = plain
 			drawn_best = drawn
 	_check(best > 30, "turned so rock hides the party, the silhouette shows: %d pixels change (yaw %d)" % [best, int(angle_best)])
+	var flat := _flat_share(drawn_best, plain_best)
+	_check(flat > 0.95, "the silhouette is one flat colour: %.1f%% of its pixels" % (flat * 100.0))
+	# A view where the party's in plain sight: nothing shows through itself.
+	var clear_view := -1
+	game.rig.frame(hero, 11.0, 75.0)
+	await _wait(0.2)
+	var drawn_top := await _grab()
+	for m in game.party_node.members:
+		(m.body as MeshInstance3D).material_overlay = null
+	var plain_top := await _grab()
+	for m in game.party_node.members:
+		(m.body as MeshInstance3D).material_overlay = game.party_node._silhouette
+	clear_view = _differs(drawn_top, plain_top)
+	_check(clear_view < 20, "from above, with nothing in front, no inner parts show: %d pixels change" % clear_view)
 	game.rig.frame(hero, 11.0, 32.0, angle_best)
 	await _wait(0.2)
 	await _shot("30_silhouette_on")
@@ -753,6 +767,24 @@ func _silhouette(map: MapBoard) -> void:
 	await _wait(0.2)
 	await _shot("32_default_camera_in_the_canyon")
 	game.ui.visible = true
+
+
+## Of the pixels that differ between two pictures, the share in the first that are the commonest colour among them.
+static func _flat_share(a: Image, b: Image) -> float:
+	var counts := {}
+	var total := 0
+	for y in range(0, a.get_height(), 2):
+		for x in range(0, a.get_width(), 2):
+			var p := a.get_pixel(x, y)
+			var q := b.get_pixel(x, y)
+			if absf(p.r - q.r) + absf(p.g - q.g) + absf(p.b - q.b) > 0.1:
+				total += 1
+				var key := Vector3i(roundi(p.r * 64.0), roundi(p.g * 64.0), roundi(p.b * 64.0))
+				counts[key] = counts.get(key, 0) + 1
+	var most := 0
+	for k in counts:
+		most = maxi(most, counts[k])
+	return float(most) / maxi(total, 1)
 
 
 func _grab() -> Image:

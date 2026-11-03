@@ -77,6 +77,7 @@ func setup(board: MapBoard, tile: Vector2i) -> void:
 		tilt.name = "tilt"
 		node.add_child(tilt)
 		body.reparent(tilt, false)
+		_clears_stencil(body)
 		var box := body.mesh.get_aabb()
 		# The standing cluster faces south; offsets are relative to the hero, in that frame.
 		members.append({node = node, tilt = tilt, body = body,
@@ -971,6 +972,17 @@ func _update_silhouette() -> void:
 		_silhouette.shader = load("res://shaders/mini_silhouette.gdshader")
 	for m in members:
 		(m.body as MeshInstance3D).material_overlay = _silhouette if on else null
+
+
+## Where a mini's own surface shows, it clears the rock's stencil mark, so the silhouette only ever draws where it's hidden.
+static func _clears_stencil(body: MeshInstance3D) -> void:
+	for k in body.mesh.get_surface_count():
+		var m := body.mesh.surface_get_material(k).duplicate() as BaseMaterial3D
+		m.stencil_mode = BaseMaterial3D.STENCIL_MODE_CUSTOM
+		m.stencil_flags = BaseMaterial3D.STENCIL_FLAG_WRITE
+		m.stencil_compare = BaseMaterial3D.STENCIL_COMPARE_ALWAYS
+		m.stencil_reference = 0
+		body.set_surface_override_material(k, m)
 
 
 # --- Ground ----------------------------------------------------------------------------

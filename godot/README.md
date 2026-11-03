@@ -512,7 +512,7 @@ Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (a
 | Ripples | `DesertLands.oasis_ripples`, `MapBoard._add_ripples` | World space at 25 degrees. One mesh a tile, not a node per ripple: each is that piece's plain strip. Their reach is a fixed number, not the map's, so a later tile moves none |
 | Canyon rock, lanes, dwellings, Echo Cave | `canyon.gd` | Generated once when the region finishes, off the main thread (`MapBoard.start_canyon`), one mesh to a tile so the tile transition and culling work as usual. No slab, no kit pieces |
 | Routes and walls | `MapBoard._canyon_graph`, `edge_open`, `canyon_open` | Corridors as a path graph; a closed edge is refused when planning a walk. Height comes from `walk_z`, so **the canyon has no collision** |
-| Silhouette through rock | `shaders/mini_silhouette.gdshader`, `PartyWalker._update_silhouette` | An overlay with an inverted depth test that reads the stencil the rock writes, so only rock sets it off. On only while the party's in a canyon |
+| Silhouette through rock | `shaders/mini_silhouette.gdshader`, `PartyWalker._update_silhouette`, `_clears_stencil` | Solid, one flat colour (Ethan, Nov 3). An overlay with an inverted depth test that reads the stencil the rock writes, so only rock sets it off; a mini's own visible surfaces clear the mark, so its inner parts never show. On only while the party's in a canyon. The gorge kit's rock should write the same stencil |
 | `shimmer`, `glint` | `desert_fx.gd`, called from `FarmFx.for_piece` | Shimmer reads the screen, and fades out at night. Glint is sparks plus a soft glow at night. `Kit` now also reads the extras of nodes with no mesh, as `oasis_centre` is |
 | `fire`, `smoke` | `FarmFx` | As elsewhere |
 | Stall detector | `scripts/game/stall_watch.gd` | On any check, demo or touch run: prints `STALL` with the game's state after 60 s with nothing moving. Test output only |
@@ -550,7 +550,7 @@ If it doesn't work in play, the agreed fallback is that a finished canyon can't 
 
 - **Stopping on the pool's tile:** the kit routes across it but gives no stop, so the party stands on the ring, on the side toward the camera.
 - **Looks:** shimmer strength and speed, the silhouette's colour and strength, glint size and count, the night glow.
-- **Silhouette:** it shows a mini's inner parts too, since the pass doesn't hide a mini's own surfaces.
+- **Lane facets (port, not art; not fixed):** a lane's quads are twisted (median 7 degrees between their two triangles, worst 36), and `Piece` gives each triangle its own normal where the art's Eevee preview shades a quad with one. So lanes show a triangle pattern (`desert_09_lane_0`) the preview doesn't. One normal to a quad would fix it.
 
 ### Accepted rough spots (hand-off)
 
