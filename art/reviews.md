@@ -41,3 +41,8 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/hills_ledges_before_after_v1.png` | approved | After keeping lava streaks off the ledge's corner |
 | 2026-11-03 | `art/preview/river_rapids_map_v2.png` | rejected | Dig the gorge into the terrain, as the canyon is |
 | 2026-11-03 | `art/preview/river_rapids_closeup_v2.png` | rejected | Flatten the Troll Bridge arch to walk at 28 degrees or less |
+| 2026-11-03 | `art/preview/village_wide_a_lanes_v1.png` | approved | Direction only, with `village_wide_b_lanes_v1.png`: mix 3- and 4-cell houses, household items on the stone, vary some roofs |
+| 2026-11-03 | `art/preview/village_map_village_lanes_v14.png` | rejected | Right track (with green_v15, street_v13, house_yard_v2); improve and diversify household props |
+| 2026-11-03 | `art/preview/river_rapids_parties_map_v1.png` | approved | Gorge and flatter Troll Bridge; pool and waterfall to add where rapids meet a river |
+| 2026-11-03 | `godot/screens/desert_05_canyon_map.png` | rejected | On the Godot branch: top mesas have thin wall-like parts, especially near the canyon's edges; also check the art |
+| 2026-11-03 | `godot/screens/desert_30_silhouette_on.png` | rejected | On the Godot branch: silhouette must be solid, no inner overlaps |
