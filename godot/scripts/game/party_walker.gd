@@ -39,6 +39,7 @@ var _span := -1                         # the one the hero is in, or -1
 var _landed := false                    # the raft has reached the far landing, and the party is getting off
 var _ride_t := 0.0                      # how long it has been riding
 var _riding := false                    # the party is carried on the raft, on its seats
+var holding := false                    # stopped at the water's edge while the check flips (go_on carries on)
 var _on_raft := false                   # and it's still on it, stopped on the water
 var _raft_at := 0.0                     # distance along the route of the raft's bow while it waits at a landing
 var _gaps := PackedFloat32Array()       # how far back on the route each mini of a stopped file stands from the hero
@@ -833,7 +834,8 @@ func _trail_s(time: float) -> float:
 
 func _process(delta: float) -> void:
 	if walking:
-		_step(delta)
+		if not holding:
+			_step(delta)
 	else:
 		_idle(delta)
 		for m in members:   # they turn to look around while standing
@@ -1083,8 +1085,10 @@ func _cross_water(delta: float) -> void:
 			else:
 				if _raft:
 					_raft.visible = false
-				_landing_splash()
+				holding = true
 				waded.emit()
+				if holding:
+					return
 	if _span < 0 or not _spans[_span].raft:
 		return
 	var to: float = _spans[_span].to
@@ -1171,6 +1175,12 @@ func _on_deck(p: Vector2) -> bool:
 func _landing_splash() -> void:
 	var pos: Vector3 = members[0].node.position
 	_burst(pos + Vector3(0, 0.05, 0), Color("#E8F4FA"), 24, 0.6, 2.4, -9.8, 0.05)
+
+
+## The check is done: the hero steps in.
+func go_on() -> void:
+	holding = false
+	_landing_splash()
 
 
 ## A failed crossing: a splash on everyone (design/07).

@@ -85,7 +85,7 @@ const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover
 const WADE_DEPTH := 0.45                 # PLACEHOLDER: m a mini sinks crossing by check, to about its waist
 const WET_ROUTE_WEIGHT := 3.0            # PLACEHOLDER: on a water tile, a route prefers dry land by this much
 const CROSS_STEP_COST := 6               # PLACEHOLDER: a crossing counts as this many steps, so the party walks round if that's near
-const CROSS_COINS := 2                   # PLACEHOLDER: the Athletics check's coins (design/02: to tune); 1 heads passes
+const CROSS_HEADS := 2                   # PLACEHOLDER: heads the crossing's Athletics check needs (as the sword pull's in Social v9)
 const CROSS_FAIL_HP := 2                 # PLACEHOLDER: HP each member loses on a failed crossing (design/02: to tune); never below 1
 const RAFT_SETTLE := 0.5                 # PLACEHOLDER: s the party takes to settle on the raft's seats
 const RAFT_DECK := 0.17                  # the raft's deck height (its seats' height, river kit)
@@ -158,6 +158,10 @@ const PARTY := [
 		"weapon": "dagger", "hot": ["move", "attack", "backstab", "throw", "sneak_attack", "poison_blade"],
 		"cards": ["move", "attack", "defend", "use_item", "backstab", "throw", "sneak_attack", "poison_blade"]},
 ]
+## DOCS: design/01 -> Companion proficiencies. PLACEHOLDER: the hero has none yet (they come from the background).
+const PROFICIENCIES := {"Fluffy": ["Persuade", "Lore"], "Chelmsford": ["Persuade", "Athletics"], "Mel": ["Deceive", "Thievery"]}
+## Written chime-ins (design/characters/<name>.md): the stage note, then the line. Only what the prototype's checks use.
+const CHIME_LINES := {"Chelmsford": {"Athletics": ["As he heaves alongside", "\"Right then, mind your fingers!\""]}}
 const ENEMY := {"name": "[Enemy %s]", "mini": "standin_enemy", "ability": "STR", "score": 2, "hp": 6}
 const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's save flips 2 coins, 1 heads saves
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)

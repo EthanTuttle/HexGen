@@ -22,6 +22,8 @@ var clock: TimeOfDay
 var party_node: PartyWalker
 var party_tile := Rules.START_TILE
 var debug_fail_crossing := false      # a test aid: every crossing check fails
+var debug_near_miss := 0              # a test aid: the hero lands 1 heads short; the helper's coin saves it (1) or not (-1)
+var debug_auto_cross := false         # a test aid: no pop-ups for crossings or the shop (the checks' walks), flips still count
 var party: Array[Dictionary] = []     # per member: name, initial, color, mini, ability, score, hp, max_hp, cards
 var held := -1                        # index into the hand, or -1
 var busy := false                     # walking, in a pop-up or in a fight
@@ -55,6 +57,7 @@ var _debug_fill := {}                 # spawn_forest_regions' plains (no cluster
 
 func _ready() -> void:
 	var seed_arg := "1"
+	debug_auto_cross = Array(OS.get_cmdline_user_args()).any(func(a): return a.ends_with("check") or a.begins_with("--demo") or a == "--touchtest")
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--seed="):
 			seed_arg = a.split("=")[1]
@@ -578,7 +581,8 @@ func spawn_forest_regions() -> void:
 		_debug_road(DEBUG_HILLS[v] + Vector2i(-3, 3), changes)
 	for v: String in DEBUG_RIVERS:
 		var tiles: Array[Vector2i] = []
-		for s: Vector2i in DEBUG_RIVER_SHAPES[v]:
+		var river_shape: Array = DEBUG_PLAINS_SHAPE if v == "rapids" and "--nobridge" in OS.get_cmdline_user_args() else DEBUG_RIVER_SHAPES[v]
+		for s: Vector2i in river_shape:
 			tiles.append(DEBUG_RIVERS[v] + s)
 		if tiles.any(func(x): return map.terrains.has(x) or changes.has(x)):
 			continue
@@ -779,7 +783,7 @@ func add_encounter(t: Vector2i, persistent: bool, dropped: Array = []) -> void:
 
 # --- Walking -----------------------------------------------------------------
 
-func path_to(goal: Vector2i) -> Array[Vector2i]:
+func path_to(goal: Vector2i, dry := false) -> Array[Vector2i]:
 	# Each tile is reached by a particular edge, because ridges can wall one way across a tile off from another.
 	var start := Vector3i(party_tile.x, party_tile.y, -1)
 	var came := {}
@@ -805,8 +809,12 @@ func path_to(goal: Vector2i) -> Array[Vector2i]:
 			if at.z >= 0 and map.ridge_wall(c, at.z, i):
 				step += Rules.RIDGE_WALL_COST
 			if at.z >= 0 and map.water_shapes.has(c) and map.wet_between(c, at.z, i):
+				if dry:
+					continue
 				step += _cross_cost(c)
 			if m == goal and map.water_shapes.has(m) and map.wet_between(m, (i + 3) % 6, -1):
+				if dry:
+					continue
 				step += _cross_cost(m)
 			var next := Vector3i(m.x, m.y, (i + 3) % 6)
 			if cost[at] + step < cost.get(next, 1 << 30):
@@ -829,11 +837,77 @@ func _cross_cost(t: Vector2i) -> int:
 	return 1 if party_node.has_raft and Water.raft_can_enter(map.terrains[t]) else Rules.CROSS_STEP_COST
 
 
-## The Athletics check on stepping into water with no raft (DOCS: design/02 -> Crossing water): a fail still crosses,
-## and the whole party loses some HP, with a splash. PLACEHOLDER: one flip for the party, nothing shown but the splash
-## and the HP (no choice or result on screen until it's checked against 07 -> Screen text).
+## Whether this route steps into water with no way over but the check: no raft, or rapids, which a raft can't run.
+func _needs_check(path: Array[Vector2i]) -> bool:
+	for p in party_node.route_preview(path):
+		if map.wet_at(p) and not (party_node.has_raft and Water.raft_can_enter(map.terrains.get(GroundCover.tile_at(p)))):
+			return true
+	return false
+
+
+## The check pop-up's top half, for the hero's Athletics check (DOCS: design/02 -> Crossing water; 07 -> Social
+## encounter screen). Coins: the base ability's plus the proficiency's (DOCS: 03 -> Proficiency rules).
+func _cross_view() -> Dictionary:
+	var hero := party[0]
+	var n: int = hero.score + (1 if "Athletics" in Rules.PROFICIENCIES.get(hero.name, []) else 0)
+	return {tag = "Athletics · STR", tag_bg = Color("#8A6420"), text = "Cross the water?", initial = hero.initial, face = hero.color,
+			coins = n, line = "%s · %d coin%s · STR · needs %d heads" % [hero.name, n, "" if n == 1 else "s", Rules.CROSS_HEADS]}
+
+
+## Who chimes in on a miss by exactly 1 (DOCS: 03 -> Companion chime-in): a proficient companion with the highest
+## score, ties by party order. {} if none. PLACEHOLDER: the prototype's members have one score each.
+func _chime_helper(proficiency: String) -> Dictionary:
+	var best := {}
+	for k in range(1, party.size()):
+		var m := party[k]
+		if proficiency in Rules.PROFICIENCIES.get(m.name, []) and (best.is_empty() or m.score > best.score):
+			best = m
+	return best
+
+
+## The prompt when a route needs a check: cross, or walk round where there's a way (DOCS: design/02 -> Crossing water).
+func _ask_crossing(goal: Vector2i, path: Array[Vector2i]) -> void:
+	busy = true
+	var way := _up_to_encounter(path_to(goal, true))
+	var has_way := not way.is_empty() and not _needs_check(way)
+	var stay := func():
+		hud.check.visible = false
+		if has_way:
+			_walk(way)
+		else:
+			busy = false
+			_refresh()
+	var go := func():
+		hud.check.visible = false
+		_walk(path)
+	hud.check.ask(_cross_view(), "Walk round" if has_way else "Back", stay, go)
+
+
+## The Athletics check as the hero steps into water: the party holds at the edge while it flips on the pop-up. A fail
+## still crosses, and the whole party loses some HP, with a splash.
 func _cross_check() -> void:
-	if Coins.heads(Coins.flip(rng, Rules.CROSS_COINS)) >= 1 and not debug_fail_crossing:
+	var view := _cross_view()
+	view.text = "Cross the water"
+	var flips: Array[bool] = Coins.flip(rng, view.coins)
+	if debug_fail_crossing or debug_near_miss != 0:
+		var heads_up: int = 0 if debug_fail_crossing else Rules.CROSS_HEADS - 1
+		for k in flips.size():
+			flips[k] = k < heads_up
+	var heads := Coins.heads(flips)
+	var helper := {}
+	var helper_heads := false
+	if heads == Rules.CROSS_HEADS - 1:
+		var m := _chime_helper("Athletics")
+		if not m.is_empty():
+			var say: Array = Rules.CHIME_LINES[m.name]["Athletics"]
+			helper = {initial = m.initial, face = m.color, name = m.name, note = say[0], line = say[1]}
+			helper_heads = debug_near_miss > 0 or (debug_near_miss == 0 and rng.randf() < 0.5)
+	var passed: bool = heads + (1 if helper_heads else 0) >= Rules.CROSS_HEADS
+	if not debug_auto_cross:
+		hud.check.play(view, flips, helper, helper_heads, passed)
+		await hud.check.continued
+	party_node.go_on()
+	if passed:
 		return
 	for m in party:
 		m.hp = maxi(mini(m.hp, 1), m.hp - Rules.CROSS_FAIL_HP)
@@ -841,24 +915,34 @@ func _cross_check() -> void:
 	_refresh()
 
 
+## The walk stops on the first hex with an encounter.
+func _up_to_encounter(path: Array[Vector2i]) -> Array[Vector2i]:
+	for i in path.size():
+		if encounters.has(path[i]):
+			return path.slice(0, i + 1)
+	return path
+
+
 ## Walks the party along placed hexes one step at a time; the camera follows; the minis face the way
 ## they walk (DOCS: Exploration screen -> Walking). Stops on a hex with an encounter.
 func walk_to(goal: Vector2i) -> void:
 	if busy or goal == party_tile:
 		return
-	var path := path_to(goal)
+	var path := _up_to_encounter(path_to(goal))
 	if path.is_empty():
 		return
+	if not debug_auto_cross and _needs_check(path):
+		_ask_crossing(goal, path)
+		return
+	_walk(path)
+
+
+func _walk(path: Array[Vector2i]) -> void:
 	busy = true
 	held = -1
 	pick(null)
 	rig.player_moved = false   # PLACEHOLDER (what "the next action" is isn't decided): a new walk follows again
 	_refresh()
-	# The walk stops on the first hex with an encounter.
-	for i in path.size():
-		if encounters.has(path[i]):
-			path = path.slice(0, i + 1)
-			break
 	# The day clock moves on as the hero steps onto each hex (PartyWalker: How the party moves).
 	var on_step := func(t: Vector2i):
 		party_tile = t
@@ -869,16 +953,26 @@ func walk_to(goal: Vector2i) -> void:
 	party_node.entered.disconnect(on_step)
 	party_node.waded.disconnect(_cross_check)
 	party_tile = path[-1]
-	# PLACEHOLDER (no shop rule yet): reaching the River Port buys the raft, for nothing, with no screen.
-	if map.terrains.get(party_tile) == "riverport":
-		party_node.has_raft = true
 	map.party_moved(party_tile)
 	if encounters.has(party_tile):
 		_encounter_tile = party_tile
 		hud.show_encounter(Rules.NAMES[land(party_tile)], "ask", [])
 		return
+	if _open_port_shop():
+		return
 	busy = false
 	_refresh()
+
+
+## The River Port's shop counter, while it still has the raft (DOCS: design/02 -> Crossing water; 07 -> Town screen).
+func _open_port_shop() -> bool:
+	if map.terrains.get(party_tile) != "riverport" or party_node.has_raft or debug_auto_cross:
+		return false
+	busy = true
+	hud.open_shop("River Port", func(): party_node.has_raft = true, func():
+		busy = false
+		_refresh())
+	return true
 
 
 ## Stealth group check (DOCS: a group check; on a pass the encounter stays on the map).
@@ -1133,6 +1227,7 @@ func tap(t: Vector2i) -> void:
 	elif map.terrains.has(t):
 		if t == party_tile:
 			pick(null)
+			_open_port_shop()
 		elif picked == t:
 			walk_to(t)
 		else:

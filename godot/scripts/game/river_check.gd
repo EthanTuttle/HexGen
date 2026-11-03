@@ -52,11 +52,16 @@ func _run() -> void:
 	game.spawn_forest_regions()
 	await _wait(1.0)
 	var map := game.map
+	if "--nobridge" in OS.get_cmdline_user_args():
+		await _no_bridge(map)
+		get_tree().quit()
+		return
 	_check_regions(map)
 	_check_graphs(map)
 	_check_fences(map)
 	await _pictures(map)
 	await _crossings(map)
+	await _popups(map)
 	await _perf(map)
 	await _ledge_on_water(map)
 	print("RIVER DONE: %d failed" % failed)
@@ -247,7 +252,7 @@ func _crossings(map: MapBoard) -> void:
 		game.rig.frame(w.centre(), 14.0, 40.0)
 		await _wait(0.3)
 		await _shot("5%s" % name)
-	_check(w.has_raft, "reaching the River Port buys the raft (a stub)")
+	w.has_raft = true
 	# The Troll Bridge.
 	var troll := _named(map, "trollbridge")
 	var ts := []
@@ -337,6 +342,180 @@ func _raft_walk(goal: Vector2i) -> Dictionary:
 	w.waded.disconnect(count)
 	await _wait(Rules.SETTLE_SECONDS)
 	return out
+
+
+## What a rapids region looks like when no tile fits a Troll Bridge (a question for Ethan): `-- --rivercheck --nobridge --shots`.
+func _no_bridge(map: MapBoard) -> void:
+	var g := _region("rapids")
+	var fits: Array = g.tiles.filter(func(c): return game.region_look(g, c) == "trollbridge")
+	print("RIVER NOBRIDGE: %d tiles, %d show a Troll Bridge, region %s, landmark %s" % [g.tiles.size(), fits.size(), g.name, g.landmark])
+	var at := Hex.to3(Hex.tile_position(g.landmark_tile.x, g.landmark_tile.y))
+	game.rig.frame(at, 34.0, 50.0)
+	await _wait(0.6)
+	await _shot("no_bridge_map")
+	game.rig.frame(at, 15.0, 40.0)
+	await _wait(0.4)
+	await _shot("no_bridge_tile")
+
+
+## The pop-ups themselves, as a player meets them: the prompt, the flip with a chime-in, and the River Port's counter.
+func _popups(map: MapBoard) -> void:
+	var w := game.party_node
+	var check := game.hud.check
+	var river: Vector2i = Game.DEBUG_RIVER_T0[3]
+	var side := _land_beside(map, river)
+	game.debug_auto_cross = false
+	w.has_raft = false
+	for m in game.party:
+		m.hp = m.max_hp
+	# Onto the water there's no way round: Cross or Back.
+	await _set_party(side[0])
+	game.walk_to(river)
+	await _wait(0.2)
+	_check(check.visible and game.busy, "a route needing a check asks first")
+	_check(game.party_tile == side[0], "nothing is committed: the party hasn't moved")
+	await _shot("80_prompt")
+	var labels := _buttons(check)
+	_check(labels.has("Back") and labels.has("Cross"), "onto water, no way round: Back and Cross (%s)" % str(labels))
+	_press(check, "Back")
+	await _wait(0.1)
+	_check(not check.visible and not game.busy and game.party_tile == side[0], "Back: stays put, free to act")
+	# A near miss, saved.
+	game.debug_near_miss = 1
+	game.walk_to(river)
+	await _wait(0.1)
+	_press(check, "Cross")
+	while not w.holding:
+		await get_tree().process_frame
+	var y := w.centre()
+	await _wait(CheckPopup.COIN_STEP * game._cross_view().coins + CheckPopup.CHIME_WAIT + 0.2)
+	await _shot("81_chime_in")
+	await _wait(CheckPopup.CHIME_FLIP + 0.1)
+	await _shot("82_chime_saved")
+	_check(w.centre().is_equal_approx(y), "the party holds at the water's edge while the coins flip")
+	var hp := _hp()
+	_press(check, "Continue")
+	while game.busy:
+		await get_tree().process_frame
+	_check(_hp() == hp and game.party_tile == river, "saved by the chime-in: no HP lost, and across")
+	# A fail: no helper's coin at 0 heads; HP goes, and they still cross.
+	game.debug_near_miss = 0
+	game.debug_fail_crossing = true
+	await _set_party(side[0])
+	game.walk_to(river)
+	await _wait(0.1)
+	_press(check, "Cross")
+	while not w.holding:
+		await get_tree().process_frame
+	await _wait(CheckPopup.COIN_STEP * game._cross_view().coins + CheckPopup.CHIME_WAIT + 0.2)
+	await _shot("83_failed")
+	_press(check, "Continue")
+	while game.busy:
+		await get_tree().process_frame
+	_check(_hp() != hp and game.party_tile == river, "failed: HP lost, and across")
+	game.debug_fail_crossing = false
+	for m in game.party:
+		m.hp = m.max_hp
+	# A near miss with no one to help: with Chelmsford gone from the party there's no chime-in.
+	var c: Dictionary = game.party.pop_at(2)
+	_check(game._chime_helper("Athletics").is_empty(), "no one proficient in the party: no helper")
+	game.party.insert(2, c)
+	_check(game._chime_helper("Athletics").name == "Chelmsford", "Chelmsford is the party's Athletics helper")
+	# Round the water: a tier 0 river tile with land beside it and a dry way past.
+	var way := await _way_round(map)
+	_check(not way.is_empty(), "there's a crossing with a dry way round")
+	if not way.is_empty():
+		var over: Array[Vector2i] = [way[1], way[2]]
+		game._ask_crossing(way[2], over)
+		await _wait(0.1)
+		_check(check.visible and _buttons(check).has("Walk round"), "with a dry way: Walk round is offered")
+		await _shot("84_walk_round")
+		var low := 0.0
+		_press(check, "Walk round")
+		while game.busy:
+			await get_tree().process_frame
+			low = minf(low, w.members[0].node.position.y)
+		_check(game.party_tile == way[2] and low > -0.1, "walking round: there, and dry (lowest %.2f)" % low)
+	# The raft: bought at the counter, then no prompt; rapids still ask.
+	var port := _named(map, "riverport")
+	await _set_party(_land_beside(map, port)[0])
+	game.walk_to(port)
+	var waited := 0.0
+	while not game.hud.shop.visible and waited < 60.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	_check(game.hud.shop.visible, "reaching the River Port opens its counter (busy %s, at %s, port %s, prompt %s, encounter %s)" % [game.busy, game.party_tile, port, check.visible, game.hud.encounter_open()])
+	await _wait(0.3)
+	await _shot("85_counter")
+	game.hud.shop._toggle_pop()
+	await _wait(0.1)
+	await _shot("86_counter_raft")
+	_check(not w.has_raft, "looking doesn't buy")
+	game.hud.shop._buy()
+	_check(w.has_raft, "Buy: the party has the raft")
+	await _wait(0.4)
+	await _shot("87_bought")
+	await _wait(0.9)
+	game.hud.shop.close()
+	await _wait(0.1)
+	_check(not game.busy and not game.hud.shop.visible, "Back: the map again")
+	game.tap(game.party_tile)
+	_check(not game.hud.shop.visible, "sold out: the counter doesn't open again")
+	await _set_party(side[0])
+	game.walk_to(river)
+	await _wait(0.1)
+	_check(not check.visible and game.busy, "with a raft: no prompt")
+	while game.busy:
+		await get_tree().process_frame
+	await _wait(Rules.SETTLE_SECONDS)
+	var rapid := Vector2i(99, 99)
+	for t: Vector2i in _region("rapids").tiles:
+		if map.terrains[t] == "rapids" and not map.water_shapes[t].has("bridge") and not _land_beside(map, t).is_empty():
+			rapid = t
+	if rapid != Vector2i(99, 99):
+		await _set_party(_land_beside(map, rapid)[0])
+		game.walk_to(rapid)
+		await _wait(0.1)
+		_check(check.visible, "rapids ask even with a raft")
+		_press(check, "Back")
+		await _wait(0.1)
+	w.has_raft = false
+	game.debug_auto_cross = true
+
+
+func _buttons(c: Control) -> Array:
+	var out := []
+	for n in c.find_children("*", "Control", true, false):
+		if n is Button or n is TagButton:
+			out.append(n.text)
+	return out
+
+
+func _press(c: Control, label: String) -> void:
+	for n in c.find_children("*", "Control", true, false):
+		if (n is Button or n is TagButton) and n.text == label:
+			n.pressed.emit()
+			return
+	_check(false, "no %s button" % label)
+
+
+## A way over a tier 0 river tile between two land tiles, with a dry way between them too: [from, river, to].
+func _way_round(map: MapBoard) -> Array:
+	for r: Vector2i in Game.DEBUG_RIVER_T0:
+		for x in Hex.NEIGHBOURS:
+			for y in Hex.NEIGHBOURS:
+				var a: Vector2i = r + x
+				var b: Vector2i = r + y
+				if a == b or not map.terrains.has(a) or not map.terrains.has(b) or Variants.is_water(map.terrains[a]) or Variants.is_water(map.terrains[b]):
+					continue
+				if not map.edge_open(a, r) or not map.edge_open(r, b):
+					continue
+				await _set_party(a)
+				var over: Array[Vector2i] = [r, b]
+				var dry := game.path_to(b, true)
+				if game._needs_check(over) and not dry.is_empty() and not game._needs_check(dry):
+					return [a, r, b]
+	return []
 
 
 ## Design/02 -> Raised hills regions and water: a region ringed by water has a ledge whose foot opens onto it.

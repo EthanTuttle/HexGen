@@ -29,6 +29,11 @@ var _enc_coins := HBoxContainer.new()
 var _enc_buttons := HBoxContainer.new()
 var _marks := Control.new()
 var _toast_until := 0.0
+var check := CheckPopup.new()           # the check pop-up (crossing water)
+var shop := ShopCounter.new()           # the shopkeeper's counter (the River Port's raft)
+var _clock_panel: Control
+var _hand_panel: Control
+var _gear_button: Control
 
 
 func _init(g: Game) -> void:
@@ -49,6 +54,8 @@ func _ready() -> void:
 	_build_hand()
 	_build_rest()
 	_build_encounter()
+	add_child(shop)
+	add_child(check)
 
 
 # --- Party tray (left 12, top 12, width 60) ------------------------------------
@@ -97,6 +104,7 @@ func _build_buttons() -> void:
 	_nav_row.add_theme_constant_override("separation", 6)
 	var gear := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("gear", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
 	gear.clickable = true
+	_gear_button = gear
 	gear.accessibility_name = "Character and gear"
 	gear.pressed.connect(func(): game.toast("Not in the prototype yet", false))
 	_nav_row.add_child(gear)
@@ -195,6 +203,7 @@ func _build_clock() -> void:
 	var p := UI.panel(UI.CREAM, 16, UI.CREAM_EDGE, 4, Vector4(8, 6, 8, 6))
 	p.custom_minimum_size.x = 152
 	UI.at_right(p, 680, 12)
+	_clock_panel = p
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 8)
 	h.add_child(_clock_dial)
@@ -222,6 +231,7 @@ func _build_hand() -> void:
 	p.size = Vector2(152, 294)
 	p.clip_contents = true
 	UI.at_right(p, 680, 84)
+	_hand_panel = p
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	var head := HBoxContainer.new()
@@ -467,7 +477,19 @@ func hide_encounter() -> void:
 
 
 func encounter_open() -> bool:
-	return _enc_layer.visible
+	return _enc_layer.visible or check.visible or shop.visible
+
+
+## Scenes show the party and the camera, not the map's hand and clock (Town v2a).
+func open_shop(where: String, on_buy: Callable, on_close: Callable) -> void:
+	_clock_panel.visible = false
+	_hand_panel.visible = false
+	shop.fly_to = _gear_button.get_global_rect().get_center() - shop.get_global_rect().position
+	shop.closed.connect(func():
+		_clock_panel.visible = true
+		_hand_panel.visible = true
+		on_close.call(), CONNECT_ONE_SHOT)
+	shop.open(where, on_buy)
 
 
 func _pill_button(t: String, sub: String, bg: Color, ink: Color) -> Button:
