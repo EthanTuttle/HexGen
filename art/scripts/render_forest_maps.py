@@ -2,7 +2,8 @@
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_forest_maps.py
 Pass names after -- to render only those maps (for example -- deep_forest_gorge), --check to run the checks without
-rendering, and --kit for the obstacles laid out. Uses the latest combat_cells, enemy_minis, giant_minis and standin_minis.
+rendering, --kit for the obstacles laid out, and --export for the engines' data: art/combat/combat_maps_vN.blend (each map's plate, shelves and cliffs)
+and art/export/combat_maps.json (each map's cells, placements and sample starts; format in art/handoff/combat_forest_kit.md). Uses the latest combat_cells, enemy_minis, giant_minis and standin_minis.
 Writes art/preview/forest_map_<map>_vN.png and the sheets forest_maps_<variant>_vN.png (never overwrites).
 
 Each plan is the map from straight above with north at the top: a cell's character is at column q, row 2r + q (so a
@@ -17,6 +18,7 @@ Cells of one letter that touch make one obstacle; its turn is found from its sha
 
 The plans assume obstacles stop movement and brush can be walked through. Enemy mixes and starting spots are samples.
 """
+import json
 import math
 import os
 import sys
@@ -314,16 +316,21 @@ def seen_default(scene, depsgraph, c, target, el):
 
 
 def shaped_piece(col, v, group, mark):
-    """A rock shelf or cliff on exactly these cells: a footing following their outline, a column on each cell."""
+    """A rock shelf or cliff on exactly these cells: a low footing following their outline, so the blocked cells stay plain,
+    and rough boulders piled on each cell, sharing a colour so they read as one mass."""
     p = hk.Piece(f"{'cliff' if mark == 'K' else 'shelf'}_{min(group)}")
     rng = hk.seeded(p.name)
     main, side, top = fc.ROCK[v]
-    low, high = (1.7, 2.3) if mark == "K" else (0.75, 1.0)
-    p.prism(fc.cell_loop(group), 0.0, low * 0.45, side)
+    p.prism(fc.cell_loop(group), 0.0, 0.16, side)
     for c in sorted(group):
-        h = rng.uniform(low, high)
-        outline = [hk.cell_position(*c) + q for q in hk.hex_corners(hk.CELL_RADIUS * rng.uniform(0.84, 0.94), pointy=False)[::-1]]
-        p.prism(outline, low * 0.3, h, top or main, side_mat=main)
+        at = hk.cell_position(*c)
+        drift = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), 0)) * 0.05
+        moss = top if rng.random() < 0.3 else None  # only here and there, or it reads as caps again
+        if mark == "K":
+            fc.rock(p, rng, at + drift, rng.uniform(0.56, 0.6), main, rng.uniform(0.42, 0.5), 1.25)
+            fc.rock(p, rng, at - drift, rng.uniform(0.42, 0.48), main, rng.uniform(1.0, 1.3), 1.25, moss)
+        else:
+            fc.rock(p, rng, at + drift, rng.uniform(0.5, 0.56), main, rng.uniform(0.3, 0.42), 0.95, moss)
     p.finish(col)
 
 
@@ -457,9 +464,55 @@ def kit_sheet(t, col):
         rp.place(t, "standin_hero", col, Vector((x, y, 0)), rb.FACE_NORTH + 0.5)
 
 
+def export():
+    """One blend holding every map's own pieces, and one JSON saying what goes where."""
+    hk.empty_scene()
+    t = rb.templates()
+    keep = hk.new_collection("maps")
+    data = {}
+    for name in MAPS:
+        col = hk.new_collection(f"building_{name}")
+        cells = build_map(t, col, name)
+        placements = []
+        for o in list(col.objects):
+            if "piece" in o:
+                placements.append({"piece": o["piece"], "x": round(o.location.x, 4), "y": round(o.location.y, 4), "turn": round(math.degrees(o.rotation_euler.z)) % 360})
+                bpy.data.objects.remove(o)
+            else:
+                o.name = f"map_{name}_{o.name}".replace("(", "").replace(")", "").replace(", ", "_")
+                col.objects.unlink(o)
+                keep.objects.link(o)
+                placements.append({"piece": o.name, "x": 0, "y": 0, "turn": 0})
+        bpy.data.collections.remove(col)
+        m = MAPS[name]
+        rows = []
+        for (q, r), mark in sorted(cells.items()):
+            rows.append({"q": q, "r": r, "kind": "open" if mark in WALKABLE and mark != "c" else "brush" if mark == "c" else "blocked"})
+        starts = [{"mini": MINI_MARKS[mark], "q": c[0], "r": c[1]} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
+        for mark, group in groups(cells, "A"):
+            anchor, turn = fit(group, {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)])
+            starts.append({"mini": m["giant"], "q": anchor[0], "r": anchor[1], "turn": 60 * turn})
+        data[name] = {"variant": next(v for v in fc.VARIANTS if name.startswith(v)), "shape": m["size"], "idea": m["idea"], "centre": list(middle_of(cells).to_tuple(3))[:2],
+                      "cells": rows, "placements": placements, "starts": starts}
+    for o in list(bpy.data.objects):
+        if o.name not in keep.objects:
+            bpy.data.objects.remove(o)
+    path = hk.next_version(os.path.join(hk.ART, "combat"), "combat_maps")
+    bpy.ops.wm.save_as_mainfile(filepath=path)
+    print("SAVED", path)
+    out = os.path.join(hk.ART, "export", "combat_maps.json")
+    with open(out, "w") as fh:
+        json.dump(data, fh, separators=(",", ":"), sort_keys=True)
+        fh.write("\n")
+    print("EXPORTED", out)
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     only_check = "--check" in args
+    if "--export" in args:
+        export()
+        sys.exit()
     if "--kit" in args:
         hk.empty_scene()
         kit_sheet(rb.templates(), hk.new_collection("kit"))
