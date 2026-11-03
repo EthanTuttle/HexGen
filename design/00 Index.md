@@ -36,7 +36,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 ## Master open questions
 
 - [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
-- [ ] New: combat map ways up: steps in a cut with a flat landing, being tried (see Presentation)
+- [x] ~~Combat map ways up~~ (settled Nov 3: landing with steps into every neighbouring cell; see Presentation)
 - [ ] New: cover on combat maps: whether crops and forest brush hide anyone (walkable with no rule for now; see Classes & combat)
 **World & story**
 
