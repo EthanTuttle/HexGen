@@ -19,6 +19,7 @@ import hexkit as hk  # noqa: E402
 import ground_cover as gc  # noqa: E402
 import landmark_flow as lf  # noqa: E402
 import cliffs  # noqa: E402
+import desert_lands as dl  # noqa: E402
 import fence_gates as fg  # noqa: E402
 import json  # noqa: E402
 import sand  # noqa: E402
@@ -120,6 +121,8 @@ def draw_effects(col, templates, thin=False):
                 for k in range(4):
                     a_ = 2 * math.pi * k / 4
                     p.box(at + Vector((math.cos(a_) * 0.2, math.sin(a_) * 0.2, 0.15 * k)), (0.07, 0.07, 0.07), "ember")
+            elif e["kind"] == "glint":
+                pass  # an engine effect on the pool's surface
             elif e["kind"] == "fire":
                 p.cone(at, 0.14, 0.32, "ember", segments=5)
             elif e["kind"] == "spray":
@@ -239,6 +242,8 @@ def linked(a, b):
     """Joined for edge pieces: the same terrain (a region variant counts as its terrain), or linked terrains."""
     if b and vr.wedges_of(a) != vr.wedges_of(b) and (vr.wedges_of(a) in cliffs.RAISED or vr.wedges_of(b) in cliffs.RAISED):
         return False  # a raised region shares no mountain with the land below it
+    if "canyon" in (vr.wedges_of(a), b and vr.wedges_of(b)):
+        return dl.joins(a, b, vr.wedges_of, vr.LANDMARKS)  # gorges run only between canyon tiles
     a, b = vr.terrain_of(a), vr.terrain_of(b) if b else b
     return a == b or frozenset((a, b)) in LINKED
 
@@ -292,7 +297,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             dist.update(d)
             toward.update(t)
             turns[lm_at] = lf.turn(lm_at, d, t)  # the landmark's entrance faces its longest trail
-            if lm == "sandstonesphinx":
+            if lm in ("sandstonesphinx", "echocave"):
                 turns[lm_at] = sand.sphinx_turn(lm_at, region)
     # Fence gates round farm and village groups (fence_gates.py).
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
@@ -306,9 +311,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         # edge pieces are picked by its terrain.
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
-        base = place(templates, f"base_{terrain}", col, at)
         kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
-        if kit in vr.VARIANTS:
+        base = place(templates, f"base_{terrain}", col, at) if kit != "canyon" else None  # the canyon's pieces are its ground: a slab would cover the gorges
+        if kit in vr.VARIANTS and base:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
             base.material_slots[0].link = "OBJECT"
             base.material_slots[0].material = hk.material(vr.VARIANTS[kit][2])
@@ -364,7 +369,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         for part, (_, hub) in vr.LANDMARK_PARTS.items():  # e.g. the Great Windmill's sails, turned with it
             if part.startswith(f"{name}_"):
                 place(templates, part, col, at + Matrix.Rotation(spin, 3, "Z") @ hub, spin)
-        if terrain == "desert":
+        if name in sand.LOOKS:
             # The sand is shaped in world space, the way the engines will.
             p = hk.Piece(f"sand_{q}_{r}")
             sand.add_sand(p, MAP, q, r, dist.get((q, r)), turns.get((q, r), 0))
@@ -1035,6 +1040,70 @@ if __name__ == "__main__":
         p.finish(col)
         stage(at, 34, 50)
         shot("desert_sphinx_routes")
+        sys.exit(0)
+    if "desert2" in flags:
+        # Desert round 2: badlands, oasis and canyon, each a 12-tile region with its landmark, from the map camera, turned, and close to; the canyon from low down too, and rays looking for holes.
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(stem)
+
+        def view(focus_, dist_, el_deg, ang):
+            el = math.radians(el_deg)
+            cam = bpy.context.scene.camera
+            cam.location = focus_ + Vector((dist_ * math.cos(el) * math.cos(ang), dist_ * math.cos(el) * math.sin(ang), dist_ * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
+
+        region = [(0, 0)] + list(hk.NEIGHBOURS) + [(1, 1), (2, -1), (1, -2), (-1, 2), (-2, 1)]
+        ring = {t: ("river" if t == (3, -1) else "plains") for b_ in region for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in region}
+        lm_at = (1, 0)
+        for variant, lm in (("badlands", "raiderstronghold"), ("oasis", "oasisbazaar"), ("canyon", "echocave")):
+            needs = [f"{variant}_{x}" for x in ("map", "turned", "landmark", "landmark_b", "low_a", "low_b", "side")]
+            if flags.get("only") and not set(needs) & set(flags["only"].split(",")) and flags.get("holes") is None:
+                continue
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            tiles_ = {**ring, **{t: variant for t in region}, lm_at: lm}
+            build_map(templates, tiles=tiles_)
+            col = bpy.data.collections["map"]
+            if variant == "canyon":
+                # Holes: straight down over the whole region, a ray must hit ground; and along each edge from outside, a ray must hit a wall.
+                bpy.context.view_layer.update()
+                dg = bpy.context.evaluated_depsgraph_get()
+                missed = hit = 0
+                lowest = 0
+                for t in region:
+                    c = hk.tile_position(*t)
+                    for ix in range(-20, 21):
+                        for iy in range(-22, 23):
+                            q = c + Vector((ix * 0.2 + 0.013, iy * 0.2 + 0.017, 0))  # off the lines where faces meet, which a ray can slip through
+                            if gc.tile_at(q.x, q.y) != t:
+                                continue
+                            ok, loc, *_ = bpy.context.scene.ray_cast(dg, Vector((q.x, q.y, 20)), Vector((0, 0, -1)))
+                            hit += ok
+                            missed += not ok
+                            if not ok:
+                                print("HOLE", t, round(q.x - c.x, 2), round(q.y - c.y, 2))
+                            lowest = min(lowest, loc.z) if ok else lowest
+                print(f"HOLES {missed} of {missed + hit} rays down, lowest {lowest:.2f}")
+            draw_effects(col, templates, thin=True)
+            focus = Vector((0.5, -1.0, 0))
+            stage(focus, 66, 50)
+            shot(f"{variant}_map")
+            view(focus, 62, 50, math.radians(150))
+            shot(f"{variant}_turned")
+            at = hk.tile_position(*lm_at)
+            view(at + Vector((0, 0, 1.0)), 19, 42, -math.pi / 2)
+            shot(f"{variant}_landmark")
+            view(at + Vector((0, 0, 1.0)), 19, 34, math.radians(20))
+            shot(f"{variant}_landmark_b")
+            if variant == "canyon":
+                mid = hk.tile_position(0, 0)
+                view(mid + Vector((0, 0, -0.5)), 24, 25, -math.pi / 2)
+                shot("canyon_low_a")
+                view(mid + Vector((0, 0, -0.5)), 20, 14, math.radians(-40))
+                shot("canyon_low_b")
+                view(Vector((0, 0, -0.5)), 44, 6, -math.pi / 2)
+                shot("canyon_side")
         sys.exit(0)
     if "river2" in flags:
         # River/lake round 2 (and the River Port's ground): each variant at map zoom with its routes, and its landmark close to.

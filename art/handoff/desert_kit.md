@@ -1,3 +1,87 @@
+# Desert kit hand-off, round 2 (tiles_v57)
+
+This round holds badlands with the Raider Stronghold, oasis with the Oasis Bazaar, and canyon with the Echo Cave. None of it has been tried in Godot, and Ethan hasn't seen it. Round 1 follows below.
+
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v57.blend`.
+- **Rules and routes:** `art/scripts/desert_lands.py`, plain Python to copy.
+- **Previews:** `art/preview/<variant>_map_v1.png`, `_turned_v1`, `_landmark_v1`, `_landmark_b_v1` for `badlands`, `oasis` and `canyon`. Canyon also has `canyon_low_a_v1`, `canyon_low_b_v1` and `canyon_side_v1`.
+
+## What the engine has to do
+
+- **No sand here:** these three aren't in `sand.LOOKS`, so give them no sand mesh. Sand beside them lies flat at the shared edge, as it does at any other terrain.
+- **Canyon has no slab:** don't place `base_desert` on a canyon tile or the Echo Cave. Its pieces are the ground, and a slab would cover the gorges. So the ground-colour fade from the slab doesn't reach it: the neighbour's side can still fade toward `canyon_top`.
+- **Canyon wedges:** a canyon tile only joins another canyon tile. Use `desert_lands.joins(a, b, wedges_of, landmarks)` to choose `edge_same` over `edge_other`, not the usual same-terrain test. It's false beside the Echo Cave, whose tile is solid to its edges. The Echo Cave uses `canyon_edge_other_lm` on all six edges.
+- **Turn:** the Echo Cave uses `sand.sphinx_turn`, like the Sphinx. The others use `landmark_flow.turn`.
+- **Corner pieces:** the badlands' and oasis' `centre` and `centre_b` reach out into the tile's corners, and `build_map` turns them by a hash of the tile, as a farm's centre.
+- **Effects:** `glint` is new, on pools and the well. Heat shimmer isn't in the kit: it's yours to add over badlands.
+
+## Canyon
+
+**The party stays on the rim. Ethan should check this, since it's my call.** Gorges run along the edges two canyon tiles share, not through a tile's middle. A natural stone arch crosses every shared edge at its midpoint, and the usual `_quad` curves cross on it, so canyon needs no new route code. Only the Echo Cave's route goes down.
+
+| Why | |
+| --- | |
+| Minis stay in view | They never walk the floor, which the near rim would hide from a 50° camera |
+| Real depth | The floor is at -3.0. A route down from a tile's edge would be limited to about 1.1 by the 28° tilt limit |
+| No holes at the board's sides | Gorges only run between canyon tiles. Every other edge is solid, with a rock face down to -3.1 |
+
+- **Not dark slots:** a shared edge's gorge is about 3 wide, about one to one with its depth. Each wall has three bands, cream, orange and rust, stepping back with ledges that catch the light, over a pale floor.
+- **Blended edges:** both tiles' floors meet at -3.0 and their arches meet at the tile's edge. `edge_same` and `edge_same_b` have different rim lines, which meet at the same point on the line between wedges, so any two join.
+- **Holes check:** 15,792 rays straight down over the 12-tile region: 0 misses, lowest hit -3.00. It's in `render_preview.py --desert2`. Its first runs missed 13 rays that landed exactly on lines where faces meet, so it now samples just off them.
+- **Flow:** no drawn paths. Marks carved on the rim thicken toward the cave (`centre_mid`, `centre_near`). Cliff dwellings stand in every gorge.
+
+### Echo Cave (`echocave_centre`, 1,285 triangles)
+
+A hexagonal pit 3 deep, with the dark mouth in its -X wall, framed by a stone arch, with spirals carved beside it and banded rock above. `desert_lands.echo_routes(t)` goes round the rim to a ramp down the pit's walls (24.3°), then across the floor to the stop in front of the mouth.
+
+## Badlands
+
+Mesas 3.1 to 3.7 high and buttes 3.6 to 4.0 high stand in tile corners, the only room clear of every route, so routes need no detours. Ground is hard-packed. No drawn paths: burnt wagons, watch posts and raider camps thicken toward the Stronghold (`centre_mid`, `centre_near`).
+
+### Raider Stronghold (`raiderstronghold_centre`, 926 triangles)
+
+A palisade fort on a 2.3 high mesa, 5.05 to the top of its tower's flag, with spiked walls and flags of rags. `desert_lands.stronghold_routes(t)` gives `routes[i]` as (x, y, z): round the mesa to the ramp's foot, up the ramp (21.8°), to the gate. Follow its z. The ramp is in the piece.
+
+## Oasis
+
+Pale sand with turquoise pools ringed with grass and palms, plus caravan tents, rugs and camels, all in tile corners. No drawn paths: tents and camels thicken toward the Bazaar.
+
+**Pools are the simplest thing that works:** a flat `oasis_water` plate in the piece, not the river system. No route touches one, so Crossing water doesn't apply. The `glint` effect is what's left to do in the engine, including the faint glow at night.
+
+### Oasis Bazaar (`oasisbazaar_centre`, 2,982 triangles)
+
+Three lanes of stalls under striped awnings lead to an open, domed well-house. A slit stays open down each lane so a mini shows from the map camera. `desert_lands.bazaar_routes(t)` runs along a lane or between lanes to the open ground round the well-house, then round to one stop.
+
+## Budget
+
+Against deep forest's 4,816 per tile, worst sampled, with the slab where there is one:
+
+| Tile | Triangles |
+| --- | --- |
+| Canyon, all edges shared | About 3,700 |
+| Oasis Bazaar | About 3,640 |
+| Oasis, `centre_b` | About 2,240 |
+| Raider Stronghold | About 2,380 |
+| Badlands, `centre_mid` | About 1,980 |
+| Echo Cave | About 1,400 |
+
+## Checks
+
+- **`art/scripts/test_desert_lands.py`:** the three landmarks' routes, turned every way: right ends, inside the tile, under the tilt limit, off the mesa, well-house and pit. Every usual curve stays on the arch near an edge, and the rim stays 0.24 or more from every curve. 0 failures.
+- **`art/scripts/check_town.py -- desert2`:** nothing standing within 0.1 of a usual route on any piece, turned every way, and each landmark's routes on the ground against its piece. 1,257 route lines, 0 failures.
+- **`art/scripts/test_sand.py 20`:** rerun: 0 failures.
+
+## Known rough spots
+
+Canyon took four passes, one over the three the brief allows, so these are listed rather than fixed:
+
+- **Rock on the rim:** the low buttes on `edge_other` look like drums or tree stumps. Fix these first: they're the weakest thing in the canyon.
+- **Hexagons show:** a tile's rim reads as a hexagon-ish island, and gorges stop in straight faces where they reach `edge_other`. Up close it reads as islands and bridges more than winding gorges.
+- **Echo Cave:** from behind, the mouth is hidden and the pit is a plain banded box (`canyon_landmark_b_v1`). The camera-facing turn hides this from the default camera only. The pit is also more a shaft than a gorge ending at a cave.
+- **Stronghold:** the ramp is short and easily foreshortened, and the mesa is close to a stack of drums.
+- **Badlands' mesas:** tall and clear of routes, but evenly spaced and all similar in shape.
+- **Not checked:** the arches' look with a mini on them, since no minis are in these previews. Colours are placeholders.
+
 # Desert kit hand-off, round 1 (tiles_v56)
 
 This round holds tier 0 desert, dunes/wasteland and the Sandstone Sphinx. Ethan has seen `tiles_v55`, and asked for its legs to show, smaller if it has to be, so the whole front reads as a crouching sphinx. That's here; he hasn't seen it. Round 2 (badlands, oasis, canyon) is held until he has.
