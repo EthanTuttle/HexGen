@@ -129,6 +129,88 @@ def main():
                     if hit is not None:
                         bad += 1
                         print("ROUTE TOUCHES port", tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
+    if kit == "sand":  # the Sandstone Sphinx's routes against its piece
+        import sand as sd
+        solid = standing(objs["sandstonesphinx_centre"])
+        routes = sd.sphinx_routes(0)
+        for line in routes.values():
+            for a, b in zip(line, line[1:]):
+                a2, b2 = Vector(a), Vector(b)
+                hit = next((q for q in solid if seg_dist(q, a2, b2) < CLEAR), None)
+                if hit is not None:
+                    bad += 1
+                    print("ROUTE TOUCHES sphinx", tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a), tuple(round(c_, 2) for c_ in b))
+        print(f"{len(routes)} route lines, {len(solid)} points; top", round(max(v.co.z for v in objs["sandstonesphinx_centre"].data.vertices), 2))
+    if kit == "desert2":  # badlands, oasis and canyon: nothing standing on a usual route; each landmark's routes against its piece, on the ground
+        import desert_lands as dl
+        import sand as sd
+        kits = ("badlands", "oasis", "canyon")
+        pieces = [o for o in objs if o.name.startswith(tuple(k + "_" for k in kits)) and ("_edge_" in o.name or "_centre" in o.name)]
+        lines_ = 0
+        for o in pieces:
+            kind = o.name.split("_", 1)[1]
+            pts = standing(o)
+            for ang in ((0,) if "centre" in kind else range(6)):
+                turned = [Vector((q.x * math.cos(math.radians(60 * ang)) - q.y * math.sin(math.radians(60 * ang)), q.x * math.sin(math.radians(60 * ang)) + q.y * math.cos(math.radians(60 * ang)))) for q in pts]
+                for line in sd.ROUTES:
+                    lines_ += 1
+                    for a, b in zip(line, line[1:]):
+                        a2, b2 = Vector(a), Vector(b)
+                        hit = next((q for q in turned if seg_dist(q, a2, b2) < CLEAR), None)
+                        if hit is not None:
+                            bad += 1
+                            print("ROUTE TOUCHES", o.name, tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a))
+                            break
+        # the badlands' pieces set back in a tile's corner, as badlands_features places them, against every usual route
+        for name in ("badlands_butte", "badlands_camp", "badlands_wagon", "badlands_post"):
+            pts = standing(objs[name])
+            for k_ in range(6):
+                ca = math.radians(60 * k_ + 30)
+                at = Vector((3.2 * math.cos(ca), 3.2 * math.sin(ca)))
+                turn_ = ca + math.pi
+                world_ = [at + Vector((q.x * math.cos(turn_) - q.y * math.sin(turn_), q.x * math.sin(turn_) + q.y * math.cos(turn_))) for q in pts]
+                for line in sd.ROUTES:
+                    lines_ += 1
+                    for a, b in zip(line, line[1:]):
+                        a2, b2 = Vector(a), Vector(b)
+                        hit = next((q for q in world_ if seg_dist(q, a2, b2) < CLEAR), None)
+                        if hit is not None:
+                            bad += 1
+                            print("ROUTE TOUCHES", name, k_, tuple(round(c_, 2) for c_ in hit))
+                            break
+        for name, routes in (("raiderstronghold", dl.stronghold_routes(0)), ("oasisbazaar", dl.bazaar_routes(0)), ("echocave", dl.echo_routes(0))):
+            solid = standing(objs[f"{name}_centre"])
+            for line in routes.values():
+                lines_ += 1
+                for a, b in zip(line, line[1:]):
+                    if a[2] != 0 or b[2] != 0 or (name == "raiderstronghold" and math.dist(b[:2], dl.ramp_line()[0][:2]) < 1e-6):
+                        continue  # on its ramp: the piece's own ground
+                    a2, b2 = Vector(a[:2]), Vector(b[:2])
+                    hit = next((q for q in solid if seg_dist(q, a2, b2) < CLEAR), None)
+                    if hit is not None:
+                        bad += 1
+                        print("ROUTE TOUCHES", name, tuple(round(c_, 2) for c_ in hit), "on", a[:2], b[:2])
+                        break
+            print(name, "top", round(max(v.co.z for v in objs[f"{name}_centre"].data.vertices), 2), "triangles", sum(len(f.vertices) - 2 for f in objs[f"{name}_centre"].data.polygons))
+        for o in pieces:
+            print(o.name, sum(len(f.vertices) - 2 for f in o.data.polygons))
+        # every ramp in the kit: its surface is there under the whole walk, and it meets the ground at both ends
+        for name, line, foot_z in (("raiderstronghold", dl.ramp_walk(), 0.0),
+                                   ("echocave", dl.echo_line(), 0.0)):
+            o = objs[f"{name}_centre"]
+            for a, b in zip(line, line[1:]):
+                for s_ in range(9):
+                    f = s_ / 8
+                    q = (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f)
+                    hit, loc, _, _ = o.ray_cast(Vector((q[0], q[1], q[2] + 0.6)), Vector((0, 0, -1)), distance=1.2)
+                    if not hit or abs(loc.z - q[2]) > 0.12:
+                        bad += 1
+                        print("RAMP GAP", name, tuple(round(c_, 2) for c_ in q), round(loc.z, 2) if hit else None)
+                        break
+            if abs(line[0][2] - foot_z) > 1e-6:
+                bad += 1
+                print("RAMP TOP NOT AT GROUND", name)
+        print(f"{lines_} route lines")
     if kit == "water":  # round 2: the Serpent's Lair's lines, Meditation Rock's walks and the Troll Bridge's path, against their own pieces
         import itertools
         import water as wt

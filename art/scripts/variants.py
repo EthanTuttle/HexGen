@@ -587,11 +587,11 @@ def small_windmill(p, rng):
         p.box_rot(hub + rot @ Vector((0.05, 0, 0.78)), (0.04, 0.06, 1.4), "trunk", rot)
 
 
-def grain_cart(p, rng, at, spin, shafts=False):
+def grain_cart(p, rng, at, spin, shafts=False, load="hay"):
     """A two-wheeled cart piled with grain. shafts: a pair of shafts out in front (toward spin), so it reads
-    as heading that way."""
+    as heading that way. load: the pile's colour."""
     p.box(at, (0.7, 0.42, 0.22), "crate", z=0.22, spin=spin)
-    p.box(at, (0.6, 0.34, 0.12), "hay", z=0.44, spin=spin)
+    p.box(at, (0.6, 0.34, 0.12), load, z=0.44, spin=spin)
     side = turn(Vector((0, 1, 0)), spin)
     for s in (-1, 1):
         p.log(at + side * s * 0.24, 0.16, 0.05, "trunk", spin=spin + math.pi / 2, z=0.16)
@@ -4290,8 +4290,602 @@ PROP_PIECES = {"raft": raft, "riverport_watergate": water_gate, "lake_hut": fish
                "lake_coil": lake_coil, "lake_fin": lake_fin, "lake_wreck": lake_wreck, "rapids_fall": rapids_fall, "rapids_bridge": rapids_bridge,
                "still_willow": still_willow, "still_stack": still_stack, "still_stones": still_stones}
 LANDMARK_CENTRES.update(riverport=river_port, serpentlair=serpent_lair, trollbridge=troll_bridge, meditationrock=meditation_rock)
+
+
+# --- Desert: Sandstone Sphinx ------------------------------------------------------------
+
+def loft(p, rings, mats, cap_start=True, cap_end=True):
+    """A hull through rings of points, each the same length, painted course by course: mats[k] for the faces between rings k and k + 1."""
+    rows = [[p.bm.verts.new(q) for q in ring] for ring in rings]
+    n = len(rows[0])
+    def face(vs, mat):
+        f = p.bm.faces.new(vs)
+        f.material_index = p._slot(mat)
+    for k in range(len(rows) - 1):
+        for j in range(n):
+            face([rows[k][j], rows[k + 1][j], rows[k + 1][(j + 1) % n], rows[k][(j + 1) % n]], mats[k % len(mats)])
+    if cap_start:
+        face(rows[0][::-1], mats[0])
+    if cap_end:
+        face(rows[-1], mats[-1])
+
+
+def sphinx_ring(rng, x, w, h, foot=-0.3):
+    """A cross-section of the body at x: half width w, height h, chipped a little."""
+    j = lambda: rng.uniform(-0.05, 0.05)  # noqa: E731
+    return [Vector((x + j(), y * w, z * h + j() if z > 0 else foot)) for y, z in ((-1, 0), (-1, 0.55), (-0.72, 0.88), (-0.3, 1.0), (0.3, 1.0), (0.72, 0.88), (1, 0.55), (1, 0))]
+
+
+def sandstone_sphinx(p, rng, kind):
+    """Dunes/wasteland's Sandstone Sphinx: a huge statue crouching toward +X, its forelegs laid out in front with the altar between its paws, its haunches under a dune
+    (sand.dune, shaped with the sand), its face worn and its nose gone. The party stops before the altar (sand.sphinx_routes)."""
+    courses = ("sphinx", "sphinx_dark", "sphinx", "sphinx_dark", "sphinx", "sphinx")
+    loft(p, [sphinx_ring(rng, x, w, h) for x, w, h in ((-2.9, 0.6, 0.6), (-2.2, 1.05, 1.5), (-1.2, 1.15, 1.75), (-0.3, 1.12, 1.85), (0.45, 1.05, 1.95), (0.95, 0.72, 1.55), (1.3, 0.45, 0.8))], courses)
+    for sd in (-1, 1):
+        # a foreleg laid along the ground from the shoulder, then its paw with blunt toes
+        y = sd * 0.9
+        loft(p, [[Vector((x, y + sy * w, z)) for sy, z in ((-1, -0.3), (-1, h * 0.8), (-0.55, h), (0.55, h), (1, h * 0.8), (1, -0.3))] for x, w, h in ((-0.3, 0.42, 1.05), (0.65, 0.39, 0.85), (1.45, 0.36, 0.66), (2.05, 0.35, 0.58))], ("sphinx_dark", "sphinx", "sphinx_dark"))
+        p.box(Vector((2.27, y, 0)), (0.44, 0.78, 0.5), "sphinx", z=-0.1)
+        for k in (-1, 0, 1):
+            p.box(Vector((2.55, y + k * 0.25, 0)), (0.2, 0.22, 0.32), "sphinx_dark", z=-0.05, spin=rng.uniform(-0.1, 0.1))
+    # the head is built at scale s, the bottom of its headcloth at (hx, 0, hz)
+    s, hx, hz = 0.88, 0.38, 2.55
+    hd = lambda x, y, z: Vector((hx + s * x, s * y, hz + s * z))  # noqa: E731
+    # the neck, then the headcloth: a high crown, wide wings beside the jaw, one of them broken away
+    frustum(p, Vector((-0.1, 0, 1.6)), hd(0, 0, 0.45), 0.85, 0.65, "sphinx_dark", segments=8)
+    cloth = []
+    for z, wl, wr, back, front in ((0.0, 0.75, 0.6, -0.55, 0.45), (0.45, 1.38, 0.85, -0.62, 0.55), (0.85, 1.28, 1.1, -0.6, 0.6), (1.25, 0.95, 0.95, -0.52, 0.62), (1.65, 0.78, 0.78, -0.42, 0.62), (2.05, 0.6, 0.6, -0.28, 0.55), (2.3, 0.36, 0.36, -0.1, 0.34)):
+        cloth.append([hd(x, y * (wl if y < 0 else wr), z) for x, y in ((back, -1), (back, 1), (front, 1), (front, -1))])
+    loft(p, cloth, ("sphinx_light", "sphinx", "sphinx_light", "sphinx", "sphinx_light", "sphinx"))
+    for sd, low in ((-1, -0.95), (1, -0.45)):  # the lappets on the chest, from under the wings, one broken short
+        loft(p, [[hd(x + dx, sd * 0.66 + dy, z) for dy, dx in ((-0.16, 0), (0.16, 0), (0.16, 0.18), (-0.16, 0.18))] for x, z in ((0.47, 0.5), (0.45, 0.0), (0.43, -0.4), (0.37 + 0.1 * (low + 0.95), low))], ("sphinx_light", "sphinx", "sphinx_light"))
+    # the face: long and level, forward of the cloth, with a ridge down its middle so its planes catch the light; a heavy brow, and the nose broken off short
+    face = []
+    for z, w, xf in ((0.05, 0.34, 0.85), (0.25, 0.5, 0.95), (0.48, 0.58, 0.99), (0.63, 0.6, 0.95), (0.73, 0.62, 1.11), (1.0, 0.66, 1.05), (1.16, 0.68, 1.11), (1.55, 0.6, 0.85)):
+        face.append([hd(x, y, z) for x, y in ((0.15, -w), (xf - 0.2, -w * 0.74), (xf, 0), (xf - 0.2, w * 0.74), (0.15, w))])
+    loft(p, face, ("sphinx_dark", "sphinx", "sphinx", "sphinx_dark", "sphinx", "sphinx_dark", "sphinx"))
+    for sd in (-1, 1):  # narrow sunken eyes, slanting down to the nose
+        p.box_rot(hd(0.95, sd * 0.3, 0.97), (0.09 * s, 0.3 * s, 0.07 * s), "sphinx_shade", Matrix.Rotation(sd * 0.15, 3, "X"))
+    p.box(Vector((hd(0.95, 0, 0).x, 0, 0)), (0.07 * s, 0.34 * s, 0.03 * s), "sphinx_shade", z=hd(0, 0, 0.36).z)  # a straight, thin mouth
+    frustum(p, hd(0.7, 0, 0.1), hd(0.77, 0, -0.35), 0.13 * s, 0.17 * s, "sphinx_dark", segments=6)  # the stump of the royal beard
+    p.box(Vector((hd(0.75, 0, 0).x, 0, 0)), (0.2 * s, 0.18 * s, 0.28 * s), "sphinx_dark", z=hd(0, 0, 1.52).z)  # the stump of the cobra on the brow
+    # what fell from it
+    for x, y, r in ((1.0, 2.05, 0.24), (1.5, -1.85, 0.17), (0.5, -2.05, 0.28)):
+        lump(p, Vector((x, y, 0)), r, "sphinx", z=0.05, squash=0.7)
+    # the altar between its paws: a stepped block, a cloth laid over it, a burning bowl, and jars left by those who came
+    at = Vector((2.0, 0, 0))
+    p.box(at, (0.72, 0.8, 0.2), "sandstone", z=-0.05)
+    p.box(at, (0.5, 0.58, 0.32), "sphinx_light", z=0.15)
+    p.box(at, (0.54, 0.26, 0.03), "offering", z=0.47)
+    p.box(at + Vector((0.27, 0, 0)), (0.02, 0.26, 0.2), "offering", z=0.28)
+    p.cylinder(at, 0.15, 0.09, "sphinx_shade", segments=7, z=0.5)
+    p.cone(at, 0.09, 0.12, "ember", segments=5, z=0.59)
+    for x, y, r, h in ((0.5, 0.3, 0.08, 0.26), (0.5, -0.32, 0.07, 0.2), (0.62, -0.14, 0.05, 0.14)):
+        p.cylinder(at + Vector((x, y, 0)), r, h, "offering" if h > 0.25 else "sphinx_dark", segments=6, z=-0.04)
+    p.effects.append(("smoke", at + Vector((0, 0, 0.7))))
+
+
+LANDMARK_CENTRES["sandstonesphinx"] = sandstone_sphinx
 LANDMARK_PARTS.update(riverport_cog=(cog, Vector((1.28, 1.35, 0))), riverport_barge=(barge, Vector((1.3, -1.85, 0))),
                       riverport_raft=(afloat_raft, Vector((1.62, -0.72, 0))))
+
+
+
+# --- Desert round 2: badlands, oasis, canyon ------------------------------------------------
+
+import desert_lands as dl  # noqa: E402
+import ramp_parts as rp  # noqa: E402
+
+CORNER_R = 3.1  # how far from a tile's middle its corner props stand: clear of every route (sand.clear_of_routes)
+
+
+def tile_corner_at(k, u=CORNER_R, side=0.0):
+    """A point in the corner between edges k and k + 1, in a centre piece's frame."""
+    a = math.radians(60 * k + 30)
+    return Vector((u * math.cos(a) - side * math.sin(a), u * math.sin(a) + side * math.cos(a), 0))
+
+
+def rough_crag(p, rng, at, r, h, mats=("mesa_b", "mesa_a", "mesa_c")):
+    """Craggy rock: a few leaning, broken blocks of uneven facets, not a round stack."""
+    for j in range(3 if r > 0.45 else 2):
+        c = at + Vector((rng.uniform(-0.6, 0.6) * r, rng.uniform(-0.6, 0.6) * r, 0))
+        hh = h * rng.uniform(0.55, 1.0)
+        lean = Vector((rng.uniform(-0.22, 0.22) * r, rng.uniform(-0.22, 0.22) * r, 0))
+        n = 6
+        rings = []
+        ang = rng.uniform(0, 6.28)
+        rad = [rng.uniform(0.6, 1.1) * r * rng.uniform(0.6, 0.9) for _ in range(n)]
+        for f, s_ in ((-0.1, 1.05), (0.45, 0.85), (0.8, 0.6), (1.0, 0.28)):
+            rings.append([c + lean * f + Vector((rad[k] * s_ * rng.uniform(0.85, 1.1) * math.cos(ang + 6.283 * k / n), rad[k] * s_ * rng.uniform(0.85, 1.1) * math.sin(ang + 6.283 * k / n), f * hh * rng.uniform(0.93, 1.05))) for k in range(n)])
+        loft(p, rings, mats, cap_start=False)
+
+
+def mesa_mass(p, rng, outline, h, bands=("mesa_a", "mesa_b", "mesa_c", "mesa_a")):
+    """A flat-topped mass over a given outline (XY points, anticlockwise, about the origin): steep banded sides, each band set back unevenly, and fallen rock at its foot."""
+    n = len(outline)
+    jag = [rng.uniform(0.0, 0.1) for _ in range(n)]
+    rings = []
+    for f, s_ in ((-0.05, 1.0), (0.38, 0.96), (0.4, 0.9), (0.7, 0.86), (0.72, 0.8), (1.0, 0.76)):
+        rings.append([Vector((outline[k][0] * (s_ - jag[k] * (f > 0.35)), outline[k][1] * (s_ - jag[k] * (f > 0.35)), f * h * (1 + 0.02 * ((k * 7) % 3 - 1)))) for k in range(n)])
+    loft(p, rings, (bands[0], bands[3], bands[1], bands[3], bands[2]), cap_start=False, cap_end=False)
+    p.bm.faces.new([p.bm.verts.new(q) for q in rings[-1]]).material_index = p._slot("mesa_top")
+    for k in range(0, n, 3):
+        x, y = outline[k]
+        rough_crag(p, rng, Vector((x * 0.98, y * 0.98, 0)), rng.uniform(0.16, 0.26), rng.uniform(0.3, 0.7))
+
+
+def mesa(p, rng, at, r, h, bands=("mesa_a", "mesa_b", "mesa_c", "mesa_a")):
+    """A round-ish butte, for the Echo Cave's cliff: see mesa_mass."""
+    n = 9
+    outline = [(r * rng.uniform(0.75, 1.0) * math.cos(6.283 * k / n), r * rng.uniform(0.75, 1.0) * math.sin(6.283 * k / n)) for k in range(n)]
+    rings = []
+    for f, s_ in ((-0.05, 1.0), (0.4, 0.95), (0.41, 0.9), (0.72, 0.86), (0.73, 0.82), (1.0, 0.79)):
+        rings.append([at + Vector((outline[k][0] * s_, outline[k][1] * s_, f * h)) for k in range(n)])
+    loft(p, rings, (bands[0], bands[3], bands[1], bands[3], bands[2]), cap_start=False, cap_end=False)
+    p.bm.faces.new([p.bm.verts.new(q) for q in rings[-1]]).material_index = p._slot("mesa_top")
+
+
+def cracked_patch(p, rng, at):
+    p.flat([Vector((x, y, 0)) for x, y in wt.circle((at.x, at.y), rng.uniform(0.3, 0.5), rng, 0.25)], 0.012, "cracked")
+
+
+def rag_post(p, rng, at, h=1.7, z=0.0):
+    """A watch post or pole with a ragged flag: torn strips of different lengths."""
+    p.box(at, (0.07, 0.07, h), "deadwood", z=z)
+    for k, (l, c) in enumerate(((0.5, "canvas_dirty"), (0.36, "offering"), (0.44, "canvas_dirty"))):
+        p.box(at + Vector((l / 2 + 0.03, 0, 0)), (l, 0.02, 0.1), c, z=z + h - 0.1 - 0.11 * k)
+
+
+def barricade(p, rng, at, spin, n=4):
+    """Sharpened stakes angled out from a low rail."""
+    p.box(at, (0.34 * n, 0.08, 0.1), "deadwood", z=0.3, spin=spin)
+    for k in range(n):
+        q = at + turn(Vector(((k - (n - 1) / 2) * 0.34, 0, 0)), spin)
+        hk.spike_up(p, q + turn(Vector((0, -0.14, 0)), spin), q + turn(Vector((0, 0.3, 0.7)), spin), 0.05, "deadwood")
+
+
+def burnt_wagon(p, rng, at, spin):
+    p.box(at, (1.0, 0.5, 0.14), "char", z=0.22, spin=spin)
+    for dx, dy in ((-0.34, -0.3), (0.34, 0.3)):
+        p.log(at + turn(Vector((dx, dy, 0)), spin), 0.18, 0.05, "char", spin=spin + math.pi / 2, z=0.18)
+    p.log(at + turn(Vector((0.42, -0.3, 0)), spin), 0.18, 0.05, "char", spin=spin + 1.2, z=0.04)
+    for dx in (-0.4, 0.05, 0.4):
+        p.box_rot(at + turn(Vector((dx, 0.26, 0.5)), spin), (0.05, 0.05, 0.6), "char", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.3, 3, "X"))
+
+
+def badlands(p, rng, kind):
+    """Hard-packed ground, with cracked patches. The mesas, buttes and raider camps stand at the tile corners (desert_lands.badlands_features). No drawn paths: camps, wagons and watch posts thicken toward the Stronghold."""
+    if kind in ("same", "other"):
+        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X1 - 1.0, margin=0.2, inner=0) and abs(q.y) > 0.45, 3 if kind == "other" else 2, 0.8, hk.WEDGE_BOUNDS):
+            cracked_patch(p, rng, at)
+        return
+    for k in ((1, 3) if kind == "centre" else (0, 2, 5)):
+        cracked_patch(p, rng, tile_corner_at(k, 1.6))
+    p.effects.append(("shimmer", Vector((0, 0, 0.3))))
+
+
+def badlands_prop(kind):
+    def build(p, rng):
+        if kind in dl.MESA_LOBES:
+            mesa_mass(p, rng, dl.mesa_outline(kind, rng), {"badlands_mesa_big": 3.3, "badlands_mesa_mid": 2.6, "badlands_mesa_low": 1.25}[kind])
+        elif kind in dl.MESA_KITES:
+            mesa_mass(p, rng, dl.kite_outline(kind, rng), {"badlands_kite_big": 3.0, "badlands_kite_mid": 2.4, "badlands_kite_low": 1.2}[kind])
+        elif kind == "badlands_butte":
+            mesa_mass(p, rng, [(0.95 * rng.uniform(0.7, 1.0) * math.cos(6.283 * j / 10), 0.95 * rng.uniform(0.7, 1.0) * math.sin(6.283 * j / 10)) for j in range(10)], 3.0)
+        elif kind == "badlands_camp":
+            raider_camp(p, rng, Vector((0, 0, 0)), 0.0)
+        elif kind == "badlands_wagon":
+            burnt_wagon(p, rng, Vector((0, 0, 0)), 0.5)
+            barricade(p, rng, Vector((-0.6, 0.55, 0)), 0.4, 3)
+        else:
+            rag_post(p, rng, Vector((0, 0, 0)), 2.4)
+            barricade(p, rng, Vector((-0.55, 0, 0)), 1.57, 3)
+    return build
+
+
+def raider_camp(p, rng, at, spin):
+    """A lean-to, spiked barricades on its far side, and a pole of rags."""
+    collapsed_tent(p, rng, at, spin, 0.6)
+    barricade(p, rng, at + turn(Vector((0, -0.55, 0)), spin), spin + math.pi, 3)
+    rag_post(p, rng, at + turn(Vector((0.55, -0.35, 0)), spin))
+
+
+class StrongholdRun(rp.Run):
+    """The Stronghold's timber ramp in its piece: s from the foot, d from the deck's open side in toward the mesa."""
+    run = dl.RAMP_END - dl.RAMP_FOOT[0]
+    deck_over = 0.0
+    inner_over = (0.0, 0.03)
+    rail_from = 1.0
+    flat_end = True
+    foot_stones = 0  # the walk from the north edge passes close by
+
+    def W(self, s, d, z):
+        return Vector((dl.RAMP_FOOT[0] + s, dl.RAMP_OUT - d, z))
+
+    def inner(self, s):
+        return dl.RAMP_OUT - dl.FORT_SIDE + 0.03
+
+    def path_z(self, s):
+        return dl.MESA_H * min(1.0, max(0.0, s) / (dl.RAMP_TOP[0] - dl.RAMP_FOOT[0]))
+
+    def on_floor(self, s, d):
+        return False
+
+
+def raider_stronghold(p, rng, kind):
+    """Badlands' Raider Stronghold: a palisade fort on a long, angular mesa, reached by a straight ramp up its long side, which meets the ground at its foot and the top at its end (desert_lands.stronghold_routes). Spiked walls and flags of rags."""
+    h = dl.MESA_H
+    outline = list(dl.FORT_OUTLINE)
+    n = len(outline)
+    in_x = [rng.uniform(0.0, 0.12) for _ in range(n)]
+
+    def ring(z, s_):
+        out = []
+        for k, (x, y) in enumerate(outline):
+            straight = abs(y - dl.FORT_SIDE) < 1e-6  # the ramp's side stays straight, so the ramp meets it all the way up
+            f = 1.0 if straight else s_ - in_x[k] * (z > 0.5)
+            out.append(Vector((x * f, y if straight else y * f, z)))
+        return out
+
+    rings = [ring(-0.1, 1.0), ring(h * 0.45, 0.97), ring(h * 0.8, 0.94), ring(h, 0.93)]
+    loft(p, rings, ("mesa_a", "mesa_b", "mesa_c"), cap_start=False, cap_end=False)
+    p.bm.faces.new([p.bm.verts.new(q) for q in rings[-1]]).material_index = p._slot("mesa_top")
+    # the ramp: timber up the straight side, with a landing beside the gate
+    StrongholdRun(p, rng, ("mesa_b", "mesa_a", "mesa_c")).timber()
+    # broken rock round the foot, on the sides the ramp isn't
+    for x, y, r_, h_ in ((-2.7, -1.15, 0.4, 1.1), (-1.6, -1.65, 0.34, 0.8), (0.1, -2.15, 0.42, 1.25), (1.9, -1.6, 0.36, 0.9), (2.95, -1.0, 0.3, 0.7), (2.95, 0.5, 0.34, 1.0), (-2.9, -0.05, 0.22, 0.8)):
+        rough_crag(p, rng, Vector((x, y, 0)), r_, h_)
+    # the fort: a palisade inside the mesa's edge, stakes leaning out, a gate near the ramp's top, a hut, a tent and a watch tower
+    wall = [Vector((-2.05, -0.5, 0)), Vector((-1.75, -0.9, 0)), Vector((-0.75, -1.0, 0)), Vector((-0.3, -1.45, 0)), Vector((0.65, -1.35, 0)), Vector((1.1, -0.85, 0)), Vector((2.05, -0.95, 0)), Vector((2.35, -0.3, 0)), Vector((2.2, 0.5, 0)), Vector((2.35, 1.0, 0)), Vector((1.6, 1.0, 0)), Vector((-2.0, 1.0, 0)), Vector((-2.3, 0.4, 0))]
+    gate_a, gate_b = wall[9], wall[10]
+    for k in range(len(wall)):
+        a, b = wall[k], wall[(k + 1) % len(wall)]
+        if a == gate_a:
+            continue  # the gate's gap, where the walk comes in
+        ln = (b - a).length
+        steps = max(1, int(ln / 0.42))
+        spin = math.atan2((b - a).y, (b - a).x)
+        out = Vector((math.sin(spin), -math.cos(spin), 0))
+        for j in range(steps):
+            mid = a + (b - a) * ((j + 0.5) / steps)
+            p.box(mid, (ln / steps + 0.02, 0.14, rng.uniform(0.6, 0.8)), "deadwood" if j % 2 else "trunk", z=h, spin=spin)
+            if j % 2 == 0:
+                hk.spike_up(p, mid + Vector((0, 0, h + 0.58)), mid + out * 0.34 + Vector((0, 0, h + 1.0)), 0.05, "bone" if (k + j) % 5 == 0 else "deadwood")
+    for g in (gate_a, gate_b):
+        rag_post(p, rng, g, 1.6, z=h)
+    tower = Vector((-1.2, -0.25, 0))
+    for dx in (-0.3, 0.3):
+        for dy in (-0.3, 0.3):
+            p.box(tower + Vector((dx, dy, 0)), (0.1, 0.1, 1.45), "deadwood", z=h)
+    p.box(tower, (0.9, 0.9, 0.1), "trunk", z=h + 1.45)
+    for sd in (-1, 1):
+        p.box(tower + Vector((sd * 0.43, 0, 0)), (0.05, 0.9, 0.3), "deadwood", z=h + 1.55)
+        p.box(tower + Vector((0, sd * 0.43, 0)), (0.9, 0.05, 0.3), "deadwood", z=h + 1.55)
+    rag_post(p, rng, tower, 1.1, z=h + 1.55)
+    hut = Vector((0.5, -0.6, 0))
+    p.box(hut, (1.1, 0.75, 0.55), "trunk", z=h, spin=0.1)
+    p.gable_roof(hut, 1.22, 0.86, 0.34, "canvas_dirty", z=h + 0.55, spin=0.1)
+    collapsed_tent(p, rng, Vector((-0.5, 0.55, h)), 3.0, 0.6)
+    fire = Vector((0.9, 0.35, 0))
+    p.cylinder(fire, 0.2, 0.08, "char", segments=6, z=h)
+    p.effects.append(("fire", fire + Vector((0, 0, h + 0.08))))
+    p.effects.append(("smoke", fire + Vector((0, 0, h + 0.5))))
+
+
+def date_palm(p, rng, at, h=None):
+    """A leaning trunk and a crown of drooping fronds."""
+    h = h or rng.uniform(1.5, 2.1)
+    a = rng.uniform(0, 2 * math.pi)
+    top = at + Vector((math.cos(a) * 0.22, math.sin(a) * 0.22, h))
+    frustum(p, at, top, 0.09, 0.055, "palm_trunk", segments=5)
+    for k in range(6):
+        b = a + 2 * math.pi * k / 6
+        d = Vector((math.cos(b), math.sin(b), 0))
+        hk.spike_up(p, top + d * 0.06, top + d * 0.55 + Vector((0, 0, 0.18)), 0.09, "palm_frond")
+        hk.spike_up(p, top + d * 0.5 + Vector((0, 0, 0.18)), top + d * 0.85 - Vector((0, 0, 0.22)), 0.07, "palm_frond")
+
+
+def oasis_pool(p, rng, at, r):
+    """A clear pool ringed with grass and palms, in a tile's corner: routes never touch it, so it isn't a river and Crossing water doesn't apply."""
+    pts = wt.circle((at.x, at.y), r, rng, 0.12)
+    p.flat([at + (Vector((x, y, 0)) - at) * ((r + 0.42) / r) for x, y in pts], 0.012, "oasis_grass")
+    p.flat([at + (Vector((x, y, 0)) - at) * ((r + 0.08) / r) for x, y in pts], 0.016, "wasteland")
+    p.flat([Vector((x, y, 0)) for x, y in pts], 0.02, "oasis_water")
+    p.effects.append(("glint", at + Vector((0, 0, 0.03))))
+    for k in range(5):
+        a = 2 * math.pi * k / 5 + rng.uniform(-0.25, 0.25)
+        date_palm(p, rng, at + Vector((math.cos(a), math.sin(a), 0)) * (r + 0.24))
+
+
+def caravan_tent(p, rng, at, spin):
+    """A bright striped caravan tent with a rug laid out in front."""
+    c = rng.choice(("rug_a", "rug_b", "rug_c"))
+    p.gable_roof(at, 1.2, 0.95, 0.85, c, z=0.0, spin=spin)
+    p.box(at + turn(Vector((0.61, 0, 0)), spin), (0.02, 0.32, 0.45), "cave_dark", spin=spin)
+    p.box(at + turn(Vector((0.98, 0, 0)), spin), (0.6, 0.72, 0.012), rng.choice(("rug_a", "rug_b", "rug_c")), spin=spin)
+
+
+def camel(p, rng, at, spin):
+    """A camel resting with its legs folded: a long body, a hump, a raised neck and head."""
+    p.box(at, (0.62, 0.26, 0.24), "camel", spin=spin)
+    lump(p, at, 0.17, "camel", z=0.3, squash=0.9)
+    q = at + turn(Vector((0.3, 0, 0)), spin)
+    frustum(p, q + Vector((0, 0, 0.14)), q + turn(Vector((0.14, 0, 0)), spin) + Vector((0, 0, 0.55)), 0.075, 0.05, "camel", segments=5)
+    p.box(q + turn(Vector((0.22, 0, 0)), spin), (0.22, 0.09, 0.09), "camel", z=0.54, spin=spin)
+
+
+def oasis_ripple_piece(length):
+    """A wind ripple along +X: a long faint line on the flat sand, placed by desert_lands.oasis_ripples."""
+    def build(p, rng):
+        p.box(Vector((0, 0, 0)), (length, 0.05, 0.008), "oasis_ripple")
+    return build
+
+
+def oasis(p, rng, kind):
+    """Open sand under shimmering heat, with ripples for the shimmer to bend (placed across the region: desert_lands.oasis_ripples) and a few resting camels on the tiles next to the pool and the Bazaar. The pool's tile is the only green (oasis_pool_tile). No drawn paths and no tents."""
+    if kind in ("same", "other"):
+        return
+    p.effects.append(("shimmer", Vector((0, 0, 0.3))))
+    if kind == "centre_near":
+        k = 1
+        spin = math.radians(60 * k + 30 + 180)
+        camel(p, rng, tile_corner_at(k, 3.2, 0.3), spin + 0.4)
+        camel(p, rng, tile_corner_at(k, 3.65, -0.4), spin - 0.7)
+
+
+def oasis_pool_tile(p, rng, kind):
+    """The region's one oasis: a big clear pool in the middle of its tile, ringed with grass and date palms, a palm or two out in the corners. Routes go round on the ring (desert_lands.pool_route), and it's not river water: Crossing water doesn't apply."""
+    at = Vector((0, 0, 0))
+    r = 1.7
+    pts = wt.circle((0, 0), r, rng, 0.1)
+    p.flat([Vector((x, y, 0)) * ((r + 0.82) / r) for x, y in pts], 0.012, "oasis_grass")
+    p.flat([Vector((x, y, 0)) * ((r + 0.1) / r) for x, y in pts], 0.016, "wasteland")
+    p.flat([Vector((x, y, 0)) for x, y in pts], 0.02, "oasis_water")
+    p.effects.append(("glint", at + Vector((0, 0, 0.03))))
+    for k in range(10):
+        a = 2 * math.pi * k / 10 + rng.uniform(-0.15, 0.15)
+        date_palm(p, rng, Vector((math.cos(a), math.sin(a), 0)) * (r + rng.uniform(0.28, 0.62)), rng.uniform(1.7, 2.5))
+    for k in range(6):
+        date_palm(p, rng, tile_corner_at(k, 3.85), rng.uniform(1.3, 1.9))
+
+
+def oasis_bazaar(p, rng, kind):
+    """Oasis's Oasis Bazaar: three long lanes of stalls under awnings, leading to a domed well-house. A slit stays open down the middle of each lane, so a mini walking it shows from the map camera."""
+    for k in range(3):
+        a = math.radians(120 * k)
+        for sd in (-1, 1):
+            for j in range(4):  # stalls and the long awning over them, striped, sloping toward the lane
+                x = 1.95 + j * 0.52
+                at = turn(Vector((x, sd * 0.62, 0)), a)
+                p.box(at, (0.5, 0.34, 0.38), "crate", spin=a)
+                for m in range(2):
+                    p.blob(at + turn(Vector((-0.12 + 0.24 * m, -sd * 0.04, 0)), a), 0.075, rng.choice(("fruit", "hay", "rug_a", "rug_b")), z=0.41, squash=0.7)
+                p.box(turn(Vector((x, sd * 0.94, 0)), a), (0.06, 0.06, 1.2), "trunk", spin=a)
+                tilt = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(sd * 0.24, 3, "X")
+                p.box_rot(turn(Vector((x, sd * 0.62, 0)), a) + Vector((0, 0, 1.13)), (0.53, 0.74, 0.03), ("rug_a", "dome", "rug_b", "dome", "rug_c")[(j + k * 2 + (sd > 0)) % 5], tilt)
+    # the well-house: an open ring of arches under a white dome, the well inside
+    at = Vector((0, 0, 0))
+    p.cylinder(at, 1.12, 0.14, "sandstone", segments=12)
+    for j in range(8):
+        a = 2 * math.pi * j / 8 + math.pi / 8
+        p.cylinder(Vector((0.88 * math.cos(a), 0.88 * math.sin(a), 0)), 0.1, 1.3, "dome", segments=6, z=0.14)
+    p.cylinder(at, 1.02, 0.18, "dome", segments=12, z=1.44)
+    rings = [[Vector((r * math.cos(2 * math.pi * j / 12), r * math.sin(2 * math.pi * j / 12), z)) for j in range(12)] for r, z in ((1.0, 1.6), (0.92, 2.02), (0.68, 2.42), (0.34, 2.68), (0.08, 2.78))]
+    loft(p, rings, ("dome", "dome", "dome", "dome"), cap_start=False)
+    p.cylinder(at, 0.04, 0.28, "rug_c", segments=5, z=2.76)
+    p.cylinder(at, 0.42, 0.44, "sandstone", segments=8, z=0.1)
+    p.cylinder(at, 0.31, 0.02, "oasis_water", segments=8, z=0.53)
+    p.effects.append(("glint", Vector((0, 0, 0.56))))
+    for k in range(3):  # palms between the lanes, tents and a camel beyond them
+        a = math.radians(120 * k + 60)
+        u = Vector((math.cos(a), math.sin(a), 0))
+        s = Vector((-u.y, u.x, 0))
+        date_palm(p, rng, u * 2.55 + s * 0.95, 2.1)
+        date_palm(p, rng, u * 2.55 - s * 0.95, 1.8)
+    camel(p, rng, Vector((-2.3, 1.0, 0)), 0.4)
+
+
+# Canyon: a wedge's rim line runs from one side of the wedge to the other, leaving the route's way over to the edge's midpoint between y = -ARCH and ARCH. Two shapes (edge_same, edge_same_b),
+# so a gorge's walls wander from stretch to stretch. They all meet the line between wedges at the same point, so any two join up. The rock steps back toward the tile's edge by STEP for each band.
+RIM_X = 2.4
+STEP = 0.2
+RIM_A = ((2.4, -1.386), (2.2, -0.98), (2.42, -0.68), (2.38, -0.45), (2.38, 0.45), (2.5, 0.72), (2.25, 1.0), (2.4, 1.386))
+RIM_B = ((2.4, -1.386), (2.55, -1.0), (2.3, -0.7), (2.42, -0.45), (2.42, 0.45), (2.25, 0.75), (2.6, 1.05), (2.4, 1.386))
+BAND_MATS = ("canyon_cream", "canyon_orange", "canyon_rust")
+
+
+def surface_face(p, verts, mat):
+    f = p.bm.faces.new([p.bm.verts.new(q) for q in verts])
+    f.material_index = p._slot(mat)
+    p.surface.add(f)
+    return f
+
+
+def stepped(x, y, k, ends):
+    """A rim point moved k steps back toward the tile's edge; its ends slide along the line between wedges."""
+    if ends:
+        x2 = x + k * STEP
+        return (x2, math.copysign(x2 * TAN30, y))
+    return (x + k * STEP, y)
+
+
+def canyon_top(p, rim):
+    """The flat rim of a wedge, from the centre hexagon to the rim line, as one face per stretch."""
+    pts = [Vector((X0, -X0 * TAN30, 0)), *[Vector((x, y, 0)) for x, y in rim], Vector((X0, X0 * TAN30, 0))]
+    surface_face(p, pts, "canyon_top")
+
+
+def border_caps(p):
+    """Rock faces along both lines between wedges, where a neighbouring wedge's gorge may end against this one. Back to back with its neighbour's where neither has one."""
+    for sd in (-1, 1):
+        a, b = Vector((RIM_X, sd * RIM_X * TAN30, 0)), Vector((X1, sd * X1 * TAN30, 0))
+        for band, mat in enumerate(BAND_MATS):
+            z1, z0 = dl.BANDS[band], dl.BANDS[band + 1]
+            quad = [a + Vector((0, 0, z0)), b + Vector((0, 0, z0)), b + Vector((0, 0, z1)), a + Vector((0, 0, z1))]
+            surface_face(p, quad[::-1] if sd > 0 else quad, mat)
+
+
+def edge_wall(p, skirt):
+    """A rock face on the tile's edge, down past the floor. skirt: the side of the board, in the slab's colours at the top."""
+    a, b = Vector((X1, -X1 * TAN30, 0)), Vector((X1, X1 * TAN30, 0))
+    bands = ((0.0, hk.SOIL_TOP, "soil_light"), (hk.SOIL_TOP, hk.SOIL_BOTTOM, "soil_dark"), (hk.SOIL_BOTTOM, dl.FLOOR - 0.1, "canyon_side")) if skirt else tuple((dl.BANDS[k], dl.BANDS[k + 1], BAND_MATS[k]) for k in range(3))
+    for z1, z0, mat in bands:
+        surface_face(p, [a + Vector((0, 0, z0)), b + Vector((0, 0, z0)), b + Vector((0, 0, z1)), a + Vector((0, 0, z1))], mat)
+
+
+def half_gorge(p, rng, rim, dwellings=()):
+    """Half a gorge between the rim line and the tile's edge: three rock bands stepping back, with ledges, and a sunlit floor running to the edge, where the neighbour's half meets it.
+    The arch at the edge's midpoint carries the route over."""
+    n = len(rim) - 1
+    for band, mat in enumerate(BAND_MATS):
+        z1, z0 = dl.BANDS[band], dl.BANDS[band + 1]
+        for k in range(n):
+            a, b = rim[k], rim[k + 1]
+            pa, pb = stepped(*a, band, k == 0), stepped(*b, band, k + 1 == n)
+            qa, qb = stepped(*a, band + 0.3, k == 0), stepped(*b, band + 0.3, k + 1 == n)
+            surface_face(p, [Vector((qa[0], qa[1], z0)), Vector((qb[0], qb[1], z0)), Vector((pb[0], pb[1], z1)), Vector((pa[0], pa[1], z1))], mat)
+            if band < 2:  # the ledge at this band's foot, back to where the next band starts
+                ra, rb = stepped(*a, band + 1, k == 0), stepped(*b, band + 1, k + 1 == n)
+                surface_face(p, [Vector((qa[0], qa[1], z0)), Vector((ra[0], ra[1], z0)), Vector((rb[0], rb[1], z0)), Vector((qb[0], qb[1], z0))], BAND_MATS[band + 1])
+    foot = [stepped(*q, 2.3, k in (0, n)) for k, q in enumerate(rim)]
+    surface_face(p, [Vector((foot[0][0], foot[0][1], dl.FLOOR)), Vector((X1, -X1 * TAN30, dl.FLOOR)), Vector((X1, X1 * TAN30, dl.FLOOR)), *[Vector((x, y, dl.FLOOR)) for x, y in foot[:0:-1]]], "canyon_floor")
+    for k in range(5):  # rubble and scrub on the floor
+        y = rng.uniform(-1.6, 1.6)
+        q = Vector((rng.uniform(3.55, 3.85), y, dl.FLOOR))
+        if abs(y) > 0.55:
+            p.blob(q, rng.uniform(0.09, 0.2), "canyon_rust" if k % 2 else "scrub", squash=0.7)
+    # the arch: the deck carrying the route, its top flush with the rim, its underside curving up to the tile's edge, where it meets the neighbour's half
+    r = rim[3][0] - 0.02
+    prof = [(r, 0.0), (X1, 0.0), (X1, -0.34), (3.55, -0.4)] + [q for q in ((3.25, -0.6), (2.95, -1.0), (2.7, -1.45)) if q[0] > r + 0.1] + [(r, -1.9)]
+    for sd in (-1, 1):
+        verts = [Vector((x, sd * dl.ARCH, z)) for x, z in prof]
+        surface_face(p, verts if sd > 0 else verts[::-1], "canyon_orange")
+    for k in range(len(prof) - 1):
+        (x0, z0), (x1, z1) = prof[k], prof[k + 1]
+        if x0 == x1:  # the end meets the neighbour's arch
+            continue
+        quad = [Vector((x0, -dl.ARCH, z0)), Vector((x1, -dl.ARCH, z1)), Vector((x1, dl.ARCH, z1)), Vector((x0, dl.ARCH, z0))]
+        surface_face(p, quad, "canyon_deck" if k == 0 else "canyon_rust")
+    for y, x in dwellings:
+        cliff_dwelling(p, rng, Vector((x, y, 0)), dl.BANDS[1])
+
+
+def cliff_dwelling(p, rng, at, z):
+    """Adobe rooms on a ledge against the rock, facing the gorge, with dark doorways and a ladder down."""
+    q = at + Vector((0, 0, z))
+    for (dx, dy, w, h) in ((0.0, 0.0, 0.5, 0.55), (0.03, 0.42, 0.42, 0.42), (-0.02, -0.04, 0.36, 0.95)):
+        p.box(q + Vector((dx, dy, 0)), (0.34, w, h), "adobe")
+    for dy, zz in ((-0.1, 0.05), (0.42, 0.05), (0.1, 0.62)):
+        p.box(q + Vector((0.175, dy, zz)), (0.02, 0.15, 0.27), "cave_dark")
+    for sd in (-1, 1):
+        p.box_rot(q + Vector((0.34, -0.52 + sd * 0.07, -0.25)), (0.025, 0.025, 1.1), "deadwood", Matrix.Rotation(-0.25, 3, "Y"))
+    for k in range(4):
+        p.box(q + Vector((0.27 + 0.05 * k, -0.52, -0.62 + 0.25 * k)), (0.025, 0.18, 0.025), "deadwood")
+
+
+def hoodoo(p, rng, at, h=1.3):
+    """A rock column on the rim: rust below, a pale cap balanced on top."""
+    frustum(p, at - Vector((0, 0, 0.03)), at + Vector((0, 0, h * 0.5)), 0.24, 0.15, "canyon_rust", segments=6)
+    frustum(p, at + Vector((0, 0, h * 0.5)), at + Vector((0, 0, h)), 0.15, 0.11, "canyon_orange", segments=6)
+    p.blob(at + Vector((0, 0, h + 0.03)), 0.17, "canyon_rust", squash=0.55)
+
+
+def spiral_mark(p, at, r, z=0.015, axis="z"):
+    """A carved spiral: little dark strokes winding out from a point. axis: the way it faces, up on the ground or +x on a cliff."""
+    for k in range(13):
+        a0, a1 = k * 0.75, (k + 1) * 0.75
+        r0, r1 = r * k / 13, r * (k + 1) / 13
+        u0, u1 = (r0 * math.cos(a0), r0 * math.sin(a0)), (r1 * math.cos(a1), r1 * math.sin(a1))
+        mid = ((u0[0] + u1[0]) / 2, (u0[1] + u1[1]) / 2)
+        length = math.dist(u0, u1) + 0.03
+        ang = math.atan2(u1[1] - u0[1], u1[0] - u0[0])
+        if axis == "z":
+            p.box(at + Vector((mid[0], mid[1], 0)), (length, 0.045, 0.012), "canyon_rust", z=z, spin=ang)
+        else:
+            p.box_rot(at + Vector((0, mid[0], mid[1])), (0.02, length, 0.05), "cave_dark", Matrix.Rotation(ang, 3, "X"))
+
+
+def spire(p, rng, at, top):
+    """A column of banded rock standing in a gorge, from the floor to about rim height."""
+    for k, mat in enumerate(BAND_MATS[::-1]):
+        z0, z1 = dl.FLOOR + (top - dl.FLOOR) * k / 3, dl.FLOOR + (top - dl.FLOOR) * (k + 1) / 3
+        frustum(p, at + Vector((0, 0, z0)), at + Vector((0, 0, z1)), 0.34 - 0.07 * k, 0.3 - 0.07 * k, mat, segments=6)
+
+
+def canyon(p, rng, kind):
+    """Deep gorges cut down along the edges two canyon tiles share, with the tile's rim a small high ground round its middle, joined to each edge by a natural stone arch that carries the route over.
+    edge_same and edge_same_b: half-gorges with different walls, and cliff dwellings. edge_other: solid, a low butte on it, with the side of the board down past the floor.
+    No slab: these pieces are the ground. No drawn paths: the marks carved on the rim thicken toward the Echo Cave."""
+    if kind in ("centre", "centre_mid", "centre_near"):
+        surface_face(p, [Vector((X0 / math.cos(math.radians(30)) * math.cos(math.radians(30 + 60 * k)), X0 / math.cos(math.radians(30)) * math.sin(math.radians(30 + 60 * k)), 0)) for k in range(6)], "canyon_top")
+        marks = {"centre": (), "centre_mid": ((1, 0.26),), "centre_near": ((1, 0.3), (3, 0.3), (5, 0.3))}[kind]
+        for k, r in marks:
+            spiral_mark(p, tile_corner_at(k, 1.5), r)
+        return
+    if kind in ("same", "edge_same_b"):
+        wide = kind == "same"
+        rim = RIM_A if wide else RIM_B
+        canyon_top(p, rim)
+        half_gorge(p, rng, rim, ((1.0, 2.5), (-0.98, 2.45)) if wide else ((-1.0, 2.8),))
+        spire(p, rng, Vector((3.45, 1.45 if wide else 1.6, 0)), rng.uniform(-1.1, -0.5))
+        return
+    inner = dl.PIT if kind == "edge_other_lm" else X0  # the Echo Cave's pit reaches into its wedges
+    surface_face(p, [Vector((inner, -inner * TAN30, 0)), Vector((X1, -X1 * TAN30, 0)), Vector((X1, X1 * TAN30, 0)), Vector((inner, inner * TAN30, 0))], "canyon_top")
+    border_caps(p)
+    edge_wall(p, True)
+    if kind == "other":
+        sd = rng.choice((-1, 1))
+        mesa(p, rng, Vector((3.0, sd * 1.4, 0)), rng.uniform(0.6, 0.72), rng.uniform(0.45, 0.75), ("canyon_rust", "canyon_rust", "canyon_orange", "canyon_rust"))
+        if rng.random() < 0.5:
+            hoodoo(p, rng, Vector((2.75, -sd * 1.25, 0)), rng.uniform(0.7, 1.0))
+        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X1 - 0.9, margin=0.2, inner=0) and abs(q.y) > 0.45, 3, 0.7, hk.WEDGE_BOUNDS):
+            p.blob(at, rng.uniform(0.1, 0.18), "scrub", squash=0.7)
+
+
+def echo_cave(p, rng, kind):
+    """Canyon's Echo Cave: a pit cut into the tile, ending at a massive dark mouth in the banded cliff on its -X side, framed by a stone arch with carved spirals. A ramp runs down its +Y walls to the floor
+    (desert_lands.echo_routes). The tile has its own solid wedges (canyon_edge_other_lm), which hold the pit's outer part."""
+    apo = dl.PIT
+    corners = [Vector((apo / math.cos(math.radians(30)) * math.cos(math.radians(30 + 60 * k)), apo / math.cos(math.radians(30)) * math.sin(math.radians(30 + 60 * k)), 0)) for k in range(6)]
+    surface_face(p, [c + Vector((0, 0, dl.FLOOR)) for c in corners], "canyon_floor")
+    for k in range(6):  # the pit's walls, banded, facing in
+        a, b = corners[(k + 1) % 6], corners[k]
+        for band, mat in enumerate(BAND_MATS):
+            z1, z0 = dl.BANDS[band], dl.BANDS[band + 1]
+            surface_face(p, [a + Vector((0, 0, z0)), b + Vector((0, 0, z0)), b + Vector((0, 0, z1)), a + Vector((0, 0, z1))], mat)
+    # the ramp: a solid strip along the pit's walls, its top flush with the rim
+    line = dl.echo_line()[:-1]
+    out_edge, in_edge = [], []
+    for k, (x, y, z) in enumerate(line):
+        r = max(wt.dot((x, y), wt.normal(j)) for j in range(6))
+        out_edge.append(Vector((x * (apo - 0.02) / r, y * (apo - 0.02) / r, z)))
+        in_edge.append(Vector((x * 2.0 / r, y * 2.0 / r, z)))
+    for k in range(len(line) - 1):
+        surface_face(p, [in_edge[k], in_edge[k + 1], out_edge[k + 1], out_edge[k]], "canyon_top")
+        low0, low1 = Vector((in_edge[k].x, in_edge[k].y, dl.FLOOR)), Vector((in_edge[k + 1].x, in_edge[k + 1].y, dl.FLOOR))
+        surface_face(p, [low0, low1, in_edge[k + 1], in_edge[k]], "canyon_orange")
+    # the mouth: a dark arch in the -X wall, the cliff rising above the rim behind it
+    x = -apo + 0.03
+    arch = [(-0.95, dl.FLOOR), (0.95, dl.FLOOR), (0.95, -1.35), (0.72, -0.95), (0.3, -0.72), (-0.3, -0.72), (-0.72, -0.95), (-0.95, -1.35)]
+    surface_face(p, [Vector((x, y, z)) for y, z in arch], "cave_dark")
+    for sd in (-1, 1):
+        p.box(Vector((x + 0.14, sd * 1.12, 0)), (0.3, 0.34, -0.72 - dl.FLOOR), "sandstone", z=dl.FLOOR)
+    loft(p, [[Vector((x + dx, y, z)) for dx in (0.0, 0.32)] + [Vector((x + 0.32, y, z + 0.34)), Vector((x, y, z + 0.34))] for y, z in ((-1.28, -0.72), (-0.7, -0.55), (0.0, -0.42), (0.7, -0.55), (1.28, -0.72))], ("sandstone", "sphinx_light", "sphinx_light", "sandstone"))
+    p.box(Vector((x + 0.3, 0, 0)), (0.12, 0.36, 0.46), "sphinx_light", z=-0.42)
+    for y, z, r in ((1.75, -1.15, 0.42), (-1.75, -1.25, 0.46), (1.75, -2.05, 0.3)):
+        spiral_mark(p, Vector((x + 0.03, y, z)), r, axis="x")
+    spiral_mark(p, Vector((0.9, 0.0, dl.FLOOR)), 0.42, z=0.02)
+    # the cliff above: banded rock on the rim behind the mouth, clear of the way round it
+    for y_, r_, h_ in ((0.0, 0.5, 1.7), (0.9, 0.4, 1.05), (-0.95, 0.4, 1.25)):
+        mesa(p, rng, Vector((-2.95, y_, 0)), r_, h_, ("canyon_cream", "canyon_rust", "canyon_orange", "canyon_cream"))
+    for k, (x_, y_, r_) in enumerate(((1.3, 0.4, 0.2), (0.4, -1.3, 0.26), (-0.4, 1.0, 0.16))):
+        p.blob(Vector((x_, y_, dl.FLOOR)), r_, "canyon_rust", squash=0.7)
+    hoodoo(p, rng, Vector((0.0, -3.35, 0)), 1.1)
+
+
+LANDMARK_CENTRES.update(raiderstronghold=raider_stronghold, oasisbazaar=oasis_bazaar, oasispool=oasis_pool_tile, echocave=echo_cave)
+PROP_PIECES.update({"oasis_ripple_short": oasis_ripple_piece(1.0), "oasis_ripple_long": oasis_ripple_piece(1.7)})
+PROP_PIECES.update({k: badlands_prop(k) for k in ("badlands_mesa_big", "badlands_mesa_mid", "badlands_mesa_low", "badlands_butte", "badlands_kite_big", "badlands_kite_mid", "badlands_kite_low", "badlands_camp", "badlands_wagon", "badlands_post")})
 
 
 # variant: (terrain, builder, ground colour, extra pieces)
@@ -4320,6 +4914,9 @@ VARIANTS = {
     "wasteland": ("desert", wasteland, "wasteland", ()),
     "excavation": ("ruins", excavation, "plains", ()),
     # tier 2 and class variants
+    "badlands": ("desert", badlands, "badlands_ground", ("centre_b",)),
+    "oasis": ("desert", oasis, "oasis_ground", ("centre_near",)),
+    "canyon": ("desert", canyon, "canyon_top", ("centre_mid", "centre_near", "edge_same_b", "edge_other_lm")),
     "fortified_town": ("village", fortified_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail", "centre_mid", "border_join_l", "border_join_r")),
     "slums": ("village", slums, "mud_ground", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
     "scholars_town": ("village", scholars_town, "pale_paving", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
@@ -4348,7 +4945,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks", "library": "monastery_heights",
              "tradinghouse": "market_town",
              "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids", "meditationrock": "still_waters",
-             "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
+             "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis", "oasispool": "oasis", "echocave": "canyon", "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})

@@ -27,6 +27,7 @@ Obstacles (from v6), full-bodied and sitting on whole cells, each with its cells
   ob_heartwood_great_7, _roots_3      a huge tree on seven cells; arching roots along three
   cell_<variant>_brush                walkable cover: darker ground with low plants under a base's height
   cell_<variant>_floor                flat stony ground, under rocks
+  cell_dark_wood_bare, _heartwood_bare  a path map's earth path
 Rock shelves and cliffs take any shape, so render_forest_maps.py makes them per map, as it does the soil plate.
 
 Which height a map uses is the map's choice, as long as every cell shows from some camera angle (render_forest_maps.py checks).
@@ -51,6 +52,7 @@ VARIANTS = ["deep_forest", "fey_wood", "dark_wood", "heartwood"]
 CORNERS = hk.hex_corners(hk.CELL_RADIUS, pointy=False)
 TREE_CORNERS = (0, 2, 4)  # every second corner; the rest of the board's corners stay clear
 FLOWER = [(0, 0), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
+BARE = {"dark_wood": "drag_scrape", "heartwood": "path_earth"}  # earth paths are cells of the path's own colour
 
 
 def mix(a, b, share):
@@ -523,6 +525,8 @@ def build():
     p.finish(col)
     for v in VARIANTS:
         cell(f"cell_{v}_floor", f"cell_{v}_block").finish(col)
+        if v in BARE:
+            cell(f"cell_{v}_bare", BARE[v]).finish(col)
         p = cell(f"cell_{v}_brush", f"cell_{v}_cover")
         brush(p, hk.seeded(p.name), v)
         p.finish(col)
