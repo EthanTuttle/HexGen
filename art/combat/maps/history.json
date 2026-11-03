@@ -190,7 +190,7 @@
  },
  "haunted_homesteads_crops": {
   "cells": 121,
-  "idea": "Big blocks of withered crop with a scarecrow standing in each. The crop can be walked through and hides what's in it; the open ground between is the only safe way across.",
+  "idea": "Big blocks of withered crop with a scarecrow standing in each. The crop can be walked through, and the scarecrows break it up into short runs.",
   "kind": "terrain",
   "shape": "big oval",
   "walkable": 112
@@ -288,7 +288,7 @@
  },
  "raided_farms_barns": {
   "cells": 121,
-  "idea": "A burnt farm spread wide: charred barns, one left standing, small fires and a block of trampled crop in the middle. Big blocks of cover far apart, with long open runs between.",
+  "idea": "A burnt farm spread wide: charred barns, one left standing, small fires and a block of trampled crop in the middle. Big obstacles far apart, with long open runs between.",
   "kind": "terrain",
   "shape": "big oval",
   "walkable": 105
@@ -365,17 +365,17 @@
  },
  "windmill_country_fields": {
   "cells": 101,
-  "idea": "Two fields of ripe wheat with a small mill between them. Anyone can walk through the wheat, so it hides who's coming; the mill and haystacks are the only hard corners.",
+  "idea": "Two fields of ripe wheat with a big mill between them. The wheat can be walked through; the mill and haystacks are the only hard corners.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 94
+  "walkable": 90
  },
  "windmill_country_mill": {
   "cells": 61,
-  "idea": "A mill in a fenced yard with a gate north and south. Whoever gets inside fights round the mill with their backs to the fence.",
+  "idea": "A big mill in a wide fenced yard, with four gates. Whoever gets inside fights round the mill with their backs to the fence.",
   "kind": "terrain",
   "shape": "medium hex",
-  "walkable": 44
+  "walkable": 36
  },
  "windmill_country_road": {
   "cells": 90,
@@ -386,7 +386,7 @@
  },
  "windmill_country_stacks": {
   "cells": 66,
-  "idea": "A small cut field dotted with haystacks. Every stack is one cell of cover, with short sight lines between them, and no lines to hold.",
+  "idea": "A small cut field dotted with haystacks. Every stack is one more corner, with short sight lines between them, and no lines to hold.",
   "kind": "terrain",
   "shape": "small rectangle",
   "walkable": 58

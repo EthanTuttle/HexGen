@@ -29,6 +29,7 @@ fc.ROCK.update({"windmill_country": ("rock", "rock_dark", "grass_ink"), "haunted
 fc.BARK.update({"windmill_country": "trunk", "haunted_homesteads": "bark_grey", "raided_farms": "char", "cider_orchards": "trunk"})
 ZERO, SINGLE, LINE3, TRIANGLE, FLOWER7 = pc.ZERO, pc.SINGLE, pc.LINE3, pc.TRIANGLE, pc.FLOWER7
 
+hk.PALETTE.update({"stack": "#BFA873", "stack_dark": "#99865A", "stack_light": "#CDB98A", "ash": "#8D877B", "burnt_wood": "#5C5044"})
 for v in VARIANTS:
     g = hk.PALETTE[GROUND[v]]
     hk.PALETTE.update({f"cell_{v}_a": g, f"cell_{v}_b": fc.mix(g, "#FFFFFF", 0.05), f"cell_{v}_c": fc.mix(g, "#000000", 0.05),
@@ -82,6 +83,53 @@ def dead_tree(p, rng, at, k=0):
     fc.dead_big(p, rng, at, rng.uniform(2.3, 2.9), ("bark_grey", "bark_dark")[k % 2])
 
 
+def haystack(p, rng, at):
+    """A proper field haystack: loose straw at its foot, a wide rounded dome of straw in two tones and a pole through it, a little under a mini's height."""
+    fc.patch(p, rng, at, 0.46, "stack_dark")
+    for z0, z1, r0, r1, mat in ((0.0, 0.3, 0.44, 0.5, "stack"), (0.3, 0.58, 0.5, 0.44, "stack_light"), (0.58, 0.8, 0.44, 0.28, "stack"), (0.8, 0.94, 0.28, 0.08, "stack_dark")):
+        vr.frustum(p, at + Vector((0, 0, z0)), at + Vector((0, 0, z1)), r0, r1, mat, segments=9)
+    p.box(at, (0.04, 0.04, 1.12), "trunk")
+    for k in range(6):
+        a = k * 1.05 + rng.uniform(-0.2, 0.2)
+        q = at + Vector((math.cos(a), math.sin(a), 0)) * 0.42
+        p.cone(q, 0.07, 0.14, "stack_light", segments=3, spin=a)
+
+
+def burnt_barn(p, rng, at, spin, w, d, h):
+    """A burnt-out barn: walls broken down to uneven scorched stubs with gaps in them, one gable end still up, and bare rafters over nothing."""
+    def q(x, y, z=0.0):
+        return at + vr.turn(Vector((x, y, 0)), spin) + Vector((0, 0, z))
+    p.prism([q(-w / 2, -d / 2), q(w / 2, -d / 2), q(w / 2, d / 2), q(-w / 2, d / 2)], 0.0, 0.02, "ash")
+    n = 6
+    for sd in (-1, 1):  # the long walls: broken planks, some missing
+        for k in range(n):
+            if rng.random() < 0.4:
+                continue
+            x = -w / 2 + w * (k + 0.5) / n
+            p.box(q(x, sd * d / 2), (w / n * 0.86, 0.09, h * rng.uniform(0.2, 0.7)), ("burnt_wood", "bark_dark", "char")[k % 3], spin=spin)
+    for k in range(3):  # the far end, low and broken
+        y = -d / 2 + d * (k + 0.5) / 3
+        p.box(q(-w / 2, y), (0.09, d / 3 * 0.85, h * rng.uniform(0.2, 0.6)), "char", spin=spin)
+    # The gable end still standing.
+    ridge = h * 1.65
+    wall = [q(w / 2, -d / 2), q(w / 2, d / 2)]
+    for k in range(4):
+        y = -d / 2 + d * (k + 0.5) / 4
+        top = ridge - (ridge - h) * abs(y) / (d / 2)
+        p.box(q(w / 2, y), (0.09, d / 4 * 0.88, top * rng.uniform(0.86, 1.0)), ("burnt_wood", "bark_dark")[k % 2], spin=spin)
+    # Bare rafters, a pair at each bay, one missing and one snapped short.
+    for k in range(5):
+        x = w / 2 - 0.05 - (w - 0.1) * k / 4
+        a, b, top = q(x, -d / 2, h * 0.8), q(x, d / 2, h * 0.8), q(x, 0, ridge)
+        if k != 3:
+            vr.frustum(p, a, top, 0.05, 0.04, "char", segments=4)
+        if k != 2:
+            vr.frustum(p, b, b.lerp(top, 1.0 if k != 1 else 0.55), 0.05, 0.04, "char", segments=4)
+    vr.frustum(p, q(w / 2, 0, ridge), q(-w * 0.1, 0, ridge * 0.97), 0.05, 0.04, "char", segments=4)
+    vr.frustum(p, q(-w * 0.2, -d * 0.2, 0.05), q(w * 0.25, d * 0.15, 0.22), 0.07, 0.06, "char", segments=4)  # a fallen beam inside
+    p.box(q(0.1 * w, 0.05), (0.26, 0.2, 0.05), "ember", z=0.02, spin=spin)
+
+
 def house(p, rng, at, k):
     grown(p, k, at, lambda: vr.boarded_house(p, rng, at, 0.4))
 
@@ -91,10 +139,12 @@ def barn(p, rng, at, k, make):
 
 
 def mill(p, rng, at, k):
+    """The tile art's small mill at full size on seven cells, on a stone apron that fills them, its sails facing south."""
+    p.cylinder(at, 1.42, 0.16, "rock_dark", segments=12)
     before = set(p.bm.verts)
     vr.small_windmill(p, rng)
     for v in set(p.bm.verts) - before:
-        v.co = at + v.co * k
+        v.co = at + v.co * k + Vector((0, 0, 0.16))
 
 
 def apple_stack(p, rng):
@@ -121,8 +171,8 @@ def stones_row(p, rng, cells):
 KIT = {
     "windmill_country": {
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
-        "P": ("mill_3", TRIANGLE, lambda p, r: mill(p, r, pc.mean(TRIANGLE), 1.2)),
-        "J": ("hay", SINGLE, lambda p, r: grown(p, 1.7, ZERO, lambda: vr.haystack(p, r, ZERO))),
+        "Q": ("mill_7", FLOWER7, lambda p, r: mill(p, r, ZERO, 2.0)),
+        "J": ("hay", SINGLE, lambda p, r: haystack(p, r, ZERO)),
         "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True))),
         "I": ("sacks", SINGLE, sack_pile),
     },
@@ -133,9 +183,9 @@ KIT = {
     },
     "raided_farms": {
         "T": ("split_tree", SINGLE, lambda p, r: pc.split_big(p, r, ZERO)),
-        "P": ("charred_barn_3", TRIANGLE, lambda p, r: barn(p, r, pc.mean(TRIANGLE), 1.7, vr.charred_barn)),
+        "P": ("charred_barn_3", TRIANGLE, lambda p, r: burnt_barn(p, r, pc.mean(TRIANGLE), 0.5, 1.75, 1.1, 0.95)),
         "D": ("barn_3", TRIANGLE, lambda p, r: barn(p, r, pc.mean(TRIANGLE), 1.65, vr.intact_barn)),
-        "N": ("charred_shed", SINGLE, lambda p, r: barn(p, r, ZERO, 1.05, vr.charred_barn)),
+        "N": ("charred_shed", SINGLE, lambda p, r: burnt_barn(p, r, ZERO, 0.5, 0.9, 0.66, 0.62)),
         "Y": ("fire", SINGLE, pc.fire),
         "J": ("crates", SINGLE, crates),
     },
