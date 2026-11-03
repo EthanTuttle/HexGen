@@ -561,7 +561,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 ## Open questions
 
 - [x] ~~How ramps should look~~ (settled Nov 3, 2026: cut paths for canyon entrances and hills ledges, timber for the Raider Stronghold; see Region variant looks)
-- [ ] **New (Nov 3, 2026):** combat map ways up: Ethan prefers steps in a cut, with a flat landing at half height so a mini's base doesn't clip and duller treads than the first try. Trying it on samples; see it before it goes on the live maps
+- [ ] **New (Nov 3, 2026):** combat map ways up: Ethan prefers steps in a cut, with a flat landing at half height so a mini's base doesn't clip and duller treads than the first try. Next try: long steps from the landing out into every neighbouring hex, up and down. See it before it goes on the live maps
 - [ ] Final palette and fonts for the "Game pieces" style (the mockup's colours and fonts are placeholders)
 - [ ] **New (Nov 1, 2026):** landmark tile looks for every other core location (Art direction → Landmark tiles; forest, farmland, plains, hills, village, river and desert done)
 - [ ] Rarity cue that doesn't rely on colour alone, now that gear has no text labels (for colour-blind players)
