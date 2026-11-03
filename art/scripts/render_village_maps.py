@@ -515,7 +515,7 @@ def build_map(t, col, name):
             for o, kind in zip(placed, kinds):
                 # A house turned half round would have a wing behind it, on the far side from the camera.
                 assert "cross" not in kind or abs(o.rotation_euler.z) < 0.1, f"{name}: {kind} turned away"
-                piece = f"ob_village_{kind}" + ("_turned" if abs(o.rotation_euler.z) > 0.1 else "")  # its yard on the camera's side
+                piece = f"ob_village_{kind}"
                 o.data, o["piece"] = t[piece].data, piece
         houses = {c for c, mark in cells.items() if mark in "PY23"}
         for c, mark in cells.items():

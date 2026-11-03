@@ -16,6 +16,7 @@ from mathutils import Vector  # noqa: E402
 
 import build_village_cells as bv  # noqa: E402
 import hexkit as hk  # noqa: E402
+import render_forest_boards as rb  # noqa: E402
 import render_forest_maps as fm  # noqa: E402
 import render_preview as rp  # noqa: E402
 
@@ -107,19 +108,22 @@ def houses(stem):
         o = t[f"ob_village_{name}"]
         cells = json.loads(o["footprint"])
         mid = sum((hk.cell_position(*c) for c in cells), Vector()) / len(cells)
-        slot = Vector((4.6 * (k % 5 - 2), 4.2 * (0.5 - k // 5), 0))
+        slot = Vector((4.3 * (k % 5 - 2.2), 4.2 * (0.5 - k // 5), 0))
         rp.place(t, f"ob_village_{name}", col, slot - mid)
         rp.place(t, "standin_hero", col, slot + Vector((1.75, -0.85, 0)), 0.0)
         label(name.replace("cottage_", ""), col, slot + Vector((0, -1.6, 0.02)), math.pi / 2 - math.radians(fm.PITCH))
     rp.stage(ZERO, 33, fm.PITCH)
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 3200, 2000
     rp.render(stem)
+    rb.turn_camera(180, ZERO)
+    for o in col.objects:
+        if o.type == "FONT":
+            o.rotation_euler = (o.rotation_euler.x, 0, math.pi)
+            o.location.y += 3.3
+    rp.render(f"{stem}_back")
 
 
 if __name__ == "__main__":
     hk.empty_scene()
     measure(templates())
-    sheet(YARD, 7, (2.6, 3.0), fm.PITCH, 30, "household_props_sheet")
-    sheet(YARD[:14], 5, (2.6, 3.0), 35, 21, "household_props_close_a")
-    sheet(YARD[14:], 5, (2.6, 3.0), 35, 21, "household_props_close_b")
     houses("household_houses")
