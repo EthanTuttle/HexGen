@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
+from mathutils.geometry import tessellate_polygon  # noqa: E402
 
 import build_forest_cells as fc  # noqa: E402
 import build_giant_minis as gm  # noqa: E402
@@ -315,22 +316,48 @@ def seen_default(scene, depsgraph, c, target, el):
     return not scene.ray_cast(depsgraph, at, to.normalized(), distance=to.length)[0]
 
 
+def rock_ring(p, rng, loop, smooth, inset, z, jag):
+    """One layer of a rock face: the map's cell outline with its zigzag smoothed away the higher it goes, pulled in from the foot."""
+    points = [q.copy() for q in loop]
+    for _ in range(smooth):
+        points = [(points[k - 1] + points[k] * 2 + points[(k + 1) % len(points)]) / 4 for k in range(len(points))]
+    ring = []
+    for k, q in enumerate(points):
+        along = points[(k + 1) % len(points)] - points[k - 1]
+        inward = Vector((-along.y, along.x, 0)).normalized()  # the loop runs anticlockwise, so its inside is on the left
+        ring.append(q + inward * (inset * rng.uniform(0.8, 1.2)) + Vector((0, 0, z + rng.uniform(-jag, jag))))
+    return [p.bm.verts.new(q) for q in ring]
+
+
 def shaped_piece(col, v, group, mark):
-    """A rock shelf or cliff on exactly these cells: a low footing following their outline, so the blocked cells stay plain,
-    and rough boulders piled on each cell, sharing a colour so they read as one mass."""
+    """One rock face round these cells, with one shared top: its foot runs exactly along the blocked cells' outline, and layers
+    of ledges step in as it rises, so the blocked cells show from where the foot sits. Style from the tile kit's ridges and cliffs."""
     p = hk.Piece(f"{'cliff' if mark == 'K' else 'shelf'}_{min(group)}")
     rng = hk.seeded(p.name)
     main, side, top = fc.ROCK[v]
-    p.prism(fc.cell_loop(group), 0.0, 0.16, side)
-    for c in sorted(group):
-        at = hk.cell_position(*c)
-        drift = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), 0)) * 0.05
-        moss = top if rng.random() < 0.3 else None  # only here and there, or it reads as caps again
-        if mark == "K":
-            fc.rock(p, rng, at + drift, rng.uniform(0.56, 0.6), main, rng.uniform(0.42, 0.5), 1.25)
-            fc.rock(p, rng, at - drift, rng.uniform(0.42, 0.48), main, rng.uniform(1.0, 1.3), 1.25, moss)
-        else:
-            fc.rock(p, rng, at + drift, rng.uniform(0.5, 0.56), main, rng.uniform(0.3, 0.42), 0.95, moss)
+    h = 2.0 if mark == "K" else 1.1
+    corners = fc.cell_loop(group)
+    loop = []
+    for k, q in enumerate(corners):  # a point midway along each cell edge, so the face has more to break up
+        loop += [q, q.lerp(corners[(k + 1) % len(corners)], 0.5)]
+    layers = [(0, 0.0, 0.0, 0.0), (1, 0.1, 0.26, 0.03), (2, 0.2, 0.33, 0.015), (3, 0.17, 0.6, 0.03), (4, 0.27, 0.67, 0.015), (5, 0.25, 0.95, 0.06)]
+    rings = [rock_ring(p, rng, loop, smooth, inset, h * z, h * jag) for smooth, inset, z, jag in layers]
+    n = len(loop)
+    for band, (a, b) in enumerate(zip(rings, rings[1:])):
+        for k in range(n):
+            m = (k + 1) % n
+            pair = ((a[k], a[m], b[m]), (a[k], b[m], b[k])) if rng.random() < 0.5 else ((a[k], a[m], b[k]), (a[m], b[m], b[k]))
+            for tri in pair:
+                # Ledges take the darker rock and faces mostly the lighter, so the layers show.
+                p.bm.faces.new(tri).material_index = p._slot(side if band % 2 or rng.random() < 0.3 else main)
+    # The top: one flat surface over the whole obstacle, meeting the jagged rim in a short slope.
+    rim, plateau = rings[-1], rock_ring(p, rng, loop, 6, 0.36, h * 0.98, 0.0)
+    for k in range(n):
+        m = (k + 1) % n
+        for tri in ((rim[k], rim[m], plateau[m]), (rim[k], plateau[m], plateau[k])):
+            p.bm.faces.new(tri).material_index = p._slot(top or main)
+    for tri in tessellate_polygon([[q.co for q in plateau]]):
+        p.bm.faces.new([plateau[k] for k in tri]).material_index = p._slot(top or main)
     p.finish(col)
 
 
@@ -510,6 +537,21 @@ def export():
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     only_check = "--check" in args
+    if "--close" in args:
+        for name, at, dist, turn in (("deep_forest_gorge", (6.5, -2.0), 12, 0), ("heartwood_shelf", (9.0, -1.8), 13, 0), ("heartwood_shelf", (9.0, -1.8), 13, 150)):
+            hk.empty_scene()
+            col = hk.new_collection("map")
+            t = rb.templates()
+            cells = build_map(t, col, name)
+            visibility(name, cells)
+            place_minis(t, col, name, cells)
+            print(f"TRIS {name}: map, with minis {triangles(col)}")
+            target = Vector((at[0], at[1], 0.5))
+            rp.stage(target, dist, PITCH)
+            if turn:
+                rb.turn_camera(turn, target)
+            rp.render(f"forest_rockface_{name}{'_back' if turn else ''}")
+        sys.exit()
     if "--export" in args:
         export()
         sys.exit()
