@@ -1,12 +1,12 @@
-# Combat forest kit hand-off (combat_cells_v7, combat_maps_v8)
+# Combat forest kit hand-off (combat_cells_v7, combat_maps_v9)
 
 Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and sixteen custom forest combat maps: twelve terrain maps and four path maps, one per variant. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v7.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v8.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
+- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v7.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v9.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
 - **Map data:** `art/export/combat_maps.json`.
 - **Scripts:** `art/scripts/build_forest_cells.py`, `art/scripts/render_forest_maps.py` (the plans, in readable text, and the checks), `build_enemy_minis.py`, `build_humanoid_minis.py`, `build_giant_minis.py`.
 - **Rules:** `design/07 Presentation.md` → Combat maps; `design/briefs/Combat art brief.md`.
-- **Previews:** minis: `art/preview/enemy_lineup_v5.png`, `enemy_closeup_v5.png`, `humanoid_lineup_v3.png`, `humanoid_closeup_v3.png`, `humanoid_map_*_v3.png`. Maps: `forest_maps_all_v6.png` (all 16), `forest_maps_paths_v3.png` (the 4 path maps), `forest_maps_<variant>_v9.png`, `forest_maps_turned_v5.png`, `forest_map_<map>_v*.png` (version numbers aren't all in order; the newest by date is current). Rock and high ground: `forest_highground_*_v1.png`, and `_v2` for the shelf. Obstacles: `forest_obstacles_v1.png`. Older `forest_rockface_*` and sheets up to v3 show earlier map shapes and rock.
+- **Previews:** minis: `art/preview/enemy_lineup_v5.png`, `enemy_closeup_v5.png`, `humanoid_lineup_v3.png`, `humanoid_closeup_v3.png`, `humanoid_map_*_v3.png`. Maps: `forest_maps_all_v7.png` (all 16), `forest_maps_paths_v4.png` (the 4 path maps), `forest_maps_<variant>_v10.png`, `forest_maps_turned_v5.png`, `forest_map_<map>_v*.png` (version numbers aren't all in order; the newest by date is current). Rock and high ground: `forest_highground_*_v1.png`, and `_v2` for the shelf. Obstacles: `forest_obstacles_v1.png`. Older `forest_rockface_*` and sheets up to v3 show earlier map shapes and rock.
 
 All pieces use the kit material with flat vertex colours, except the fey mushrooms' own material, as on the tiles, and on ghosts `ghost_glow` and `lantern`. `ghost_glow` is a faint glow in its own material (emission 0.35 in the blend; it's in the glb).
 

@@ -78,7 +78,7 @@
  },
  "dark_wood_furrow": {
   "cells": 107,
-  "idea": "A straight furrow worn by something dragged, strewn with bones, runs the length of the map to a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait where it ends.",
+  "idea": "A straight furrow worn by something dragged, strewn with bones, runs the length of the map past a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait by the hollow.",
   "kind": "path",
   "shape": "tall oval",
   "walkable": 87

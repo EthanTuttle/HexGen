@@ -219,10 +219,10 @@ x . h . w
  . b b . 
   . . w  
    x .   """},
-    "dark_wood_furrow": {"kind": "path", "size": "tall oval", "idea": "A straight furrow worn by something dragged, strewn with bones, runs the length of the map to a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait where it ends.", "plan": """
-   . E .   
-  . x E .  
- . . E . . 
+    "dark_wood_furrow": {"kind": "path", "size": "tall oval", "idea": "A straight furrow worn by something dragged, strewn with bones, runs the length of the map past a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait by the hollow.", "plan": """
+   E . n   
+  . E n x  
+ . E . . . 
 T . x n . T
  T . . . y 
 . . . n . .
