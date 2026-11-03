@@ -4460,16 +4460,17 @@ def badlands(p, rng, kind):
         return
     for k in ((1, 3) if kind == "centre" else (0, 2, 5)):
         cracked_patch(p, rng, tile_corner_at(k, 1.6))
+    p.effects.append(("shimmer", Vector((0, 0, 0.3))))
 
 
 def badlands_prop(kind):
     def build(p, rng):
         if kind in dl.MESA_LOBES:
             mesa_mass(p, rng, dl.mesa_outline(kind, rng), {"badlands_mesa_big": 3.3, "badlands_mesa_mid": 2.6, "badlands_mesa_low": 1.25}[kind])
+        elif kind in dl.MESA_KITES:
+            mesa_mass(p, rng, dl.kite_outline(kind, rng), {"badlands_kite_big": 3.0, "badlands_kite_mid": 2.4, "badlands_kite_low": 1.2}[kind])
         elif kind == "badlands_butte":
             mesa_mass(p, rng, [(0.95 * rng.uniform(0.7, 1.0) * math.cos(6.283 * j / 10), 0.95 * rng.uniform(0.7, 1.0) * math.sin(6.283 * j / 10)) for j in range(10)], 3.0)
-        elif kind == "badlands_small":
-            mesa_mass(p, rng, [(1.12 * rng.uniform(0.62, 1.0) * math.cos(6.283 * j / 12), 1.12 * rng.uniform(0.62, 1.0) * math.sin(6.283 * j / 12)) for j in range(12)], 2.0)
         elif kind == "badlands_camp":
             raider_camp(p, rng, Vector((0, 0, 0)), 0.0)
         elif kind == "badlands_wagon":
@@ -4489,60 +4490,66 @@ def raider_camp(p, rng, at, spin):
 
 
 def raider_stronghold(p, rng, kind):
-    """Badlands' Raider Stronghold: a palisade fort on a rough mesa, reached by a long ramp cut round the mesa's side (desert_lands.stronghold_routes), with spiked walls and flags of rags."""
+    """Badlands' Raider Stronghold: a palisade fort on a long, angular mesa, reached by a straight ramp up its long side, which meets the ground at its foot and the top at its end (desert_lands.stronghold_routes). Spiked walls and flags of rags."""
     h = dl.MESA_H
-    n = 28
-    jag = [rng.uniform(0.96, 1.03) for _ in range(n)]
+    outline = list(dl.FORT_OUTLINE)
+    n = len(outline)
+    in_x = [rng.uniform(0.0, 0.12) for _ in range(n)]
 
-    def ring(z, f=1.0):
-        return [Vector((*dl.polar(dl.fort_outline(360 * k / n, dl.fort_taper(z)) * f * jag[k], 360 * k / n)[:2], z)) for k in range(n)]
+    def ring(z, s_):
+        out = []
+        for k, (x, y) in enumerate(outline):
+            straight = abs(y - dl.FORT_SIDE) < 1e-6  # the ramp's side stays straight, so the ramp meets it all the way up
+            f = 1.0 if straight else s_ - in_x[k] * (z > 0.5)
+            out.append(Vector((x * f, y if straight else y * f, z)))
+        return out
 
-    rings = [ring(-0.1), ring(h * 0.34), ring(h * 0.35, 0.97), ring(h * 0.7, 0.98), ring(h * 0.71, 0.95), ring(h, 0.97)]
-    loft(p, rings, ("mesa_a", "mesa_c", "mesa_b", "mesa_c", "mesa_a"), cap_start=False, cap_end=False)
+    rings = [ring(-0.1, 1.0), ring(h * 0.45, 0.97), ring(h * 0.8, 0.94), ring(h, 0.93)]
+    loft(p, rings, ("mesa_a", "mesa_b", "mesa_c"), cap_start=False, cap_end=False)
     p.bm.faces.new([p.bm.verts.new(q) for q in rings[-1]]).material_index = p._slot("mesa_top")
-    # the ramp: a solid strip round the mesa's side with a rough outer wall and stakes on its lip
+    # the ramp: a solid strip along the straight side, from the ground to the top's height, flush against it
     line = dl.ramp_line()
-    outside, inside = [], []
-    for x, y, z in line:
-        r = math.hypot(x, y)
-        u = Vector((x / r, y / r, 0))
-        outside.append((u * (r + 0.4) + Vector((0, 0, z)), u * (r + 0.4) + Vector((0, 0, -0.1))))
-        inside.append(u * (r - 0.5) + Vector((0, 0, z)))
-    for k in range(len(line) - 1):
-        quads = [([inside[k], outside[k][0], outside[k + 1][0], inside[k + 1]], "badlands_ground")]
-        z0, z1 = outside[k][0].z, outside[k + 1][0].z
-        low0, low1 = outside[k][1], outside[k + 1][1]
-        for b0, b1, mat in ((-0.1, h * 0.34, "mesa_a"), (h * 0.34, h * 0.7, "mesa_b"), (h * 0.7, h, "mesa_c")):  # the wall's bands line up with the mesa's
-            if b0 < z1:
-                top0, top1 = min(z0, b1), min(z1, b1)
-                if top1 > b0 and top0 >= b0:
-                    quads.append(([Vector((low0.x, low0.y, b0)), Vector((low1.x, low1.y, b0)), Vector((low1.x, low1.y, top1)), Vector((low0.x, low0.y, top0))], mat))
-        for quad, mat in quads:
-            f = p.bm.faces.new([p.bm.verts.new(q) for q in quad])
+    y_in, y_out = dl.FORT_SIDE, dl.RAMP_FOOT[1] + 0.42
+    for (x0, _, z0), (x1, _, z1) in zip(line, line[1:]):
+        for quad, mat in (([(x0, y_in, z0), (x0, y_out, z0), (x1, y_out, z1), (x1, y_in, z1)][::-1], "badlands_ground"), ):
+            f = p.bm.faces.new([p.bm.verts.new(Vector(q)) for q in quad])
             f.material_index = p._slot(mat)
             p.surface.add(f)
-        if k % 4 == 3:
-            q = outside[k][0]
-            hk.spike_up(p, q, q + Vector((q.x, q.y, 0)).normalized() * 0.14 + Vector((0, 0, 0.42)), 0.035, "deadwood")
-    # broken rock round the foot, on the side the ramp isn't
-    for deg in (70, 100, 125, 160, 185, 205):
-        q = Vector((*dl.polar(dl.fort_outline(deg) * 1.0, deg)[:2], 0))
-        rough_crag(p, rng, q, rng.uniform(0.26, 0.36), rng.uniform(0.5, 1.2))
-    # the fort: a palisade following the mesa's edge, stakes leaning out, a gate at the ramp's top, a hut, a tent and a watch tower
-    wall = lambda deg: Vector((*dl.polar(dl.fort_outline(deg, dl.fort_taper(h)) * 0.84, deg)[:2], 0))  # noqa: E731
-    gate_gap = 16
-    deg = dl.TOP_ANGLE + gate_gap
-    while deg < dl.TOP_ANGLE + 360 - gate_gap:
-        a, b = wall(deg), wall(deg + 16)
-        mid = (a + b) / 2
-        out = mid.normalized()
+        for b0, b1, mat in ((-0.1, h * 0.45, "mesa_a"), (h * 0.45, h * 0.8, "mesa_b"), (h * 0.8, h, "mesa_c")):
+            top0, top1 = min(z0, b1), min(z1, b1)
+            if top1 > b0 and top0 >= b0:
+                f = p.bm.faces.new([p.bm.verts.new(Vector(q)) for q in ((x0, y_out, b0), (x1, y_out, b0), (x1, y_out, top1), (x0, y_out, top0))][::-1])
+                f.material_index = p._slot(mat)
+                p.surface.add(f)
+        q = Vector((x1, y_out, z1))
+        hk.spike_up(p, q, q + Vector((0, 0.12, 0.4)), 0.035, "deadwood")
+    x_end = line[-1][0]  # the ramp's end: its wall comes down to the ground under the top
+    for quad in (((x_end, y_in, -0.1), (x_end, y_out, -0.1), (x_end, y_out, h), (x_end, y_in, h)),):
+        f = p.bm.faces.new([p.bm.verts.new(Vector(q)) for q in quad])
+        f.material_index = p._slot("mesa_b")
+        p.surface.add(f)
+    # broken rock round the foot, on the sides the ramp isn't
+    for x, y, r_, h_ in ((-2.7, -1.15, 0.4, 1.1), (-1.6, -1.65, 0.34, 0.8), (0.1, -2.15, 0.42, 1.25), (1.9, -1.6, 0.36, 0.9), (2.95, -1.0, 0.3, 0.7), (2.95, 0.5, 0.34, 1.0), (-3.0, -0.05, 0.3, 0.8)):
+        rough_crag(p, rng, Vector((x, y, 0)), r_, h_)
+    # the fort: a palisade inside the mesa's edge, stakes leaning out, a gate near the ramp's top, a hut, a tent and a watch tower
+    wall = [Vector((-2.05, -0.5, 0)), Vector((-1.75, -0.9, 0)), Vector((-0.75, -1.0, 0)), Vector((-0.3, -1.45, 0)), Vector((0.65, -1.35, 0)), Vector((1.1, -0.85, 0)), Vector((2.05, -0.95, 0)), Vector((2.35, -0.3, 0)), Vector((2.2, 0.5, 0)), Vector((2.35, 1.0, 0)), Vector((1.6, 1.0, 0)), Vector((-2.0, 1.0, 0)), Vector((-2.3, 0.4, 0))]
+    gate_a, gate_b = wall[9], wall[10]
+    for k in range(len(wall)):
+        a, b = wall[k], wall[(k + 1) % len(wall)]
+        if a == gate_a:
+            continue  # the gate's gap, where the walk comes in
+        ln = (b - a).length
+        steps = max(1, int(ln / 0.42))
         spin = math.atan2((b - a).y, (b - a).x)
-        p.box(mid, ((b - a).length + 0.03, 0.14, rng.uniform(0.62, 0.8)), "deadwood" if int(deg) % 3 else "trunk", z=h, spin=spin)
-        hk.spike_up(p, mid + Vector((0, 0, h + 0.6)), mid + out * 0.36 + Vector((0, 0, h + 1.02)), 0.05, "bone" if int(deg) % 5 == 0 else "deadwood")
-        deg += 16
-    for sd in (-1, 1):
-        rag_post(p, rng, wall(dl.TOP_ANGLE + sd * gate_gap), 1.6, z=h)
-    tower = wall(dl.TOP_ANGLE + 165) * 0.62
+        out = Vector((math.sin(spin), -math.cos(spin), 0))
+        for j in range(steps):
+            mid = a + (b - a) * ((j + 0.5) / steps)
+            p.box(mid, (ln / steps + 0.02, 0.14, rng.uniform(0.6, 0.8)), "deadwood" if j % 2 else "trunk", z=h, spin=spin)
+            if j % 2 == 0:
+                hk.spike_up(p, mid + Vector((0, 0, h + 0.58)), mid + out * 0.34 + Vector((0, 0, h + 1.0)), 0.05, "bone" if (k + j) % 5 == 0 else "deadwood")
+    for g in (gate_a, gate_b):
+        rag_post(p, rng, g, 1.6, z=h)
+    tower = Vector((-1.2, -0.25, 0))
     for dx in (-0.3, 0.3):
         for dy in (-0.3, 0.3):
             p.box(tower + Vector((dx, dy, 0)), (0.1, 0.1, 1.45), "deadwood", z=h)
@@ -4551,11 +4558,11 @@ def raider_stronghold(p, rng, kind):
         p.box(tower + Vector((sd * 0.43, 0, 0)), (0.05, 0.9, 0.3), "deadwood", z=h + 1.55)
         p.box(tower + Vector((0, sd * 0.43, 0)), (0.9, 0.05, 0.3), "deadwood", z=h + 1.55)
     rag_post(p, rng, tower, 1.1, z=h + 1.55)
-    hut = wall(dl.TOP_ANGLE + 80) * 0.5
-    p.box(hut, (0.95, 0.75, 0.55), "trunk", z=h, spin=0.5)
-    p.gable_roof(hut, 1.08, 0.86, 0.34, "canvas_dirty", z=h + 0.55, spin=0.5)
-    collapsed_tent(p, rng, wall(dl.TOP_ANGLE + 255) * 0.55 + Vector((0, 0, h)), 2.2, 0.62)
-    fire = Vector((0.1, 0.05, 0))
+    hut = Vector((0.5, -0.6, 0))
+    p.box(hut, (1.1, 0.75, 0.55), "trunk", z=h, spin=0.1)
+    p.gable_roof(hut, 1.22, 0.86, 0.34, "canvas_dirty", z=h + 0.55, spin=0.1)
+    collapsed_tent(p, rng, Vector((-0.5, 0.55, h)), 3.0, 0.6)
+    fire = Vector((0.9, 0.35, 0))
     p.cylinder(fire, 0.2, 0.08, "char", segments=6, z=h)
     p.effects.append(("fire", fire + Vector((0, 0, h + 0.08))))
     p.effects.append(("smoke", fire + Vector((0, 0, h + 0.5))))
@@ -4603,20 +4610,24 @@ def camel(p, rng, at, spin):
     p.box(q + turn(Vector((0.22, 0, 0)), spin), (0.22, 0.09, 0.09), "camel", z=0.54, spin=spin)
 
 
+def sand_ripples(p, rng, inside, count):
+    """Wind ripples, all one way: long faint lines on the flat sand, which give the heat shimmer something to bend."""
+    for at in hk.scatter(rng, inside, count, 0.75, ((-3.9, 3.9), (-3.9, 3.9))):
+        p.box(at, (rng.uniform(0.7, 1.5), 0.05, 0.008), "oasis_ripple", spin=math.radians(25 + 90))
+
+
 def oasis(p, rng, kind):
-    """Open sand, with colourful caravan tents, rugs and resting camels in the tile's corners, clear of the routes. No drawn paths: they thicken toward the pool's tile and the Bazaar. Only one tile of a region has the pool (oasis_pool_tile)."""
+    """Open sand under shimmering heat, with ripples for the shimmer to bend and a few resting camels on the tiles next to the pool and the Bazaar. The pool's tile is the only green (oasis_pool_tile). No drawn paths and no tents."""
     if kind in ("same", "other"):
-        for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, x0=X1 - 1.0, margin=0.25, inner=0) and abs(q.y) > 0.5, 2, 1.0, hk.WEDGE_BOUNDS):
-            p.blob(at, rng.uniform(0.12, 0.2), "scrub", squash=0.7)
+        sand_ripples(p, rng, lambda q: hk.in_edge_wedge(q, margin=0.2, inner=0.0) and abs(q.y) > 0.3, 4)
         return
-    plan = {"centre": (), "centre_b": ((1, "camels"),), "centre_mid": ((0, "tent"), (3, "camels")), "centre_near": ((1, "tent"), (3, "tent"), (4, "camels"), (5, "tent"))}[kind]
-    for k, what in plan:
+    sand_ripples(p, rng, lambda q: q.length < 1.6, 4)
+    p.effects.append(("shimmer", Vector((0, 0, 0.3))))
+    if kind == "centre_near":
+        k = 1
         spin = math.radians(60 * k + 30 + 180)
-        if what == "tent":
-            caravan_tent(p, rng, tile_corner_at(k, 3.55), spin)
-        else:
-            camel(p, rng, tile_corner_at(k, 3.2, 0.3), spin + 0.4)
-            camel(p, rng, tile_corner_at(k, 3.65, -0.4), spin - 0.7)
+        camel(p, rng, tile_corner_at(k, 3.2, 0.3), spin + 0.4)
+        camel(p, rng, tile_corner_at(k, 3.65, -0.4), spin - 0.7)
 
 
 def oasis_pool_tile(p, rng, kind):
@@ -4870,7 +4881,7 @@ def echo_cave(p, rng, kind):
 
 
 LANDMARK_CENTRES.update(raiderstronghold=raider_stronghold, oasisbazaar=oasis_bazaar, oasispool=oasis_pool_tile, echocave=echo_cave)
-PROP_PIECES.update({k: badlands_prop(k) for k in ("badlands_mesa_big", "badlands_mesa_mid", "badlands_mesa_low", "badlands_butte", "badlands_small", "badlands_camp", "badlands_wagon", "badlands_post")})
+PROP_PIECES.update({k: badlands_prop(k) for k in ("badlands_mesa_big", "badlands_mesa_mid", "badlands_mesa_low", "badlands_butte", "badlands_kite_big", "badlands_kite_mid", "badlands_kite_low", "badlands_camp", "badlands_wagon", "badlands_post")})
 
 
 # variant: (terrain, builder, ground colour, extra pieces)
@@ -4900,7 +4911,7 @@ VARIANTS = {
     "excavation": ("ruins", excavation, "plains", ()),
     # tier 2 and class variants
     "badlands": ("desert", badlands, "badlands_ground", ("centre_b",)),
-    "oasis": ("desert", oasis, "oasis_ground", ("centre_b", "centre_mid", "centre_near")),
+    "oasis": ("desert", oasis, "oasis_ground", ("centre_near",)),
     "canyon": ("desert", canyon, "canyon_top", ("centre_mid", "centre_near", "edge_same_b", "edge_other_lm")),
     "fortified_town": ("village", fortified_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail", "centre_mid", "border_join_l", "border_join_r")),
     "slums": ("village", slums, "mud_ground", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),

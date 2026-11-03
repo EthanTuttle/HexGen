@@ -362,17 +362,17 @@ def dwelling(p, rng, at, spin):
     """Adobe rooms against the rock, doors facing along spin, with a ladder down."""
     from mathutils import Vector
     import variants as vr
-    for dx, dy, w, h in ((0.0, 0.0, 0.5, 0.55), (0.03, 0.42, 0.42, 0.42), (-0.02, -0.04, 0.36, 0.95)):
-        p.box(at + vr.turn(Vector((dx, dy, 0)), spin), (0.34, w, h), "adobe", spin=spin)
-    for dy, zz in ((-0.1, 0.05), (0.42, 0.05), (0.1, 0.62)):
-        p.box(at + vr.turn(Vector((0.175, dy, 0)), spin) + Vector((0, 0, zz)), (0.02, 0.15, 0.27), "cave_dark", spin=spin)
-    for sd in (-1, 1):
-        p.box(at + vr.turn(Vector((0.3, -0.52 + sd * 0.07, 0)), spin) - Vector((0, 0, 0.75)), (0.025, 0.025, 1.1), "deadwood", spin=spin)
+    for dx, dy, w, h in ((-0.1, 0.0, 0.62, 0.72), (-0.05, 0.52, 0.5, 0.5), (-0.14, -0.06, 0.44, 1.25)):
+        p.box(at + vr.turn(Vector((dx, dy, 0)), spin), (0.5, w, h), "adobe", spin=spin)
+    for dy, dx, zz in ((-0.1, 0.16, 0.05), (0.52, 0.21, 0.05), (-0.06, 0.12, 0.8)):
+        p.box(at + vr.turn(Vector((dx, dy, 0)), spin) + Vector((0, 0, zz)), (0.02, 0.17, 0.3), "cave_dark", spin=spin)
+    for sd in (-1, 1):  # a ladder up to the top room
+        p.box(at + vr.turn(Vector((0.26, -0.3 + sd * 0.09, 0)), spin), (0.03, 0.03, 1.15), "deadwood", spin=spin)
     for k in range(4):
-        p.box(at + vr.turn(Vector((0.3, -0.52, 0)), spin) + Vector((0, 0, -0.62 + 0.25 * k)), (0.025, 0.18, 0.025), "deadwood", spin=spin)
+        p.box(at + vr.turn(Vector((0.26, -0.3, 0)), spin) + Vector((0, 0, 0.2 + 0.27 * k)), (0.03, 0.2, 0.03), "deadwood", spin=spin)
 
 
-def echo_mouth(p, rng, x, floor):
+def echo_mouth(p, rng, x, floor, spirals=((1.75, 1.85, 0.42), (-1.75, 1.75, 0.46), (1.75, 0.95, 0.3))):
     """The Echo Cave's look, facing +X with its foot on floor: a massive dark arch, a stone frame, carved spirals beside it. In the piece's frame, at x."""
     from mathutils import Vector
     import variants as vr
@@ -385,7 +385,7 @@ def echo_mouth(p, rng, x, floor):
         p.box(Vector((x + 0.14, sd * 1.12, 0)), (0.3, 0.34, 2.3), "sandstone", z=floor)
     vr.loft(p, [[Vector((x + dx, y, floor + z)) for dx in (0.0, 0.32)] + [Vector((x + 0.32, y, floor + z + 0.34)), Vector((x, y, floor + z + 0.34))] for y, z in ((-1.28, 2.28), (-0.7, 2.45), (0.0, 2.58), (0.7, 2.45), (1.28, 2.28))], ("sandstone", "sphinx_light", "sphinx_light", "sandstone"))
     p.box(Vector((x + 0.3, 0, 0)), (0.12, 0.36, 0.46), "sphinx_light", z=floor + 2.58)
-    for y, z, r in ((1.75, 1.85, 0.42), (-1.75, 1.75, 0.46), (1.75, 0.95, 0.3)):
+    for y, z, r in spirals:
         vr.spiral_mark(p, Vector((x + 0.03, y, floor + z)), r, axis="x")
 
 

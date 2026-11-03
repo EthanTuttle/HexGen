@@ -1,3 +1,71 @@
+# Desert kit hand-off, round 4 (tiles_v59)
+
+This round holds the canyon as Ethan chose it (a maze walked on the floor), more wide badlands mesas, a rebuilt Raider Stronghold, and an open-sand oasis. None of it has been tried in Godot, and Ethan hasn't seen it. Rounds 3, 2 and 1 follow below: where they differ, this section is current. Take B and the old take A in `canyon_takes.py` are history; `canyon.py` borrows a few helpers from that file.
+
+- **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v59.blend`. The canyon isn't in it: `art/scripts/canyon.py` builds it per region (`render_preview.py --canyon-maze`).
+
+## Canyon
+
+Previews, all `_v1` in `art/preview/`: `canyon_maze_map`, `_turned`, `_turned_b`, `_low`, `_low_turned`, `_lower`, `_lower_turned`, `_cave`, `_ramp`, `_side`. Stand-in parties stand in several spots at once.
+
+- **Continuous walls:** the region is solid rock with corridors cut through it, not blocks on a floor. Floor -1.9, walls in up to about four bands of 0.95. Rock and floor run across tile edges, so no hexagon shows inside the region.
+- **Maze:** `open_edges` opens a winding tree of shared edges plus about one in five of the others, and each corridor bends on its way to a junction near the tile's middle. **Every other shared edge is rock, so the party can't cross it.**
+- **Echo Cave:** one way in, the edge it faces. So the too-steep leg is gone from this version: there's no back route any more. Tiles it would cut off get their own entrance.
+- **Ramps:** an entrance is a plain straight-sided strip from z = 0 at the edge's midpoint to the floor, 28° at most on 851 ramps tested over 200 random regions (24.0° to 25.5° in the preview). The fans are gone. One ramp to a tile.
+- **Cliff dwellings:** adobe rooms with dark doorways and ladders, set against the walls along the corridors, facing into them.
+
+### For Ethan or the planner to decide
+
+- **Closed edges are a rule change:** a neighbouring tile can be a wall, and tiles can be dead ends. It's what makes it a maze, but it goes beyond this art round: routes must use `canyon.route` and refuse closed edges, and 02's Obstacles doesn't say whether a Climb check could cross one. I built walk-round only. It also breaks my standing note against dead ends, which I took to be about drawn paths.
+- **A turned camera hides more, as expected:** rock is held low only on the south side of each corridor, for the default camera (`canyon_maze_turned`, `_low_turned`, `_lower_turned`). 07 lets the player rotate freely, so I'd draw a mini's silhouette through rock in Godot, a second depth-tested pass on the minis. That isn't built or tried.
+
+### Triangles and whether it's practical in Godot
+
+| | |
+| --- | --- |
+| 12-tile region | 41,268 triangles, about 3,440 a tile on average, against 4,816 |
+| Generating it in plain Python | About 0.45 s for field and mesh together |
+
+It looks practical: generate once when the region finishes and keep the mesh, as the sand does. GDScript should be slower than this Python run, so do it off the main thread or a tile at a time; that's an estimate, not measured. Per-tile worst case isn't measured, and the triangle count includes dwellings and crags. Mesh and collision aren't built in Godot, and the grid (`ND`, `NV`) is the lever if it runs heavy.
+
+**Not worked out:** adding tiles to a finished canyon. The preview has no ground-colour fade at its edge.
+
+## Badlands
+
+`badlands_features` is reworked. Any corner of a badlands tile can now hold a wide mesa: across all three tiles if they're all badlands (`badlands_mesa_*`), or otherwise in that tile's own corner (`badlands_kite_*`, about 3 wide), including beside the Stronghold. Narrow buttes are rare, and only some corners stay open, by a slow pattern. Camps and wagons take a share of corners nearest the Stronghold. Previews: `badlands_map_v3`, `badlands_turned_v3`, `badlands_landmark_v3`.
+
+**Rough spot:** a kite next to another reads as two blocks with a crack, and a few still look tall and narrow from the camera.
+
+### Raider Stronghold
+
+Rebuilt: a long angular mesa, 2.3 high, with strata but no ledges, and a straight ramp up its long side at 22.9°. It meets the ground at the foot, and at the top it's level with the mesa, flush against its side, with the gate beside it. Previews: `badlands_stronghold_alone_front_v2`, `_corner_v2`, `_side_v2`, `_back_v2`, `_map_v2`, `_low_v2`. Triangles: about 1,460 for the piece.
+
+**Rough spot:** the ramp's outer wall is a large plain wedge.
+
+## Oasis
+
+The one pool and the Bazaar stay. Tents and rugs are gone: the rest is open sand with wind ripples, and a few resting camels only on the tiles next to the pool and Bazaar (`centre_near`). Previews: `oasis_map_v3`, `oasis_turned_v3`, `oasis_landmark_v3`.
+
+**Rough spot:** ripples are in wedge pieces, so they turn with their wedge and make a herringbone rather than running one way. They should be world-space, like ground cover.
+
+## Effects for Godot
+
+| Effect | Where | What it is |
+| --- | --- | --- |
+| `shimmer` | Every oasis and badlands `centre` piece | Heat waves over open ground. Ripples and cracked patches give it something to bend. Not drawn in previews |
+| `glint` | Pool and well | Blue-white glint, faint glow at night |
+| `fire`, `smoke` | Stronghold | As elsewhere |
+
+## Ramp checks
+
+Ramps must meet the ground at both ends, on every ramp in the desert:
+
+- **`check_town.py -- desert2`:** rays along the Stronghold's and the older Echo Cave piece's ramps, from foot to stop, find the surface at the walk's height with no gap. It also fails if a ramp doesn't start at ground level. 0 failures.
+- **`render_preview.py --canyon-maze`:** a ray just outside each entrance finds z = 0, and one at its foot finds the floor. `RAMPS NOT JOINED 0; HOLES 0`, with no holes from rays straight down.
+- **`test_desert_lands.py`:** each canyon ramp's ends and tilt on 200 random regions, connectivity, one way into the Echo Cave. 0 failures.
+
+The older counts printed for take A's cave leg and take B's crossings are from the rejected takes.
+
 # Desert kit hand-off, round 3 (tiles_v58)
 
 This round holds two canyon takes for Ethan to compare, reworked badlands and a rebuilt Raider Stronghold, and the oasis with one pool tile. None of it has been tried in Godot, and Ethan hasn't seen it. Rounds 2 and 1 follow below: where they differ, this section is current.

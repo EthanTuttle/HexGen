@@ -159,6 +159,8 @@ PALETTE = {
     "rug_c": "#D9A441",
     "dome": "#F0E4CC",
     "canyon_top": "#DBA877",
+    "canyon_rust_top": "#C87A4E",
+    "oasis_ripple": "#DFC99A",
     "canyon_deck": "#E2B487",
     "canyon_cream": "#F0CE96",
     "canyon_orange": "#E2914F",

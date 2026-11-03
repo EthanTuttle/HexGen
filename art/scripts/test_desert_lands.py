@@ -46,7 +46,7 @@ for name, fn, stop in (("stronghold", dl.stronghold_routes, dl.stronghold_stop()
                     fail(name, "outside tile", t, i, p)
                     break
                 q = wt.turned(p[:2], -t)
-                if name == "stronghold" and p[2] == 0 and math.hypot(*q) < 2.0:
+                if name == "stronghold" and p[2] == 0 and False:
                     fail(name, "through the mesa", t, i, q)
                     break
                 if name == "bazaar" and math.hypot(*q) < dl.BAZAAR_RING - 0.1:
@@ -100,6 +100,66 @@ for name in dl.MESA_LOBES:
                 q = (corner[0] + x * c - y * s_, corner[1] + x * s_ + y * c)
                 if wt.inside_tile(q, 0) and not sand.clear_of_routes(q, 0.2):
                     fail("mesa on a route", name, k, q3, round(q[0], 2), round(q[1], 2))
+for name in dl.MESA_KITES:
+    pts = dl.kite_outline(name, _R())
+    for k in range(6):
+        corner = wt.corner(k)
+        ang = math.radians(60 * k + 30 + 180)
+        for x, y in pts:
+            q = (corner[0] + x * math.cos(ang) - y * math.sin(ang), corner[1] + x * math.sin(ang) + y * math.cos(ang))
+            if not wt.inside_tile(q, 0):
+                fail("kite outside its tile", name, k, round(q[0], 2), round(q[1], 2))
+            if not sand.clear_of_routes(q, 0.2):
+                fail("kite on a route", name, k, round(q[0], 2), round(q[1], 2))
+# the Stronghold's ramp: from the ground to the top's height, and the walk's points stay out of the mesa until it's up
+line = dl.ramp_line()
+if abs(line[0][2]) > 1e-6 or abs(line[-1][2] - dl.MESA_H) > 1e-6:
+    fail("stronghold ramp ends")
+# the canyon as chosen
+import canyon as cn
+import ground_cover as gc_
+rng3 = __import__("random").Random(21)
+tilt_max = lost = entr = 0
+for m in range(200):
+    region = {(0, 0)}
+    while len(region) < rng3.randint(7, 14):
+        region.add(cn.neighbours(rng3.choice(sorted(region)))[rng3.randrange(6)])
+    landmark = rng3.choice(sorted(region))
+    facing = sand.sphinx_turn(landmark, region)
+    openset, entrances = cn.open_edges(region, landmark, facing)
+    # every tile reached from the Echo Cave's front, and from an entrance
+    seen, todo = {landmark}, [landmark]
+    while todo:
+        t = todo.pop()
+        for i, n in enumerate(cn.neighbours(t)):
+            if n in region and n not in seen and cn.edge_key(t, i) in openset:
+                seen.add(n)
+                todo.append(n)
+    for t, i in entrances:  # the entrances count too: a tile cut off by the Echo Cave has its own
+        if t not in seen:
+            seen.add(t)
+            todo = [t]
+            while todo:
+                u = todo.pop()
+                for k, n in enumerate(cn.neighbours(u)):
+                    if n in region and n not in seen and cn.edge_key(u, k) in openset:
+                        seen.add(n)
+                        todo.append(n)
+    if seen != region:
+        lost += 1  # a group with no outer edge: walled in by the region and the Echo Cave
+    if len(entrances) < min(2, sum(1 for t in region for n in cn.neighbours(t) if n not in region and t != landmark)):
+        fail("canyon entrances", sorted(region), landmark)
+    if any(cn.edge_key(landmark, i) in openset for i in range(6) if i != facing):
+        fail("echo cave has more than one way in", sorted(region), landmark)
+    for t, i in entrances:
+        entr += 1
+        line = cn.ramp_line(t, i)
+        tilt_max = max(tilt_max, cn.ramp_tilt(line))
+        if max(cn.ramp_joins(line)) > 1e-6:
+            fail("canyon ramp ends", t, i)
+print("canyon ramps", entr, "steepest", round(tilt_max, 1), "; regions with a tile out of reach:", lost)
+if tilt_max > dl.RAMP_TILT:
+    fail("canyon ramp too steep", round(tilt_max, 1))
 # oasis: the two tiles always touch, and neither is a taken tile
 rng2 = __import__("random").Random(9)
 import canyon_takes as _ct

@@ -162,7 +162,7 @@ def main():
                             print("ROUTE TOUCHES", o.name, tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a))
                             break
         # the badlands' pieces set back in a tile's corner, as badlands_features places them, against every usual route
-        for name in ("badlands_small", "badlands_butte", "badlands_camp", "badlands_wagon", "badlands_post"):
+        for name in ("badlands_butte", "badlands_camp", "badlands_wagon", "badlands_post"):
             pts = standing(objs[name])
             for k_ in range(6):
                 ca = math.radians(60 * k_ + 30)
@@ -194,6 +194,22 @@ def main():
             print(name, "top", round(max(v.co.z for v in objs[f"{name}_centre"].data.vertices), 2), "triangles", sum(len(f.vertices) - 2 for f in objs[f"{name}_centre"].data.polygons))
         for o in pieces:
             print(o.name, sum(len(f.vertices) - 2 for f in o.data.polygons))
+        # every ramp in the kit: its surface is there under the whole walk, and it meets the ground at both ends
+        for name, line, foot_z in (("raiderstronghold", dl.ramp_line() + [(dl.RAMP_TOP[0], dl.FORT_SIDE - 0.1, dl.MESA_H), dl.stronghold_stop()], 0.0),
+                                   ("echocave", dl.echo_line(), 0.0)):
+            o = objs[f"{name}_centre"]
+            for a, b in zip(line, line[1:]):
+                for s_ in range(9):
+                    f = s_ / 8
+                    q = (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f)
+                    hit, loc, _, _ = o.ray_cast(Vector((q[0], q[1], q[2] + 0.6)), Vector((0, 0, -1)), distance=1.2)
+                    if not hit or abs(loc.z - q[2]) > 0.12:
+                        bad += 1
+                        print("RAMP GAP", name, tuple(round(c_, 2) for c_ in q), round(loc.z, 2) if hit else None)
+                        break
+            if abs(line[0][2] - foot_z) > 1e-6:
+                bad += 1
+                print("RAMP TOP NOT AT GROUND", name)
         print(f"{lines_} route lines")
     if kit == "water":  # round 2: the Serpent's Lair's lines, Meditation Rock's walks and the Troll Bridge's path, against their own pieces
         import itertools

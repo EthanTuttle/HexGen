@@ -121,8 +121,8 @@ def draw_effects(col, templates, thin=False):
                 for k in range(4):
                     a_ = 2 * math.pi * k / 4
                     p.box(at + Vector((math.cos(a_) * 0.2, math.sin(a_) * 0.2, 0.15 * k)), (0.07, 0.07, 0.07), "ember")
-            elif e["kind"] == "glint":
-                pass  # an engine effect on the pool's surface
+            elif e["kind"] in ("glint", "shimmer"):
+                pass  # engine effects, on the pool's surface and over open ground
             elif e["kind"] == "fire":
                 p.cone(at, 0.14, 0.32, "ember", segments=5)
             elif e["kind"] == "spray":
@@ -1176,6 +1176,96 @@ if __name__ == "__main__":
             shot(f"canyon_take_{take}_cave")
             view(Vector((0, 0, -0.5)), 44, 6, -math.pi / 2)
             shot(f"canyon_take_{take}_side")
+        sys.exit(0)
+    if "canyon-maze" in flags:
+        # The canyon as chosen (canyon.py): a maze walked on the floor, with a party on it, from the map camera, turned, low and close; triangles per tile, and each entrance ramp's two ends against what's under them.
+        import canyon as cn
+        region = [(0, 0)] + list(hk.NEIGHBOURS) + [(1, 1), (2, -1), (1, -2), (-1, 2), (-2, 1)]
+        ring = {t: ("river" if t == (3, -1) else "plains") for b_ in region for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in region}
+        lm_at = (1, 0)
+        turn_ = sand.sphinx_turn(lm_at, set(region))
+
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(stem)
+
+        def view(focus_, dist_, el_deg, ang):
+            el = math.radians(el_deg)
+            cam = bpy.context.scene.camera
+            cam.location = focus_ + Vector((dist_ * math.cos(el) * math.cos(ang), dist_ * math.cos(el) * math.sin(ang), dist_ * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
+
+        hk.empty_scene()
+        templates = load_templates(tiles)
+        minis = load_templates(max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1))))
+        build_map(templates, tiles=dict(ring), hollow=region)
+        col = bpy.data.collections["map"]
+        import canyon_takes as ct
+        p = hk.Piece("canyon")
+        field = cn.build(p, random.Random(7), region, lm_at, turn_)
+        tris = sum(len(f.verts) - 2 for f in p.bm.faces)
+        print(f"CANYON {tris} triangles, {tris / len(region):.0f} a tile, entrances {field.entrances}")
+        p.finish(col)
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        bad_ = 0
+        for t, i in field.entrances:
+            c = hk.tile_position(*t)
+            line = cn.ramp_line(t, i, lm_at, turn_)
+            n = wt.normal(i)
+            ok, loc, *_ = bpy.context.scene.ray_cast(dg, Vector((c.x + line[0][0] + n[0] * 0.15, c.y + line[0][1] + n[1] * 0.15, 20)), Vector((0, 0, -1)))
+            ok2, loc2, *_ = bpy.context.scene.ray_cast(dg, Vector((c.x + line[-1][0] + 0.02, c.y + line[-1][1] + 0.02, 20)), Vector((0, 0, -1)))
+            print("RAMP", t, i, "tilt", round(cn.ramp_tilt(line), 1), "outside ground", round(loc.z, 2) if ok else None, "foot floor", round(loc2.z, 2) if ok2 else None)
+            if not ok or abs(loc.z) > 0.08 or not ok2 or abs(loc2.z - cn.FLOOR) > 0.08:
+                bad_ += 1
+        missed = 0
+        for t in region:
+            c = hk.tile_position(*t)
+            for ix in range(-20, 21):
+                for iy in range(-22, 23):
+                    q = c + Vector((ix * 0.2 + 0.013, iy * 0.2 + 0.017, 0))
+                    if gc.tile_at(q.x, q.y) == t and not bpy.context.scene.ray_cast(dg, Vector((q.x, q.y, 20)), Vector((0, 0, -1)))[0]:
+                        missed += 1
+        print(f"RAMPS NOT JOINED {bad_}; HOLES {missed}")
+        spots = []
+        t, i = field.entrances[0]
+        c = hk.tile_position(*t)
+        rl = cn.ramp_line(t, i, lm_at, turn_)
+        q = rl[1]
+        spots.append(((c.x + q[0], c.y + q[1], q[2]), math.atan2(rl[2][1] - q[1], rl[2][0] - q[0])))
+        for t in sorted(region, key=lambda t_: -len(cn.tile_lines(t_, field.openset, field.entrances, lm_at, turn_)))[:3]:
+            if t == lm_at:
+                continue
+            c = hk.tile_position(*t)
+            jn = cn.junction(t)
+            spots.append(((c.x + jn[0], c.y + jn[1], cn.FLOOR), 0.6))
+        q = wt.turned(cn.STOP, turn_)
+        at = hk.tile_position(*lm_at)
+        spots.append(((at.x + q[0], at.y + q[1], cn.FLOOR), math.radians(60 * turn_ + 180)))
+        ct._mini_spots(col, minis, spots)
+        focus = Vector((0.5, -1.0, -0.5))
+        stage(focus, 66, 50)
+        shot("canyon_maze_map")
+        view(focus, 62, 50, math.radians(150))
+        shot("canyon_maze_turned")
+        view(focus, 62, 50, math.radians(30))
+        shot("canyon_maze_turned_b")
+        mid = hk.tile_position(0, 0)
+        view(mid + Vector((0, 0, -1.0)), 22, 28, -math.pi / 2)
+        shot("canyon_maze_low")
+        view(mid + Vector((0, 0, -1.0)), 22, 28, math.radians(90))
+        shot("canyon_maze_low_turned")
+        view(mid + Vector((0, 0, -1.0)), 15, 15, math.radians(-40))
+        shot("canyon_maze_lower")
+        view(mid + Vector((0, 0, -1.0)), 15, 15, math.radians(130))
+        shot("canyon_maze_lower_turned")
+        view(at + Vector((0, 0, -1.0)), 15, 32, math.radians(60 * turn_))
+        shot("canyon_maze_cave")
+        rq = hk.tile_position(*field.entrances[0][0])
+        view(rq + Vector((0, 0, -0.5)), 13, 30, math.radians(60 * field.entrances[0][1] + 40))
+        shot("canyon_maze_ramp")
+        view(Vector((0, 0, -0.5)), 44, 6, -math.pi / 2)
+        shot("canyon_maze_side")
         sys.exit(0)
     if "stronghold-alone" in flags:
         # The Raider Stronghold on its own, on a bare tile, from several angles.
