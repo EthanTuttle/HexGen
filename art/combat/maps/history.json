@@ -214,28 +214,28 @@
   "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 86
+  "walkable": 81
  },
  "fortified_town_corner": {
   "cells": 37,
   "idea": "The corner of the town wall, a tower at its point. Enemies have their backs to the stone: push them into it, or be pinned against the house.",
   "kind": "terrain",
   "shape": "small hex",
-  "walkable": 25
+  "walkable": 24
  },
  "fortified_town_street": {
   "cells": 77,
   "idea": "A cobbled street up the map between stone houses and a smithy, a supply wagon stuck in the middle of it. The wagon splits the street in two.",
   "kind": "path",
   "shape": "tall rectangle",
-  "walkable": 60
+  "walkable": 58
  },
  "fortified_town_yard": {
   "cells": 61,
   "idea": "A supply yard round a smithy, with wagons, stores and spear racks scattered about. Lots of small corners and no clear line.",
   "kind": "terrain",
   "shape": "medium hex",
-  "walkable": 47
+  "walkable": 44
  },
  "haunted_homesteads_crops": {
   "cells": 121,
@@ -319,7 +319,7 @@
   "idea": "Two long rows of stalls across the map, with crates and carts closing the gaps, one row open at its east end and one at its west. Long runs along them, and a way across only at the end of each row.",
   "kind": "terrain",
   "shape": "big square",
-  "walkable": 65
+  "walkable": 67
  },
  "market_town_row": {
   "cells": 37,

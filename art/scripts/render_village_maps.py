@@ -165,30 +165,30 @@ n n n n n n n n n
     "fortified_town_breach": {"size": "wide oval", "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.", "foes": BANDITS, "plan": """
   N . . . . . w .  
  . L . . . . . v . 
-. . L . . . . . . .
+. . L . . J . . . .
  P . L . . . . . . 
-P . . N . . . . x .
- P . . , . . . . P 
-. . . . N . . . P .
- . . . . L . . . P 
-. h . . . L . . . .
- k s . . . , . . . 
+P . . N . . x . 2 .
+ P . . , . . . 2 2 
+. . . . N . . . 2 .
+ . I . . L . . . . 
+. h . . . L . Y . .
+ k s . . . , . . J 
   . . . . . N . .  
 """},
     "fortified_town_yard": {"size": "medium hex", "idea": "A supply yard round a smithy, with wagons, stores and spear racks scattered about. Lots of small corners and no clear line.", "foes": BANDITS, "plan": """
     .    
    v w   
-  . . .  
- I . x Y 
+  . . x  
+ I . . Y 
 . . D . J
  . . D . 
 Y . D . .
  J . . I 
 . . . . Y
- . , . . 
-P . . J .
- P . . . 
-P . . . .
+ . , . 3 
+6 . . 3 3
+ 6 . . 3 
+6 . . . .
  . h k . 
   . s .  
    . .   
@@ -204,27 +204,27 @@ L . . L
  . J . 
 Y . . P
  . . P 
-. h . P
+I h . P
  k s . 
   . .  
    .   
 """},
     "fortified_town_street": {"kind": "path", "size": "tall rectangle", "idea": "A cobbled street up the map between stone houses and a smithy, a supply wagon stuck in the middle of it. The wagon splits the street in two.", "foes": BANDITS, "plan": """
+. . n w .
+ v n x . 
 . . n . .
- v n n w 
-P . n . P
- P n n P 
-P . n . P
- . n n x 
-Y . n . I
- . n n . 
-J . Y . J
+ . n n 4 
+5 . n 4 4
+ 5 n n 4 
+5 . n . I
+ J n n . 
+Y . Y . J
  . n n . 
 D . n . P
  D n n P 
 D . n . P
  . n n . 
-. . n s .
+. . n s I
  k n n h 
 . . n . .
 """},
@@ -350,8 +350,8 @@ c c n c c
 }
 
 
-HOUSE_MARKS = {"village": "PY23", "market_town": "P56234"}
-BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street"}  # beside HOUSES
+HOUSE_MARKS = {"village": "PY23", "market_town": "P56234", "fortified_town": "P56D234"}
+BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street", "fortified_town_breach", "fortified_town_yard", "fortified_town_corner", "fortified_town_street"}  # beside HOUSES
 # Each map's houses, north to south: (those on three cells, those on four). No two alike side by side.
 HOUSES = {
     "village_green": (("cottage_3_cross", "cottage_3_gable"), ("cottage_4_long",)),
@@ -366,7 +366,7 @@ WALL_WALK = {"size": "wide oval", "idea": "The town wall's top can be walked. Tw
  . X . . . . . v . 
 . . H . . . . . . .
  P . H . . . . . . 
-P . ^ H . . . . x .
+P . ^ H . . x . . .
  P . . , . . . . P 
 . . . . N ^ . . P .
  . . . . H . . . P 

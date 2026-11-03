@@ -35,6 +35,10 @@ def templates():
     return t
 
 
+def piece_of(name):
+    return f"ob_market_town_{name}" if name.startswith("town") else f"ob_fortified_town_{name}" if name.startswith(("stone_", "smithy", "armoury")) else f"ob_village_{name}"
+
+
 def size(obj):
     obj.data.calc_loop_triangles()
     xs, ys, zs = zip(*(v.co[:] for v in obj.data.vertices))
@@ -56,7 +60,7 @@ def measure(t):
         thing(p, hk.seeded(name), ZERO, 0.0)
         print("PROP", name, "%d %.2f %.2f %.2f" % size(p.finish(col)))
     for name in HOUSES:
-        print("HOUSE", name, "%d" % size(t[f"ob_market_town_{name}"] if name.startswith("town") else t[f"ob_village_{name}"])[0])
+        print("HOUSE", name, "%d" % size(t[piece_of(name)])[0])
     print("HERO", "%d %.2f %.2f %.2f" % size(t["standin_hero"]))
 
 
@@ -105,7 +109,7 @@ def houses(stem):
     t = templates()
     col = hk.new_collection("houses")
     for k, name in enumerate(HOUSES):
-        o = t[f"ob_market_town_{name}"] if name.startswith("town") else t[f"ob_village_{name}"]
+        o = t[piece_of(name)]
         cells = json.loads(o["footprint"])
         mid = sum((hk.cell_position(*c) for c in cells), Vector()) / len(cells)
         slot = Vector((4.3 * (k % 5 - 2.2), 4.2 * (0.5 - k // 5), 0))
@@ -129,6 +133,14 @@ MARKET = [("cloth", bv.yard_cloth), ("grain sacks", bv.yard_sacks), ("produce", 
 
 if __name__ == "__main__":
     hk.empty_scene()
+    if "--fort" in sys.argv:
+        YARD[:] = [("anvil", bv.yard_anvil), ("quench tub", bv.yard_quench), ("coal", bv.yard_coal), ("grindstone", bv.yard_grindstone), ("forge", bv.yard_forge), ("spears", bv.yard_spears), ("shields", bv.yard_shields),
+                   ("armour", bv.yard_armour), ("arrows", bv.yard_arrows), ("stores", "ob_fortified_town_stores"), ("racks", "ob_fortified_town_racks"), ("wagon", "ob_fortified_town_wagon")]
+        HOUSES[:] = ["stone_3_side", "stone_3_gable", "stone_3_cross", "smithy_3", "stone_4_long", "armoury_4", "stone_4_gable"]
+        measure(templates())
+        sheet(YARD, 4, (2.8, 3.4), 35, 19, "fort_props_close")
+        houses("fort_houses")
+        sys.exit()
     if "--stalls" in sys.argv:
         hk.empty_scene()
         close = [("grain sacks", bv.yard_sacks), ("wares", "ob_market_town_wares"), ("stall fruit", "ob_market_town_stall"), ("stall cloth", "ob_market_town_stall_blue"), ("stall pots", "ob_market_town_stall_green")]
