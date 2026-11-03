@@ -3,7 +3,7 @@ checks and export as the forest maps (render_forest_maps.py).
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_plains_maps.py
 Pass names after -- to render only those maps, --check to run the checks without rendering, --sheets to redo the sheets from
-the newest renders, --kit for the props laid out, and --export for art/combat/combat_maps_plains_vN.blend and
+the newest renders, --close for close views of two maps, --kit for the props laid out, and --export for art/combat/combat_maps_plains_vN.blend and
 art/export/combat_maps_plains.json. Uses the latest combat_plains, enemy_minis, humanoid_minis and standin_minis.
 Writes art/preview/plains_map_<map>_vN.png and the sheets plains_maps_<variant>_vN.png, plains_maps_all_vN.png.
 
@@ -23,7 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402,F401
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import build_forest_cells as fc  # noqa: E402
 import build_plains_cells as pc  # noqa: E402
@@ -243,6 +243,12 @@ def variant_of(name):
     return next(v for v in pc.VARIANTS if name.startswith(v))
 
 
+def hk_other_end(anchor, along):
+    """The cell at the far end of a line of cells, given the line's vector from this one."""
+    q = round(along.x / (1.5 * hk.CELL_RADIUS))
+    return anchor[0] + q, anchor[1] + round(-along.y / hk.CELL_FLATS - q / 2)
+
+
 def line_wall(col, v, group):
     """A palisade or tilt barrier joining touching cells of a line."""
     p = hk.Piece(f"{'palisade' if v == 'battlefield' else 'barrier'}_{min(group)}")
@@ -313,6 +319,11 @@ def build_map(t, col, name):
         else:
             piece, foot = f"ob_{v}_{kit[mark][0]}", kit[mark][1]
         anchor, turn = fm.fit(group, foot)
+        if v == "tourney_fields" and mark == "D":  # stands face into the map: their back, on the piece's +side, away from its middle
+            along = Matrix.Rotation(math.radians(60 * turn), 3, "Z") @ (hk.cell_position(*foot[-1]) - hk.cell_position(*foot[0]))
+            mid = fm.middle_of(group)
+            if Vector((-along.y, along.x, 0)).dot(fm.middle_of(cells) - mid) > 0:
+                anchor, turn = hk_other_end(anchor, along), (turn + 3) % 6
         rp.place(t, piece, col, hk.cell_position(*anchor), math.radians(60 * turn))
     for _, group in fm.groups(cells, "L"):
         if v in LINE_WALLS:
@@ -367,6 +378,16 @@ if __name__ == "__main__":
     only_check = "--check" in args
     if "--sheets" in args:
         make_sheets()
+        sys.exit()
+    if "--close" in args:
+        for name, at, dist in (("battlefield_graves", (3.46, -4.5), 11), ("tourney_fields_lists", (3.46, -7.5), 12)):
+            hk.empty_scene()
+            col = hk.new_collection("map")
+            t = templates()
+            cells = build_map(t, col, name)
+            fm.place_minis(t, col, MAPS[name], cells)
+            rp.stage(Vector((at[0], at[1], 0.4)), dist, fm.PITCH)
+            rp.render(f"plains_close_{name}")
         sys.exit()
     if "--export" in args:
         fm.export(MAPS, build_map, templates, variant_of, "combat_maps_plains")

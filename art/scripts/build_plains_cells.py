@@ -35,7 +35,7 @@ for v in VARIANTS:
     hk.PALETTE.update({f"cell_{v}_a": g, f"cell_{v}_b": fc.mix(g, "#FFFFFF", 0.05), f"cell_{v}_c": fc.mix(g, "#000000", 0.05),
                        f"cell_{v}_cover": fc.mix(g, "#10201A", 0.3), f"cell_{v}_block": fc.mix(g, "#8F897F", 0.5),
                        f"cell_{v}_mark": fc.mix(g, "#10201A", 0.18)})
-hk.PALETTE.update({"flower_soft_a": "#E8C7D8", "flower_soft_b": "#F4EDB8", "flower_soft_c": "#BFC8EC"})
+hk.PALETTE.update({"bench_plank": "#D9BE8E", "flower_soft_a": "#E8C7D8", "flower_soft_b": "#F4EDB8", "flower_soft_c": "#BFC8EC"})
 
 
 def mean(cells):
@@ -188,12 +188,15 @@ def collapsed(p, rng, cells, r):
 
 
 def graves(p, rng, cells):
-    """A row of big old graves, one to a cell, big enough to read as a wall from the combat camera."""
-    for c in fc.centres(cells):
-        p.blob(c, 0.42, "grave_mound", squash=0.45)
-        tilt = Matrix.Rotation(rng.uniform(-0.2, 0.2), 3, "X") @ Matrix.Rotation(rng.uniform(-0.2, 0.2), 3, "Y")
-        p.box_rot(c + Vector((0, 0.16, 0.5)), (0.1, 0.08, 1.0), "boards", tilt)
-        p.box_rot(c + Vector((0, 0.16, 0.72)), (0.48, 0.07, 0.09), "boards", tilt)
+    """A row of big old graves, one to a cell: a raised earth mound with a pale headstone at its head, nearly a mini's height, so the row reads as a wall."""
+    for k, c in enumerate(fc.centres(cells)):
+        p.blob(c + Vector((0, -0.08, 0)), 0.44, "grave_mound", squash=0.62)
+        head = c + Vector((0, 0.24, 0))
+        tilt = Matrix.Rotation(rng.uniform(-0.12, 0.12), 3, "X") @ Matrix.Rotation(rng.uniform(-0.12, 0.12), 3, "Y")
+        p.box_rot(head + tilt @ Vector((0, 0, 0.42)), (0.52, 0.16, 0.84), "rock", tilt)
+        p.box_rot(head + tilt @ Vector((0, 0, 0.9)), (0.34, 0.15, 0.14), "rock", tilt)  # a stepped top, so it reads as a headstone from any side
+        p.box_rot(head + tilt @ Vector((0, -0.09, 0.56)), (0.26, 0.02, 0.06), "rock_dark", tilt)  # a worn carved line
+        p.box_rot(head + tilt @ Vector((0, -0.09, 0.42)), (0.2, 0.02, 0.06), "rock_dark", tilt)
 
 
 def spire(p, rng):
@@ -216,18 +219,30 @@ def spire(p, rng):
 
 
 def stands(p, rng, cells):
-    """Tiered wooden stands along a line of cells, climbing to one side, with a banner at the back of each cell."""
+    """Tourney stands along a line of cells: three rows of pale benches rising away from the lane on +side, a coloured drape along
+    the front, a striped canopy over the back row and pennants along the top."""
     a, b = fc.centres(cells)[0], fc.centres(cells)[-1]
     d = (b - a).normalized()
     side = Vector((-d.y, d.x, 0))
+    half = ((b - a).length + 0.8) / 2
+    middle = (a + b) / 2
+
+    def rect(s0, s1, l0=-half, l1=half):
+        return [middle + d * l0 + side * s0, middle + d * l1 + side * s0, middle + d * l1 + side * s1, middle + d * l0 + side * s1]
+
     spin = math.atan2(d.y, d.x)
-    length = (b - a).length + 0.8
-    for k, (off, h) in enumerate(((-0.27, 0.32), (0.0, 0.62), (0.27, 0.95))):
-        p.box((a + b) / 2 + side * off, (length, 0.3, h), ("stand_a", "stand_b")[k % 2], spin=spin)
+    for off0, off1, h in ((-0.42, -0.14, 0.26), (-0.14, 0.14, 0.52), (0.14, 0.42, 0.78)):
+        p.prism(rect(off0, off1), 0.0, h, "bench_plank", side_mat="stand_b")
+    for k in range(6):  # the drape along the front, in alternating colours
+        l0 = -half + 2 * half * k / 6
+        p.prism(rect(-0.44, -0.42, l0, l0 + 2 * half / 6), 0.04, 0.24, ("banner", "ribbon_blue")[k % 2])
+    for at in (-half + 0.06, 0.0, half - 0.06):  # posts and canopy over the back row
+        p.box(middle + d * at + side * 0.4, (0.08, 0.08, 1.62), "trunk")
+    for k in range(6):
+        l0 = -half + 2 * half * k / 6
+        p.prism(rect(0.1, 0.46, l0, l0 + 2 * half / 6), 1.58, 1.64, ("banner", "wall")[k % 2])
     for c in fc.centres(cells):
-        q = c + side * 0.38
-        p.box(q, (0.07, 0.07, 1.9), "trunk")
-        p.box(q + d * 0.16, (0.3, 0.03, 0.55), "banner", z=1.32, spin=spin)
+        vr.pennant_pole(p, c + side * 0.4 + Vector((0, 0, 1.62)), 0.36)
 
 
 def hay_foot(p, rng):

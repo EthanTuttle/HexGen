@@ -1,11 +1,11 @@
-# Combat plains kit hand-off (combat_plains_v4, combat_maps_plains_v5)
+# Combat plains kit hand-off (combat_plains_v5, combat_maps_plains_v6)
 
 Twelve custom plains combat maps, three per variant, with their cell and prop kit. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest kit: see [combat_forest_kit.md](combat_forest_kit.md).
 
-- **Models:** `art/export/combat_plains.glb` (from `art/combat/combat_plains_v4.blend`), `art/export/combat_maps_plains.glb` (`art/combat/combat_maps_plains_v5.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_plains.glb` (from `art/combat/combat_plains_v5.blend`), `art/export/combat_maps_plains.glb` (`art/combat/combat_maps_plains_v6.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_plains.json`, the same format as `combat_maps.json`. `variant` is `meadows`, `battlefield`, `stormy_plains` or `tourney_fields`. Pieces come from `combat_plains.glb` or, for names starting `map_`, `combat_maps_plains.glb`.
 - **Scripts:** `art/scripts/build_plains_cells.py`, `art/scripts/render_plains_maps.py` (the plans, in readable text). It reuses the checks and export in `render_forest_maps.py`.
-- **Previews:** catalogue and current images `art/combat/maps/README.md`; sheet `art/preview/plains_maps_all_v5.png`, `plains_maps_<variant>_v5.png`, `plains_maps_turned_v5.png`, props `plains_obstacles_v4.png`.
+- **Previews:** catalogue and current images `art/combat/maps/README.md`; sheet `art/preview/plains_maps_all_v6.png`, `plains_maps_<variant>_v6.png`, `plains_maps_turned_v6.png`, props `plains_obstacles_v5.png`.
 
 ## Pieces
 
