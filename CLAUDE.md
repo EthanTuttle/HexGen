@@ -16,6 +16,10 @@ This repo holds the design docs for Heads or Hexes (working name HexGen, which t
 - Before merging, pull `main` again. If there's a conflict, merge both sides by hand so neither session's decisions are lost, and tell Ethan what you merged. Never resolve a conflict by throwing one side away.
 - The master open-questions list in `design/00 Index.md` is touched by most decisions, so expect conflicts there and merge them line by line.
 
+## Finding current art
+
+The most recent version of a file is the working version, unless `art/reviews.md` says Ethan rejected it. Version numbers aren't always in date order, so never pick by the highest number or from memory: `art/README.md` → Finding the current version says how to look it up.
+
 ## How to work with Ethan
 
 - Content comes only from Ethan. Never invent design decisions, names, numbers or lore and present them as settled. You can propose ideas, but nothing goes into a doc until he picks or approves it.

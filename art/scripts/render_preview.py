@@ -606,15 +606,11 @@ def stage(target, distance, elevation_deg, lens=50):
 
 
 def next_n(stem):
-    out = os.path.join(hk.ART, "preview")
-    n = 1
-    while glob.glob(os.path.join(out, f"{stem}_v{n}.png")) + glob.glob(os.path.join(out, f"{stem}_v{n}[a-z].png")):
-        n += 1
-    return n
+    return hk.next_number(os.path.join(hk.ART, "preview"), stem, "png")
 
 
 def render(stem):
-    """Renders to preview/<stem>_vN.png, N the first version not taken (counting lettered options too)."""
+    """Renders to preview/<stem>_vN.png, N one past the highest version (counting lettered options too)."""
     out = os.path.join(hk.ART, "preview")
     os.makedirs(out, exist_ok=True)
     path = os.path.join(out, f"{stem}_v{next_n(stem)}.png")
