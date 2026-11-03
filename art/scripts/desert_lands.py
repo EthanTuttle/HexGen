@@ -33,7 +33,7 @@ def polar(r, deg, z=0.0):
 FORT_SIDE = 1.45
 FORT_OUTLINE = ((-2.75, -0.55), (-2.2, -1.25), (-1.1, -1.35), (-0.55, -1.95), (0.75, -1.8), (1.35, -1.2), (2.4, -1.35), (2.85, -0.45), (2.6, 0.5), (2.75, FORT_SIDE), (-2.45, FORT_SIDE), (-2.85, 0.6))
 RAMP_FOOT, RAMP_TOP = (-2.85, 1.96), (1.9, 1.96)  # the ramp's middle line, along the straight side; it reaches the top's height at RAMP_TOP, then runs on flat as a landing
-STRONGHOLD_TURN = 3  # on the map its ramp side faces the default camera (a proposal: the Stronghold has no trail to line up with here)
+STRONGHOLD_TURN = 3  # on the map its ramp side always faces the default camera (design/07)
 RAMP_OUT, RAMP_END = 2.5, 2.7  # the deck's open side, and where its landing stops
 FORT_GATE = (2.0, 0.95)  # the stop: in the gate, on the top
 

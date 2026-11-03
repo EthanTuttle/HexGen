@@ -1,20 +1,74 @@
-# Desert kit hand-off, round 5 (tiles_v60)
+# Desert kit hand-off, final (tiles_v60)
 
-Ethan's ramp picks (design/07) are in, and the oasis ripple fix. None of it has been tried in Godot, and Ethan hasn't seen it in place. Rounds below still hold, except where this says otherwise.
+Ethan approved the desert on Nov 3, 2026. **Start here:** this section is what Godot builds, and where a round below differs, this wins. None of it has been tried in Godot.
 
-- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v60.blend`.
-- **Canyon entrances (`canyon.py`, still region-level, not in the kit):** `ramp_sections` gives each lane's cross-sections, and `build` makes the worn path, low broken kerbs, rock shoulders and stones. Each side runs out to the next rock higher than the lane, so it lies level with a ledge where it passes one and no side faces show; the rock field isn't altered. Beside another corridor a lane narrows instead. `ramp_line` is still the route, but now reaches the floor early, at 27.5° (the minis' limit is 28°), then runs flat to the junction. The short walls where a lane meets the land are in the land's colour. It starts square to the tile's edge, and its colour runs from the floor's at its foot to the land's at its top. 41,439 triangles for 12 tiles.
-- **Raider Stronghold:** the wedge is gone. `StrongholdRun` (variants.py) builds `ramp_parts.Run.timber` up the straight side, with a landing beside the gate. The walk is `desert_lands.ramp_walk()`, and `stronghold_routes` uses it; those routes moved (foot at x = -2.85, y = 1.96, tilt 25.8°). 1,916 triangles.
-- **Proposal, not canon:** `desert_lands.STRONGHOLD_TURN = 3` turns it on the map so the ramp faces the default camera, as the Sphinx's turn does. Its ramp is hidden behind the mesa otherwise. Render_preview uses it; Godot should too if Ethan keeps it.
-- **Oasis ripples:** no longer in the tile pieces. `desert_lands.oasis_ripples(terrains)` returns (piece, x, y, degrees) in world space for `oasis_ripple_short` and `_long`, all at 25°, none on the pool's or Bazaar's tile.
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v60.blend`. Tier 0 desert, wasteland and the Sphinx are as in round 1.
+- **Don't use:** the kit's old `canyon_*` wedges and `echocave_centre` (round 2), and `canyon_takes.py`'s takes A and B. `canyon.py` still borrows the Echo Cave's look and a few helpers from that file. Rounds 2 and 3's canyon notes are history.
 
-**Rough spots:** where a corridor leaves a junction at a shallow angle, a mini's base on it can still overlap a lane's foot: 15 sampled spots in 6 test regions, the worst 0.38 above the floor. A small ledge can show through a lane's wide shoulder (`canyon_lane_close_2_v4`).
+## What Godot has to build
 
-**For Combat Art:** `art/scripts/ramp_parts.py` has `Run.timber` and `Run.steps`; subclass `Run` and set `run`, `edge`, `inner`, `path_z` and `W`. `art/scripts/ramp_study.py` is a working example (`Bench`), and writes `ramp_study_*` sheets. Colours are `ramp_plank*`, `ramp_post`, `ramp_rope` and `ramp_adobe*` in hexkit.
+| Item | What to do | Reference |
+| --- | --- | --- |
+| Canyon rock and floor | Generate once when the region finishes and keep the mesh; it isn't in the kit. Floor at -1.9, bands of 0.95, running across tile edges so no hexagon shows inside the region. No `base_desert` slab on canyon tiles | `canyon.Field`, `tile_grid`, `terrace`, `build` |
+| Canyon routes | Walk corridors only. Each tile's corridors meet at a junction. An entrance's height comes from its lane's line, and everywhere else is the floor | `canyon.route`, `ramp_line` |
+| Walk-round walls | Walls can't be crossed: a shared edge not in `openset` is rock. The party walks round, some tiles are dead ends, and the Echo Cave has one way in (design/02 → Canyon walls). Refuse closed edges when planning a walk | `open_edges`, `is_open` |
+| Echo Cave | Part of the generated canyon. Turn it with `sand.sphinx_turn`, and pass that turn to `Field` and `build` | `canyon.build`, `STOP` |
+| Cut lanes | One to each entrance, generated with the rock: worn path, low broken kerbs, rock shoulders, stones. Each side runs out to the next rock higher than the lane, so it lies level with any ledge it passes. Beside another corridor it narrows. Colour runs from the floor's at its foot to the land's at its top | `ramp_sections`, `build`, `LANE` |
+| Silhouette through rock | **Ethan's pick, not built or tried.** Rock is held low south of each corridor for the default camera only, so a turned camera hides minis. Draw a hidden mini's silhouette through rock, as a second depth-tested pass on the minis | design/07 → Region variant looks |
+| Oasis ripples | Placed by script, in world space, all running one way at 25°. Not in tile pieces, and none on the pool's or Bazaar's tile | `desert_lands.oasis_ripples(terrains)`, pieces `oasis_ripple_short`, `_long` |
+| Stronghold turn | Always `desert_lands.STRONGHOLD_TURN` (3), so the ramp faces the default camera. It's canon now (design/07), not `landmark_flow.turn` | `render_preview.py` uses it |
+| Stronghold timber ramp | In the piece `raiderstronghold_centre` (1,916 triangles): straight up the long side, with a landing beside the gate. Follow the route's z. Tilt 25.8° | `desert_lands.stronghold_routes`, `ramp_walk` |
+| `shimmer` | Heat waves over open ground, at the effect point on every oasis and badlands `centre` piece. Not drawn in previews | Piece effects |
+| `glint` | Blue-white glint on the pool and well, with a faint glow at night | Piece effects |
+| `fire`, `smoke` | At the Stronghold's effect points, as elsewhere | Piece effects |
 
-**Checks:** `test_desert_lands.py` checks each lane's top on the land and foot on the floor, its width, and the Stronghold's walk and deck width, on 6 random regions, and the ripples. `check_town.py -- desert2` casts rays along the Stronghold's walk. `render_preview.py --canyon-maze` reports `RAMPS NOT JOINED` and `HOLES` for the rendered region. All pass at 0.
+**Budget and speed:** 41,439 triangles for a 12-tile canyon, about 3,450 a tile against 4,816. Before the lanes' final change, the worst tile measured 3,984; it hasn't been re-measured. Field and mesh took about 0.45 s in plain Python before the lanes, and GDScript should be slower, so run it off the main thread or a tile at a time. That's an estimate. Mesh and collision aren't built in Godot.
 
-Previews in `art/preview/`: `canyon_maze_map_v6`, `canyon_maze_turned_v4`, `canyon_maze_low_v4`, `canyon_lane_close_0_v5`, `canyon_lane_close_1_v5`, `canyon_lane_close_2_v4`, `canyon_lane_up_*`, `badlands_stronghold_alone_ramp_v2`, `_ramp_low_v2`, `_map_v5`, `badlands_map_v4`, `oasis_map_v4`.
+## Open item: adding tiles to a finished canyon
+
+**This is unsolved, and nothing in the kit handles it.** design/02 says adding tiles to a finished region just expands it, but the canyon is generated from the whole region. Rerunning `open_edges` with one more tile reshuffles the maze, so walls would move under the party.
+
+**My proposal, for Ethan or the planner to decide:**
+
+1. Save `openset` and `entrances` when the region finishes, and never regenerate them.
+2. A new tile opens onto one old neighbour, never the Echo Cave, and gets its own entrance on an edge facing outside.
+3. An old entrance facing the new tile becomes an ordinary opening, and its lane goes.
+4. Rebuild only the new tile and the old tiles touching it.
+
+**Tested:** on 37 random regions, a new tile changed rock only on tiles touching it, and no old floor became rock. Nothing moved two or more steps away. Run `python3 art/scripts/test_canyon_add.py`.
+
+**Needed for this to work:**
+
+- The field's grid must be anchored to the world. `Field` starts it at the region's corner, so a tile that extends the region west or south shifts the grid and every height. The test skips those cases.
+- A tile that fills a hole has no outer edge for its entrance, so check nothing gets cut off.
+- Rock on the neighbours changes while the player watches, so it needs a transition. I haven't designed one.
+- The lane and mesh rebuild isn't built or tested: the test covers rock heights only.
+
+## Accepted rough spots
+
+Ethan has seen these and accepted them for now:
+
+- **Small base clip at shallow junctions:** where a corridor leaves a junction at a shallow angle, a mini's base can overlap a lane's foot. 15 sampled spots in 6 test regions, the worst 0.38 above the floor. A full fix would change how corridors bend, and so the approved maze.
+- **Plate-like shoulders on lanes:** a wide shoulder can read as a flat plate, and a small ledge can show through it (`canyon_lane_close_2_v4`). Lane edges are slightly jagged near the foot.
+
+The preview has no ground-colour fade at the canyon's edge, and that's also not worked out.
+
+## For Combat Art
+
+`art/scripts/ramp_parts.py` has `Run.timber` and `Run.steps`; subclass `Run` and set `run`, `edge`, `inner`, `path_z` and `W`. `art/scripts/ramp_study.py` is a working example (`Bench`), and writes `ramp_study_*` sheets. Colours are `ramp_plank*`, `ramp_post`, `ramp_rope` and `ramp_adobe*` in hexkit.
+
+## Checks
+
+| Check | Covers | Result |
+| --- | --- | --- |
+| `test_desert_lands.py` | Each lane's top on the land and foot on the floor, its width, the Stronghold's walk and deck width, on 6 random regions, and the ripples | 0 failures |
+| `check_town.py -- desert2` | Rays along the Stronghold's walk | 0 failures on v60 |
+| `render_preview.py --canyon-maze` | `RAMPS NOT JOINED` and `HOLES` for the rendered region | 0 |
+| `test_canyon_add.py` | The open item's proposal, rock heights only | Changes stay on touching tiles |
+
+## Previews
+
+In `art/preview/`: `canyon_maze_map_v6` (approved), `canyon_maze_turned_v4`, `canyon_maze_low_v4`, `canyon_lane_close_0_v5`, `canyon_lane_close_1_v5`, `canyon_lane_close_2_v4`, `canyon_lane_up_*`, `badlands_stronghold_alone_ramp_v2`, `badlands_stronghold_alone_ramp_low_v2`, `badlands_stronghold_alone_map_v5`, `badlands_map_v4`, `oasis_map_v4`.
 
 ---
 
