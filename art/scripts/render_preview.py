@@ -1020,7 +1020,7 @@ if __name__ == "__main__":
         t_ = sand.sphinx_turn(LANDMARK_AT, set(DENSITY_REGION))
         at = hk.tile_position(*LANDMARK_AT)
         a_ = math.radians(60 * t_)
-        for stem, ang, far, el, lift in (("desert_sphinx_closeup", a_ + 0.55, 19, 28, 2.3), ("desert_sphinx_closeup_b", a_ + 2.4, 19, 40, 2.0), ("desert_sphinx_default", -math.pi / 2, 20, 42, 2.0), ("desert_sphinx_face", a_ + 0.25, 9, 12, 4.2)):
+        for stem, ang, far, el, lift in (("desert_sphinx_closeup", a_ + 0.55, 19, 28, 2.3), ("desert_sphinx_closeup_b", a_ + 2.4, 19, 40, 2.0), ("desert_sphinx_default", -math.pi / 2, 20, 42, 2.0), ("desert_sphinx_face", a_ + 0.25, 9, 12, 2.2)):
             el = math.radians(el)
             cam = bpy.context.scene.camera
             cam.location = at + Vector((far * math.cos(el) * math.cos(ang), far * math.cos(el) * math.sin(ang), lift + far * math.sin(el)))

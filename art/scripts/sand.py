@@ -28,7 +28,7 @@ FADE = (0.3, 2.8)          # flat within 0.3 m of a non-desert edge, full height
 ND, NV = 14, 16            # grid samples across one sixth of a tile: depth, side to side (swells are 6.5 m long)
 PROP_CELL = 1.4
 LOOKS = {"desert": "desert", "wasteland": "wasteland", "sandstonesphinx": "wasteland"}  # the desert terrain, its variants and landmarks -> whose sand
-DUNE_H = 1.75  # the Sphinx's dune, at its crest
+DUNE_H = 2.2  # the Sphinx's dune, at its crest
 SPHINX_STOP = (3.1, 0.0)  # where the party stops, facing the altar, on the piece's +X
 PROP_R = {"cactus": 0.35, "rock": 0.3, "bush": 0.25, "cracked": 0.0, "column": 1.1, "wall": 1.15, "statue": 1.2, "bones": 0.7, "deadtree": 0.45}  # how far a prop reaches from its point
 
@@ -103,8 +103,8 @@ def rim(p):
 
 
 def dune(p):
-    """The Sphinx's dune at p, in the piece's frame (+X its front): over its back and flanks, falling away before its paws."""
-    return DUNE_H * rim(p) * smooth((1.6 - p[0]) / 3.2) * smooth((3.1 - abs(p[1])) / 1.9)
+    """The Sphinx's dune at p, in the piece's frame (+X its front): over its haunches and back flanks, gone before its shoulders so its forelegs lie clear."""
+    return DUNE_H * rim(p) * smooth((-0.2 - p[0]) / 2.2) * smooth((3.1 - abs(p[1])) / 1.6)
 
 
 def surface_z(terrains, q, r, x, y, turn=0):
@@ -129,7 +129,7 @@ def sphinx_turn(tile, region):
 
 def sphinx_routes(t):
     """routes[i] for all six edges, in the tile's frame, for the Sphinx turned t steps: from the edge's midpoint round the dune to SPHINX_STOP."""
-    ways = {0: [], 1: [], 2: [(0.7, 3.05), (2.35, 1.75), (3.05, 0.85)], 3: [(-3.6, 1.7), (-2.1, 3.1), (0.7, 3.05), (2.35, 1.75), (3.05, 0.85)]}
+    ways = {0: [], 1: [(3.4, 1.1)], 2: [(0.7, 3.05), (2.6, 2.35), (3.4, 1.1)], 3: [(-3.6, 1.7), (-2.1, 3.1), (0.7, 3.05), (2.6, 2.35), (3.4, 1.1)]}
     out = {}
     for k in range(6):
         sd = 1 if k <= 3 else -1
