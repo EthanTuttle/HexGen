@@ -279,6 +279,20 @@ def downhill(q, r):
     return r - 0.3 * q
 
 
+def flow_in(q, r, water, rapids, own="river"):
+    """Which water edges water comes in through, for flow_signs. downhill decides, but a waterfall needs a source: the last river tile above one flows toward it, from all its plain river edges, so the far edge is where it parts from the next river tile. A lake only turns at the fall's edge.
+    rapids[i]: the tile across edge i is rapids. own: this tile's water, "river", "lake" or "rapids"."""
+    here = downhill(q, r)
+    across = [downhill(q + dq, r + dr) for dq, dr in EDGE_STEPS]
+    inflow = [across[i] < here for i in range(6)]
+    if own == "rapids":
+        return [inflow[i] or bool(water[i] and not rapids[i]) for i in range(6)]
+    falls = [i for i in range(6) if water[i] and rapids[i] and across[i] < here]
+    if falls:
+        inflow = [False if i in falls else across[i] < here if rapids[i] or own == "lake" else True for i in range(6)]
+    return inflow
+
+
 def flow_signs(ends, inflow):
     """+1 if water runs along a shore curve in its own direction, -1 if against it, 0 if still.
     inflow[e] is True when water enters the tile through edge e (from a lower neighbour)."""

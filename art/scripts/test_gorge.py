@@ -50,6 +50,26 @@ def widths_of(m, plain=(), falls=()):
     return [wt.FALL_WIDTH if x and i in falls else wt.RIVER_WIDTH if not x or i in plain else wt.RAPIDS_WIDTH for i, x in enumerate(m)]
 
 
+# a waterfall's source: every pair of tiles agrees on its edge, and the last river tile runs toward the fall
+for q, r in itertools.product(range(-3, 4), repeat=2):
+    for i, (dq, dr) in enumerate(wt.EDGE_STEPS):
+        n = (q + dq, r + dr)
+        fall_here = wt.downhill(*n) > wt.downhill(q, r)  # this tile is rapids, n a river: a fall on this edge when n is lower down
+        back = (i + 3) % 6
+        for other in range(6):
+            if other in (i, back):
+                continue
+            water = [k == i for k in range(6)]
+            river_water = [k in (back, other) for k in range(6)]
+            r_in = wt.flow_in(q, r, water, [False] * 6, "rapids")
+            n_in = wt.flow_in(*n, river_water, [k == back for k in range(6)])
+            if r_in[i] == n_in[back] and fall_here:
+                fail("the two tiles disagree at a fall", None, f"{q},{r}", i)
+            if fall_here and not n_in[other]:
+                fail("the last river tile doesn't flow toward its fall", None, f"{q},{r}", i)
+            if fall_here and n_in[back]:
+                fail("the fall's edge runs back into the river", None, f"{q},{r}", i)
+
 SEEDS = int(sys.argv[1]) if len(sys.argv) > 1 else 4
 masks = [m for m in itertools.product([False, True], repeat=6) if any(m)]
 tiles = holes = walks = worst = steep = wmax = 0
