@@ -76,17 +76,56 @@ def brush(p, rng, v):
             p.blob(at + Vector((0.03, 0.02, 0)), 0.03, "flower_blue" if v == "scholars_town" else "fruit", z=0.055, squash=0.6)
 
 
-def building(p, rng, make, k=1.5):
-    """A tile building grown to true scale, standing square on the middle of three cells and inside them. k is one number, or x, y, z."""
-    at = pc.mean(TRIANGLE)
-    grown(p, k, at, lambda: make(p, rng, at, 0.88, 0.62, math.radians(-30)))
+# A building on three cells stands on the point they share, its long sides along the grid's east-west edges, turned with its cells. This rectangle lies inside the
+# three cells (the two in one column and the one beside them), so nothing overhangs a walkable neighbour.
+FIT_LONG, FIT_DEEP, FIT_X = 1.45, 0.9, 0.165
+# A building on one cell: a near-square that fits inside the hexagon.
+ONE_WIDE, ONE_DEEP = 0.72, 0.72
+ROW_SPIN = math.radians(-120)  # a row's houses face south when the row runs north to south
 
 
-def house_row(p, rng, make, cells=LINE3, k=1.45):
-    """Three narrow houses side by side along a line of cells."""
-    spin = math.radians(-30)  # along the line of cells
+def building(p, rng, make, eaves=(0.12, 0.16), tall=1.5):
+    """A tile building on three cells, roof and all inside FIT_LONG x FIT_DEEP. eaves: how much wider and deeper its maker's roof is than its walls."""
+    at = pc.mean(TRIANGLE) + Vector((FIT_X, 0, 0))
+    grown(p, (1, 1, tall), at, lambda: make(p, rng, at, FIT_LONG - eaves[0], FIT_DEEP - eaves[1], 0.0))
+
+
+def house_row(p, rng, make, cells=LINE3, eaves=(0.12, 0.16), tall=1.45):
+    """A house on each cell of a line, each inside its own hexagon."""
     for c in fc.centres(cells):
-        grown(p, k, c, lambda: make(p, rng, c, 0.62, 0.56, spin))
+        grown(p, (1, 1, tall), c, lambda c=c: make(p, rng, c, ONE_WIDE - eaves[0], ONE_DEEP - eaves[1], ROW_SPIN))
+
+
+def fitted_cottage(p, rng, at, w, d, spin):
+    """A cottage with a door and windows on both long sides, as its back may face the camera, and a window in each gable end. Flat quads on the walls, so they cost little."""
+    h = 1.0
+    wall = rng.choice(("wall", "wall", "wall_warm"))
+    p.box(at, (w, d, h), wall, spin=spin)
+    p.gable_roof(at, w + 0.12, d + 0.1, 0.62, rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
+
+    def quad(x, y, half, z0, z1, mat, off, end=False):
+        """A rectangle on a wall's face, off from it; x along the ridge, y across it."""
+        side = Vector((0, 1, 0)) if end else Vector((1, 0, 0))
+        face = Vector((x, y, 0)) + (Vector((off if x > 0 else -off, 0, 0)) if end else Vector((0, off if y > 0 else -off, 0)))
+        points = [face - side * half + Vector((0, 0, z0)), face + side * half + Vector((0, 0, z0)), face + side * half + Vector((0, 0, z1)), face - side * half + Vector((0, 0, z1))]
+        turned_points = [at + vr.turn(q, spin) for q in points]
+        out = vr.turn(Vector((x, 0, 0)) if end else Vector((0, y, 0)), spin)
+        verts = [p.bm.verts.new(q) for q in turned_points]
+        normal = (turned_points[1] - turned_points[0]).cross(turned_points[2] - turned_points[1])
+        p.bm.faces.new(verts if normal.dot(out) > 0 else verts[::-1]).material_index = p._slot(mat)
+
+    for y in (-d / 2, d / 2):
+        doors = -0.12 * w if y < 0 else 0.12 * w  # the two doors aren't opposite
+        quad(doors, y, 0.13, 0.0, 0.62, "timber", 0.012)
+        quad(doors, y, 0.16, 0.0, 0.68, "trunk", 0.006)
+        for x in (doors - 0.34 * w * (1 if doors > 0 else -1) * 1.0, doors + 0.26 * w * (1 if doors > 0 else -1)):
+            if abs(x) < w / 2 - 0.14:
+                quad(x, y, 0.11, 0.42, 0.72, "trunk", 0.006)
+                quad(x, y, 0.08, 0.45, 0.69, "window_glow", 0.012)
+    for x in (-w / 2, w / 2):
+        if w > 0.9:
+            quad(x, 0.0, 0.11, 0.42, 0.72, "trunk", 0.006, end=True)
+            quad(x, 0.0, 0.08, 0.45, 0.69, "window_glow", 0.012, end=True)
 
 
 def well(p, rng):
@@ -138,11 +177,11 @@ def tower(p, rng):
 
 def forge(p, rng):
     """A smithy on three cells: a stone forge with a tall chimney, and its anvil and a spear rack at the door."""
-    at = pc.mean(TRIANGLE)
-    grown(p, 1.5, at, lambda: vr.stone_house(p, rng, at, 0.88, 0.62, math.radians(-30)))
-    p.box(at + Vector((0.42, 0.3, 0)), (0.3, 0.3, 2.9), "stone_block_dark")
-    p.effects.append(("smoke", at + Vector((0.42, 0.3, 3.0))))
-    door = at + Vector((-0.32, -0.62, 0))
+    at = pc.mean(TRIANGLE) + Vector((FIT_X, 0, 0))
+    grown(p, (1, 1, 1.5), at, lambda: vr.stone_house(p, rng, at, FIT_LONG - 0.12, FIT_DEEP - 0.16, 0.0))
+    p.box(at + Vector((0.42, 0.15, 0)), (0.26, 0.26, 2.9), "stone_block_dark")
+    p.effects.append(("smoke", at + Vector((0.42, 0.15, 3.0))))
+    door = pc.mean(TRIANGLE) + Vector((-0.3, -0.72, 0))
     grown(p, 1.3, door, lambda: vr.anvil(p, door, 0.0))
 
 
@@ -189,22 +228,23 @@ def fount(p, rng):
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_village_maps.py reads this.
 KIT = {
     "village": {
-        "P": ("cottage_3", TRIANGLE, lambda p, r: building(p, r, bt.cottage)),
-        "D": ("cottages_row", LINE3, lambda p, r: house_row(p, r, bt.cottage)),
+        "P": ("cottage_3", TRIANGLE, lambda p, r: building(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
+        "Y": ("cottage_3b", TRIANGLE, lambda p, r: building(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
+        "D": ("cottages_row", LINE3, lambda p, r: house_row(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
         "N": ("well", SINGLE, well),
         "J": ("goods", SINGLE, goods),
     },
     "market_town": {
-        "P": ("townhouse_3", TRIANGLE, lambda p, r: building(p, r, vr.townhouse, (1.5, 1.5, 1.15))),
-        "D": ("townhouse_row", LINE3, lambda p, r: house_row(p, r, vr.townhouse, k=(1.3, 1.3, 1.1))),
+        "P": ("townhouse_3", TRIANGLE, lambda p, r: building(p, r, vr.townhouse, eaves=(0.2, 0.26), tall=1.15)),
+        "D": ("townhouse_row", LINE3, lambda p, r: house_row(p, r, vr.townhouse, eaves=(0.2, 0.26), tall=1.1)),
         "Y": ("stall", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0)),
         "I": ("stalls_3", LINE3, stalls_row),
         "J": ("goods", SINGLE, goods),
         "N": ("well", SINGLE, well),
     },
     "fortified_town": {
-        "P": ("stone_house_3", TRIANGLE, lambda p, r: building(p, r, vr.stone_house)),
+        "P": ("stone_house_3", TRIANGLE, lambda p, r: building(p, r, vr.stone_house, tall=1.5)),
         "D": ("smithy_3", TRIANGLE, forge),
         "N": ("tower", SINGLE, tower),
         "Y": ("wagon", SINGLE, wagon),
@@ -212,16 +252,16 @@ KIT = {
         "I": ("racks", SINGLE, racks),
     },
     "slums": {
-        "P": ("shack_3", TRIANGLE, lambda p, r: building(p, r, vr.shack, 1.6)),
-        "D": ("shack_row", LINE3, lambda p, r: house_row(p, r, vr.shack, k=1.45)),
+        "P": ("shack_3", TRIANGLE, lambda p, r: building(p, r, vr.shack, eaves=(0.14, 0.16), tall=1.6)),
+        "D": ("shack_row", LINE3, lambda p, r: house_row(p, r, vr.shack, eaves=(0.14, 0.16), tall=1.45)),
         "T": ("scraggly_tree", SINGLE, scrag),
         "J": ("junk", SINGLE, slum_junk),
         "N": ("lantern_heap", SINGLE, lantern_heap),
         "I": ("washing", SINGLE, washing),
     },
     "scholars_town": {
-        "P": ("scholar_house_3", TRIANGLE, lambda p, r: building(p, r, vr.scholar_house)),
-        "D": ("scholar_row", LINE3, lambda p, r: house_row(p, r, vr.scholar_house, k=1.35)),
+        "P": ("scholar_house_3", TRIANGLE, lambda p, r: building(p, r, vr.scholar_house, tall=1.4)),
+        "D": ("scholar_row", LINE3, lambda p, r: house_row(p, r, vr.scholar_house, tall=1.35)),
         "N": ("tower_pointed", SINGLE, slim("pointed")),
         "Q": ("tower_domed", SINGLE, slim("domed")),
         "Y": ("tower_telescope", SINGLE, slim("telescope")),

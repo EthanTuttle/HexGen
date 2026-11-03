@@ -8,9 +8,9 @@ the newest renders, --close for close views, --kit for the props laid out, --wal
 art/export/combat_maps_village.json. Uses the latest combat_village, enemy_minis, humanoid_minis and standin_minis.
 Writes art/preview/village_map_<map>_vN.png and the sheets village_maps_<variant>_vN.png, village_maps_all_vN.png.
 
-Letters as in render_forest_maps.py (. , c T O R and the minis). c is walkable garden, plot or lawn, n a street, also the paved part of a square,
+Letters as in render_forest_maps.py (. , c T O R and the minis). c is walkable garden, plot or lawn, n a street, also the paved part of a square, g an open gate in a fence,
 L a fence, town wall, patched fence or hedge (any line). Per variant:
-  village         P cottage (3)   D cottages in a row (3)   T tree   N well   J goods
+  village         P Y cottage (3)   D cottages in a row (3)   T tree   N well   J goods
   market_town     P townhouse (3)   D townhouses in a row (3)   Y stall   I stalls in a row (3)   J goods   N well
   fortified_town  P stone house (3)   D smithy (3)   N wall tower   Y supply wagon   J stores   I spear racks
   slums           P shack (3)   D shacks in a row (3)   T scraggly tree   J junk   N crates and a red lantern   I washing line
@@ -62,31 +62,33 @@ P . h . .
    . T   
     .    
 """},
-    "village_gardens": {"size": "wide oval", "idea": "Two fenced gardens open to the south. Each is a pocket with one way in; the wide lane between them is where the fight starts.", "foes": BANDITS, "plan": """
-  . . . . v . . .  
- T . . . . . w . T 
-. L c c L . . L c L
- . c c c . . . c . 
-. L c c L . x L c L
- . c c c . N . c . 
-. L . . L . . L . L
- . . . . . . . . . 
-T . . , . T . . . .
- . k h s . . . . T 
-  . . . . . . . .  
+    "village_gardens": {"size": "wide oval", "idea": "Two fenced garden plots, each with one gate on its south side. Each is a pocket with one way in; the wide lane between them is where the fight starts.", "foes": BANDITS, "plan": """
+  . L . . v . . .  
+ . L L . . . w L . 
+T L c L . . . L L .
+ . c c . . . L c L 
+. L c L . . x c c .
+ . c c . . N L c L 
+. L c L . . . c c .
+ . L L . . . L c L 
+T . g . , T . L L .
+ . k h s . . . g . 
+  T . . . . . . .  
 """},
-    "village_lanes": {"size": "small rectangle", "idea": "Slanting rows of cottages make short lanes. Pick a lane and you can't see down the next until you reach its end.", "foes": BANDITS, "plan": """
-. w . v .
- . x . . 
-D . . D .
- D . . D 
-. D . . D
- . . . . 
-D . . D .
- D . . D 
-. D . J D
- h k s . 
-. . . . .
+    "village_lanes": {"size": "rectangle", "idea": "Two straight rows of cottages, each from its own side of the map, overlap in the middle. The lane between them is short and hidden from both ends, so nobody sees round the corner until they're in it.", "foes": BANDITS, "plan": """
+. . w . v . .
+ . . x . . . 
+P Y P . . . .
+ P Y P . . . 
+P Y P . . . .
+ . . . . . . 
+. . . . . . .
+ . . P Y P . 
+. . . P Y P .
+ . . P Y P . 
+. . . . . . .
+ . h k s . . 
+. . . . . . .
 """},
     "village_street": {"kind": "path", "size": "tall rectangle", "idea": "The village street, straight up the map between cottages, with a well and a tree breaking up the verges. The street is the quick way; the verges are the way round.", "foes": BANDITS, "plan": """
 . . n . .
@@ -424,7 +426,7 @@ def line_wall(col, v, group):
         elif v == "scholars_town":
             p.box(a, (0.44, 0.44, 0.72), "hedge", spin=0.52)
         else:
-            p.box(a, (0.2, 0.2, 0.9), "timber")
+            p.box(a, (0.18, 0.18, 0.95), "timber")
     for a, b in pairs:
         d, spin = b - a, math.atan2((b - a).y, (b - a).x)
         if v == "fortified_town":
@@ -439,8 +441,10 @@ def line_wall(col, v, group):
         elif v == "scholars_town":
             p.box((a + b) / 2, (d.length, 0.36, 0.68), "hedge", spin=spin)
         else:
-            for z in (0.34, 0.68):
-                p.box((a + b) / 2, (d.length, 0.17, 0.11), "trunk", z=z, spin=spin)
+            for z in (0.26, 0.62):  # two rails, with pickets close together on them, so a fence reads from any side
+                p.box((a + b) / 2, (d.length, 0.06, 0.08), "trunk", z=z, spin=spin)
+            for k in range(5):
+                p.box(a.lerp(b, (k + 1) / 6), (0.1, 0.1, 0.84), "boards", spin=spin)
     p.finish(col)
 
 
@@ -461,9 +465,42 @@ def track(col, v, cells):
 pm.track = track
 
 
+def fit_on_grid(cells_of_group, footprint):
+    """As fm.fit, but a three-cell building's long sides always run east-west when they can: its cells look the same turned by 120 degrees."""
+    for k in (0, 3, 2, 5, 1, 4):
+        for anchor in sorted(cells_of_group):
+            placed = {(anchor[0] + a, anchor[1] + b) for a, b in (fm.turned(q, r, k) for q, r in footprint)}
+            if placed == set(cells_of_group):
+                return anchor, k
+    raise ValueError(f"{sorted(cells_of_group)} doesn't fit {footprint}")
+
+
+def gates(col, v, cells):
+    """A gate cell in a fence: a post where each fence meets it, each with a leaf swung back along the cell's edge, so it stands open and the cell stays clear."""
+    p = hk.Piece("gates")
+    for c, mark in cells.items():
+        if mark != "g":
+            continue
+        at = hk.cell_position(*c)
+        for i, (dq, dr) in enumerate(fm.NEIGHBOURS):
+            if cells.get((c[0] + dq, c[1] + dr)) == "L":
+                a = math.radians(60 * i - 30)
+                post = at + Vector((math.cos(a), math.sin(a), 0)) * 0.5
+                p.box(post, (0.14, 0.14, 0.95), "timber")
+                south = Vector((-math.sin(a), math.cos(a), 0))
+                south = south if south.y < 0 else -south
+                for z in (0.22, 0.42, 0.62):
+                    p.box(post + south * 0.16, (0.06, 0.3, 0.06), "boards", z=z, spin=a)
+    p.finish(col)
+
+
 def build_map(t, col, name):
     v = variant_of(name)
-    return pm.build_from_plan(t, col, name, MAPS[name], v, bv.KIT[v], line_wall, set(bv.VARIANTS), FREE_TURN)
+    fit, fm.fit = fm.fit, fit_on_grid
+    cells = pm.build_from_plan(t, col, name, MAPS[name], v, bv.KIT[v], line_wall, set(bv.VARIANTS), FREE_TURN)
+    fm.fit = fit
+    gates(col, v, cells)
+    return cells
 
 
 def templates():
