@@ -9,8 +9,7 @@ Writes art/preview/plains_map_<map>_vN.png and the sheets plains_maps_<variant>_
 
 Letters as in render_forest_maps.py (. , c T O R G L B K H ^ / and the minis), plus n bare ground (walkable), and per variant:
   meadows         D herd (3)   N felt tent   P big felt tent (3)   J rug rack   I spirit pole   Y fire
-  battlefield     D heap of wreckage (3)   J wreckage   I tattered banner   P collapsed tent (3)   Q great collapsed tent (7)
-                  Y row of graves (3 in a line)   L palisade (any line)
+  battlefield     D heap of wreckage (3)   J wreckage   L an old battle line of spears and shields (any line)
   stormy_plains   T split tree   G split trees (2 or 3)   Q rock spire with its nest (7)   L charred trunk (2 or 3 in a line)
   tourney_fields  N pavilion   P big pavilion (3)   Q grand pavilion (7)   D bunting fence (3 in a line)   J archery butt   I dummy
                   Y quintain   L tilt barrier (any line)   seven n cells in a flower get a roped ring
@@ -29,6 +28,7 @@ from mathutils import Vector  # noqa: E402
 import build_forest_cells as fc  # noqa: E402
 import build_plains_cells as pc  # noqa: E402
 import hexkit as hk  # noqa: E402
+import map_catalogue as mc  # noqa: E402
 import render_forest_boards as rb  # noqa: E402
 import render_forest_maps as fm  # noqa: E402
 import render_preview as rp  # noqa: E402
@@ -38,7 +38,7 @@ fm.WALKABLE += "n"
 LINE_WALLS = {"battlefield", "tourney_fields"}  # L runs along any line of cells in these, and is a fallen trunk elsewhere
 BANDITS = {"w": "enemy_bandit_melee", "x": "enemy_bandit_ranged", "v": "enemy_bandit_elite", "W": "enemy_bandit_melee", "X": "enemy_bandit_ranged", "V": "enemy_bandit_elite"}
 UNDEAD = {"w": "enemy_skeleton", "x": "enemy_ghost", "v": "enemy_skeleton_elite", "X": "enemy_ghost", "W": "enemy_skeleton"}
-TURNED = {"meadows_tents", "battlefield_mound", "stormy_plains_outcrop", "tourney_fields_lists"}
+TURNED = {"meadows_tents", "battlefield_lines", "stormy_plains_outcrop", "tourney_fields_lists"}
 
 MAPS = {
     "meadows_herds": {"size": "wide oval", "idea": "Wide open grass with nothing to hide behind but herds, lone trees and drifts of tall flowers. Ranged shine here; the herds are the only walls.", "plan": """
@@ -71,59 +71,76 @@ T . c . D . . . c .
   h . s  
    k .   
     .    """},
-    "meadows_tents": {"size": "large oval", "idea": "Nomads' outlying tents and rug racks strung loosely across the grass, with a herd at one side. Short walls and no real line: every tent is a corner to step round.", "foes": BANDITS, "plan": """
-   . . T . .   
-  I . . w . .  
- . . N . . . . 
-. . . J . v . .
- . N . . . x . 
-. . . . . . N .
- D . . c . . J 
-D . . c . . . .
- D . . . N . . 
-. . J . . . . .
- . N . . . . I 
-  . . h k . .  
-   T . s . T   """},
-    "battlefield_palisade": {"size": "wide rectangle", "idea": "Two old palisade lines across the field, their gaps not lined up, so an advance has to zigzag from one breach to the next while ranged shoot along the lines.", "foes": BANDITS, "plan": """
-. . v . I . w . . .
- . , . x . . . , . 
-. . . . . J . . . .
+    "meadows_tents": {"size": "tall rectangle", "idea": "A long walk up a strip of meadow past outlying tents and rug racks, with a herd at one side. Short walls and no real line: every tent is a corner to step round.", "foes": BANDITS, "plan": """
+. . T . .
+ I . w . 
+. . . . .
+ N . v . 
+. . . J .
+ . x . N 
+. . . . .
+ D . c . 
+D . c . .
+ D . . N 
+. . . . .
+ . J . . 
+. N . . .
+ . . . I 
+. . . . .
+ . h k . 
+. T s . .
+ . . . T """},
+    "battlefield_lines": {"size": "big oval", "idea": "Two old battle lines across a wide field, rows of spears and shields left standing, their gaps not lined up. An advance has to zigzag from one breach to the next while ranged shoot along the lines.", "foes": BANDITS, "plan": """
+    . . v . w .    
+   . , . x . . .   
+  . . . . J . . .  
  L L . L L L . L L 
 L L L . L L . . L L
- . . . , . . . P . 
-. J . . I . . P . .
- . L L L . L L P . 
+ . . . , . . . D . 
+. J . . R . . D . .
+ . L L L . L L D . 
 . . L L . . L L L .
  . c . . . , . . . 
-. . . h . k . . . .
- . . , . s . . J . """},
-    "battlefield_mound": {"size": "large oval", "idea": "A raised mound where an old fight ended, a ramp and a stair up its south side, and heaps of wreckage to the east. The dead hold the top; the heaps give a covered way round.", "foes": UNDEAD, "plan": """
-   . v . . .   
-  . . . w . .  
- . J . . . D . 
-. . . . . D . .
- x . . . . D . 
-. . H H . . . .
- . H H H . . I 
-. . W H . . D .
- . / H ^ . D . 
-. . . . J . D .
- , . . . . . . 
-  . h . k . .  
-   . s . , .   """},
-    "battlefield_graves": {"size": "rectangle", "idea": "Rows of old graves make long lanes running north and south. Easy to walk a lane, slow to change lanes, and the dead can be waiting in any of them.", "foes": UNDEAD, "plan": """
- . . v . w . . . 
-. . . . . . x . .
- . . I . . I . . 
-. . Y . Y . Y . .
- . . . . . . . . 
-. . Y x Y . Y . .
- , . . . . . . , 
-. . Y . Y . Y . .
- . . . J . . . . 
-. . h . k . s . .
- . . . c . . . . """},
+  . . h . k . . .  
+   , . s . . J .   
+    . . . . . .    """},
+    "battlefield_mound": {"size": "small hex", "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side. Nowhere is far from the top, so the fight is over who stands on it.", "foes": UNDEAD, "plan": """
+   .   
+  v .  
+ w . J 
+. . . .
+ . H . 
+. H H .
+ . W . 
+. H H .
+ ^ H / 
+. . . .
+ . c . 
+  h k  
+   s   """},
+    "battlefield_heaps": {"size": "tall rectangle", "idea": "A long narrow stretch of old field, big heaps of war wreckage staggered up its length. A running fight from heap to heap, each one hiding the next stretch.", "foes": BANDITS, "plan": """
+. . v . .
+ . w . . 
+. . . x .
+ . . . . 
+. D . . J
+ D . . . 
+. D . . .
+ . . . . 
+. . R D .
+ . . . D 
+. . . D .
+ J . , . 
+. . . . .
+ . D . . 
+. . D . J
+ . D . . 
+. . . . .
+ J . . c 
+. . . . .
+ . h k . 
+. . s . .
+ . . , . """},
     "stormy_plains_outcrop": {"size": "medium hex", "idea": "A big rock outcrop fills the middle of the map and blocks everything behind it. The fight circles it, with split trees and boulders closing the ring in places.", "plan": """
     .    
    . v   
@@ -155,60 +172,70 @@ H H W H . . . T .
  . . h . . . T . 
 . k . s . . . . .
  T . . . . c . T """},
-    "stormy_plains_trunks": {"size": "wide oval", "idea": "Lightning has dropped trunks all over the field, and split trees stand in clumps. Short broken lines everywhere: lots of corners, no long sight lines.", "plan": """
-  . T . . v . T .  
- . L . . . x . . . 
-. . L . G . . . L .
- . . L . . . . L . 
-. . . . G . w L . .
- T . . . . . . . T 
-. . , . . O . . . .
- . . L . . . G . . 
-. . . L . . G . . .
- . h . L . . G . . 
-  k . s . . . T .  """},
+    "stormy_plains_trunks": {"size": "round oval", "idea": "Lightning has dropped trunks all over a round field, and split trees stand in clumps. Short broken lines everywhere: lots of corners, no long sight lines.", "plan": """
+   . v .   
+  T . x .  
+ . L . . . 
+. . L . G .
+ . . L . . 
+T . . . G .
+ . , . w . 
+. . O . . T
+ . . . L . 
+. G . L . .
+ G . L . . 
+. G . . . T
+ . . h . . 
+  k . s .  
+   . T .   """},
     "tourney_fields_lists": {"size": "tall rectangle", "idea": "Jousting lists: a tilt barrier down the middle with one crossing, and bunting fences closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.", "foes": BANDITS, "plan": """
-D . . v . . D
- . w . . x . 
-D . . L . . D
- . . . . . . 
-D . . L . . D
- . . , . . . 
-. . . L . . .
- . Y . . Y . 
-D . . . . . D
- . . . . . . 
-D . . L . . D
- . . h . . . 
-D . . L k . D
- N . s . . N """},
-    "tourney_fields_camp": {"size": "large oval", "idea": "The knights' camp: a grand pavilion with big ones either side wall off the north, and a roped sparring ring stands open on the party's side. Narrow lanes between canvas, an open floor to fall back on.", "foes": BANDITS, "plan": """
-   . v . w .   
-  . . . . x .  
- . P . Q . P . 
-. P . Q Q . P .
- . P . Q . P . 
-. . . Q Q . . .
- . . . Q . N . 
-N . n . . . . .
- . n n . . N . 
-. . n . . . J .
- . n n . h . . 
-  . n . k . .  
-   . . . s N   """},
-    "tourney_fields_range": {"size": "rectangle", "idea": "The archery range: butts side by side at the far end of a long open lane, rows of dummies and quintains down both flanks. Cross the open lane, or creep along behind the rows.", "foes": BANDITS, "plan": """
-. . x . . x . .
- . . J J J . . 
-. I . . . . Y .
- . I . . w . Y 
-. I . . . . Y .
- . I . . . . Y 
-. I . . . . Y .
- . P . . . . . 
-. P . . . . N .
- . P h k . . , 
-. . . . s . . .
- T . . . . . T """},
+D . v . D
+ w . . x 
+D . L . D
+ . . . . 
+D . L . D
+ . , . . 
+. . L . .
+ Y . . Y 
+. . . . .
+ . . . . 
+D . L . D
+ . . . . 
+D . L . D
+ . . . . 
+D . L . D
+ . h . . 
+. . . k .
+ . s . . 
+. N . N .
+ . . . . """},
+    "tourney_fields_camp": {"size": "big oval", "idea": "The knights' camp, spread wide: a grand pavilion with big ones either side wall off the north, and a roped sparring ring stands open on the party's side. Narrow lanes between canvas, an open floor to fall back on.", "foes": BANDITS, "plan": """
+    . . v . w . .    
+   . . . . . x . .   
+  . . T . Q . T . .  
+ . . P . Q Q . P . . 
+. . P . . Q . . P . .
+ . . P . Q Q . P . . 
+. . . n . Q . . . N .
+ . . n n . . . . . . 
+N . . n . . . N . . .
+ . . n n . . . . J . 
+  . . n . . h . . .  
+   . . . . k . s .   
+    T . . . . N .    """},
+    "tourney_fields_range": {"size": "small rectangle", "idea": "A small archery range: butts side by side at the far end of an open lane, dummies and quintains in rows either side. Cross the open lane, or creep along behind the rows.", "foes": BANDITS, "plan": """
+. x . . x .
+ . J J J . 
+. I . . Y .
+ . . w . . 
+. I . . Y .
+ . . . . . 
+. I . . Y .
+ . . . . . 
+. . . . . .
+ . h . k . 
+T . s . . N
+ . . . . . """},
 }
 
 
@@ -217,8 +244,8 @@ def variant_of(name):
 
 
 def line_wall(col, v, group):
-    """A palisade or tilt barrier joining touching cells of a line. A palisade has gaps and short stretches where it's fallen."""
-    p = hk.Piece(f"{'palisade' if v == 'battlefield' else 'barrier'}_{min(group)}")
+    """An old battle line or a tilt barrier joining touching cells of a line."""
+    p = hk.Piece(f"{'battle_line' if v == 'battlefield' else 'barrier'}_{min(group)}")
     rng = hk.seeded(p.name)
     for c in sorted(group):
         a = hk.cell_position(*c)
@@ -227,13 +254,13 @@ def line_wall(col, v, group):
             if n in group:
                 b = hk.cell_position(*n)
                 if v == "battlefield":
-                    vr.stakes(p, rng, a, b, 2, h=rng.uniform(0.8, 1.2), r=0.1)
+                    pc.battle_line(p, rng, a, b)
                 else:
                     d = b - a
                     p.box((a + b) / 2, (d.length, 0.1, 0.1), "trunk", z=0.86, spin=math.atan2(d.y, d.x))
                     p.box((a + b) / 2, (d.length * 0.94, 0.2, 0.56), "banner" if (c[0] + c[1]) % 2 else "ribbon_blue", z=0.3, spin=math.atan2(d.y, d.x))
         if v == "battlefield":
-            vr.stakes(p, rng, a + Vector((-0.15, 0, 0)), a + Vector((0.15, 0, 0)), 1, h=1.05, r=0.1)
+            vr.spear(p, rng, a)
         else:
             p.box(a, (0.24, 0.24, 1.0), "trunk")
     p.finish(col)
@@ -366,9 +393,12 @@ if __name__ == "__main__":
             target, distance = fm.framing(cells)
             rp.stage(target, distance, fm.PITCH)
             rp.render(f"plains_map_{name}")
+            mc.keep_image("plains_map_", name)
             if name in TURNED:
                 rb.turn_camera(180, target)
                 rp.render(f"plains_map_{name}_turned")
     if not only_check and wanted == list(MAPS):
         make_sheets()
+    if not only_check:
+        mc.write()
     print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)

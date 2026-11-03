@@ -1,8 +1,8 @@
-# Combat forest kit hand-off (combat_cells_v6, combat_maps_v4)
+# Combat forest kit hand-off (combat_cells_v6, combat_maps_v5)
 
 Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and twelve custom forest combat maps. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v6.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v4.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
+- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v6.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v5.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
 - **Map data:** `art/export/combat_maps.json`.
 - **Scripts:** `art/scripts/build_forest_cells.py`, `art/scripts/render_forest_maps.py` (the plans, in readable text, and the checks), `build_enemy_minis.py`, `build_humanoid_minis.py`, `build_giant_minis.py`.
 - **Rules:** `design/07 Presentation.md` → Combat maps; `design/briefs/Combat art brief.md`.
@@ -64,20 +64,7 @@ One object per map name:
 - **Raised ground:** a cell with `z` 0.9 is walkable high ground. A cell with `ramp` (`steps` or `earth`) is the way up: `up` is the cell it climbs to, and its `z` 0.45 is its middle. Raised rock is one `map_..._raised_*` piece per group, wider at the foot than the cells by 0.15, with normal ground cells on top. A `start` with `z` stands on raised ground. An engine that ignores `z` will draw minis inside the rock and cells on the ground, so it has to read it.
 - **`starts`:** samples only, to preview a fight. Enemy mixes and starting spots aren't decided.
 
-| Map | Shape | Cells (walkable) | Triangles, no minis | Fewest angles of 12 |
-| --- | --- | --- | --- | --- |
-| `deep_forest_gorge` | long rectangle, the thinnest allowed | 60 (35) | 4,042 | 6 |
-| `deep_forest_pocket` | small hex | 37 (19) | 2,210 | 4 |
-| `deep_forest_groves` | wide oval | 114 (91) | 5,388 | 4 |
-| `fey_wood_stones` | medium hex | 61 (46) | 3,300 | 4 |
-| `fey_wood_glades` | wide oval | 73 (53) | 3,444 | 3 |
-| `fey_wood_crescent` | small hex | 37 (22) | 2,396 | 3 |
-| `dark_wood_bend` | rectangle | 90 (37) | 6,763 | 3 |
-| `dark_wood_thorns` | wide oval | 101 (70) | 5,532 | 3 |
-| `dark_wood_surround` | small oval | 41 (35) | 2,080 | 10 |
-| `heartwood_great_tree` | large oval | 100 (79) | 5,638 | 3 |
-| `heartwood_shelf` | rectangle | 93 (84) | 6,310 | 3 |
-| `heartwood_hollow` | large oval | 88 (57) | 6,686 | 2 |
+The maps, their shapes, sizes and ideas are in `art/combat/maps/README.md`, generated from the JSON, with each map's current image beside it. Triangles without minis run 1,658 to 5,837.
 
 Each map's tactical idea is in the JSON. Two things the plans assume and nobody has decided: obstacles stop movement, and brush can be walked through. Whether obstacles stop sight, and what brush and the fairy ring do, are open. Height's direction is in `design/03`: longer ranged range from high ground, and going up or down is its own action, with a ledge possibly climbable, so the reach check doesn't require steps or a ramp. Every map's base is a solid hex, oval or rectangle; `check_base` in the script stops a plan with a notch, a hole, or a depth under 4 cells north to south (the Gorge's, the thinnest Ethan will take, and only with a reason such as its cliff wall).
 

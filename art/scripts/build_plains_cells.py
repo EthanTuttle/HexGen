@@ -157,9 +157,26 @@ def wreck_one(p, rng):
 
 
 def wreck_3(p, rng, cells):
+    """A big heap of war wreckage: a mound of churned earth, thick with spears, swords, shields and helmets."""
+    at = mean(cells)
+    p.blob(at, 0.95, "war_earth", squash=0.42)
     for c in fc.centres(cells):
-        vr.wreck(p, rng, c, heavy=True)
-    vr.tattered_banner(p, mean(cells), 2.5, "banner_dark")
+        vr.wreck(p, rng, c)
+    for k in range(3):
+        a = k * 2.1 + 0.4
+        q = at + Vector((math.cos(a), math.sin(a), 0)) * 0.3 + Vector((0, 0, 0.3))
+        vr.spear(p, rng, q)
+    vr.rusted_helmet(p, rng, at + Vector((0, 0, 0.36)))
+
+
+def battle_line(p, rng, a, b):
+    """A stretch of an old battle line between two cell middles: spears still standing, and shields stuck upright among them."""
+    d = b - a
+    spin = math.atan2(d.y, d.x)
+    for t in (0.2, 0.5, 0.8):
+        vr.spear(p, rng, a.lerp(b, t), broken=rng.random() < 0.35)
+    for t in (0.33, 0.67):
+        p.box_rot(a.lerp(b, t) + Vector((0, 0, 0.28)), (0.42, 0.06, 0.56), "shield_wood", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "X"))
 
 
 def banner_pole(p, rng):
@@ -263,6 +280,7 @@ KIT = {
     "battlefield": {
         "D": ("wreck_3", TRIANGLE, lambda p, r: wreck_3(p, r, TRIANGLE)),
         "J": ("wreck", SINGLE, wreck_one),
+        # The Old Battlefield's own, kept for landmark fights, on no map yet:
         "I": ("banner", SINGLE, banner_pole),
         "P": ("collapsed_3", TRIANGLE, lambda p, r: collapsed(p, r, TRIANGLE, 0.85)),
         "Q": ("collapsed_7", FLOWER7, lambda p, r: collapsed(p, r, FLOWER7, 1.5)),

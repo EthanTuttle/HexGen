@@ -39,6 +39,7 @@ from mathutils.geometry import tessellate_polygon  # noqa: E402
 import build_forest_cells as fc  # noqa: E402
 import build_giant_minis as gm  # noqa: E402
 import hexkit as hk  # noqa: E402
+import map_catalogue as mc  # noqa: E402
 import render_forest_boards as rb  # noqa: E402
 import render_preview as rp  # noqa: E402
 
@@ -138,19 +139,23 @@ T G . T
  h k . 
   . .  
    R   """},
-    "dark_wood_bend": {"size": "rectangle", "idea": "A rectangle whose north-west is one big cliff, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
-K K K K K T x T
- K K K K T . . 
-K K K K K . y .
- K K K K . . w 
-K K K K K . . T
- K K K K G . . 
-K K K K E G L .
- K K K E G . L 
-T . T . E . . T
- h . c . . T . 
-. k . , . . b .
- s . b . T . . """},
+    "dark_wood_bend": {"size": "square-ish rectangle", "idea": "A cliff fills the map's north-west, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
+K K K T x T
+ K K T . . 
+K K K . y .
+ K K . . w 
+K K K . . T
+ K K G . . 
+K K K G L .
+ K K G . L 
+K K E . . T
+ K E . . . 
+T . E . T .
+ . . . . . 
+. . c . b .
+ h . . , . 
+. k . . T .
+ s . b . . """},
     "dark_wood_thorns": {"size": "wide oval", "idea": "Bramble masses and dead trees scattered wide, joined into broken walls. A winding walk for melee; ranged may shoot across if brambles don't stop sight.", "plan": """
   . T T . . v T .  
  T . . Z . . . w . 
@@ -204,22 +209,24 @@ H . . H X H . . H
  . . h . . . . . 
 . k . . s . . . .
  T . . . . O . T """},
-    "heartwood_hollow": {"size": "large oval", "idea": "A big oval pinched in the middle by a cliff from the west and trees from the east, with arching roots as low walls. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
-     . T .     
-    . v . .    
-   G . . w .   
-  G . x . U .  
- K G . . U . . 
-K K . . U . . T
- K K . . . . . 
-K K K . . . T T
- K K K . . . T 
-K K . U . . . T
- K . U . . k h 
-  . U . . . s  
-   , . . . .   
-    . . . T    
-     . O .     """},
+    "heartwood_hollow": {"size": "medium hex", "idea": "A hex pinched in the middle by a cliff from the west and trees from the east, with arching roots as low walls. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
+    T    
+   v .   
+  G . w  
+ G x U . 
+K G U . .
+ K U . . 
+K K . . T
+ K . . . 
+K K K . T
+ K K . . 
+K . . U .
+ . . U . 
+. . U . .
+ , . . O 
+  . h k  
+   s .   
+    T    """},
 }
 
 
@@ -676,6 +683,7 @@ def export(maps, build, load, variant_of, stem):
         json.dump(data, fh, separators=(",", ":"), sort_keys=True)
         fh.write("\n")
     print("EXPORTED", out)
+    mc.write()
 
 
 if __name__ == "__main__":
@@ -728,9 +736,12 @@ if __name__ == "__main__":
             target, distance = framing(cells)
             rp.stage(target, distance, PITCH)
             rp.render(f"forest_map_{name}")
+            mc.keep_image("forest_map_", name)
             if name in TURNED:
                 rb.turn_camera(180, target)
                 rp.render(f"forest_map_{name}_turned")
     if not only_check and wanted == list(MAPS):
         make_sheets()
+    if not only_check:
+        mc.write()
     print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)
