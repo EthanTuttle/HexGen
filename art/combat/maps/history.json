@@ -515,21 +515,21 @@
   "idea": "A green round a well, cottages on both sides, a few trees. The well is the only cover in the middle, so the fight opens across the green.",
   "kind": "terrain",
   "shape": "medium hex",
-  "walkable": 46
+  "walkable": 45
  },
  "village_lanes": {
   "cells": 85,
   "idea": "Two straight rows of cottages, each from its own side of the map, overlap in the middle, with gardens, a well and a washing line on the open ground round them. The lane between them is short and hidden from both ends, with a cart left in it, so nobody sees round the corner until they're in it.",
   "kind": "terrain",
   "shape": "rectangle",
-  "walkable": 59
+  "walkable": 63
  },
  "village_street": {
   "cells": 77,
   "idea": "The village street, straight up the map between cottages, with a well and a tree breaking up the verges. The street is the quick way; the verges are the way round.",
   "kind": "path",
   "shape": "tall rectangle",
-  "walkable": 61
+  "walkable": 60
  },
  "windmill_country_fields": {
   "cells": 101,

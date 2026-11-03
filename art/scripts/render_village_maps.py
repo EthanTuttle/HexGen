@@ -4,13 +4,13 @@ No raised ground or stairs: the ways-up decision is still open.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_village_maps.py
 Pass names after -- to render only those maps, --check to run the checks without rendering, --sheets to redo the sheets from
-the newest renders, --close for close views, --corner for a house corner beside a mini, --kit for the props laid out, --wall for the wall-top trial, and --export for art/combat/combat_maps_village_vN.blend and
+the newest renders, --close for close views, --yard for a house yard beside a mini, --kit for the props laid out, --wall for the wall-top trial, and --export for art/combat/combat_maps_village_vN.blend and
 art/export/combat_maps_village.json. Uses the latest combat_village, enemy_minis, humanoid_minis and standin_minis.
 Writes art/preview/village_map_<map>_vN.png and the sheets village_maps_<variant>_vN.png, village_maps_all_vN.png.
 
 Letters as in render_forest_maps.py (. , c T O R and the minis). c is walkable garden, plot or lawn, n a street, also the paved part of a square, g an open gate in a fence,
 L a fence, town wall, patched fence or hedge (any line). Per variant:
-  village         P Y cottage (2 touching on the slant, its kind picked in turn)   1 small cottage (1, its kind picked in turn)   D cottages in a row (3)   T tree   N well   J goods   Q cart   I washing line
+  village         P Y cottage (3, its kind picked in turn)   2 3 long cottage (4 in a diamond, its kind picked in turn)   D cottages in a row (3)   T tree   N well   J goods   Q cart   I washing line
   market_town     P townhouse (3)   D townhouses in a row (3)   Y stall   I stalls in a row (3)   J goods   N well
   fortified_town  P stone house (3)   D smithy (3)   N wall tower   Y supply wagon   J stores   I spear racks
   slums           P shack (3)   D shacks in a row (3)   T scraggly tree   J junk   N crates and a red lantern   I washing line
@@ -49,14 +49,14 @@ MAPS = {
   T . .  
  . . . . 
 P . x . T
- P . . P 
-1 . . . P
- . . , 1 
-. . N . .
- , . . . 
-P . . . J
- P . . T 
-1 . h . .
+ P . . 2 
+P . . 2 2
+ . . , 2 
+. Y N . .
+ Y . . . 
+. Y . . J
+ . . . T 
+. . h . .
  s . k . 
   . . .  
    . T   
@@ -76,34 +76,34 @@ T . g . , T . L L .
   T . . . . . . .  
 """},
     "village_lanes": {"size": "rectangle", "idea": "Two straight rows of cottages, each from its own side of the map, overlap in the middle, with gardens, a well and a washing line on the open ground round them. The lane between them is short and hidden from both ends, with a cart left in it, so nobody sees round the corner until they're in it.", "foes": BANDITS, "plan": """
-. . w . v . T
- . . x . . . 
-P Y P . . c c
- P Y P . c c 
-1 1 1 . . c c
+. . . w v . T
+ . . . x . . 
+. Y 2 . . c c
+ Y 2 2 . c c 
+J Y 2 . . c c
  . . . Q . N 
-J . . . . . .
- c c P Y P . 
-c c . P Y P .
- c I 1 1 1 J 
 . . . . . . .
- . h k s . . 
-T . . . . . T
+ c c 2 P . . 
+c c 2 2 P . .
+ c I 2 P . J 
+. . . . . . .
+ . . . . . . 
+T h k s . . T
 """},
     "village_street": {"kind": "path", "size": "tall rectangle", "idea": "The village street, straight up the map between cottages, with a well and a tree breaking up the verges. The street is the quick way; the verges are the way round.", "foes": BANDITS, "plan": """
 . . n . .
  v . w . 
+. . n . P
+ . . . P 
 P . n . P
- P . . P 
-1 . n . 1
- . . x . 
-. T n . .
+ P . x . 
+P T n . .
  . . . J 
-N . n . T
- . . . . 
-P . n . P
- P . . P 
-1 . n . 1
+. . n N T
+ 2 . . . 
+2 2 n . P
+ 2 . . P 
+. . n . P
  . . . . 
 . . n s .
  k h . . 
@@ -350,6 +350,14 @@ c c n c c
 }
 
 
+# Each map's houses, north to south: (those on three cells, those on four). No two alike side by side.
+HOUSES = {
+    "village_green": (("cottage_3_cross", "cottage_3_gable"), ("cottage_4_long",)),
+    "village_lanes": (("cottage_3_tall", "cottage_3_lean"), ("cottage_4_thatch", "cottage_4_cross")),
+    "village_street": (("cottage_3_side", "cottage_3_gable", "cottage_3_tall"), ("cottage_4_cross",)),
+}
+
+
 # A trial for Ethan, shown on its own, in no export or catalogue: the breach map with a walkable wall top, reached by ways up.
 WALL_WALK = {"size": "wide oval", "idea": "The town wall's top can be walked. Two stretches run across the map on the slant, each with a way up on one side only, and two gaps below. Hold the top and look down, or come through a gap and climb behind them.", "foes": BANDITS, "plan": """
   H . . . . . w .  
@@ -501,12 +509,19 @@ def build_map(t, col, name):
     fm.fit = fit
     gates(col, v, cells)
     if v == "village":  # no two cottages alike side by side: each map walks through the kit's kinds in turn
-        for kinds in (["cottage_2", "cottage_2_thatch", "cottage_2_lean", "cottage_2_tall"], ["cottage_1", "cottage_1_thatch"]):
-            names = {f"ob_village_{k}" for k in kinds}
-            houses = sorted((o for o in col.objects if o.get("piece") in names), key=lambda o: (-round(o.location.y), o.location.x))
-            for k, o in enumerate(houses):
-                piece = f"ob_village_{kinds[k % len(kinds)]}"
+        for size, kinds in zip("34", HOUSES.get(name, ((), ()))):
+            placed = sorted((o for o in col.objects if o.get("piece", "").startswith(f"ob_village_cottage_{size}")), key=lambda o: (-round(o.location.y), o.location.x))
+            assert len(placed) == len(kinds), f"{name}: {len(placed)} houses on {size} cells, {kinds} named"
+            for o, kind in zip(placed, kinds):
+                # A house turned half round would have a wing behind it, on the far side from the camera.
+                assert "cross" not in kind or abs(o.rotation_euler.z) < 0.1, f"{name}: {kind} turned away"
+                piece = f"ob_village_{kind}"
                 o.data, o["piece"] = t[piece].data, piece
+        houses = {c for c, mark in cells.items() if mark in "PY23"}
+        for c, mark in cells.items():
+            if mark in fm.MINI_MARKS:
+                beside = houses & {(c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS}
+                assert not beside, f"{name}: start {mark} at {c} is beside a house at {beside}"
     return cells
 
 
@@ -549,15 +564,17 @@ if __name__ == "__main__":
     if "--wall" in args:
         wall_walk()
         sys.exit()
-    if "--corner" in args:  # a house's corner with a mini on the next cell
+    if "--yard" in args:  # a house's yard with a mini on the next cell
         hk.empty_scene()
         col = hk.new_collection("map")
         t = templates()
         cells = build_map(t, col, "village_green")
         fm.place_minis(t, col, MAPS["village_green"], cells)
-        at = next(hk.cell_position(*c) for c, mark in cells.items() if mark == "s")
-        rp.stage(at + Vector((0, 0.6, 0.4)), 7.5, fm.PITCH)
-        rp.render("village_house_corner")
+        house = min((c for c, mark in cells.items() if mark == "Y"), key=lambda c: hk.cell_position(*c).y)  # the south end of a house
+        spot = hk.cell_position(*min((n for n in ((house[0] + a, house[1] + b) for a, b in fm.NEIGHBOURS) if cells.get(n) == "."), key=lambda n: hk.cell_position(*n).y))
+        rp.place(t, "standin_hero", col, spot, rb.FACE_NORTH)
+        rp.stage(spot + Vector((0, 0.9, 0.4)), 8.5, fm.PITCH)
+        rp.render("village_house_yard")
         sys.exit()
     if "--close" in args:
         shots = []

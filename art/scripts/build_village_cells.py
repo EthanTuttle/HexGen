@@ -83,7 +83,8 @@ FIT_LONG, FIT_DEEP, FIT_X = 1.45, 0.9, 0.165
 # A building on one cell: a near-square that fits inside the hexagon.
 ONE_WIDE, ONE_DEEP = 0.72, 0.72
 ROW_SPIN = math.radians(-120)  # a row's houses face south when the row runs north to south
-PAIR_SPIN = math.radians(-30)  # a house on two cells lies along them
+DIAMOND = [(0, 0), (1, -1), (1, 0), (2, -1)]  # four cells, the two middle ones stacked; a house on it lies east to west
+X3 = 0.145  # a house on three cells, east of the point they share: the middle of their width
 
 
 def building(p, rng, make, eaves=(0.12, 0.16), tall=1.5):
@@ -98,7 +99,7 @@ def house_row(p, rng, make, cells=LINE3, eaves=(0.12, 0.16), tall=1.45):
         grown(p, (1, 1, tall), c, lambda c=c: make(p, rng, c, ONE_WIDE - eaves[0], ONE_DEEP - eaves[1], ROW_SPIN))
 
 
-def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False):
+def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False):
     """A cottage with a door and windows on both long sides, as its back may face the camera, and a window in each gable end. Flat quads on the walls, so they cost little.
     The rest varies it: wall height, roof pitch and colour, a chimney, a row of upper windows."""
     wall = wall or rng.choice(("wall", "wall", "wall_warm"))
@@ -132,7 +133,13 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
                 quad(x, y, 0.11, h - 0.42, h - 0.14, "trunk", 0.006)
                 quad(x, y, 0.08, h - 0.39, h - 0.17, "window_glow", 0.012)
     for x in (-w / 2, w / 2):
-        if w > 0.9:
+        if end_door:  # its gable to the camera whichever way it's turned, so a door in each end
+            quad(x, 0.0, 0.13, 0.0, 0.62, "timber", 0.012, end=True)
+            quad(x, 0.0, 0.16, 0.0, 0.68, "trunk", 0.006, end=True)
+            if h > 1.2:
+                quad(x, 0.0, 0.11, h - 0.42, h - 0.14, "trunk", 0.006, end=True)
+                quad(x, 0.0, 0.08, h - 0.39, h - 0.17, "window_glow", 0.012, end=True)
+        elif w > 0.9:
             quad(x, 0.0, 0.11, 0.42, 0.72, "trunk", 0.006, end=True)
             quad(x, 0.0, 0.08, 0.45, 0.69, "window_glow", 0.012, end=True)
 
@@ -161,23 +168,102 @@ def on_footing(p, cells, make):
         v.co.z += FOOTING
 
 
-def cottage_on(cells, wide, deep, spin=0.0, lean=False, **kw):
-    """A cottage on these cells, on their foundation, turned to lie along them. wide and deep are its walls: wide along its cells, and deep inside the narrow waist where two cells meet.
-    The rest is what fitted_cottage varies. lean swaps the far end of its length for a low shed."""
+def yard_bench(p, rng, at, spin=0.0):
+    p.box(at, (0.36, 0.1, 0.12), "trunk", spin=spin)
+    p.box(at, (0.46, 0.16, 0.04), "shield_wood", z=0.12, spin=spin)
+
+
+def yard_chair(p, rng, at, spin=0.0):
+    p.box(at, (0.13, 0.13, 0.15), "trunk", spin=spin)
+    p.box(at + vr.turn(Vector((0, 0.07, 0)), spin), (0.16, 0.03, 0.36), "shield_wood", spin=spin)
+
+
+def yard_flowers(p, rng, at, spin=0.0):
+    p.box(at, (0.4, 0.26, 0.03), "soil_light", spin=spin)
+    for d, c in ((-0.1, "fruit"), (0.1, "flower_blue")):
+        q = at + vr.turn(Vector((d, 0, 0)), spin)
+        p.blob(q, 0.09, "hedge", z=0.03, squash=0.7)
+        p.box(q, (0.06, 0.06, 0.03), c, z=0.1)
+
+
+def yard_logs(p, rng, at, spin=0.0):
+    """A stack of split logs, two under one."""
+    side = vr.turn(Vector((0, 0.07, 0)), spin)
+    for q, z in ((at - side, 0.06), (at + side, 0.06), (at, 0.17)):
+        p.log(q, 0.06, 0.4, "trunk", spin=spin, z=z, segments=5)
+
+
+def yard_laundry(p, rng, at, spin=0.0):
+    """A low line with two things on it."""
+    a, b = at + vr.turn(Vector((-0.2, 0, 0)), spin), at + vr.turn(Vector((0.2, 0, 0)), spin)
+    for q in (a, b):
+        p.box(q, (0.04, 0.04, 0.72), "timber", spin=spin)
+    vr.frustum(p, a + Vector((0, 0, 0.7)), b + Vector((0, 0, 0.7)), 0.01, 0.01, "rope", segments=3)
+    for k in (-0.08, 0.09):
+        p.box(at + vr.turn(Vector((k, 0, 0)), spin), (0.13, 0.02, 0.3), rng.choice(vr.CLOTHES), z=0.4, spin=spin)
+
+
+def yard_broom(p, rng, at, spin=0.0):
+    p.box_rot(at + Vector((0, 0, 0.32)), (0.025, 0.025, 0.56), "timber", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.2, 3, "Y"))
+    p.box(at + vr.turn(Vector((-0.06, 0, 0)), spin), (0.1, 0.06, 0.1), "thatch", spin=spin)
+
+
+def yard_barrels(p, rng, at, spin=0.0):
+    for d in (-0.1, 0.11):
+        p.cylinder(at + vr.turn(Vector((d, 0, 0)), spin), 0.1, 0.26, "trunk", segments=6)
+
+
+def yard_crate(p, rng, at, spin=0.0):
+    p.box(at, (0.24, 0.24, 0.24), "crate", spin=spin + 0.4)
+
+
+def yard_pots(p, rng, at, spin=0.0):
+    for d, c in ((-0.09, "fruit"), (0.09, "flower_blue")):
+        q = at + vr.turn(Vector((d, 0, 0)), spin)
+        p.cylinder(q, 0.07, 0.13, "soil_light", segments=5)
+        p.box(q, (0.06, 0.06, 0.04), c, z=0.13)
+
+
+def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard=(), **kw):
+    """A house and its household things on these cells' stone. wall_w, wall_d: its walls, along and across its ridge; x: its middle, east of the cells' middle.
+    gable: ridge north to south, an end to the camera. lean: the east end of its length a low shed. wing: (x, width, length), a lower gabled wing running south.
+    yard: (thing, x, y, spin) from the cells' middle."""
 
     def make(p, rng):
-        def house():
-            at = pc.mean(cells)
-            along = Vector((math.cos(spin), math.sin(spin), 0))
-            if not lean:
-                fitted_cottage(p, rng, at, wide, deep, spin, **kw)
-                return
-            fitted_cottage(p, rng, at - along * 0.17, wide - 0.34, deep, spin, **kw)
-            q = at + along * (wide / 2 - 0.16)
-            p.box(q, (0.32, deep - 0.08, 0.58), "boards", spin=spin)
-            p.box_rot(q + Vector((0, 0, 0.64)), (0.42, deep + 0.02, 0.05), "roof_brown", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.32, 3, "Y"))
-        on_footing(p, cells, house)
+        def build_it():
+            mid = pc.mean(cells)
+            at = mid + Vector((x, 0, 0))
+            spin = math.pi / 2 if gable else 0.0
+            if gable:
+                kw.setdefault("end_door", True)
+            if lean:
+                fitted_cottage(p, rng, at - Vector((0.17, 0, 0)), wall_w - 0.34, wall_d, spin, **kw)
+                q = at + Vector((wall_w / 2 - 0.16, 0, 0))
+                p.box(q, (0.32, wall_d - 0.08, 0.58), "boards")
+                p.box_rot(q + Vector((0, 0, 0.64)), (0.42, wall_d + 0.02, 0.05), "roof_brown", Matrix.Rotation(0.32, 3, "Y"))
+            else:
+                fitted_cottage(p, rng, at, wall_w, wall_d, spin, **kw)
+            if wing:
+                wx, width, length = wing
+                fitted_cottage(p, rng, mid + Vector((wx, -length / 2, 0)), length, width, math.pi / 2, h=0.84, pitch=0.42, roof=kw.get("roof"), wall=kw.get("wall"), end_door=True)
+            for thing, tx, ty, tspin in yard:
+                thing(p, rng, mid + Vector((tx, ty, 0)), tspin)
+        on_footing(p, cells, build_it)
     return make
+
+
+def check_inside(obj, cells):
+    """Nothing of a house or its household things, eaves included, passes the cells it blocks. Along edges too: the outline has notches a long edge could cross."""
+    centres = fc.centres(cells)
+    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
+    me = obj.data
+    for e in me.edges:
+        a, b = me.vertices[e.vertices[0]].co, me.vertices[e.vertices[1]].co
+        for k in range(9):
+            q = a.lerp(b, k / 8)
+            q = Vector((q.x, q.y, 0))
+            past = min(max(abs((q - c).dot(n)) - hk.CELL_FLATS / 2 for n in normals) for c in centres)
+            assert past < 0.003, f"{obj.name} passes its cells by {past:.3f} at {q}"
 
 
 def well(p, rng):
@@ -280,12 +366,17 @@ def fount(p, rng):
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_village_maps.py reads this.
 KIT = {
     "village": {
-        "P": ("cottage_2", LINE2, cottage_on(LINE2, 1.32, 0.48, PAIR_SPIN, pitch=0.5, roof="roof", wall="wall")),
-        "Y": ("cottage_2_thatch", LINE2, cottage_on(LINE2, 1.2, 0.48, PAIR_SPIN, h=0.82, pitch=0.66, roof="thatch", wall="wall_warm")),
-        "2": ("cottage_2_tall", LINE2, cottage_on(LINE2, 1.2, 0.48, PAIR_SPIN, h=1.42, pitch=0.5, roof="roof_brown", wall="wall", chimney=True, upstairs=True)),
-        "3": ("cottage_2_lean", LINE2, cottage_on(LINE2, 1.34, 0.48, PAIR_SPIN, lean=True, pitch=0.5, roof="roof", wall="wall_warm", chimney=True)),
-        "1": ("cottage_1", SINGLE, cottage_on(SINGLE, 0.56, 0.56, PAIR_SPIN, h=0.78, pitch=0.46, roof="roof_brown", wall="wall_warm")),
-        "4": ("cottage_1_thatch", SINGLE, cottage_on(SINGLE, 0.56, 0.56, -PAIR_SPIN, h=0.74, pitch=0.6, roof="thatch", wall="wall")),
+        # Plans use P or Y for a house on three cells, 2 or 3 for one on four; render_village_maps.py picks the kinds in turn. The rest are here to be picked.
+        "P": ("cottage_3_side", TRIANGLE, house(TRIANGLE, 1.08, 0.82, X3, roof="roof", wall="wall", chimney=True, yard=((yard_barrels, -0.52, -0.7, 0.0), (yard_broom, -0.14, -0.72, 0.0), (yard_flowers, -0.42, 0.72, 0.0), (yard_crate, 0.96, 0.0, 0.0)))),
+        "Y": ("cottage_3_gable", TRIANGLE, house(TRIANGLE, 0.82, 1.0, X3, gable=True, h=0.86, pitch=0.7, roof="thatch", wall="wall_warm", yard=((yard_flowers, -0.42, -0.74, 0.0), (yard_chair, 0.92, 0.1, 0.0), (yard_logs, -0.42, 0.74, 0.0)))),
+        "5": ("cottage_3_cross", TRIANGLE, house(TRIANGLE, 1.08, 0.8, X3, wing=(-0.22, 0.46, 0.74), roof="roof_brown", wall="wall_warm", yard=((yard_bench, -0.42, 0.74, 0.0), (yard_pots, 0.94, -0.06, 1.57)))),
+        "6": ("cottage_3_tall", TRIANGLE, house(TRIANGLE, 0.82, 0.96, X3, gable=True, h=1.42, pitch=0.5, roof="roof_brown", wall="wall", chimney=True, yard=((yard_laundry, -0.42, -0.74, 0.0), (yard_barrels, -0.42, 0.72, 0.0), (yard_broom, 0.92, 0.0, 0.0)))),
+        "7": ("cottage_3_lean", TRIANGLE, house(TRIANGLE, 1.14, 0.8, X3, lean=True, roof="roof", wall="wall_warm", chimney=True, yard=((yard_bench, -0.42, -0.74, 0.0), (yard_flowers, -0.42, 0.72, 0.0)))),
+        "2": ("cottage_4_long", DIAMOND, house(DIAMOND, 1.7, 0.86, roof="roof", wall="wall", chimney=True, yard=((yard_bench, -0.1, -0.72, 0.0), (yard_pots, 0.3, -0.7, 0.0), (yard_logs, -0.1, 0.72, 0.0), (yard_broom, 1.14, -0.1, 0.0), (yard_crate, -1.14, 0.0, 0.0)))),
+        "3": ("cottage_4_cross", DIAMOND, house(DIAMOND, 1.56, 0.84, wing=(0.0, 0.5, 0.74), roof="roof_brown", wall="wall_warm", chimney=True, yard=((yard_barrels, -1.08, 0.0, 1.57), (yard_flowers, 0.0, 0.74, 0.0), (yard_chair, 1.1, 0.04, 0.0)))),
+        "8": ("cottage_4_gable", DIAMOND, house(DIAMOND, 0.8, 1.24, gable=True, h=0.92, pitch=0.76, roof="thatch", wall="wall_warm", yard=((yard_logs, -0.92, -0.24, 1.57), (yard_flowers, 0.92, -0.14, 1.57), (yard_laundry, 0.92, 0.26, 1.57), (yard_bench, -0.92, 0.22, 1.57)))),
+        "9": ("cottage_4_tall", DIAMOND, house(DIAMOND, 1.42, 0.84, h=1.42, pitch=0.56, roof="roof_brown", wall="wall", chimney=True, upstairs=True, yard=((yard_laundry, 0.0, -0.74, 0.0), (yard_barrels, 1.08, 0.0, 1.57), (yard_logs, -1.02, 0.0, 1.57), (yard_flowers, 0.0, 0.74, 0.0)))),
+        "0": ("cottage_4_thatch", DIAMOND, house(DIAMOND, 1.5, 0.86, h=0.86, pitch=0.76, roof="thatch", wall="wall", yard=((yard_flowers, -0.1, -0.74, 0.0), (yard_chair, 0.28, -0.72, 0.0), (yard_crate, 1.06, 0.0, 0.0), (yard_broom, -1.08, 0.0, 0.0), (yard_bench, 0.0, 0.74, 0.0)))),
         "Q": ("cart", SINGLE, lambda p, r: grown(p, 1.3, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="thatch"))),
         "I": ("washing", SINGLE, washing),
         "D": ("cottages_row", LINE3, lambda p, r: on_footing(p, LINE3, lambda: house_row(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0))),
@@ -329,15 +420,6 @@ KIT = {
 }
 
 
-def check_inside(obj, cells):
-    """Nothing of a house, eaves included, reaches past the cells it blocks."""
-    centres = fc.centres(cells)
-    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
-    for v in obj.data.vertices:
-        q = Vector((v.co.x, v.co.y, 0))
-        assert any(all(abs((q - c).dot(n)) <= hk.CELL_FLATS / 2 + 0.002 for n in normals) for c in centres), f"{obj.name} reaches past its cells at {v.co}"
-
-
 def build():
     hk.empty_scene()
     col = hk.new_collection("village")
@@ -362,7 +444,7 @@ def build():
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
     for mark, (kind, cells, _) in KIT["village"].items():
-        if kind.startswith("cottage"):
+        if kind.startswith("cottage_"):
             check_inside(bpy.data.objects[f"ob_village_{kind}"], cells)
     for o in sorted(col.objects, key=lambda o: o.name):
         o.data.calc_loop_triangles()
