@@ -163,7 +163,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Night building in multiplayer~~ (settled Oct 23: each player's own controllable party's sight range)
 - [x] ~~Engine choice~~ (settled Oct 29: **Godot**; Unity kept on its branch as a proof of concept; see Multiplayer & tech → Engine prototype)
 - [x] ~~Godot on iPhone frame rate~~ (Nov 1, 2026: 120 fps on the 15 Pro; target set to 120 where possible, never below 60)
-- [ ] New: high ground on combat maps: how to reach it and what it does (see Classes & combat)
+- [ ] New: high ground on combat maps: range bonus, and the AP cost of the ascend/descend action (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
 - [ ] New: giant enemies (3 or 7 cells): grid rules (see Classes & combat)
 - [ ] New: custom combat maps: how many per terrain and variant, size range (forest set is 34–114 cells; check how long maps feel in play), and how a fight picks one
