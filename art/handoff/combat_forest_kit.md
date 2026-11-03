@@ -1,12 +1,12 @@
-# Combat forest kit hand-off (combat_cells_v6, combat_maps_v2)
+# Combat forest kit hand-off (combat_cells_v6, combat_maps_v3)
 
 Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and twelve custom forest combat maps. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v6.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v2.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
+- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v6.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v3.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
 - **Map data:** `art/export/combat_maps.json`.
 - **Scripts:** `art/scripts/build_forest_cells.py`, `art/scripts/render_forest_maps.py` (the plans, in readable text, and the checks), `build_enemy_minis.py`, `build_humanoid_minis.py`, `build_giant_minis.py`.
 - **Rules:** `design/07 Presentation.md` → Combat maps; `design/briefs/Combat art brief.md`.
-- **Previews:** minis: `art/preview/enemy_lineup_v5.png`, `enemy_closeup_v5.png`, `humanoid_lineup_v3.png`, `humanoid_closeup_v3.png`, `humanoid_map_*_v3.png`. Rock: `forest_rockface_*_v1.png`. Maps: `forest_maps_<variant>_v3.png`, `forest_maps_turned_v3.png`, `forest_obstacles_v1.png`, `forest_map_<map>_v*.png`; these show older rock on the five maps with shelves or cliffs and will be redone once the map shapes are settled.
+- **Previews:** minis: `art/preview/enemy_lineup_v5.png`, `enemy_closeup_v5.png`, `humanoid_lineup_v3.png`, `humanoid_closeup_v3.png`, `humanoid_map_*_v3.png`. Maps: `forest_maps_all_v1.png` (all 12), `forest_maps_<variant>_v4.png`, `forest_maps_turned_v4.png`, `forest_map_<map>_v*.png`. Rock and high ground: `forest_highground_*_v1.png`. Obstacles: `forest_obstacles_v1.png`. Older `forest_rockface_*` and sheets up to v3 show earlier map shapes and rock.
 
 All pieces use the kit material with flat vertex colours, except the fey mushrooms' own material, as on the tiles, and on ghosts `ghost_glow` and `lantern`. `ghost_glow` is a faint glow in its own material (emission 0.35 in the blend; it's in the glb).
 
@@ -60,34 +60,35 @@ One object per map name:
 ```
 
 - **`cells`:** the grid. `kind` is `open`, `brush` or `blocked`. Coordinates aren't centred on (0, 0); `centre` is the mean of the cells, in Blender's x, y, for framing.
-- **`placements`:** everything to draw. Instance `piece` from `combat_cells.glb` or, for names starting `map_`, `combat_maps.glb` at `x`, `y` in Blender's frame, so glb position = (x, 0, -y). `turn` is degrees anticlockwise from above, the same sign about glb's +Y. `map_` pieces (soil plate, rock faces) are already in place at 0, 0. A rock face is one piece per connected group of blocked cells, its foot exactly on their outline; shelves stand 1.1, cliffs 2.0.
+- **`placements`:** everything to draw. Instance `piece` from `combat_cells.glb` or, for names starting `map_`, `combat_maps.glb` at `x`, `y` in Blender's frame, so glb position = (x, 0, -y). `turn` is degrees anticlockwise from above, the same sign about glb's +Y. A placement with `z` stands that high (raised cells, trees on a cliff top): glb position = (x, z, -y). `map_` pieces (soil plate, rock, steps, ramps) are already in place at 0, 0. A cliff is one piece per connected group of blocked cells, its foot exactly on their outline, 2.0 high.
+- **Raised ground:** a cell with `z` 0.9 is walkable high ground. A cell with `ramp` (`steps` or `earth`) is the way up: `up` is the cell it climbs to, and its `z` 0.45 is its middle. Raised rock is one `map_..._raised_*` piece per group, wider at the foot than the cells by 0.15, with normal ground cells on top. A `start` with `z` stands on raised ground. An engine that ignores `z` will draw minis inside the rock and cells on the ground, so it has to read it.
 - **`starts`:** samples only, to preview a fight. Enemy mixes and starting spots aren't decided.
 
 | Map | Shape | Cells (walkable) | Triangles, no minis | Fewest angles of 12 |
 | --- | --- | --- | --- | --- |
-| `deep_forest_gorge` | long | 60 (35) | 4,042 | 6 |
-| `deep_forest_pocket` | small | 34 (24) | 1,658 | 5 |
-| `deep_forest_groves` | wide | 114 (88) | 5,172 | 4 |
+| `deep_forest_gorge` | long rectangle | 60 (35) | 4,042 | 6 |
+| `deep_forest_pocket` | small hex | 37 (19) | 2,210 | 4 |
+| `deep_forest_groves` | wide oval | 114 (91) | 5,388 | 4 |
 | `fey_wood_stones` | medium hex | 61 (46) | 3,300 | 4 |
-| `fey_wood_glades` | two lobes | 62 (50) | 2,444 | 3 |
-| `fey_wood_crescent` | small crescent | 42 (35) | 1,860 | 5 |
-| `dark_wood_bend` | L-shaped | 55 (37) | 3,733 | 5 |
-| `dark_wood_thorns` | wide | 101 (70) | 5,532 | 3 |
-| `dark_wood_surround` | small | 41 (35) | 2,080 | 10 |
-| `heartwood_great_tree` | large | 98 (74) | 5,490 | 3 |
-| `heartwood_shelf` | wide band | 73 (54) | 4,956 | 4 |
-| `heartwood_hollow` | bean | 91 (73) | 4,800 | 3 |
+| `fey_wood_glades` | wide oval | 73 (53) | 3,444 | 3 |
+| `fey_wood_crescent` | small hex | 37 (22) | 2,396 | 3 |
+| `dark_wood_bend` | rectangle | 90 (37) | 6,763 | 3 |
+| `dark_wood_thorns` | wide oval | 101 (70) | 5,532 | 3 |
+| `dark_wood_surround` | small oval | 41 (35) | 2,080 | 10 |
+| `heartwood_great_tree` | large oval | 100 (79) | 5,638 | 3 |
+| `heartwood_shelf` | wide rectangle | 73 (69) | 5,090 | 3 |
+| `heartwood_hollow` | large oval | 88 (57) | 6,686 | 2 |
 
-Each map's tactical idea is in the JSON. Two rules the plans assume and nobody has decided: obstacles stop movement, and brush can be walked through. Whether obstacles stop sight, and what brush and the fairy ring do, are open.
+Each map's tactical idea is in the JSON. Three things the plans assume and nobody has decided: obstacles stop movement, brush can be walked through, and raised ground is only reached by its steps or ramp. Whether obstacles stop sight, what height does, and what brush and the fairy ring do, are open (`design/03`). Every map's base is a solid hex, oval or rectangle; `check_base` in the script stops a plan with a notch or hole.
 
 ## Camera check
 
 `Blender -b --factory-startup --python art/scripts/render_forest_maps.py -- --check`
 
 - **Camera it copies:** the Godot prototype's combat framing (`game/fight.gd`: distance 22, pitch 52; `camera_rig.gd`: 50 mm lens; `Rules.ROTATE_STEP` 60°). If those change, change `PITCH` and `ENGINE_DISTANCE` in the script.
-- **What it checks:** every walkable cell can be reached from the hero. Each shows from at least 2 of 12 angles, one of them a 60° step, where a cell counts as seen when 6 of 7 points on it have a clear ray to the camera. All 12 maps pass; the worst cell shows from 3 of 12.
+- **What it checks:** the base is solid, and every walkable cell can be reached from the hero. Each shows from at least 2 of 12 angles, one of them a 60° step, where a cell counts as seen when 6 of 7 points on it have a clear ray to the camera. All 12 maps pass; the worst cell shows from 2 of 12 (one in `heartwood_hollow`), the minimum allowed.
 - **What it doesn't:** the target is the map's middle, while the game's follows who acts. Minis are left out. An obstacle's own cells aren't tested, since what stands there is what shows. A new map or engine tilt should be rechecked; a port to Godot would be a good test there.
 
 ## Not done
 
-Slopes and night aren't covered. How many maps a fight can pick from, and how, is open in 07. Previews are framed to the whole map, while the game opens at distance 22 on whoever acts, so large maps need panning or zooming out. The web hollow is the weakest piece; the root plates on trunks are plain.
+Night isn't covered, and the game hasn't been tested with raised ground. How many maps a fight can pick from, and how, is open in 07. Previews are framed to the whole map, while the game opens at distance 22 on whoever acts, so large maps need panning or zooming out. The web hollow is the weakest piece; the root plates on trunks are plain.

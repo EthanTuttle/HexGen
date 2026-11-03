@@ -12,11 +12,16 @@ column of cells runs down one column of text, and each next column is half a cel
   T tree   O stump   R boulder   S standing stone   b bramble   (one cell each)
   G grove (2, 3 or 7 cells)   L fallen trunk (2 or 3 in a line)   B big boulder (3)   F giant mushrooms (3)
   E web-choked hollow (3)   Z bramble mass (3)   Q huge tree (7)   U big roots (3 in a line)
-  M rock shelf, K cliff (any shape, made per map)   A a giant's cells
-  h k s the party (hero, Chelmsford stand-in, small stand-in)   w v wolf and elite   x y spider and elite
+  K cliff wall (any shape, made per map)   H raised ground, walkable   ^ stone steps up to it   / earth ramp up to it
+  A a giant's cells   h k s the party (hero, Chelmsford stand-in, small stand-in)   w v wolf and elite   x y spider and elite
+  W V X a wolf, elite wolf or spider standing on raised ground
 Cells of one letter that touch make one obstacle; its turn is found from its shape.
 
-The plans assume obstacles stop movement and brush can be walked through. Enemy mixes and starting spots are samples.
+A map's base is always a simple, solid shape (a hex, or a wide oval or rectangle of cells): check_base stops a plan with a
+notch or hole. Lanes, chokes and walls come from what stands on the cells.
+
+The plans assume obstacles stop movement, brush can be walked through, and raised ground is only reached by its steps or
+ramp. What height does is open in design/03. Enemy mixes and starting spots are samples.
 """
 import json
 import math
@@ -37,12 +42,13 @@ import render_forest_boards as rb  # noqa: E402
 import render_preview as rp  # noqa: E402
 
 MINI_MARKS = {"h": "standin_hero", "k": "standin_chelmsford", "s": "standin_small", "w": "enemy_wolf", "v": "enemy_wolf_elite",
-              "x": "enemy_spider", "y": "enemy_spider_elite"}
+              "x": "enemy_spider", "y": "enemy_spider_elite", "W": "enemy_wolf", "V": "enemy_wolf_elite", "X": "enemy_spider"}
 NEIGHBOURS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
 GROUPED = {"G": "grove", "L": "log", "B": "boulder_3", "F": "mushrooms_3", "E": "hollow_3", "Z": "thicket_3", "Q": "great_7", "U": "roots_3"}
 SINGLE = {"T": "tree", "O": "stump", "S": "stone"}
-SHAPED = "MK"
-WALKABLE = ".,c" + "".join(MINI_MARKS) + "A"
+RAISED, RAMPS = "HWVX", "^/"
+RAISED_HEIGHT, CLIFF_HEIGHT = 0.9, 2.0
+WALKABLE = ".,c" + "".join(MINI_MARKS) + "A" + RAISED + RAMPS
 # The combat camera of the Godot prototype: game/fight.gd frames rig at distance 22, pitch 52; camera_rig.gd has a 50 mm lens,
 # Q / E turn it by Rules.ROTATE_STEP (60 degrees) and a two-finger twist turns it freely.
 PITCH, ENGINE_DISTANCE = 52, 22
@@ -52,7 +58,7 @@ SAMPLES_CLEAR = 6  # of 7 points on a cell, for it to count as seen from an angl
 TURNED = {"deep_forest_groves", "fey_wood_stones", "dark_wood_bend", "heartwood_great_tree"}
 
 MAPS = {
-    "deep_forest_gorge": {"size": "long", "idea": "A long gorge under a cliff, closed twice by fallen trunks that each leave a one-cell gap. A running fight from gap to gap.", "plan": """
+    "deep_forest_gorge": {"size": "long rectangle", "idea": "A long gorge under a cliff, closed twice by fallen trunks that each leave a one-cell gap. A running fight from gap to gap.", "plan": """
 K K K K K K K K
  K K K K K K K 
 . T L . T . . T
@@ -61,30 +67,34 @@ h . . L . O . x
  s . . . . L w 
 k . c . . L . .
  . , . c L . . """},
-    "deep_forest_pocket": {"size": "small", "idea": "A tight pocket among the pines, a trunk and a stump in the middle. Everyone is in reach almost at once; only the obstacles buy a turn.", "plan": """
-    T T  
-   . w T 
-  T . . .
- T v . L 
-. . O L .
- x . . . 
-. . . h .
- R k s T 
-  . . .  """},
-    "deep_forest_groves": {"size": "wide", "idea": "Wide ground with groves dotted over it, a big boulder and a shelf. No front line: lanes run between the groves and anyone can be flanked.", "giant": "giant_wolf_3", "plan": """
+    "deep_forest_pocket": {"size": "small hex", "idea": "A tight pocket ringed by pines, a trunk and a stump in the middle. Everyone is in reach almost at once; only the obstacles buy a turn.", "plan": """
+   T   
+  T T  
+ T . T 
+T w . T
+ v . . 
+T . O L
+ x . L 
+R . . T
+ . . h 
+O k s T
+ . . . 
+  R T  
+   T   """},
+    "deep_forest_groves": {"size": "wide oval", "idea": "Wide ground with groves dotted over it, a big boulder and a rise of raised rock in the west with one stair up. No front line: lanes run between the groves and anyone can be flanked.", "giant": "giant_wolf_3", "plan": """
     . . T . . T .    
    . G . . . . G .   
-  T . G . A . . G T  
+  . . G . A . . G T  
  . . G . . A . G . . 
 . . . . . A . . . . .
- M . . . . . . L . . 
-. M . B . . G . L . .
- . . . B . G G . . O 
+ H H . . . . . L . . 
+H H . B . . G . L . .
+ ^ . . B . G G . . O 
 . c . B . . G . c . .
  . . . . . G G . . . 
   , . h . . G . . T  
    k . s . . . . .   """},
-    "fey_wood_stones": {"size": "medium", "idea": "A ring of standing stones round a fairy ring. Each stone is one cell to step behind; what the ring itself does is a rule still to make.", "ring": (4, 8), "plan": """
+    "fey_wood_stones": {"size": "medium hex", "idea": "A ring of standing stones round a fairy ring. Each stone is one cell to step behind; what the ring itself does is a rule still to make.", "ring": (4, 8), "plan": """
     T    
    G T   
   G . S  
@@ -102,41 +112,44 @@ T . . . T
   . S .  
    . .   
     .    """},
-    "fey_wood_glades": {"size": "two lobes", "idea": "Two glades joined by a neck two cells wide. Whoever holds the neck holds the fight; giant mushrooms crowd each glade.", "plan": """
-  T .       . T  
- . F .     . . G 
-. . F . . . . G .
- . F . . . . . G 
-. . . . . . . v .
- . . k . . . . w 
-. . h s   . F . .
- . T .     . F x 
-  . .       F .  """},
-    "fey_wood_crescent": {"size": "small", "idea": "A narrow crescent round a stand of trees. Enemies at one tip, party at the other, and the way across is hidden until you round it.", "plan": """
-  . . T     
- w . G . .  
-. v . G . . 
- . . G . . .
-    . . T . 
-     . . . T
-      . c . 
-     . . s .
-    . h k . 
-     R . .  """},
-    "dark_wood_bend": {"size": "L-shaped", "idea": "An L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
-        T x T 
-         T . .
-        . . y 
-         . . w
-        T . . 
-         G . .
-        E G L 
- T . T E G . L
-. . . . E . . 
- h . c . . T .
-. k . , . . b 
- s . b . T .  """},
-    "dark_wood_thorns": {"size": "wide", "idea": "Bramble masses and dead trees scattered wide, joined into broken walls. A winding walk for melee; ranged may shoot across if brambles don't stop sight.", "plan": """
+    "fey_wood_glades": {"size": "wide oval", "idea": "Two glades split by a big grove, with a neck two cells wide below it. Whoever holds the neck holds the fight; giant mushrooms crowd each glade.", "plan": """
+  T . . G . . T  
+ . F . G G . . T 
+. . F . G . . T .
+ . F . G G . . . 
+. . . . G . . v .
+ . k . . . . . w 
+. h s . . . F . .
+ . T . . . . F x 
+  . . T . T F .  """},
+    "fey_wood_crescent": {"size": "small hex", "idea": "A narrow crescent round a stand of trees, on a small hex. Enemies at one tip, party at the other, and the way across is hidden until you round it.", "plan": """
+   .   
+  w .  
+ v . T 
+. G . T
+ G G . 
+T G . T
+ G G . 
+T G . T
+ . c . 
+. s . T
+ h k . 
+  . .  
+   R   """},
+    "dark_wood_bend": {"size": "rectangle", "idea": "A rectangle whose north-west is one big cliff, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
+K K K K K T x T
+ K K K K T . . 
+K K K K K . y .
+ K K K K . . w 
+K K K K K . . T
+ K K K K G . . 
+K K K K E G L .
+ K K K E G . L 
+T . T . E . . T
+ h . c . . T . 
+. k . , . . b .
+ s . b . T . . """},
+    "dark_wood_thorns": {"size": "wide oval", "idea": "Bramble masses and dead trees scattered wide, joined into broken walls. A winding walk for melee; ranged may shoot across if brambles don't stop sight.", "plan": """
   . T T . . v T .  
  T . . Z . . . w . 
 . Z . . Z . Z . . T
@@ -148,7 +161,7 @@ T . . Z . . . . Z .
 . . . Z . . . . Z .
  . k . . . . T . . 
   h . s . . b . .  """},
-    "dark_wood_surround": {"size": "small", "idea": "The party starts in the middle of a broken ring, a giant and spiders on every side. Four gaps to hold and no back line.", "giant": "giant_spider_3", "plan": """
+    "dark_wood_surround": {"size": "small oval", "idea": "The party starts in the middle of a broken ring, a giant and spiders on every side. Four gaps to hold and no back line.", "giant": "giant_spider_3", "plan": """
    A .   
   A . .  
  w A . x 
@@ -160,7 +173,7 @@ x . h . w
  . b b . 
   . . w  
    x .   """},
-    "heartwood_great_tree": {"size": "large", "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees.", "plan": """
+    "heartwood_great_tree": {"size": "large oval", "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with an earth ramp stands by the party.", "plan": """
      . T .     
     . . . .    
    T . . . G   
@@ -170,36 +183,37 @@ x . h . w
  . U Q Q U . w 
 v . U Q . U . .
  . . Q Q . U . 
-. . . Q . . . .
- M . . . . . . 
-. M . . . . O .
- M . . . . . T 
+H . . Q . . . .
+ H . . . . . . 
+H H . . . . O .
+ H / . . . . T 
   . k h s . .  
-   . . . .     
-    . T .      """},
-    "heartwood_shelf": {"size": "long", "idea": "A rock shelf runs the length of a wide band, cut by two gaps far apart. Holding both means splitting the party; each side picks which one to force.", "plan": """
+   . . . . .   
+    . T . .    """},
+    "heartwood_shelf": {"size": "wide rectangle", "idea": "A ridge of raised rock runs the length of the map, cut by two gaps far apart, with steps and ramps up from both sides. Hold the gaps, or take the top: each side picks what to force.", "plan": """
  . . v T . w . T . . 
-. . . . y . . x . . .
- M M . M M M M . M M 
-M M . . M M M . . M M
- . . . . . . . . . . 
+. . . . y ^ . x . . .
+ H H . H H H H . H H 
+H H . . H X H . . H H
+ ^ . . . / . . . . / 
 . . T . h . . T , . .
  . k . . s . . . . . """},
-    "heartwood_hollow": {"size": "bean-shaped", "idea": "A bean-shaped glade with arching roots as low walls and a cliff across its waist. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
-    . . T .     
-   . v . . .    
-  G . . w . .   
- G . x . U . .  
-  G . . U . . . 
-   . . U . . . .
-  K K . . . . . 
-   K K . . . O .
-  K K . U . . . 
- . . . U . . . .
-. . . U . . h . 
- . , . . . s k  
-  T . . . . .   
-   . . . . .    """},
+    "heartwood_hollow": {"size": "large oval", "idea": "A big oval pinched in the middle by a cliff from the west and trees from the east, with arching roots as low walls. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
+     . T .     
+    . v . .    
+   G . . w .   
+  G . x . U .  
+ K G . . U . . 
+K K . . U . . T
+ K K . . . . . 
+K K K . . . T T
+ K K K . . . T 
+K K . U . . . T
+ K . U . . k h 
+  . U . . . s  
+   , . . . .   
+    . . . T    
+     . O .     """},
 }
 
 
@@ -251,8 +265,24 @@ def fit(cells_of_group, footprint):
     raise AssertionError(f"no fit for {sorted(cells_of_group)}")
 
 
+def check_base(name, cells):
+    """The base has to be solid: along each of the three cell directions, every line of cells runs unbroken."""
+    for axis, along in ((0, 1), (1, 0), (None, 0)):
+        lines = {}
+        for c in cells:
+            lines.setdefault(c[0] + c[1] if axis is None else c[axis], []).append(c[along])
+        for at, line in lines.items():
+            assert max(line) - min(line) + 1 == len(line), f"{name}: base is notched or holed at line {at}: {sorted(line)}"
+
+
+def can_step(cells, a, b):
+    """Raised ground meets low ground only at steps or a ramp."""
+    return cells[a] in RAMPS or cells[b] in RAMPS or (cells[a] in RAISED) == (cells[b] in RAISED)
+
+
 def check_reach(name, m, cells):
     """Every walkable cell has to be reachable. Prints what the plan offers, for the report."""
+    check_base(name, cells)
     walk = {c for c, mark in cells.items() if mark in WALKABLE}
     start = next(c for c, mark in cells.items() if mark == "h")
     dist = {start: 0}
@@ -261,16 +291,16 @@ def check_reach(name, m, cells):
         c = todo.popleft()
         for dq, dr in NEIGHBOURS:
             n = (c[0] + dq, c[1] + dr)
-            if n in walk and n not in dist:
+            if n in walk and n not in dist and can_step(cells, c, n):
                 dist[n] = dist[c] + 1
                 todo.append(n)
     cut_off = sorted(walk - set(dist))
     assert not cut_off, f"{name}: cut off {cut_off}"
-    foes = [c for c, mark in cells.items() if mark in "wvxyA"]
+    foes = [c for c, mark in cells.items() if mark in "wvxyA" + RAISED[1:]]
     free = {c for c, mark in cells.items() if mark in ".,"}
     flowers = sum(all((q + a, r + b) in free for a, b in gm.FLOWER) for q, r in cells)
     triangles = sum(all((q + a, r + b) in free for a, b in gm.TRIANGLE) for q, r in cells)
-    print(f"PLAN {name} ({m['size']}): {len(cells)} cells, walkable {len(walk)}, brush {sum(v == 'c' for v in cells.values())}, blocked {len(cells) - len(walk)}, "
+    print(f"PLAN {name} ({m['size']}): {len(cells)} cells, walkable {len(walk)}, brush {sum(v == 'c' for v in cells.values())}, raised {sum(v in RAISED for v in cells.values())}, blocked {len(cells) - len(walk)}, "
           f"nearest foe {min(dist[c] for c in foes)} steps, farthest cell {max(dist.values())}, free 7-cell spots {flowers}, 3-cell spots {triangles}")
 
 
@@ -290,7 +320,9 @@ def visibility(name, cells):
     for c, mark in cells.items():
         if mark not in WALKABLE:
             continue
-        points = [hk.cell_position(*c) + Vector((0, 0, 0.26 if mark == "c" else 0.02))]  # above brush's own plants
+        # Above brush's own plants, and above the steps of a ramp at any of the points.
+        z = 0.26 if mark == "c" else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
+        points = [hk.cell_position(*c) + Vector((0, 0, z))]
         points += [p + Vector((0.3 * math.cos(k * math.pi / 3), 0.3 * math.sin(k * math.pi / 3), 0)) for p in points[:1] for k in range(6)]
         seen[c] = seen_step[c] = 0
         for a in range(ANGLES):
@@ -305,13 +337,17 @@ def visibility(name, cells):
                 seen_step[c] += a % 2 == 0
     bad = sorted(c for c in seen if seen[c] < MIN_ANGLES or seen_step[c] == 0)
     print(f"VIS {name}: {'OK' if not bad else 'TOO HIDDEN ' + str({c: seen[c] for c in bad})}, fewest {min(seen.values())} of {ANGLES}, "
-          f"default view shows {sum(1 for c in seen if seen_default(scene, depsgraph, c, target, el))} of {len(seen)}")
+          f"default view shows {sum(1 for c in seen if seen_default(scene, depsgraph, c, target, el, cells[c]))} of {len(seen)}")
     return not bad
 
 
-def seen_default(scene, depsgraph, c, target, el):
+def ground_z(mark):
+    return RAISED_HEIGHT if mark in RAISED else 0.0
+
+
+def seen_default(scene, depsgraph, c, target, el, mark):
     cam = target + Vector((0, -math.cos(el), math.sin(el))) * ENGINE_DISTANCE
-    at = hk.cell_position(*c) + Vector((0, 0, 0.02))
+    at = hk.cell_position(*c) + Vector((0, 0, RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02))
     to = cam - at
     return not scene.ray_cast(depsgraph, at, to.normalized(), distance=to.length)[0]
 
@@ -329,17 +365,91 @@ def rock_ring(p, rng, loop, smooth, inset, z, jag):
     return [p.bm.verts.new(q) for q in ring]
 
 
+def midpoints(corners):
+    """A point midway along each cell edge as well, so a rock face has more to break up."""
+    loop = []
+    for k, q in enumerate(corners):
+        loop += [q, q.lerp(corners[(k + 1) % len(corners)], 0.5)]
+    return loop
+
+
+def raised_piece(col, v, group):
+    """The rock under a group of raised cells: full width at the top so every cell keeps its whole hex, and three thick ledges
+    stepping out as it falls, the lowest just over the cells round it. Ground cells stand on top of it."""
+    p = hk.Piece(f"raised_{min(group)}")
+    rng = hk.seeded(p.name)
+    main, side, top = fc.ROCK[v]
+    loop = midpoints(fc.cell_loop(group))
+    layers = [(-0.15, 0.0, 0.0), (-0.15, 0.22, 0.015), (-0.09, 0.28, 0.015), (-0.09, 0.6, 0.02), (-0.04, 0.66, 0.015), (-0.04, 0.95, 0.0), (0.0, 1.0, 0.0)]
+    rings = [rock_ring(p, rng, loop, 0, inset, RAISED_HEIGHT * z - 0.01 * (z == 1.0), RAISED_HEIGHT * jag) for inset, z, jag in layers]
+    n = len(loop)
+    for band, (a, b) in enumerate(zip(rings, rings[1:])):
+        for k in range(n):
+            m = (k + 1) % n
+            mat = (top or main) if band % 2 else main if rng.random() < 0.7 else side
+            for tri in ((a[k], a[m], b[m]), (a[k], b[m], b[k])):
+                p.bm.faces.new(tri).material_index = p._slot(mat)
+    for tri in tessellate_polygon([[q.co for q in rings[-1]]]):
+        p.bm.faces.new([rings[-1][k] for k in tri]).material_index = p._slot(side)
+    p.finish(col)
+
+
+def clipped(outline, normal, at):
+    """The part of a convex outline where the position along normal is at least at."""
+    out = []
+    for k, a in enumerate(outline):
+        b = outline[(k + 1) % len(outline)]
+        da, db = a.dot(normal) - at, b.dot(normal) - at
+        if da >= 0:
+            out.append(a)
+        if da * db < 0:
+            out.append(a.lerp(b, da / (da - db)))
+    return out
+
+
+def up_from(cells, c):
+    """The cell a ramp climbs to: the raised neighbour straight ahead when several touch it."""
+    near = [(c[0] + dq, c[1] + dr) for dq, dr in NEIGHBOURS if cells.get((c[0] + dq, c[1] + dr), " ") in RAISED]
+    assert near, f"ramp at {c} touches no raised ground"
+    aim = sum((hk.cell_position(*n) for n in near), Vector((0, 0, 0))) / len(near)
+    return min(near, key=lambda n: ((hk.cell_position(*n) - aim).length, n))
+
+
+def ramp_piece(col, v, cells, c):
+    """A way up on one cell: stone steps for ^, an earth ramp for /."""
+    at, up = hk.cell_position(*c), up_from(cells, c)
+    aim = (hk.cell_position(*up) - at).normalized()
+    p = hk.Piece(f"{'steps' if cells[c] == '^' else 'ramp'}_{c}")
+    main, side, top = fc.ROCK[v]
+    outline = [at + q for q in hk.hex_corners(hk.CELL_RADIUS, pointy=False)[::-1]]
+    low = at.dot(aim) - hk.CELL_FLATS / 2
+    if cells[c] == "^":
+        treads = 5
+        for k in range(treads):
+            p.prism(clipped(outline, aim, low + k * hk.CELL_FLATS / treads), RAISED_HEIGHT * k / treads, RAISED_HEIGHT * (k + 1) / treads,
+                    "rock" if k % 2 else "rock_shade" if v == "dark_wood" else main, side_mat=side)
+    else:
+        foot = [p.bm.verts.new(q) for q in outline]
+        head = [p.bm.verts.new(q + Vector((0, 0, RAISED_HEIGHT * (q.dot(aim) - low) / hk.CELL_FLATS + 0.02))) for q in outline]
+        p.bm.faces.new(head).material_index = p._slot("soil_light")
+        for k in range(6):
+            m = (k + 1) % 6
+            p.bm.faces.new((foot[k], foot[m], head[m], head[k])).material_index = p._slot(side)
+        for k in (0.2, 0.45, 0.7):  # logs set across the slope, so it reads as a way up
+            band = clipped(clipped(outline, aim, low + k * hk.CELL_FLATS), -aim, -(low + (k + 0.09) * hk.CELL_FLATS))
+            verts = [p.bm.verts.new(q + Vector((0, 0, RAISED_HEIGHT * (q.dot(aim) - low) / hk.CELL_FLATS + 0.05))) for q in band]
+            p.bm.faces.new(verts).material_index = p._slot("bark_dark")
+    p.finish(col)
+
+
 def shaped_piece(col, v, group, mark):
     """One rock face round these cells, with one shared top: its foot runs exactly along the blocked cells' outline, and layers
     of ledges step in as it rises, so the blocked cells show from where the foot sits. Style from the tile kit's ridges and cliffs."""
-    p = hk.Piece(f"{'cliff' if mark == 'K' else 'shelf'}_{min(group)}")
+    p = hk.Piece(f"cliff_{min(group)}")
     rng = hk.seeded(p.name)
     main, side, top = fc.ROCK[v]
-    h = 2.0 if mark == "K" else 1.1
-    corners = fc.cell_loop(group)
-    loop = []
-    for k, q in enumerate(corners):  # a point midway along each cell edge, so the face has more to break up
-        loop += [q, q.lerp(corners[(k + 1) % len(corners)], 0.5)]
+    h = CLIFF_HEIGHT
+    loop = midpoints(fc.cell_loop(group))
     layers = [(0, 0.0, 0.0, 0.0), (1, 0.1, 0.26, 0.03), (2, 0.2, 0.33, 0.015), (3, 0.17, 0.6, 0.03), (4, 0.27, 0.67, 0.015), (5, 0.25, 0.95, 0.06)]
     rings = [rock_ring(p, rng, loop, smooth, inset, h * z, h * jag) for smooth, inset, z, jag in layers]
     n = len(loop)
@@ -382,11 +492,13 @@ def build_map(t, col, name):
             piece = "cell_dark_wood_block_b"
         elif mark in "TGQEZU":
             piece = f"cell_{v}_cover"
-        elif mark in "BMKSFLO":
+        elif mark in RAMPS:
+            continue
+        elif mark in "BKSFLO":
             piece = f"cell_{v}_floor"
         else:
             piece = f"cell_{v}_ground_{'abc'[(c[0] - c[1]) % 3]}"
-        rp.place(t, piece, col, hk.cell_position(*c), math.radians(60 * (n % 6)) if mark in "Rb,c" else 0.0)
+        rp.place(t, piece, col, hk.cell_position(*c) + Vector((0, 0, ground_z(mark))), math.radians(60 * (n % 6)) if mark in "Rb,c" else 0.0)
     k = 0
     for c, mark in cells.items():
         if mark == "T":
@@ -409,8 +521,17 @@ def build_map(t, col, name):
             piece, foot = f"ob_{v}_{kind}", {"F": fc.TRIANGLE, "E": fc.TRIANGLE, "Z": fc.TRIANGLE, "Q": fc.FLOWER7, "U": fc.LINE3}[mark]
         anchor, turn = fit(group, foot)
         rp.place(t, piece, col, hk.cell_position(*anchor), math.radians(60 * turn))
-    for mark, group in groups(cells, SHAPED):
+    for mark, group in groups(cells, "K"):
         shaped_piece(col, v, group, mark)
+        # Trees on top of a big cliff, on cells away from its face, so the flat top isn't bare.
+        for c in sorted(group):
+            if rb.hash_cell(c) % 3 == 0 and all((c[0] + a, c[1] + b) in group or (c[0] + a, c[1] + b) not in cells for a, b in NEIGHBOURS):
+                rp.place(t, f"ob_{v}_tree_{'abc'[c[0] % 3]}", col, hk.cell_position(*c) + Vector((0, 0, CLIFF_HEIGHT * 0.98)), math.radians(60 * (rb.hash_cell(c) % 6)))
+    for _, group in groups({c: "H" for c, mark in cells.items() if mark in RAISED}, "H"):
+        raised_piece(col, v, group)
+    for c, mark in cells.items():
+        if mark in RAMPS:
+            ramp_piece(col, v, cells, c)
     if m.get("ring"):
         at = m["ring"]
         rp.place(t, "fey_wood_ring", col, hk.cell_position(at[0], (at[1] - at[0]) // 2))
@@ -427,7 +548,7 @@ def place_minis(t, col, name, cells):
             d = middle - at
             # Minis face -Y, so a turn of a points them along (sin a, -cos a). Enemies look at the party, near enough.
             angle = rb.FACE_NORTH if mark in "hks" else math.atan2(d.x, -d.y) + math.radians((rb.hash_cell(c) % 30) - 15)
-            rp.place(t, MINI_MARKS[mark], col, at, angle)
+            rp.place(t, MINI_MARKS[mark], col, at + Vector((0, 0, ground_z(mark))), angle)
     for mark, group in groups(cells, "A"):
         foot = {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)]
         anchor, turn = fit(group, foot)
@@ -503,7 +624,10 @@ def export():
         placements = []
         for o in list(col.objects):
             if "piece" in o:
-                placements.append({"piece": o["piece"], "x": round(o.location.x, 4), "y": round(o.location.y, 4), "turn": round(math.degrees(o.rotation_euler.z)) % 360})
+                placed = {"piece": o["piece"], "x": round(o.location.x, 4), "y": round(o.location.y, 4), "turn": round(math.degrees(o.rotation_euler.z)) % 360}
+                if o.location.z:
+                    placed["z"] = round(o.location.z, 4)
+                placements.append(placed)
                 bpy.data.objects.remove(o)
             else:
                 o.name = f"map_{name}_{o.name}".replace("(", "").replace(")", "").replace(", ", "_")
@@ -514,8 +638,13 @@ def export():
         m = MAPS[name]
         rows = []
         for (q, r), mark in sorted(cells.items()):
-            rows.append({"q": q, "r": r, "kind": "open" if mark in WALKABLE and mark != "c" else "brush" if mark == "c" else "blocked"})
-        starts = [{"mini": MINI_MARKS[mark], "q": c[0], "r": c[1]} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
+            row = {"q": q, "r": r, "kind": "open" if mark in WALKABLE and mark != "c" else "brush" if mark == "c" else "blocked"}
+            if mark in RAISED:
+                row["z"] = RAISED_HEIGHT
+            elif mark in RAMPS:
+                row.update(z=RAISED_HEIGHT / 2, ramp="steps" if mark == "^" else "earth", up=list(up_from(cells, (q, r))))
+            rows.append(row)
+        starts = [{"mini": MINI_MARKS[mark], "q": c[0], "r": c[1], **({"z": RAISED_HEIGHT} if mark in RAISED else {})} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
         for mark, group in groups(cells, "A"):
             anchor, turn = fit(group, {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)])
             starts.append({"mini": m["giant"], "q": anchor[0], "r": anchor[1], "turn": 60 * turn})
@@ -538,7 +667,8 @@ if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     only_check = "--check" in args
     if "--close" in args:
-        for name, at, dist, turn in (("deep_forest_gorge", (6.5, -2.0), 12, 0), ("heartwood_shelf", (9.0, -1.8), 13, 0), ("heartwood_shelf", (9.0, -1.8), 13, 150)):
+        for name, at, dist, turn in (("heartwood_shelf", (8.0, -2.0), 13, 0), ("heartwood_shelf", (8.0, -2.0), 13, 180), ("deep_forest_groves", (1.8, -3.5), 11, 0),
+                                     ("heartwood_great_tree", (2.0, -5.5), 11, 0), ("deep_forest_gorge", (6.5, -2.0), 12, 0), ("dark_wood_bend", (5.0, -3.5), 13, 0)):
             hk.empty_scene()
             col = hk.new_collection("map")
             t = rb.templates()
@@ -550,7 +680,7 @@ if __name__ == "__main__":
             rp.stage(target, dist, PITCH)
             if turn:
                 rb.turn_camera(turn, target)
-            rp.render(f"forest_rockface_{name}{'_back' if turn else ''}")
+            rp.render(f"forest_highground_{name}{'_back' if turn else ''}")
         sys.exit()
     if "--export" in args:
         export()
@@ -584,4 +714,5 @@ if __name__ == "__main__":
         for v in fc.VARIANTS:
             sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}")
         sheet([f"forest_map_{n}_turned" for n in MAPS if n in TURNED], "forest_maps_turned", 2)
+        sheet([f"forest_map_{n}" for n in MAPS], "forest_maps_all", 4)
     print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)
