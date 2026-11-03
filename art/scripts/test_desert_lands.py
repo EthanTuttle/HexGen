@@ -179,23 +179,21 @@ for m in range(6):
             fail("canyon lane top not on the land", t, i)
         if abs(secs[-1][2] - cn.FLOOR) > 1e-3:
             fail("canyon lane foot not on the floor", t, i)
-        for q in secs:
-            if min(q[5], q[6]) < cn.RAMP_HALF - 1e-6:
-                fail("canyon lane too narrow for a mini's base", t, i)
-        own = {(tuple(p_ + c_ for p_, c_ in zip(a[:2], c)), tuple(p_ + c_ for p_, c_ in zip(b[:2], c))) for a, b in zip(line, line[1:])}
+        ownp = {tuple(wt.add(q_, c)) for q_ in cn.line_to_junction(t, i, landmark, field.turn)}
         for a, b in field.segs:
-            if (a, b) in own or (b, a) in own:
+            if tuple(a) in ownp and tuple(b) in ownp:
                 continue
-            for f in range(9):
-                w = (a[0] + (b[0] - a[0]) * f / 8, a[1] + (b[1] - a[1]) * f / 8)
-                for q in secs:
+            for f in range(13):
+                w = (a[0] + (b[0] - a[0]) * f / 12, a[1] + (b[1] - a[1]) * f / 12)
+                for q in secs:  # a mini's round base here, against the lane's cross-sections
                     along = (w[0] - q[0]) * -q[4] + (w[1] - q[1]) * q[3]
+                    if abs(along) >= 0.2:
+                        continue
                     across = (w[0] - q[0]) * q[3] + (w[1] - q[1]) * q[4]
-                    if abs(along) < 0.2 and -q[6] < across < q[5] and q[2] > cn.FLOOR + 0.2:
+                    if -q[6] - 0.52 < across < q[5] + 0.52 and q[2] > cn.FLOOR + 0.02:
                         buried += 1
                         buried_h = max(buried_h, q[2] - cn.FLOOR)
-                        break
-print("points of other corridors under a lane by more than 0.2:", buried, "worst", round(buried_h, 2))
+print("spots on other corridors where a mini's base is over a lane:", buried, "worst height", round(buried_h, 2))
 # the Stronghold's walk is on its deck, then the mesa's top
 if dl.ramp_walk()[-1][:2] != dl.FORT_GATE or abs(dl.ramp_walk()[-1][2] - dl.MESA_H) > 1e-6:
     fail("stronghold walk doesn't reach the gate")

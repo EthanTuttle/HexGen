@@ -7,7 +7,7 @@ Worked out once for a whole region, when it finishes, in world space, so rock an
 3. height_field: rock rises from the corridors in bands of LAYER. Its height is held down wherever it stands just south of a corridor (north_cap), so from the default map camera a wall hides little of the floor behind it.
    Along an edge facing outside it comes to z = 0, level with the neighbour.
 4. tile_mesh: each tile's triangles, cut along each band's line into flat ledges and upright walls. Tiles sample shared edges at the same points, so they join.
-5. ramps: a path cut into the rock (chosen Nov 3, 2026, from art/scripts/ramp_study.py), from z = 0 at an entrance's midpoint down its corridor to the floor. A worn lane from wall to wall, so taller rock stands either side; where the rock beside it is lower, the bands carry on up to the lane's edge, with a broken lip. The rock itself is not changed. A ramp's two ends join the ground: see ramp_joins.
+5. ramps: a path cut into the rock (chosen Nov 3, 2026, from art/scripts/ramp_study.py), from z = 0 at an entrance's midpoint down its corridor to the floor. A worn lane running out on each side to the next rock higher than it. That rock's ledges are at band heights, so where the lane passes one it lies level with that ledge and carries straight on into it: no side faces show, and the rock itself isn't changed. Beside another corridor it narrows instead, so a mini there stays clear of it. A ramp's two ends join the ground: see ramp_joins.
 """
 import math
 
@@ -24,9 +24,11 @@ CAP_SLOPE = math.tan(math.radians(50)) / LAYER  # bands per metre north of a cor
 ND, NV = 10, 12       # grid over a sixth of a tile: depth, side to side
 CELL = 0.2            # the field's grid
 RAMP_HALF = 0.62      # the narrowest a lane gets, at its foot or beside another corridor
+MINI_HALF = 0.56      # a mini's base, with a little room
+RAMP_STEEP = 27.5     # the minis' limit is 28
 PATH_HALF = 0.62      # the walked path, within the lane
 KERB = 0.07           # the rock shoulder stands this much above the path
-LANE_REACH = 1.6      # how far a lane looks for a wall to run up to
+LANE_REACH = 2.8      # how far a lane looks for a wall to run up to
 LANE_OPEN = 0.92      # its half width on a side with no wall, where the rock stands lower than it
 STOP = (0.1, 0.0)     # the Echo Cave's stop, in its frame: +X toward the edge it faces
 TAN30 = math.tan(math.radians(30))
@@ -295,11 +297,16 @@ def ramp_line(t, i, landmark=None, turn=0):
     """An entrance's ramp, tile-frame (x, y, z): from z = 0 at the edge's midpoint down its corridor to the floor at the junction."""
     line = line_to_junction(t, i, landmark, turn)
     run = sum(math.dist(a, b) for a, b in zip(line, line[1:]))
+    climb = min(run, -FLOOR / math.tan(math.radians(RAMP_STEEP)))  # it reaches the floor as soon as it can, so its foot stays clear of the junction
     out, walked = [], 0.0
     for k, q in enumerate(line):
-        if k:
-            walked += math.dist(line[k - 1], q)
-        out.append((q[0], q[1], FLOOR * walked / run))
+        step = math.dist(line[k - 1], q) if k else 0.0
+        if walked < climb < walked + step:
+            f = (climb - walked) / step
+            a = line[k - 1]
+            out.append((a[0] + (q[0] - a[0]) * f, a[1] + (q[1] - a[1]) * f, FLOOR))
+        walked += step
+        out.append((q[0], q[1], FLOOR * min(walked, climb) / climb))
     return out
 
 
@@ -316,11 +323,17 @@ def ramp_sections(t, i, field, landmark=None, turn=0, spacing=0.35):
     """Cross-sections of an entrance's lane, top to foot, world space: (x, y, z, nx, ny, left, right), with (nx, ny) pointing left. Its middle line is ramp_line, so the route walks on it. Direction turns gradually round the bend, and each side stops short of any other corridor."""
     c = gc.tile_centre(*t)
     line = [(q[0] + c[0], q[1] + c[1], q[2]) for q in ramp_line(t, i, landmark, turn)]
+    while len(line) > 2 and line[-2][2] <= FLOOR:
+        line.pop()  # the rest of the way to the junction is floor
     lens = [math.dist(a[:2], b[:2]) for a, b in zip(line, line[1:])]
     total = sum(lens)
-    own = {(line[k][:2], line[k + 1][:2]) for k in range(len(line) - 1)}
-    others = [sg for sg in field.segs if not (sg in own or sg[::-1] in own or min(math.dist(sg[0], line[0][:2]), math.dist(sg[1], line[0][:2])) < 1e-6)]
+    own = {tuple(wt.add(q, c)) for q in line_to_junction(t, i, landmark, turn)}
+    others = [sg for sg in field.segs if not (tuple(sg[0]) in own and tuple(sg[1]) in own)]
     stations = sorted({round(total * k / max(1, round(total / spacing)), 4) for k in range(max(1, round(total / spacing)) + 1)} | {round(lens[0], 4)})
+    # where the lane passes a band's height it's level with that band's ledge: two sections there, the one above reaching the wall behind the ledge, the one below only as far as the ledge's own wall
+    ledges = {round(total * (1 - level_ * LAYER / -FLOOR), 4) for level_ in range(1, TOP_LEVEL)}
+    stations = sorted(stations + [q for q in ledges if q in stations] + [q for q in ledges for _ in (0, 1) if q not in stations])
+    seen_ledge = set()
     dirs = [wt.mul(wt.sub(b[:2], a[:2]), 1 / max(ln, 1e-6)) for a, b, ln in zip(line, line[1:], lens)]
     raw = []
     for s in stations:
@@ -343,26 +356,36 @@ def ramp_sections(t, i, field, landmark=None, turn=0, spacing=0.35):
         d = wt.mul(d, 1 / max(wt.length(d), 1e-6))
         n = (-d[1], d[0])
         x, y, z = a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f
-        foot = max(0.0, min(1.0, (total - s) / 1.2))
-        wide = RAMP_HALF + (LANE_REACH - RAMP_HALF) * foot * foot * (3 - 2 * foot)
+        wide = LANE_REACH
         level = (z - FLOOR) / LAYER
+        if s in ledges:
+            level = round(level) + (0.001 if s not in seen_ledge else -0.001)
+            seen_ledge.add(s)
+        clear = MINI_HALF + (HALF_WIDTH + 0.06 - MINI_HALF) * min(1.0, (z - FLOOR) / 0.6)  # low down, just far enough for a mini on that corridor to miss it
 
         def reach(sign):
-            """Out to the wall and just into it, if there's one; if the rock stays lower than the lane, only LANE_OPEN."""
-            w, kept = RAMP_HALF, RAMP_HALF
+            """Out to the wall and just into it, stopping short of any other corridor."""
+            w, kept = 0.1, 0.1
             while w < wide:
-                w = min(wide, w + 0.08)
+                w = min(wide, w + 0.06)
                 q = (x + n[0] * sign * w, y + n[1] * sign * w)
-                if any(seg_dist(q, *sg) < HALF_WIDTH + 0.06 for sg in others):
-                    return kept
+                if any(seg_dist(q, *sg) < clear for sg in others):
+                    return -kept  # negative: stopped by another corridor
                 kept = w
-                if field.value(*q) >= level:
+                # a real wall, not just a tooth of rock with a pit behind it, which the lane would leave showing
+                if int(field.value(*q)) >= level and (s > 1.4 or all(int(field.value(x + n[0] * sign * (w + look), y + n[1] * sign * (w + look))) >= level for look in (0.2, 0.4, 0.6, 0.8))):
                     return w + 0.06
             mouth = max(0.0, 1.0 - s / 1.4)  # near the land it runs wide to the rock kept level with it, so no slit opens along the edge
             return min(wide, LANE_OPEN + (LANE_REACH - LANE_OPEN) * mouth)
 
         raw.append([x, y, z, n[0], n[1], reach(1), reach(-1)])
-    return [tuple(q) for q in raw]
+    # near the land, each section is at least as wide as the next: under the rock kept level with the land, the lane still covers any pit behind it. Not the very first, which is level with that rock.
+    for k in range(len(raw) - 2, 0, -1):
+        if stations[k] < 1.4:
+            for side in (5, 6):
+                if raw[k][side] > 0 and raw[k + 1][side] > raw[k][side]:
+                    raw[k][side] = raw[k + 1][side]
+    return [tuple(q[:5]) + (abs(q[5]), abs(q[6])) for q in raw]
 
 
 # --- Blender ----------------------------------------------------------------------------------
@@ -386,6 +409,7 @@ def build(p, rng, region, landmark, turn):
         p.surface.add(f)
         return f
 
+    mouths = [wt.add(wt.mul(wt.normal(i), wt.A), gc.tile_centre(*t)) for t, i in field.entrances]
     for t in field.region:
         for tri in tile_grid(t, field):
             flats, walls = terrace(tri)
@@ -407,7 +431,9 @@ def build(p, rng, region, landmark, turn):
                 right = field.value(mx - nx / ln * 0.05, my - ny / ln * 0.05)
                 if left < right:  # (b - a) x z looks right: swap so it looks to the low side
                     a, b = b, a
-                face([(a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1)], BAND[min(level, 4)])
+                # where a lane meets the land, the short walls beside it are in the land's colour, so they don't stand out against it
+                by_mouth = level == TOP_LEVEL and any(math.dist((mx, my), q_) < 2.4 for q_ in mouths)
+                face([(a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1)], "canyon_top" if by_mouth else BAND[min(level, 4)])
     ct._skirts(p, field.region, FLOOR - 0.2)
     # ramps: a worn lane cut between the walls
     stones = rp.Run(p, rng, ("canyon_side", "canyon_rust", "canyon_orange"))
@@ -428,9 +454,11 @@ def build(p, rng, region, landmark, turn):
             # across it: rock shoulder, a low broken kerb down to the walked path, the path, kerb and shoulder again; the kerb sinks away at both ends
             kerb = KERB * min(1.0, k / 3, (len(secs) - 1 - k) / 3) * rng.uniform(0.35, 1.0)
             pl, pr = min(lw, PATH_HALF + rng.uniform(-jit, jit)), min(rw, PATH_HALF + rng.uniform(-jit, jit))
-            cuts = ((lw + wobble(x, y) * 0.25, z + kerb), (pl + 0.03, z + kerb), (pl, z), (-pr, z), (-pr - 0.03, z + kerb), (-rw + wobble(y, x) * 0.25, z + kerb))
+            cuts = ((max(pl + 0.04, lw), z), (pl + 0.03, z + kerb), (pl, z), (-pr, z), (-pr - 0.03, z + kerb), (min(-pr - 0.04, -rw), z))  # the shoulder's outer edge is at the lane's height, so it lies flush with a ledge
             rows.append([(x + nx * w, y + ny * w, h_) for w, h_ in cuts])
         for j, (r0, r1) in enumerate(zip(rows, rows[1:])):
+            if secs[j][:2] == secs[j + 1][:2]:
+                continue
             sink = (secs[j][2] + secs[j + 1][2]) / 2 / FLOOR  # 0 at the top, 1 at the foot
             for k in range(5):
                 tone = (1 - sink) * 4 + rng.uniform(-0.45, 0.45)
@@ -440,6 +468,8 @@ def build(p, rng, region, landmark, turn):
         # beside it: where the rock stands lower than the lane, the bands carry on up to its edge, with a broken lip; where it's higher, a stone or two fallen from the cut
         for side, sign in ((0, 1), (5, -1)):
             for k in range(len(rows) - 1):
+                if secs[k][:2] == secs[k + 1][:2]:
+                    continue
                 p0, p1 = rows[k][side], rows[k + 1][side]
                 x, y, z, nx, ny = secs[k][:5]
                 out = (p0[0] + nx * sign * 0.1, p0[1] + ny * sign * 0.1)

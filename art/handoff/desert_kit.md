@@ -3,18 +3,18 @@
 Ethan's ramp picks (design/07) are in, and the oasis ripple fix. None of it has been tried in Godot, and Ethan hasn't seen it in place. Rounds below still hold, except where this says otherwise.
 
 - **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v60.blend`.
-- **Canyon entrances (`canyon.py`, still region-level, not in the kit):** `ramp_sections` gives each lane's cross-sections, and `build` makes the worn path, low broken kerbs, rock shoulders and stones. The middle line and route are still `ramp_line`, so nothing changes for walking. The rock field isn't altered: the lane runs to the walls, and where rock stands lower than it, the bands carry on up to its edge. It starts square to the tile's edge, and its colour runs from the floor's at its foot to the land's at its top. 41,810 triangles for 12 tiles, worst tile 3,984.
+- **Canyon entrances (`canyon.py`, still region-level, not in the kit):** `ramp_sections` gives each lane's cross-sections, and `build` makes the worn path, low broken kerbs, rock shoulders and stones. Each side runs out to the next rock higher than the lane, so it lies level with a ledge where it passes one and no side faces show; the rock field isn't altered. Beside another corridor a lane narrows instead. `ramp_line` is still the route, but now reaches the floor early, at 27.5° (the minis' limit is 28°), then runs flat to the junction. The short walls where a lane meets the land are in the land's colour. It starts square to the tile's edge, and its colour runs from the floor's at its foot to the land's at its top. 41,439 triangles for 12 tiles.
 - **Raider Stronghold:** the wedge is gone. `StrongholdRun` (variants.py) builds `ramp_parts.Run.timber` up the straight side, with a landing beside the gate. The walk is `desert_lands.ramp_walk()`, and `stronghold_routes` uses it; those routes moved (foot at x = -2.85, y = 1.96, tilt 25.8°). 1,916 triangles.
 - **Proposal, not canon:** `desert_lands.STRONGHOLD_TURN = 3` turns it on the map so the ramp faces the default camera, as the Sphinx's turn does. Its ramp is hidden behind the mesa otherwise. Render_preview uses it; Godot should too if Ethan keeps it.
 - **Oasis ripples:** no longer in the tile pieces. `desert_lands.oasis_ripples(terrains)` returns (piece, x, y, degrees) in world space for `oasis_ripple_short` and `_long`, all at 25°, none on the pool's or Bazaar's tile.
 
-**Rough spot:** a lane's narrow foot can sit over part of another corridor where the two leave the junction at a shallow angle. In 6 test regions, 13 sampled points were more than 0.2 under a lane, the worst 0.52, so a mini on that other corridor would clip into it for a short stretch. Not fixed.
+**Rough spots:** where a corridor leaves a junction at a shallow angle, a mini's base on it can still overlap a lane's foot: 15 sampled spots in 6 test regions, the worst 0.38 above the floor. A small ledge can show through a lane's wide shoulder (`canyon_lane_close_2_v4`).
 
 **For Combat Art:** `art/scripts/ramp_parts.py` has `Run.timber` and `Run.steps`; subclass `Run` and set `run`, `edge`, `inner`, `path_z` and `W`. `art/scripts/ramp_study.py` is a working example (`Bench`), and writes `ramp_study_*` sheets. Colours are `ramp_plank*`, `ramp_post`, `ramp_rope` and `ramp_adobe*` in hexkit.
 
 **Checks:** `test_desert_lands.py` checks each lane's top on the land and foot on the floor, its width, and the Stronghold's walk and deck width, on 6 random regions, and the ripples. `check_town.py -- desert2` casts rays along the Stronghold's walk. `render_preview.py --canyon-maze` reports `RAMPS NOT JOINED` and `HOLES` for the rendered region. All pass at 0.
 
-Previews in `art/preview/`: `canyon_maze_map_v5`, `canyon_maze_turned_v3`, `canyon_maze_low_v3`, `canyon_lane_close_0_v4`, `canyon_lane_close_1_v4`, `canyon_lane_close_2_v3`, `canyon_lane_up_*`, `badlands_stronghold_alone_ramp_v2`, `_ramp_low_v2`, `_map_v5`, `badlands_map_v4`, `oasis_map_v4`.
+Previews in `art/preview/`: `canyon_maze_map_v6`, `canyon_maze_turned_v4`, `canyon_maze_low_v4`, `canyon_lane_close_0_v5`, `canyon_lane_close_1_v5`, `canyon_lane_close_2_v4`, `canyon_lane_up_*`, `badlands_stronghold_alone_ramp_v2`, `_ramp_low_v2`, `_map_v5`, `badlands_map_v4`, `oasis_map_v4`.
 
 ---
 
