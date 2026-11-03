@@ -615,7 +615,7 @@ if __name__ == "__main__":
             rp.stage(target, distance, fm.PITCH)
             rp.render(f"village_map_{name}")
             mc.keep_image("village_map_", name)
-            if name in TURNED:
+            if name in TURNED or name in HOUSES:  # the houses' backs matter too
                 rb.turn_camera(180, target)
                 rp.render(f"village_map_{name}_turned")
     if not only_check and wanted == list(MAPS):
