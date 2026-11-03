@@ -32,3 +32,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/canyon_lane_close_1_v4.png` | rejected | Cut path good, but fix the slivers at the open side |
 | 2026-11-03 | `art/preview/oasis_map_v4.png` | approved | |
 | 2026-11-03 | `art/preview/crop_rows_close_v5.png` | rejected | Rows dropped; tufts stay, straw stays #D1B668 |
+| 2026-11-03 | `art/combat/maps/village_lanes.png` | rejected | Round 1, Village set (green, gardens, lanes, street): houses sit oddly on hexes; add doors and windows; better garden fences |
