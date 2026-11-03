@@ -3536,13 +3536,13 @@ PATCHES = ("patch_red", "patch_ochre", "patch_teal", "patch_brown", "patch_cream
 CLOTHES = ("awning_b", "patch_teal", "patch_ochre", "flower_blue", "patch_red")
 
 
-def sag_roof(p, at, w, d, h, mat, z, spin, rng):
+def sag_roof(p, at, w, d, h, mat, z, spin, rng, middle=0.72, off_level=0.1):
     """A gable roof with a ridge that sags in the middle and runs off level, so the house looks lopsided."""
     rot = Matrix.Rotation(spin, 4, "Z")
-    tilt = rng.uniform(-0.1, 0.1)
+    tilt = rng.uniform(-off_level, off_level)
     shift = rng.uniform(-0.07, 0.07)
     pts = [(-w / 2, -d / 2, 0), (0, -d / 2, -0.02), (w / 2, -d / 2, 0), (w / 2, d / 2, 0), (0, d / 2, -0.02), (-w / 2, d / 2, 0),
-           (-w / 2, shift, h + tilt), (0, shift, h * 0.72), (w / 2, shift, h - tilt)]
+           (-w / 2, shift, h + tilt), (0, shift, h * middle), (w / 2, shift, h - tilt)]
     v = [p.bm.verts.new(at + Vector((0, 0, z)) + rot @ Vector(q)) for q in pts]
     idx = p._slot(mat)
     for f in ((v[0], v[1], v[7], v[6]), (v[1], v[2], v[8], v[7]), (v[3], v[4], v[7], v[8]), (v[4], v[5], v[6], v[7]),

@@ -104,6 +104,22 @@ def sheet(items, cols, pitch, elevation, distance, stem):
     rp.render(stem)
 
 
+def plots(stem):
+    """Vegetable plot cells together, a tarp and a hero, close up."""
+    hk.empty_scene()
+    t = templates()
+    col = hk.new_collection("plots")
+    for q, r in ((0, 0), (0, 1), (1, 0), (1, -1), (-1, 1), (-1, 0), (0, -1)):
+        rp.place(t, "cell_slums_brush", col, hk.cell_position(q, r))
+    rp.place(t, "standin_hero", col, hk.cell_position(0, 0), 0.0)
+    p = hk.Piece("tarp")
+    bv.yard_tarp(p, hk.seeded("tarp"), Vector((3.0, 0, 0)), 0.0)
+    p.finish(col)
+    rp.stage(Vector((1.0, 0, 0)), 11, fm.PITCH)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 2400, 1500
+    rp.render(stem)
+
+
 def houses(stem):
     hk.empty_scene()
     t = templates()
@@ -140,6 +156,7 @@ if __name__ == "__main__":
         measure(templates())
         sheet(YARD, 4, (2.8, 3.4), 35, 19, "slums_props_close")
         houses("slums_houses")
+        plots("slums_plot_close")
         sys.exit()
     if "--fort" in sys.argv:
         YARD[:] = [("anvil", bv.yard_anvil), ("quench tub", bv.yard_quench), ("coal", bv.yard_coal), ("grindstone", bv.yard_grindstone), ("forge", bv.yard_forge), ("spears", bv.yard_spears), ("shields", bv.yard_shields),

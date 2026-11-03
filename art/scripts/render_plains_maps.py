@@ -316,7 +316,7 @@ def build_from_plan(t, col, name, m, v, kit, wall, wall_variants, free_turn):
             piece = f"cell_{v}_floor" if v == "stormy_plains" else f"cell_{v}_cover"
         else:
             piece = f"cell_{v}_ground_{'abc'[(c[0] - c[1]) % 3]}"
-        rp.place(t, piece, col, hk.cell_position(*c) + Vector((0, 0, fm.ground_z(mark))), math.radians(60 * (n % 6)) if mark in "R,c" or v == "meadows" else 0.0)
+        rp.place(t, piece, col, hk.cell_position(*c) + Vector((0, 0, fm.ground_z(mark))), math.radians(60 * (n % 6)) if mark in "R," or (mark == "c" and v not in fm.ROWED_BRUSH) or v == "meadows" else 0.0)
     k = 0
     for c, mark in cells.items():
         turn = math.radians(60 * (rb.hash_cell(c) % 6))

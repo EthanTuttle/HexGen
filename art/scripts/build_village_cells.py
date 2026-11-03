@@ -30,7 +30,7 @@ hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
 hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "garrison": hk.PALETTE["banner_fort"], "coal": "#35322F", "ember": "#E2672A", "bale": "#D1B668", "char_dark": "#332D29", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
                    "flower_red": "#D6455A", "flower_yellow": "#F0C53C", "cabbage": "#8DBB5A", "pumpkin": "#E0802A", "stack_band": fc.mix("#D1B668", "#6E5A3C", 0.5),
-                   "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
+                   "tarp_a": "#A39A84", "tarp_b": "#7E7259", "tarp_c": "#8F7F62", "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
 fc.BARK.update({v: "trunk" for v in VARIANTS})
 fc.BARK["slums"] = "deadwood"
@@ -67,10 +67,17 @@ def litter(p, rng, v):
 
 def brush(p, rng, v):
     """Walkable and under a base's height: garden greens and low flowers on the tiles' plots and lawns."""
-    if v == "slums":  # a vegetable plot, its rows of greens on dug earth
-        fc.patch(p, rng, ZERO, 0.44, "soil_light")
-        for row in (-0.2, 0.0, 0.2):
-            p.box(Vector((0, row, 0)), (0.62, 0.09, 0.055), rng.choice(("field_c", "lily", "reed")))
+    if v == "slums":  # a vegetable plot: dug earth filling the cell, its rows east to west a quarter cell apart, so they run on across neighbouring cells. Placed unturned.
+        p.flat(hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1], 0.012, "soil_dark")
+        for row in (-0.25, 0.0, 0.25):
+            half = hk.CELL_RADIUS - abs(row) / math.sqrt(3) - 0.05
+            p.box(Vector((0, row, 0)), (half * 2, 0.13, 0.035), "soil_light")
+            if row:  # carrot tops
+                for k in range(5):
+                    p.cone(Vector(((k - 2) * half * 0.4, row + rng.uniform(-0.012, 0.012), 0)), 0.07, rng.uniform(0.1, 0.13), "vine_light" if k % 2 else "hedge", segments=5, z=0.03, spin=rng.uniform(0, 2))
+            else:  # cabbages
+                for x in (-0.3, 0.0, 0.3):
+                    p.blob(Vector((x, 0, 0)), rng.uniform(0.09, 0.105), "cabbage", z=0.09, squash=0.8)
         return
     for k in range(7):
         a, d = k * 0.9 + rng.uniform(-0.3, 0.3), rng.uniform(0.12, 0.36)
@@ -108,27 +115,20 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
     door_x: the front door, along the wall; front_door False: none in the south wall, where a wing stands instead. back_door: a smaller door at the back, if any.
     back_windows, back_upper, back_boxes: where the back's plain windows, upper windows and flower boxes go along the wall. vines, back_vines: where vines climb the front and back.
     timber: a townhouse's two storeys, the upper jutting out over a timber band, framed in dark timber. awning: (x, width) of striped awnings over the front. sign: x of a shop sign on a bracket.
-    shack: lopsided, with a sagging roof and patches on its walls.
+    shack: a sagging roof and patches on its walls; house's lop pushes the whole thing over.
     Doors stand at a mini's shoulder."""
     p.doors = getattr(p, "doors", [])
     wall = wall or rng.choice(("wall", "wall", "wall_warm"))
     floor = FLOOR if timber else h  # where the upper storey starts
     jut = 0.04 if timber else 0.0
-    if shack:  # its top pushed over along the walls that carry its door, so they stay flat for the door and windows
-        before = set(p.bm.verts)
-        p.box(at, (w, d, h), wall, spin=spin)
-        tilt = vr.turn(Vector((0.0, 0.05, 0)) if end_door else Vector((0.05, 0.0, 0)), spin) * rng.choice((-1, 1))
-        for v in set(p.bm.verts) - before:
-            if v.co.z > h / 2:
-                v.co += tilt
-    elif timber:
+    if timber:
         p.box(at, (w, d, floor), wall, spin=spin)
         p.box(at, (w + 0.05, d + 0.05, 0.06), "timber", z=floor - 0.03, spin=spin)
         p.box(at, (w + jut * 2, d + jut * 2, h - floor), wall, z=floor, spin=spin)
     else:
         p.box(at, (w, d, h), wall, spin=spin)
     if shack:
-        vr.sag_roof(p, at + tilt, w + 0.04, d + 0.06, pitch, roof, h - 0.01, spin, rng)
+        vr.sag_roof(p, at, w + 0.04, d + 0.06, pitch, roof, h - 0.01, spin, rng, middle=0.45, off_level=0.17)
     else:
         p.gable_roof(at, w + 0.12 + jut * 2, d + 0.1 + jut * 2, pitch, roof or rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
     if chimney:
@@ -689,13 +689,26 @@ def yard_arrows(p, rng, at, spin=0.0):
 
 
 def yard_tarp(p, rng, at, spin=0.0):
-    """A patched tarp on four poles, sloping down toward the camera at spin 0, with a crate in its shade."""
-    for sd in (-1, 1):
-        p.box(at + vr.turn(Vector((sd * 0.3, -0.17, 0)), spin), (0.04, 0.04, 0.72), "timber", spin=spin)
-        p.box(at + vr.turn(Vector((sd * 0.3, 0.17, 0)), spin), (0.04, 0.04, 0.98), "timber", spin=spin)
-    tilt = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.66, 3, "X")
-    for x, w, c in ((-0.22, 0.26, "patch_teal"), (0.04, 0.26, "canvas"), (0.26, 0.18, "patch_red")):
-        p.box_rot(at + vr.turn(Vector((x, 0.0, 0)), spin) + Vector((0, 0, 0.86)), (w, 0.48, 0.02), c, tilt)
+    """A worn sheet slung as a low roof on four crooked poles, nearly flat so it reads from above, sagging between them, with a few odd patches and a crate in its shade."""
+    xs, ys = (-0.34, -0.12, 0.12, 0.34), (-0.24, -0.06, 0.1, 0.24)
+
+    def point(x, y, off=0.0):
+        hang = (1 - (x / 0.34) ** 2) * 0.09 + (1 - (y / 0.24) ** 2) * 0.05 + (1 - (x / 0.34) ** 2) * (1 - (y / 0.24) ** 2) * 0.05
+        return at + vr.turn(Vector((x, y, 0)), spin) + Vector((0, 0, 0.82 + y * 0.15 + x * 0.12 - hang + off))
+
+    for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        q = point(sx * 0.33, sy * 0.23)
+        p.box(Vector((q.x, q.y, 0)), (0.035, 0.035, q.z + 0.03), "timber", spin=spin + sx * sy * 0.4)
+    def sheet(corners, mat, off):
+        p.bm.faces.new([p.bm.verts.new(point(*q, off)) for q in corners]).material_index = p._slot(mat)
+
+    for a in range(3):
+        for b in range(3):
+            corners = [(xs[a], ys[b]), (xs[a + 1], ys[b]), (xs[a + 1], ys[b + 1]), (xs[a], ys[b + 1])]
+            sheet(corners, "tarp_a", 0.0)
+            sheet(corners[::-1], "tarp_b", -0.012)
+    for x, y, w, d, turned, c in ((-0.23, -0.14, 0.08, 0.06, 0.25, "tarp_b"), (0.02, 0.02, 0.07, 0.05, -0.3, "tarp_c"), (0.22, 0.17, 0.08, 0.04, 0.15, "tarp_b")):
+        sheet([(x + sx * w * math.cos(turned) - sy * d * math.sin(turned), y + sx * w * math.sin(turned) + sy * d * math.cos(turned)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))], c, 0.012)
     p.box(at + vr.turn(Vector((-0.08, 0.02, 0)), spin), (0.24, 0.24, 0.2), "crate", spin=spin + 0.3)
 
 
@@ -775,16 +788,26 @@ def clear_of_doors(p, thing, before):
                 break
 
 
-def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard=(), stone="rock", **kw):
+def crooked(p, before, at, half, h, lop):
+    """Lopsided: everything added since before is pushed over in proportion to its height, with door, windows and all staying on their walls, and one end sinks. lop: how far the wall tops go east and north, and how far the east end drops."""
+    east, north, drop = lop
+    for v in set(p.bm.verts) - before:
+        k = v.co.z / h
+        v.co += Vector((east * k, north * k, drop * k * (at.x - v.co.x) / half))
+    p.effects[:] = [(name, q + Vector((east, north, 0)) * ((q.z - FOOTING) / h)) if name == "smoke" else (name, q) for name, q in p.effects]
+
+
+def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard=(), stone="rock", lop=None, **kw):
     """A house and its household things on these cells' stone. wall_w, wall_d: its walls, along and across its ridge; x: its middle, east of the cells' middle.
     gable: ridge north to south, an end to the camera. lean: the east end of its length a low shed. wing: (x, width, length), a lower gabled wing running south.
-    yard: (thing, x, y, spin) from the cells' middle, about as much behind the house as before it, as the camera turns all the way round."""
+    yard: (thing, x, y, spin) from the cells' middle, about as much behind the house as before it, as the camera turns all the way round. lop: see crooked."""
 
     def make(p, rng):
         def build_it():
             mid = pc.mean(cells)
             at = mid + Vector((x, 0, 0))
             spin = math.pi / 2 if gable else 0.0
+            before = set(p.bm.verts)
             if gable:
                 kw.setdefault("end_door", True)
             if lean:
@@ -796,7 +819,9 @@ def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard
                 fitted_cottage(p, rng, at, wall_w, wall_d, spin, **kw)
             if wing:
                 wx, width, length = wing
-                fitted_cottage(p, rng, mid + Vector((wx, -length / 2, 0)), length, width, math.pi / 2, h=0.84, pitch=0.42, roof=kw.get("roof"), wall=kw.get("wall"), end_door=True, back_windows=(), paint=kw.get("paint", "trunk"))
+                fitted_cottage(p, rng, mid + Vector((wx, -length / 2, 0)), length, width, math.pi / 2, h=0.84, pitch=0.42, roof=kw.get("roof"), wall=kw.get("wall"), end_door=True, back_windows=(), paint=kw.get("paint", "trunk"), shack=kw.get("shack", False))
+            if lop:
+                crooked(p, before, at, wall_w / 2, kw["h"], lop)
             for thing, tx, ty, tspin in yard:
                 before = set(p.bm.verts)
                 thing(p, rng, mid + Vector((tx, ty, 0)), tspin)
@@ -1059,13 +1084,13 @@ KIT = {
     },
     "slums": {
         # Plans use P, 5, 6 or 7 for a shack on three cells, 2, 3 or 4 for one on four.
-        "P": ("shack_3_side", TRIANGLE, house(TRIANGLE, 1.06, 0.8, X3, shack=True, h=0.86, pitch=0.42, stone="rock", wall="shack_a", roof="roof_tin", chimney=True, paint="patch_teal", door_x=0.28, front_windows=(-0.12,), back_windows=(0.2,), yard=((yard_rain_barrel, -0.5, -0.66, 0.0), (yard_bucket, -0.1, -0.56, 0.0), (yard_laundry, 0.88, 0.0, math.pi / 2), (yard_weeds, -0.42, 0.74, 0.0), (yard_bucket, 0.02, 0.58, 0.0)))),
-        "5": ("shack_3_gable", TRIANGLE, house(TRIANGLE, 0.8, 0.98, X3, shack=True, h=0.86, pitch=0.42, stone="rock", gable=True, wall="shack_b", roof="patch_brown", paint="patch_red", back_windows=(-0.2,), yard=((yard_brazier, -0.4, -0.72, 0.0), (yard_veg, 0.82, 0.0, math.pi / 2), (yard_red_lantern, -0.6, -0.32, 0.0), (yard_logs, -0.38, 0.72, 0.0), (yard_hen, 0.1, 0.52, 0.0)))),
-        "6": ("shack_3_cross", TRIANGLE, house(TRIANGLE, 1.06, 0.8, X3, shack=True, h=0.86, pitch=0.42, stone="rock", wing=(-0.22, 0.46, 0.74), front_door=False, wall="shack_a", roof="roof_tin", chimney=True, paint="patch_ochre", back_windows=(-0.3, 0.3), yard=((yard_crate, 0.9, 0.02, 0.0), (yard_broom, 0.14, -0.5, 0.0), (yard_barrels, -0.34, 0.6, 0.0), (yard_bucket, -0.34, 0.86, 0.0)))),
-        "7": ("shack_3_lean", TRIANGLE, house(TRIANGLE, 1.12, 0.8, X3, shack=True, h=0.86, pitch=0.42, stone="rock", lean=True, wall="shack_b", roof="roof_tin", chimney=True, paint="patch_teal", door_x=0.22, back_windows=(-0.2,), yard=((yard_scrap, -0.42, -0.6, 0.0), (yard_block, 0.87, 0.04, 0.0), (yard_tarp, -0.29, 0.63, math.pi), (yard_small_pot, 0.16, 0.52, 0.0)))),
-        "2": ("shack_4_long", DIAMOND, house(DIAMOND, 1.66, 0.84, shack=True, h=0.86, pitch=0.42, stone="rock", door_x=-0.6, wall="shack_a", roof="patch_brown", chimney=True, paint="patch_red", back_windows=(-0.45, 0.35), yard=((yard_tarp, 0.04, -0.56, 0.0), (yard_rain_barrel, 1.06, 0.02, 0.0), (yard_red_lantern, -1.09, -0.14, 0.0), (yard_broom, -0.98, 0.14, 0.0), (yard_laundry, 0.0, 0.62, 0.0), (yard_bucket, 0.1, 0.84, 0.0)))),
-        "3": ("shack_4_gable", DIAMOND, house(DIAMOND, 0.8, 1.22, shack=True, h=0.86, pitch=0.42, stone="rock", gable=True, wall="shack_b", roof="roof_tin", paint="patch_ochre", back_windows=(0.24,), yard=((yard_veg, 0.94, 0.0, math.pi / 2), (yard_scrap, -1.02, -0.14, 0.0), (yard_brazier, -1.0, 0.22, 0.0), (yard_bucket, 0.34, -0.56, 0.0), (yard_bucket, -0.36, -0.6, 0.0), (yard_crate, -0.24, 0.62, 0.0), (yard_weeds, 0.21, 0.56, 0.0)))),
-        "4": ("shack_4_cross", DIAMOND, house(DIAMOND, 1.52, 0.84, shack=True, h=0.86, pitch=0.42, stone="rock", wing=(0.0, 0.5, 0.74), front_door=False, wall="shack_a", roof="patch_brown", chimney=True, paint="patch_teal", back_door=0.55, back_windows=(-0.3,), yard=((yard_washtub, 1.0, 0.0, 0.0), (yard_logs, -1.06, 0.0, 0.0), (yard_bucket, -0.38, -0.56, 0.0), (yard_bucket, 0.38, -0.56, 0.0), (yard_scrap, 0.0, 0.6, math.pi), (yard_bucket, 0.0, 0.84, 0.0)))),
+        "P": ("shack_3_side", TRIANGLE, house(TRIANGLE, 1.06, 0.8, X3, shack=True, lop=(0.13, 0.03, 0.08), h=0.86, pitch=0.42, stone="rock", wall="shack_a", roof="roof_tin", chimney=True, paint="patch_teal", door_x=0.28, front_windows=(-0.12,), back_windows=(0.2,), yard=((yard_rain_barrel, -0.5, -0.66, 0.0), (yard_bucket, -0.1, -0.56, 0.0), (yard_laundry, 0.88, 0.0, math.pi / 2), (yard_weeds, -0.42, 0.74, 0.0), (yard_bucket, 0.02, 0.58, 0.0)))),
+        "5": ("shack_3_gable", TRIANGLE, house(TRIANGLE, 0.8, 0.98, X3, shack=True, lop=(0.12, 0.03, 0.05), h=0.86, pitch=0.42, stone="rock", gable=True, wall="shack_b", roof="patch_brown", paint="patch_red", back_windows=(-0.2,), yard=((yard_brazier, -0.4, -0.72, 0.0), (yard_veg, 0.82, 0.0, math.pi / 2), (yard_red_lantern, -0.6, -0.32, 0.0), (yard_logs, -0.38, 0.72, 0.0), (yard_hen, 0.1, 0.52, 0.0)))),
+        "6": ("shack_3_cross", TRIANGLE, house(TRIANGLE, 1.06, 0.8, X3, shack=True, lop=(0.12, 0.03, -0.07), h=0.86, pitch=0.42, stone="rock", wing=(-0.22, 0.46, 0.74), front_door=False, wall="shack_a", roof="roof_tin", chimney=True, paint="patch_ochre", back_windows=(-0.3, 0.3), yard=((yard_crate, 0.9, 0.02, 0.0), (yard_broom, 0.14, -0.5, 0.0), (yard_barrels, -0.34, 0.6, 0.0), (yard_bucket, -0.34, 0.86, 0.0)))),
+        "7": ("shack_3_lean", TRIANGLE, house(TRIANGLE, 1.12, 0.8, X3, shack=True, lop=(0.1, -0.03, 0.09), h=0.86, pitch=0.42, stone="rock", lean=True, wall="shack_b", roof="roof_tin", chimney=True, paint="patch_teal", door_x=0.22, back_windows=(-0.2,), yard=((yard_scrap, -0.42, -0.6, 0.0), (yard_block, 0.87, 0.04, 0.0), (yard_tarp, -0.29, 0.63, math.pi), (yard_small_pot, 0.16, 0.52, 0.0)))),
+        "2": ("shack_4_long", DIAMOND, house(DIAMOND, 1.66, 0.84, shack=True, lop=(-0.14, 0.03, 0.09), h=0.86, pitch=0.42, stone="rock", door_x=-0.6, wall="shack_a", roof="patch_brown", chimney=True, paint="patch_red", back_windows=(-0.58, 0.58), yard=((yard_weeds, 0.1, -0.58, 0.0), (yard_bucket, -0.14, -0.56, 0.0), (yard_rain_barrel, 1.06, 0.02, 0.0), (yard_red_lantern, -1.09, -0.14, 0.0), (yard_broom, -0.98, 0.14, 0.0), (yard_tarp, 0.0, 0.62, math.pi)))),
+        "3": ("shack_4_gable", DIAMOND, house(DIAMOND, 0.8, 1.22, shack=True, lop=(-0.12, 0.03, -0.05), h=0.86, pitch=0.42, stone="rock", gable=True, wall="shack_b", roof="roof_tin", paint="patch_ochre", back_windows=(0.24,), yard=((yard_veg, 0.94, 0.0, math.pi / 2), (yard_scrap, -1.02, -0.14, 0.0), (yard_brazier, -1.0, 0.22, 0.0), (yard_bucket, 0.34, -0.56, 0.0), (yard_bucket, -0.36, -0.6, 0.0), (yard_crate, -0.24, 0.62, 0.0), (yard_weeds, 0.21, 0.56, 0.0)))),
+        "4": ("shack_4_cross", DIAMOND, house(DIAMOND, 1.52, 0.84, shack=True, lop=(0.13, 0.03, -0.08), h=0.86, pitch=0.42, stone="rock", wing=(0.0, 0.5, 0.74), front_door=False, wall="shack_a", roof="patch_brown", chimney=True, paint="patch_teal", back_door=0.55, back_windows=(-0.3,), yard=((yard_washtub, 1.0, 0.0, 0.0), (yard_logs, -1.06, 0.0, 0.0), (yard_bucket, -0.38, -0.56, 0.0), (yard_bucket, 0.38, -0.56, 0.0), (yard_scrap, 0.0, 0.6, math.pi), (yard_bucket, 0.0, 0.84, 0.0)))),
         "T": ("scraggly_tree", SINGLE, scrag),
         "J": ("junk", SINGLE, slum_junk),
         "N": ("lantern_heap", SINGLE, lantern_heap),
