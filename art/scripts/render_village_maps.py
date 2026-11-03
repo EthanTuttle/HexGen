@@ -354,7 +354,7 @@ c c n c c
 HOUSES = {
     "village_green": (("cottage_3_cross", "cottage_3_gable"), ("cottage_4_long",)),
     "village_lanes": (("cottage_3_tall", "cottage_3_lean"), ("cottage_4_thatch", "cottage_4_cross")),
-    "village_street": (("cottage_3_side", "cottage_3_gable", "cottage_3_tall"), ("cottage_4_cross",)),
+    "village_street": (("cottage_3_side", "cottage_3_gable", "cottage_3_tall"), ("cottage_4_gable",)),
 }
 
 
@@ -515,7 +515,7 @@ def build_map(t, col, name):
             for o, kind in zip(placed, kinds):
                 # A house turned half round would have a wing behind it, on the far side from the camera.
                 assert "cross" not in kind or abs(o.rotation_euler.z) < 0.1, f"{name}: {kind} turned away"
-                piece = f"ob_village_{kind}"
+                piece = f"ob_village_{kind}" + ("_turned" if abs(o.rotation_euler.z) > 0.1 else "")  # its yard on the camera's side
                 o.data, o["piece"] = t[piece].data, piece
         houses = {c for c, mark in cells.items() if mark in "PY23"}
         for c, mark in cells.items():
@@ -571,9 +571,9 @@ if __name__ == "__main__":
         cells = build_map(t, col, "village_green")
         fm.place_minis(t, col, MAPS["village_green"], cells)
         house = min((c for c, mark in cells.items() if mark == "Y"), key=lambda c: hk.cell_position(*c).y)  # the south end of a house
-        spot = hk.cell_position(*min((n for n in ((house[0] + a, house[1] + b) for a, b in fm.NEIGHBOURS) if cells.get(n) == "."), key=lambda n: hk.cell_position(*n).y))
+        spot = hk.cell_position(*max((n for n in ((house[0] + a, house[1] + b) for a, b in fm.NEIGHBOURS) if cells.get(n) == "."), key=lambda n: hk.cell_position(*n).x))  # beside it, clear of the view
         rp.place(t, "standin_hero", col, spot, rb.FACE_NORTH)
-        rp.stage(spot + Vector((0, 0.9, 0.4)), 8.5, fm.PITCH)
+        rp.stage(hk.cell_position(*house) + Vector((0.3, 0.5, 0.5)), 8.5, fm.PITCH)
         rp.render("village_house_yard")
         sys.exit()
     if "--close" in args:

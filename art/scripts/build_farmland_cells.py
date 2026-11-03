@@ -7,6 +7,7 @@ Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --pyt
   ob_<variant>_<kind>                 an obstacle on whole cells, with its cells in the "footprint" property (pivot on the (0, 0) cell)
 Fences, barricades and tracks run along any line of cells, so render_farmland_maps.py makes them per map.
 """
+import json
 import math
 import os
 import sys
@@ -147,6 +148,32 @@ def mill(p, rng, at, k):
         v.co = at + v.co * k + Vector((0, 0, 0.16))
 
 
+OVERHANG = 0.15  # how far a piece on its cells may pass them, its lowest parts and all; trees and towers go by what they hide instead
+LOOSE = ("tree", "boulder", "tower", "statue", "mill", "house_3", "barn_3")  # house_3 and barn_3: farm buildings past the limit by 0.34 to 0.41, for when farmland next comes up
+
+
+def check_overhangs(col):
+    """No piece passes its cells by more than OVERHANG."""
+    too_far = [o.name for o in col.objects if o.name.startswith("ob_") and not any(k in o.name for k in LOOSE) and not check_overhang(o)]
+    assert not too_far, f"past their cells by more than {OVERHANG}: {too_far}"
+
+
+def check_overhang(obj):
+    cells = [tuple(c) for c in json.loads(obj["footprint"])]
+    centres = fc.centres(cells)
+    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
+    worst = max(min(max(abs((Vector((v.co.x, v.co.y, 0)) - c).dot(n)) - hk.CELL_FLATS / 2 for n in normals) for c in centres) for v in obj.data.vertices)
+    print("PAST", obj.name, round(worst, 2))
+    return worst <= OVERHANG
+
+
+def short_cart(p, rng, load):
+    """The tiles' cart with its shafts cut short, so it passes its cell by no more than OVERHANG."""
+    grown(p, 1.16, ZERO, lambda: vr.grain_cart(p, rng, ZERO, 0.4, load=load))
+    for s in (-1, 1):
+        p.box(vr.turn(Vector((0.5, s * 0.17, 0)), 0.4), (0.26, 0.04, 0.04), "trunk", z=0.26, spin=0.4)
+
+
 def apple_stack(p, rng):
     grown(p, 1.8, ZERO, lambda: (vr.basket(p, rng, Vector((-0.12, 0.08, 0))), vr.basket(p, rng, Vector((0.14, -0.04, 0)))))
     vr.ladder(p, Vector((0.05, 0.12, 0)), 1.0)
@@ -173,7 +200,7 @@ KIT = {
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
         "Q": ("mill_7", FLOWER7, lambda p, r: mill(p, r, ZERO, 2.0)),
         "J": ("hay", SINGLE, lambda p, r: haystack(p, r, ZERO)),
-        "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="stack"))),
+        "Y": ("cart", SINGLE, lambda p, r: short_cart(p, r, "stack")),
         "I": ("sacks", SINGLE, sack_pile),
     },
     "haunted_homesteads": {
@@ -192,7 +219,7 @@ KIT = {
     "cider_orchards": {
         "T": ("apple_tree", SINGLE, lambda p, r: apple_tree_big(p, r, ZERO)),
         "I": ("baskets", SINGLE, apple_stack),
-        "Y": ("cart", SINGLE, lambda p, r: grown(p, 1.45, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="stack"))),
+        "Y": ("cart", SINGLE, lambda p, r: short_cart(p, r, "stack")),
     },
 }
 
@@ -221,6 +248,7 @@ def build():
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
+    check_overhangs(col)
     for o in sorted(col.objects, key=lambda o: o.name):
         o.data.calc_loop_triangles()
         print("TRIS", o.name, len(o.data.loop_triangles))

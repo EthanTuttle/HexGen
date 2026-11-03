@@ -1,10 +1,11 @@
-"""A contact sheet of every household or yard prop in the combat kits, each labelled on its cell with a hero on the next cell, for review.
+"""A contact sheet of the household and yard props on village houses, each labelled on its cell with a hero on the next cell, for review, and every village house with its yard.
 Outside the kits and exports: it builds nothing new, and changes no maps.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/household_props_sheet.py
-Writes art/preview/household_props_sheet_vN.png from the default camera angle, household_props_close_{a,b,c}_vN.png closer and lower,
+Writes art/preview/household_props_sheet_vN.png from the default camera angle, household_props_close_vN.png closer and lower, household_houses_vN.png the ten houses,
 and prints PROP lines: name, triangles, width, depth and height.
 """
+import json
 import math
 import os
 import sys
@@ -19,14 +20,11 @@ import render_forest_maps as fm  # noqa: E402
 import render_preview as rp  # noqa: E402
 
 ZERO = Vector((0, 0, 0))
-YARD = [("bench", bv.yard_bench), ("chair", bv.yard_chair), ("flowers", bv.yard_flowers), ("pots", bv.yard_pots), ("logs", bv.yard_logs),
-        ("laundry", bv.yard_laundry), ("broom", bv.yard_broom), ("barrels", bv.yard_barrels), ("crate", bv.yard_crate)]
-TOWN = ["ob_village_well", "ob_village_goods", "ob_village_washing", "ob_village_cart", "ob_slums_junk", "ob_slums_lantern_heap", "ob_market_town_stall", "ob_fortified_town_stores"]
-FARM = ["ob_fortified_town_wagon", "ob_village_stump", "ob_scholars_town_fountain", "ob_windmill_country_hay", "ob_windmill_country_sacks", "ob_raided_farms_crates", "ob_cider_orchards_baskets", "ob_haunted_homesteads_scarecrow", "ob_meadows_rugs"]
-LABEL = {"ob_village_well": "well", "ob_village_goods": "goods", "ob_village_washing": "washing line", "ob_village_cart": "cart", "ob_slums_junk": "junk", "ob_slums_lantern_heap": "lantern heap",
-         "ob_market_town_stall": "stall", "ob_fortified_town_stores": "stores", "ob_fortified_town_wagon": "wagon", "ob_village_stump": "stump", "ob_scholars_town_fountain": "fountain",
-         "ob_windmill_country_hay": "haystack", "ob_windmill_country_sacks": "sacks", "ob_raided_farms_crates": "crates", "ob_cider_orchards_baskets": "baskets",
-         "ob_haunted_homesteads_scarecrow": "scarecrow", "ob_meadows_rugs": "rug rack"}
+YARD = [("bench", bv.yard_bench), ("chair", bv.yard_chair), ("flowers", bv.yard_flowers), ("pots", bv.yard_pots), ("logs", bv.yard_logs), ("laundry", bv.yard_laundry), ("broom", bv.yard_broom),
+        ("barrels", bv.yard_barrels), ("crate", bv.yard_crate), ("log wall", bv.yard_log_wall), ("chopping block", bv.yard_block), ("sawhorse", bv.yard_sawhorse), ("trough", bv.yard_trough),
+        ("washtub", bv.yard_washtub), ("rain barrel", bv.yard_rain_barrel), ("vegetables", bv.yard_veg), ("pumpkins", bv.yard_pumpkins), ("beehive", bv.yard_hive), ("hen coop", bv.yard_coop),
+        ("hens", bv.yard_hens), ("dog", bv.yard_dog), ("ladder", bv.yard_ladder), ("lantern", bv.yard_lantern), ("net rack", bv.yard_net), ("cart", "ob_village_cart"), ("wagon", "ob_fortified_town_wagon")]
+HOUSES = ["cottage_3_side", "cottage_3_gable", "cottage_3_cross", "cottage_3_tall", "cottage_3_lean", "cottage_4_long", "cottage_4_cross", "cottage_4_gable", "cottage_4_tall", "cottage_4_thatch"]
 
 
 def templates():
@@ -50,11 +48,14 @@ def past(obj):
 def measure(t):
     col = hk.new_collection("measure")
     for name, thing in YARD:
+        if isinstance(thing, str):
+            print("PROP", name, "%d %.2f %.2f %.2f" % size(t[thing]), "past %.2f" % past(t[thing]))
+            continue
         p = hk.Piece(f"yard_{name}")
         thing(p, hk.seeded(name), ZERO, 0.0)
         print("PROP", name, "%d %.2f %.2f %.2f" % size(p.finish(col)))
-    for name in TOWN + FARM:
-        print("PROP", LABEL[name], "%d %.2f %.2f %.2f" % size(t[name]), "past its cell by %.2f" % past(t[name]))
+    for name in HOUSES:
+        print("HOUSE", name, "%d" % size(t[f"ob_village_{name}"])[0])
     print("HERO", "%d %.2f %.2f %.2f" % size(t["standin_hero"]))
 
 
@@ -82,10 +83,10 @@ def sheet(items, cols, pitch, elevation, distance, stem):
         at, beside = slot + Vector((-0.43, 0.25, 0)), slot + Vector((0.43, -0.25, 0))
         rp.place(t, "cell_village_ground_a", col, beside)
         rp.place(t, "standin_hero", col, beside, 0.0)
-        if isinstance(item, str):
+        if isinstance(item[1], str):
             rp.place(t, "cell_village_ground_a", col, at)
-            rp.place(t, item, col, at)
-            text = LABEL[item]
+            rp.place(t, item[1], col, at)
+            text = item[0]
         else:
             rp.place(t, "cell_village_floor", col, at)
             p = hk.Piece(f"yard_{item[0]}_{k}")
@@ -98,11 +99,27 @@ def sheet(items, cols, pitch, elevation, distance, stem):
     rp.render(stem)
 
 
+def houses(stem):
+    hk.empty_scene()
+    t = templates()
+    col = hk.new_collection("houses")
+    for k, name in enumerate(HOUSES):
+        o = t[f"ob_village_{name}"]
+        cells = json.loads(o["footprint"])
+        mid = sum((hk.cell_position(*c) for c in cells), Vector()) / len(cells)
+        slot = Vector((4.6 * (k % 5 - 2), 4.2 * (0.5 - k // 5), 0))
+        rp.place(t, f"ob_village_{name}", col, slot - mid)
+        rp.place(t, "standin_hero", col, slot + Vector((1.75, -0.85, 0)), 0.0)
+        label(name.replace("cottage_", ""), col, slot + Vector((0, -1.6, 0.02)), math.pi / 2 - math.radians(fm.PITCH))
+    rp.stage(ZERO, 33, fm.PITCH)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 3200, 2000
+    rp.render(stem)
+
+
 if __name__ == "__main__":
     hk.empty_scene()
     measure(templates())
-    if "--close" not in sys.argv:
-        sheet(YARD + TOWN + FARM, 7, (2.6, 3.0), fm.PITCH, 30, "household_props_sheet")
-    sheet(YARD, 5, (2.6, 3.6), 35, 20, "household_props_close_a")
-    sheet(TOWN, 4, (2.9, 4.6), 35, 19, "household_props_close_b")
-    sheet(FARM, 5, (2.6, 4.6), 35, 21, "household_props_close_c")
+    sheet(YARD, 7, (2.6, 3.0), fm.PITCH, 30, "household_props_sheet")
+    sheet(YARD[:14], 5, (2.6, 3.0), 35, 21, "household_props_close_a")
+    sheet(YARD[14:], 5, (2.6, 3.0), 35, 21, "household_props_close_b")
+    houses("household_houses")
