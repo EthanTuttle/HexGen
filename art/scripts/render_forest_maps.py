@@ -2,7 +2,7 @@
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_forest_maps.py
 Pass names after -- to render only those maps (for example -- deep_forest_gorge), --check to run the checks without
-rendering, --kit for the obstacles laid out, and --export for the engines' data: art/combat/combat_maps_vN.blend (each map's plate, shelves and cliffs)
+rendering, --sheets to redo the sheets from the latest renders, --close for rock close-ups, --kit for the obstacles laid out, and --export for the engines' data: art/combat/combat_maps_vN.blend (each map's plate, shelves and cliffs)
 and art/export/combat_maps.json (each map's cells, placements and sample starts; format in art/handoff/combat_forest_kit.md). Uses the latest combat_cells, enemy_minis, giant_minis and standin_minis.
 Writes art/preview/forest_map_<map>_vN.png and the sheets forest_maps_<variant>_vN.png (never overwrites).
 
@@ -18,11 +18,12 @@ column of cells runs down one column of text, and each next column is half a cel
 Cells of one letter that touch make one obstacle; its turn is found from its shape.
 
 A map's base is always a simple, solid shape (a hex, or a wide oval or rectangle of cells): check_base stops a plan with a
-notch or hole. Lanes, chokes and walls come from what stands on the cells.
+notch, a hole, or a depth under MIN_DEPTH. Lanes, chokes and walls come from what stands on the cells.
 
-The plans assume obstacles stop movement, brush can be walked through, and raised ground is only reached by its steps or
-ramp. What height does is open in design/03. Enemy mixes and starting spots are samples.
+The plans assume obstacles stop movement and brush can be walked through. Height's rules are in design/03: a ledge may be
+climbable, so the reach check treats raised ground like any other. Enemy mixes and starting spots are samples.
 """
+import glob
 import json
 import math
 import os
@@ -55,6 +56,7 @@ PITCH, ENGINE_DISTANCE = 52, 22
 ANGLES = 12  # checked round the rotation, every 30 degrees; every second one is a Q / E step
 MIN_ANGLES = 2  # a cell has to show from at least this many of them, one of them a Q / E step
 SAMPLES_CLEAR = 6  # of 7 points on a cell, for it to count as seen from an angle
+MIN_DEPTH = 4  # cells north to south, the Gorge's, the thinnest Ethan will take, and only with a reason such as its cliff wall
 TURNED = {"deep_forest_groves", "fey_wood_stones", "dark_wood_bend", "heartwood_great_tree"}
 
 MAPS = {
@@ -190,14 +192,18 @@ H H . . . . O .
   . k h s . .  
    . . . . .   
     . T . .    """},
-    "heartwood_shelf": {"size": "wide rectangle", "idea": "A ridge of raised rock runs the length of the map, cut by two gaps far apart, with steps and ramps up from both sides. Hold the gaps, or take the top: each side picks what to force.", "plan": """
- . . v T . w . T . . 
-. . . . y ^ . x . . .
- H H . H H H H . H H 
-H H . . H X H . . H H
- ^ . . . / . . . . / 
-. . T . h . . T , . .
- . k . . s . . . . . """},
+    "heartwood_shelf": {"size": "rectangle", "idea": "A ridge of raised rock crosses the map's middle, cut by two gaps, with steps and ramps up from both sides. Hold the gaps, or take the top: each side picks what to force.", "plan": """
+ . v T . w . T . 
+. . . y . x . . .
+ . T . ^ . . T . 
+H H . H H H . H H
+ H . . H H . . H 
+H . . H X H . . H
+ ^ . . / . . . / 
+. . T . . . T , .
+ . . h . . . . . 
+. k . . s . . . .
+ T . . . . O . T """},
     "heartwood_hollow": {"size": "large oval", "idea": "A big oval pinched in the middle by a cliff from the west and trees from the east, with arching roots as low walls. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
      . T .     
     . v . .    
@@ -266,18 +272,16 @@ def fit(cells_of_group, footprint):
 
 
 def check_base(name, cells):
-    """The base has to be solid: along each of the three cell directions, every line of cells runs unbroken."""
+    """The base has to be solid: along each of the three cell directions, every line of cells runs unbroken. And not too thin."""
+    rows = [2 * r + q for q, r in cells]
+    depth = (max(rows) - min(rows) + 1) / 2
+    assert depth >= MIN_DEPTH, f"{name}: base only {depth} cells deep"
     for axis, along in ((0, 1), (1, 0), (None, 0)):
         lines = {}
         for c in cells:
             lines.setdefault(c[0] + c[1] if axis is None else c[axis], []).append(c[along])
         for at, line in lines.items():
             assert max(line) - min(line) + 1 == len(line), f"{name}: base is notched or holed at line {at}: {sorted(line)}"
-
-
-def can_step(cells, a, b):
-    """Raised ground meets low ground only at steps or a ramp."""
-    return cells[a] in RAMPS or cells[b] in RAMPS or (cells[a] in RAISED) == (cells[b] in RAISED)
 
 
 def check_reach(name, m, cells):
@@ -291,7 +295,7 @@ def check_reach(name, m, cells):
         c = todo.popleft()
         for dq, dr in NEIGHBOURS:
             n = (c[0] + dq, c[1] + dr)
-            if n in walk and n not in dist and can_step(cells, c, n):
+            if n in walk and n not in dist:
                 dist[n] = dist[c] + 1
                 todo.append(n)
     cut_off = sorted(walk - set(dist))
@@ -577,7 +581,8 @@ def sheet(stems, out, cols=3):
     """Half-size copies of the latest previews side by side."""
     tiles = []
     for stem in stems:
-        im = bpy.data.images.load(os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png"))
+        # By date, as version numbers here aren't all in order.
+        im = bpy.data.images.load(max(glob.glob(os.path.join(hk.ART, "preview", f"{stem}_v*.png")), key=os.path.getmtime))
         w, h = im.size
         tiles.append(np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::2, ::2])
     h, w, _ = tiles[0].shape
@@ -592,6 +597,13 @@ def sheet(stems, out, cols=3):
     im.file_format = "PNG"
     im.save()
     print("SHEET", im.filepath_raw)
+
+
+def make_sheets():
+    for v in fc.VARIANTS:
+        sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}")
+    sheet([f"forest_map_{n}_turned" for n in MAPS if n in TURNED], "forest_maps_turned", 2)
+    sheet([f"forest_map_{n}" for n in MAPS], "forest_maps_all", 4)
 
 
 def kit_sheet(t, col):
@@ -666,9 +678,15 @@ def export():
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     only_check = "--check" in args
+    if "--sheets" in args:
+        make_sheets()
+        sys.exit()
     if "--close" in args:
-        for name, at, dist, turn in (("heartwood_shelf", (8.0, -2.0), 13, 0), ("heartwood_shelf", (8.0, -2.0), 13, 180), ("deep_forest_groves", (1.8, -3.5), 11, 0),
+        names = [a for a in args if not a.startswith("--")]
+        for name, at, dist, turn in (("heartwood_shelf", (6.9, -2.5), 13, 0), ("heartwood_shelf", (6.9, -2.5), 13, 180), ("deep_forest_groves", (1.8, -3.5), 11, 0),
                                      ("heartwood_great_tree", (2.0, -5.5), 11, 0), ("deep_forest_gorge", (6.5, -2.0), 12, 0), ("dark_wood_bend", (5.0, -3.5), 13, 0)):
+            if names and name not in names:
+                continue
             hk.empty_scene()
             col = hk.new_collection("map")
             t = rb.templates()
@@ -711,8 +729,5 @@ if __name__ == "__main__":
                 rb.turn_camera(180, target)
                 rp.render(f"forest_map_{name}_turned")
     if not only_check and wanted == list(MAPS):
-        for v in fc.VARIANTS:
-            sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}")
-        sheet([f"forest_map_{n}_turned" for n in MAPS if n in TURNED], "forest_maps_turned", 2)
-        sheet([f"forest_map_{n}" for n in MAPS], "forest_maps_all", 4)
+        make_sheets()
     print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)

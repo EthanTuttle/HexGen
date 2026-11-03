@@ -1,12 +1,12 @@
-# Combat forest kit hand-off (combat_cells_v6, combat_maps_v3)
+# Combat forest kit hand-off (combat_cells_v6, combat_maps_v4)
 
 Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and twelve custom forest combat maps. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v6.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v3.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
+- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v6.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v4.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
 - **Map data:** `art/export/combat_maps.json`.
 - **Scripts:** `art/scripts/build_forest_cells.py`, `art/scripts/render_forest_maps.py` (the plans, in readable text, and the checks), `build_enemy_minis.py`, `build_humanoid_minis.py`, `build_giant_minis.py`.
 - **Rules:** `design/07 Presentation.md` → Combat maps; `design/briefs/Combat art brief.md`.
-- **Previews:** minis: `art/preview/enemy_lineup_v5.png`, `enemy_closeup_v5.png`, `humanoid_lineup_v3.png`, `humanoid_closeup_v3.png`, `humanoid_map_*_v3.png`. Maps: `forest_maps_all_v1.png` (all 12), `forest_maps_<variant>_v4.png`, `forest_maps_turned_v4.png`, `forest_map_<map>_v*.png`. Rock and high ground: `forest_highground_*_v1.png`. Obstacles: `forest_obstacles_v1.png`. Older `forest_rockface_*` and sheets up to v3 show earlier map shapes and rock.
+- **Previews:** minis: `art/preview/enemy_lineup_v5.png`, `enemy_closeup_v5.png`, `humanoid_lineup_v3.png`, `humanoid_closeup_v3.png`, `humanoid_map_*_v3.png`. Maps: `forest_maps_all_v2.png` (all 12), `forest_maps_<variant>_v5.png`, `forest_maps_turned_v5.png`, `forest_map_<map>_v*.png` (version numbers aren't all in order; the newest by date is current). Rock and high ground: `forest_highground_*_v1.png`, and `_v2` for the shelf. Obstacles: `forest_obstacles_v1.png`. Older `forest_rockface_*` and sheets up to v3 show earlier map shapes and rock.
 
 All pieces use the kit material with flat vertex colours, except the fey mushrooms' own material, as on the tiles, and on ghosts `ghost_glow` and `lantern`. `ghost_glow` is a faint glow in its own material (emission 0.35 in the blend; it's in the glb).
 
@@ -66,7 +66,7 @@ One object per map name:
 
 | Map | Shape | Cells (walkable) | Triangles, no minis | Fewest angles of 12 |
 | --- | --- | --- | --- | --- |
-| `deep_forest_gorge` | long rectangle | 60 (35) | 4,042 | 6 |
+| `deep_forest_gorge` | long rectangle, the thinnest allowed | 60 (35) | 4,042 | 6 |
 | `deep_forest_pocket` | small hex | 37 (19) | 2,210 | 4 |
 | `deep_forest_groves` | wide oval | 114 (91) | 5,388 | 4 |
 | `fey_wood_stones` | medium hex | 61 (46) | 3,300 | 4 |
@@ -76,17 +76,17 @@ One object per map name:
 | `dark_wood_thorns` | wide oval | 101 (70) | 5,532 | 3 |
 | `dark_wood_surround` | small oval | 41 (35) | 2,080 | 10 |
 | `heartwood_great_tree` | large oval | 100 (79) | 5,638 | 3 |
-| `heartwood_shelf` | wide rectangle | 73 (69) | 5,090 | 3 |
+| `heartwood_shelf` | rectangle | 93 (84) | 6,310 | 3 |
 | `heartwood_hollow` | large oval | 88 (57) | 6,686 | 2 |
 
-Each map's tactical idea is in the JSON. Three things the plans assume and nobody has decided: obstacles stop movement, brush can be walked through, and raised ground is only reached by its steps or ramp. Whether obstacles stop sight, what height does, and what brush and the fairy ring do, are open (`design/03`). Every map's base is a solid hex, oval or rectangle; `check_base` in the script stops a plan with a notch or hole.
+Each map's tactical idea is in the JSON. Two things the plans assume and nobody has decided: obstacles stop movement, and brush can be walked through. Whether obstacles stop sight, and what brush and the fairy ring do, are open. Height's direction is in `design/03`: longer ranged range from high ground, and going up or down is its own action, with a ledge possibly climbable, so the reach check doesn't require steps or a ramp. Every map's base is a solid hex, oval or rectangle; `check_base` in the script stops a plan with a notch, a hole, or a depth under 4 cells north to south (the Gorge's, the thinnest Ethan will take, and only with a reason such as its cliff wall).
 
 ## Camera check
 
 `Blender -b --factory-startup --python art/scripts/render_forest_maps.py -- --check`
 
 - **Camera it copies:** the Godot prototype's combat framing (`game/fight.gd`: distance 22, pitch 52; `camera_rig.gd`: 50 mm lens; `Rules.ROTATE_STEP` 60°). If those change, change `PITCH` and `ENGINE_DISTANCE` in the script.
-- **What it checks:** the base is solid, and every walkable cell can be reached from the hero. Each shows from at least 2 of 12 angles, one of them a 60° step, where a cell counts as seen when 6 of 7 points on it have a clear ray to the camera. All 12 maps pass; the worst cell shows from 2 of 12 (one in `heartwood_hollow`), the minimum allowed.
+- **What it checks:** the base is solid and deep enough, and every walkable cell can be reached from the hero. Each shows from at least 2 of 12 angles, one of them a 60° step, where a cell counts as seen when 6 of 7 points on it have a clear ray to the camera. All 12 maps pass; the worst cell shows from 2 of 12 (one in `heartwood_hollow`), the minimum allowed.
 - **What it doesn't:** the target is the map's middle, while the game's follows who acts. Minis are left out. An obstacle's own cells aren't tested, since what stands there is what shows. A new map or engine tilt should be rechecked; a port to Godot would be a good test there.
 
 ## Not done
