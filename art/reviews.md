@@ -18,3 +18,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/canyon_maze_ramp_v1.png` | rejected | Ramps look terrible; style study first |
 | 2026-11-03 | `art/preview/badlands_stronghold_alone_corner_v2.png` | rejected | Ramp looks terrible; style study first |
 | 2026-11-03 | `art/preview/oasis_map_v3.png` | approved | With ripples made to run one way across the region |
+| 2026-11-03 | `art/preview/farmland_maps_all_v4.png` | approved | Except haystacks: `farmland_close_windmill_country_stacks_v7.png` rejected, back to the round 2 stacks (`_stacks_v3`) |
