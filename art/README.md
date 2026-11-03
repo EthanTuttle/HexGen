@@ -171,6 +171,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v63:** tiles_v61 with lava streaks kept off the ledges' corners. Ethan approved it. tiles_v62 is the rejected first Rapids gorge, on its own branch.
 - **tiles_v62:** rapids rebuilt as a river gorge: a narrow channel between dark wet rock banks (`water.gorge_banks`), a rebuilt plain bridge with 25° ramps and room for a mini's base, and a wider search for bridge spots. Hand-off: `handoff/river_kit.md`.
 - **tiles_v61:** hills ledges on snowy and volcanic peaks get the canyon's cut-lane look and a broken lip, wider with a new walked line and foot (28.9°). `hay` is now #D1B668, the one hay and straw colour for tiles and combat maps. Hand-off: `handoff/hills_kit.md`, `handoff/farmland_kit.md`.
 - **tiles_v60:** desert round 5, with Ethan's ramp picks. Canyon entrances are paths cut between the walls (`scripts/canyon.py`), the Raider Stronghold's ramp is timber (`scripts/ramp_parts.py`), and the oasis's ripples run one way across the region (`oasis_ripple_*`, `desert_lands.oasis_ripples`).
