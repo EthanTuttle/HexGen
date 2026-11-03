@@ -94,6 +94,20 @@ func _link(a: int, b: int) -> void:
 		links[b][a] = d
 
 
+## A line of a water tile's own routes (water.py has no pieces for them), points in the tile's frame.
+func add_line(line: PackedVector2Array, at: Vector2) -> void:
+	for k in range(1, line.size()):
+		_link(_node(at + line[k - 1]), _node(at + line[k]))
+
+
+## Makes the links for which `wet` says so dearer, so a way over dry land wins where there is one.
+func weigh_wet(wet: Callable, weight: float) -> void:
+	for a in links:
+		for b in links[a]:
+			if wet.call((nodes[a] + nodes[b]) * 0.5):
+				links[a][b] = nodes[a].distance_to(nodes[b]) * weight
+
+
 func _add(poly: Array, turn: int, at: Vector2) -> void:
 	for k in range(1, poly.size()):
 		_link(_node(_plan(poly[k - 1], turn, at)), _node(_plan(poly[k], turn, at)))

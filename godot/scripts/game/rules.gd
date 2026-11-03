@@ -82,7 +82,13 @@ const LOOK_AROUND_DEG := 35.0            # on arrival, each looks this far aside
 const IDLE_LOOK_EVERY := Vector2(4.0, 9.0)   # s between one mini looking elsewhere while they stand
 const IDLE_LOOK_DEG := 55.0
 const GRASS_PART_RADIUS := 0.75          # m around a mini that the ground cover bends away
-const WADE_DEPTH := 0.07                 # m a mini sinks in a ford
+const WADE_DEPTH := 0.45                 # PLACEHOLDER: m a mini sinks crossing by check, to about its waist
+const WET_ROUTE_WEIGHT := 3.0            # PLACEHOLDER: on a water tile, a route prefers dry land by this much
+const CROSS_STEP_COST := 6               # PLACEHOLDER: a crossing counts as this many steps, so the party walks round if that's near
+const CROSS_COINS := 2                   # PLACEHOLDER: the Athletics check's coins (design/02: to tune); 1 heads passes
+const CROSS_FAIL_HP := 2                 # PLACEHOLDER: HP each member loses on a failed crossing (design/02: to tune); never below 1
+const RAFT_SETTLE := 0.5                 # PLACEHOLDER: s the party takes to settle on the raft's seats
+const RAFT_DECK := 0.17                  # the raft's deck height (its seats' height, river kit)
 const FOOTPRINT_SECONDS := 14.0          # how long a footprint stays in the sand
 # DOCS: the route goes round peaks, mountains and ridges, staying on the hills' grass.
 const ON_ROCK_COST := 40.0                # PLACEHOLDER: how much dearer a route's step is on rock, or within the clearance of it

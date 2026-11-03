@@ -924,31 +924,28 @@ func _check_no_way() -> void:
 		game._debug_fill[t] = true
 	var r := _raised_at_once(tiles, "snowy_peaks", c)
 	var own := map.climbs.filter(func(x): return x[0] in tiles)
-	_check(own.is_empty(), "a river all round: no ledge")
-	_check(game.path_to(c).is_empty(), "no route up")
-	game.pick(null)
-	game.tap(c)
-	_check(game.picked == null and not game.party_node.walking, "a tap on it does nothing")
+	# DOCS (design/02 -> Raised hills regions and water): a ledge's foot may open onto water, reached by a check or a raft.
+	_check(own.size() >= 1, "a river all round: a ledge, its foot on the water")
 	game.rig.frame(Hex.to3(Hex.tile_position(c.x, c.y), 4.0), 45.0, 50.0)
 	await _wait(0.2)
-	await _shot("93_no_way_up")
+	await _shot("93_ledge_onto_the_river")
 	# A party up there always has one ledge down, shown even so.
 	var was := game.party_tile
 	game.party_tile = c
 	game.party_node.place_at(c)
 	map.party_moved(c)
 	var down := map.climbs.filter(func(x): return x[0] in tiles)
-	_check(down.size() == 1, "a party on it has one ledge down")
+	_check(down.size() >= 1, "a party on it has a ledge down")
 	await _wait(0.2)
 	await _shot("96_ledge_down_for_a_party_up_there")
-	if down.size() == 1:
+	if down.size() >= 1:
 		var foot: Vector2i = Cliffs.beside(down[0][0], down[0][1] - 1)
 		_check(Variants.is_water(map.terrains.get(foot)), "its foot is on the river, the only land there is")
 		_check(not game.path_to(foot).is_empty(), "there's a route down")
 		await _watched_walk(foot, "the ledge down, into the river", "")
 		_check(game.party_tile == foot and game.party_node.centre().y < 1.5, "the party got down")
-		_check(map.climbs.filter(func(x): return x[0] in tiles).is_empty(), "with the party gone, the ledge goes")
-		_check(game.path_to(c).is_empty(), "and there's no way back up")
+		_check(not map.climbs.filter(func(x): return x[0] in tiles).is_empty(), "with the party gone, the ledge stays")
+		_check(not game.path_to(c).is_empty(), "and there's a way back up")
 		await _wait(0.2)
 		await _shot("97_ledge_gone_party_at_its_foot")
 	game.party_tile = was

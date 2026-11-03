@@ -108,6 +108,15 @@ static func town_smoke(points: Array) -> GPUParticles3D:
 	return p
 
 
+## Spray where rapids fall (river kit -> Engine effects). PLACEHOLDER: a little pale smoke, thrown up and falling back.
+static func spray(at: Vector3) -> GPUParticles3D:
+	var p := _particles("rapids|spray", [Vector3.ZERO], 8, 0.9, _smoke(), Vector3(0, -1.2, 0), 0.7)
+	p.position = at
+	p.scale = Vector3.ONE * 0.5
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return p
+
+
 ## A low flame: an orange billboard, bright and additive.
 static func _fire() -> Mesh:
 	if _fire_mesh == null:

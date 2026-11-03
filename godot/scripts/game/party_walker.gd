@@ -15,6 +15,7 @@ extends Node3D
 ## Plan coordinates as everywhere: x east, y north; Hex.to3 turns them into Godot's world.
 
 signal entered(tile: Vector2i)          # the hero stepped onto a new hex
+signal waded                            # the hero stepped into water with no raft: the Athletics check
 
 var map: MapBoard
 var members: Array[Dictionary] = []     # {node, tilt, body, radius, offset, phase, side, yaw, up, squeeze}
@@ -31,6 +32,15 @@ var _s0 := 0.0                          # where the hero starts on the route (af
 var _file_start := false                # the party starts this walk stopped in a file on a narrow path
 var _file_end := false                  # and ends it so (DOCS: Walking: a tighter cluster that fits the path)
 var _tail := PackedVector2Array()       # the stretch of route the stopped file stands on, last follower to hero
+var has_raft := false                   # the party's raft, a permanent purchase (design/02 -> Crossing water)
+var _raft: MeshInstance3D = null
+var _spans: Array = []                  # the route's stretches on water: {from, to, raft}, by distance along it
+var _span := -1                         # the one the hero is in, or -1
+var _landed := false                    # the raft has reached the far landing, and the party is getting off
+var _ride_t := 0.0                      # how long it has been riding
+var _riding := false                    # the party is carried on the raft, on its seats
+var _on_raft := false                   # and it's still on it, stopped on the water
+var _raft_at := 0.0                     # distance along the route of the raft's bow while it waits at a landing
 var _gaps := PackedFloat32Array()       # how far back on the route each mini of a stopped file stands from the hero
 var _start_gaps := PackedFloat32Array() # and where they stood at this walk's start
 var _t := 0.0
@@ -106,12 +116,18 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 ## DOCS (Exploration screen -> Walking): on a town or farm tile the party stands at the hub in the tight line, after a
 ## fight too. One already in that line stays in it; else it takes a line along the tile's streets. False on other tiles.
 func _hub_line(tile: Vector2i) -> bool:
-	if not map.tile_node(tile) or not Variants.terrain_of(map.terrains.get(tile)) in ["village", "farmland"]:
+	if not map.tile_node(tile) or not Variants.terrain_of(map.terrains.get(tile)) in ["village", "farmland", "river"]:
 		return false
 	var graph := map.path_graph(tile)
 	if graph.stand == null:
 		return false
 	walking = false
+	if _on_raft and tile == _tile:
+		_ride()   # back on its seats (design/07: PLACEHOLDER for a party stopped on the water on a raft)
+		return true
+	_on_raft = false
+	if _raft:
+		_raft.visible = false
 	if tile != _tile or not _file_end or not _line_on(graph):
 		var line := _line_to_hub(graph)
 		_tile = tile
@@ -131,7 +147,7 @@ func _hub_line(tile: Vector2i) -> bool:
 			m.up = Vector3.UP
 			m.squeeze = 1.0
 			m.high = map.raised.has(GroundCover.tile_at(p))
-			_stand_on(m, p, _feel(m, p), 1.0, true)
+			_stand_on(m, p, _feel(m, p), 1.0, true, Rules.WADE_DEPTH if map.wet_at(p) else 0.0)
 	for m in members:
 		_rock(m, 0.0, 0.0)
 	return true
@@ -192,6 +208,8 @@ func walk(tiles: Array[Vector2i]) -> void:
 	_build_path(tiles)
 	_gaps = _file_gaps()
 	_s0 = 0.0
+	if _on_raft:
+		_file_start = false
 	peeled = _file_start and _peel_off()
 	if not peeled:
 		if _file_start and _tail.size() > 1:
@@ -214,11 +232,18 @@ func walk(tiles: Array[Vector2i]) -> void:
 	_trail = [Vector2(0, _s0)]
 	_start_facing = facing
 	_entered = {_tile: true}
+	_find_spans()
+	_span = -1
+	_riding = false
+	_landed = false
 	walking = true
 	while walking:
 		await get_tree().process_frame
 	facing = _end_facing
 	_tile = tiles[-1]
+	_on_raft = _riding
+	if not _on_raft and _raft:
+		_raft.visible = false
 	_tail = _route_end() if _file_end else PackedVector2Array()
 	_arrive()
 	await get_tree().create_timer(Rules.SETTLE_SECONDS).timeout
@@ -831,8 +856,14 @@ func _step(delta: float) -> void:
 			if not _entered.has(t):
 				_entered[t] = true
 				entered.emit(t)
+	_cross_water(delta)
 	_trail.append(Vector2(_t, _s))
-	var done := true
+	if _riding:
+		_ride()
+		if _s >= total and _ride_t > Rules.RAFT_SETTLE:
+			walking = false
+		return
+	var done: bool = _span < 0 or not _spans[_span].raft or _landed   # never stops short of the raft
 	for i in members.size():
 		var m: Dictionary = members[i]
 		# In a file, each follower keeps its gap on the route: from its place at the start to its stop at the end.
@@ -841,6 +872,7 @@ func _step(delta: float) -> void:
 		var gap_start: float = _start_gaps[i] if _file_start else 0.0
 		var gap_end: float = _gaps[i] if _file_end else 0.0
 		s -= lerpf(gap_start, gap_end, u)
+		s = _boarding_s(i, s)
 		var stop := total - gap_end
 		if s < stop - 1e-3:
 			done = false
@@ -870,7 +902,7 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 	# companion walks beside it): pushed in toward the route as far as it takes, spreading back out slowly.
 	var squeeze := minf(1.0, m.squeeze + delta * Rules.SQUEEZE_RATE)
 	var height := _height_at(s) if m.leg.is_empty() or s >= m.join else NAN
-	if map.gates.has(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses
+	if map.gates.has(GroundCover.tile_at(_point_at(s))) or map.water_shapes.has(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses, or on a water tile's line
 		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 2.0)
 	elif not is_nan(_height_at(s + Rules.LEDGE_NARROW)) or not is_nan(_height_at(s - Rules.LEDGE_NARROW)):
 		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 3.0)   # a ledge is one base wide
@@ -892,8 +924,12 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 			p = on_route + side * squeeze
 			felt = _feel(m, p)
 		m.squeeze = squeeze
-		wet = in_water(p)
-		_stand_on(m, p, felt, delta, false, Rules.WADE_DEPTH if wet else 0.0)
+		wet = map.wet_at(on_route)
+		if _raft and _raft.visible and _on_deck(p):   # stepping on or off: on the deck, not in the water
+			wet = false
+			m.node.position = Hex.to3(p, Rules.RAFT_DECK)
+		else:
+			_stand_on(m, p, felt, delta, false, Rules.WADE_DEPTH if wet else 0.0)
 	# The waddle: rock side to side with the distance slid; each rock is a footstep.
 	var moved := Vector2(old.x, old.z).distance_to(Vector2(m.node.position.x, m.node.position.z))
 	var speed := clampf(moved / maxf(delta, 1e-4) / Rules.WALK_SPEED, 0.0, 1.0)
@@ -1018,14 +1054,154 @@ func _rock(m: Dictionary, angle: float, lift: float) -> void:
 
 
 func in_water(p: Vector2) -> bool:
-	var t := GroundCover.tile_at(p)
-	if not map.water_shapes.has(t):
-		return false
-	var local := p - Hex.tile_position(t.x, t.y)
-	for o: PackedVector2Array in map.water_shapes[t].outlines:
-		if Water.point_in(o, local):
-			return true
-	return false
+	return map.wet_at(p)
+
+
+# --- Crossing water (DOCS: design/02 -> Crossing water; 07 -> Crossing water) -----------------------
+
+## Finds the route's stretches on water. A raft can't run rapids, so a stretch breaks where it reaches them.
+func _find_spans() -> void:
+	_spans = []
+	for k in _path.size():
+		var wet := map.wet_at(_path[k])
+		var raft := wet and has_raft and Water.raft_can_enter(map.terrains.get(GroundCover.tile_at(_path[k])))
+		if wet and (_spans.is_empty() or _spans[-1].to < _len[maxi(k - 1, 0)] or _spans[-1].raft != raft):
+			_spans.append({from = _len[k], to = _len[k], raft = raft})
+		elif wet:
+			_spans[-1].to = _len[k]
+
+
+## The hero reaching water, on it, and leaving it.
+func _cross_water(delta: float) -> void:
+	for k in _spans.size():
+		var span: Dictionary = _spans[k]
+		if k > _span and _s >= span.from:
+			_span = k
+			_landed = false
+			if span.raft:
+				_board(span)
+			else:
+				if _raft:
+					_raft.visible = false
+				_landing_splash()
+				waded.emit()
+	if _span < 0 or not _spans[_span].raft:
+		return
+	var to: float = _spans[_span].to
+	if _riding:
+		_ride_t += delta
+		if _s >= to and to < _len[-1] - 0.01 and _ride_t > Rules.RAFT_SETTLE:
+			_riding = false
+			_landed = true
+			_raft_at = to
+			_set_raft(to)
+		elif _s >= to:
+			_s = to
+	elif _landed:
+		if _trail_s(_t - (members.size() - 1) * Rules.FOLLOW_DELAY) >= _raft_at + 0.3:
+			_raft.visible = false
+	elif _s >= _raft_at:
+		# The hero waits at the front seat until the last is at theirs, then the raft sets off.
+		_s = _raft_at
+		if _trail_s(_t - (members.size() - 1) * Rules.FOLLOW_DELAY) >= _raft_at - _seat_gap(members.size() - 1) - 0.05:
+			_riding = true
+			_ride_t = 0.0
+
+
+## The raft shows at the landing with its front seat a little way out, and the party walks on.
+func _board(span: Dictionary) -> void:
+	if not _raft:
+		_raft = MeshInstance3D.new()
+		_raft.name = "raft"
+		_raft.mesh = map._kit["raft"]
+		add_child(_raft)
+	_raft_at = minf(span.from + _seat_gap(members.size() - 1), span.to)
+	_raft.visible = true
+	_set_raft(_raft_at)
+	if _on_raft:
+		_riding = true
+		_ride_t = Rules.RAFT_SETTLE
+
+
+## How far back from the front seat a mini's seat is.
+func _seat_gap(i: int) -> float:
+	var seats: Array = Kit.path_data("raft").effects
+	return seats[0].at[0] - seats[mini(i, seats.size() - 1)].at[0]
+
+
+## The raft with its front seat at distance s along the route, turned along it, bobbing.
+func _set_raft(s: float) -> void:
+	var front := _point_at(s)
+	var back := _point_at(s - _seat_gap(members.size() - 1))
+	var ang := (front - back).angle() if front.distance_to(back) > 0.01 else _angle_at(s)
+	_raft.rotation.y = ang
+	var bow: float = Kit.path_data("raft").effects[0].at[0]
+	_raft.position = Hex.to3(front - Vector2.from_angle(ang) * bow, 0.02 * sin(_t * 2.2))
+
+
+## A follower waits for its seat while the raft is at the landing, and gets off in turn at the far one.
+func _boarding_s(i: int, s: float) -> float:
+	if _span < 0 or not _spans[_span].raft or not _raft or not _raft.visible:
+		return s
+	return maxf(s, _raft_at - _seat_gap(i)) if _landed else minf(s, _raft_at - _seat_gap(i))
+
+
+## Carried on the raft: each on its seat.
+func _ride() -> void:
+	_set_raft(_s)
+	var seats: Array = Kit.path_data("raft").effects
+	for i in members.size():
+		var m: Dictionary = members[i]
+		var seat: Array = seats[mini(i, seats.size() - 1)].at
+		var rel := Vector2(seat[0], -seat[2]).rotated(_raft.rotation.y) + Vector2(_raft.position.x, -_raft.position.z)
+		var at := Hex.to3(rel, seat[1] + _raft.position.y)
+		var old: Vector3 = m.node.position
+		m.node.position = Vector3(lerpf(old.x, at.x, 0.25), at.y, lerpf(old.z, at.z, 0.25))
+		m.node.rotation.y = lerp_angle(m.node.rotation.y, yaw_of(_raft.rotation.y), 0.15)
+		m.up = Vector3.UP
+		_rock(m, 0.0, 0.0)
+		_tilt(m)
+
+
+func _on_deck(p: Vector2) -> bool:
+	var at := Vector2(_raft.position.x, -_raft.position.z)
+	return p.distance_to(at) < 2.0 and absf((p - at).rotated(-_raft.rotation.y).y) < 0.8
+
+
+func _landing_splash() -> void:
+	var pos: Vector3 = members[0].node.position
+	_burst(pos + Vector3(0, 0.05, 0), Color("#E8F4FA"), 24, 0.6, 2.4, -9.8, 0.05)
+
+
+## A failed crossing: a splash on everyone (design/07).
+func splash() -> void:
+	for m in members:
+		_burst(m.node.position + Vector3(0, 0.3, 0), Color("#E8F4FA"), 36, 0.8, 3.2, -9.8, 0.06)
+
+
+## A ring spreading on the water round a wading mini.
+func _ripple(pos: Vector3) -> void:
+	var ring := MeshInstance3D.new()
+	var mesh := TorusMesh.new()
+	mesh.inner_radius = 0.26
+	mesh.outer_radius = 0.3
+	mesh.rings = 16
+	mesh.ring_segments = 4
+	ring.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1, 1, 1, 0.6)
+	ring.material_override = mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.position = Vector3(pos.x, 0.05, pos.z)
+	ring.scale = Vector3(1, 0.1, 1)
+	add_child(ring)
+	var tw := ring.create_tween()
+	tw.set_parallel()
+	tw.tween_property(ring, "scale", Vector3(2.4, 0.1, 2.4), 0.9)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.9)
+	tw.chain().tween_callback(ring.queue_free)
 
 
 static func yaw_of(angle: float) -> float:
@@ -1124,7 +1300,8 @@ func _footstep(m: Dictionary, p: Vector2, wet: bool) -> void:
 	var terrain: String = map.terrains.get(GroundCover.tile_at(p), "")
 	var node: Node3D = m.node
 	if wet:
-		_burst(node.position + Vector3(0, 0.05, 0), Color("#E8F4FA"), 10, 0.45, 1.8, -9.8, 0.035)
+		_burst(node.position + Vector3(0, 0.3, 0), Color("#E8F4FA"), 10, 0.45, 1.8, -9.8, 0.035)
+		_ripple(node.position)
 	elif terrain in Sand.DESERTS:
 		_burst(node.position + Vector3(0, 0.05, 0), Color(Hex.colour(terrain), 0.7), 5, 0.9, 0.5, 0.15, 0.09)
 		_footprint(node, m.side)

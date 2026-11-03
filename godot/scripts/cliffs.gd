@@ -75,7 +75,17 @@ static func climbs(region: Array, terrains: Dictionary, raised_tiles: Dictionary
 		shown = ranked.filter(func(e): return _clear(e, terrains)).slice(0, 1)
 	if shown.is_empty():
 		shown = ranked.filter(func(e): return _walkable(e, terrains)).slice(0, 1)
+	if shown.is_empty():   # a region ringed by water: a foot on a placed river or lake tile, reached by a check or a raft
+		shown = ranked.filter(func(e): return terrains.get(beside(e[0], e[1] - 1)) in UNWALKABLE).slice(0, 1)
 	return shown
+
+
+## The tiles where these ledges come out: they have no ridges, so a party arriving at the top has an opening.
+static func ledge_tops(shown: Array) -> Dictionary:
+	var out := {}
+	for e in shown:
+		out[e[0]] = true
+	return out
 
 
 static func _rank(e: Array) -> float:

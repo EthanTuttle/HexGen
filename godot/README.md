@@ -470,6 +470,20 @@ Tier 0 hills, highlands with the Clan Hall, cold snowy peaks with the Yeti Cave,
 
 Debug: `-- --forest` and F9 also spawn a 12-tile region of each variant (snowy and volcanic raised), a tier 0 hills group and a lone tile. `-- --hillscheck` (add `--shots` for `screens/hills_*.png`) checks all of the above, the rise, added tiles, touching regions, no way up and fenced feet.
 
+### River kit (tiles v53)
+
+Rules: `design/02` -> Obstacles, `design/06` -> Tile build, `design/07` -> Water, Landmark tiles. Hand-off: `art/handoff/river_kit.md`. Debug spawn (`-- --forest`, F9): a delta, great lake, rapids and still waters region, and a tier 0 river into a small lake.
+
+- **Water:** `scripts/water.gd` is `water.py` line by line (`tools/water_cases.py` then `tools/water_check.gd`: 1,200 tiles, 618,222 values, 0 differ). The three new waters are the shared shader with the kit's colour.
+- **Routes on water** are a `TilePaths` graph per tile (`MapBoard._water_graph`), so `PartyWalker._way_on_paths` follows them like drawn paths. Wet links cost more, so a bridge or stones win where there are any. `MapBoard.wet_at` says what's in the water: outlines less bridges, stones, the rock and the Lair's shelf.
+- **Crossing:** waders sink to `WADE_DEPTH` with ripples. The check fires as the hero steps in (`waded`, `Game._cross_check`). A raft crossing shows the `raft` piece at the landing; the party walks on, sets off on its seats, and walks off. It stays under them if they stop on the water. It stops where rapids start.
+- **Landmarks:** `Game._landmark_tile` picks from the tiles where `landmark_fits`. Port turn: `port_turn`; Rock: `rock_routes`; Lair: `landmark_flow.turn`; Troll Bridge: at `bridge_spot`.
+- **Ledges:** `cliffs.gd` re-copied: feet may open onto water, and no ridges where a ledge comes out.
+
+**PLACEHOLDERS, in `rules.gd` unless noted:** `CROSS_FAIL_HP` 2, never below 1 HP. `CROSS_COINS` 2, one flip for the party, 1 heads passes. `CROSS_STEP_COST` 6: the route picks crossing or walking round, with no choice shown. `WADE_DEPTH` 0.45. `WET_ROUTE_WEIGHT` 3. `RAFT_SETTLE` 0.5. The raft is free on reaching the River Port (`Game.walk_to`; no shop rule). The check shows no coins or result, only the splash and HP. A party stopped on water stands at the tile's hub, in a line or on the raft. Spray and dawn mist are placeholder looks (`FarmFx.spray`; mist while `night` is between 0.15 and 0.85). Water material tweaks (`_water_material`).
+
+**For Ethan (kit's questions):** no tile fits a Troll Bridge: the region keeps plain rapids with no landmark piece (`region_look`). A later water neighbour takes the spot away: the bridge stays where it was (`_troll_spots`), though the water under it can change.
+
 ### Waiting for the phone
 
 No phone runs until the Engine Planner says the phone is plugged in and unlocked. Waiting for it, top item first, all but the first in the forest perf run (`HEXGEN_FORESTPERF`; `HILLS PERF` lines, `hills_*.png`):
@@ -479,6 +493,7 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - A view over the raised regions at the opening zoom and zoomed all the way out.
 - Working out a route up, climbing a ledge, and a real rise with the party on it, the worst frame of each.
 - Touch on the plateau: tapping raised ground on a real screen.
+- The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
 ## Terrains and region variants (tiles v13)

@@ -110,6 +110,7 @@ func _forest_perf() -> void:
 	await _walk_to_mill(game, vp)
 	await _hills_perf(game, vp)
 	await _town_perf(game, vp)
+	await _river_perf(game, vp)
 	_say("FOREST PERF DONE")
 
 
@@ -195,6 +196,16 @@ func _town_perf(game: Game, vp: RID) -> void:
 		var m := await _measure(vp, 5.0)
 		_say("TOWN PERF %s at the opening zoom: %.1f fps, worst frame %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms" % [v, m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu])
 		await _shot_as("town_%s" % v)
+
+
+func _river_perf(game: Game, vp: RID) -> void:
+	for v: String in Game.DEBUG_RIVERS:
+		var c: Vector2i = Game.DEBUG_RIVERS[v]
+		game.rig.frame(Hex.to3(Hex.tile_position(c.x, c.y)), 58.0, 50.0)
+		await get_tree().create_timer(2.0).timeout
+		var m := await _measure(vp, 5.0)
+		_say("RIVER PERF %s at the opening zoom: %.1f fps, worst frame %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms" % [v, m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu])
+		await _shot_as("river_%s" % v)
 
 
 ## Walks the party to the Great Windmill, measuring the walk, and logs how it stops on the narrow path.

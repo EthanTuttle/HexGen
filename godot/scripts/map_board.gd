@@ -47,6 +47,11 @@ var _ground_img: Image
 var _ground_tex: ImageTexture
 var _tile_nodes := {}
 var _water_node: Node3D
+var _water_cache := {}     # (q, r) -> _water_info(), reused while what it depends on stays the same
+var _water_mats := {}      # style -> its water material
+var _troll_spots := {}     # Troll Bridge tile -> where its bridge was placed
+var _port_boats := []      # the River Port's boats, which bob
+var _still_mists := []     # still waters' mist, shown at dawn
 var _slots_node: Node3D
 var _slot_mesh: Mesh
 var _slot_mat: Material
@@ -458,6 +463,8 @@ func _update_smoke() -> void:
 
 ## Tile t's drawn paths (empty where its pieces have no path data).
 func path_graph(t: Vector2i) -> TilePaths:
+	if not _graphs.has(t) and water_shapes.has(t):
+		_graphs[t] = _water_graph(t)
 	if not _graphs.has(t):
 		var pieces := []
 		var node := tile_node(t)
@@ -667,6 +674,7 @@ func _build_tile(t: Vector2i) -> void:
 		var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
 		base.set_surface_override_material(0, _ground)
 	if terrain == "river":
+		_place_water_pieces(node, t, at)
 		return
 	var centre := "_centre"
 	if flow_dist.get(t) == 1 and _kit.has(name + "_centre_near"):
@@ -715,7 +723,8 @@ func _build_tile(t: Vector2i) -> void:
 			Kit.place(node, _kit, name + "_mountain_" + part[0], at, deg_to_rad(60.0 * part[1]))
 		# In bigger groups the mountains join into a range: ridges from this tile's middle to each of them. None
 		# within two steps of a landmark (clear ground), nor where steps run (they'd bury them).
-		if parts.size() >= 2 and clear_near and not _kit.has(Variants.wedges_of(name) + "_steps_centre"):
+		if parts.size() >= 2 and clear_near and not _kit.has(Variants.wedges_of(name) + "_steps_centre") \
+				and not Cliffs.ledge_tops(climbs).has(t):   # design/06: none where a ledge comes out
 			Kit.place(node, _kit, name + "_ridge_knot", at)
 			for part in parts:
 				Kit.place(node, _kit, name + "_ridge_" + part[0], at, deg_to_rad(60.0 * part[1]))
@@ -779,7 +788,7 @@ func ridge_wall(t: Vector2i, a: int, b: int) -> bool:
 	if Variants.terrain_of(name) != "hills" or flow_dist.get(t, 3) <= 2 or _kit.has(Variants.wedges_of(name) + "_steps_centre"):
 		return false
 	var parts := _mountain_parts(t)
-	if parts.size() < 2:
+	if parts.size() < 2 or Cliffs.ledge_tops(climbs).has(t):
 		return false
 	var left := false
 	var right := false
@@ -934,16 +943,11 @@ func _add_ground_collision(node: Node3D, hills: bool, high: bool) -> void:
 
 func _update_water() -> void:
 	water_shapes.clear()
+	_port_boats = _port_boats.filter(func(b): return is_instance_valid(b))
 	for t: Vector2i in terrains:
 		if Variants.is_water(terrains[t]):
-			var near := []
-			var mask := []
-			for n in Hex.NEIGHBOURS:
-				near.append(terrains.get(t + n))
-				mask.append(Variants.is_water(near[-1]))
-			var w := Water.tile_water(mask, "%d,%d" % [t.x, t.y], Water.edge_widths(terrains[t], near))
-			w.delta = terrains[t] == "delta"
-			water_shapes[t] = w
+			water_shapes[t] = _water_info(t)
+			_graphs.erase(t)
 	if _water_node:
 		_water_node.free()
 	boats.clear()
@@ -954,10 +958,278 @@ func _update_water() -> void:
 		_build_water()
 
 
+## One water tile's shape, routes, props and landmark spot; unchanged while what they depend on is.
+func _water_info(t: Vector2i) -> Dictionary:
+	var near := []
+	var mask := []
+	for n in Hex.NEIGHBOURS:
+		near.append(terrains.get(t + n))
+		mask.append(Variants.is_water(near[-1]))
+	var name: String = terrains[t]
+	var band: int = flow_dist.get(t, 0) if flow_dist.get(t, 0) in [1, 2] else 0
+	var widths := Water.edge_widths(name, near)
+	var key := [name, mask, widths, band]
+	if _water_cache.has(t) and _water_cache[t].key == key:
+		return _water_cache[t]
+	var seed := "%d,%d" % [t.x, t.y]
+	var style: String = Water.FAMILY.get(name, "")
+	var w := Water.tile_water(mask, seed, widths, style)
+	var landmark := Variants.LANDMARK_CENTRES.has(name)
+	w.merge({key = key, style = style, mask = mask, widths = widths, seed = seed, band = band, landmark = landmark, dry = []})
+	w.props = Water.tile_props(mask, seed, widths, style, band, landmark)
+	var turn := 0
+	if name == "riverport":
+		turn = Water.port_turn(mask, seed)
+		var sh := Water.port_shape(mask, seed, widths, turn)
+		var arc: PackedVector2Array = Water.port_water(turn)[1]
+		w.outlines = sh.outlines
+		w.quads = sh.quads
+		w.walls = Water.port_walls(mask, seed, widths, turn)
+		w.cover_shores = [arc]
+		w.shores = w.shores + [arc]
+		w.ends = w.ends + [[-1, -1]]
+		landmark_turns[t] = turn
+	elif name == "meditationrock":
+		w.rock = Water.rock_routes(mask, seed, widths)
+		landmark_turns[t] = maxi(w.rock.turn, 0)
+		w.dry.append([Vector2.ZERO, Vector2.ZERO, Water.ROCK_R])
+		for e in w.rock.land:
+			var l: PackedVector2Array = w.rock.land[e]
+			for k in l.size() - 1:
+				w.dry.append([l[k], l[k + 1], 0.35])
+	elif name == "serpentlair":
+		var lt: int = landmark_turns.get(t, 0)
+		w.dry.append([Water.turned(Water.LAIR_LAND, lt), Water.turned(Water.LAIR_STOP, lt), 0.5])
+	elif name == "trollbridge":
+		# PLACEHOLDER: design/02 hasn't said what happens if a later water neighbour takes the spot away: it stays where it was.
+		var spot := Water.bridge_spot(mask, seed, widths, Water.TROLL_HALF)
+		if not _troll_spots.has(t) and not spot.is_empty():
+			_troll_spots[t] = spot
+		w.bridge = _troll_spots.get(t, {})
+		w.bridge_piece = "trollbridge_centre"
+	else:
+		for prop in w.props:
+			if prop[0] == "rapids_bridge":
+				w.bridge = Water.bridge_spot(mask, seed, widths)
+				w.bridge_piece = "rapids_bridge"
+	if not w.get("bridge", {}).is_empty():
+		var half := Water.TROLL_HALF if w.bridge_piece == "trollbridge_centre" else Water.BRIDGE_HALF
+		var axis := Vector2.from_angle(w.bridge.angle)
+		w.dry.append([w.bridge.middle - axis * half, w.bridge.middle + axis * half, 0.75])
+	_water_cache[t] = w
+	return w
+
+
+## Whether a point is in the water, not on a bridge, stepping stones, a rock or the port's quay.
+func wet_at(p: Vector2) -> bool:
+	var t := GroundCover.tile_at(p)
+	if not water_shapes.has(t):
+		return false
+	var w: Dictionary = water_shapes[t]
+	var local := p - Hex.tile_position(t.x, t.y)
+	if not Water.in_water(w.outlines, local):
+		return false
+	for d in w.dry:
+		if Water.seg_dist(local, d[0], d[1]) <= d[2]:
+			return false
+	return true
+
+
+## Whether going across water tile t, in by one edge and out by another (or to its stopping point, out -1), means
+## getting wet. A bridge, the stepping stones and the port's alley don't.
+func wet_between(t: Vector2i, in_edge: int, out_edge: int) -> bool:
+	var g := path_graph(t)
+	var a: int = g.edge_node.get(in_edge, -1)
+	var b = g.stand if out_edge < 0 else g.edge_node.get(out_edge, -1)
+	if a < 0 or b == null or b < 0:
+		return true
+	var way := g.route(a, b)
+	for k in range(1, way.size()):
+		for u in [0.25, 0.5, 0.75]:
+			if wet_at(way[k - 1].lerp(way[k], u)):
+				return true
+	return false
+
+
+## The routes across a water tile, as a graph like a piece's drawn paths (water.py has them, not the glb).
+func _water_graph(t: Vector2i) -> TilePaths:
+	var g := TilePaths.new()
+	var w: Dictionary = water_shapes[t]
+	var at := Hex.tile_position(t.x, t.y)
+	var name: String = terrains[t]
+	var stand := Vector2.ZERO
+	if name == "riverport":
+		var turn: int = landmark_turns.get(t, 0)
+		var r := Water.port_routes(w.mask, turn)
+		stand = Water.turned(Water.PORT_STOP, turn)
+		g.add_line(PackedVector2Array([Water.turned(Water.PORT_FLOAT, turn), stand]), at)
+		for lines in [r.land, r.floats]:
+			for e in lines:
+				g.add_line(lines[e], at)
+				g.edge_node[e] = g._node(at + lines[e][0])
+	elif name == "serpentlair":
+		var turn: int = landmark_turns.get(t, 0)
+		var r := Water.lair_routes(turn)
+		stand = Water.turned(Water.LAIR_STOP, turn)
+		g.add_line(PackedVector2Array([Water.turned(Water.LAIR_LAND, turn), stand]), at)
+		for e in r:
+			g.add_line(r[e], at)
+			g.edge_node[e] = g._node(at + r[e][0])
+	elif name == "meditationrock" and w.rock.turn >= 0:
+		for e in w.rock.land:
+			g.add_line(w.rock.land[e], at)
+			g.edge_node[e] = g._node(at + w.rock.land[e][0])
+		for e in w.rock.floats:
+			var l: PackedVector2Array = w.rock.floats[e]
+			g.add_line(PackedVector2Array([l[0], l[1], Vector2.ZERO]), at)
+			g.edge_node[e] = g._node(at + l[0])
+	else:
+		var r := Water.water_routes(w.mask, w.seed, w.widths, w.style)
+		stand = r.hub
+		for e in r.lines:
+			g.add_line(r.lines[e], at)
+			g.edge_node[e] = g._node(at + r.lines[e][0])
+		var lands := Water.landings(w.mask, w.seed, w.widths, w.style)
+		var bridge: Dictionary = w.get("bridge", {})
+		for e in lands:
+			if bridge.is_empty() or not bridge.routes.has(e):
+				g.add_line(PackedVector2Array([lands[e][0], lands[e][1], lands[e][2], r.hub]), at)
+				g.edge_node[e] = g._node(at + lands[e][0])
+		if not bridge.is_empty():
+			var ends := []
+			for e in bridge.routes:
+				g.add_line(bridge.routes[e], at)
+				g.edge_node[e] = g._node(at + bridge.routes[e][0])
+				ends.append(bridge.routes[e][1])
+			var axis := Vector2.from_angle(bridge.angle)
+			var half := Water.TROLL_HALF if w.bridge_piece == "trollbridge_centre" else Water.BRIDGE_HALF
+			var top: Vector2 = bridge.middle
+			g.add_line(PackedVector2Array([top - axis * half, top, top + axis * half]), at)
+			# A wader coming down the channel climbs out at the nearer end.
+			var off: Vector2 = top - axis * half if r.hub.distance_to(top - axis * half) < r.hub.distance_to(top + axis * half) else top + axis * half
+			g.add_line(PackedVector2Array([r.hub, off]), at)
+			stand = top
+	g.stand = g._node(at + stand)
+	g.weigh_wet(wet_at, Rules.WET_ROUTE_WEIGHT)
+	return g
+
+
+## What stands on a water tile: its props, a landmark's pieces, the ground the party walks on over the water, and effects.
+func _place_water_pieces(node: Node3D, t: Vector2i, at: Vector2) -> void:
+	if not water_shapes.has(t):
+		water_shapes[t] = _water_info(t)
+	var w: Dictionary = water_shapes[t]
+	var name: String = terrains[t]
+	for prop in w.props:
+		var mi := Kit.place(node, _kit, prop[0], at + prop[1], prop[2])
+		if prop[0] == "rapids_fall" and mi:
+			for e in Kit.path_data("rapids_fall").get("effects", []):
+				if e.kind == "spray":
+					node.add_child(FarmFx.spray(Hex.to3(at + prop[1], e.at[1])))
+		if prop[0] == "rapids_bridge":
+			_deck(node, at, prop[0], w.bridge.middle, w.bridge.angle, 0.6)
+	var turn: int = landmark_turns.get(t, 0)
+	if name == "serpentlair":
+		Kit.place(node, _kit, "serpentlair_centre", at, deg_to_rad(60.0 * turn))
+		_deck(node, at, "serpentlair_centre", Vector2.ZERO, deg_to_rad(60.0 * turn), 0.7)
+	elif name == "meditationrock":
+		Kit.place(node, _kit, "meditationrock_centre", at, deg_to_rad(60.0 * turn))
+		_rock_ground(node, at, w)
+	elif name == "trollbridge" and not w.bridge.is_empty():
+		Kit.place(node, _kit, "trollbridge_centre", at + w.bridge.middle, w.bridge.angle)
+		_deck(node, at, "trollbridge_centre", w.bridge.middle, w.bridge.angle, 0.7)
+	elif name == "riverport":
+		var spin := deg_to_rad(60.0 * turn)
+		Kit.place(node, _kit, "riverport_centre", at, spin)
+		for part in Variants.PORT_PARTS:
+			var mi := Kit.place(node, _kit, part, at + Variants.PORT_PARTS[part].rotated(spin), spin)
+			if mi:
+				_port_boats.append(mi)
+		for k in [2, 3, 4]:
+			if w.mask[(k + turn) % 6]:
+				Kit.place(node, _kit, "riverport_watergate", at, deg_to_rad(60.0 * (k + turn)))
+		_town_smoke(node, at)
+	if w.style == "still_waters":
+		var mist := _mist(at)
+		mist.visible = false
+		node.add_child(mist)
+		_still_mists.append(mist)
+
+
+## Ground for the party over a piece's own path (a bridge's hump, the Lair's shelf): a strip it can feel.
+func _deck(node: Node3D, at: Vector2, piece: String, middle: Vector2, angle: float, half: float) -> void:
+	var faces := PackedVector3Array()
+	for poly in Kit.path_data(piece).get("paths", []):
+		for k in range(1, poly.size()):
+			var a: Vector3 = _deck_point(poly[k - 1], at + middle, angle, half)
+			var b: Vector3 = _deck_point(poly[k], at + middle, angle, half)
+			var c: Vector3 = _deck_point(poly[k - 1], at + middle, angle, -half)
+			var d: Vector3 = _deck_point(poly[k], at + middle, angle, -half)
+			faces.append_array([a, b, c, b, d, c])
+	_ground_body(node, faces)
+
+
+static func _deck_point(p: Array, at: Vector2, angle: float, side: float) -> Vector3:
+	return Hex.to3(at + Vector2(p[0], -p[2] + side).rotated(angle), p[1])
+
+
+## Meditation Rock's top and the stepping stones, at their drawn heights (variants.meditation_rock, water.add_water).
+func _rock_ground(node: Node3D, at: Vector2, w: Dictionary) -> void:
+	var faces := PackedVector3Array()
+	var cone := func(c: Vector2, r0: float, h0: float, r1: float, h1: float) -> void:
+		for k in 16:
+			var a := Vector2.from_angle(TAU * k / 16)
+			var b := Vector2.from_angle(TAU * (k + 1) / 16)
+			var i0 := Hex.to3(at + c + a * r0, h0)
+			var i1 := Hex.to3(at + c + b * r0, h0)
+			var o0 := Hex.to3(at + c + a * r1, h1)
+			var o1 := Hex.to3(at + c + b * r1, h1)
+			faces.append_array([i0, i1, o0, i1, o1, o0])
+	cone.call(Vector2.ZERO, 0.0, 0.34, 0.82, 0.34)
+	cone.call(Vector2.ZERO, 0.82, 0.34, 1.28, 0.16)
+	cone.call(Vector2.ZERO, 1.28, 0.16, 1.45, 0.0)
+	for stone in w.rock.stones:
+		cone.call(stone[0], 0.0, 0.1, stone[1] + 0.3, 0.1)   # a base wider than a stone doesn't tip off it
+	_ground_body(node, faces)
+
+
+func _ground_body(node: Node3D, faces: PackedVector3Array) -> void:
+	if faces.is_empty():
+		return
+	var shape := ConcavePolygonShape3D.new()
+	shape.backface_collision = true
+	shape.set_faces(faces)
+	var cs := CollisionShape3D.new()
+	cs.shape = shape
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.add_child(cs)
+	node.add_child(body)
+
+
+## The water's material for a style: the shared shader, with the kit's colour (PLACEHOLDER colours; deep is that darkened).
+func _water_material(style: String) -> ShaderMaterial:
+	if not Water.WATER_MAT.has(style):
+		return load("res://shaders/water.tres")
+	if not _water_mats.has(style):
+		var m := (load("res://shaders/water.tres") as ShaderMaterial).duplicate() as ShaderMaterial
+		var c := Hex.colour(Water.WATER_MAT[style]).srgb_to_linear()
+		m.set_shader_parameter("shallow", Vector3(c.r, c.g, c.b))
+		m.set_shader_parameter("deep", Vector3(c.r, c.g, c.b) * 0.7)
+		if style == "great_lake":   # gentle waves
+			m.set_shader_parameter("bump_strength", 3.0)
+		elif style == "still_waters":
+			m.set_shader_parameter("bump_strength", 0.6)
+			m.set_shader_parameter("sparkle_strength", 1.0)
+		elif style == "rapids":
+			m.set_shader_parameter("period", 1.2)
+		_water_mats[style] = m
+	return _water_mats[style]
+
+
 func _build_water() -> void:
 	var dressing := Piece.new()
-	var shores := []        # [world plan points, flow sign, speed]
-	var outlines := []      # world plan outlines
+	var groups := {}        # water style -> {shores = [world plan points, flow sign, speed], outlines = world plan outlines}
 	var bank := Hex.colour("bank")
 	for t: Vector2i in water_shapes:
 		var w: Dictionary = water_shapes[t]
@@ -969,6 +1241,9 @@ func _build_water() -> void:
 			inflow.append(Water.downhill(t.x + n.x, t.y + n.y) < h)
 		var speed := RIVER_SPEED if w.kind in ["river", "spring"] else LAKE_SPEED
 		var signs := Water.flow_signs(w.ends, inflow)
+		var group: Dictionary = groups.get_or_add(w.style if Water.WATER_MAT.has(w.style) else "", {shores = [], outlines = []})
+		var shores: Array = group.shores
+		var outlines: Array = group.outlines
 		for k in w.shores.size():
 			var pts := PackedVector2Array()
 			for p in w.shores[k]:
@@ -981,20 +1256,70 @@ func _build_water() -> void:
 			outlines.append(pts)
 		# Banks and dressing (water.add_water with plates=False, boats=False)
 		dressing.offset = Vector3(at.x, at.y, 0)
-		for curve: PackedVector2Array in w.shores:
-			for quad in Water.bank_strip(curve, 0.22):
+		if w.has("quads"):
+			for quad: PackedVector2Array in w.quads:
 				dressing.flat(quad, 0.025, bank)
-		_add_dressing(dressing, w, seed, at)
+			for wall in w.walls:   # the port's stone, where its land meets water
+				var d: Vector2 = wall[1] - wall[0]
+				var mid: Vector2 = (wall[0] + wall[1]) * 0.5
+				dressing.box(Vector3(mid.x, mid.y, 0), Vector3(d.length(), 0.22, 0.17), Hex.colour("stone_block_dark"), 0.0, d.angle())
+				dressing.box(Vector3(mid.x, mid.y, 0), Vector3(d.length() + 0.02, 0.26, 0.04), Hex.colour("stone_block"), 0.17, d.angle())
+		else:
+			for curve: PackedVector2Array in w.shores:
+				for quad in Water.bank_strip(curve, 0.22):
+					dressing.flat(quad, 0.025, bank)
+			_add_dressing(dressing, w, seed, at)
 	_water_node.add_child(dressing.instance("water_dressing"))
-	var mi := MeshInstance3D.new()
-	mi.name = "water_surface"
-	mi.mesh = _water_mesh(outlines, shores)
-	mi.material_override = load("res://shaders/water.tres")
-	_water_node.add_child(mi)
+	for style in groups:
+		var mi := MeshInstance3D.new()
+		mi.name = "water_surface" if style == "" else "water_surface_" + style
+		mi.mesh = _water_mesh(groups[style].outlines, groups[style].shores)
+		mi.material_override = _water_material(style)
+		_water_node.add_child(mi)
+
+
+func _add_lens(p: Piece, at: Vector2, ang: float, long_: float, wide: float, col: String, z: float) -> void:
+	var outline := PackedVector2Array()
+	for k in 8:
+		var a := TAU * k / 8
+		outline.append(at + Vector2(long_ * cos(a), wide * sin(a)).rotated(ang))
+	p.flat(outline, z, Hex.colour(col))
 
 
 func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
 	var d := Water.dressing(w.outlines, w.shores, w.kind, seed)
+	var style: String = w.style
+	var lands := Water.landings(w.mask, seed, w.widths, style)
+	var lines: Dictionary = Water.water_routes(w.mask, seed, w.widths, style).lines
+	d.reeds = Water.clear_of_landings(d.reeds, lands)
+	d.rocks = Water.clear_of_landings(d.rocks, lands)
+	d.boats = Water.clear_of_routes(d.boats, lines)
+	# A jetty reaches into the water, so its tip stays off the routes too.
+	d.jetties = d.jetties.filter(func(j): return Water._line_dist(j[0] + Vector2.from_angle(j[1]) * 1.1, lines) > 0.45)
+	if Water.WATER_MAT.has(style):
+		d.lilies = []
+		d.jetties = []
+		d.boats = []
+	if style == "rapids":
+		d.reeds = []
+	if style == "great_lake":
+		for q in Water.lake_waves(w.outlines, w.shores, seed):
+			_add_lens(p, q[0], q[1], q[2], q[3], "wave_light", 0.034)
+	elif style == "rapids":
+		var marks := Water.rapids_marks(w.mask, seed, w.widths, w.band)
+		for q in marks.foam:
+			_add_lens(p, q[0], q[1], q[2], q[3], "foam", 0.034)
+		var rr := PyRandom.new(seed + "-boulders")
+		for q in marks.boulders:
+			p.blob(Vector3(q[0].x, q[0].y, 0), q[1], Hex.colour(["rock", "rock_dark"][rr.randbelow(2)]), 0.0, 0.75)
+	elif style == "still_waters":
+		for q in Water.still_lilies(w.outlines, w.shores, seed, w.band):
+			p.cylinder(Vector3(q[0].x, q[0].y, 0), q[1], 0.012, Hex.colour("lily"), 7, 0.032)
+			if q[2] != "":
+				p.cone(Vector3(q[0].x, q[0].y, 0), q[1] * 0.5, 0.11, Hex.colour(q[2]), 5, 0.044)
+		if w.has("rock"):
+			for q in w.rock.stones:
+				p.cylinder(Vector3(q[0].x, q[0].y, 0), q[1], 0.08, Hex.colour("smooth_stone"), 7, 0.02)
 	var rng := PyRandom.new(seed + "-props")
 	for r: Vector2 in d.reeds:
 		for _k in 3:
@@ -1014,16 +1339,16 @@ func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
 			var post: Vector2 = tip + dir * (0.6 * s)
 			p.cylinder(Vector3(post.x, post.y, 0), 0.05, 0.2, Hex.colour("trunk"))
 	var boat_spots: Array = d.boats
-	if w.get("delta", false):
-		# The river delta's islands, boats, jetty and crates (water.add_water(..., delta=True)).
-		var dd := Water.delta_dressing(w.outlines, w.shores, w.kind, seed)
-		boat_spots = boat_spots + dd.boats
+	if style == "delta":
+		# The river delta's islands, boats, jetty and crates (water.add_water(..., style="delta")).
+		var dd := Water.delta_dressing(w.outlines, w.shores, w.kind, seed, w.band)
+		boat_spots = boat_spots + Water.clear_of_routes(dd.boats, lines)
 		for poly: PackedVector2Array in dd.islands:
 			p.flat(poly, 0.036, Hex.colour("sandbar"))
 			for k in range(0, poly.size(), 5):
 				var q := (poly[k] + poly[0]) * 0.5
 				p.cone(Vector3(q.x, q.y, 0), 0.05, rng.uniform(0.35, 0.55), Hex.colour("reed"), 4, 0.03)
-		for j in dd.jetties:
+		for j in Water.clear_of_routes(dd.jetties, lines, 0.45):
 			var ang: float = j[1]
 			var dir := Vector2(cos(ang), sin(ang))
 			var tip: Vector2 = j[0] + dir * 0.5
@@ -1062,10 +1387,18 @@ func _process(delta: float) -> void:
 		_lava.emission_energy_multiplier = (0.75 + 0.25 * sin(TAU * _time / 4.0)) * (0.8 + 2.0 * night)   # PLACEHOLDER: pulses slowly, glows at night
 		ForestFx.set_night(night)
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
+		for style in _water_mats:
+			_water_mats[style].set_shader_parameter("night", night)
+		for m in _still_mists:   # thin mist at dawn on still waters (PLACEHOLDER: while the light is low)
+			if is_instance_valid(m):
+				m.visible = night > 0.15 and night < 0.85
 	var s := _time
 	for k in boats.size():
 		boats[k].position.y = 0.03 * sin(TAU * s / 2.0 + k)
 		boats[k].rotation.x = 0.05 * sin(TAU * s / 3.0 + k)
+	for k in _port_boats.size():   # the River Port's boats, each on its own tile's node
+		if is_instance_valid(_port_boats[k]):
+			_port_boats[k].position.y = 0.03 * sin(TAU * s / 2.0 + k)
 
 
 static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:

@@ -21,6 +21,7 @@ var rig := CameraRig.new()
 var clock: TimeOfDay
 var party_node: PartyWalker
 var party_tile := Rules.START_TILE
+var debug_fail_crossing := false      # a test aid: every crossing check fails
 var party: Array[Dictionary] = []     # per member: name, initial, color, mini, ability, score, hp, max_hp, cards
 var held := -1                        # index into the hand, or -1
 var busy := false                     # walking, in a pop-up or in a fight
@@ -112,6 +113,10 @@ func _ready() -> void:
 		var fm := FarmCheck.new()
 		fm.game = self
 		add_child(fm)
+	elif "--rivercheck" in OS.get_cmdline_user_args():
+		var rc := RiverCheck.new()
+		rc.game = self
+		add_child(rc)
 	elif "--towncheck" in OS.get_cmdline_user_args():
 		var tc := TownCheck.new()
 		tc.game = self
@@ -399,8 +404,8 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 	if tiles.size() < goal:
 		return
 	var first := not regions.any(func(g): return g.terrain == terrain)
-	var region := new_region(terrain, tiles, Variants.TIER1[terrain] if first else _roll_tier2(terrain),
-			tiles[rng.randi_range(0, tiles.size() - 1)])
+	var variant: String = Variants.TIER1[terrain] if first else _roll_tier2(terrain)
+	var region := new_region(terrain, tiles, variant, _landmark_tile(variant, tiles))
 	_transform(tiles, region, t)
 	var draw := Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION
 	deck.draw(draw)
@@ -408,6 +413,28 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 	_reveal_until = real_time + 3.5
 	# No draw amounts or hand-limit notes (DOCS: UI -> Screen text); the hand and its count show them.
 	toast("%s! Landmark: %s" % [region.name, region.landmark])
+
+
+## Which of a finished region's tiles gets its landmark: at random, from the tiles where it fits (DOCS: design/02 ->
+## Crossing water, Bridges on rapids). PLACEHOLDER (a question for Ethan): if none fits, a random tile keeps the plain
+## look (region_look), so a rapids region can have no Troll Bridge.
+func _landmark_tile(variant: String, tiles: Array[Vector2i], placed := {}) -> Vector2i:
+	var lm: String = Variants.LANDMARK_OF.get(variant, "")
+	var fits := tiles.filter(func(c): return _landmark_fits(lm, variant, c, tiles, placed))
+	var from: Array = fits if not fits.is_empty() else tiles
+	return from[rng.randi_range(0, from.size() - 1)]
+
+
+func _landmark_fits(lm: String, variant: String, c: Vector2i, tiles: Array[Vector2i], placed: Dictionary) -> bool:
+	if not Water.FAMILY.has(lm):
+		return true
+	var mask := []
+	var near := []
+	for n in Hex.NEIGHBOURS:
+		var x = variant if tiles.has(c + n) else placed.get(c + n, map.terrains.get(c + n))
+		near.append(x)
+		mask.append(Variants.is_water(x))
+	return Water.landmark_fits(lm, mask, "%d,%d" % [c.x, c.y], Water.edge_widths(variant, near))
 
 
 ## Records a finished region. variant "" means a tier 2 region with no art yet (it keeps its terrain's look).
@@ -434,7 +461,9 @@ func _roll_tier2(terrain: String) -> String:
 ## art), else the variant's.
 func region_look(region: Dictionary, c: Vector2i) -> String:
 	var lm: String = Variants.LANDMARK_OF.get(region.variant, "")
-	return lm if lm != "" and c == region.landmark_tile else region.variant
+	if lm == "" or c != region.landmark_tile or not _landmark_fits(lm, region.variant, c, region.tiles, {}):
+		return region.variant
+	return lm
 
 
 ## Sets a region's landmark trails (DOCS: Tile build -> Trails to the landmark), once, when it finishes.
@@ -494,6 +523,13 @@ const DEBUG_PLAINS_SHAPE := [Vector2i(1, -1), Vector2i(0, 0), Vector2i(1, 0), Ve
 const DEBUG_HILLS := {"highlands": Vector2i(10, -6), "snowy_peaks": Vector2i(11, -13), "volcanic_peaks": Vector2i(-12, 2),
 	"monastery_heights": Vector2i(-10, 12)}   # 12 tiles each, raised, with plains laid to them
 const DEBUG_TOWNS := {"fortified_town": Vector2i(5, -12), "slums": Vector2i(4, 11), "scholars_town": Vector2i(-7, -11)}   # 12 tiles each, like plains
+const DEBUG_RIVERS := {"delta": Vector2i(16, -2), "great_lake": Vector2i(15, 7), "rapids": Vector2i(-17, 8), "still_waters": Vector2i(-16, -4)}   # with plains laid to them
+const DEBUG_RIVER_SHAPES := {   # channels for the delta and rapids, so islands and bridges fit; pools for the others
+	"delta": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, -1), Vector2i(4, -2), Vector2i(-1, 0), Vector2i(-2, 1)],
+	"great_lake": DEBUG_PLAINS_SHAPE,
+	"rapids": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, -1), Vector2i(3, -1), Vector2i(4, -2), Vector2i(-1, 0), Vector2i(-2, 1)],
+	"still_waters": DEBUG_PLAINS_SHAPE}
+const DEBUG_RIVER_T0 := [Vector2i(13, 3), Vector2i(14, 3), Vector2i(15, 2), Vector2i(16, 2), Vector2i(17, 1), Vector2i(17, 2), Vector2i(18, 1)]   # tier 0: a river into a small lake
 const DEBUG_HILLS_T0 := Vector2i(9, 2)    # tier 0: a hills group, and one lone tile beside it
 const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
 const DEBUG_FARMS := Vector2i(3, 3)      # tier 0: farmland in the middle and half the ring, village the other half
@@ -540,6 +576,26 @@ func spawn_forest_regions() -> void:
 			changes[x] = region_look(region, x)
 			order[x] = order.size()
 		_debug_road(DEBUG_HILLS[v] + Vector2i(-3, 3), changes)
+	for v: String in DEBUG_RIVERS:
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_RIVER_SHAPES[v]:
+			tiles.append(DEBUG_RIVERS[v] + s)
+		if tiles.any(func(x): return map.terrains.has(x) or changes.has(x)):
+			continue
+		var placed := changes.duplicate()
+		var region := new_region("river", tiles, v, _landmark_tile(v, tiles, placed))
+		_set_flow(region)
+		for x in tiles:
+			changes[x] = v if x != region.landmark_tile or not _landmark_fits(Variants.LANDMARK_OF[v], v, x, tiles, placed) else Variants.LANDMARK_OF[v]
+			order[x] = order.size()
+		_debug_road(DEBUG_RIVERS[v] + Vector2i(-3, 3), changes)
+	for k in DEBUG_RIVER_T0.size():
+		var x: Vector2i = DEBUG_RIVER_T0[k]
+		if not map.terrains.has(x) and not changes.has(x):
+			changes[x] = "river"
+			order[x] = order.size()
+			_debug_fill[x] = true
+	_debug_road(DEBUG_RIVER_T0[0] + Vector2i(-1, 2), changes)
 	for v: String in DEBUG_TOWNS:
 		var tiles: Array[Vector2i] = []
 		for s: Vector2i in DEBUG_PLAINS_SHAPE:
@@ -748,6 +804,10 @@ func path_to(goal: Vector2i) -> Array[Vector2i]:
 			var step: int = Rules.MOUNTAIN_EDGE_COST if map._ranges(c, i) else 1
 			if at.z >= 0 and map.ridge_wall(c, at.z, i):
 				step += Rules.RIDGE_WALL_COST
+			if at.z >= 0 and map.water_shapes.has(c) and map.wet_between(c, at.z, i):
+				step += _cross_cost(c)
+			if m == goal and map.water_shapes.has(m) and map.wet_between(m, (i + 3) % 6, -1):
+				step += _cross_cost(m)
 			var next := Vector3i(m.x, m.y, (i + 3) % 6)
 			if cost[at] + step < cost.get(next, 1 << 30):
 				cost[next] = cost[at] + step
@@ -762,6 +822,23 @@ func path_to(goal: Vector2i) -> Array[Vector2i]:
 		path.push_front(Vector2i(c.x, c.y))
 		c = came[c]
 	return path
+
+
+## What crossing water tile t adds to a route: little on a raft, which can't run rapids; else a check to pass or pay for.
+func _cross_cost(t: Vector2i) -> int:
+	return 1 if party_node.has_raft and Water.raft_can_enter(map.terrains[t]) else Rules.CROSS_STEP_COST
+
+
+## The Athletics check on stepping into water with no raft (DOCS: design/02 -> Crossing water): a fail still crosses,
+## and the whole party loses some HP, with a splash. PLACEHOLDER: one flip for the party, nothing shown but the splash
+## and the HP (no choice or result on screen until it's checked against 07 -> Screen text).
+func _cross_check() -> void:
+	if Coins.heads(Coins.flip(rng, Rules.CROSS_COINS)) >= 1 and not debug_fail_crossing:
+		return
+	for m in party:
+		m.hp = maxi(mini(m.hp, 1), m.hp - Rules.CROSS_FAIL_HP)
+	party_node.splash()
+	_refresh()
 
 
 ## Walks the party along placed hexes one step at a time; the camera follows; the minis face the way
@@ -787,9 +864,14 @@ func walk_to(goal: Vector2i) -> void:
 		party_tile = t
 		_advance(Rules.STEP_MINUTES)
 	party_node.entered.connect(on_step)
+	party_node.waded.connect(_cross_check)
 	await party_node.walk(path)
 	party_node.entered.disconnect(on_step)
+	party_node.waded.disconnect(_cross_check)
 	party_tile = path[-1]
+	# PLACEHOLDER (no shop rule yet): reaching the River Port buys the raft, for nothing, with no screen.
+	if map.terrains.get(party_tile) == "riverport":
+		party_node.has_raft = true
 	map.party_moved(party_tile)
 	if encounters.has(party_tile):
 		_encounter_tile = party_tile
