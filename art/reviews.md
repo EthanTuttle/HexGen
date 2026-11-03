@@ -52,3 +52,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/household_houses_v6.png` | rejected | With houses_back_v4: nitpick; fronts and backs shouldn't mirror, not every house needs a back door |
 | 2026-11-03 | `art/preview/canyon_mesa_before_after_v2.png` | rejected | Still thin edges on top mesa rocks |
 | 2026-11-03 | `art/preview/river_pool_river_v4.png` | approved | Keep the cascade; last river tile flows into the fall |
+| 2026-11-03 | `art/preview/household_houses_back_v5.png` | approved | With houses_v7 and the Village set (green_v23, lanes_v22, street_v21, gardens): Village set done, merges with the rest of village |
