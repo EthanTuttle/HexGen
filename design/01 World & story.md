@@ -60,6 +60,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 ## Enemies
 
 - Enemy types: beasts, bandits/humanoids, undead, monsters/dragons, fey, fiends, and eldritch horrors, which are rare and appear only at special locations.
+- First enemies with minis (Nov 2, 2026; stats still open): wolves and giant spiders; separate melee and ranged bandits, plus an axe elite; skeletons, zombies and ghosts, each with an elite.
 - Bosses appear at landmarks and Legendary locations. Named so far: Redbone, King of the Dragons, at Redbone's Lair on Dragon mountain (Oct 24, 2026).
 - How enemies spawn and scale with distance: see [Map & exploration](02 Map & exploration.md) → Encounters.
 
