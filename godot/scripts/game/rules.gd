@@ -101,6 +101,7 @@ const TRAIL_INNER := 1.2                 # PLACEHOLDER: where a trail starts, me
 const PATH_CORNER := 0.35                # PLACEHOLDER: how far before a corner on a drawn path the route starts to bend
 const ROUND_LANDMARK := 3.0              # PLACEHOLDER: how far out the party circles a plains landmark to its entrance
 const FILE_GAP := 1.0                    # PLACEHOLDER: metres between minis stopped in a file on a narrow path
+const LINE_ON_STREET := 0.3              # PLACEHOLDER: how far off the streets a stopped line can be and still count as on them
 const PEEL_REACH := 0.5                  # PLACEHOLDER: how near the next follower the hero's new route must pass to count as turning back past the file
 const RISE_SECONDS := 3.5                # PLACEHOLDER: how long a raised region takes to come up (DOCS: a few seconds)
 const RISE_SHAKE := 0.12                 # PLACEHOLDER: metres the camera shakes while it does

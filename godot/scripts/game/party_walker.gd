@@ -31,6 +31,8 @@ var _s0 := 0.0                          # where the hero starts on the route (af
 var _file_start := false                # the party starts this walk stopped in a file on a narrow path
 var _file_end := false                  # and ends it so (DOCS: Walking: a tighter cluster that fits the path)
 var _tail := PackedVector2Array()       # the stretch of route the stopped file stands on, last follower to hero
+var _gaps := PackedFloat32Array()       # how far back on the route each mini of a stopped file stands from the hero
+var _start_gaps := PackedFloat32Array() # and where they stood at this walk's start
 var _t := 0.0
 var _start_facing := 0.0
 var _end_facing := 0.0
@@ -82,6 +84,8 @@ func centre() -> Vector3:
 
 ## Stands the cluster on a tile at once (start of play, back at camp after a wipe).
 func place_at(tile: Vector2i, angle := -PI / 2) -> void:
+	if _hub_line(tile):
+		return
 	_tile = tile
 	_file_end = false
 	_tail = PackedVector2Array()
@@ -99,11 +103,94 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 		_rock(m, 0.0, 0.0)
 
 
+## DOCS (Exploration screen -> Walking): on a town or farm tile the party stands at the hub in the tight line, after a
+## fight too. One already in that line stays in it; else it takes a line along the tile's streets. False on other tiles.
+func _hub_line(tile: Vector2i) -> bool:
+	if not map.tile_node(tile) or not Variants.terrain_of(map.terrains.get(tile)) in ["village", "farmland"]:
+		return false
+	var graph := map.path_graph(tile)
+	if graph.stand == null:
+		return false
+	walking = false
+	if tile != _tile or not _file_end or not _line_on(graph):
+		var line := _line_to_hub(graph)
+		_tile = tile
+		_file_end = true
+		_set_path(line, _no_heights(line.size()))
+		_gaps = _file_gaps()
+		_tail = _route_end()
+		facing = _member_angle(members[0], _len[-1])
+		_end_facing = facing
+		for i in members.size():
+			var m: Dictionary = members[i]
+			var s: float = _len[-1] - _gaps[i]
+			var p := _point_at(s)
+			m.leg = PackedVector2Array()
+			m.node.rotation.y = yaw_of(_member_angle(m, s))
+			m.yaw = m.node.rotation.y
+			m.up = Vector3.UP
+			m.squeeze = 1.0
+			m.high = map.raised.has(GroundCover.tile_at(p))
+			_stand_on(m, p, _feel(m, p), 1.0, true)
+	for m in members:
+		_rock(m, 0.0, 0.0)
+	return true
+
+
+## The party's hero is at the hub and everyone is on a tile's streets (they change as new tiles join them).
+func _line_on(graph: TilePaths) -> bool:
+	var hero: Vector3 = members[0].node.position
+	if Vector2(hero.x, -hero.z).distance_to(graph.nodes[graph.stand]) > Rules.LINE_ON_STREET:
+		return false
+	for m in members:
+		var p := Vector2(m.node.position.x, -m.node.position.z)
+		if GroundCover.tile_at(p) == _tile and graph.distance_to_paths(p) > Rules.LINE_ON_STREET:
+			return false
+	return true
+
+
+## The way along the streets that a line stands on: in from the first edge (or else node) far enough from the hub to
+## hold the whole line, or from the farthest, and on straight behind it if even that is too short.
+func _line_to_hub(graph: TilePaths) -> PackedVector2Array:
+	var need := members.size() * Rules.FILE_GAP + 1.0
+	var starts: Array = graph.edge_node.values()
+	starts.sort()
+	for n in graph.nodes.size():
+		if not n in starts:
+			starts.append(n)
+	var best := PackedVector2Array([graph.nodes[graph.stand]])
+	var best_len := 0.0
+	for n: int in starts:
+		var way := graph.route(n, graph.stand)
+		var d := _leg_length(way)
+		if d > best_len:
+			best = way
+			best_len = d
+		if d >= need:
+			break
+	if best_len < need:
+		var back := Vector2.RIGHT if best.size() < 2 else (best[0] - best[1]).normalized()
+		best.insert(0, best[0] + back * (need - best_len))
+	var out := PackedVector2Array([best[0]])
+	for k in range(1, best.size()):
+		_line(out, best[k])
+	return out
+
+
+static func _no_heights(n: int) -> PackedFloat32Array:
+	var out := PackedFloat32Array()
+	for _k in n:
+		out.append(NAN)
+	return out
+
+
 ## Walks the route through these tiles (each a neighbour of the last; the first a neighbour of where the party
 ## stands). Returns when everyone has arrived and settled into place.
 func walk(tiles: Array[Vector2i]) -> void:
 	_file_start = _file_end
+	_start_gaps = _gaps
 	_build_path(tiles)
+	_gaps = _file_gaps()
 	_s0 = 0.0
 	peeled = _file_start and _peel_off()
 	if not peeled:
@@ -120,7 +207,7 @@ func walk(tiles: Array[Vector2i]) -> void:
 		else:
 			_file_start = false
 		for i in members.size():
-			members[i].from = _s0 - (i * Rules.FILE_GAP if _file_start else 0.0)
+			members[i].from = _s0 - (_start_gaps[i] if _file_start else 0.0)
 			members[i].leg = PackedVector2Array()
 	_s = _s0
 	_t = 0.0
@@ -211,6 +298,7 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 				var spot := _stand_spot(t, (anchor(t) - c).angle())
 				_quad(pts, c, spot[0])
 				_end_facing = spot[1]
+				_file_end = graph.stand != null and Variants.terrain_of(map.terrains[t]) in ["village", "farmland"]
 			elif graph.edge_inner.has(out_edge):
 				_quad(pts, c, graph.edge_inner[out_edge])
 				if not onto_ledge:
@@ -344,7 +432,7 @@ func _peel_off() -> bool:
 	for k in joins.size():
 		var j: Dictionary = joins[k]
 		members[k + 1] = j.m
-		var stop: float = _len[-1] - ((k + 1) * Rules.FILE_GAP if _file_end else 0.0)
+		var stop: float = _len[-1] - (_gaps[k + 1] if _file_end else 0.0)
 		j.m.from = minf(j.from, stop)
 		j.m.leg = j.leg
 		j.m.join = part_d
@@ -396,11 +484,24 @@ func _nearest_along(p: Vector2, reach: float) -> float:
 
 ## The end of the route that the stopped file stands on.
 func _route_end() -> PackedVector2Array:
-	var from := _len[-1] - (members.size() - 1) * Rules.FILE_GAP
+	var from := _len[-1] - _gaps[-1]
 	var out := PackedVector2Array([_point_at(from)])
 	for k in _path.size():
 		if _len[k] > from:
 			out.append(_path[k])
+	return out
+
+
+## How far back on the route each mini stands in a stopped file, so that each is FILE_GAP in a straight line from the
+## one ahead, round a bend too.
+func _file_gaps() -> PackedFloat32Array:
+	var out := PackedFloat32Array([0.0])
+	var s := _len[-1]
+	for _i in range(1, members.size()):
+		var ahead := _point_at(s)
+		while s > 0.0 and _point_at(s).distance_to(ahead) < Rules.FILE_GAP:
+			s -= 0.05
+		out.append(_len[-1] - s)
 	return out
 
 
@@ -737,8 +838,8 @@ func _step(delta: float) -> void:
 		# In a file, each follower keeps its gap on the route: from its place at the start to its stop at the end.
 		var s := _trail_s(_t - i * Rules.FOLLOW_DELAY)
 		var u := clampf((s - _s0) / maxf(total - _s0, 1e-3), 0.0, 1.0)
-		var gap_start := i * Rules.FILE_GAP if _file_start else 0.0
-		var gap_end := i * Rules.FILE_GAP if _file_end else 0.0
+		var gap_start: float = _start_gaps[i] if _file_start else 0.0
+		var gap_end: float = _gaps[i] if _file_end else 0.0
 		s -= lerpf(gap_start, gap_end, u)
 		var stop := total - gap_end
 		if s < stop - 1e-3:

@@ -325,7 +325,7 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Tier 2 roll (village) | Fortified, slums or scholars' town, evenly | The lean from neighbours isn't set, as for other terrains |
 | Round a plains landmark | The party circles 3 m out (`Rules.ROUND_LANDMARK`), then comes in along the entrance's line | The kit's entrance paths don't join anything, so the route has to reach them on its own |
 | Farm effects | Fire, smoke and crows at the art's effect points: counts, colours, sizes, speeds (`farm_fx.gd`); the sails' speed (`Rules.SAIL_SPEED`); the barn's faint glow, 0.1 by day to 1.0 at night (`map_board.gd`) | The hand-off gives the points, not the look |
-| Stopping on farm tiles | The tile's middle where the spokes meet, a landmark's approach end, a cider orchard's hub | The docs say routes keep to paths, not where a party stops |
+| Stopping on town and farm tiles | Settled (07 -> Walking, Nov 2): at the hub in the tight line, and after a fight it moves to that line (`PartyWalker._hub_line`). A landmark's "hub" is its approach end. Minis stand 1 m apart in a straight line, round bends too. Back from a fight the line appears at once; no walk is animated | The move's look isn't set |
 | Forest effects | Fey motes, heartwood seeds and light shafts, the shrine's shaft: counts, colours, sizes, the shafts' lean (`forest_fx.gd`, `shaders/light_shaft.gdshader`) | The hand-off names the effects, not their look |
 | Night glow strengths | Fairy rings 0.15 by day to 1.75 at night; the Fey Court's windows 0.4 to 3.4 (`map_board.gd`) | "Glow softly at night" |
 | Cluster badge shows from | 2 tiles | The mockup's number for "a few hexes" |

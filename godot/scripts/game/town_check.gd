@@ -62,6 +62,11 @@ func _run() -> void:
 	game.spawn_forest_regions()
 	await _wait(1.0)
 	var map := game.map
+	if "--lines" in OS.get_cmdline_user_args():   # only the party's line at the hub
+		await _after_fight(map)
+		print("TOWN DONE: %d failed" % failed)
+		get_tree().quit()
+		return
 	_check_streets(map)
 	for v in KITS:
 		_check(not _region(v).is_empty(), "%s: spawned" % v)
@@ -75,6 +80,7 @@ func _run() -> void:
 		await _walk_town(map, v)
 	await _walk_through_wall(map)
 	await _walk_tier0(map)
+	await _after_fight(map)
 	await _perf_views(map)
 	print("TOWN DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
@@ -421,6 +427,59 @@ func _walk_through_wall(map: MapBoard) -> void:
 	for pair in plain.slice(0, 2):
 		await _watched(pair[1], "out to %s by a gatehouse" % map.terrains[pair[1]])
 		await _watched(pair[0], "back in from %s" % map.terrains[pair[1]])
+
+
+## DOCS (Walking): after a fight the party is at the hub in the tight line. Back from a fight is place_at, as in
+## Game.start_fight: a party in the line stays in it, one coming from elsewhere takes it, and it can walk on from there.
+func _after_fight(map: MapBoard) -> void:
+	var w := game.party_node
+	var f := Game.DEBUG_FARMS
+	var spots := [[f, "a farm"]]
+	for n: Vector2i in Hex.NEIGHBOURS:
+		if map.terrains.get(f + n) == "village":
+			spots.append([f + n, "a tier 0 village"])
+			break
+	for v in KITS:
+		spots.append([_region(v).landmark_tile, v + "'s landmark"])
+		for t: Vector2i in _region(v).tiles:
+			if t != _region(v).landmark_tile and map.path_graph(t).stand != null:
+				spots.append([t, v + "'s hub"])
+				break
+	for v in ["windmill_country", "raided_farms"]:
+		if not _region(v).is_empty():
+			spots.append([_region(v).landmark_tile, v + "'s landmark"])
+	for spot in spots:
+		var t: Vector2i = spot[0]
+		await _watched(t, "to %s" % spot[1])
+		var was: Array = w.members.map(func(m): return m.node.position)
+		w.place_at(t)
+		_check(w.members.map(func(m): return m.node.position) == was, "%s: back from a fight, the line hasn't moved" % spot[1])
+		_line_at_hub(map, t, spot[1] + ", back from a fight")
+	# From another tile (a line that has gone stale, or a debug start): a new line on the streets, ready to walk on.
+	for spot in spots:
+		var t: Vector2i = spot[0]
+		game.party_tile = t
+		w.place_at(Rules.START_TILE)
+		w.place_at(t)
+		_line_at_hub(map, t, spot[1] + ", set down")
+		w.members[0].node.position += Vector3(1.0, 0.0, 0.0)   # streets that have changed under the line
+		w.place_at(t)
+		_line_at_hub(map, t, spot[1] + ", streets changed")
+	var from: Vector2i = spots[0][0]
+	game.party_tile = from
+	w.place_at(from)
+	for t: Vector2i in Hex.NEIGHBOURS.map(func(n): return from + n):
+		if map.edge_open(from, t) and map.path_graph(t).stand != null:
+			await _watched(t, "on from a line set down")
+			break
+
+
+func _line_at_hub(map: MapBoard, t: Vector2i, what: String) -> void:
+	var ms := game.party_node.members
+	var graph := map.path_graph(t)
+	var hero := Vector2(ms[0].node.position.x, -ms[0].node.position.z)
+	_check(hero.distance_to(graph.nodes[graph.stand]) < 0.3, "%s: the hero is at the hub" % what)
+	_stopped(map, t, what)
 
 
 func _walk_tier0(map: MapBoard) -> void:
