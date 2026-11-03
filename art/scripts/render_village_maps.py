@@ -10,7 +10,7 @@ Writes art/preview/village_map_<map>_vN.png and the sheets village_maps_<variant
 
 Letters as in render_forest_maps.py (. , c T O R and the minis). c is walkable garden, plot or lawn, n a street, also the paved part of a square, g an open gate in a fence,
 L a fence, town wall, patched fence or hedge (any line). Per variant:
-  village         P Y cottage (3)   D cottages in a row (3)   T tree   N well   J goods
+  village         P Y cottage (3, its kind picked in turn)   D cottages in a row (3)   T tree   N well   J goods   Q cart   I washing line
   market_town     P townhouse (3)   D townhouses in a row (3)   Y stall   I stalls in a row (3)   J goods   N well
   fortified_town  P stone house (3)   D smithy (3)   N wall tower   Y supply wagon   J stores   I spear racks
   slums           P shack (3)   D shacks in a row (3)   T scraggly tree   J junk   N crates and a red lantern   I washing line
@@ -75,20 +75,20 @@ T . g . , T . L L .
  . k h s . . . g . 
   T . . . . . . .  
 """},
-    "village_lanes": {"size": "rectangle", "idea": "Two straight rows of cottages, each from its own side of the map, overlap in the middle. The lane between them is short and hidden from both ends, so nobody sees round the corner until they're in it.", "foes": BANDITS, "plan": """
-. . w . v . .
+    "village_lanes": {"size": "rectangle", "idea": "Two straight rows of cottages, each from its own side of the map, overlap in the middle, with gardens, a well and a washing line on the open ground round them. The lane between them is short and hidden from both ends, with a cart left in it, so nobody sees round the corner until they're in it.", "foes": BANDITS, "plan": """
+. . w . v . T
  . . x . . . 
-P Y P . . . .
- P Y P . . . 
-P Y P . . . .
- . . . . . . 
-. . . . . . .
- . . P Y P . 
-. . . P Y P .
- . . P Y P . 
+P Y P . . c c
+ P Y P . c c 
+P Y P . . c c
+ . . . Q . N 
+J . . . . . .
+ c c P Y P . 
+c c . P Y P .
+ c I P Y P J 
 . . . . . . .
  . h k s . . 
-. . . . . . .
+T . . . . . T
 """},
     "village_street": {"kind": "path", "size": "tall rectangle", "idea": "The village street, straight up the map between cottages, with a well and a tree breaking up the verges. The street is the quick way; the verges are the way round.", "foes": BANDITS, "plan": """
 . . n . .
@@ -500,6 +500,12 @@ def build_map(t, col, name):
     cells = pm.build_from_plan(t, col, name, MAPS[name], v, bv.KIT[v], line_wall, set(bv.VARIANTS), FREE_TURN)
     fm.fit = fit
     gates(col, v, cells)
+    if v == "village":  # no two cottages alike side by side: each map walks through the kit's kinds in turn
+        kinds = ["cottage_3", "cottage_3_thatch", "cottage_3_lean", "cottage_3_tall", "cottage_3_small"]
+        houses = sorted((o for o in col.objects if o.get("piece", "") in ("ob_village_cottage_3", "ob_village_cottage_3b")), key=lambda o: (-round(o.location.y), o.location.x))
+        for k, o in enumerate(houses):
+            name = f"ob_village_{kinds[k % len(kinds)]}"
+            o.data, o["piece"] = t[name].data, name
     return cells
 
 

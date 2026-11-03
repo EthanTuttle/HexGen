@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import build_farmland_cells as bf  # noqa: E402
 import build_forest_cells as fc  # noqa: E402
@@ -26,6 +26,7 @@ import variants as vr  # noqa: E402
 VARIANTS = ["village", "market_town", "fortified_town", "slums", "scholars_town"]
 GROUND = {"village": "plains", "market_town": "cobble", "fortified_town": "town_flag", "slums": "mud_ground", "scholars_town": "lawn"}
 BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "street"}
+hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
 fc.BARK.update({v: "trunk" for v in VARIANTS})
@@ -96,12 +97,15 @@ def house_row(p, rng, make, cells=LINE3, eaves=(0.12, 0.16), tall=1.45):
         grown(p, (1, 1, tall), c, lambda c=c: make(p, rng, c, ONE_WIDE - eaves[0], ONE_DEEP - eaves[1], ROW_SPIN))
 
 
-def fitted_cottage(p, rng, at, w, d, spin):
-    """A cottage with a door and windows on both long sides, as its back may face the camera, and a window in each gable end. Flat quads on the walls, so they cost little."""
-    h = 1.0
-    wall = rng.choice(("wall", "wall", "wall_warm"))
+def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False):
+    """A cottage with a door and windows on both long sides, as its back may face the camera, and a window in each gable end. Flat quads on the walls, so they cost little.
+    The rest varies it: wall height, roof pitch and colour, a chimney, a row of upper windows."""
+    wall = wall or rng.choice(("wall", "wall", "wall_warm"))
     p.box(at, (w, d, h), wall, spin=spin)
-    p.gable_roof(at, w + 0.12, d + 0.1, 0.62, rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
+    p.gable_roof(at, w + 0.12, d + 0.1, pitch, roof or rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
+    if chimney:
+        c = at + vr.turn(Vector((w * 0.28, d * 0.1, 0)), spin)
+        p.box(c, (0.16, 0.16, h + pitch + 0.12), "rock_dark", spin=spin)
 
     def quad(x, y, half, z0, z1, mat, off, end=False):
         """A rectangle on a wall's face, off from it; x along the ridge, y across it."""
@@ -122,10 +126,29 @@ def fitted_cottage(p, rng, at, w, d, spin):
             if abs(x) < w / 2 - 0.14:
                 quad(x, y, 0.11, 0.42, 0.72, "trunk", 0.006)
                 quad(x, y, 0.08, 0.45, 0.69, "window_glow", 0.012)
+        if upstairs:
+            for x in (-0.28 * w, 0.0, 0.28 * w):
+                quad(x, y, 0.11, h - 0.42, h - 0.14, "trunk", 0.006)
+                quad(x, y, 0.08, h - 0.39, h - 0.17, "window_glow", 0.012)
     for x in (-w / 2, w / 2):
         if w > 0.9:
             quad(x, 0.0, 0.11, 0.42, 0.72, "trunk", 0.006, end=True)
             quad(x, 0.0, 0.08, 0.45, 0.69, "window_glow", 0.012, end=True)
+
+
+def cottage_like(**kw):
+    """A cottage on three cells: kw sets its size, inside the fit, and what fitted_cottage varies. shift moves it along its cells, lean adds a low shed on its east end."""
+    wide, deep = kw.pop("wide", FIT_LONG - 0.12), kw.pop("deep", FIT_DEEP - 0.1)
+    lean = kw.pop("lean", False)
+
+    def make(p, rng):
+        at = pc.mean(TRIANGLE) + Vector((FIT_X, 0, 0))
+        fitted_cottage(p, rng, at - Vector((0.17 if lean else 0, 0, 0)), wide - (0.34 if lean else 0), deep, 0.0, **kw)
+        if lean:
+            q = at + Vector((wide / 2 - 0.16, 0, 0))
+            p.box(q, (0.32, deep - 0.14, 0.62), "boards")
+            p.box_rot(q + Vector((0, 0, 0.7)), (0.46, deep - 0.04, 0.05), "roof_brown", Matrix.Rotation(0.32, 3, "Y"))
+    return make
 
 
 def well(p, rng):
@@ -230,6 +253,12 @@ KIT = {
     "village": {
         "P": ("cottage_3", TRIANGLE, lambda p, r: building(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
         "Y": ("cottage_3b", TRIANGLE, lambda p, r: building(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
+        "1": ("cottage_3_thatch", TRIANGLE, cottage_like(wide=1.2, deep=0.78, h=0.82, pitch=0.78, roof="thatch")),
+        "2": ("cottage_3_tall", TRIANGLE, cottage_like(wide=1.15, deep=0.76, h=1.42, pitch=0.6, roof="roof_brown", wall="wall", chimney=True, upstairs=True)),
+        "3": ("cottage_3_lean", TRIANGLE, cottage_like(lean=True, roof="roof", wall="wall_warm", chimney=True)),
+        "4": ("cottage_3_small", TRIANGLE, cottage_like(wide=0.98, deep=0.72, h=0.78, pitch=0.5, roof="roof_brown", wall="wall_warm")),
+        "Q": ("cart", SINGLE, lambda p, r: grown(p, 1.3, ZERO, lambda: vr.grain_cart(p, r, ZERO, 0.4, shafts=True, load="thatch"))),
+        "I": ("washing", SINGLE, washing),
         "D": ("cottages_row", LINE3, lambda p, r: house_row(p, r, fitted_cottage, eaves=(0.12, 0.1), tall=1.0)),
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
         "N": ("well", SINGLE, well),
