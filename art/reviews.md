@@ -60,3 +60,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_wall_walk_wide_v2.png` | rejected | Not a wall yet; trial last, about 1.5 high with a double flight or ladder |
 | 2026-11-03 | `art/preview/canyon_mesa_before_after_v3.png` | approved | Rebuilt mesas, with `canyon_mesa_spots_a_v1`, `_b_v1`; small lower-band rims accepted |
 | 2026-11-03 | `art/preview/village_map_fortified_town_breach_v11.png` | rejected | With street_v11: taller map and longer top wall, two gaps stay; smaller house banners, fewer windows; clear a blocked door |
+| 2026-11-03 | `art/preview/village_map_fortified_town_breach_v12.png` | approved | Fortified set done, no objection raised; merges with the rest of village |
+| 2026-11-03 | `art/preview/village_map_slums_plots_v9.png` | rejected | Slums set (with shacks_v9, fences_v9, street_v9): flag-like tarp, more lopsided shacks, vegetable plots look terrible |
