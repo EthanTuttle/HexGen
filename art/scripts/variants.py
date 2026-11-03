@@ -1235,7 +1235,7 @@ def market_town(p, rng, kind):
 # --- River: delta ----------------------------------------------------------------------
 
 def delta(p, rng, kind):
-    """The braided channels, islands, boats and jetties are drawn with the water (water.py, delta=True)."""
+    """A water variant's look is drawn with the water (water.add_water, water.tile_props)."""
 
 
 # --- Swamp: bog/fen ----------------------------------------------------------------------
@@ -3886,6 +3886,414 @@ def college(p, rng, kind):
 LANDMARK_CENTRES.update(keep=keep, blackmarket=black_market, college=college)
 
 
+# --- River: raft and River Port -----------------------------------------------------
+
+def raft(p, rng):
+    """The party's raft: a long line of lashed logs with cross-beams, and a short mast at the back with a square striped sail so
+    it reads at map zoom. Forward is +X. seat effect points: where up to four minis stand, one behind the other as they walk
+    (the engine moves the raft with them and bobs it). It floats at z = 0, the water's level."""
+    length, n = 3.5, 8
+    for k in range(n):
+        y = -0.6 + 1.2 * k / (n - 1)
+        p.log(Vector((rng.uniform(-0.1, 0.1), y, 0)), 0.085, length, rng.choice(("trunk", "timber", "trunk")), spin=0.0, z=0.07)
+    for x in (-1.45, -0.5, 0.5, 1.45):
+        p.box(Vector((x, 0, 0)), (0.12, 1.38, 0.05), "timber", z=0.14)
+        for y in (-0.48, 0.48):
+            p.box(Vector((x, y, 0)), (0.15, 0.06, 0.06), "rope", z=0.13)
+    mast = Vector((-1.45, 0, 0))
+    p.box(mast, (0.09, 0.09, 2.05), "timber", z=0.14)
+    p.box(mast + Vector((0.02, 0, 0)), (0.05, 1.45, 0.05), "timber", z=2.05)
+    for k in range(4):
+        p.box(mast + Vector((0.04, -0.54 + 0.36 * k, 0)), (0.02, 0.36, 1.1), ("awning_a", "awning_b")[k % 2], z=0.95)
+    frustum(p, mast + Vector((-0.1, 0.5, 0.2)), mast + Vector((-0.7, 0.62, 0.42)), 0.03, 0.03, "timber", segments=4)  # the steering oar
+    p.box(mast + Vector((-0.78, 0.63, 0.4)), (0.28, 0.03, 0.12), "timber")
+    for x, y in ((1.2, 0.14), (0.45, -0.14), (-0.3, 0.14), (-1.0, -0.14)):
+        p.effects.append(("seat", Vector((x, y, 0.17))))
+
+
+def water_gate(p, rng):
+    """Where water reaches the River Port on a back edge: a stone wall across the edge, with an arch the water runs into, and steps
+    up through the wall beside it, where a raft lands (water.GATE_STEPS), with paving on to the port. In edge 0's frame."""
+    x = X1 - 0.12
+    arcade(p, x + 0.12, -1.25, 0.25, 1, 0.8, 0.24, "stone_tan")
+    p.flat([Vector((x - 0.12, -1.16, 0)), Vector((X1, -1.16, 0)), Vector((X1, 0.16, 0)), Vector((x - 0.12, 0.16, 0))], 0.03, "water")  # into the arch
+    p.box(Vector((x, -0.5, 0)), (0.26, 1.56, 0.06), "stone_block_dark", z=0.8)
+    p.box(Vector((x - 0.11, -0.5, 0)), (0.02, 1.2, 0.72), "pit_dark", z=0.03)
+    p.box(Vector((x, 1.1, 0)), (0.24, 0.3, 0.8), "stone_tan")
+    p.box(Vector((x, 1.1, 0)), (0.26, 0.34, 0.06), "stone_block_dark", z=0.8)
+    for k in range(4):  # steps up from the water, through the gap, down on to the paving
+        p.box(Vector((X1 - 0.08 - 0.14 * k, 0.6, 0)), (0.14, 0.62, 0.1 + 0.05 * k), "stone_block")
+    strip_x0 = 2.0
+    p.flat([Vector((strip_x0, 0.28, 0)), Vector((X1 - 0.5, 0.28, 0)), Vector((X1 - 0.5, 0.92, 0)), Vector((strip_x0, 0.92, 0))], 0.04, "street")
+
+
+def dock_house(p, rng, y, w, h, wall, roof, depth=1.3):
+    """A tall narrow house on the quay, its gable to the water, with windows up its front, a door and a jutting top storey."""
+    x = -0.55
+    at = Vector((x, y, 0))
+    p.box(at, (depth, w, h), wall)
+    p.box(at, (depth + 0.05, w + 0.05, 0.05), "timber", z=h * 0.36)
+    p.box(at, (depth + 0.05, w + 0.05, 0.05), "timber", z=h * 0.7)
+    p.gable_roof(at, depth + 0.16, w + 0.12, 0.72, roof, z=h)
+    front = x + depth / 2 + 0.01
+    p.box(Vector((front, y, 0)), (0.02, 0.26, 0.56), "timber", z=0.12)
+    for z in (h * 0.42, h * 0.76):
+        for dy in ((-w * 0.24, w * 0.24) if w > 0.75 else (0,)):
+            p.box(Vector((front, y + dy, 0)), (0.02, 0.17, 0.26), "window_glow", z=z)
+
+
+def cog(p, rng):
+    """A cargo boat with a mast and a furled sail, moored along the quay. Its long side is along Y."""
+    for x, y, w, d in ((0, 0, 0.56, 1.6), (0, 0.9, 0.34, 0.3), (0, -0.9, 0.34, 0.3)):
+        p.box(Vector((x, y, 0)), (w, d, 0.3), "trunk", z=0.03)
+    p.box(Vector((0, 0, 0)), (0.44, 1.5, 0.05), "boat", z=0.33)
+    p.box(Vector((0, 0.1, 0)), (0.07, 0.07, 1.6), "timber", z=0.33)
+    p.box(Vector((0, 0.1, 0)), (0.1, 0.9, 0.12), "sail", z=1.42)
+    p.box(Vector((0, -0.45, 0)), (0.3, 0.3, 0.24), "crate", z=0.38)
+    p.box(Vector((0.03, 0.55, 0)), (0.26, 0.26, 0.2), "crate", z=0.38)
+
+
+def barge(p, rng):
+    """A low flat barge heaped with crates and barrels, moored along the quay."""
+    p.box(Vector((0, 0, 0)), (0.6, 1.3, 0.2), "trunk", z=0.03)
+    p.box(Vector((0, 0, 0)), (0.5, 1.2, 0.04), "crate", z=0.23)
+    for y, h in ((-0.42, 0.28), (-0.1, 0.34), (0.22, 0.24)):
+        p.box(Vector((rng.uniform(-0.05, 0.05), y, 0)), (0.28, 0.28, h), "crate", z=0.27, spin=rng.uniform(-0.2, 0.2))
+    p.cylinder(Vector((0.08, 0.46, 0)), 0.1, 0.24, "trunk", segments=8, z=0.27)
+
+
+def river_port(p, rng, kind):
+    """River delta's River Port: a row of tall dockside houses and a tavern facing a stone quay on +X, boats alongside (separate
+    pieces, so they can bob), a crane, cargo, and rafts for sale. Its paving lies flat on the tile's own ground, with no edge of its
+    own, and fades out into the grass; the water, the harbour and the quay's stone wall are the engine's (water.add_water, port).
+    An alley through the row joins the back to the quay."""
+    q = 0.9  # water.QUAY_X
+    y_end = 3.25
+    k_z = 0.04  # the paving's height, just over the water so it covers its shore, too low to show an edge
+    p.flat([Vector(c + (0,)) for c in ((q, -y_end + 0.3), (q, y_end - 0.3), (0.1, y_end), (-1.35, y_end - 0.05), (-2.05, 2.35), (-2.1, -2.35), (-1.35, -y_end + 0.05), (0.1, -y_end))], k_z, "street")
+    bt.cobbles(p, rng, lambda t: 0.25 < t.x < 0.72 and abs(t.y) < y_end - 0.5, hk.CENTRE_BOUNDS, 0, z=k_z + 0.01)
+    for at, r in ((Vector((-2.35, 1.2, 0)), 0.28), (Vector((-2.4, -0.9, 0)), 0.34), (Vector((-1.7, 3.0, 0)), 0.26), (Vector((-1.75, -3.0, 0)), 0.3), (Vector((0.35, 3.45, 0)), 0.24), (Vector((0.4, -3.45, 0)), 0.26)):
+        p.cylinder(at, r, 0.012, "street", segments=7, z=k_z - 0.012)  # stray flagstones, where the paving gives out in the grass
+    for y in (-2.65, -0.9, 0.9, 2.65):
+        p.cylinder(Vector((q - 0.08, y, 0)), 0.05, 0.3, "trunk", segments=6, z=k_z)  # mooring posts, in the quay wall
+    # the steps down to the water, where a raft lands
+    for k in range(3):
+        p.box(Vector((q + 0.1 + 0.14 * k, 0, 0)), (0.14, 0.9, 0.12 - 0.03 * k), "stone_tan", z=0.03)
+    # the row: tall narrow houses either side of an alley, the tavern wider, with a lit front and a sign
+    walls = (("wall_warm", "roof"), ("cream_stone", "slate"), ("wall", "roof_brown"), ("patch_ochre", "roof"), ("stone_tan", "slate"))
+    for k, (y, w, h) in enumerate(((-2.95, 0.72, 2.1), (-2.2, 0.72, 2.6), (-1.45, 0.72, 2.25), (-0.72, 0.68, 2.75))):
+        dock_house(p, rng, y, w, h, *walls[k])
+    dock_house(p, rng, 2.9, 0.78, 2.5, *walls[4])
+    tav, tw = 1.45, 1.95
+    p.box(Vector((-0.55, tav, 0)), (1.3, tw, 2.15), "timber_light")
+    for z in (0.75, 1.5):
+        p.box(Vector((-0.55, tav, 0)), (1.36, tw + 0.05, 0.06), "timber", z=z)
+    p.gable_roof(Vector((-0.55, tav, 0)), tw + 0.12, 1.5, 0.75, "roof", z=2.15, spin=math.pi / 2)
+    front = 0.11
+    for dy in (-0.68, -0.22, 0.22, 0.68):
+        p.box(Vector((front, tav + dy, 0)), (0.02, 0.26, 0.3), "window_glow", z=1.05)
+        if abs(dy) > 0.3:
+            p.box(Vector((front, tav + dy, 0)), (0.02, 0.26, 0.3), "window_glow", z=0.32)
+    p.box(Vector((front, tav, 0)), (0.02, 0.36, 0.62), "timber", z=k_z)
+    p.box(Vector((0.26, tav + 0.0, 0)), (0.3, 0.04, 0.04), "timber", z=1.0)  # the sign
+    p.box(Vector((0.36, tav + 0.0, 0)), (0.03, 0.3, 0.26), "banner_guild", z=0.72)
+    p.cylinder(Vector((-0.55, tav - 0.5, 0)), 0.1, 0.5, "rock_dark", segments=6, z=2.5)
+    p.effects.append(("smoke", Vector((-0.55, tav - 0.5, 3.1))))
+    # tables out in front of the tavern
+    for dy in (-0.55, 0.45):
+        p.cylinder(Vector((0.34, tav + dy, 0)), 0.14, 0.03, "trunk", segments=8, z=0.42)
+        p.box(Vector((0.34, tav + dy, 0)), (0.05, 0.05, 0.38), "trunk", z=k_z)
+    # the crane at the far end, unloading the barge
+    c = Vector((0.3, -2.2, 0))
+    p.box(c, (0.16, 0.16, 1.97), "timber", z=k_z)
+    p.box_rot(c + Vector((0.5, 0, 1.87)), (1.25, 0.08, 0.08), "timber", Matrix.Rotation(-0.35, 3, "Y"))
+    frustum(p, c + Vector((1.07, 0, 2.09)), c + Vector((1.07, 0, 1.25)), 0.012, 0.012, "rope", segments=3)
+    p.box(c + Vector((1.07, 0, 0)), (0.26, 0.26, 0.22), "crate", z=1.03)
+    # cargo on the quay, rafts for sale at the near end: two stacked and one afloat, with a sign
+    for at, s in ((Vector((0.28, -2.75, 0)), 0.2), (Vector((0.3, -1.6, 0)), -0.15), (Vector((0.3, -1.25, 0)), 0.3)):
+        p.box(at, (0.3, 0.3, 0.26), "crate", z=k_z, spin=s)
+    p.cylinder(Vector((0.3, -2.75, 0)) + Vector((0, 0.45, 0)), 0.12, 0.3, "trunk", segments=8, z=k_z)
+    for k in range(2):
+        for j in range(5):
+            p.log(Vector((0.27, 2.25 + 0.5 * (j / 4 - 0.5), 0)), 0.05, 0.44, "trunk", spin=0.0, z=0.09 + 0.11 * k)
+    p.box(Vector((0.3, 2.68, 0)), (0.04, 0.04, 0.82), "timber", z=k_z)
+    p.box(Vector((0.3, 2.68, 0)), (0.03, 0.44, 0.24), "sail", z=0.66)
+    for y in (-2.1, 0.0, 2.1):  # only the paving, so the grass and flowers carry on round it
+        p.no_cover.append((Vector((-0.6, y, 0)), 1.75))
+
+
+def afloat_raft(p, rng):
+    """A raft for sale, moored: the party's raft without its sail."""
+    for k in range(5):
+        p.log(Vector((rng.uniform(-0.05, 0.05), -0.36 + 0.18 * k, 0)), 0.07, 1.25, "trunk", spin=0.0, z=0.06)
+    for x in (-0.42, 0.42):
+        p.box(Vector((x, 0, 0)), (0.09, 0.85, 0.04), "timber", z=0.12)
+
+
+# --- Great lake, rapids, still waters: props the water code places (water.tile_props), +X out over the water --------------
+
+def fish_hut(p, rng):
+    """A fisher's hut on stilts at the lake's edge, with a pier running out from it and a small boat tied up."""
+    at = Vector((0.1, 0, 0))
+    for x, y in ((-0.3, -0.3), (0.42, -0.3), (-0.3, 0.3), (0.42, 0.3)):
+        p.cylinder(Vector((x, y, 0)), 0.035, 0.32, "trunk", segments=5)
+    p.box(at, (0.95, 0.85, 0.05), "timber", z=0.32)
+    p.box(at, (0.7, 0.62, 0.48), rng.choice(("wall_warm", "timber_light")), z=0.37)
+    p.gable_roof(at, 0.82, 0.74, 0.34, "roof_brown", z=0.85)
+    p.box(Vector((0.46, 0, 0)), (0.02, 0.2, 0.34), "timber", z=0.37)
+    p.box(Vector((1.1, 0, 0)), (1.2, 0.26, 0.04), "trunk", z=0.26)
+    for x in (0.8, 1.65):
+        for y in (-0.11, 0.11):
+            p.cylinder(Vector((x, y, 0)), 0.03, 0.34, "trunk", segments=5)
+    p.box(Vector((1.25, 0.42, 0)), (0.75, 0.28, 0.1), "trunk", z=0.03)
+    p.box(Vector((1.25, 0.42, 0)), (0.42, 0.2, 0.04), "boat", z=0.13)
+
+
+def net_rack(p, rng):
+    """Fishing nets drying on a long rack on the shore."""
+    for y in (-0.55, 0.55):
+        p.box(Vector((0, y, 0)), (0.05, 0.05, 0.62), "trunk")
+    p.box(Vector((0, 0, 0)), (0.04, 1.2, 0.04), "trunk", z=0.6)
+    for y, h in ((-0.33, 0.42), (0.0, 0.34), (0.32, 0.45)):
+        p.box(Vector((0, y, 0)), (0.02, 0.3, h), "net", z=0.6 - h)
+
+
+def fishing_boat(p, rng):
+    """A small fishing boat with a stubby mast, out on the lake."""
+    p.prism([Vector(c + (0,)) for c in ((-0.45, -0.2), (0.3, -0.2), (0.62, 0.0), (0.3, 0.2), (-0.45, 0.2))], 0.03, 0.17, "trunk")
+    p.prism([Vector(c + (0,)) for c in ((-0.36, -0.13), (0.26, -0.13), (0.42, 0.0), (0.26, 0.13), (-0.36, 0.13))], 0.17, 0.18, "pit_dark")
+    p.box(Vector((-0.02, 0, 0)), (0.05, 0.05, 0.85), "timber", z=0.18)
+    p.box(Vector((-0.12, 0, 0)), (0.5, 0.02, 0.46), "sail", z=0.46, spin=0.25)
+
+
+def lake_islet(p, rng):
+    """A little island far out on the lake: sand, rocks and a couple of pines."""
+    p.cylinder(Vector((0, 0, 0)), 0.85, 0.04, "sandbar", segments=9, z=0.01)
+    p.cylinder(Vector((-0.05, 0, 0)), 0.58, 0.05, "plains", segments=8, z=0.03)
+    for x, y, h in ((-0.2, 0.1, 1.0), (0.18, -0.12, 0.75)):
+        frustum(p, Vector((x, y, 0.06)), Vector((x, y, 0.3)), 0.05, 0.04, "trunk", segments=4)
+        p.cone(Vector((x, y, 0)), 0.3, h, "leaf", segments=5, z=0.25)
+    for x, y, r in ((0.55, 0.28, 0.17), (0.3, 0.52, 0.12)):
+        lump(p, Vector((x, y, 0)), r, "rock", z=0.04, squash=0.7)
+
+
+def serpent_hump(p, at, r, spin, thick):
+    """One coil breaking the water: an arch of body, with a ridge of fins along its top."""
+    n = 6
+    d = Vector((math.cos(spin), math.sin(spin), 0))
+    pts = [at + d * (r * math.cos(math.pi * k / n)) + Vector((0, 0, r * 0.95 * math.sin(math.pi * k / n))) for k in range(n + 1)]
+    for a, b in zip(pts, pts[1:]):
+        frustum(p, a, b, thick, thick, "serpent", segments=5)
+    for pt in pts[2:5]:
+        spike(p, pt + Vector((0, 0, thick * 0.6)), pt + Vector((0, 0, thick + 0.2)) - d * 0.1, 0.09, "serpent", segments=3)
+
+
+def lake_coil(p, rng):
+    """Now and then a coil breaks the surface far out: three humps in a line, smaller toward the tail."""
+    for x, r, t in ((-0.72, 0.42, 0.13), (0.12, 0.34, 0.11), (0.74, 0.22, 0.08)):
+        serpent_hump(p, Vector((x, 0, 0)), r, 0.0, t)
+        p.flat([Vector((x + (r + 0.1) * math.cos(a), (t + 0.07) * math.sin(a), 0)) for a in (2 * math.pi * k / 8 for k in range(8))], 0.034, "foam")
+
+
+def lake_fin(p, rng):
+    """A fin cutting the water, with a wake behind it."""
+    spike(p, Vector((0.12, 0, 0.02)), Vector((-0.22, 0, 0.72)), 0.26, "serpent", segments=3)
+    spike(p, Vector((0.95, 0.04, 0.02)), Vector((0.8, 0.04, 0.3)), 0.12, "serpent", segments=3)
+    p.flat([Vector((0.3 + 0.75 * math.cos(a), 0.05 * math.sin(a), 0)) for a in (2 * math.pi * k / 8 for k in range(8))], 0.034, "foam")
+
+
+def boat_wreck(p, rng, at, spin, tilt):
+    """A wrecked boat, half sunk: a broken hull, ribs showing, and a snapped mast."""
+    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(tilt, 3, "Y")
+    off = lambda x, y, z: at + rot @ Vector((x, y, z))  # noqa: E731
+    p.box_rot(off(0.28, 0, 0.09), (0.72, 0.5, 0.16), "trunk", rot)
+    p.box_rot(off(0.28, 0, 0.18), (0.6, 0.4, 0.03), "pit_dark", rot)
+    for x in (-0.3, -0.12, 0.06):
+        for s_ in (-1, 1):
+            p.box_rot(off(x, s_ * 0.24, 0.16), (0.05, 0.04, 0.32), "timber", rot)
+    frustum(p, off(0.25, 0, 0.18), off(0.5, 0.2, 0.86), 0.04, 0.03, "timber", segments=4)
+    p.box_rot(off(-0.65, 0.3, 0.03), (0.62, 0.1, 0.03), "trunk", Matrix.Rotation(spin + 0.5, 3, "Z"))
+
+
+def lake_wreck(p, rng):
+    """Flotsam near the Serpent's Lair: a wreck and loose planks."""
+    boat_wreck(p, rng, Vector((0, 0, 0)), 0.3, 0.3)
+
+
+def rapids_fall(p, rng):
+    """A small waterfall where two rapids tiles meet: a ledge of rock across the channel on the edge, with foam spilling over it. In the edge's frame; the engine adds spray."""
+    half = 1.05
+    p.flat([Vector((-0.34, -0.98, 0)), Vector((0.2, -0.98, 0)), Vector((0.34, -0.45, 0)), Vector((0.24, 0.1, 0)), Vector((0.36, 0.55, 0)), Vector((0.2, 0.98, 0)), Vector((-0.34, 0.98, 0)), Vector((-0.42, 0.3, 0)), Vector((-0.3, -0.3, 0))], 0.037, "foam")
+    for k in range(7):
+        y = -0.82 + 1.64 * k / 6
+        lump(p, Vector((0.14, y, 0)), rng.uniform(0.11, 0.17), "foam", z=0.05, squash=0.55)
+        lump(p, Vector((-0.14, y + 0.08, 0)), rng.uniform(0.08, 0.13), "foam", z=0.05, squash=0.5)
+    for y, r in ((-half, 0.3), (half, 0.27)):
+        lump(p, Vector((0.05, y, 0)), r, "rock", z=0.08, squash=0.8)
+    p.effects.append(("spray", Vector((0, 0, 0.3))))
+
+
+def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=None, n=12):
+    """A humped stone bridge along X, its ends at x = +-half on the ground: a solid with a round arch under the middle. Returns its deck height at x."""
+    top = lambda x: crown * (1 - (x / half) ** 2) + 0.02  # noqa: E731
+    under = lambda x: rise * math.sqrt(max(0.0, 1 - (x / open_half) ** 2)) if abs(x) < open_half else 0.0  # noqa: E731
+
+    def block(a, b, c, d, y0, y1, mat):  # a solid from a quad in the (x, z) plane, from y0 to y1
+        v = [p.bm.verts.new((x, y, z)) for y in (y0, y1) for x, z in (a, b, c, d)]
+        idx = p._slot(mat)
+        for f in ((v[0], v[1], v[2], v[3]), (v[7], v[6], v[5], v[4]), (v[0], v[4], v[5], v[1]), (v[1], v[5], v[6], v[2]),
+                  (v[2], v[6], v[7], v[3]), (v[3], v[7], v[4], v[0])):
+            p.bm.faces.new(f).material_index = idx
+
+    # breakpoints: the arch's springing lies on one, so the solid meets the ground cleanly either side of it
+    xs = sorted(set([-half, half, -open_half, open_half] + [-half + (half - open_half) * k / 3 for k in (1, 2)] + [half - (half - open_half) * k / 3 for k in (1, 2)]
+                    + [open_half * math.cos(math.pi * k / n) for k in range(n + 1)]))
+    for a, b in zip(xs, xs[1:]):
+        block((a, under(a)), (b, under(b)), (b, top(b)), (a, top(a)), -width / 2, width / 2, stone)
+        for s_ in (-1, 1):
+            y0 = s_ * width / 2
+            block((a, top(a) - 0.02), (b, top(b) - 0.02), (b, top(b) + 0.2), (a, top(a) + 0.2), y0, y0 - s_ * 0.1, parapet)
+            if ring and abs(a) < open_half + 0.01 and abs(b) < open_half + 0.01:  # the arch's ring of darker blocks, on each face
+                y1 = s_ * (width / 2 + 0.02)
+                block((a, under(a)), (b, under(b)), (b, under(b) + 0.18), (a, under(a) + 0.18), y0, y1, ring)
+    p.flat([Vector((-open_half, -width / 2, 0)), Vector((open_half, -width / 2, 0)), Vector((open_half, width / 2, 0)), Vector((-open_half, width / 2, 0))], 0.036, "water_shade")  # the shade under it
+    p.paths.append([Vector((x, 0, top(x))) for x in xs[::2] + xs[-1:]])
+    return top
+
+
+def rapids_bridge(p, rng):
+    """A plain stone bridge over rapids, walked with no check (water.bridge_spot says where). Ramps run out on to the land each side."""
+    arch_bridge(p, 1.95, 0.92, 0.8, 1.2, 0.6, "stone_tan", "stone_block", n=8)
+
+
+def still_willow(p, rng):
+    """A weeping willow on the shore, trailing into the water on +X."""
+    willow(p, rng, Vector((0, 0, 0)), 0.8, 1.55)
+
+
+def willow(p, rng, at, reach, h):
+    """A weeping willow leaning out along +X: a dome of leaves with long strands falling to the water."""
+    top = at + Vector((reach * 0.35, 0, h))
+    frustum(p, at, top, 0.14, 0.08, "trunk", segments=5)
+    crown = top + Vector((reach * 0.25, 0, 0.12))
+    lump(p, crown, 0.74, "leaf_green", squash=0.42)
+    lump(p, crown + Vector((0.16, 0.14, 0.1)), 0.4, "leaf_gold", squash=0.4)
+    # the curtain: long strands, wide where they leave the crown and fine at the water, so the trunk shows between their tips
+    for k in range(14):
+        a = 2 * math.pi * (k + rng.uniform(-0.2, 0.2)) / 14
+        q = crown + Vector((0.66 * math.cos(a), 0.66 * math.sin(a), 0.02))
+        tip = Vector((q.x + 0.2 * math.cos(a), q.y + 0.2 * math.sin(a), rng.uniform(0.05, 0.38)))
+        spike(p, q, tip, 0.17, ("leaf_green", "leaf_gold", "leaf_green_dark")[k % 3], segments=4)
+
+
+def stone_stack(p, rng, at, n=4, r=0.17):
+    """A small balanced stack of flat stones."""
+    z = at.z
+    for k in range(n):
+        rk = r * (1 - 0.16 * k) * rng.uniform(0.9, 1.1)
+        h = rk * 0.55
+        p.cylinder(Vector((at.x + rng.uniform(-0.02, 0.02), at.y + rng.uniform(-0.02, 0.02), 0)), rk, h, "smooth_stone", segments=7, z=z)
+        z += h
+
+
+def still_stack(p, rng):
+    stone_stack(p, rng, Vector((0, 0, 0)))
+    stone_stack(p, rng, Vector((0.26, 0.14, 0)), n=3, r=0.12)
+
+
+def still_stones(p, rng):
+    """Rounded stones standing in still water, as dressing, not a way across: they don't reach either shore."""
+    for x, y, r in ((-0.45, 0.1, 0.2), (0.0, -0.1, 0.25), (0.42, 0.14, 0.18)):
+        p.cylinder(Vector((x, y, 0)), r, 0.09, "smooth_stone", segments=7, z=0.0)
+    stone_stack(p, rng, Vector((0.0, -0.1, 0.09)), n=3, r=0.13)
+
+
+# --- Great lake, rapids, still waters: landmarks -----------------------------------------------------------------
+
+LAIR_ROCK = ("rock_dark", "stone_block_dark", "basalt")
+
+
+def serpent_lair(p, rng, kind):
+    """Great lake's Lake Serpent's Lair: a craggy rock rising from the middle of the water, a black cave at the waterline on +X with a low shelf in front of it,
+    wrecked boats and great bones round it, and a coil of the serpent behind. No way on foot: a check or a raft to the shelf (water.lair_routes)."""
+    for x, y, r, z in ((-0.35, 0, 1.25, 0.2), (-0.1, 1.05, 0.8, 0.1), (-0.1, -1.05, 0.8, 0.1), (-1.0, 0.65, 0.85, 0.15), (-1.0, -0.65, 0.85, 0.15), (0.55, 0.88, 0.62, 0.1),
+                       (0.55, -0.88, 0.62, 0.1), (-0.55, 0.3, 0.9, 1.35), (-0.6, -0.4, 0.75, 1.7), (0.1, 0.05, 0.62, 1.2)):
+        lump(p, Vector((x, y, 0)), r, rng.choice(LAIR_ROCK), z=z)
+    for x, y, b, h in ((-0.6, 0.3, 2.1, 1.5), (-0.55, -0.42, 2.2, 1.0), (-1.1, 0.0, 1.7, 0.9), (0.15, 0.75, 0.9, 0.7), (0.1, -0.85, 0.85, 0.6)):  # jagged crags on top
+        spike(p, Vector((x, y, b)), Vector((x + 0.08, y, b + h)), 0.36, rng.choice(LAIR_ROCK[:2]), segments=5)
+    mouth = Vector((0.92, 0, 0))
+    p.box(mouth, (0.34, 1.0, 1.02), "cave_dark", z=0.03)
+    for y, z, r in ((-0.42, 1.05, 0.34), (0.0, 1.15, 0.36), (0.42, 1.05, 0.34), (-0.7, 0.68, 0.32), (0.7, 0.68, 0.32), (-0.74, 0.22, 0.34), (0.74, 0.22, 0.34)):
+        lump(p, mouth + Vector((0.14, y, z)), r, rng.choice(LAIR_ROCK))
+    # the shelf where a party lands, at the water, leading up to the mouth
+    p.prism([Vector(c + (0,)) for c in ((1.05, -0.62), (1.95, -0.72), (2.32, -0.2), (2.28, 0.35), (1.85, 0.7), (1.05, 0.62))], 0.0, 0.14, "rock_dark")
+    for x, y, r in ((2.1, -0.62, 0.17), (1.55, -0.72, 0.2), (2.0, 0.62, 0.18), (1.42, 0.7, 0.2)):
+        lump(p, Vector((x, y, 0)), r, "rock_dark", z=0.1)
+    bones(p, rng, Vector((1.62, 0.42, 0.14)), skull=True)
+    bones(p, rng, Vector((1.7, -0.45, 0.14)), skull=False)
+    # a great rib cage standing out of the water
+    spine = Vector((1.3, 1.22, 0))
+    along, across = Vector((-0.5, 0.4, 0)), Vector((0.38, 0.47, 0))
+    for k in range(4):
+        h_ = 1.0 - 0.14 * k
+        for s_ in (-1, 1):
+            base = spine + along * k * 0.5 + across * s_ * 0.5
+            knee = base + across * s_ * 0.14 + Vector((0, 0, h_ * 0.55))
+            frustum(p, base, knee, 0.06, 0.045, "bone", segments=4)
+            frustum(p, knee, knee - across * s_ * 0.34 + Vector((0, 0, h_ * 0.45)), 0.045, 0.012, "bone", segments=4)
+    boat_wreck(p, rng, Vector((0.95, -1.3, 0)), -0.7, 0.28)
+    boat_wreck(p, rng, Vector((-1.55, -1.3, 0)), 2.4, -0.25)
+    serpent_hump(p, Vector((-1.75, 0.95, 0)), 0.42, 2.2, 0.14)
+    serpent_hump(p, Vector((-2.15, 0.05, 0)), 0.3, 1.5, 0.1)
+    p.paths.append([Vector((2.75, 0, 0)), Vector((2.15, 0, 0.14)), Vector((1.5, 0, 0.14))])  # water.LAIR_LAND to water.LAIR_STOP
+    p.no_cover.append((Vector((0, 0, 0)), 2.4))
+
+
+def troll_bridge(p, rng, kind):
+    """Rapids' Troll Bridge: a big old mossy stone arch over the white water, placed where water.bridge_spot says, with shade under it, a dark hollow in its
+    near side where the troll lives, a toll post at one end, and bones. Its path runs over the top: walking it needs no check."""
+    half, w = 2.9, 1.4
+    top = arch_bridge(p, half, 2.05, w, 1.42, 1.5, "stone_moss", "stone_block_dark", ring="stone_block_dark", n=10)
+    for x, y, r in ((-1.6, 0.56, 0.24), (-0.8, -0.56, 0.2), (-0.1, 0.56, 0.26), (0.7, 0.56, 0.2), (1.35, -0.56, 0.24), (1.95, 0.56, 0.2), (-2.1, -0.56, 0.18)):
+        p.blob(Vector((x, y, 0)), r, "moss", z=top(x) + 0.16, squash=0.45)
+    for x, y, z, r in ((-1.25, w / 2, 0.45, 0.3), (1.55, -w / 2, 0.34, 0.34), (1.55, w / 2, 0.34, 0.3), (-1.2, -w / 2, 1.2, 0.2), (0.95, -w / 2, 1.45, 0.22), (-0.9, w / 2, 1.5, 0.22)):  # moss on the walls
+        p.blob(Vector((x, y, 0)), r, "moss", z=z, squash=0.6)
+    # the hollow: a black opening in the side of the near abutment, with rough stone round it, on -Y, and bones before it
+    hx = -1.92
+    p.box(Vector((hx, -w / 2 - 0.02, 0)), (0.62, 0.05, 0.58), "cave_dark")
+    for dx, z, r in ((-0.38, 0.22, 0.2), (0.38, 0.2, 0.2), (-0.26, 0.58, 0.18), (0.26, 0.58, 0.18), (0, 0.66, 0.2)):
+        lump(p, Vector((hx + dx, -w / 2 - 0.04, 0)), r, "stone_block_dark", z=z)
+    bones(p, rng, Vector((hx - 0.35, -w / 2 - 0.42, 0)), skull=True)
+    bones(p, rng, Vector((hx + 0.1, -w / 2 - 0.55, 0)), skull=False)
+    # the toll post, at the far end: a stout post with a sign and a skull
+    tp = Vector((2.45, w / 2 + 0.18, 0))
+    p.box(tp, (0.16, 0.16, 1.45), "timber")
+    p.box(tp + Vector((0, 0.09, 0)), (0.54, 0.04, 0.36), "timber_light", z=0.95)
+    lump(p, tp, 0.12, "bone", z=1.55, squash=0.85)
+    bones(p, rng, tp + Vector((0.3, 0.32, 0)), skull=True)
+    p.no_cover.append((Vector((-1.9, 0, 0)), 1.3))
+    p.no_cover.append((Vector((1.9, 0, 0)), 1.3))
+    p.no_cover.append((Vector((0, 0, 0)), 1.3))
+
+
+def meditation_rock(p, rng, kind):
+    """Still waters' Meditation Rock: a broad smooth rock out on the water with balanced stone stacks, and no tree (design/07). The stepping
+    stones are the engine's (water.rock_routes): +X faces the first line of them. The party stops in the middle of the rock."""
+    for at, top, r0, r1 in ((0.0, 0.16, 1.45, 1.28), (0.16, 0.34, 1.28, 0.82)):
+        frustum(p, Vector((0, 0, at)), Vector((0, 0, top)), r0, r1, "smooth_stone", segments=12)
+    for x, y, n, r in ((0.56, 0.33, 7, 0.19), (0.0, -0.66, 6, 0.18), (0.0, 0.66, 5, 0.16)):  # between the lines of stones, which come in at 60 degree steps
+        stone_stack(p, rng, Vector((x, y, 0.34)), n=n, r=r)
+    p.no_cover.append((Vector((0, 0, 0)), 1.6))
+
+
+PROP_PIECES = {"raft": raft, "riverport_watergate": water_gate, "lake_hut": fish_hut, "lake_net": net_rack, "lake_boat": fishing_boat, "lake_islet": lake_islet,
+               "lake_coil": lake_coil, "lake_fin": lake_fin, "lake_wreck": lake_wreck, "rapids_fall": rapids_fall, "rapids_bridge": rapids_bridge,
+               "still_willow": still_willow, "still_stack": still_stack, "still_stones": still_stones}
+LANDMARK_CENTRES.update(riverport=river_port, serpentlair=serpent_lair, trollbridge=troll_bridge, meditationrock=meditation_rock)
+LANDMARK_PARTS.update(riverport_cog=(cog, Vector((1.28, 1.35, 0))), riverport_barge=(barge, Vector((1.3, -1.85, 0))),
+                      riverport_raft=(afloat_raft, Vector((1.62, -0.72, 0))))
+
+
 # variant: (terrain, builder, ground colour, extra pieces)
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -3905,6 +4313,9 @@ VARIANTS = {
                           "centre_near", "edge_other_lm")),
     "market_town": ("village", market_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
     "delta": ("river", delta, "plains", ()),
+    "great_lake": ("river", delta, "plains", ()),
+    "rapids": ("river", delta, "plains", ()),
+    "still_waters": ("river", delta, "plains", ()),
     "bog": ("swamp", bog, "bog", ()),
     "wasteland": ("desert", wasteland, "wasteland", ()),
     "excavation": ("ruins", excavation, "plains", ()),
@@ -3936,6 +4347,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "harvestfestival": "cider_orchards", "nomadcamp": "meadows",
              "clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks", "library": "monastery_heights",
              "tradinghouse": "market_town",
+             "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids", "meditationrock": "still_waters",
              "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
