@@ -128,7 +128,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
 - [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
 - [ ] New: Legendary odds; minor landmark odds per placed tile
-- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills, village and river done by Nov 2, 2026)
+- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills, village, river and desert done by Nov 2, 2026)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
 - [ ] New: class quests: what the task rewards; Rogue's manor in a bayou
@@ -166,7 +166,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: do custom combat maps have height, and what it does (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
 - [ ] New: giant enemies (3 or 7 cells): grid rules (see Classes & combat)
-- [ ] New: custom combat maps: how many per terrain and variant, size range, and how a fight picks one
+- [ ] New: custom combat maps: how many per terrain and variant, size range (forest set is 34–114 cells; check how long maps feel in play), and how a fight picks one
 - [x] ~~Crossing water~~ (settled Nov 2, 2026: Athletics check, a failure costs the whole party HP but they still cross; a permanent raft from the River Port; see Map & exploration → Obstacles)
 - [ ] New: HP lost on a failed crossing, raft price, and how the raft looks on the map
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
