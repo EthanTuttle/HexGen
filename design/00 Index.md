@@ -166,7 +166,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: do custom combat maps have height, and what it does (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
 - [ ] New: giant enemies (3 or 7 cells): grid rules (see Classes & combat)
-- [ ] New: custom combat maps: how many per terrain and variant, and how a fight picks one
+- [ ] New: custom combat maps: how many per terrain and variant, size range, and how a fight picks one
 - [x] ~~Crossing water~~ (settled Nov 2, 2026: Athletics check, a failure costs the whole party HP but they still cross; a permanent raft from the River Port; see Map & exploration → Obstacles)
 - [ ] New: HP lost on a failed crossing, raft price, and how the raft looks on the map
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
