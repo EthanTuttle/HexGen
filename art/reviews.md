@@ -46,3 +46,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/river_rapids_parties_map_v1.png` | approved | Gorge and flatter Troll Bridge; pool and waterfall to add where rapids meet a river |
 | 2026-11-03 | `godot/screens/desert_05_canyon_map.png` | rejected | On the Godot branch: top mesas have thin wall-like parts, especially near the canyon's edges; also check the art |
 | 2026-11-03 | `godot/screens/desert_30_silhouette_on.png` | rejected | On the Godot branch: silhouette must be solid, no inner overlaps |
+| 2026-11-03 | `art/preview/household_props_sheet_v2.png` | rejected | Yard things too small, brown and scattered; rework and add new sets; slight overhang fine |
