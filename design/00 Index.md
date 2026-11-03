@@ -35,6 +35,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [ ] New: walkable wall on combat maps: last trial after all sets, a real wall about 1.5 high reached by two stacked flights or a ladder (Ethan, Nov 3)
 - [ ] New: a pass on combat map buildings over the 0.15 overhang limit (haunted house, two barns; see Presentation)
 - [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
 - [x] ~~Combat map ways up~~ (settled Nov 3: landing with steps into every neighbouring cell; see Presentation)

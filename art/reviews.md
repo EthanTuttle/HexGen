@@ -56,3 +56,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_map_market_town_aisles_v10.png` | rejected | Market Town set (with square_v10, row_v10, street_v10): better stall goods and sacks; stall rows overlap; row too tight. Colours, stone and goods kept |
 | 2026-11-03 | `art/preview/village_map_market_town_aisles_v11.png` | rejected | Rework with horizontal stalls, same challenge. Goods, sacks and other Market maps (square_v11, row_v12, street_v11) not objected to |
 | 2026-11-03 | `art/preview/village_map_market_town_aisles_v13.png` | approved | After shortening a row and moving the well to the bottom left; Market Town set done, merges with the rest of village |
+| 2026-11-03 | `art/preview/village_map_fortified_town_breach_v9.png` | rejected | Fortified set (with yard_v9, corner_v9, street_v9): more colour, hay bales, fuller maps; close the wall gap on Breach |
+| 2026-11-03 | `art/preview/village_wall_walk_wide_v2.png` | rejected | Not a wall yet; trial last, about 1.5 high with a double flight or ladder |
