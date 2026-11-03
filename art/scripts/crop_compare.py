@@ -4,7 +4,7 @@ and with one straw colour for haystacks and cart hay. A mini stands on a crop ce
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/crop_compare.py
 Writes art/preview/crop_compare_<map>_<today|rows>_<wide|close>_vN.png, crop_compare_straw_<today|rows>_vN.png, crop_compare_straw_colours_vN.png
-(left to right: the tiles' hay, the maps' straw, the proposed colour) and the sheets crop_compare_wide_vN.png, crop_compare_close_vN.png, and prints triangles.
+(left to right: the tiles' hay, the maps' straw, the proposed colour) and the sheets crop_compare_wide_vN.png, crop_compare_close_vN.png, and prints triangles. With -- --rows, only the new rows close up: crop_rows_<map>_<mini|bare>_vN.png and crop_rows_close_vN.png.
 """
 import math
 import os
@@ -25,9 +25,10 @@ import variants as vr  # noqa: E402
 
 TILE_HAY, MAP_STRAW = hk.PALETTE["hay"], hk.PALETTE["stack"]
 STRAW = fc.mix(TILE_HAY, MAP_STRAW, 0.5)  # halfway between the tiles' hay and the maps' straw
-ROW_PITCH, ROW_WIDTH = 0.27, 0.18
-CROPS = {"windmill_country": (["field_a", "field_b"], "soil_light", 0.12), "haunted_homesteads": (["withered", "withered_dark"], "withered_soil", 0.07),
-         "raided_farms": (["scorched", "field_a"], "soil_dark", 0.09)}
+ROW_PITCH, STEP = 0.235, 0.17  # between rows, and along them
+# Per variant: the colours mixed along a row, the soil, the ridge's height range, how often a stretch of row is missing.
+CROPS = {"windmill_country": (["field_a", "field_b"], "soil_light", (0.05, 0.075), 0.0), "haunted_homesteads": (["withered", "withered_dark"], "withered_soil", (0.035, 0.065), 0.1),
+         "raided_farms": (["scorched", "scorched", "withered_dark"], "soil_dark", (0.025, 0.055), 0.14)}
 MAPS = ["windmill_country_road", "haunted_homesteads_crops", "raided_farms_barns"]
 STYLES = ("today", "rows")
 
@@ -53,21 +54,34 @@ def own(t, col, name, make, cells=bf.SINGLE):
 
 
 def rows(col, v, block, k):
-    """Straight rows across a block of crop cells, in world space so they line up from cell to cell, clipped at each cell."""
-    crops, _, tall = CROPS[v]
+    """Low ridges of crop on the soil: straight overall and carried from cell to cell, with a ragged edge, an uneven top, mixed colours and bare stretches. Stops short of each cell's edge."""
+    crops, _, (low, high), missing = CROPS[v]
     p = hk.Piece(f"rows_{min(block)}")
+    rng = hk.seeded(p.name)
     a = math.radians((90, 150, 30)[rb.hash_cell(min(block)) % 3])
-    across = Vector((math.cos(a), math.sin(a), 0))
-    crop = crops[k % len(crops)]
-    for c in block:
+    across, along = Vector((math.cos(a), math.sin(a), 0)), Vector((-math.sin(a), math.cos(a), 0))
+    flats = [Vector((math.cos(math.radians(x)), math.sin(math.radians(x)), 0)) for x in (30, 90, 150)]
+    for c in sorted(block):
         at = hk.cell_position(*c)
-        outline = [at + q for q in hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]]
-        n = math.floor((at.dot(across) - 0.6) / ROW_PITCH)
-        while n * ROW_PITCH < at.dot(across) + 0.6:
-            band = fm.clipped(outline, across, n * ROW_PITCH)
-            band = fm.clipped(band, -across, -(n * ROW_PITCH + ROW_WIDTH)) if len(band) >= 3 else []
-            if len(band) >= 3:
-                p.prism(band, 0.0, 0.03 + tall, crop)
+        n = math.floor((at.dot(across) - 0.55) / ROW_PITCH)
+        while n * ROW_PITCH < at.dot(across) + 0.55:
+            spot = (n * ROW_PITCH + 0.1) * across
+            t = at.dot(along) - 0.6
+            ring = None
+            while t < at.dot(along) + 0.6:
+                q = spot + along * t + across * (0.018 * math.sin(t * 5.0 + n * 2.1) + rng.uniform(-0.012, 0.012))
+                inside = max(abs((q - at).dot(f)) for f in flats) < 0.45
+                if inside and rng.random() >= missing:
+                    half = rng.uniform(0.06, 0.1)
+                    next_ring = (q + across * half + Vector((0, 0, 0.005)), q + Vector((0, 0, rng.uniform(low, high))), q - across * half + Vector((0, 0, 0.005)))
+                    if ring:
+                        verts = [p.bm.verts.new(w) for w in (ring[0], ring[1], next_ring[1], next_ring[0])] + [p.bm.verts.new(w) for w in (ring[1], ring[2], next_ring[2], next_ring[1])]
+                        p.bm.faces.new(verts[:4]).material_index = p._slot(rng.choice(crops))
+                        p.bm.faces.new(verts[4:]).material_index = p._slot(rng.choice(crops))
+                    ring = next_ring
+                else:
+                    ring = None
+                t += STEP * rng.uniform(0.8, 1.2)
             n += 1
     p.finish(col)
 
@@ -121,8 +135,27 @@ def straw_colours():
     rp.render("crop_compare_straw_colours")
 
 
+def rows_only():
+    """The rows alone, close, with and without a mini on a crop cell."""
+    shots = []
+    for name in MAPS:
+        for mini in (True, False):
+            t, col, cells, blocks = build(name, "rows")
+            spot = min(blocks[0], key=lambda c: (hk.cell_position(*c) - sum((hk.cell_position(*q) for q in blocks[0]), Vector((0, 0, 0))) / len(blocks[0])).length)
+            if mini:
+                rp.place(t, "standin_hero", col, hk.cell_position(*spot), rb.FACE_NORTH)
+            rp.stage(hk.cell_position(*spot) + Vector((0, 0, 0.4)), 9, fm.PITCH)
+            stem = f"crop_rows_{name}_{'mini' if mini else 'bare'}"
+            rp.render(stem)
+            shots.append(stem)
+    fm.sheet(shots, "crop_rows_close", 2)
+
+
 if __name__ == "__main__":
     print("STRAW", STRAW)
+    if "--rows" in sys.argv:
+        rows_only()
+        sys.exit()
     wide, close = [], []
     for name in MAPS:
         for style in STYLES:
