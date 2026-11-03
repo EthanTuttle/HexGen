@@ -47,6 +47,7 @@ PALETTE = {
     "hedge": "#4F7A33",
     "water": "#86BEDB",
     "water_deep": "#5E9CC7",
+    "fall_light": "#A8D5E2",
     "water_fast": "#6FAFC9",
     "water_still": "#93CFC7",
     "foam": "#F4FAF8",

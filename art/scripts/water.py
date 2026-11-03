@@ -30,6 +30,9 @@ SAMPLES = 18                    # points per curve
 SWERVE = 1.12                   # how far a delta's route swings round each island (they sit at 0.3 and 0.7 along the channel)
 LAKE_WIDTH = 3.4                # great lake: tiles join into one body, nearly a whole edge wide
 STILL_WIDTH = 2.8               # still waters: broad, calm pools
+FALL_WIDTH = 1.501              # a plain river's width, on a rapids tile's edge where the rapids flow out into it: the gorge ends in a pool there, with a waterfall (gorge.py)
+POOL_BACK, POOL_RADIUS = 1.75, 1.45  # that pool: its middle's distance from the edge, and its size
+EDGE_STEPS = ((1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1))  # the tile across each edge, as hexkit.NEIGHBOURS
 RAPIDS_WIDTH = 1.4              # rapids: a narrow gorge, always a channel, even round a triangle of tiles, so a region never turns into a lake
 RAPIDS_POOL = 0.85              # where a gorge starts: no wide pools
 BROAD = {"great_lake": 0.7, "still_waters": 1.05}  # styles drawn as one body of water, and how far their shore stands in from a land edge
@@ -87,6 +90,8 @@ def edge_interval(water, i, widths=None):
         return None
     start_tri, end_tri = water[(i - 1) % 6], water[(i + 1) % 6]
     width = widths[i] if widths else RIVER_WIDTH
+    if width == FALL_WIDTH:
+        width = RIVER_WIDTH
     if width == RAPIDS_WIDTH or not (start_tri or end_tri):
         half = width / R / 2
         return (0.5 - half, 0.5 + half)
@@ -162,6 +167,31 @@ def edge_widths(own, neighbours):
     return [WIDTH[style] if style and FAMILY.get(n) == style else RIVER_WIDTH for n in neighbours]
 
 
+def falling(widths, i):
+    return bool(widths) and widths[i] == FALL_WIDTH
+
+
+def with_falls(widths, water, q, r):
+    """A rapids tile's widths, marking the plain river or lake edges its water flows out through (downhill): water can't climb out of a gorge, so those get a pool and a waterfall."""
+    here = downhill(q, r)
+    return [FALL_WIDTH if water[i] and widths[i] != RAPIDS_WIDTH and downhill(q + EDGE_STEPS[i][0], r + EDGE_STEPS[i][1]) > here else widths[i] for i in range(6)]
+
+
+def pooled(curve, widths):
+    """A rapids shore, pushed out round each fall's pool."""
+    out = curve
+    for i in range(6):
+        if falling(widths, i):
+            c = mul(normal(i), A - POOL_BACK)
+            pushed = []
+            for k, p in enumerate(out):
+                d = sub(p, c)
+                ln = length(d)
+                pushed.append(add(c, mul(d, POOL_RADIUS / ln)) if 0 < k < len(out) - 1 and 1e-6 < ln < POOL_RADIUS else p)
+            out = pushed
+    return out
+
+
 def tile_water(water, seed, widths=None, style=None):
     """Water outlines (anticlockwise point lists) and shore curves for one tile.
 
@@ -202,7 +232,7 @@ def tile_water(water, seed, widths=None, style=None):
             start = math.atan2(*reversed(sub(a_, pond_at)))
             turn_way = 1 if dot((math.cos(start + 1.57), math.sin(start + 1.57)), normal(i)) < 0 else -1
             head = [add(pond_at, mul((math.cos(start + turn_way * math.pi * k / 6), math.sin(start + turn_way * math.pi * k / 6)), half)) for k in range(1, 6)]
-            curve = bank_a + head + bank_b
+            curve = pooled(bank_a + head + bank_b, widths)
             return [[edge_point(i, t0), edge_point(i, t1)] + curve[1:-1]], [curve], "spring", [(i, i)]
         pond = circle(add(pond_at, sway), 1.3, rng, 0.12)
         return [channel, pond], [bank_a, bank_b, pond + pond[:1]], "spring", [(i, None), (None, i), (None, None)]
@@ -233,6 +263,8 @@ def tile_water(water, seed, widths=None, style=None):
         else:
             curve = shore(run["pts"][-1], run["end_edge"], nxt["pts"][0], nxt["start_edge"],
                           sway if not lake else mul(sway, 0.4), rng, WOBBLE if lake else 0)
+        if style == "rapids":
+            curve = pooled(curve, widths)
         outline += curve[1:-1]
         shores.append(curve)
         ends.append((run["end_edge"], nxt["start_edge"]))
@@ -378,6 +410,12 @@ def delta_dressing(outlines, shores, kind, seed, near=0):
 # When it does cross, it uses these lines, and it steps in and out at the landings. Nothing here is drawn.
 
 def water_routes(water, seed, widths=None, style=None):
+    """As _water_routes, with no line up or down a rapids waterfall: nothing can walk or float over one."""
+    hub, lines = _water_routes(water, seed, widths, style)
+    return hub, {i: l_ for i, l_ in lines.items() if not falling(widths, i)}
+
+
+def _water_routes(water, seed, widths=None, style=None):
     """(hub, lines): lines[i] is the route on the water from edge i's midpoint to the hub, for each water edge i. They meet at
     the hub, and at each edge's midpoint with the neighbour's line. A river's lines follow the channel's middle, so its
     bends stay in the water; a delta's swing round its islands. Lakes, ponds and junctions run straight to the hub."""
@@ -985,6 +1023,23 @@ def add_water(piece, water, seed, plates=True, boats=True, widths=None, style=No
 
         for tri, mat in g["tris"]:
             face(tri, mat)
+        rf = random.Random(f"{seed}-falls")
+        for mid, foot, top_half, half in g["falls"]:  # foam where the waterfall lands, a rock either side of its top, tucked against the wall
+            into = sub(foot, mid)
+            into = mul(into, 1 / (length(into) or 1.0))
+            side = (-into[1], into[0])
+            for k in range(9):
+                q = add(add(foot, mul(side, half * (-0.8 + 1.6 * k / 8))), mul(into, rf.uniform(-0.05, 0.2)))
+                ring = [(q[0] + rf.uniform(0.2, 0.34) * math.cos(t), q[1] + rf.uniform(0.14, 0.26) * math.sin(t), -gorge.DEPTH + 0.02) for t in (2 * math.pi * j / 7 for j in range(7))]
+                face(ring, "foam")
+            for k in range(6):
+                q = add(add(foot, mul(side, rf.uniform(-half, half) * 0.8)), mul(into, rf.uniform(0.35, 1.05)))
+                ring = [(q[0] + rf.uniform(0.2, 0.42) * math.cos(t), q[1] + rf.uniform(0.07, 0.16) * math.sin(t), -gorge.DEPTH + 0.015) for t in (2 * math.pi * j / 8 for j in range(8))]
+                face(ring, "foam")
+            for sign in (-1, 1):
+                q = add(add(mid, mul(side, sign * (top_half + 0.06))), mul(into, 0.14))
+                piece.blob(Vector((q[0], q[1], -0.06)), rf.uniform(0.15, 0.2), "rock_wet", squash=0.7)
+            piece.effects.append(("spray", Vector((foot[0], foot[1], -gorge.DEPTH + 0.3))))
         for quad, mat in g["sides"]:
             face(quad, mat)
         if plates:

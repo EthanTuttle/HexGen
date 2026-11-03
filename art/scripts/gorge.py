@@ -28,11 +28,14 @@ LANE_BLEND = 3        # columns over which the lip eases back to the plain wall,
 WALL_SHARES = (0.0, 0.14, 0.4, 0.68, 0.88, 1.0)  # across a wall, shares of its run
 WALL_RISE = (0.0, 0.2, 0.5, 0.74, 0.92, 1.0)     # and of its height
 WALL_MATS = (("rock_wet_dark",), ("rock_wet_dark", "rock_wet"), ("rock_wet",), ("rock_wet", "rock_wet", "rock_wet_moss"), ("rock_wet", "rock_wet_moss"))
+FALL_ROWS = ((0.0, WATER_TOP), (0.1, -0.05), (0.4, -0.38), (0.55, -0.52), (0.85, -0.86), (1.0, -1.0), (1.2, -DEPTH + 0.01))  # a waterfall: in from the edge, and height
+FALL_WHITE = (False, False, True, False, True, True)  # which steps of it are all foam
 LANE_TONES = ("gorge_lane_a", "gorge_lane_b", "gorge_lane_c", "gorge_lane_d")  # from wet stone at its foot to nearly the ground's colour at its top
 
 
 def shared(water, widths, i):
-    return bool(water[i] and widths and widths[i] == wt.RAPIDS_WIDTH)
+    """The water is down in the gorge at this edge: another rapids tile, or the foot of a waterfall from a river or lake (water.with_falls)."""
+    return bool(water[i] and widths and widths[i] in (wt.RAPIDS_WIDTH, wt.FALL_WIDTH))
 
 
 def water_z(water, widths, p):
@@ -143,6 +146,13 @@ class Shore:
             if 0 < k < n:
                 r *= 1 + 0.16 * self.jig[k][0]
             self.run.append(max(r, 0.0))
+        # beside a fall the wall stands straight at the edge, since the land across it isn't cut, and leans back further in
+        for end, step, e in ((0, 1, ends[0]), (n, -1, ends[1])):
+            if e is not None and wt.falling(widths, e):
+                for m, share in enumerate((0.02, 0.3, 0.65)):
+                    k = end + step * m
+                    if 0 <= k <= n:
+                        self.run[k] *= share
 
     def land_edges(self):
         """The land edges on this shore's side, between the edges it starts and ends on."""
@@ -245,8 +255,8 @@ def pick_lane(sh, s, shs, lanes, ways_off, water, widths):
                 continue
             lane, top = got
             order = sorted(lane)
-            if any(wt.dot(sh.out[c], sh.out[c + 1]) < 0.93 for c in order[:-1]) or wt.dot(sh.out[order[0]], sh.out[order[-1]]) < 0.55:
-                continue  # on a tight bend the wall would crowd the path
+            if any(wt.dot(sh.out[c], sh.out[c + 1]) < 0.93 for c in order[:-1]) or wt.dot(sh.out[order[0]], sh.out[order[-1]]) < (-0.1 if any(wt.falling(widths, i) for i in range(6)) else 0.55):
+                continue  # on a tight bend the wall would crowd the path, though round a pool's outside it has room
             line = [wt.add(sh.curve[c], wt.mul(sh.out[c], LANE_MID)) for c in sorted(lane)]
             if any(wt.seg_dist(q, a, b) < 1.25 for q in line for a, b in ways_off):
                 continue
@@ -282,6 +292,37 @@ def pick_lane(sh, s, shs, lanes, ways_off, water, widths):
             else:
                 return lane, top, walks
     return None
+
+
+def fall_sheet(i, water, widths, seed, add):
+    """The waterfall on edge i: from the river's level at the edge down into the pool, as a stepped cascade, fanning out as it drops. It lies less steeply than the map camera looks, since by the flow rule it mostly faces away from that camera, and a sheer one would hide behind the land. Returns its top's middle, its foot's middle, and the half widths of its top and foot."""
+    t0, t1 = wt.edge_interval(water, i, widths)
+    a, b = wt.edge_point(i, t0), wt.edge_point(i, t1)
+    mid = wt.mul(wt.add(a, b), 0.5)
+    along = wt.mul(wt.sub(b, a), 1 / wt.length(wt.sub(b, a)))
+    top_half = wt.length(wt.sub(b, a)) / 2
+    into = wt.mul(wt.normal(i), -1)
+    rng = random.Random(f"{seed}-fall{i}")
+    across = 8
+    rows = []
+    for r, (d, z) in enumerate(FALL_ROWS):
+        back = abs(d - wt.POOL_BACK)
+        half = max(top_half, math.sqrt(max(wt.POOL_RADIUS ** 2 - back ** 2, 0.0)) + 0.12) if r else top_half
+        row = []
+        for k in range(across + 1):
+            jog = 0.0 if k in (0, across) or r == 0 else rng.uniform(-0.05, 0.05)
+            q = wt.add(wt.add(mid, wt.mul(along, half * (2 * k / across - 1))), wt.mul(into, d + jog))
+            row.append((*(q if wt.inside_tile(q, -0.01) else wt.clamp_inside(q, 0.0)), z))
+        rows.append(row)
+    streak = [rng.random() < 0.4 for _ in range(across)]
+    for r in range(len(rows) - 1):
+        for k in range(across):
+            mat = "foam" if FALL_WHITE[r] or (streak[k] and r % 2) else ("fall_light" if rng.random() < 0.45 else "water_fast")
+            p, q, s_, t = rows[r][k], rows[r][k + 1], rows[r + 1][k + 1], rows[r + 1][k]
+            add((p, q, s_), mat)
+            add((p, s_, t), mat)
+    foot = rows[-1]
+    return mid, wt.add(mid, wt.mul(into, FALL_ROWS[-1][0])), top_half, math.dist(foot[0][:2], foot[-1][:2]) / 2
 
 
 @lru_cache(maxsize=256)
@@ -380,7 +421,11 @@ def _build(water, seed, widths, landmark, ground):
         for i0, i1, i2 in ear_clip(poly):
             tri = tuple((*poly[j], water_z(w_list, wd_list, poly[j])) for j in (i0, i1, i2))
             water_tris.append(tri)
-    return dict(tris=tris, water=water_tris, sides=sides, lanes=lanes, walks=walks, cut=[cut_of(shs, lanes)] if shs else [], spot=spot)
+    falls = []
+    for i in range(6):
+        if w_list[i] and wt.falling(wd_list, i):
+            falls.append(fall_sheet(i, w_list, wd_list, seed, add))
+    return dict(tris=tris, water=water_tris, sides=sides, lanes=lanes, walks=walks, cut=[cut_of(shs, lanes)] if shs else [], spot=spot, falls=falls)
 
 
 def build(water, seed, widths=None, landmark=False, ground="plains"):

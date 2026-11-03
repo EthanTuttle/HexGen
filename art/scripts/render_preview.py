@@ -330,6 +330,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             port = wt.port_turn(mask, seed) if name == "riverport" else None
             band = dist.get((q, r), 0) if dist.get((q, r), 0) in (1, 2) else 0
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
+            if kit == "rapids":
+                widths = wt.with_falls(widths, mask, q, r)
             is_lm = name in vr.LANDMARK_CENTRES
             wt.add_water(p, mask, seed, plates=not animated, boats=not animated, widths=widths, style=wt.FAMILY.get(kit), near=band, port=port, landmark=is_lm, ground=vr.VARIANTS[kit][2] if kit in vr.VARIANTS else "plains")
             p.finish(col, at)
@@ -1381,6 +1383,7 @@ if __name__ == "__main__":
                     near_ = [scene_map.get((q_ + dq, r_ + dr)) for dq, dr in hk.NEIGHBOURS]
                     mask = turned_map(near_)
                     widths = wt.edge_widths(vr.wedges_of(name_), [n_ and vr.wedges_of(n_) for n_ in near_])
+                    widths = wt.with_falls(widths, mask, q_, r_)
                     g_ = gg.build(mask, f"{q_},{r_}", widths, name_ == "trollbridge")
                     at = hk.tile_position(q_, r_)
                     if g_["spot"]:
@@ -1427,6 +1430,105 @@ if __name__ == "__main__":
                         cam.data.lens = 40
                         look_at(cam, at + Vector((1.5, -12, 12)), at + Vector((0, 0, -0.3)))
                         shot(f"river_rapids_{stem_}")
+        if needs("river_pool_map", "river_pool_turned", "river_pool_river", "river_pool_river_low", "river_pool_river_back", "river_pool_lake", "river_pool_lake_low", "river_pool_lake_back", "river_inflow_river", "river_inflow_lake"):
+            # Where rapids meet a river or lake: water flowing out of the gorge falls into a sunken pool; water flowing in slopes down. Both, for both, with parties.
+            import canyon_takes as ct
+            import gorge as gg
+            ends = {(3, -2): "plains", (4, -3): "plains", (4, -5): "plains", (5, -4): "plains", (3, -4): "plains", (-2, 4): "plains", (-3, 3): "plains", (-4, 3): "plains", (-2, 5): "plains"}
+            up, down = ((4, -4), (5, -5)), ((-3, 4), (-4, 5))
+            for scene_map, close in (({**RAPIDS_MAP, **ends, **{t_: "river" for t_ in down}, **{t_: "great_lake" for t_ in up}, (-4, 4): "plains", (-3, 5): "plains"}, ("river_pool_river", "river_inflow_lake")),
+                                     ({**RAPIDS_MAP, **ends, **{t_: "great_lake" for t_ in down}, **{t_: "river" for t_ in up}, (-4, 4): "great_lake", (-3, 5): "great_lake"}, ("river_pool_lake", "river_inflow_river"))):
+                if not needs("river_pool_map", "river_pool_turned", f"{close[0]}", f"{close[0]}_low", f"{close[0]}_back", close[1]):
+                    continue
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                minis = load_templates(max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1))))
+                build_map(templates, tiles=scene_map)
+                col = bpy.data.collections["map"]
+                draw_effects(col, templates, thin=True)
+                pool_t = (-2, 3)
+                near_ = [scene_map.get((pool_t[0] + dq, pool_t[1] + dr)) for dq, dr in hk.NEIGHBOURS]
+                mask = turned_map(near_)
+                widths = wt.with_falls(wt.edge_widths("rapids", [n_ and vr.wedges_of(n_) for n_ in near_]), mask, *pool_t)
+                g_ = gg.build(mask, f"{pool_t[0]},{pool_t[1]}", widths)
+                at = hk.tile_position(*pool_t)
+                print("FALLS", pool_t, [i_ for i_ in range(6) if wt.falling(widths, i_)], "walks", sorted(g_["walks"]))
+                mid_, foot_, *_ = g_["falls"][0]
+                pool_c = Vector((foot_[0], foot_[1], 0)) + (Vector((foot_[0], foot_[1], 0)) - Vector((mid_[0], mid_[1], 0))).normalized() * 1.1 + Vector((1.0, -0.5, 0))
+                spots = [((at.x + pool_c.x, at.y + pool_c.y, -gg.DEPTH - 0.4), 0.6)]
+                if g_["spot"]:
+                    spots.append(((at.x + g_["spot"][0][0], at.y + g_["spot"][0][1], 0.32), g_["spot"][1]))
+                for walk in list(g_["walks"].values())[:1]:
+                    for kind_, pt_ in zip(("standin_hero", "standin_chelmsford", "standin_small", "standin_fluffy"), [walk[-2 - k_] for k_ in range(4)]):
+                        o_ = ct.bpy_new(minis[kind_], col)
+                        o_.location = at + Vector(pt_)
+                        o_.rotation_euler.z = math.atan2(walk[-1][1] - walk[-3][1], walk[-1][0] - walk[-3][0]) - math.pi / 2
+                ct._mini_spots(col, minis, spots)
+                focus = at + Vector((0, 0, -0.3))
+                stage(at, 40, 50)
+                cam = bpy.context.scene.camera
+                if "lake" in close[1]:
+                    shot("river_pool_map")
+                    spin_cam(at, 40, math.radians(120))
+                    shot("river_pool_turned")
+                cam.data.lens = 40
+                look_at(cam, focus + Vector((0, -13.5, 16)), focus)
+                shot(close[0])
+                out_ = (Vector((foot_[0], foot_[1], 0)) - Vector((mid_[0], mid_[1], 0))).normalized()
+                look_at(cam, at + Vector((mid_[0], mid_[1], 0)) + out_ * 6.5 + Vector((1.5, 0, 3.6)), at + Vector((mid_[0], mid_[1], -0.8)) + out_ * 0.5)
+                shot(f"{close[0]}_back")
+                side_ = Vector((-out_.y, out_.x, 0))
+                look_at(cam, at + Vector((mid_[0], mid_[1], 0)) + out_ * 3 + side_ * 6 + Vector((0, 0, 1.4)), at + Vector((mid_[0], mid_[1], -0.7)) + out_ * 0.9)
+                shot(f"{close[0]}_low")
+                in_at = hk.tile_position(4, -4)
+                look_at(cam, in_at + Vector((-3, -11, 11)), in_at + Vector((-1.5, 1.5, -0.3)))
+                shot(close[1])
+                cam.data.lens = 50
+        if needs("river_pool_lane", "river_pool_lane_turned"):
+            # A pool's tile with no bridge: a party strung down the lane, another wading.
+            import canyon_takes as ct
+            import gorge as gg
+            found = None
+            for q_, r_ in ((a_, b_) for a_ in range(-3, 4) for b_ in range(-3, 4)):
+                for keep in (1, 2, 0):
+                    for fall_e in (3, 4, 5):
+                        if keep == fall_e:
+                            continue
+                        m_ = [i_ in (keep, fall_e) for i_ in range(6)]
+                        w_ = wt.with_falls([wt.RAPIDS_WIDTH if i_ == keep else wt.RIVER_WIDTH for i_ in range(6)], m_, q_, r_)
+                        g_ = gg.build(m_, f"{q_},{r_}", w_)
+                        if wt.falling(w_, fall_e) and not g_["spot"] and g_["walks"] and found is None:
+                            found = (q_, r_, keep, fall_e, g_)
+            q_, r_, keep, fall_e, g_ = found
+            scene_map = {(q_ + dq, r_ + dr): "plains" for dq in range(-3, 4) for dr in range(-3, 4) if abs(dq + dr) <= 3}
+            scene_map[(q_, r_)] = "rapids"
+            step_ = lambda t_, e_: (t_[0] + hk.NEIGHBOURS[e_][0], t_[1] + hk.NEIGHBOURS[e_][1])  # noqa: E731
+            t_ = step_((q_, r_), keep)
+            scene_map[t_] = "rapids"
+            t2_ = step_((q_, r_), fall_e)
+            scene_map[t2_] = "river"
+            scene_map[step_(t2_, fall_e)] = "river"
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            minis = load_templates(max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1))))
+            build_map(templates, tiles=scene_map)
+            col = bpy.data.collections["map"]
+            at = hk.tile_position(q_, r_)
+            walk = list(g_["walks"].values())[0]
+            for kind_, pt_ in zip(("standin_hero", "standin_chelmsford", "standin_small", "standin_fluffy"), [walk[-2 - k_] for k_ in range(4)]):
+                o_ = ct.bpy_new(minis[kind_], col)
+                o_.location = at + Vector(pt_)
+                o_.rotation_euler.z = math.atan2(walk[-2][1] - walk[-4][1], walk[-2][0] - walk[-4][0]) + math.pi / 2
+            print("POOL LANE", q_, r_, keep, fall_e, sorted(g_["walks"]))
+            stage(at, 40, 50)
+            cam = bpy.context.scene.camera
+            cam.data.lens = 40
+            focus_ = at + Vector((walk[-3][0], walk[-3][1], -0.4))
+            look_at(cam, focus_ + Vector((0, -8, 9)), focus_)
+            shot("river_pool_lane")
+            look_at(cam, focus_ + Vector((7, 5, 7)), focus_)
+            shot("river_pool_lane_turned")
+            cam.data.lens = 50
         for stem, tiles_map, focus, lm_at, lm in (("river_lake", LAKE_MAP, Vector((0, -0.5, 0)), LANDMARK_AT, "serpentlair"), ("river_rapids", RAPIDS_MAP, Vector((0, 0, 0)), (0, 0), "trollbridge"),
                                                   ("river_still", STILL_MAP, Vector((2, -1, 0)), (1, 0), "meditationrock")):
             for paths in (False, True):
