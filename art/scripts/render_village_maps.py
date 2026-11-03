@@ -4,7 +4,7 @@ No raised ground or stairs: the ways-up decision is still open.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_village_maps.py
 Pass names after -- to render only those maps, --check to run the checks without rendering, --sheets to redo the sheets from
-the newest renders, --close for close views, --kit for the props laid out, and --export for art/combat/combat_maps_village_vN.blend and
+the newest renders, --close for close views, --kit for the props laid out, --wall for the wall-top trial, and --export for art/combat/combat_maps_village_vN.blend and
 art/export/combat_maps_village.json. Uses the latest combat_village, enemy_minis, humanoid_minis and standin_minis.
 Writes art/preview/village_map_<map>_vN.png and the sheets village_maps_<variant>_vN.png, village_maps_all_vN.png.
 
@@ -348,6 +348,63 @@ c c n c c
 }
 
 
+# A trial for Ethan, shown on its own, in no export or catalogue: the breach map with a walkable wall top, reached by ways up.
+WALL_WALK = {"size": "wide oval", "idea": "The town wall's top can be walked. Two stretches run across the map on the slant, each with a way up on one side only, and two gaps below. Hold the top and look down, or come through a gap and climb behind them.", "foes": BANDITS, "plan": """
+  H . . . . . w .  
+ . X . . . . . v . 
+. . H . . . . . . .
+ P . H . . . . . . 
+P . ^ H . . . . x .
+ P . . , . . . . P 
+. . . . N ^ . . P .
+ . . . . H . . . P 
+. h . . . H . . . .
+ k s . . . , . . . 
+  . . . . . N . .  
+"""}
+
+
+def parapet(col, cells):
+    """Merlons along a wall top's edge, clear of a base and of the ways up."""
+    p = hk.Piece("parapet")
+    for _, group in fm.groups({c: "H" for c, mark in cells.items() if mark in fm.RAISED}, "H"):
+        loop = fm.midpoints(fc.cell_loop(group))
+        for k, q in enumerate(loop):
+            along = loop[(k + 1) % len(loop)] - loop[k - 1]
+            at = q - Vector((-along.y, along.x, 0)).normalized() * 0.05
+            if k % 2 and all((hk.cell_position(*c) - at).length > 1.0 for c, mark in cells.items() if mark in fm.RAMPS):
+                p.box(at, (0.2, 0.1, 0.24), "stone_block_dark", z=fm.RAISED_HEIGHT, spin=math.atan2(along.y, along.x))
+    p.finish(col)
+
+
+def wall_walk():
+    name = "fortified_town_wall_walk"
+    MAPS[name] = WALL_WALK
+    fc.ROCK["fortified_town"] = ("stone_block", "stone_block_dark", None)
+    shots = []
+    for label, at, dist, turn in (("wide", None, None, 0), ("wide_turned", None, None, 180), ("close", (4.2, -2.0), 9, 0), ("close_east", (8.6, -3.5), 9, 180)):
+        hk.empty_scene()
+        col = hk.new_collection("map")
+        t = templates()
+        cells = build_map(t, col, name)
+        parapet(col, cells)
+        ok = fm.visibility(name, cells)
+        print(f"WALL {label}: map {fm.triangles(col)}, seen {ok}")
+        fm.place_minis(t, col, WALL_WALK, cells)
+        for c, mark in cells.items():
+            if mark in fm.RAMPS:
+                rp.place(t, "standin_small", col, hk.cell_position(*c) + Vector((0, 0, fm.HALF)), rb.FACE_NORTH)
+        target, distance = fm.framing(cells)
+        if at:
+            target, distance = Vector((at[0], at[1], 0.6)), dist
+        rp.stage(target, distance, fm.PITCH)
+        if turn:
+            rb.turn_camera(turn, target)
+        rp.render(f"village_wall_walk_{label}")
+        shots.append(f"village_wall_walk_{label}")
+    fm.sheet(shots, "village_wall_walk", 2)
+
+
 def variant_of(name):
     return next(v for v in bv.VARIANTS if name.startswith(v))
 
@@ -444,6 +501,9 @@ if __name__ == "__main__":
     only_check = "--check" in args
     if "--sheets" in args:
         make_sheets()
+        sys.exit()
+    if "--wall" in args:
+        wall_walk()
         sys.exit()
     if "--close" in args:
         shots = []
