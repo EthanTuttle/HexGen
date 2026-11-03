@@ -6,7 +6,8 @@ Worked out once for a whole region, when it finishes, in world space, so rock an
 2. tile_lines: in each tile, a corridor from each open edge's midpoint, with a bend, to a junction near the tile's middle. route() walks them.
 3. height_field: rock rises from the corridors in bands of LAYER. Its height is held down wherever it stands just south of a corridor (north_cap), so from the default map camera a wall hides little of the floor behind it.
    Along an edge facing outside it comes to z = 0, level with the neighbour.
-   Rock above the land has to have body (Ethan, Nov 3, 2026, no thin walls or slabs): rock_bodies keeps only the parts a disc of MESA_HALF can reach while staying inside, set back from the region's edge, and the rest stops level with the land. The band level with the land gets the same, with LAND_HALF, so its top has no teeth.
+   Rock has to have body (Ethan, Nov 3, 2026: no thin walls, slabs or thin edges). rock_bodies keeps only the parts of each band a disc can reach while staying inside it, and the band lines come from that.
+   Mesas, the rock above the land, aren't cut from the field at all: mesa_outlines traces each one, straightens it into a few angular sides, and build stands it on the land as one closed solid, well back from the rim and the region's edge, and clear of the others.
 4. tile_mesh: each tile's triangles, cut along each band's line into flat ledges and upright walls. Tiles sample shared edges at the same points, so they join.
 5. ramps: a path cut into the rock (chosen Nov 3, 2026, from art/scripts/ramp_study.py), from z = 0 at an entrance's midpoint down its corridor to the floor. A worn lane running out on each side to the next rock higher than it. That rock's ledges are at band heights, so where the lane passes one it lies level with that ledge and carries straight on into it: no side faces show, and the rock itself isn't changed. Beside another corridor it narrows instead, so a mini there stays clear of it. A ramp's two ends join the ground: see ramp_joins.
 """
@@ -31,10 +32,17 @@ PATH_HALF = 0.62      # the walked path, within the lane
 KERB = 0.07           # the rock shoulder stands this much above the path
 LANE_REACH = 2.8      # how far a lane looks for a wall to run up to
 LANE_OPEN = 0.92      # its half width on a side with no wall, where the rock stands lower than it
-MESA_HALF = 0.62      # the rock above the land: no part of it is narrower than twice this
-MESA_BACK = 0.85      # and it stands this far back from the region's edge
+MESA_HALF = 0.68      # the rock above the land: no part of it is narrower than twice this
+MESA_BACK = 0.8       # and it stands this far back from the region's edge
+MESA_RIM = 0.57       # and this far back from the canyon's rim, so it has a real ledge
+MESA_GAP = 1.05       # and two mesas are at least this far apart, or join
 MESA_LEAST = 3.5      # and no mesa is smaller than this, in square metres
-LAND_HALF = 0.4       # the rock level with the land: no part of its top is narrower than twice this
+MESA_TRUE = 0.15      # how far an outline may stray from the rock it was traced from
+MESA_SIDE = 0.5       # its shortest side, so no wall is a thin strip
+MESA_CORNER = 70      # its sharpest corner, in degrees
+RIDGE_HALF = 0.25     # the bottom band: no part of it is narrower than twice this
+LAND_HALF = 0.4       # the band level with the land: no part of its top is narrower than twice this
+LEDGE = 0.12          # each band stands at least this far back from the one below
 STOP = (0.1, 0.0)     # the Echo Cave's stop, in its frame: +X toward the edge it faces
 TAN30 = math.tan(math.radians(30))
 
@@ -146,7 +154,7 @@ def wobble(x, y):
 class Field:
     """The region's rock, in bands above the floor, on a world grid. value(x, y) is the height in bands: 0 on the floor."""
 
-    def __init__(self, region, landmark, turn):
+    def __init__(self, region, landmark, turn, before=None):
         self.region = set(region)
         self.landmark = landmark
         self.turn = turn
@@ -160,6 +168,9 @@ class Field:
         c = gc.tile_centre(*landmark)  # the court before the Echo Cave
         a = wt.turned((-0.2, 1.05), turn)
         b = wt.turned((-0.2, -1.05), turn)
+        self.segs.append(((c[0] + a[0], c[1] + a[1]), (c[0] + b[0], c[1] + b[1])))
+        a = wt.turned((-1.0, 1.1), turn)  # and back behind the cave's mouth and its carvings, so no rock stands in front of them
+        b = wt.turned((-1.0, -1.1), turn)
         self.segs.append(((c[0] + a[0], c[1] + a[1]), (c[0] + b[0], c[1] + b[1])))
         xs = [gc.tile_centre(*t)[0] for t in self.region]
         ys = [gc.tile_centre(*t)[1] for t in self.region]
@@ -191,24 +202,36 @@ class Field:
         # eased across columns, so a corridor's bends don't leave thin fins of rock
         spread = 4
         self.north = [[min(self.north[j][iy] for j in range(max(0, ix - spread), min(self.nx, ix + spread + 1))) * 0.5 + self.north[ix][iy] * 0.5 for iy in range(self.ny)] for ix in range(self.nx)]
-        self.top, self.land = self.rock_bodies()
+        self.ridge, self.land = self.rock_bodies()
+        self.mesas = self.mesa_outlines()
+        if before:  # a canyon that has grown keeps every mesa a new corridor doesn't reach, and only rebuilt tiles get new ones. A mesa is its own solid on top of the land, so one going leaves nothing to rejoin
+            fresh = self.region - before.region
+            rebuilt = fresh | {n for t in fresh for n in neighbours(t)}
+            kept = [m for m in before.mesas if all(self._bilinear(self.land, *q) >= MESA_RIM - MESA_TRUE for q in m)]
+            self.mesas = kept + [m for m in self.mesas if all(gc.tile_at(*q) in rebuilt for q in m) and all(outline_gap(m, o) >= MESA_GAP - 2 * MESA_TRUE for o in kept)]
 
     def reach(self, cells):
         """How far each grid point is from the nearest set cell, in metres: two sweeps, near enough to a true distance."""
         far = 99.0
-        out = [[0.0 if v else far for v in col] for col in cells]
         side, slant = CELL, CELL * math.sqrt(2)
-        for ix in range(self.nx):
-            for iy in range(self.ny):
-                for a, b, step in ((-1, 0, side), (0, -1, side), (-1, -1, slant), (-1, 1, slant)):
-                    if 0 <= ix + a < self.nx and 0 <= iy + b < self.ny:
-                        out[ix][iy] = min(out[ix][iy], out[ix + a][iy + b] + step)
-        for ix in range(self.nx - 1, -1, -1):
-            for iy in range(self.ny - 1, -1, -1):
-                for a, b, step in ((1, 0, side), (0, 1, side), (1, 1, slant), (1, -1, slant)):
-                    if 0 <= ix + a < self.nx and 0 <= iy + b < self.ny:
-                        out[ix][iy] = min(out[ix][iy], out[ix + a][iy + b] + step)
-        return out
+        s = self.ny + 2  # a border of far cells, so no sweep needs a bounds check
+        out = [far] * ((self.nx + 2) * s)
+        for ix, col in enumerate(cells):
+            at = (ix + 1) * s + 1
+            for iy, v in enumerate(col):
+                if v:
+                    out[at + iy] = 0.0
+        for at in range(s + 1, (self.nx + 1) * s - 1):
+            v = out[at]
+            if v:
+                v = min(v, out[at - 1] + side, out[at - s] + side, out[at - s - 1] + slant, out[at - s + 1] + slant)
+                out[at] = v if v < far else far
+        for at in range((self.nx + 1) * s - 2, s, -1):
+            v = out[at]
+            if v:
+                v = min(v, out[at + 1] + side, out[at + s] + side, out[at + s + 1] + slant, out[at + s - 1] + slant)
+                out[at] = v if v < far else far
+        return [out[(ix + 1) * s + 1:(ix + 1) * s + 1 + self.ny] for ix in range(self.nx)]
 
     def body(self, high, half, least=0.0):
         """Keeps what a disc of radius half can reach while staying inside high, and parts of at least least square metres. Returns the distance from its outline: positive inside, negative outside."""
@@ -237,21 +260,125 @@ class Field:
         return [[inside[ix][iy] - outside[ix][iy] for iy in range(self.ny)] for ix in range(self.nx)]
 
     def rock_bodies(self):
-        """The two bands that showed thin walls: the rock above the land, and the top of the rock level with it."""
-        high = [[False] * self.ny for _ in range(self.nx)]
+        """The two lower bands, as distances from their lines. Outside the region the rock runs on by its corridors, so the rim isn't worn away from that side and a way in stays open."""
+        ridge = [[False] * self.ny for _ in range(self.nx)]
         land = [[False] * self.ny for _ in range(self.nx)]
         for ix in range(self.nx):
             x = self.x0 + ix * CELL
             for iy in range(self.ny):
                 y = self.y0 + iy * CELL
-                v = self.rock(x, y)
-                if gc.tile_at(x, y) not in self.region:
-                    land[ix][iy] = True  # the land outside carries on level, so the rim isn't worn away from that side
-                    continue
-                margin = self.edge_margin(x, y)
-                land[ix][iy] = v >= TOP_LEVEL or (margin < 0.6 and self._bilinear(self.dist, x, y) > HALF_WIDTH + STEP_OUT * TOP_LEVEL)
-                high[ix][iy] = v >= TOP_LEVEL + 1 and margin + 2 * wobble(x, y) >= MESA_BACK
-        return self.body(high, MESA_HALF, MESA_LEAST), self.body(land, LAND_HALF)
+                v = self.slope(x, y)
+                ridge[ix][iy] = v >= 1
+                land[ix][iy] = v >= TOP_LEVEL
+        return self.body(ridge, RIDGE_HALF), self.body(land, LAND_HALF)
+
+    def grown(self, cells, by):
+        far = self.reach(cells)
+        return [[d <= by for d in col] for col in far]
+
+    def opened(self, cells, half):
+        worn = self.reach([[not v for v in col] for col in cells])
+        return self.grown([[d > half for d in col] for col in worn], half)
+
+    def parts(self, cells):
+        """The connected parts of a grid, as lists of (ix, iy)."""
+        seen, out = set(), []
+        for ix in range(self.nx):
+            for iy in range(self.ny):
+                if cells[ix][iy] and (ix, iy) not in seen:
+                    part, stack = [], [(ix, iy)]
+                    seen.add((ix, iy))
+                    while stack:
+                        a, b = stack.pop()
+                        part.append((a, b))
+                        for u, v in ((a + 1, b), (a - 1, b), (a, b + 1), (a, b - 1)):
+                            if 0 <= u < self.nx and 0 <= v < self.ny and cells[u][v] and (u, v) not in seen:
+                                seen.add((u, v))
+                                stack.append((u, v))
+                    out.append(part)
+        return out
+
+    def mesa_room(self, x, y):
+        """Could a mesa stand here: on the land, back from the rim and the region's edge, off the lanes and clear of the Echo Cave's cliff. Lumpy, so its sides aren't parallel to any of those."""
+        if gc.tile_at(x, y) not in self.region:
+            return False
+        lump = 0.15 + 0.1 * math.sin(x * 1.4 + 1.7 * math.sin(y * 0.9)) * math.sin(y * 1.2 + 0.5) + 0.25 * wobble(x, y)  # 0 to 0.3: they only ever stand further back
+        if self.edge_margin(x, y) - lump < MESA_BACK or self._bilinear(self.land, x, y) - lump < MESA_RIM:
+            return False
+        if any(seg_dist((x, y), a, b) < 1.75 for a, b in self.lane_segs):
+            return False
+        c = gc.tile_centre(*self.landmark)
+        q = wt.turned((x - c[0], y - c[1]), -self.turn)
+        return not (-3.3 < q[0] < 0.2 and abs(q[1]) < 2.6)
+
+    def mesa_outlines(self):
+        """Each mesa's outline, a few straight sides, anticlockwise. The disc comes after the lumps, so nothing narrows it afterwards."""
+        self.lane_segs = []
+        for t, i in self.entrances:
+            c = gc.tile_centre(*t)
+            line = line_to_junction(t, i, self.landmark, self.turn)
+            self.lane_segs += [((a[0] + c[0], a[1] + c[1]), (b[0] + c[0], b[1] + c[1])) for a, b in zip(line, line[1:])]
+        room = [[False] * self.ny for _ in range(self.nx)]
+        high = [[False] * self.ny for _ in range(self.nx)]
+        for ix in range(self.nx):
+            x = self.x0 + ix * CELL
+            for iy in range(self.ny):
+                y = self.y0 + iy * CELL
+                if self._bilinear(self.land, x, y) > 0 and self.mesa_room(x, y):
+                    room[ix][iy] = True
+                    high[ix][iy] = self.rock(x, y) >= TOP_LEVEL + 1
+        kept = self.opened(high, MESA_HALF)
+        # a gap too narrow to read as a gap closes up, where there's room
+        wide = self.grown(kept, MESA_GAP / 2 + CELL)
+        shut = self.reach([[not v for v in col] for col in wide])
+        closed = [[kept[ix][iy] or (shut[ix][iy] > MESA_GAP / 2 + CELL and room[ix][iy]) for iy in range(self.ny)] for ix in range(self.nx)]
+        kept = self.opened([[closed[ix][iy] and room[ix][iy] for iy in range(self.ny)] for ix in range(self.nx)], MESA_HALF)
+        # any that are still too close (no room to join): the smaller gives way
+        parts = sorted(self.parts(kept), key=len, reverse=True)
+        taken = [[False] * self.ny for _ in range(self.nx)]
+        for n, part in enumerate(parts):
+            left = [[False] * self.ny for _ in range(self.nx)]
+            near = self.reach(taken) if n else None
+            clear = [p_ for p_ in part if near is None or near[p_[0]][p_[1]] >= MESA_GAP + 2 * MESA_TRUE]
+            for a, b in clear:
+                left[a][b] = True
+            for sub in (self.parts(self.opened(left, MESA_HALF)) if len(clear) < len(part) else [part]):
+                if len(sub) * CELL ** 2 >= MESA_LEAST:
+                    for a, b in sub:
+                        if left[a][b]:
+                            taken[a][b] = True
+        return [straighten(self.trace(part)) for part in self.parts(taken)]
+
+    def trace(self, part):
+        """The outer outline of one part of the grid: points midway between its cells and the rest, anticlockwise."""
+        cells = set(part)
+        follow = {}
+        for a, b in cells:
+            for (u, v), start, end in (((a + 1, b), (a + 0.5, b - 0.5), (a + 0.5, b + 0.5)), ((a, b + 1), (a + 0.5, b + 0.5), (a - 0.5, b + 0.5)), ((a - 1, b), (a - 0.5, b + 0.5), (a - 0.5, b - 0.5)), ((a, b - 1), (a - 0.5, b - 0.5), (a + 0.5, b - 0.5))):
+                if (u, v) not in cells:
+                    follow.setdefault(start, []).append(end)
+        best = []
+        while follow:
+            start = min(follow)
+            ring, q = [start], follow[start].pop()
+            if not follow[start]:
+                del follow[start]
+            while q != start:
+                ring.append(q)
+                nxt = follow[q].pop()
+                if not follow[q]:
+                    del follow[q]
+                q = nxt
+            if len(ring) > len(best):
+                best = ring
+        return [(self.x0 + a * CELL, self.y0 + b * CELL) for a, b in best]
+
+    def mesa_depth(self, x, y):
+        """How far (x, y) is inside a mesa, or 0."""
+        for m in self.mesas:
+            if wt.point_in(m, (x, y)):
+                return min(seg_dist((x, y), m[k - 1], m[k]) for k in range(len(m)))
+        return 0.0
 
     def _bilinear(self, grid, x, y):
         fx = min(max((x - self.x0) / CELL, 0.0), self.nx - 1.001)
@@ -280,25 +407,73 @@ class Field:
         return min(v, TOP_LEVEL + 0.7 + (MAX_LEVEL - TOP_LEVEL - 0.7) * (0.5 + 0.5 * math.sin(x * 0.61 + 0.8) * math.sin(y * 0.73 - 0.4))) if tall else v
 
     def slope(self, x, y):
-        """The rock up to the land, not clamped at the floor or above the land: cutting the bands from this keeps their lines straight across the mesh. Negative in a corridor."""
+        """The rock before its bands are worked out, not clamped at the floor or above the land. Negative in a corridor."""
+        plain = (self._bilinear(self.dist, x, y) - HALF_WIDTH + wobble(x, y)) / STEP_OUT
+        if gc.tile_at(x, y) not in self.region:
+            return plain
         v = self.rock(x, y, tall=False)
-        v = min(v, max(TOP_LEVEL - 0.5, TOP_LEVEL + self._bilinear(self.land, x, y) * 5 + 0.001))
         margin = self.edge_margin(x, y)
-        if margin < 0.6:  # level with the land outside, along the region's edge: eases to a plain slope with no cap, so a wall meets the edge with no jump
-            plain = (self._bilinear(self.dist, x, y) - HALF_WIDTH + wobble(x, y)) / STEP_OUT
+        if margin < 0.6:  # easing to a plain slope with no cap along the region's edge, so a wall meets it with no jump
             v = v + (plain - v) * (1 - margin / 0.6)
         return v
 
-    def outline(self, x, y):
-        """Where the rock above the land stands: positive inside a mesa."""
-        return self._bilinear(self.top, x, y) + 0.5 * wobble(x, y) + 0.2 * math.sin(x * 1.4 + 1.7 * math.sin(y * 0.9)) * math.sin(y * 1.2 + 0.5)  # lumpy, not a drum
+    def ridge_at(self, x, y):
+        return self._bilinear(self.ridge, x, y)
+
+    def land_at(self, x, y):
+        """Positive where the rock reaches the land. It always stands back from the band below, so every ledge is real."""
+        return min(self._bilinear(self.land, x, y), self.ridge_at(x, y) - LEDGE)
 
     def value(self, x, y):
-        v = self.slope(x, y)
-        if v >= TOP_LEVEL:
-            edge = self.outline(x, y)
-            v = TOP_LEVEL + 1 + min(0.9, edge * 1.5) if edge > 0 else min(v, TOP_LEVEL + 0.9)
-        return max(0.0, v)
+        """The rock's height in bands, as the mesh has it: 0 on the floor, 1 and 2 on its ledges, 3 up on a mesa."""
+        a = self.ridge_at(x, y)
+        if a <= 0:
+            return max(0.0, 1 + a * 5)
+        b = self.land_at(x, y)
+        if b <= 0:
+            return 1 + min(0.999, a * 5)
+        d = self.mesa_depth(x, y)
+        return TOP_LEVEL + 1 + min(0.9, d * 1.5) if d > 0 else TOP_LEVEL + min(0.9, b * 5)
+
+
+def outline_gap(m, o):
+    """The least distance between two outlines' corners and sides."""
+    return min(min(seg_dist(p, o[k - 1], o[k]) for p in m for k in range(len(o))), min(seg_dist(p, m[k - 1], m[k]) for p in o for k in range(len(m))))
+
+
+def straighten(ring):
+    """A traced outline as a few straight sides: within MESA_TRUE of the trace, with no side under MESA_SIDE and no corner sharper than MESA_CORNER."""
+    def stray(a, b, run):
+        return max(((seg_dist(q, a, b), k) for k, q in enumerate(run)), default=(0.0, 0))
+
+    def split(a, run, b):
+        d, k = stray(a, b, run)
+        if d <= MESA_TRUE:
+            return []
+        return split(a, run[:k], run[k]) + [run[k]] + split(run[k], run[k + 1:], b)
+
+    far = max(range(len(ring)), key=lambda k: math.dist(ring[0], ring[k]))
+    pts = [ring[0]] + split(ring[0], ring[1:far], ring[far]) + [ring[far]] + split(ring[far], ring[far + 1:], ring[0])
+
+    def corner(k):
+        a, b, c = pts[k - 1], pts[k], pts[(k + 1) % len(pts)]
+        u, v = wt.sub(a, b), wt.sub(c, b)
+        return math.degrees(math.acos(max(-1.0, min(1.0, wt.dot(u, v) / (wt.length(u) * wt.length(v) or 1.0)))))
+
+    def area_of(k):
+        a, b, c = pts[k - 1], pts[k], pts[(k + 1) % len(pts)]
+        return abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]))
+
+    while len(pts) > 5:
+        short = [k for k in range(len(pts)) if math.dist(pts[k], pts[(k + 1) % len(pts)]) < MESA_SIDE]
+        sharp = [k for k in range(len(pts)) if corner(k) < MESA_CORNER]
+        if sharp:
+            pts.pop(min(sharp, key=corner))
+        elif short:
+            pts.pop(min((j for k in short for j in (k, (k + 1) % len(pts))), key=area_of))
+        else:
+            break
+    return pts
 
 
 def clip(poly, level):
@@ -320,39 +495,37 @@ def clip(poly, level):
 
 
 def terrace(tri, field):
-    """Cut one triangle of (x, y, slope) by the bands: (flats, walls). flats: (level, [(x, y)...]) to lie at that level's height. walls: (level, a, b), upright from level - 1 to level. The part above the land is cut again by the mesas' outline."""
-    vals = [q[2] for q in tri]
-    lo, hi = max(0, math.floor(min(vals))), max(0, min(TOP_LEVEL, math.floor(max(vals))))
+    """Cut one triangle of (x, y, ridge) by the two lower bands: (flats, walls). flats: (level, [(x, y)...]) to lie at that level's height. walls: (level, a, b), upright from level - 1 to level, with the higher rock on the left going from a to b. Each band is cut only from the one below, so its walls always stand on a ledge."""
     flats, walls = [], []
-    above = tri
-    for level in range(lo + 1, hi + 1):
-        keep, _ = clip([(q[0], q[1], -q[2]) for q in above], -level)  # the part below this level
-        if len(keep) >= 3:
-            flats.append((level - 1, [(q[0], q[1]) for q in keep]))
-        high, edge = clip(above, level)
-        if edge:
-            walls.append((level, edge[0], edge[1]))
-        above = high
-    if len(above) < 3:
-        return flats, walls
-    if hi < TOP_LEVEL:
-        flats.append((hi, [(q[0], q[1]) for q in above]))
-        return flats, walls
-    # above the land: the mesas
-    poly = [(q[0], q[1], field.outline(q[0], q[1])) for q in above]
-    keep, _ = clip([(q[0], q[1], -q[2]) for q in poly], 0.0)
-    if len(keep) >= 3:
-        flats.append((TOP_LEVEL, [(q[0], q[1]) for q in keep]))
-    high, edge = clip(poly, 0.0)
-    if edge:
-        walls.append((TOP_LEVEL + 1, edge[0], edge[1]))
-    if len(high) >= 3:
-        flats.append((TOP_LEVEL + 1, [(q[0], q[1]) for q in high]))
+
+    def cut(poly, level):
+        """poly's values are this band's distance from its line: flats it leaves at level - 1, the wall, and the part above."""
+        poly = [(q[0], q[1], q[2] or 1e-6) for q in poly]  # exactly on the line would count as both sides
+        low, _ = clip([(q[0], q[1], -q[2]) for q in poly], 0.0)
+        high, edge = clip(poly, 0.0)
+        if len(low) >= 3:
+            flats.append((level - 1, [(q[0], q[1]) for q in low]))
+        if edge and len(high) >= 3:
+            a, b = edge
+            mx, my = sum(q[0] for q in high) / len(high), sum(q[1] for q in high) / len(high)
+            left = (b[0] - a[0]) * (my - a[1]) - (b[1] - a[1]) * (mx - a[0]) > 0
+            walls.append((level, a[:2], b[:2]) if left else (level, b[:2], a[:2]))
+        return high
+
+    above = cut(tri, 1)
+    if len(above) >= 3:
+        ring = [(q[0], q[1], min(field._bilinear(field.land, q[0], q[1]), q[2] - LEDGE)) for q in above]  # q[2] as this triangle has it, so its wall below always has a ledge on top
+        crossings = sum((ring[k][2] >= 0) != (ring[k - 1][2] >= 0) for k in range(len(ring)))
+        # a line that crosses more than once in here is cut a triangle at a time, so every piece of it gets its wall
+        for piece in [ring] if crossings <= 2 else [[ring[0], ring[k], ring[k + 1]] for k in range(1, len(ring) - 1)]:
+            top = cut(piece, TOP_LEVEL)
+            if len(top) >= 3:
+                flats.append((TOP_LEVEL, [(q[0], q[1]) for q in top]))
     return flats, walls
 
 
 def tile_grid(t, field):
-    """The tile's triangles of (x, y, slope), world space, anticlockwise: each sixth is a grid between the middle and an edge, on points its neighbours share."""
+    """The tile's triangles of (x, y, ridge), world space, anticlockwise: each sixth is a grid between the middle and an edge, on points its neighbours share."""
     c = gc.tile_centre(*t)
     tris = []
     memo = {}
@@ -361,7 +534,7 @@ def tile_grid(t, field):
         key = (round(p[0], 4), round(p[1], 4))
         if key not in memo:
             x, y = c[0] + p[0], c[1] + p[1]
-            memo[key] = (x, y, field.slope(x, y))
+            memo[key] = (x, y, field.ridge_at(x, y))
         return memo[key]
 
     for i in range(6):
@@ -515,18 +688,18 @@ def build(p, rng, region, landmark, turn):
                 face([(q[0], q[1], z) for q in (poly if area > 0 else poly[::-1])], FLAT[level])
             for level, a, b in walls:
                 z1, z0 = level_z(level), level_z(level - 1)
-                # the wall looks toward the lower side: test a point beside its middle
                 mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
-                nx, ny = -(b[1] - a[1]), b[0] - a[0]
-                ln = math.hypot(nx, ny) or 1.0
-                near_ = field.outline if level > TOP_LEVEL else field.slope
-                left = near_(mx + nx / ln * 0.05, my + ny / ln * 0.05)
-                right = near_(mx - nx / ln * 0.05, my - ny / ln * 0.05)
-                if left < right:  # (b - a) x z looks right: swap so it looks to the low side
-                    a, b = b, a
                 # where a lane meets the land, the short walls beside it are in the land's colour, so they don't stand out against it
                 by_mouth = level == TOP_LEVEL and any(math.dist((mx, my), q_) < 2.4 for q_ in mouths)
-                face([(a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1)], "canyon_top" if by_mouth else BAND[min(level, 4)])
+                face([(a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1)], "canyon_top" if by_mouth else BAND[level])
+    import gorge
+    for m in field.mesas:  # each one solid, its sides running down onto the land
+        z1, z0 = level_z(TOP_LEVEL + 1), level_z(TOP_LEVEL) - 0.02
+        for k in range(len(m)):
+            a, b = m[k - 1], m[k]
+            face([(a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1)], BAND[TOP_LEVEL + 1])
+        for tri in gorge.ear_clip(m):
+            face([(*m[n], z1) for n in tri], FLAT[TOP_LEVEL + 1])
     ct._skirts(p, field.region, FLOOR - 0.2)
     # ramps: a worn lane cut between the walls
     stones = rp.Run(p, rng, ("canyon_side", "canyon_rust", "canyon_orange"))
