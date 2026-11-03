@@ -1012,6 +1012,33 @@ def washing(p, rng):
     p.box(Vector((0.24, -0.16, 0)), (0.3, 0.24, 0.18), "crate", spin=0.3)
 
 
+def slum_washing(p, rng):
+    """A sagging line on two crooked posts, hung with separate things at different heights and sizes, gaps between them, with a basket and a tub under it."""
+    a, b = Vector((-0.44, 0.1, 1.44)), Vector((0.44, 0.1, 1.28))
+    for q, lean in ((a, 0.05), (b, -0.07)):
+        p.box_rot(Vector((q.x - lean * q.z / 2, q.y, q.z / 2)), (0.055, 0.055, q.z + 0.06), "timber", Matrix.Rotation(lean, 3, "Y"))
+
+    def line(t):
+        return a.lerp(b, t) - Vector((0, 0, 0.17 * (1 - (2 * t - 1) ** 2)))
+
+    for t0, t1 in ((0.0, 0.25), (0.25, 0.5), (0.5, 0.75), (0.75, 1.0)):
+        vr.frustum(p, line(t0), line(t1), 0.011, 0.011, "rope", segments=3)
+    q = line(0.17)  # a shirt with its arms out
+    p.box(q, (0.17, 0.02, 0.27), "paint_blue", z=-0.27)
+    p.box(q, (0.31, 0.02, 0.07), "paint_blue", z=-0.08)
+    q = line(0.43)  # trousers, by the ankles
+    for side in (-1, 1):
+        p.box(q + Vector((side * 0.045, 0, 0)), (0.07, 0.02, 0.4), "patch_brown", z=-0.4)
+    p.box(q + Vector((0, 0, -0.4)), (0.16, 0.02, 0.09), "patch_brown")
+    q = line(0.63)  # a rag
+    p.box_rot(q + Vector((0, 0, -0.06)), (0.09, 0.02, 0.12), "patch_red", Matrix.Rotation(0.2, 3, "Y"))
+    q = line(0.84)  # a long sheet, folded over
+    p.box(q, (0.2, 0.02, 0.56), "canvas_dirty", z=-0.56)
+    p.box(q + Vector((0, -0.016, 0)), (0.2, 0.012, 0.16), "canvas_dirty", z=-0.16)
+    lathe(p, Vector((-0.12, -0.12, 0)), ((0.0, 0.18, "trunk"), (0.08, 0.2, "hoop"), (0.11, 0.2, "trunk"), (0.22, 0.21, "trunk")), "water")
+    p.box(Vector((0.24, -0.16, 0)), (0.3, 0.24, 0.18), "crate", spin=0.3)
+
+
 def scrag(p, rng):
     grown(p, 1.8, ZERO, lambda: vr.scraggly_tree(p, rng, ZERO))
 
@@ -1094,7 +1121,7 @@ KIT = {
         "T": ("scraggly_tree", SINGLE, scrag),
         "J": ("junk", SINGLE, slum_junk),
         "N": ("lantern_heap", SINGLE, lantern_heap),
-        "I": ("washing", SINGLE, washing),
+        "I": ("washing", SINGLE, slum_washing),
         "U": ("broken_cart", SINGLE, broken_cart),
         "E": ("lean_to", SINGLE, lean_to),
     },

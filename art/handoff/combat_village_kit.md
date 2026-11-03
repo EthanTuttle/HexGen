@@ -1,8 +1,8 @@
-# Combat village kit hand-off (combat_village_v32, combat_maps_village_v17)
+# Combat village kit hand-off (combat_village_v33, combat_maps_village_v18)
 
 Twenty custom village combat maps, four per variant: three terrain maps and one path map. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest, plains and farmland kits: see [combat_forest_kit.md](combat_forest_kit.md) and [combat_farmland_kit.md](combat_farmland_kit.md). No map has raised ground or stairs, while the ways-up decision is open.
 
-- **Models:** `art/export/combat_village.glb` (from `art/combat/combat_village_v32.blend`), `art/export/combat_maps_village.glb` (`art/combat/combat_maps_village_v17.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_village.glb` (from `art/combat/combat_village_v33.blend`), `art/export/combat_maps_village.glb` (`art/combat/combat_maps_village_v18.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_village.json`, the same format as `combat_maps.json`, with `"kind": "path"` on path maps. `variant` is `village`, `market_town`, `fortified_town`, `slums` or `scholars_town`.
 - **Scripts:** `art/scripts/build_village_cells.py`, `art/scripts/render_village_maps.py` (the plans, in readable text). They reuse the farmland, plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
