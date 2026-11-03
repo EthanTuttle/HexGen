@@ -4,6 +4,13 @@ This round holds the canyon as Ethan chose it (a maze walked on the floor), more
 
 - **Models:** `art/export/tiles.glb`, exported from `art/tiles/tiles_v59.blend`. The canyon isn't in it: `art/scripts/canyon.py` builds it per region (`render_preview.py --canyon-maze`).
 
+
+## Ramp study (not in the kit; waiting on Ethan's pick)
+
+`art/scripts/ramp_study.py` builds each style against a stand-in banded wall. Nothing from it is in the canyon or the Stronghold yet.
+Sheets: `art/preview/ramp_study_game_v5.png` (close, at the map camera's 50°), `ramp_study_map_v3.png` (a full map-distance frame, middle kept), `ramp_study_low_v4.png`, `ramp_study_bend_v3.png`, and `ramp_study_game_v3.png` for steps standing out from the wall instead of set in it.
+The study's walls are simplified, so carving a cut into `canyon.py`'s terraces is still unproven.
+
 ## Canyon
 
 Previews, all `_v1` in `art/preview/`: `canyon_maze_map`, `_turned`, `_turned_b`, `_low`, `_low_turned`, `_lower`, `_lower_turned`, `_cave`, `_ramp`, `_side`. Stand-in parties stand in several spots at once.
