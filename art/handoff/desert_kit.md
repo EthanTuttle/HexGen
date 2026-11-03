@@ -1,6 +1,6 @@
 # Canyon top rock, rebuilt as solid mesas
 
-Ethan rejected the top mesas twice for thin edges (Nov 3, 2026). This is the second rebuild, working from a reviewer's list of spots. **Waiting on his OK.** It changes `canyon.py` only, no kit, and where the sections below describe the rock, this wins. The maze, routes and lanes' lines are unchanged. Not tried in Godot.
+Ethan rejected the top mesas twice for thin edges (Nov 3, 2026). This is the second rebuild, working from a reviewer's list of spots, and he approved it. It changes `canyon.py` only, no kit, and where the sections below describe the rock, this wins. The maze, routes and lanes' lines are unchanged. Not tried in Godot.
 
 ## What Godot re-ports
 
