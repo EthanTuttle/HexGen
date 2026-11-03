@@ -23,3 +23,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/ramp_study_game_v5.png` | approved | A cut path for canyon entrances and hills ledges, C timber for the Stronghold; D and E out. Combat ramps: B/C comparison first |
 | 2026-11-03 | `art/preview/forest_maps_paths_v2.png` | rejected | Fey and Deep Forest paths not objected to; Heartwood down to 2 gates; Heartwood and Dark Wood paths use path-coloured cells |
 | 2026-11-03 | `art/preview/ramp_compare_close_v1.png` | rejected | B steps preferred, but bases clip; try a flat landing and duller treads. C dropped by planner's read, not ruled on |
+| 2026-11-03 | `art/preview/forest_maps_paths_v3.png` | approved | Once Dark Wood's path reaches the map's edge; merge without another review |
+| 2026-11-03 | `art/preview/crop_compare_close_v1.png` | rejected | Rows chosen over tufts, but less like pallets; straw halfway colour #D1B668 |
