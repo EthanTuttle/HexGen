@@ -4169,11 +4169,10 @@ def rapids_fall(p, rng):
     p.effects.append(("spray", Vector((0, 0, 0.3))))
 
 
-def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=None, n=12, flat=None):
-    """A humped stone bridge along X, its ends at x = +-half on the ground: a solid with a round arch under the middle. Returns its deck height at x.
-    flat: the deck is level within this of the middle, with a straight ramp each side, instead of a curve."""
-    top = lambda x: crown * (1 - (x / half) ** 2) + 0.02 if flat is None else crown * min(1.0, (half - abs(x)) / (half - flat)) + 0.02  # noqa: E731
-    under = lambda x: rise * math.sqrt(max(0.0, 1 - (x / open_half) ** 2)) if abs(x) < open_half else 0.0  # noqa: E731
+def gorge_bridge(p, half, width, open_half, spring, apex, stone, parapet, top, ring=None, n=12):
+    """A stone bridge along X over the gorge, from ground to ground: its ends at x = +-half on the land, a round arch from the water's level under its middle, and solid down into the rock either side. top(x): its deck height."""
+    under = lambda x: spring + (apex - spring) * math.sqrt(max(0.0, 1 - (x / open_half) ** 2)) if abs(x) < open_half else spring  # noqa: E731
+    deck = lambda x: top(x) + 0.02  # noqa: E731
 
     def block(a, b, c, d, y0, y1, mat):  # a solid from a quad in the (x, z) plane, from y0 to y1
         v = [p.bm.verts.new((x, y, z)) for y in (y0, y1) for x, z in (a, b, c, d)]
@@ -4182,25 +4181,24 @@ def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=Non
                   (v[2], v[6], v[7], v[3]), (v[3], v[7], v[4], v[0])):
             p.bm.faces.new(f).material_index = idx
 
-    # breakpoints: the arch's springing lies on one, so the solid meets the ground cleanly either side of it
-    xs = sorted(set([-half, half, -open_half, open_half] + [-half + (half - open_half) * k / 3 for k in (1, 2)] + [half - (half - open_half) * k / 3 for k in (1, 2)]
-                    + [open_half * math.cos(math.pi * k / n) for k in range(n + 1)] + ([-flat, flat] if flat else [])))
+    xs = sorted(set([-half, half, -open_half, open_half] + [-half + (half - open_half) * k / 4 for k in (1, 2, 3)] + [half - (half - open_half) * k / 4 for k in (1, 2, 3)]
+                    + [open_half * math.cos(math.pi * k / n) for k in range(n + 1)]))
     for a, b in zip(xs, xs[1:]):
-        block((a, under(a)), (b, under(b)), (b, top(b)), (a, top(a)), -width / 2, width / 2, stone)
+        block((a, under(a)), (b, under(b)), (b, deck(b)), (a, deck(a)), -width / 2, width / 2, stone)
         for s_ in (-1, 1):
             y0 = s_ * width / 2
-            block((a, top(a) - 0.02), (b, top(b) - 0.02), (b, top(b) + 0.2), (a, top(a) + 0.2), y0, y0 - s_ * 0.1, parapet)
+            block((a, deck(a) - 0.02), (b, deck(b) - 0.02), (b, deck(b) + 0.2), (a, deck(a) + 0.2), y0, y0 - s_ * 0.1, parapet)
             if ring and abs(a) < open_half + 0.01 and abs(b) < open_half + 0.01:  # the arch's ring of darker blocks, on each face
                 y1 = s_ * (width / 2 + 0.02)
-                block((a, under(a)), (b, under(b)), (b, under(b) + 0.18), (a, under(a) + 0.18), y0, y1, ring)
-    p.flat([Vector((-open_half, -width / 2, 0)), Vector((open_half, -width / 2, 0)), Vector((open_half, width / 2, 0)), Vector((-open_half, width / 2, 0))], 0.036, "water_shade")  # the shade under it
-    p.paths.append([Vector((x, 0, top(x))) for x in (xs if flat else xs[::2] + xs[-1:])])
-    return top
+                block((a, under(a)), (b, under(b)), (b, under(b) + 0.22), (a, under(a) + 0.22), y0, y1, ring)
+    p.paths.append([Vector((x, 0, deck(x))) for x in xs])
+    return deck
 
 
 def rapids_bridge(p, rng):
-    """A plain stone bridge over rapids, walked with no check (water.bridge_spot says where). Ramps run out on to the land each side."""
-    arch_bridge(p, 1.95, 0.6, 1.3, 0.95, 0.36, "stone_block_dark", "stone_block", n=8, flat=0.67)  # ramps of 25 degrees; 1.1 clear between its low walls, for a mini's base
+    """A plain stone bridge over the gorge, walked with no check (water.bridge_spot says where). 1.1 clear between its low walls, for a mini's base."""
+    half, crown, flat = 2.35, 0.3, 0.9
+    gorge_bridge(p, half, 1.3, 0.85, -1.25, -0.3, "stone_block_dark", "stone_block", lambda x: crown * min(1.0, (half - abs(x)) / (half - flat)), n=8)
 
 
 def still_willow(p, rng):
@@ -4289,16 +4287,16 @@ def serpent_lair(p, rng, kind):
 def troll_bridge(p, rng, kind):
     """Rapids' Troll Bridge: a big old mossy stone arch over the white water, placed where water.bridge_spot says, with shade under it, a dark hollow in its
     near side where the troll lives, a toll post at one end, and bones. Its path runs over the top: walking it needs no check."""
-    half, w = 2.9, 1.4
-    top = arch_bridge(p, half, 2.05, w, 1.42, 1.5, "stone_moss", "stone_block_dark", ring="stone_block_dark", n=10)
+    half, w, crown = 3.1, 1.4, 1.05
+    top = gorge_bridge(p, half, w, 1.42, -1.25, 0.42, "stone_moss", "stone_block_dark", lambda x: crown * (1 - (abs(x) / half) ** 1.5), ring="stone_block_dark", n=10)  # 26.9 degrees at its ends, walkable all the way
     for x, y, r in ((-1.6, 0.56, 0.24), (-0.8, -0.56, 0.2), (-0.1, 0.56, 0.26), (0.7, 0.56, 0.2), (1.35, -0.56, 0.24), (1.95, 0.56, 0.2), (-2.1, -0.56, 0.18)):
         p.blob(Vector((x, y, 0)), r, "moss", z=top(x) + 0.16, squash=0.45)
-    for x, y, z, r in ((-1.25, w / 2, 0.45, 0.3), (1.55, -w / 2, 0.34, 0.34), (1.55, w / 2, 0.34, 0.3), (-1.2, -w / 2, 1.2, 0.2), (0.95, -w / 2, 1.45, 0.22), (-0.9, w / 2, 1.5, 0.22)):  # moss on the walls
+    for x, y, z, r in ((-1.25, w / 2, -0.1, 0.3), (1.55, -w / 2, -0.25, 0.34), (1.55, w / 2, 0.1, 0.3), (-1.2, -w / 2, 0.3, 0.2), (0.95, -w / 2, 0.42, 0.22), (-0.9, w / 2, 0.5, 0.22), (1.0, w / 2, -0.7, 0.26), (-1.05, -w / 2, -0.75, 0.24)):  # moss on the walls
         p.blob(Vector((x, y, 0)), r, "moss", z=z, squash=0.6)
-    # the hollow: a black opening in the side of the near abutment, with rough stone round it, on -Y, and bones before it
-    hx = -1.92
-    p.box(Vector((hx, -w / 2 - 0.02, 0)), (0.62, 0.05, 0.58), "cave_dark")
-    for dx, z, r in ((-0.38, 0.22, 0.2), (0.38, 0.2, 0.2), (-0.26, 0.58, 0.18), (0.26, 0.58, 0.18), (0, 0.66, 0.2)):
+    # the hollow: a black opening in the side of the near abutment, on the land, with rough stone round it, on -Y, and bones before it
+    hx = -2.15
+    p.box(Vector((hx, -w / 2 - 0.02, 0)), (0.5, 0.05, 0.36), "cave_dark")
+    for dx, z, r in ((-0.31, 0.14, 0.17), (0.31, 0.12, 0.17), (-0.21, 0.38, 0.14), (0.21, 0.38, 0.14), (0, 0.44, 0.15)):
         lump(p, Vector((hx + dx, -w / 2 - 0.04, 0)), r, "stone_block_dark", z=z)
     bones(p, rng, Vector((hx - 0.35, -w / 2 - 0.42, 0)), skull=True)
     bones(p, rng, Vector((hx + 0.1, -w / 2 - 0.55, 0)), skull=False)

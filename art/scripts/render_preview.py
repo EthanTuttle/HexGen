@@ -315,7 +315,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
         kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
-        base = place(templates, f"base_{terrain}", col, at) if kit != "canyon" else None  # the canyon's pieces are its ground: a slab would cover the gorges
+        no_slab = kit == "canyon" or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
+        base = place(templates, f"base_{terrain}", col, at) if not no_slab else None
         if kit in vr.VARIANTS and base:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
             base.material_slots[0].link = "OBJECT"
@@ -330,11 +331,11 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             band = dist.get((q, r), 0) if dist.get((q, r), 0) in (1, 2) else 0
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
             is_lm = name in vr.LANDMARK_CENTRES
-            wt.add_water(p, mask, seed, plates=not animated, boats=not animated, widths=widths, style=wt.FAMILY.get(kit), near=band, port=port, landmark=is_lm)
+            wt.add_water(p, mask, seed, plates=not animated, boats=not animated, widths=widths, style=wt.FAMILY.get(kit), near=band, port=port, landmark=is_lm, ground=vr.VARIANTS[kit][2] if kit in vr.VARIANTS else "plains")
             p.finish(col, at)
             water_tiles.append((q, r, at, mask))
             for prop, pt, ang in wt.tile_props(mask, seed, widths, wt.FAMILY.get(kit), band, is_lm):
-                place(templates, prop, col, at + Vector((pt[0], pt[1], 0)), ang)
+                place(templates, prop, col, at + Vector((pt[0], pt[1], wt.prop_z(prop))), ang)
             if name == "serpentlair":
                 place(templates, "serpentlair_centre", col, at, math.radians(60 * turns.get((q, r), 0)))
             elif name == "meditationrock":
@@ -1358,6 +1359,74 @@ if __name__ == "__main__":
             at = n_ * 3.9
             look_at(bpy.context.scene.camera, at + n_ * 6.5 + Vector((0, 0, 4.5)), at + Vector((0, 0, 0.5)))
             shot("river_port_gate_closeup")
+        if needs("river_rapids_parties_map", "river_rapids_parties_turned", "river_rapids_low", "river_rapids_troll", "river_rapids_lane", "river_rapids_join_river", "river_rapids_join_lake"):
+            # The gorge with parties in it: on bridges, on a lane, wading, and where it joins plain river and a lake
+            import canyon_takes as ct
+            import gorge as gg
+            JOIN_MAP = {**RAPIDS_MAP, (4, -4): "river", (5, -5): "river", (3, -2): "plains", (4, -3): "plains", (4, -5): "plains", (5, -4): "plains", (3, -4): "plains",
+                        (-3, 4): "great_lake", (-4, 4): "great_lake", (-3, 5): "great_lake", (-4, 5): "great_lake", (-2, 4): "plains", (-3, 3): "plains", (-4, 3): "plains", (-2, 5): "plains"}
+            for scene_map, views in ((RAPIDS_MAP, ("parties_map", "parties_turned", "low", "troll", "lane")), (JOIN_MAP, ("join_river", "join_lake"))):
+                if not needs(*[f"river_rapids_{v}" for v in views]):
+                    continue
+                hk.empty_scene()
+                templates = load_templates(tiles)
+                minis = load_templates(max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1))))
+                build_map(templates, tiles=scene_map)
+                col = bpy.data.collections["map"]
+                draw_effects(col, templates, thin=True)
+                spots, lane_at, wade_at = [], None, None
+                for (q_, r_), name_ in sorted(scene_map.items()):
+                    if vr.wedges_of(name_) != "rapids":
+                        continue
+                    near_ = [scene_map.get((q_ + dq, r_ + dr)) for dq, dr in hk.NEIGHBOURS]
+                    mask = turned_map(near_)
+                    widths = wt.edge_widths(vr.wedges_of(name_), [n_ and vr.wedges_of(n_) for n_ in near_])
+                    g_ = gg.build(mask, f"{q_},{r_}", widths, name_ == "trollbridge")
+                    at = hk.tile_position(q_, r_)
+                    if g_["spot"]:
+                        c_, ang_, _ = g_["spot"]
+                        z_ = 1.07 if name_ == "trollbridge" else 0.32
+                        spots.append(((at.x + c_[0], at.y + c_[1], z_), ang_))
+                        if name_ == "trollbridge":
+                            troll_view = (at + Vector((c_[0], c_[1], 0)), ang_)
+                    for walk in g_["walks"].values():
+                        if lane_at is None:
+                            m_ = walk[-4]
+                            n_ = walk[-5]
+                            lane_at = (at + Vector((m_[0], m_[1], m_[2])), math.atan2(m_[1] - n_[1], m_[0] - n_[0]))
+                            for kind_, pt_ in zip(("standin_hero", "standin_chelmsford", "standin_small", "standin_fluffy"), [walk[-2 - k_] for k_ in range(4)]):  # strung out down the lane, each at its own height
+                                o_ = ct.bpy_new(minis[kind_], col)
+                                o_.location = at + Vector(pt_)
+                                o_.rotation_euler.z = lane_at[1] + math.pi / 2
+                            w_ = walk[-1]
+                            wade_at = at + Vector((w_[0], w_[1], w_[2]))
+                            spots.append(((wade_at.x, wade_at.y, wade_at.z - 0.4), lane_at[1]))
+                            break
+                ct._mini_spots(col, minis, spots)
+                focus = Vector((0, 0, 0))
+                stage(focus, 62, 50)
+                cam = bpy.context.scene.camera
+                if "parties_map" in views:
+                    shot("river_rapids_parties_map")
+                    spin_cam(focus, 62, math.radians(150))
+                    shot("river_rapids_parties_turned")
+                    p0, ang0 = troll_view
+                    along = Vector((-math.sin(ang0), math.cos(ang0), 0))
+                    cam.data.lens = 30
+                    look_at(cam, p0 + along * 8 + Vector((0, 0, 1.6)), p0 + Vector((0, 0, -0.3)))
+                    shot("river_rapids_low")
+                    cam.data.lens = 50
+                    close_to(p0, ang0 - math.pi / 2)
+                    shot("river_rapids_troll")
+                    cam.data.lens = 40
+                    look_at(cam, lane_at[0] + Vector((-1.5, -5.5, 5.5)), lane_at[0])
+                    shot("river_rapids_lane")
+                else:
+                    for stem_, t_ in (("join_river", (4, -4)), ("join_lake", (-3, 4))):
+                        at = hk.tile_position(*t_)
+                        cam.data.lens = 40
+                        look_at(cam, at + Vector((1.5, -12, 12)), at + Vector((0, 0, -0.3)))
+                        shot(f"river_rapids_{stem_}")
         for stem, tiles_map, focus, lm_at, lm in (("river_lake", LAKE_MAP, Vector((0, -0.5, 0)), LANDMARK_AT, "serpentlair"), ("river_rapids", RAPIDS_MAP, Vector((0, 0, 0)), (0, 0), "trollbridge"),
                                                   ("river_still", STILL_MAP, Vector((2, -1, 0)), (1, 0), "meditationrock")):
             for paths in (False, True):

@@ -191,7 +191,20 @@ def tile_water(water, seed, widths=None, style=None):
         bank_a = shore(p, i, add(pond_at, mul((-normal(i)[1], normal(i)[0]), 0.7)), i, sway, rng, 0)
         bank_b = shore(add(pond_at, mul((normal(i)[1], -normal(i)[0]), 0.7)), i, q, i, sway, rng, 0)
         channel = [edge_point(i, t0), edge_point(i, t1)] + bank_a[1:] + bank_b[:-1]
-        pond = circle(add(pond_at, sway), RAPIDS_POOL if style == "rapids" else 1.3, rng, 0.12)
+        if style == "rapids":  # no pool: the gorge just ends, in a rounded head
+            side = (-normal(i)[1], normal(i)[0])
+            half = (t1 - t0) * R / 2
+            a_ = add(pond_at, mul(side, half if dot(sub(p, q), side) > 0 else -half))  # on p's side
+            b_ = add(pond_at, sub(pond_at, a_))
+            n_ = normal(i)
+            bank_a = bezier(p, sub(p, mul(n_, 1.3)), add(a_, mul(n_, 1.3)), a_, 14)  # running straight in to the head, so no overshoot where they meet
+            bank_b = bezier(b_, add(b_, mul(n_, 1.3)), sub(q, mul(n_, 1.3)), q, 14)
+            start = math.atan2(*reversed(sub(a_, pond_at)))
+            turn_way = 1 if dot((math.cos(start + 1.57), math.sin(start + 1.57)), normal(i)) < 0 else -1
+            head = [add(pond_at, mul((math.cos(start + turn_way * math.pi * k / 6), math.sin(start + turn_way * math.pi * k / 6)), half)) for k in range(1, 6)]
+            curve = bank_a + head + bank_b
+            return [[edge_point(i, t0), edge_point(i, t1)] + curve[1:-1]], [curve], "spring", [(i, i)]
+        pond = circle(add(pond_at, sway), 1.3, rng, 0.12)
         return [channel, pond], [bank_a, bank_b, pond + pond[:1]], "spring", [(i, None), (None, i), (None, None)]
 
     # Walk round the edge, merging stretches that meet at a water corner.
@@ -553,9 +566,9 @@ def port_routes(water, t):
 # A bridge is a piece (rapids_bridge, or the Troll Bridge's centre) placed at any angle across the channel, where bridge_spot says.
 # Walking over it crosses with no check (design/02 -> Bridges on rapids), so its routes are plain land routes.
 
-BRIDGE_HALF = 1.95  # half the length of a rapids_bridge, ramps included
-TROLL_HALF = 2.9  # half the length of the Troll Bridge
-BRIDGE_OPEN, TROLL_OPEN = 0.95, 1.42  # half the width of each one's arch
+BRIDGE_HALF = 2.35  # half the length of a rapids_bridge, from ground to ground over the gorge
+TROLL_HALF = 3.1  # half the length of the Troll Bridge
+BRIDGE_OPEN, TROLL_OPEN = 0.85, 1.42  # half the width of each one's arch
 BRIDGE_CHANCE = 0.35  # the share of rapids tiles that have a bridge, where one fits
 
 
@@ -579,7 +592,11 @@ def bridge_spot(water, seed, widths=None, half=BRIDGE_HALF):
     """(middle, angle, routes), or None if no bridge fits. It crosses a channel with land edges on both sides, as near the tile's middle as it
     can, with both ends on land in the tile; routes[e] walks from land edge e's midpoint to the nearer end, and the piece's own path crosses
     from end to end. Angle turns the piece's +X along the bridge. A tile with no spot can't have a Troll Bridge."""
-    outlines, shores, kind, _ = tile_water(water, seed, widths, "rapids")
+    import gorge
+    wet_outlines, shores, kind, _ = tile_water(water, seed, widths, "rapids")
+    outlines = gorge.cut_outlines(water, seed, widths)  # both ends on the land beyond the cut
+    if not outlines:
+        return None
     wet = [i for i in range(6) if water[i]]
     tries = []
     if kind == "river" and len(wet) == 2 and len(shores) == 2:
@@ -601,17 +618,17 @@ def bridge_spot(water, seed, widths=None, half=BRIDGE_HALF):
         if dot(axis, tuple(map(sum, zip(*[normal(e) for e in after])))) < 0:
             axis = mul(axis, -1)
         ends = [add(c, mul(axis, half)), sub(c, mul(axis, half))]
-        firm = [add(c, mul(axis, half - 0.5)), sub(c, mul(axis, half - 0.5))] + ends
+        firm = [add(c, mul(axis, half - 0.35)), sub(c, mul(axis, half - 0.35))] + ends
         if in_water(outlines, firm[0]) or in_water(outlines, firm[1]) or not all(inside_tile(e, 0.1) and not in_water(outlines, e) for e in ends):
             continue
         routes = {e: [mul(normal(e), A), end] for side, end in ((after, ends[0]), (before, ends[1])) for e in side}
         if any(in_water(outlines, add(l_[0], mul(sub(l_[1], l_[0]), k / 12))) for l_ in routes.values() for k in range(13)):
             continue
         return c, math.atan2(axis[1], axis[0]), routes
-    return bridge_search(water, outlines, half)
+    return bridge_search(water, wet_outlines, outlines, half)
 
 
-def bridge_search(water, outlines, half):
+def bridge_search(water, wet_outlines, outlines, half):
     """Where the channel's shape leaves bridge_spot's usual tries no room: any line over one channel, near the tile's middle, whose water fits under the arch, with each land edge a dry walk from one end. A plain
     bridge must join land on both sides; the Troll's may end on a spit, since it's a place in itself. Returns as bridge_spot does, or None."""
     land = [e for e in range(6) if not water[e]]
@@ -619,20 +636,21 @@ def bridge_search(water, outlines, half):
         return None
     arch = (BRIDGE_OPEN if half <= BRIDGE_HALF else TROLL_OPEN) * 2 - 0.05
     spots = sorted(((x * 0.4, y * 0.4) for x in range(-10, 11) for y in range(-10, 11)), key=length)
+    firm_by = half - 0.35
 
     def dry(a, b):
         return not any(in_water(outlines, add(a, mul(sub(b, a), k / 12))) for k in range(13))
 
     for c in spots:
-        if not inside_tile(c, 0.5) or not in_water(outlines, c):
+        if not inside_tile(c, 0.5) or not in_water(wet_outlines, c):
             continue
         for k in range(12):
             axis = (math.cos(math.pi * k / 12), math.sin(math.pi * k / 12))
             ends = [add(c, mul(axis, half)), sub(c, mul(axis, half))]
-            firm = [add(c, mul(axis, half - 0.5)), sub(c, mul(axis, half - 0.5))]
+            firm = [add(c, mul(axis, firm_by)), sub(c, mul(axis, firm_by))]
             if any(in_water(outlines, f) for f in firm + ends) or not all(inside_tile(e, 0.1) for e in ends):
                 continue
-            if sum(in_water(outlines, add(c, mul(axis, -half + 2 * half * j / 40))) for j in range(41)) * 2 * half / 40 > arch:
+            if sum(in_water(wet_outlines, add(c, mul(axis, -half + 2 * half * j / 40))) for j in range(41)) * 2 * half / 40 > arch:
                 continue
             routes = {}
             for e in land:
@@ -686,155 +704,8 @@ def rapids_spot(water, seed, widths=None, landmark=False):
     if landmark:
         return bridge_spot(water, seed, widths, TROLL_HALF)
     if random.Random(f"{seed}-bridge").random() < BRIDGE_CHANCE:
-        spot = bridge_spot(water, seed, widths)
-        return spot if spot and clear_of_joins(spot, water, widths) else None
+        return bridge_spot(water, seed, widths)
     return None
-
-
-def clear_of_joins(spot, water, widths):
-    """Whether a bridge's walks keep off the banks where they cross a shared edge, whose height can't sink for one tile alone."""
-    c, ang, routes = spot
-    d = mul((math.cos(ang), math.sin(ang)), BRIDGE_HALF)
-    lines = [[sub(c, d), add(c, d)]] + list(routes.values())
-    for i in range(6):
-        if water[i] and widths and widths[i] == RAPIDS_WIDTH:
-            along = (-normal(i)[1], normal(i)[0])
-            for s_ in (-1, 1):
-                a = add(mul(normal(i), A), mul(along, s_ * (RAPIDS_WIDTH / 2)))
-                b = add(a, mul(along, s_ * 0.75))
-                for line in lines:
-                    for p, q in zip(line, line[1:]):
-                        for t in range(9):
-                            if seg_dist(add(p, mul(sub(q, p), t / 8)), a, b) < 0.6:
-                                return False
-    return True
-
-
-GORGE_ROWS = ((-0.04, 0.0), (0.1, 0.5), (0.36, 1.0), (0.7, 0.5), (1.02, 0.0))  # across a bank: (how far out from the shore, share of its height)
-GORGE_MATS = (("rock_wet_dark",), ("rock_wet", "rock_wet_dark"), ("rock_wet",), ("rock_wet", "rock_wet", "rock_wet_moss"))  # each band between rows
-GORGE_LOW, GORGE_HIGH = 0.6, 1.9  # a bank's height on the side toward the default camera, and on the side away, so it hides little of the water
-GORGE_JOIN = 1.2  # its height where it crosses a shared edge, the same from both tiles
-GORGE_GAP = 0.84, 1.2  # no bank within the first of a way the party walks, full height by the second
-
-
-def smooth(t):
-    t = max(0.0, min(1.0, t))
-    return t * t * (3 - 2 * t)
-
-
-def gorge_rows(water, seed, widths=None):
-    """The banks' plan: for each shore a grid, grid[row][k] = (x, y), plus (outward direction per k, ends). Rows and sides stay in the tile, and a shared edge's end column lies along that edge."""
-    outlines, shores, _, ends = tile_water(water, seed, widths, "rapids")
-    rng = random.Random(f"{seed}-gorge")
-    out = []
-    for curve, (e0, e1) in zip(shores, ends):
-        n = len(curve) - 1
-        run = sum(length(sub(curve[k + 1], curve[k])) for k in range(n))
-        scale = 1.0 if run > 3.2 else 0.6  # a spit of land between two channels has less room
-        outward = []
-        for k in range(n + 1):
-            t = sub(curve[min(n, k + 1)], curve[max(0, k - 1)])
-            o = mul((-t[1], t[0]), 1 / (length(t) or 1))
-            if in_water(outlines, add(curve[k], mul(o, 0.06))):
-                o = mul(o, -1)
-            edge = e0 if k == 0 else e1 if k == n else None
-            if edge is not None:  # along the edge, away from the channel
-                along = (-normal(edge)[1], normal(edge)[0])
-                o = along if dot(along, sub(curve[k], mul(normal(edge), A))) > 0 else mul(along, -1)
-            outward.append(o)
-        grid = []
-        for d, _ in GORGE_ROWS:
-            row = []
-            for k in range(n + 1):
-                jig = 0.0 if k in (0, n) or d <= 0 else rng.uniform(-0.09, 0.09)
-                p = add(curve[k], mul(outward[k], d * scale + jig))
-                if not inside_tile(p, 0.03) and k not in (0, n):
-                    p = clamp_inside(p, 0.03)
-                edge = e0 if k == 0 else e1 if k == n else None
-                if edge is not None:  # exactly on the line, so no slit shows between the two tiles' banks
-                    p = sub(p, mul(normal(edge), dot(p, normal(edge)) - A))
-                row.append(p)
-            grid.append(row)
-        for row in grid[2:]:  # a bank never folds back into the water
-            for k in range(1, n):
-                if in_water(outlines, row[k]):
-                    row[k] = grid[1][k]
-        out.append((grid, outward, (e0, e1)))
-    return out
-
-
-def gorge_ways(water, seed, widths=None, landmark=False):
-    """The lines the party walks on this tile's land: to each landing, and to and over its bridge. The banks have a gap at each."""
-    lines = [[e, s_, w] for e, s_, w in landings(water, seed, widths, "rapids").values()]
-    spot = rapids_spot(water, seed, widths, landmark)
-    if spot:
-        c, ang, routes = spot
-        half = TROLL_HALF if landmark else BRIDGE_HALF
-        d = mul((math.cos(ang), math.sin(ang)), half)
-        lines.append([sub(c, d), add(c, d)])
-        lines += list(routes.values())
-    return lines
-
-
-def gorge_banks(water, seed, widths=None, landmark=False):
-    """(triangles, stones). triangles: ((x, y, z) * 3, material), all facing up. stones: ((x, y, z), radius, material). Dark wet rock either side of the channel, standing on the tile's ground,
-    tall behind the water and low in front of it as seen from the default camera, sunk to nothing at each way the party walks and at any edge that isn't rapids on both sides."""
-    ways = gorge_ways(water, seed, widths, landmark)
-    rng = random.Random(f"{seed}-gorge-h")
-    tris, stones = [], []
-
-    def way_gap(p):
-        best = min((seg_dist(p, a, b) for line in ways for a, b in zip(line, line[1:])), default=9.0)
-        wide = 1.5 if landmark else 1.0  # the Troll's hollow and toll post stand beside its ends
-        return smooth((best - GORGE_GAP[0] * wide) / ((GORGE_GAP[1] - GORGE_GAP[0]) * wide))
-
-    def edge_fade(p):
-        best = 1.0
-        for i in range(6):
-            if not (water[i] and widths and widths[i] == RAPIDS_WIDTH):
-                best = min(best, smooth((A - dot(p, normal(i))) / 0.7))
-        return best
-
-    for grid, outward, (e0, e1) in gorge_rows(water, seed, widths):
-        n = len(grid[0]) - 1
-        height = []
-        for k in range(n + 1):
-            h_ = (GORGE_LOW + GORGE_HIGH) / 2 + (GORGE_HIGH - GORGE_LOW) / 2 * outward[k][1]
-            height.append(h_ * rng.uniform(0.78, 1.18))
-        joined = [e is not None and water[e] and widths and widths[e] == RAPIDS_WIDTH for e in (e0, e1)]
-        if e0 is None and e1 is None:
-            height[n] = height[0]
-        z = []
-        for row, (d, share) in enumerate(GORGE_ROWS):
-            zs_ = []
-            for k in range(n + 1):
-                p = grid[row][k]
-                h_ = height[k]
-                blend = min(k, n - k) / 2  # settle to the agreed height at each end
-                if blend < 1:
-                    end = joined[0] if k <= n / 2 else joined[1]
-                    h_ = h_ * blend + (GORGE_JOIN if end else 0.0) * (1 - blend)
-                if row == 0:
-                    zs_.append(0.02)
-                else:  # where a bank has sunk to nothing it goes under the ground, so the grass runs clean to the shore's strip
-                    zk = h_ * share if k in (0, n) else h_ * share * way_gap(p) * edge_fade(p)
-                    zs_.append(zk if zk > 0.03 else -0.03)
-            z.append(zs_)
-        for row in range(len(GORGE_ROWS) - 1):
-            for k in range(n):
-                a, b, c, d = ((*grid[row][k], z[row][k]), (*grid[row][k + 1], z[row][k + 1]), (*grid[row + 1][k + 1], z[row + 1][k + 1]), (*grid[row + 1][k], z[row + 1][k]))
-                for tri in ((a, b, c), (a, c, d)):
-                    if row and max(q[2] for q in tri) <= 0:
-                        continue
-                    area = (tri[1][0] - tri[0][0]) * (tri[2][1] - tri[0][1]) - (tri[1][1] - tri[0][1]) * (tri[2][0] - tri[0][0])
-                    if abs(area) < 1e-6:
-                        continue
-                    tris.append((tri if area > 0 else tri[::-1], rng.choice(GORGE_MATS[row])))
-        for k in range(2, n - 1, 3):
-            if z[2][k] > 0.55 and rng.random() < 0.55 and inside_tile(grid[2][k], 0.4):
-                r = rng.uniform(0.14, 0.28)
-                stones.append(((*grid[2][k], z[2][k]), r, rng.choice(("rock_wet", "rock_wet_dark"))))
-    return tris, stones
 
 
 # --- 8. Lake Serpent's Lair and Meditation Rock: routes --------------------------------
@@ -1014,6 +885,14 @@ def tile_props(water, seed, widths=None, style=None, near=0, landmark=False):
     return out
 
 
+def prop_z(prop):
+    """How high to place a prop from tile_props: a rapids fall stands on the gorge's water, at a shared edge."""
+    if prop == "rapids_fall":
+        import gorge
+        return gorge.DEPTH * -1
+    return 0.0
+
+
 def lake_waves(outlines, shores, seed):
     """Short pale strokes on deep water, all lying the same way so they read as one body: (point, angle, long, wide)."""
     rng = random.Random(f"{seed}-waves")
@@ -1052,8 +931,9 @@ def cover_shape(own, neighbours, seed):
         t = port_turn(mask, seed)
         return port_shape(mask, seed, widths, t)[0], [port_water(t)[1]]
     outlines, shores, _, _ = tile_water(mask, seed, widths, FAMILY.get(own))
-    if FAMILY.get(own) == "rapids":  # off the banks too
-        shores = shores + [row for grid, _, _ in gorge_rows(mask, seed, widths) for row in grid[2:]]
+    if FAMILY.get(own) == "rapids" and any(mask):  # off the cut too
+        import gorge
+        outlines = gorge.build(mask, seed, widths, own == "trollbridge")["cut"] or outlines
     return outlines, shores
 
 
@@ -1069,7 +949,7 @@ def add_lens(piece, p, ang, long_, wide, mat, z):
     piece.flat([Vector((p[0] + x * c - y * s_, p[1] + x * s_ + y * c, 0)) for x, y in pts], z, mat)
 
 
-def add_water(piece, water, seed, plates=True, boats=True, widths=None, style=None, near=0, port=None, landmark=False):
+def add_water(piece, water, seed, plates=True, boats=True, widths=None, style=None, near=0, port=None, landmark=False, ground="plains"):
     """Adds one tile's water, banks and dressing to a hexkit.Piece.
     plates=False leaves out the flat water (an animated render builds its own); boats=False leaves out
     the boats, so they can be separate objects that bob. widths: river width per edge (edge_widths()).
@@ -1094,19 +974,36 @@ def add_water(piece, water, seed, plates=True, boats=True, widths=None, style=No
             piece.box(v(mid), (length(d), 0.22, 0.17), "stone_block_dark", spin=math.atan2(d[1], d[0]))
             piece.box(v(mid), (length(d) + 0.02, 0.26, 0.04), "stone_block", z=0.17, spin=math.atan2(d[1], d[0]))
         return []
-    outlines, shores, kind, _ = tile_water(water, seed, widths, style)
-    if style == "rapids":
-        tris, stones = gorge_banks(water, seed, widths, landmark)
-        for tri, mat in tris:
-            f = piece.bm.faces.new([piece.bm.verts.new(q) for q in tri])
+    if style == "rapids" and any(water):  # dug into the ground: no slab under it (gorge.py)
+        import gorge
+        g = gorge.build(water, seed, widths, landmark, ground)
+
+        def face(pts, mat):
+            f = piece.bm.faces.new([piece.bm.verts.new(q) for q in pts])
             f.material_index = piece._slot(mat)
             piece.surface.add(f)
-        for at, r, mat in stones:
-            piece.blob(Vector(at), r, mat, squash=0.7)
-    else:
-        for curve in shores:
-            for quad in bank_strip(curve, 0.22):
-                piece.flat([v(p) for p in quad], 0.025, "bank")
+
+        for tri, mat in g["tris"]:
+            face(tri, mat)
+        for quad, mat in g["sides"]:
+            face(quad, mat)
+        if plates:
+            for tri in g["water"]:
+                face(tri, WATER_MAT[style])
+        foam, boulders = rapids_marks(water, seed, widths, near)
+        for p, ang, long_, wide in foam:
+            c, s_ = math.cos(ang), math.sin(ang)
+            z = gorge.water_z(water, widths, p) + 0.012
+            ring = [(p[0] + long_ * math.cos(t) * c - wide * math.sin(t) * s_, p[1] + long_ * math.cos(t) * s_ + wide * math.sin(t) * c, z) for t in (2 * math.pi * k / 8 for k in range(8))]
+            face(ring, "foam")
+        rr = random.Random(f"{seed}-boulders")
+        for p, r in boulders:
+            piece.blob(Vector((p[0], p[1], gorge.water_z(water, widths, p))), r, rr.choice(("rock_wet", "rock_wet_dark")), squash=0.75)
+        return []
+    outlines, shores, kind, _ = tile_water(water, seed, widths, style)
+    for curve in shores:
+        for quad in bank_strip(curve, 0.22):
+            piece.flat([v(p) for p in quad], 0.025, "bank")
     if plates:
         for poly in outlines:
             piece.flat([v(p) for p in poly], 0.03, WATER_MAT.get(style, "water"))
@@ -1119,18 +1016,9 @@ def add_water(piece, water, seed, plates=True, boats=True, widths=None, style=No
     jetties = [(sub(p, mul((math.cos(a), math.sin(a)), 1.1)), a) for p, a in jetties]
     if style in WATER_MAT:  # these have their own dressing
         lilies, jetties, boat_spots = [], [], []
-    if style == "rapids":
-        reeds, rocks = [], []
     if style == "great_lake":
         for w in lake_waves(outlines, shores, seed):
             add_lens(piece, *w, "wave_light", 0.034)
-    if style == "rapids":
-        foam, boulders = rapids_marks(water, seed, widths, near)
-        for f in foam:
-            add_lens(piece, *f, "foam", 0.034)
-        rr = random.Random(f"{seed}-boulders")
-        for p, r in boulders:
-            piece.blob(v(p), r, rr.choice(("rock", "rock_dark")), squash=0.75)
     if style == "still_waters":
         for p, r, flower in still_lilies(outlines, shores, seed, near):
             piece.cylinder(v(p), r, 0.012, "lily", segments=7, z=0.032)

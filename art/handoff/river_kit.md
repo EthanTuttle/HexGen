@@ -1,34 +1,68 @@
-# Rapids river gorge (tiles_v62)
+# Rapids river gorge, dug in (tiles_v64)
 
-Rapids are rebuilt as a river gorge (design/07 → Region variant looks). Ethan hasn't seen this, and it hasn't been tried in Godot. The rest of this kit holds, and where the sections below describe rapids, this wins.
+Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked for a channel cut below ground, as the canyon is. This is that rebuild. He hasn't seen it, and it hasn't been tried in Godot. The rest of this kit holds, and where the sections below describe rapids, this wins.
 
-- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v62.blend`, which also carries the ledges and hay of tiles_v61. Banks are drawn per tile from `water.py`, not kit pieces.
-- **Channel:** `RAPIDS_WIDTH` 1.4, was 2.0. Where a gorge starts, its pool has a radius of 0.85 (`RAPIDS_POOL`), was 1.3 to 1.7. The water plate stays at the usual height, so it joins plain river with no step. No sand bank strip or reeds.
-- **Banks:** `water.gorge_banks(water, seed, widths, landmark)` returns triangles (all facing up) and stones, in the tile's frame. Dark wet rock on the tile's ground, reaching 1.02 out from the shore. Height is by direction, 1.9 behind the water from the default camera and 0.6 in front of it, so it hides little of the water; a turned camera sees less. `gorge_rows` is the plan, and `cover_shape` keeps ground cover off it.
-- **Gaps:** banks sink under the ground round each landing and bridge walk (`gorge_ways`), and fade out at any edge that isn't rapids on both sides.
-- **Joins:** at a shared rapids edge, both tiles' banks end at the same points and height (`GORGE_JOIN`, 1.2), so no slit shows.
-- **Falls and foam:** `rapids_fall` is narrower, in wet rock. There's more foam, and `water_fast` is darker, #6FAFC9, so foam reads white. Colours are placeholders.
-- **Plain bridge:** `rapids_bridge` is rebuilt with straight 25° ramps (was about 43° at its ends) and 1.1 clear between its low walls (was 0.6, narrower than a mini's base). Path data is updated.
-- **Bridge spots:** `bridge_spot` now falls back to `bridge_search`, any line over one channel near the tile's middle whose water fits under the arch. `rapids_spot` picks the tile's bridge, and leaves out a plain bridge whose walks would meet a bank at a shared edge.
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v64.blend`.
+- **Geometry:** `art/scripts/gorge.py`, plain Python, per tile, so unlike the canyon it needs no region-wide field. `gorge.build(water, seed, widths, landmark, ground)` returns everything below.
+- **No slab:** don't place `base_river` on a rapids tile with a water neighbour: `tris` is its ground, with `sides` as the soil sides on land edges. Every land edge stays at z = 0, so neighbours are untouched. A rapids tile with no water neighbours keeps the slab and a small flat pool.
 
-| Fits | Before | Now |
+## What Ethan asked to solve
+
+**Water joining plain river or a lake, with no step.** `water_z` puts the water 1.2 down at any edge shared with rapids and at the tile's middle, and level with ordinary water (0.03) at an edge shared with plain river or a lake. Between them it slopes, and the walls sink with it to nothing at that edge. Previews: `river_rapids_join_river_v1`, `river_rapids_join_lake_v1`.
+
+**Reaching the water for the Athletics crossing.** Each side of the channel with a land edge has one lane, a style A path cut along the wall, with a low broken lip on the water side and its colour running from wet stone to nearly the ground's. At most 26.5° by construction, and 25.9° is the steepest on any walk tested. Its top is level with the land and its foot ends just above the water at a small landing, so it joins at both ends. `build()["walks"][e]` is land edge `e`'s walk as (x, y, z), from the midpoint, down the lane, into the water. On the water, height comes from `gorge.water_z`. Use these in place of `landings` on rapids.
+
+**No lanes on a side a bridge already serves,** since walking over needs no check. That's my call, and it's why walls stay long. Previews: `river_rapids_lane_v1`, with a party strung down it and another wading.
+
+**Bridges from ground to ground.** `rapids_bridge`, half length 2.35, deck rising 0.3 (11.7°), 1.1 clear between its low walls, with an arch from the water's level and solid sides down into the rock. Spots now clear the whole cut (`gorge.cut_outlines`), both ends on the land beyond it.
+
+**Troll Bridge flattened.** Half length 3.1, crown 1.05 above the ground, 26.9° at its ends and less everywhere else. It keeps the moss, hollow, toll post and bones, and its big arch now rises from the water to just above ground level. Preview: `river_rapids_troll_v1`.
+
+## Troll fit
+
+| | Original (2.0 channel) | Now |
 | --- | --- | --- |
-| Troll Bridge, across all patterns of water neighbours, 12 seeds each | 363 of 744 | 733 of 744 |
-| Plain bridge, same test | 375 of 744 | 533 of 744 |
-| 7-tile random regions with no Troll spot | About 21–31% | 0 of 600 |
+| Tiles, all patterns of water neighbours, 12 seeds each | 362 of 744 | 685 of 744 |
+| Plain bridge, same test | 375 of 744 | 434 of 744 |
+| Regions with no spot, 7 tiles | About 21–31% | 0 of 300 |
+| Regions with no spot, 12 tiles | About 14–25% | 0 of 300 |
+| A later water neighbour takes the spot | 52% | 9% (101 of 1,034) |
 
-**"A bridge fits every tile" isn't quite true (design/02, 07).** A plain bridge needs land on both sides to lead anywhere, so tiles whose water edges are all side by side don't get one. Nor do tiles with two opposite land edges between two pairs of water edges. The Troll Bridge can end on a spit of land in those tiles, since it's a place in itself. A later water neighbour can still take away a Troll spot where the bridge already stands: that open question below hasn't changed or been re-measured.
+**That last line understates it.** Of the 933 cases that still have a spot, the spot is a different one on 536: the standing bridge's ends would fall in the new cut. So a later water neighbour breaks a standing Troll Bridge in 637 of 1,034 cases, 62%. **Proposal, for Ethan:** as with the canyon, once the Troll Bridge stands its tile keeps its water as it was. A later water neighbour on a closed edge ends in a gorge head instead of joining. This isn't built.
 
-**Rough spots:**
+**"A bridge fits every tile" still isn't literally true (design/02, 07).** A plain bridge needs land on both sides to lead anywhere, so tiles whose water edges are all side by side get none, and neither do some where the channels leave no line short enough. The Troll Bridge may end on a spit of land there.
 
-- **Gaps break the walls:** a tile with several land edges has several gaps, so the banks read as separate walls rather than one long gorge (`river_rapids_map_v2`). They're there so the Athletics crossing can reach the water: a landing cut as a narrow notch would be the next thing to try.
-- **Troll Bridge's ramps:** not changed. Its curve is about 55° at its ends, against the minis' 28° limit. It's Ethan's approved look, so it's his call.
-- **Known in `test_water.py 20`:** 1 failure of 19,200 route lines, an Athletics line at a junction cutting over a spit (16,3, three water edges side by side). 2 tiles have a landing passing a bank at a shared edge, where a bank can't sink for one tile alone. It reports these separately.
+## What Godot has to do
+
+- Draw `tris`, `sides` and `water` per tile (`water_fast`, its own material). Water triangles aren't flat where it slopes.
+- Foam: `rapids_marks` lenses and boulders, at `water_z`.
+- Place `tile_props`' pieces at `water.prop_z(prop)`: `rapids_fall` stands on the gorge's water. `spray` as before.
+- Bridges: `water.rapids_spot`, and `bridge_spot` as before; the piece's path has its heights.
+- Ground cover: `water.cover_shape` now keeps off the cut.
+- A mini wading stands 0.4 below `water_z`, as elsewhere. Walls can hide it from a turned camera, so the canyon's silhouette through rock should apply here too. That's not decided.
+
+## Rough spots
+
+- **Water runs uphill where a gorge leads out.** Plain river or a lake is higher than the gorge, so the water can't fall both ways: going downstream, it climbs 1.2 at a shallow slope (about 17° at most through a tile). Upstream it reads as a cascade. Foam hides some of it, and a flow shader would show it. Options: accept it, or end the gorge at a rock face. It's Ethan's call.
+- **Walls lean more on the camera's side,** so from the default camera little water is hidden, and a turned camera sees less (`river_rapids_parties_turned_v1`).
+- **Lane plates:** seen from low, a lane's top is a flat plain surface (`river_rapids_low_v1`).
+- **Known in `test_gorge.py 6`, reported, not failed:** 16 land edges of 756 tiles have no way down: short land between two channels, so the party walks round. 69 sample points have rock above a walk, usually a mini's base against a wall on a bend, the worst 1.15.
 - **Colour at a join:** rapids meeting plain river still change colour sharply at the edge.
+- **Colours are placeholders:** `gorge_lane_*`, `rock_wet_moss`, `water_fast`.
 
-**Checks:** `check_town.py -- water` has 0 failures on 209 lines. `test_water.py` also checks banks stay in their tile, face up, stand clear of a base on every way, keep off land edges and end on shared edges. Worst banks on one tile are about 1,160 triangles, counted with stones; the whole tile wasn't measured in the map.
+## Checks
 
-**Previews:** `art/preview/river_rapids_map_v2`, `_turned_v2`, `_paths_v2`, `_closeup_v2`, `_closeup_b_v2`.
+| Check | Covers | Result |
+| --- | --- | --- |
+| `test_gorge.py 6` | 756 tiles: holes, facing up, in the tile, land edges at z = 0, water at each edge, walls across shared edges, walks, bridges | 0 failures, 0 holes |
+| `test_water.py 8` | All water routes and props | 0 failures |
+| `check_town.py -- water` | 209 lines, the Troll Bridge's path against its post and hollow | 0 failures |
+
+Worst tile is 1,288 triangles of walls, ground and water, before falls and foam, against 4,816.
+
+## Previews
+
+In `art/preview/`: `river_rapids_parties_map_v1`, `_parties_turned_v1`, `_low_v1`, `_troll_v1`, `_lane_v1`, `_join_river_v1`, `_join_lake_v1`, all with minis, and `river_rapids_map_v3`, `_turned_v3`, `_paths_v3` without.
 
 ---
 
