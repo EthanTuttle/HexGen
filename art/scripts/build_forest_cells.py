@@ -17,8 +17,21 @@ Pieces placed on top of cells:
 
 A mini's base reaches 0.52 from a cell's centre and a corner is 0.577 away, so a thin trunk on a corner never cuts a base.
 Trees go on every second corner of a cover cell, the same set on every cell, so neighbouring cover cells share trees.
+Obstacles (from v6), full-bodied and sitting on whole cells, each with its cells in the "footprint" property as axial offsets (pivot on the (0, 0) cell's centre):
+  ob_<variant>_tree_a / _b / _c       one tree on the middle of one cell
+  ob_<variant>_grove_2 / _3 / _7      several trees on 2, 3 or 7 cells
+  ob_<variant>_log_2 / _3             a fallen trunk along a line of cells
+  ob_<variant>_stump, _boulder_3      a big stump on one cell; a big boulder on three
+  ob_fey_wood_stone, _mushrooms_3     a standing stone; giant mushrooms
+  ob_dark_wood_hollow_3, _thicket_3   a web-choked hollow; a bramble mass
+  ob_heartwood_great_7, _roots_3      a huge tree on seven cells; arching roots along three
+  cell_<variant>_brush                walkable cover: darker ground with low plants under a base's height
+  cell_<variant>_floor                flat stony ground, under rocks
+Rock shelves and cliffs take any shape, so render_forest_maps.py makes them per map, as it does the soil plate.
+
 Which height a map uses is the map's choice, as long as every cell shows from some camera angle (render_forest_maps.py checks).
 """
+import json
 import math
 import os
 import sys
@@ -226,19 +239,18 @@ def board_under(p):
     p.prism(outline, hk.SOIL_BOTTOM, -0.3, "soil_dark")
 
 
-def board_plate(p):
-    """The outer edge of the radius 4 board, walked corner to corner."""
+def cell_loop(cells):
+    """The outer edge of a set of cells with no holes, walked corner to corner, anticlockwise."""
     edges = {}
-    for q in range(-4, 5):
-        for r in range(max(-4, -q - 4), min(4, -q + 4) + 1):
-            at = hk.cell_position(q, r)
-            for k in range(6):
-                a, b = at + CORNERS[k], at + CORNERS[(k + 1) % 6]
-                ka, kb = (round(a.x, 3), round(a.y, 3)), (round(b.x, 3), round(b.y, 3))
-                if (kb, ka) in edges:
-                    del edges[(kb, ka)]
-                else:
-                    edges[(ka, kb)] = a
+    for q, r in cells:
+        at = hk.cell_position(q, r)
+        for k in range(6):
+            a, b = at + CORNERS[k], at + CORNERS[(k + 1) % 6]
+            ka, kb = (round(a.x, 3), round(a.y, 3)), (round(b.x, 3), round(b.y, 3))
+            if (kb, ka) in edges:
+                del edges[(kb, ka)]
+            else:
+                edges[(ka, kb)] = a
     after = {a: b for a, b in edges}
     start = min(after)
     loop, at = [], start
@@ -249,8 +261,209 @@ def board_plate(p):
             break
     if sum(a.x * b.y - b.x * a.y for a, b in zip(loop, loop[1:] + loop[:1])) < 0:
         loop.reverse()
+    return loop
+
+
+def plate(p, cells):
+    loop = cell_loop(cells)
     p.prism(loop, -0.3, -0.07, "soil_dark", side_mat="soil_light")
     p.prism(loop, hk.SOIL_BOTTOM, -0.3, "soil_dark")
+
+
+def board_plate(p):
+    plate(p, [(q, r) for q in range(-4, 5) for r in range(max(-4, -q - 4), min(4, -q + 4) + 1)])
+
+
+# --- Obstacles: full-bodied, on whole cells --------------------------------------------------------------------------
+
+LINE2, LINE3 = [(0, 0), (1, 0)], [(0, 0), (1, 0), (2, 0)]
+TRIANGLE = [(0, 0), (0, -1), (1, -1)]
+FLOWER7 = FLOWER
+BARK = {"deep_forest": "trunk", "fey_wood": "trunk", "dark_wood": "bark_dark", "heartwood": "trunk_old"}
+ROCK = {"deep_forest": ("rock_dark", "rock_shade", "moss"), "fey_wood": ("rock", "rock_dark", None),
+        "dark_wood": ("rock_shade", "bark_grey", None), "heartwood": ("rock", "rock_dark", "moss")}
+FEY_ORDER = ["fey_teal", "leaf", "leaf_dark", "fey_rose", "leaf", "leaf_dark", "fey_violet", "leaf_dark", "leaf"]
+hk.PALETTE.update({"stump_top": "#C9A876"})
+
+
+def centres(cells):
+    return [hk.cell_position(q, r) for q, r in cells]
+
+
+def dead_big(p, rng, at, h, bark):
+    """A dead tree with a body: a thick leaning trunk and big forked limbs."""
+    lean = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), 0)).normalized() * 0.18
+    mid = at + Vector((0, 0, h * 0.5)) + lean
+    top = mid + Vector((0, 0, h * 0.5)) + lean
+    vr.frustum(p, at, mid, 0.24, 0.13, bark, segments=6)
+    p.cone(at, 0.36, 0.34, bark, segments=6)
+    vr.spike(p, mid, top, 0.13, bark, segments=5)
+    a0 = rng.uniform(0, 6.3)
+    for k in range(5):
+        base = mid.lerp(top, k * 0.16)
+        a = a0 + k * 2.4
+        d = Vector((math.cos(a), math.sin(a), rng.uniform(0.35, 0.8))).normalized()
+        tip = base + d * rng.uniform(0.85, 1.2)
+        vr.spike(p, base, tip, 0.09, bark)
+        fork = base.lerp(tip, 0.55)
+        vr.spike(p, fork, fork + Vector((-d.y, d.x, 0.5)).normalized() * 0.45, 0.05, bark)
+
+
+def full_tree(p, rng, v, at, k=0):
+    """A tree of the map's body on a cell's middle."""
+    if v == "deep_forest":
+        vr.pine(p, rng, at, rng.uniform(2.5, 3.3), "pine_deep")
+    elif v == "fey_wood":
+        h = rng.uniform(2.3, 2.9)
+        leaf = FEY_ORDER[k % len(FEY_ORDER)]
+        p.cylinder(at, 0.1, h * 0.45, "trunk")
+        p.blob(at, h * 0.27, leaf, z=h * 0.62)
+        a = rng.uniform(0, 6.3)
+        p.blob(at + Vector((math.cos(a), math.sin(a), 0)) * h * 0.13, h * 0.17, leaf, z=h * 0.84)
+    elif v == "dark_wood":
+        dead_big(p, rng, at, rng.uniform(2.8, 3.4), ("bark_dark", "bark_black", "bark_grey")[k % 3])
+    else:
+        vr.great_tree(p, rng, at, rng.uniform(2.7, 3.2), rng.uniform(0.8, 0.95), girth=0.7)
+
+
+def fallen_log(p, rng, v, cells):
+    """A trunk lying along a line of cells, its torn root plate at the first and a broken tip at the last."""
+    a, b = centres(cells)[0], centres(cells)[-1]
+    d = (b - a).normalized()
+    z = Vector((0, 0, 0.3))
+    side = Vector((-d.y, d.x, 0))
+    bark = BARK[v]
+    vr.frustum(p, a - d * 0.28 + z, b + d * 0.36 + z, 0.3, 0.2, bark, segments=7)
+    p.blob(a - d * 0.32, 0.42, "soil_dark", z=0.42, squash=0.9)
+    for k in range(5):
+        c = rng.uniform(0, 6.3)
+        tip = a - d * 0.42 + Vector((0, 0, 0.42)) + side * math.cos(c) * 0.48 + Vector((0, 0, math.sin(c) * 0.42))
+        vr.spike(p, a - d * 0.32 + Vector((0, 0, 0.42)), tip, 0.06, bark)
+    length = (b - a).length
+    for k in range(2):
+        at = a + d * (0.35 + 0.5 * k) * length
+        vr.spike(p, at + z, at + z + side * (1 if k else -1) * 0.34 + Vector((0, 0, 0.42)), 0.05, bark)
+    if v in ("deep_forest", "heartwood"):
+        for t in (0.3, 0.75):
+            vr.lump(p, a + d * t * length, 0.2, "moss", z=0.54, squash=0.4)
+    elif v == "dark_wood":
+        vr.lump(p, a + d * 0.6 * length, 0.14, "bone_old", z=0.56, squash=0.4)
+
+
+def stump(p, rng, v):
+    at = Vector((0, 0, 0))
+    bark = BARK[v]
+    vr.frustum(p, at, at + Vector((0, 0, 0.5)), 0.38, 0.3, bark, segments=7)
+    p.cylinder(at, 0.27, 0.02, "stump_top", segments=7, z=0.5)
+    a0 = rng.uniform(0, 6.3)
+    for k in range(4):
+        a = a0 + k * 1.57
+        vr.spike(p, Vector((math.cos(a), math.sin(a), 0)) * 0.26 + Vector((0, 0, 0.14)), Vector((math.cos(a), math.sin(a), 0)) * 0.47, 0.07, bark)
+    if v in ("deep_forest", "heartwood"):
+        vr.lump(p, Vector((0.18, -0.1, 0)), 0.14, "moss", z=0.45, squash=0.5)
+
+
+def big_boulder(p, rng, v):
+    mid = sum(centres(TRIANGLE), Vector((0, 0, 0))) / 3
+    main, side, top = ROCK[v]
+    rock(p, rng, mid, 0.82, main, 0.62, 0.9, top)
+    for c in centres(TRIANGLE):
+        rock(p, rng, c + (c - mid).normalized() * 0.08, 0.36, side, 0.18, 0.85)
+
+
+def grove(p, rng, v, cells):
+    """A tree on every cell's middle, and more on the corners where three of its cells meet."""
+    k = 0
+    for at in centres(cells):
+        full_tree(p, rng, v, at, k)
+        k += 1
+    seen = {}
+    for at in centres(cells):
+        for c in CORNERS:
+            key = (round((at + c).x, 2), round((at + c).y, 2))
+            seen[key] = seen.get(key, 0) + 1
+    for key, n in sorted(seen.items()):
+        if n == 3 and v != "heartwood":
+            full_tree(p, rng, v, Vector((key[0], key[1], 0)), k)
+            k += 1
+
+
+def standing_stone(p, rng):
+    at = Vector((0.02, 0, 0))
+    vr.frustum(p, at, at + Vector((0.08, 0.04, 1.75)), 0.33, 0.15, "rock", segments=5)
+    rock(p, rng, at + Vector((0.08, 0.04, 0)), 0.2, "rock", 1.74, 0.8)
+    for k in range(3):
+        a = k * 2.1 + 0.5
+        vr.fey_mushroom(p, rng, Vector((math.cos(a), math.sin(a), 0)) * 0.38, 0.7)
+
+
+def giant_mushrooms(p, rng):
+    for at, scale in zip(centres(TRIANGLE), (3.4, 2.7, 2.9)):
+        vr.fey_mushroom(p, rng, at, scale)
+
+
+def web_hollow(p, rng):
+    """Dead snags on the three cells with sheets of web between them, a black floor and cocoons in the middle."""
+    tops = []
+    for at in centres(TRIANGLE):
+        tops.append(at)
+        vr.frustum(p, at, at + Vector((0, 0, 1.9)), 0.13, 0.05, "bark_black", segments=5)
+    mid = sum(tops, Vector((0, 0, 0))) / 3
+    p.prism([c + mid for c in hk.hex_corners(0.86, pointy=False)[::-1]], 0.0, 0.02, "bark_black")
+    for k in range(3):
+        a, b = tops[k], tops[(k + 1) % 3]
+        vr.orb_web(p, rng, a + Vector((0, 0, 1.15)), b + Vector((0, 0, 1.15)), sag=0.03)
+    for off in (Vector((0.14, 0.08, 0)), Vector((-0.2, 0.02, 0)), Vector((0.02, -0.2, 0))):
+        p.blob(mid + off, 0.17, "cocoon", z=0.22, squash=1.5)
+
+
+def big_thicket(p, rng):
+    mid = sum(centres(TRIANGLE), Vector((0, 0, 0))) / 3
+    vr.lump(p, mid, 0.62, "bramble_leaf", z=0.5, squash=0.9)
+    for c in centres(TRIANGLE):
+        vr.lump(p, c, 0.46, "bramble_leaf", z=0.34, squash=0.85)
+        for k in range(5):
+            a, up = k * 1.26 + rng.uniform(-0.3, 0.3), rng.uniform(0.3, 1.0)
+            d = Vector((math.cos(a), math.sin(a), up)).normalized()
+            base = c + Vector((0, 0, 0.42))
+            vr.spike(p, base, base + d * rng.uniform(0.62, 0.8), 0.04, "bramble")
+
+
+def great_tree_7(p, rng):
+    vr.great_tree(p, rng, Vector((0, 0, 0)), 5.0, 2.0, mossy=True, girth=1.9)
+
+
+def big_roots(p, rng):
+    """Two roots arching out of the ground along a line of three cells."""
+    a, b = centres(LINE3)[0], centres(LINE3)[-1]
+    d = (b - a).normalized()
+    side = Vector((-d.y, d.x, 0))
+    for sd, peak in ((1, 0.62), (-1, 0.82)):
+        last = a - d * 0.42 + side * sd * 0.12
+        n = 6
+        for k in range(1, n + 1):
+            t = k / n
+            at = a - d * 0.42 + (b - a + d * 0.84) * t + side * sd * (0.12 + 0.1 * math.sin(t * 6.3))
+            at = at + Vector((0, 0, peak * math.sin(t * math.pi)))
+            vr.frustum(p, last, at, 0.17, 0.15, "trunk_old", segments=5)
+            last = at
+    vr.lump(p, a + d * 0.3, 0.2, "moss", z=0.58, squash=0.4)
+    vr.lump(p, b - d * 0.2, 0.17, "moss", z=0.66, squash=0.4)
+
+
+def brush(p, rng, v):
+    leaf = {"deep_forest": "pine_deep", "fey_wood": "leaf", "dark_wood": "bramble_leaf", "heartwood": "leaf_green_dark"}[v]
+    for k in range(6):
+        a, d = k * 1.05 + rng.uniform(-0.3, 0.3), rng.uniform(0.2, 0.38)
+        p.cone(Vector((math.cos(a), math.sin(a), 0)) * d, rng.uniform(0.09, 0.13), rng.uniform(0.14, 0.2), leaf, segments=4, spin=rng.uniform(0, 1))
+
+
+def obstacle(col, name, cells, make):
+    p = hk.Piece(name)
+    rng = hk.seeded(name)
+    make(p, rng)
+    obj = p.finish(col)
+    obj["footprint"] = json.dumps([list(c) for c in cells])
 
 
 def build():
@@ -308,6 +521,25 @@ def build():
     p = hk.Piece("board_plate")
     board_plate(p)
     p.finish(col)
+    for v in VARIANTS:
+        cell(f"cell_{v}_floor", f"cell_{v}_block").finish(col)
+        p = cell(f"cell_{v}_brush", f"cell_{v}_cover")
+        brush(p, hk.seeded(p.name), v)
+        p.finish(col)
+        for j, k in enumerate("abc"):
+            obstacle(col, f"ob_{v}_tree_{k}", [(0, 0)], lambda p, r, v=v, j=j: full_tree(p, r, v, Vector((0, 0, 0)), j * 3))
+        for cells in (LINE2, TRIANGLE, FLOWER7):
+            obstacle(col, f"ob_{v}_grove_{len(cells)}", cells, lambda p, r, v=v, cells=cells: grove(p, r, v, cells))
+        for cells in (LINE2, LINE3):
+            obstacle(col, f"ob_{v}_log_{len(cells)}", cells, lambda p, r, v=v, cells=cells: fallen_log(p, r, v, cells))
+        obstacle(col, f"ob_{v}_stump", [(0, 0)], lambda p, r, v=v: stump(p, r, v))
+        obstacle(col, f"ob_{v}_boulder_3", TRIANGLE, lambda p, r, v=v: big_boulder(p, r, v))
+    obstacle(col, "ob_fey_wood_stone", [(0, 0)], standing_stone)
+    obstacle(col, "ob_fey_wood_mushrooms_3", TRIANGLE, giant_mushrooms)
+    obstacle(col, "ob_dark_wood_hollow_3", TRIANGLE, web_hollow)
+    obstacle(col, "ob_dark_wood_thicket_3", TRIANGLE, big_thicket)
+    obstacle(col, "ob_heartwood_great_7", FLOWER7, great_tree_7)
+    obstacle(col, "ob_heartwood_roots_3", LINE3, big_roots)
     for o in sorted(col.objects, key=lambda o: o.name):
         o.data.calc_loop_triangles()
         print("TRIS", o.name, len(o.data.loop_triangles))
