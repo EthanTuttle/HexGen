@@ -1,6 +1,6 @@
 # Rapids river gorge, dug in (tiles_v64)
 
-Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked for a channel cut below ground, as the canyon is. This is that rebuild. He hasn't seen it, and it hasn't been tried in Godot. The rest of this kit holds, and where the sections below describe rapids, this wins.
+Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked for a channel cut below ground, as the canyon is. This is that rebuild, and he approved it (Nov 3, 2026). It hasn't been tried in Godot. The rest of this kit holds, and where the sections below describe rapids, this wins.
 
 - **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v64.blend`.
 - **Geometry:** `art/scripts/gorge.py`, plain Python, per tile, so unlike the canyon it needs no region-wide field. `gorge.build(water, seed, widths, landmark, ground)` returns everything below.
@@ -28,7 +28,7 @@ Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked
 | Regions with no spot, 12 tiles | About 14–25% | 0 of 300 |
 | A later water neighbour takes the spot | 52% | 9% (101 of 1,034) |
 
-**That last line understates it.** Of the 933 cases that still have a spot, the spot is a different one on 536: the standing bridge's ends would fall in the new cut. So a later water neighbour breaks a standing Troll Bridge in 637 of 1,034 cases, 62%. **Proposal, for Ethan:** as with the canyon, once the Troll Bridge stands its tile keeps its water as it was. A later water neighbour on a closed edge ends in a gorge head instead of joining. This isn't built.
+**That last line understates it.** Of the 933 cases that still have a spot, the spot is a different one on 536: the standing bridge's ends would fall in the new cut. So a later water neighbour breaks a standing Troll Bridge in 637 of 1,034 cases, 62%. **Ethan's decision (design/02):** once the Troll Bridge stands, its tile's water is frozen. To Godot that's one rule: treat the shared edge as closed for both tiles, so neither lists it in `water`. The new tile's channel then ends in a gorge head on its side, and the shared edge stays land at z = 0. It needs no new geometry, but no code does this yet.
 
 **"A bridge fits every tile" still isn't literally true (design/02, 07).** A plain bridge needs land on both sides to lead anywhere, so tiles whose water edges are all side by side get none, and neither do some where the channels leave no line short enough. The Troll Bridge may end on a spit of land there.
 
@@ -39,11 +39,11 @@ Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked
 - Place `tile_props`' pieces at `water.prop_z(prop)`: `rapids_fall` stands on the gorge's water. `spray` as before.
 - Bridges: `water.rapids_spot`, and `bridge_spot` as before; the piece's path has its heights.
 - Ground cover: `water.cover_shape` now keeps off the cut.
-- A mini wading stands 0.4 below `water_z`, as elsewhere. Walls can hide it from a turned camera, so the canyon's silhouette through rock should apply here too. That's not decided.
+- A mini wading stands 0.4 below `water_z`, as elsewhere. Walls can hide it from a turned camera, so the silhouette through rock applies here too (design/07).
 
 ## Rough spots
 
-- **Water runs uphill where a gorge leads out.** Plain river or a lake is higher than the gorge, so the water can't fall both ways: going downstream, it climbs 1.2 through the join's tile. Upstream it reads as a cascade. On Athletics lines at a join, 95% of segments are 21.6° or less, but 39 of 3,456 pass 28°, the worst 31.4°, where a plain edge and a rapids edge sit side by side. Foam hides some of it, and a flow shader would show it. Options: accept it, or end the gorge at a rock face. It's Ethan's call.
+- **Water runs uphill where a gorge leads out.** Plain river or a lake is higher than the gorge, so the water can't fall both ways: going downstream, it climbs 1.2 through the join's tile. Upstream it reads as a cascade. On Athletics lines at a join, 95% of segments are 21.6° or less, but 39 of 3,456 pass 28°, the worst 31.4°, where a plain edge and a rapids edge sit side by side. Foam hides some of it, and a flow shader would show it. Ethan's answer is a sunken pool and a waterfall where rapids flow into a river; that's on its own branch and not in this kit.
 - **Walls lean more on the camera's side,** so from the default camera little water is hidden, and a turned camera sees less (`river_rapids_parties_turned_v1`).
 - **Lane plates:** seen from low, a lane's top is a flat plain surface (`river_rapids_low_v1`).
 - **Known in `test_gorge.py 6`, reported, not failed:** 16 land edges of 756 tiles have no way down: short land between two channels, so the party walks round. 69 sample points have rock above a walk, usually a mini's base against a wall on a bend, the worst 1.15.
