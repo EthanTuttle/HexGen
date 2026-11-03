@@ -64,6 +64,25 @@ func poly(pts: Array, col: Color) -> void:
 		tri(pts[0], pts[k], pts[k + 1], col)
 
 
+## One face with one normal, even if its points aren't quite in a plane, as Blender's flat shading draws a quad, so it
+## shows no diagonal (a canyon lane's twisted quads).
+func poly_one_normal(pts: Array, col: Color) -> void:
+	var n := Vector3.ZERO
+	for k in pts.size():
+		var a: Vector3 = _v(pts[k])
+		var b: Vector3 = _v(pts[(k + 1) % pts.size()])
+		n += a.cross(b)
+	if n.length_squared() < 1e-14:
+		return
+	n = n.normalized()
+	for k in range(1, pts.size() - 1):
+		_st.set_color(col)
+		_st.set_normal(n)
+		_st.add_vertex(_v(pts[0])); _st.add_vertex(_v(pts[k + 1])); _st.add_vertex(_v(pts[k]))
+		triangles += 1
+	_empty = false
+
+
 ## Extrude a convex outline (plan points, anticlockwise) from z0 up to z1.
 func prism(outline: PackedVector2Array, z0: float, z1: float, col: Color, side_col := Color(0, 0, 0, 0)) -> void:
 	var sc := col if side_col.a == 0 else side_col

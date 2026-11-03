@@ -837,7 +837,7 @@ static func _lane(p: Piece, rng: PyRandom, t: Vector2i, i: int, field: Field, co
 			var tone := (1.0 - sink) * 4.0 + rng.uniform(-0.45, 0.45)
 			tone += -0.6 if k == 2 else 1.2   # the walked middle a shade nearer the floor's, the shoulders nearer the land's
 			var mat: String = LANE[clampi(roundi(tone), 0, 4)] if k in [0, 2, 4] else "canyon_top"
-			p.poly(_up([rows[j][k], rows[j + 1][k], rows[j + 1][k + 1], rows[j][k + 1]]), cols[mat])
+			p.poly_one_normal(_up([rows[j][k], rows[j + 1][k], rows[j + 1][k + 1], rows[j][k + 1]]), cols[mat])
 	# Beside it: where the rock stands lower than the lane, the bands carry on up to its edge, with a broken lip; where
 	# it's higher, a stone or two fallen from the cut.
 	for pair in [[0, 1.0], [5, -1.0]]:

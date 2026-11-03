@@ -517,7 +517,7 @@ Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (a
 | `fire`, `smoke` | `FarmFx` | As elsewhere |
 | Stall detector | `scripts/game/stall_watch.gd` | On any check, demo or touch run: prints `STALL` with the game's state after 60 s with nothing moving. Test output only |
 
-**Where the engine differs from `canyon.py`:** a wall's facing comes from the triangle's highest corner, not a test of the field beside it, and skirts are drawn on both sides. The preview renders both sides of every face, so neither shows there; here both showed the sky. Hulls (`_loft`) wind outward for the same reason.
+**Where the engine differs from `canyon.py`:** a lane's quads each have one normal (`Piece.poly_one_normal`), as the preview's flat shading draws them, or their twist shows as triangles (before and after: `desert_09_lane_0_before_normals`, `desert_05_canyon_map_before_normals`; waiting for Ethan's approval). A wall's facing comes from the triangle's highest corner, not a test of the field beside it, and skirts are drawn on both sides. The preview renders both sides of every face, so neither shows there; here both showed the sky. Hulls (`_loft`) wind outward for the same reason.
 
 ### Adding a tile to a finished canyon (design/02 -> Canyon walls, trying it, Nov 3, 2026)
 
@@ -550,7 +550,6 @@ If it doesn't work in play, the agreed fallback is that a finished canyon can't 
 
 - **Stopping on the pool's tile:** the kit routes across it but gives no stop, so the party stands on the ring, on the side toward the camera.
 - **Looks:** shimmer strength and speed, the silhouette's colour and strength, glint size and count, the night glow.
-- **Lane facets (port, not art; not fixed):** a lane's quads are twisted (median 7 degrees between their two triangles, worst 36), and `Piece` gives each triangle its own normal where the art's Eevee preview shades a quad with one. So lanes show a triangle pattern (`desert_09_lane_0`) the preview doesn't. One normal to a quad would fix it.
 
 ### Accepted rough spots (hand-off)
 
