@@ -67,6 +67,7 @@ func _run() -> void:
 	await _look(g.landmark_tile, 16.0, 45.0, "02_troll")
 	await _falls(tiles)
 	await _walks(tiles)
+	await _hop(g.landmark_tile)
 	await _frozen(g.landmark_tile)
 	await _region_turning()
 	_perf()
@@ -243,10 +244,20 @@ func _walks(tiles: Array) -> void:
 	await _wait(0.3)
 	await _shot("21_wading")
 	await _wait(0.3)
-	game.rig.frame(pw.centre(), 12.0, 40.0, 180.0)   # from the far side the near wall hides the minis: their silhouettes
-	await _wait(0.4)
-	await _shot("22_silhouette_turned")
-	game.rig.frame(pw.centre(), 12.0, 45.0, 0.0)
+	# From across the channel the near wall hides a wader: at the game's camera angle, and lower, to see the silhouette whole.
+	var hero: Vector3 = pw.members[0].node.position
+	var along := Water.normal(edge)
+	var yaw := rad_to_deg(atan2(along.x, along.y))
+	for k in 2:
+		var turn: float = yaw + 180.0 * k
+		game.rig.frame(hero, 12.0, 45.0, turn)
+		await _wait(0.3)
+		await _shot("22_silhouette_%d_game_angle" % k)
+		if k == 1:
+			game.rig.frame(hero, 9.0, 18.0, turn)
+			await _wait(0.3)
+			await _shot("23_silhouette_low")
+	game.rig.frame(hero, 12.0, 45.0, 0.0)
 	# A plain bridge or the Troll Bridge: over it with no check.
 	var troll: Vector2i = _region("rapids").landmark_tile
 	var br: Dictionary = map.water_shapes[troll].get("bridge", {})
@@ -275,6 +286,92 @@ func _walks(tiles: Array) -> void:
 			await _wait(0.4)
 			await _shot("30_on_the_troll_bridge")
 			break
+
+
+## What the player sees when a wader reaches a bridged tile, and how many routes on this region do it.
+func _hop(troll: Vector2i) -> void:
+	var pw := game.party_node
+	var from = null
+	for i in 6:
+		var n: Vector2i = troll + Hex.NEIGHBOURS[i]
+		if map.water_shapes.has(n) and map.water_shapes[n].has("gorge") and map.water_shapes[troll].mask[i] and map.edge_open(n, troll):
+			from = n
+			break
+	_check(from != null, "a gorge tile joining the Troll tile by water")
+	if from == null:
+		return
+	game.party_tile = from
+	pw.place_at(from)
+	await _wait(0.4)
+	game.rig.frame(Hex.to3(Hex.tile_position(troll.x, troll.y)), 15.0, 45.0)
+	await _wait(0.3)
+	await _shot("35_hop_before")
+	var low := pw.members[0].node.position.y as float
+	# Straight over the shared edge, as a route does when there's no dry way round (on this map there is one).
+	var straight: Array[Vector2i] = [troll]
+	game._walk(straight)
+	var t0 := -1.0
+	var took := 0.0
+	var last := low
+	var worst_step := 0.0
+	var mid_shot := false
+	var at_shot := false
+	while game.busy:
+		await get_tree().process_frame
+		var y: float = pw.members[0].node.position.y
+		var rise := y - last
+		worst_step = maxf(worst_step, rise)
+		last = y
+		if y > low + 0.3 and t0 < 0.0:
+			t0 = Time.get_ticks_msec()
+		if t0 >= 0.0 and took == 0.0 and y > -0.05:
+			took = Time.get_ticks_msec() - t0
+		if t0 >= 0.0 and not mid_shot and y > -0.9:
+			mid_shot = true
+			game.rig.frame(pw.members[0].node.position, 12.0, 45.0)
+			await _shot("36_hop_rising")
+		if took > 0.0 and not at_shot:
+			at_shot = true
+			game.rig.frame(pw.members[0].node.position, 12.0, 45.0)
+			await _shot("37_hop_on_deck")
+	print("GORGE HOP from the water at %.2f up to the deck: %d ms, the most in one frame %.2f m" % [low, took, worst_step])
+	# How often: every land or water start next to the region, to every tile of it and across it.
+	var region: Array = _region("rapids").tiles
+	var around := {}
+	for t: Vector2i in region:
+		for n in Hex.NEIGHBOURS:
+			if map.terrains.has(t + n) and not (t + n) in region:
+				around[t + n] = true
+	var starts := {"from the land round it": around.keys(), "from inside the gorge": region}
+	for label: String in starts:
+		_count_hops(label, starts[label], region + around.keys())
+
+
+func _count_hops(label: String, from_tiles: Array, goals: Array) -> void:
+	var routes := 0
+	var hops := 0
+	var was_at := game.party_tile
+	for a: Vector2i in from_tiles:
+		for goal: Vector2i in goals:
+			if a == goal:
+				continue
+			game.party_tile = a
+			var path := game.path_to(goal)
+			if path.is_empty():
+				continue
+			routes += 1
+			var was: Vector2i = a
+			var hop := false
+			for t: Vector2i in path:
+				var edge := Hex.NEIGHBOURS.find(t - was)
+				if edge >= 0 and map.water_shapes.has(t):
+					var w: Dictionary = map.water_shapes[t]
+					if w.has("gorge") and w.mask[(edge + 3) % 6] and w.has("bridge"):
+						hop = true
+				was = t
+			hops += 1 if hop else 0
+	game.party_tile = was_at
+	print("GORGE HOP %s: %d routes, %d step into a bridged tile by water" % [label, routes, hops])
 
 
 ## design/02: once it stands, a later water neighbour's channel ends in a gorge head beside it.
@@ -343,6 +440,12 @@ func _region_turning() -> void:
 	print("GORGE PERF a %d-tile region turning into rapids: %d ms off the main thread, worst frame %.1f ms" % [tiles.size(), map.gorge_job_ms, worst / 1000.0])
 	_check(tiles.all(func(t): return map.water_shapes[t].has("gorge")), "the region turned into gorges")
 	await _shot("50_region_turned")
+	var ends: Array = tiles.duplicate()
+	ends.sort_custom(func(a, b): return Hex.tile_position(a.x, a.y).x > Hex.tile_position(b.x, b.y).x)
+	game.rig.frame(Hex.to3(Hex.tile_position(ends[0].x, ends[0].y)), 16.0, 45.0)
+	await _wait(0.3)
+	await _shot("51_region_end")
+	_count_hops("in a region with no land placed round it", tiles, tiles)
 
 
 func _perf() -> void:

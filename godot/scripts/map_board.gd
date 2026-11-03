@@ -34,6 +34,7 @@ const BLEND_WIDTH := 1.6   # ground colour fade width; no doc value yet, matches
 # render_animation.py
 const RIVER_SPEED := 0.6
 const LAKE_SPEED := 0.15
+const FOAM_SPEED := 1.8        # PLACEHOLDER: how fast a gorge's white water drifts, in metres a second
 const GRID := 0.35
 
 var terrains := {}         # (q, r) -> terrain of every placed tile
@@ -91,6 +92,7 @@ var canyon_stats := []                 # each generated region's triangles and t
 var _canyon_meshes := {}               # canyon tile -> its mesh
 var _canyon_dirty := {}                # canyon tiles with new rock, waiting to be rebuilt
 var _canyon_mat: StandardMaterial3D    # marks the stencil, for the minis' silhouette through rock
+var _gorge_rock: StandardMaterial3D    # the canyon's, marking the stencil, and two-sided
 var _gorge_ground: ShaderMaterial      # a gorge's land: the ground's colours, and marks the stencil too
 var _fall_mat: ShaderMaterial          # a waterfall: unlit, so it doesn't go grey in shade
 var _gorge_foam_mat: ShaderMaterial   # a gorge's white water: unlit, so walls don't shade it grey
@@ -1347,8 +1349,7 @@ static func _lane_lines(walks: Dictionary) -> Array:
 func _gorge_foam() -> ShaderMaterial:
 	if _gorge_foam_mat == null:
 		_gorge_foam_mat = ShaderMaterial.new()
-		_gorge_foam_mat.shader = load("res://shaders/fall.gdshader")
-		_gorge_foam_mat.set_shader_parameter("bands_on", 0.0)
+		_gorge_foam_mat.shader = load("res://shaders/gorge_foam.gdshader")
 	return _gorge_foam_mat
 
 
@@ -1377,7 +1378,10 @@ func _add_gorge(node: Node3D, t: Vector2i, at: Vector2) -> void:
 		_gorge_ground.set_shader_parameter("blend_width", BLEND_WIDTH)
 		_fall_mat = ShaderMaterial.new()
 		_fall_mat.shader = load("res://shaders/fall.gdshader")
-	var mats := [_canyon_material(), _gorge_ground, _fall_mat]
+	if _gorge_rock == null:   # both sides: a wall that folds at a tile's edge shows its back to a turned camera (the preview draws both)
+		_gorge_rock = _canyon_material().duplicate() as StandardMaterial3D
+		_gorge_rock.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var mats := [_gorge_rock, _gorge_ground, _fall_mat]
 	for k in 3:
 		if w.gorge_meshes[k] == null:
 			continue
@@ -1658,7 +1662,7 @@ func _water_material(style: String) -> ShaderMaterial:
 
 func _build_water() -> void:
 	var dressing_arrays := [PackedVector3Array(), PackedVector3Array(), PackedColorArray()]
-	var foam_arrays := [PackedVector3Array(), PackedVector3Array(), PackedColorArray()]   # a gorge's white water, unlit
+	var foam_arrays := _foam_parts()   # a gorge's white water, unlit and moving
 	var by_tile := {}           # water tile -> [its shores (world plan points, flow sign, speed), its flow signs]
 	for t: Vector2i in water_shapes:
 		var w: Dictionary = water_shapes[t]
@@ -1686,9 +1690,10 @@ func _build_water() -> void:
 		var group: Array = groups.get_or_add(style, [PackedVector3Array(), PackedVector2Array(), PackedVector2Array()])
 		for k in 3:
 			group[k].append_array(surface[k])
-		var parts := _tile_dressing(t, w, seed, at)
+		var parts := _tile_dressing(t, w, seed, at, by_tile[t])
 		for k in 3:
 			dressing_arrays[k].append_array(parts.dressing[k])
+		for k in 5:
 			foam_arrays[k].append_array(parts.foam[k])
 		for b in parts.boats:
 			var piece := Piece.new()
@@ -1705,6 +1710,7 @@ func _build_water() -> void:
 	if not foam_arrays[0].is_empty():
 		var mi := _flat_mesh("gorge_foam", foam_arrays, _gorge_foam())
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.extra_cull_margin = 3.0   # it drifts in the shader
 		_water_node.add_child(mi)
 	for style in groups:
 		var arrays := []
@@ -1732,6 +1738,9 @@ func _flat_mesh(name: String, parts: Array, mat: Material) -> MeshInstance3D:
 	arrays[Mesh.ARRAY_VERTEX] = parts[0]
 	arrays[Mesh.ARRAY_NORMAL] = parts[1]
 	arrays[Mesh.ARRAY_COLOR] = parts[2]
+	if parts.size() > 3:
+		arrays[Mesh.ARRAY_TEX_UV] = parts[3]
+		arrays[Mesh.ARRAY_TEX_UV2] = parts[4]
 	var mi := MeshInstance3D.new()
 	mi.name = name
 	if not parts[0].is_empty():
@@ -1750,17 +1759,17 @@ static func _piece_parts(p: Piece) -> Array:
 
 
 ## A tile's banks and dressing (water.add_water with plates=False, boats=False), kept while its shape stays the same.
-func _tile_dressing(t: Vector2i, w: Dictionary, seed: String, at: Vector2) -> Dictionary:
-	if _dressing_cache.has(t) and _dressing_cache[t].key == w.key:
+func _tile_dressing(t: Vector2i, w: Dictionary, seed: String, at: Vector2, flow: Array) -> Dictionary:
+	var key := [w.key, flow[1]]
+	if _dressing_cache.has(t) and _dressing_cache[t].key == key:
 		return _dressing_cache[t]
 	var dressing := Piece.new()
-	var foam := Piece.new()
+	var foam := _foam_parts()
 	var bank := Hex.colour("bank")
 	dressing.offset = Vector3(at.x, at.y, 0)
-	foam.offset = dressing.offset
 	var boat_spots := []
 	if w.has("gorge"):
-		_add_gorge_dressing(dressing, foam, w, seed)
+		_add_gorge_dressing(dressing, foam, w, seed, at, flow[0])
 	elif w.has("quads"):
 		for quad: PackedVector2Array in w.quads:
 			dressing.flat(quad, 0.025, bank)
@@ -1774,7 +1783,7 @@ func _tile_dressing(t: Vector2i, w: Dictionary, seed: String, at: Vector2) -> Di
 			for quad in Water.bank_strip(curve, 0.22):
 				dressing.flat(quad, 0.025, bank)
 		boat_spots = _add_dressing(dressing, w, seed)
-	var out := {key = w.key, dressing = _piece_parts(dressing), foam = _piece_parts(foam), boats = boat_spots}
+	var out := {key = key, dressing = _piece_parts(dressing), foam = foam, boats = boat_spots}
 	_dressing_cache[t] = out
 	return out
 
@@ -1807,10 +1816,30 @@ func _tile_surface(t: Vector2i, w: Dictionary, style: String, by_tile: Dictionar
 	return surface
 
 
-## What water.add_water puts on a gorge: foam where a waterfall lands and a rock either side of its top, the white water and boulders.
-func _add_gorge_dressing(p: Piece, white: Piece, w: Dictionary, seed: String) -> void:
-	var foam := Hex.colour("foam")
+static func _foam_parts() -> Array:
+	return [PackedVector3Array(), PackedVector3Array(), PackedColorArray(), PackedVector2Array(), PackedVector2Array()]
+
+
+## One ring of foam, in the tile's plan frame, for shaders/gorge_foam.gdshader: UV its drift (world X, Z, metres a second),
+## UV2 its middle (world X, Z), COLOR.r its phase, COLOR.g how its water rises per metre, COLOR.b its pace. No drift: it stays
+## and churns (round a boulder, under a fall).
+static func _foam_ring(parts: Array, ring: Array, middle: Vector2, at: Vector2, drift: Vector2, rise: float, hash_: Vector2) -> void:
+	var col := Color(hash_.x, clampf(rise * 0.25 + 0.5, 0.0, 1.0), hash_.y, 1.0)
+	var mid := Hex.to3(at + middle)
+	for k in range(1, ring.size() - 1):
+		for q: Vector3 in [ring[0], ring[k + 1], ring[k]]:   # clockwise for Godot's front face
+			parts[0].append(Hex.to3(at + Vector2(q.x, q.y), q.z))
+			parts[1].append(Vector3.UP)
+			parts[2].append(col)
+			parts[3].append(drift)
+			parts[4].append(Vector2(mid.x, mid.z))
+
+
+## What water.add_water puts on a gorge: foam where a waterfall lands and a rock either side of its top, the white water and
+## boulders. The white water moves (Ethan, Nov 3, 2026): streaks drift along the flow, and foam held by a boulder or a fall churns.
+func _add_gorge_dressing(p: Piece, white: Array, w: Dictionary, seed: String, at: Vector2, shores: Array) -> void:
 	var rf := PyRandom.new(seed + "-falls")
+	var rh := PyRandom.new(seed + "-foam")
 	for f in w.gorge.falls:
 		var d: Vector2 = f.foot - f.top
 		var l := d.length()
@@ -1824,7 +1853,7 @@ func _add_gorge_dressing(p: Piece, white: Piece, w: Dictionary, seed: String) ->
 				var x: float = q.x + rf.uniform(0.2, 0.34) * cos(a)
 				var y: float = q.y + rf.uniform(0.14, 0.26) * sin(a)
 				ring.append(Vector3(x, y, -Gorge.DEPTH + 0.02))
-			white.poly(ring, foam)
+			_foam_ring(white, ring, q, at, Vector2.ZERO, 0.0, Vector2(rh.random(), rh.random()))
 		for k in 6:
 			var q: Vector2 = f.foot + side * (rf.uniform(-f.half, f.half) * 0.8) + into * rf.uniform(0.35, 1.05)
 			var ring := []
@@ -1833,7 +1862,7 @@ func _add_gorge_dressing(p: Piece, white: Piece, w: Dictionary, seed: String) ->
 				var x: float = q.x + rf.uniform(0.2, 0.42) * cos(a)
 				var y: float = q.y + rf.uniform(0.07, 0.16) * sin(a)
 				ring.append(Vector3(x, y, -Gorge.DEPTH + 0.015))
-			white.poly(ring, foam)
+			_foam_ring(white, ring, q, at, Vector2.ZERO, 0.0, Vector2(rh.random(), rh.random()))
 		for sign_ in [-1, 1]:
 			var q: Vector2 = f.top + side * (sign_ * (f.top_half + 0.06)) + into * 0.14
 			p.blob(Vector3(q.x, q.y, -0.06), rf.uniform(0.15, 0.2), Hex.colour("rock_wet"), 0.0, 0.7)
@@ -1843,9 +1872,18 @@ func _add_gorge_dressing(p: Piece, white: Piece, w: Dictionary, seed: String) ->
 		var ring := []
 		for k in 8:
 			var a := TAU * k / 8.0
-			var at: Vector2 = q[0] + Vector2(q[2] * cos(a), q[3] * sin(a)).rotated(q[1])
-			ring.append(Vector3(at.x, at.y, z))
-		white.poly(ring, foam)
+			var pt: Vector2 = q[0] + Vector2(q[2] * cos(a), q[3] * sin(a)).rotated(q[1])
+			ring.append(Vector3(pt.x, pt.y, z))
+		var drift := Vector2.ZERO
+		var rise := 0.0
+		if not q[4]:   # q[4]: held by a boulder
+			var df := _depth_flow(at + q[0], shores)
+			var flow := Vector2(df.y, df.z)
+			if flow.length() > 1e-4:
+				drift = flow.normalized() * FOAM_SPEED
+				var ahead: Vector2 = q[0] + Vector2(drift.x, -drift.y).normalized() * 0.3
+				rise = (Gorge.water_z(w.mask, w.widths, ahead) - z + 0.012) / 0.3
+		_foam_ring(white, ring, q[0], at, drift, rise, Vector2(rh.random(), rh.random()))
 	var rr := PyRandom.new(seed + "-boulders")
 	for q in marks.boulders:
 		p.blob(Vector3(q[0].x, q[0].y, Gorge.water_z(w.mask, w.widths, q[0])), q[1], Hex.colour(["rock_wet", "rock_wet_dark"][rr.randbelow(2)]), 0.0, 0.75)

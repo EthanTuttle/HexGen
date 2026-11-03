@@ -1281,7 +1281,8 @@ func _ripple(pos: Vector3) -> void:
 	mat.albedo_color = Color(1, 1, 1, 0.6)
 	ring.material_override = mat
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	ring.position = Vector3(pos.x, 0.05, pos.z)
+	var water := map.wading_z(Vector2(pos.x, -pos.z), Vector2(pos.x, -pos.z))   # down in a gorge, on its water
+	ring.position = Vector3(pos.x, 0.05 if is_nan(water) else water + 0.05, pos.z)
 	ring.scale = Vector3(1, 0.1, 1)
 	add_child(ring)
 	var tw := ring.create_tween()

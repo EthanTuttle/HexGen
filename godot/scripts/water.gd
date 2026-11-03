@@ -966,7 +966,7 @@ static func rapids_spot(water: Array, seed: String, widths: Array = [], landmark
 	return {}
 
 
-## {foam = [point, angle, long, wide], boulders = [point, radius]} in the channel. near: closer to the Troll Bridge, more.
+## {foam = [point, angle, long, wide, held by a boulder], boulders = [point, radius]} in the channel. near: closer to the Troll Bridge, more.
 static func rapids_marks(water: Array, seed: String, widths: Array = [], near := 0) -> Dictionary:
 	var w := tile_water(water, seed, widths, "rapids")
 	var lines: Dictionary = water_routes(water, seed, widths, "rapids").lines
@@ -986,12 +986,13 @@ static func rapids_marks(water: Array, seed: String, widths: Array = [], near :=
 				var r := rng.uniform(0.12, 0.22)
 				boulders.append([p, r])
 				var off := Vector2(cos(ang), sin(ang)) * rng.uniform(-0.1, 0.1)
-				foam.append([p + off, ang, r + rng.uniform(0.2, 0.42), r * 0.72])
+				var long_ := r + rng.uniform(0.2, 0.42)
+				foam.append([p + off, ang, long_, r * 0.72, true])
 			var q := curve[k] + into * rng.uniform(0.15, 0.6)
 			if in_water(w.outlines, q) and inside_tile(q, 0.4):
 				var a2 := ang + rng.uniform(-0.2, 0.2)
 				var l2 := rng.uniform(0.28, 0.55)
-				foam.append([q, a2, l2, rng.uniform(0.04, 0.08)])
+				foam.append([q, a2, l2, rng.uniform(0.04, 0.08), false])
 	for i in lines:
 		var l: PackedVector2Array = lines[i]
 		for k in l.size() - 1:
@@ -1000,7 +1001,7 @@ static func rapids_marks(water: Array, seed: String, widths: Array = [], near :=
 				var c := l[k] + d * rng.uniform(0.25, 0.75)
 				if in_water(w.outlines, c):
 					var l2 := rng.uniform(0.3, 0.6)
-					foam.append([c, atan2(d.y, d.x), l2, rng.uniform(0.04, 0.09)])
+					foam.append([c, atan2(d.y, d.x), l2, rng.uniform(0.04, 0.09), false])
 	return {foam = foam, boulders = boulders}
 
 

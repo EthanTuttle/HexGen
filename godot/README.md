@@ -514,7 +514,8 @@ Built from the top sections of `art/handoff/river_kit.md` and `art/handoff/hills
 | Frozen Troll tile | `MapBoard._troll_water`, `_frozen_shut`, `_water_inputs` | The tile's water edges and widths are kept when its bridge first stands. A shared edge it didn't have is land for both tiles. A new tile with other water ends in a gorge head; one with only the Troll tile beside it keeps a slab and a small pool |
 | Falls | `Water.with_falls`, `pooled`, `flow_in`, `falling`; `MapBoard._water_edge_shut` | Every rapids tile takes `with_falls` widths. Flow signs come from `flow_in`. The route planner refuses a fall edge from both sides, and a gorge's land edge with no lane or bridge |
 | Silhouette | `_canyon_material`, `shaders/ground_stencil.gdshader`, `PartyWalker._update_silhouette` | Gorge rock and land write the canyon's stencil. It's on in a gorge, and doesn't show below the water |
-| Foam and falls unlit | `shaders/fall.gdshader` | So walls don't shade them grey |
+| Foam and falls | `shaders/fall.gdshader`, `shaders/gorge_foam.gdshader`, `MapBoard._foam_ring` | Unlit, so walls don't shade them grey. Foam moves in the shader (Ethan, Nov 3, 2026): streaks swell, run along the tile's flow at `FOAM_SPEED` and shrink away; foam held by a boulder or under a fall stays and churns |
+| Walls | `MapBoard._gorge_rock` | Two-sided: a wall that folds at a tile's edge showed the board through its back from some angles |
 | Hills ledges, hay | The glb's pieces and paths; `Hex` palette | No code but the palette and the check's foot position |
 
 **Where the engine differs from `gorge.py`:** soil sides are wound to face out (the preview draws both sides of a face; Godot culls). Water's grid as above. 110 of 154,637 compared values differ: lips a hair apart where they fold on a bend (70), ear clips of those (12 counts, 6 areas), and in one case in 500 a different lane by a hair's difference (20 walk values, 2 of them from a bridge's route where both ends are the same distance).
@@ -532,12 +533,13 @@ Built from the top sections of `art/handoff/river_kit.md` and `art/handoff/hills
 
 ### PLACEHOLDER, for Ethan or the planner
 
-- **Waterfall's look:** the moving bands' speed and strength, and how far falls and foam dim at night. `fall_light`, `water_fast` and the `gorge_lane_*` and `rock_wet_moss` colours are the kit's placeholders.
+- **Waterfall's and foam's look:** the moving bands' speed and strength, `FOAM_SPEED` and the foam's times and sizes, and how far they dim at night. `fall_light`, `water_fast` and the `gorge_lane_*` and `rock_wet_moss` colours are the kit's placeholders.
 - **`downhill`:** still the placeholder flow rule (design/07's open question). If it changes, which joins get a fall changes with it.
 
 ### Rough spots
 
-- **A wader on a bridged tile climbs onto the deck,** quickly rather than at once, as there's no telling from a plan point whether a mini is on the deck or under it, and a side a bridge serves has no lane.
+- **A wader stepping into a bridged tile by water** rises about 1.7 m in about 0.3 s, through the bridge's side wall, onto its deck, as there's no telling from a plan point whether a mini is on the deck or under it, and a side a bridge serves has no lane. Of the debug region's routes, 0 of 600 do it with land placed round the region, and 24 of 42 with none (`GORGE HOP` lines; `screens/gorge_35`, `36`, `37`). With Ethan to decide.
+- **The silhouette in a gorge** shows from a low camera (`screens/gorge_23_silhouette_low.png`). At the game's fixed 50-degree tilt the walls lean back too far to hide a wader in the two turned views checked (`gorge_22_*`).
 - From the hand-off: a pool has no way out, a bridge can stand beside a pool, and water runs uphill going downstream where no fall applies.
 
 ## Desert kit (tiles v60)
