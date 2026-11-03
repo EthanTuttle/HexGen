@@ -25,10 +25,12 @@ import variants as vr  # noqa: E402
 
 TILE_HAY, MAP_STRAW = hk.PALETTE["hay"], hk.PALETTE["stack"]
 STRAW = fc.mix(TILE_HAY, MAP_STRAW, 0.5)  # halfway between the tiles' hay and the maps' straw
-ROW_PITCH, STEP = 0.235, 0.17  # between rows, and along them
-# Per variant: the colours mixed along a row, the soil, the ridge's height range, how often a stretch of row is missing.
-CROPS = {"windmill_country": (["field_a", "field_b"], "soil_light", (0.05, 0.075), 0.0), "haunted_homesteads": (["withered", "withered_dark"], "withered_soil", (0.035, 0.065), 0.1),
-         "raided_farms": (["scorched", "scorched", "withered_dark"], "soil_dark", (0.025, 0.055), 0.14)}
+ROW_PITCH = 0.17  # rows touch, with only a shallow groove between them
+TOP, GROOVE = 0.055, 0.02  # under a base's 0.06 rim
+# Per variant: the two sides of a row, and the soil cell under it.
+CROPS = {"windmill_country": (("field_a", "field_b"), "field_b"), "haunted_homesteads": (("withered", "crop_withered_b"), "withered_soil"),
+         "raided_farms": (("withered_dark", "scorched"), "scorched")}
+hk.PALETTE["crop_withered_b"] = fc.mix(hk.PALETTE["withered"], hk.PALETTE["withered_dark"], 0.5)
 MAPS = ["windmill_country_road", "haunted_homesteads_crops", "raided_farms_barns"]
 STYLES = ("today", "rows")
 
@@ -54,34 +56,34 @@ def own(t, col, name, make, cells=bf.SINGLE):
 
 
 def rows(col, v, block, k):
-    """Low ridges of crop on the soil: straight overall and carried from cell to cell, with a ragged edge, an uneven top, mixed colours and bare stretches. Stops short of each cell's edge."""
-    crops, _, (low, high), missing = CROPS[v]
+    """A solid field: rows packed side by side over the whole cell, each a low ridge with a light and a dark side, a shallow groove between them, clean at the cell's edge. Lined up from cell to cell."""
+    sides, _ = CROPS[v]
     p = hk.Piece(f"rows_{min(block)}")
-    rng = hk.seeded(p.name)
     a = math.radians((90, 150, 30)[rb.hash_cell(min(block)) % 3])
-    across, along = Vector((math.cos(a), math.sin(a), 0)), Vector((-math.sin(a), math.cos(a), 0))
-    flats = [Vector((math.cos(math.radians(x)), math.sin(math.radians(x)), 0)) for x in (30, 90, 150)]
+    across = Vector((math.cos(a), math.sin(a), 0))
+
+    def height(q, n):
+        return GROOVE + (TOP - GROOVE) * (1 - abs(q.dot(across) - (n + 0.5) * ROW_PITCH) / (ROW_PITCH / 2))
+
     for c in sorted(block):
         at = hk.cell_position(*c)
-        n = math.floor((at.dot(across) - 0.55) / ROW_PITCH)
-        while n * ROW_PITCH < at.dot(across) + 0.55:
-            spot = (n * ROW_PITCH + 0.1) * across
-            t = at.dot(along) - 0.6
-            ring = None
-            while t < at.dot(along) + 0.6:
-                q = spot + along * t + across * (0.018 * math.sin(t * 5.0 + n * 2.1) + rng.uniform(-0.012, 0.012))
-                inside = max(abs((q - at).dot(f)) for f in flats) < 0.45
-                if inside and rng.random() >= missing:
-                    half = rng.uniform(0.06, 0.1)
-                    next_ring = (q + across * half + Vector((0, 0, 0.005)), q + Vector((0, 0, rng.uniform(low, high))), q - across * half + Vector((0, 0, 0.005)))
-                    if ring:
-                        verts = [p.bm.verts.new(w) for w in (ring[0], ring[1], next_ring[1], next_ring[0])] + [p.bm.verts.new(w) for w in (ring[1], ring[2], next_ring[2], next_ring[1])]
-                        p.bm.faces.new(verts[:4]).material_index = p._slot(rng.choice(crops))
-                        p.bm.faces.new(verts[4:]).material_index = p._slot(rng.choice(crops))
-                    ring = next_ring
-                else:
-                    ring = None
-                t += STEP * rng.uniform(0.8, 1.2)
+        outline = [at + q for q in hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]]
+        n = math.floor((at.dot(across) - 0.6) / ROW_PITCH)
+        while n * ROW_PITCH < at.dot(across) + 0.6:
+            for half in (0, 1):
+                s0, s1 = (n + half / 2) * ROW_PITCH, (n + (half + 1) / 2) * ROW_PITCH
+                band = fm.clipped(outline, across, s0)
+                band = fm.clipped(band, -across, -s1) if len(band) >= 3 else []
+                if len(band) < 3:
+                    continue
+                top = [p.bm.verts.new(q + Vector((0, 0, height(q, n)))) for q in band]
+                p.bm.faces.new(top).material_index = p._slot(sides[half])
+                for i, q in enumerate(band):  # a skirt down to the soil, along the cell's edge
+                    r = band[(i + 1) % len(band)]
+                    if abs((q - r).dot(across)) > 0.001:
+                        low = [p.bm.verts.new(w) for w in (q, r)]
+                        high = [p.bm.verts.new(w + Vector((0, 0, height(w, n)))) for w in (r, q)]
+                        p.bm.faces.new(low + high).material_index = p._slot(sides[1])
             n += 1
     p.finish(col)
 
