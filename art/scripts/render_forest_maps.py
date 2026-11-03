@@ -39,6 +39,7 @@ from mathutils.geometry import tessellate_polygon  # noqa: E402
 import build_forest_cells as fc  # noqa: E402
 import build_giant_minis as gm  # noqa: E402
 import hexkit as hk  # noqa: E402
+import map_catalogue as mc  # noqa: E402
 import render_forest_boards as rb  # noqa: E402
 import render_preview as rp  # noqa: E402
 
@@ -138,19 +139,23 @@ T G . T
  h k . 
   . .  
    R   """},
-    "dark_wood_bend": {"size": "rectangle", "idea": "A rectangle whose north-west is one big cliff, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
-K K K K K T x T
- K K K K T . . 
-K K K K K . y .
- K K K K . . w 
-K K K K K . . T
- K K K K G . . 
-K K K K E G L .
- K K K E G . L 
-T . T . E . . T
- h . c . . T . 
-. k . , . . b .
- s . b . T . . """},
+    "dark_wood_bend": {"size": "square-ish rectangle", "idea": "A cliff fills the map's north-west, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
+K K K T x T
+ K K T . . 
+K K K . y .
+ K K . . w 
+K K K . . T
+ K K G . . 
+K K K G L .
+ K K G . L 
+K K E . . T
+ K E . . . 
+T . E . T .
+ . . . . . 
+. . c . b .
+ h . . , . 
+. k . . T .
+ s . b . . """},
     "dark_wood_thorns": {"size": "wide oval", "idea": "Bramble masses and dead trees scattered wide, joined into broken walls. A winding walk for melee; ranged may shoot across if brambles don't stop sight.", "plan": """
   . T T . . v T .  
  T . . Z . . . w . 
@@ -204,22 +209,24 @@ H . . H X H . . H
  . . h . . . . . 
 . k . . s . . . .
  T . . . . O . T """},
-    "heartwood_hollow": {"size": "large oval", "idea": "A big oval pinched in the middle by a cliff from the west and trees from the east, with arching roots as low walls. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
-     . T .     
-    . v . .    
-   G . . w .   
-  G . x . U .  
- K G . . U . . 
-K K . . U . . T
- K K . . . . . 
-K K K . . . T T
- K K K . . . T 
-K K . U . . . T
- K . U . . k h 
-  . U . . . s  
-   , . . . .   
-    . . . T    
-     . O .     """},
+    "heartwood_hollow": {"size": "medium hex", "idea": "A hex pinched in the middle by a cliff from the west and trees from the east, with arching roots as low walls. The cliff's shelter is the prize: back to it, only two sides to watch.", "plan": """
+    T    
+   v .   
+  G . w  
+ G x U . 
+K G U . .
+ K U . . 
+K K . . T
+ K . . . 
+K K K . T
+ K K . . 
+K . . U .
+ . . U . 
+. . U . .
+ , . . O 
+  . h k  
+   s .   
+    T    """},
 }
 
 
@@ -324,8 +331,8 @@ def visibility(name, cells):
     for c, mark in cells.items():
         if mark not in WALKABLE:
             continue
-        # Above brush's own plants, and above the steps of a ramp at any of the points.
-        z = 0.26 if mark == "c" else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
+        # Above brush's own plants, a litter mark's height, and the steps of a ramp at any of the points.
+        z = 0.26 if mark == "c" else 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
         points = [hk.cell_position(*c) + Vector((0, 0, z))]
         points += [p + Vector((0.3 * math.cos(k * math.pi / 3), 0.3 * math.sin(k * math.pi / 3), 0)) for p in points[:1] for k in range(6)]
         seen[c] = seen_step[c] = 0
@@ -351,7 +358,7 @@ def ground_z(mark):
 
 def seen_default(scene, depsgraph, c, target, el, mark):
     cam = target + Vector((0, -math.cos(el), math.sin(el))) * ENGINE_DISTANCE
-    at = hk.cell_position(*c) + Vector((0, 0, RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02))
+    at = hk.cell_position(*c) + Vector((0, 0, 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02))
     to = cam - at
     return not scene.ray_cast(depsgraph, at, to.normalized(), distance=to.length)[0]
 
@@ -542,8 +549,11 @@ def build_map(t, col, name):
     return cells
 
 
-def place_minis(t, col, name, cells):
-    m = MAPS[name]
+def mini_of(m, mark):
+    return m.get("foes", {}).get(mark, MINI_MARKS[mark])
+
+
+def place_minis(t, col, m, cells):
     party = [hk.cell_position(*c) for c, mark in cells.items() if mark in "hks"]
     middle = sum(party, Vector((0, 0, 0))) / len(party)
     for c, mark in cells.items():
@@ -552,7 +562,7 @@ def place_minis(t, col, name, cells):
             d = middle - at
             # Minis face -Y, so a turn of a points them along (sin a, -cos a). Enemies look at the party, near enough.
             angle = rb.FACE_NORTH if mark in "hks" else math.atan2(d.x, -d.y) + math.radians((rb.hash_cell(c) % 30) - 15)
-            rp.place(t, MINI_MARKS[mark], col, at + Vector((0, 0, ground_z(mark))), angle)
+            rp.place(t, mini_of(m, mark), col, at + Vector((0, 0, ground_z(mark))), angle)
     for mark, group in groups(cells, "A"):
         foot = {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)]
         anchor, turn = fit(group, foot)
@@ -624,15 +634,15 @@ def kit_sheet(t, col):
         rp.place(t, "standin_hero", col, Vector((x, y, 0)), rb.FACE_NORTH + 0.5)
 
 
-def export():
+def export(maps, build, load, variant_of, stem):
     """One blend holding every map's own pieces, and one JSON saying what goes where."""
     hk.empty_scene()
-    t = rb.templates()
+    t = load()
     keep = hk.new_collection("maps")
     data = {}
-    for name in MAPS:
+    for name in maps:
         col = hk.new_collection(f"building_{name}")
-        cells = build_map(t, col, name)
+        cells = build(t, col, name)
         placements = []
         for o in list(col.objects):
             if "piece" in o:
@@ -647,7 +657,7 @@ def export():
                 keep.objects.link(o)
                 placements.append({"piece": o.name, "x": 0, "y": 0, "turn": 0})
         bpy.data.collections.remove(col)
-        m = MAPS[name]
+        m = maps[name]
         rows = []
         for (q, r), mark in sorted(cells.items()):
             row = {"q": q, "r": r, "kind": "open" if mark in WALKABLE and mark != "c" else "brush" if mark == "c" else "blocked"}
@@ -656,23 +666,24 @@ def export():
             elif mark in RAMPS:
                 row.update(z=RAISED_HEIGHT / 2, ramp="steps" if mark == "^" else "earth", up=list(up_from(cells, (q, r))))
             rows.append(row)
-        starts = [{"mini": MINI_MARKS[mark], "q": c[0], "r": c[1], **({"z": RAISED_HEIGHT} if mark in RAISED else {})} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
+        starts = [{"mini": mini_of(m, mark), "q": c[0], "r": c[1], **({"z": RAISED_HEIGHT} if mark in RAISED else {})} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
         for mark, group in groups(cells, "A"):
             anchor, turn = fit(group, {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)])
             starts.append({"mini": m["giant"], "q": anchor[0], "r": anchor[1], "turn": 60 * turn})
-        data[name] = {"variant": next(v for v in fc.VARIANTS if name.startswith(v)), "shape": m["size"], "idea": m["idea"], "centre": list(middle_of(cells).to_tuple(3))[:2],
+        data[name] = {"variant": variant_of(name), "shape": m["size"], "idea": m["idea"], "centre": list(middle_of(cells).to_tuple(3))[:2],
                       "cells": rows, "placements": placements, "starts": starts}
     for o in list(bpy.data.objects):
         if o.name not in keep.objects:
             bpy.data.objects.remove(o)
-    path = hk.next_version(os.path.join(hk.ART, "combat"), "combat_maps")
+    path = hk.next_version(os.path.join(hk.ART, "combat"), stem)
     bpy.ops.wm.save_as_mainfile(filepath=path)
     print("SAVED", path)
-    out = os.path.join(hk.ART, "export", "combat_maps.json")
+    out = os.path.join(hk.ART, "export", f"{stem}.json")
     with open(out, "w") as fh:
         json.dump(data, fh, separators=(",", ":"), sort_keys=True)
         fh.write("\n")
     print("EXPORTED", out)
+    mc.write(prune=True)
 
 
 if __name__ == "__main__":
@@ -692,7 +703,7 @@ if __name__ == "__main__":
             t = rb.templates()
             cells = build_map(t, col, name)
             visibility(name, cells)
-            place_minis(t, col, name, cells)
+            place_minis(t, col, MAPS[name], cells)
             print(f"TRIS {name}: map, with minis {triangles(col)}")
             target = Vector((at[0], at[1], 0.5))
             rp.stage(target, dist, PITCH)
@@ -701,7 +712,7 @@ if __name__ == "__main__":
             rp.render(f"forest_highground_{name}{'_back' if turn else ''}")
         sys.exit()
     if "--export" in args:
-        export()
+        export(MAPS, build_map, rb.templates, lambda name: next(v for v in fc.VARIANTS if name.startswith(v)), "combat_maps")
         sys.exit()
     if "--kit" in args:
         hk.empty_scene()
@@ -719,15 +730,18 @@ if __name__ == "__main__":
         if not visibility(name, cells):
             failed.append(name)
         without = triangles(col)
-        place_minis(t, col, name, cells)
+        place_minis(t, col, MAPS[name], cells)
         print(f"TRIS {name}: map {without}, with minis {triangles(col)}")
         if not only_check:
             target, distance = framing(cells)
             rp.stage(target, distance, PITCH)
             rp.render(f"forest_map_{name}")
+            mc.keep_image("forest_map_", name)
             if name in TURNED:
                 rb.turn_camera(180, target)
                 rp.render(f"forest_map_{name}_turned")
     if not only_check and wanted == list(MAPS):
         make_sheets()
+    if not only_check:
+        mc.write()
     print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)

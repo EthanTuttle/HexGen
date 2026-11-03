@@ -18,6 +18,8 @@ For the Combat Art session: enemy minis and combat map art, drafted with Blender
 - Hand-off goes through the planner session, never directly to Godot. Ethan reviews previews before anything reaches the engine.
 - Never overwrite: versioned files only. The tile art session also uses `art/`, so keep your scripts and files separate from its (`art/minis/enemies/`, `art/combat/`) and don't use its `tiles_vN` numbers.
 - Content comes from Ethan. Where the docs don't decide a look, offer options through the planner rather than settling it.
+- Map catalogue: `art/combat/maps/README.md` lists the maps in use and the retired ones, generated from `art/export/combat_maps*.json` by `art/scripts/map_catalogue.py`. Each in-use map's current image is at `art/combat/maps/<map id>.png`, an unversioned path that the render scripts refresh whenever the map changes (an exception to versioned files). Pull maps up from there, not from `art/preview`. Retire a map by taking it out of its plans, and the catalogue moves it to the retired list.
+- A variant's maps differ clearly in overall base shape and size, not just props.
 
 ## First job: enemy minis
 
@@ -41,6 +43,8 @@ Changed Nov 2, 2026: a fight is an animated zoom into the hex, but it really hap
 - Build several distinct layouts per forest variant, each with a clear tactical idea (a choke point, a clearing, cover lanes), reusing the cell and prop kit. Say what the idea of each is.
 - The combat camera rotates, so tall obstacles such as map-height trees are fine, as long as every cell can be seen from at least one angle of the rotation. Check this for each map (a test would be good). Blocked cells must look blocked.
 - The board sits on the combat backdrop, with its soil sides. The zoom into the hex is an engine animation.
+
+- Terrains with drawn paths also get themed, hand-built path maps round their roads and structures (farm tracks and gates, town streets and squares, trails, bridges). A fight on such a tile rolls from both sets. Count: 3 terrain maps per variant, plus 1 path map if the variant has roads. No landmark-specific maps yet, and keep landmark props (camps, spires, nests, the landmarks' own structures) off ordinary maps. Herds are plain obstacles.
 
 Previews: each map from the combat camera with minis on it, plus the kit laid out.
 
