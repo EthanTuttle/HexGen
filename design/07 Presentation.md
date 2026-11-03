@@ -109,6 +109,10 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Dunes/wasteland | Sandstone Sphinx | A huge crouching sandstone sphinx, about 4.6 tall (just over a hill peak), its haunches under a dune and its forelegs and paws out front, with a stern, regal, worn face and a small offering altar between its paws. It faces the neighbouring tile nearest the default camera, unlike other landmarks (chosen Nov 2, 2026) |
   | Badlands | Raider Stronghold | A fort built on top of a mesa, with a ramp up, spiked walls and flags of rags (chosen Nov 2, 2026). The ramp joins the ground and the top; ramps on the map never end in empty space (Nov 2, 2026). The ramp is timber: planks on log trestles with a rope rail, a straight run up the mesa's long side, and the Stronghold always turns so the ramp faces the default camera (chosen Nov 3, 2026) |
   | Oasis | Oasis Bazaar | Long awning-covered lanes of stalls leading to a domed well-house (chosen Nov 2, 2026) |
+  | Bog/fen | Witch's Hut | A lopsided hut on crooked stilts over dark water, with a patched thatch roof, hanging bones and herbs, a glowing green window and a cauldron out front (chosen Nov 3, 2026) |
+  | Will-o'-wisp marsh | Wisp Hollow | A ring of pale wisps swirling over a still, glowing pool in a hollow of reeds, with a half-sunk treasure chest just visible (chosen Nov 3, 2026) |
+  | Rot swamp | Plague Pit | A wide round sinkhole dug into the ground, with glowing yellow-green ooze below, pale fungus on its walls and a broken ramp leading down (chosen Nov 3, 2026) |
+  | Smugglers' bayou | Thieves Guild | A large two-storey house on stilts with a covered dock, boats underneath, a crooked sign and lanterns: a shady tavern at the hub of the walkways (chosen Nov 3, 2026) |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
 
