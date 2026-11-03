@@ -33,7 +33,7 @@ The wasteland leads the eye by density:
 
 Bones, dead trees and cracked earth are scattered at the same rate everywhere.
 
-**Why corners:** `ROUTES` is the set of curves between every pair of edges, plus each edge to the middle. The only room clear of all of them is the six corners of a tile, so the big ruins stand there, at most one each. `sand.clear_of_routes` assumes curves with the tile's middle as their control point. If the engine's curves differ, tell me and I'll match them.
+**Why corners:** `ROUTES` is the set of curves between every pair of edges, plus each edge to the middle. The only room clear of all of them is the six corners of a tile, so the big ruins stand there, at most one each. `sand.clear_of_routes` uses curves with the tile's middle as their control point, which matches `party_walker.gd`'s `_quad` (confirmed Nov 2, 2026).
 
 ## Sandstone Sphinx: `sandstonesphinx_centre` (734 triangles)
 
