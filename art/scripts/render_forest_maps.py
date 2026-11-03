@@ -50,6 +50,7 @@ GROUPED = {"G": "grove", "L": "log", "B": "boulder_3", "F": "mushrooms_3", "E": 
 SINGLE = {"T": "tree", "O": "stump", "S": "stone"}
 RAISED, RAMPS = "HWVX", "^/"
 RAISED_HEIGHT, CLIFF_HEIGHT = 0.9, 2.0
+BRUSH_Z = 0.26  # where the camera check samples a brush cell: above its plants
 WALKABLE = ".,c" + "".join(MINI_MARKS) + "A" + RAISED + RAMPS
 # The combat camera of the Godot prototype: game/fight.gd frames rig at distance 22, pitch 52; camera_rig.gd has a 50 mm lens,
 # Q / E turn it by Rules.ROTATE_STEP (60 degrees) and a two-finger twist turns it freely.
@@ -332,7 +333,7 @@ def visibility(name, cells):
         if mark not in WALKABLE:
             continue
         # Above brush's own plants, a litter mark's height, and the steps of a ramp at any of the points.
-        z = 0.26 if mark == "c" else 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
+        z = BRUSH_Z if mark == "c" else 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
         points = [hk.cell_position(*c) + Vector((0, 0, z))]
         points += [p + Vector((0.3 * math.cos(k * math.pi / 3), 0.3 * math.sin(k * math.pi / 3), 0)) for p in points[:1] for k in range(6)]
         seen[c] = seen_step[c] = 0
@@ -672,6 +673,8 @@ def export(maps, build, load, variant_of, stem):
             starts.append({"mini": m["giant"], "q": anchor[0], "r": anchor[1], "turn": 60 * turn})
         data[name] = {"variant": variant_of(name), "shape": m["size"], "idea": m["idea"], "centre": list(middle_of(cells).to_tuple(3))[:2],
                       "cells": rows, "placements": placements, "starts": starts}
+        if "kind" in m:
+            data[name]["kind"] = m["kind"]
     for o in list(bpy.data.objects):
         if o.name not in keep.objects:
             bpy.data.objects.remove(o)

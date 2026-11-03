@@ -17,7 +17,8 @@ ART = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 MAPS = os.path.join(ART, "combat", "maps")
 PREVIEW = os.path.join(ART, "preview")
 HISTORY = os.path.join(MAPS, "history.json")
-TERRAINS = (("Forest", "combat_maps.json", "forest_map_"), ("Plains", "combat_maps_plains.json", "plains_map_"))
+TERRAINS = (("Forest", "combat_maps.json", "forest_map_"), ("Plains", "combat_maps_plains.json", "plains_map_"),
+            ("Farmland", "combat_maps_farmland.json", "farmland_map_"))
 
 
 def keep_image(prefix, name):

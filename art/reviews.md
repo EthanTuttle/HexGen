@@ -12,3 +12,12 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-02 | `art/preview/badlands_map_v2.png` | rejected | Wider mesas still too few |
 | 2026-11-02 | `art/preview/badlands_stronghold_alone_corner_v1.png` | rejected | Ramp ends in empty space; ramps always connect; mesa still round |
 | 2026-11-02 | `art/preview/oasis_map_v2.png` | rejected | One pool and Bazaar stay; tents and rugs go, heat shimmer and a few camels instead |
+| 2026-11-02 | `art/preview/farmland_maps_all_v2.png` | rejected | Rework haystacks and charred barns, thicken fences; windmills should be bigger. Crops stay walkable with no rule |
+| 2026-11-03 | `art/preview/farmland_maps_all_v3.png` | rejected | Mills and charred barns stay; haystacks look like pears, match cart hay, slim the fences |
+| 2026-11-03 | `art/preview/canyon_maze_map_v1.png` | approved | Maze look approved with silhouette through rock; except its ramps (`canyon_maze_ramp_v1.png`) |
+| 2026-11-03 | `art/preview/canyon_maze_ramp_v1.png` | rejected | Ramps look terrible; style study first |
+| 2026-11-03 | `art/preview/badlands_stronghold_alone_corner_v2.png` | rejected | Ramp looks terrible; style study first |
+| 2026-11-03 | `art/preview/oasis_map_v3.png` | approved | With ripples made to run one way across the region |
+| 2026-11-03 | `art/preview/farmland_maps_all_v4.png` | approved | Except haystacks: `farmland_close_windmill_country_stacks_v7.png` rejected, back to the round 2 stacks (`_stacks_v3`) |
+| 2026-11-03 | `art/preview/forest_maps_paths_v1.png` | rejected | Fey path good; Heartwood layout good but needs torii gates and no lanterns; Deep Forest and Dark Wood paths should be straighter or soft curves, not diagonals |
+| 2026-11-03 | `art/preview/ramp_study_game_v5.png` | approved | A cut path for canyon entrances and hills ledges, C timber for the Stronghold; D and E out. Combat ramps: B/C comparison first |
