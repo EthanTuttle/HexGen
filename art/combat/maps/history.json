@@ -431,28 +431,28 @@
   "idea": "Two long patched fences cross the map from opposite sides, leaving one gap each. The way through winds from side to side.",
   "kind": "terrain",
   "shape": "tall rectangle",
-  "walkable": 60
+  "walkable": 51
  },
  "slums_plots": {
   "cells": 41,
   "idea": "Vegetable plots and scraggly trees behind the shacks. Nothing to hide behind but junk and washing, so everyone is in reach fast.",
   "kind": "terrain",
   "shape": "small square",
-  "walkable": 35
+  "walkable": 33
  },
  "slums_shacks": {
   "cells": 101,
   "idea": "Shacks packed close, with crooked alleys between them. Short sight lines and many ways round, with only a small vegetable plot in the open.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 77
+  "walkable": 74
  },
  "slums_street": {
   "cells": 85,
   "idea": "A muddy street across the map, with junk and washing lines along it and shacks at both ends. As wide as any town's, so the party fits, and open to both sides.",
   "kind": "path",
   "shape": "wide rectangle",
-  "walkable": 72
+  "walkable": 64
  },
  "stormy_plains_outcrop": {
   "cells": 61,

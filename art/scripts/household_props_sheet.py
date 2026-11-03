@@ -36,7 +36,7 @@ def templates():
 
 
 def piece_of(name):
-    return f"ob_market_town_{name}" if name.startswith("town") else f"ob_fortified_town_{name}" if name.startswith(("stone_", "smithy", "armoury")) else f"ob_village_{name}"
+    return f"ob_market_town_{name}" if name.startswith("town") else f"ob_fortified_town_{name}" if name.startswith(("stone_", "smithy", "armoury")) else f"ob_slums_{name}" if name.startswith("shack") else f"ob_village_{name}"
 
 
 def size(obj):
@@ -133,6 +133,14 @@ MARKET = [("cloth", bv.yard_cloth), ("grain sacks", bv.yard_sacks), ("produce", 
 
 if __name__ == "__main__":
     hk.empty_scene()
+    if "--slums" in sys.argv:
+        YARD[:] = [("tarp", bv.yard_tarp), ("red lantern", bv.yard_red_lantern), ("scrap", bv.yard_scrap), ("weeds", bv.yard_weeds), ("brazier", bv.yard_brazier), ("bucket", bv.yard_bucket),
+                   ("junk", "ob_slums_junk"), ("lantern heap", "ob_slums_lantern_heap"), ("broken cart", "ob_slums_broken_cart"), ("lean-to", "ob_slums_lean_to"), ("washing", "ob_slums_washing")]
+        HOUSES[:] = ["shack_3_side", "shack_3_gable", "shack_3_cross", "shack_3_lean", "shack_4_long", "shack_4_gable", "shack_4_cross"]
+        measure(templates())
+        sheet(YARD, 4, (2.8, 3.4), 35, 19, "slums_props_close")
+        houses("slums_houses")
+        sys.exit()
     if "--fort" in sys.argv:
         YARD[:] = [("anvil", bv.yard_anvil), ("quench tub", bv.yard_quench), ("coal", bv.yard_coal), ("grindstone", bv.yard_grindstone), ("forge", bv.yard_forge), ("spears", bv.yard_spears), ("shields", bv.yard_shields),
                    ("armour", bv.yard_armour), ("arrows", bv.yard_arrows), ("stores", "ob_fortified_town_stores"), ("racks", "ob_fortified_town_racks"), ("wagon", "ob_fortified_town_wagon")]

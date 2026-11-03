@@ -28,7 +28,7 @@ GROUND = {"village": "plains", "market_town": "cobble", "fortified_town": "town_
 BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "street"}
 hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
-hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "garrison": hk.PALETTE["banner_fort"], "coal": "#35322F", "ember": "#E2672A", "bale": "#D1B668", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
+hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "garrison": hk.PALETTE["banner_fort"], "coal": "#35322F", "ember": "#E2672A", "bale": "#D1B668", "char_dark": "#332D29", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
                    "flower_red": "#D6455A", "flower_yellow": "#F0C53C", "cabbage": "#8DBB5A", "pumpkin": "#E0802A", "stack_band": fc.mix("#D1B668", "#6E5A3C", 0.5),
                    "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
@@ -102,27 +102,40 @@ def house_row(p, rng, make, cells=LINE3, eaves=(0.12, 0.16), tall=1.45):
         grown(p, (1, 1, tall), c, lambda c=c: make(p, rng, c, ONE_WIDE - eaves[0], ONE_DEEP - eaves[1], ROW_SPIN))
 
 
-def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False, paint="trunk", door_x=None, back_door=None, front_door=True, boxes=False, vines=(), back_windows=(0.0,), back_upper=(), back_boxes=(), back_vines=(), timber=False, awning=(), sign=None, courses=False, banners=(), back_banners=(), front_windows=None):
+def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False, paint="trunk", door_x=None, back_door=None, front_door=True, boxes=False, vines=(), back_windows=(0.0,), back_upper=(), back_boxes=(), back_vines=(), timber=False, awning=(), sign=None, courses=False, banners=(), back_banners=(), front_windows=None, shack=False):
     """A cottage with a clear front: its door and shuttered windows on the south side, or in a gable's south end. Its back is laid out differently, as the camera turns all the way round, usually with no door. Flat quads on the walls, so they cost little.
     The rest varies it: wall height, roof pitch and colour, a chimney, a row of upper windows, a painted door and shutters, flower boxes (on the camera's side) and vines.
     door_x: the front door, along the wall; front_door False: none in the south wall, where a wing stands instead. back_door: a smaller door at the back, if any.
     back_windows, back_upper, back_boxes: where the back's plain windows, upper windows and flower boxes go along the wall. vines, back_vines: where vines climb the front and back.
     timber: a townhouse's two storeys, the upper jutting out over a timber band, framed in dark timber. awning: (x, width) of striped awnings over the front. sign: x of a shop sign on a bracket.
+    shack: lopsided, with a sagging roof and patches on its walls.
     Doors stand at a mini's shoulder."""
     p.doors = getattr(p, "doors", [])
     wall = wall or rng.choice(("wall", "wall", "wall_warm"))
     floor = FLOOR if timber else h  # where the upper storey starts
     jut = 0.04 if timber else 0.0
-    if timber:
+    if shack:  # its top pushed over along the walls that carry its door, so they stay flat for the door and windows
+        before = set(p.bm.verts)
+        p.box(at, (w, d, h), wall, spin=spin)
+        tilt = vr.turn(Vector((0.0, 0.05, 0)) if end_door else Vector((0.05, 0.0, 0)), spin) * rng.choice((-1, 1))
+        for v in set(p.bm.verts) - before:
+            if v.co.z > h / 2:
+                v.co += tilt
+    elif timber:
         p.box(at, (w, d, floor), wall, spin=spin)
         p.box(at, (w + 0.05, d + 0.05, 0.06), "timber", z=floor - 0.03, spin=spin)
         p.box(at, (w + jut * 2, d + jut * 2, h - floor), wall, z=floor, spin=spin)
     else:
         p.box(at, (w, d, h), wall, spin=spin)
-    p.gable_roof(at, w + 0.12 + jut * 2, d + 0.1 + jut * 2, pitch, roof or rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
+    if shack:
+        vr.sag_roof(p, at + tilt, w + 0.04, d + 0.06, pitch, roof, h - 0.01, spin, rng)
+    else:
+        p.gable_roof(at, w + 0.12 + jut * 2, d + 0.1 + jut * 2, pitch, roof or rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
     if chimney:
         c = at + vr.turn(Vector((w * 0.28, d * 0.1, 0)), spin)
         p.box(c, (0.16, 0.16, h + pitch + 0.12), "rock_dark", spin=spin)
+        if shack:
+            p.effects.append(("smoke", c + Vector((0, 0, FOOTING + h + pitch + 0.2))))
 
     def quad(x, y, half, z0, z1, mat, off, end=False):
         """A rectangle on a wall's face, off from it; x along the ridge, y across it. On the upper storey it sits out with the wall."""
@@ -234,6 +247,10 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
         q = at + vr.turn(Vector((sign, -d / 2, 0)), spin)
         p.box(q + vr.turn(Vector((0, -0.09, 0)), spin), (0.03, 0.18, 0.03), "timber", z=floor - 0.1, spin=spin)
         p.box(q + vr.turn(Vector((0, -0.14, 0)), spin), (0.03, 0.14, 0.17), "paint_green", z=floor - 0.28, spin=spin)
+    if shack:  # patched boards, differently on each side
+        for wall_y, places in ((-d / 2, ((-0.32, 0.5, "patch_brown"), (0.34, 0.26, "shack_b"))), (d / 2, ((0.1, 0.34, "shack_a"), (-0.36, 0.2, "patch_brown")))):
+            for k, z, c in places:
+                quad(k * w, wall_y, 0.09 + 0.06 * (z > 0.3), z - 0.16, z + 0.14, c, 0.003)
     if not end_door and front_door:
         door(-0.12 * w if door_x is None else door_x, -d / 2)
     for y in (-d / 2, d / 2):
@@ -671,6 +688,51 @@ def yard_arrows(p, rng, at, spin=0.0):
         p.box(q, (0.05, 0.015, 0.06), "awning_b", z=0.58)
 
 
+def yard_tarp(p, rng, at, spin=0.0):
+    """A patched tarp on four poles, sloping down toward the camera at spin 0, with a crate in its shade."""
+    for sd in (-1, 1):
+        p.box(at + vr.turn(Vector((sd * 0.3, -0.17, 0)), spin), (0.04, 0.04, 0.72), "timber", spin=spin)
+        p.box(at + vr.turn(Vector((sd * 0.3, 0.17, 0)), spin), (0.04, 0.04, 0.98), "timber", spin=spin)
+    tilt = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.66, 3, "X")
+    for x, w, c in ((-0.22, 0.26, "patch_teal"), (0.04, 0.26, "canvas"), (0.26, 0.18, "patch_red")):
+        p.box_rot(at + vr.turn(Vector((x, 0.0, 0)), spin) + Vector((0, 0, 0.86)), (w, 0.48, 0.02), c, tilt)
+    p.box(at + vr.turn(Vector((-0.08, 0.02, 0)), spin), (0.24, 0.24, 0.2), "crate", spin=spin + 0.3)
+
+
+def yard_red_lantern(p, rng, at, spin=0.0):
+    """A red lantern hung from an arm on a crooked post."""
+    p.box_rot(at + Vector((0, 0, 0.56)), (0.05, 0.05, 1.12), "timber", Matrix.Rotation(spin + 0.1, 3, "Y"))
+    q = at + vr.turn(Vector((0.17, 0, 0)), spin)
+    p.box(at + vr.turn(Vector((0.1, 0, 0)), spin), (0.26, 0.03, 0.03), "timber", z=1.06, spin=spin)
+    p.box(q, (0.015, 0.015, 0.06), "rock_dark", z=1.0)
+    lathe(p, q, ((0.78, 0.05, "lantern_red"), (0.86, 0.085, "lantern_red"), (0.96, 0.085, "lantern_red"), (1.0, 0.04, "rock_dark")), "rock_dark", segments=6)
+
+
+def yard_scrap(p, rng, at, spin=0.0):
+    """Scrap boards stacked and leaning, with a broken crate."""
+    for k, (x, c) in enumerate(((-0.14, "boards"), (-0.02, "patch_brown"), (0.1, "shack_a"))):
+        rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.36, 3, "X")
+        p.box_rot(at + vr.turn(Vector((x, 0.03 - 0.03 * k, 0)), spin) + Vector((0, 0, 0.3)), (0.11, 0.025, 0.62), c, rot)
+    p.box(at + vr.turn(Vector((0.26, -0.08, 0)), spin), (0.22, 0.2, 0.12), "crate", spin=spin + 0.5)
+    p.box(at + vr.turn(Vector((0.26, -0.08, 0)), spin), (0.24, 0.03, 0.02), "boards", z=0.13, spin=spin + 0.9)
+
+
+def yard_weeds(p, rng, at, spin=0.0):
+    """Tufts of weeds pushing up through the stone."""
+    for x, y, r, c in ((-0.14, 0.04, 0.09, "hedge"), (0.1, -0.05, 0.1, "lily"), (0.02, 0.11, 0.07, "hedge"), (0.2, 0.09, 0.07, "lily")):
+        p.cone(at + vr.turn(Vector((x, y, 0)), spin), r, 0.2 + r, c, segments=4)
+
+
+def yard_brazier(p, rng, at, spin=0.0):
+    """A holed barrel with a fire in it, to warm hands at."""
+    barrel(p, at, r=0.13, h=0.42, lid="char_dark")
+    p.cone(at, 0.09, 0.2, "ember", segments=5, z=0.42)
+
+
+def yard_bucket(p, rng, at, spin=0.0):
+    lathe(p, at, ((0.0, 0.08, "trunk"), (0.2, 0.1, "trunk")), "water", segments=6)
+
+
 def bale(p, at, spin, z=0.0):
     """A hay bale with two bands of twine round it."""
     p.box(at, (0.46, 0.3, 0.26), "bale", z=z, spin=spin)
@@ -886,23 +948,43 @@ def slum_junk(p, rng):
 
 
 def lantern_heap(p, rng):
-    """A heap of crates with a red lantern on a leaning post over it."""
-    for at, s in ((Vector((-0.2, 0.05, 0)), 0.34), (Vector((0.18, 0.14, 0)), 0.3), (Vector((0.02, -0.2, 0)), 0.28)):
+    """A heap of crates with a red lantern hung from a crooked post over it."""
+    for at, s in ((Vector((-0.24, 0.05, 0)), 0.34), (Vector((0.16, 0.2, 0)), 0.3), (Vector((-0.02, -0.22, 0)), 0.28)):
         p.box(at, (s, s, s), "crate", spin=rng.uniform(0, 1.5))
-    q = Vector((0.03, 0.02, 0))
-    grown(p, 1.4, q, lambda: vr.lantern_post(p, q))
+    yard_red_lantern(p, rng, Vector((0.2, -0.08, 0)), math.pi)
+
+
+def broken_cart(p, rng):
+    """A cart tipped on its one wheel with its shafts in the air, the other wheel off it, its load spilled."""
+    rot = Matrix.Rotation(0.42, 3, "Y")
+    bed = Vector((0.06, 0.1, 0.32))
+    p.box_rot(bed, (0.66, 0.46, 0.05), "boards", rot)
+    for y in (-0.23, 0.23):
+        p.box_rot(bed + Vector((0, y, 0.07)), (0.66, 0.03, 0.14), "crate", rot)
+        p.box_rot(bed + rot @ Vector((0.44, y * 0.7, 0.02)), (0.18, 0.035, 0.035), "trunk", rot)
+    p.log(Vector((0.02, -0.15, 0)), 0.18, 0.05, "trunk", spin=math.pi / 2, z=0.18, segments=8)
+    p.cylinder(Vector((-0.28, -0.28, 0)), 0.17, 0.05, "trunk", segments=8)
+    p.box(Vector((0.3, -0.26, 0)), (0.2, 0.16, 0.12), "crate", spin=0.6)
+    p.blob(Vector((-0.34, 0.14, 0)), 0.12, "burlap", z=0.08, squash=0.7)
+
+
+def lean_to(p, rng):
+    """Tarps on poles over crates and a barrel, where someone has made a shelter on the street."""
+    yard_tarp(p, rng, Vector((-0.08, 0.14, 0)))
+    barrel(p, Vector((0.28, -0.2, 0)), h=0.42)
+    yard_bucket(p, rng, Vector((-0.2, -0.3, 0)))
 
 
 def washing(p, rng):
     """A line of washing on two posts across a cell, with a basket and a tub under it, so the cell reads as taken."""
-    a, b = Vector((-0.42, -0.14, 0)), Vector((0.42, 0.14, 0))
+    a, b = Vector((-0.44, 0.1, 0)), Vector((0.44, 0.1, 0))
     for q in (a, b):
         p.cylinder(q, 0.04, 1.55, "timber", segments=5)
     vr.frustum(p, a + Vector((0, 0, 1.5)), b + Vector((0, 0, 1.5)), 0.014, 0.014, "rope", segments=3)
     for k in range(4):
         p.box(a.lerp(b, (k + 0.5) / 4), (0.16, 0.025, 0.42), rng.choice(vr.CLOTHES), z=1.06, spin=math.atan2((b - a).y, (b - a).x))
-    p.cylinder(Vector((-0.08, 0.1, 0)), 0.2, 0.24, "trunk", segments=8)
-    p.box(Vector((0.2, -0.16, 0)), (0.3, 0.24, 0.18), "crate", spin=0.3)
+    lathe(p, Vector((-0.12, -0.12, 0)), ((0.0, 0.18, "trunk"), (0.08, 0.2, "hoop"), (0.11, 0.2, "trunk"), (0.22, 0.21, "trunk")), "water")
+    p.box(Vector((0.24, -0.16, 0)), (0.3, 0.24, 0.18), "crate", spin=0.3)
 
 
 def scrag(p, rng):
@@ -976,12 +1058,20 @@ KIT = {
         "8": ("smith_work", SINGLE, smith_work),
     },
     "slums": {
-        "P": ("shack_3", TRIANGLE, lambda p, r: building(p, r, vr.shack, eaves=(0.14, 0.16), tall=1.6)),
-        "D": ("shack_row", LINE3, lambda p, r: house_row(p, r, vr.shack, eaves=(0.14, 0.16), tall=1.45)),
+        # Plans use P, 5, 6 or 7 for a shack on three cells, 2, 3 or 4 for one on four.
+        "P": ("shack_3_side", TRIANGLE, house(TRIANGLE, 1.06, 0.8, X3, shack=True, h=0.86, pitch=0.42, stone="rock", wall="shack_a", roof="roof_tin", chimney=True, paint="patch_teal", door_x=0.28, front_windows=(-0.12,), back_windows=(0.2,), yard=((yard_rain_barrel, -0.5, -0.66, 0.0), (yard_bucket, -0.1, -0.56, 0.0), (yard_laundry, 0.88, 0.0, math.pi / 2), (yard_weeds, -0.42, 0.74, 0.0), (yard_bucket, 0.02, 0.58, 0.0)))),
+        "5": ("shack_3_gable", TRIANGLE, house(TRIANGLE, 0.8, 0.98, X3, shack=True, h=0.86, pitch=0.42, stone="rock", gable=True, wall="shack_b", roof="patch_brown", paint="patch_red", back_windows=(-0.2,), yard=((yard_brazier, -0.4, -0.72, 0.0), (yard_veg, 0.82, 0.0, math.pi / 2), (yard_red_lantern, -0.6, -0.32, 0.0), (yard_logs, -0.38, 0.72, 0.0), (yard_hen, 0.1, 0.52, 0.0)))),
+        "6": ("shack_3_cross", TRIANGLE, house(TRIANGLE, 1.06, 0.8, X3, shack=True, h=0.86, pitch=0.42, stone="rock", wing=(-0.22, 0.46, 0.74), front_door=False, wall="shack_a", roof="roof_tin", chimney=True, paint="patch_ochre", back_windows=(-0.3, 0.3), yard=((yard_crate, 0.9, 0.02, 0.0), (yard_broom, 0.14, -0.5, 0.0), (yard_barrels, -0.34, 0.6, 0.0), (yard_bucket, -0.34, 0.86, 0.0)))),
+        "7": ("shack_3_lean", TRIANGLE, house(TRIANGLE, 1.12, 0.8, X3, shack=True, h=0.86, pitch=0.42, stone="rock", lean=True, wall="shack_b", roof="roof_tin", chimney=True, paint="patch_teal", door_x=0.22, back_windows=(-0.2,), yard=((yard_scrap, -0.42, -0.6, 0.0), (yard_block, 0.87, 0.04, 0.0), (yard_tarp, -0.29, 0.63, math.pi), (yard_small_pot, 0.16, 0.52, 0.0)))),
+        "2": ("shack_4_long", DIAMOND, house(DIAMOND, 1.66, 0.84, shack=True, h=0.86, pitch=0.42, stone="rock", door_x=-0.6, wall="shack_a", roof="patch_brown", chimney=True, paint="patch_red", back_windows=(-0.45, 0.35), yard=((yard_tarp, 0.04, -0.56, 0.0), (yard_rain_barrel, 1.06, 0.02, 0.0), (yard_red_lantern, -1.09, -0.14, 0.0), (yard_broom, -0.98, 0.14, 0.0), (yard_laundry, 0.0, 0.62, 0.0), (yard_bucket, 0.1, 0.84, 0.0)))),
+        "3": ("shack_4_gable", DIAMOND, house(DIAMOND, 0.8, 1.22, shack=True, h=0.86, pitch=0.42, stone="rock", gable=True, wall="shack_b", roof="roof_tin", paint="patch_ochre", back_windows=(0.24,), yard=((yard_veg, 0.94, 0.0, math.pi / 2), (yard_scrap, -1.02, -0.14, 0.0), (yard_brazier, -1.0, 0.22, 0.0), (yard_bucket, 0.34, -0.56, 0.0), (yard_bucket, -0.36, -0.6, 0.0), (yard_crate, -0.24, 0.62, 0.0), (yard_weeds, 0.21, 0.56, 0.0)))),
+        "4": ("shack_4_cross", DIAMOND, house(DIAMOND, 1.52, 0.84, shack=True, h=0.86, pitch=0.42, stone="rock", wing=(0.0, 0.5, 0.74), front_door=False, wall="shack_a", roof="patch_brown", chimney=True, paint="patch_teal", back_door=0.55, back_windows=(-0.3,), yard=((yard_washtub, 1.0, 0.0, 0.0), (yard_logs, -1.06, 0.0, 0.0), (yard_bucket, -0.38, -0.56, 0.0), (yard_bucket, 0.38, -0.56, 0.0), (yard_scrap, 0.0, 0.6, math.pi), (yard_bucket, 0.0, 0.84, 0.0)))),
         "T": ("scraggly_tree", SINGLE, scrag),
         "J": ("junk", SINGLE, slum_junk),
         "N": ("lantern_heap", SINGLE, lantern_heap),
         "I": ("washing", SINGLE, washing),
+        "U": ("broken_cart", SINGLE, broken_cart),
+        "E": ("lean_to", SINGLE, lean_to),
     },
     "scholars_town": {
         "P": ("scholar_house_3", TRIANGLE, lambda p, r: building(p, r, vr.scholar_house, tall=1.4)),
@@ -1018,9 +1108,9 @@ def build():
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
-    for v in ("village", "market_town", "fortified_town"):
+    for v in ("village", "market_town", "fortified_town", "slums"):
         for mark, (kind, cells, _) in KIT[v].items():
-            if kind.startswith(("cottage_", "town_", "stone_", "smithy_", "armoury_")):
+            if kind.startswith(("cottage_", "town_", "stone_", "smithy_", "armoury_", "shack_")):
                 check_inside(bpy.data.objects[f"ob_{v}_{kind}"], cells)
     bf.check_overhangs(col)
     for fault in sorted(set(DOOR_FAULTS)):

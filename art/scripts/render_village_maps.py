@@ -232,24 +232,24 @@ U . n s I
 . . n . .
 """},
     "slums_shacks": {"size": "wide oval", "idea": "Shacks packed close, with crooked alleys between them. Short sight lines and many ways round, with only a small vegetable plot in the open.", "foes": BANDITS, "plan": """
-  P . . w . . P .  
- P . J . . x . P . 
-J P . . T . . P . .
- T . I . . . . . v 
-P . . . P . c c . .
- P . N P . . c . P 
-P . . . P . , . P .
- . . c . . . J . P 
+  P . . w . . 7 .  
+ P . J . . x . 7 . 
+J P . . T . . 7 . .
+ T . I . U . . . v 
+6 . . . 5 . c c . .
+ 6 . N 5 . . c 2 . 
+6 . . . 5 . , 2 2 .
+ . . c . . . J 2 . 
 T . c c . I . . . .
- . , . h . k . s . 
+ . , . h . k s . E 
   . . . . . . . .  
 """},
     "slums_plots": {"size": "small square", "idea": "Vegetable plots and scraggly trees behind the shacks. Nothing to hide behind but junk and washing, so everyone is in reach fast.", "foes": BANDITS, "plan": """
 . w . T v
  c c . x 
-c c I . .
+c c I . U
  c . . J 
-T . . c c
+T . E c c
  . N c c 
 . . . c T
  h k s . 
@@ -257,34 +257,34 @@ T . . c c
 """},
     "slums_fences": {"size": "tall rectangle", "idea": "Two long patched fences cross the map from opposite sides, leaving one gap each. The way through winds from side to side.", "foes": BANDITS, "plan": """
 . . v . .
- . w . x 
-L . . T .
- L . . . 
-. L . . J
+ . w x . 
+L . . T P
+ L . . P 
+. L . . P
  . L . . 
-N . L . .
- . . . . 
-. . . . L
- I . . L 
-. . . L .
+N . L . J
+ . . . U 
+5 . . . L
+ 5 E . L 
+5 . . L .
  . . L . 
-J . L . N
- . . . . 
-T . . . .
+J . L . E
+ . I . . 
+T . . . U
  h . k . 
 . . s . .
 """},
     "slums_street": {"kind": "path", "size": "wide rectangle", "idea": "A muddy street across the map, with junk and washing lines along it and shacks at both ends. As wide as any town's, so the party fits, and open to both sides.", "foes": BANDITS, "plan": """
-P . T . v . . J P
- P . . x . w . P 
-P . c . I . . . P
+P . T . v . . J 5
+ P . . x . w . 5 
+P . c . I . E . 5
  . . . . . . . . 
 n n n n n n n n n
  n n n n n n n n 
-. . . . . . . . .
- J . I . . N . T 
-. h . k . s . c c
- . . . . . . c . 
+. . . . U . . . .
+ 2 . I . . N . 4 
+2 2 h . k . s 4 4
+ 2 . . . . c . 4 
 """},
     "scholars_town_court": {"size": "medium hex", "idea": "A hedged court round a fountain, gaps on three sides, a house and towers outside it. Hold the fountain, or come at it through any gap.", "foes": BANDITS, "plan": """
     .    
@@ -353,8 +353,8 @@ c c n c c
 }
 
 
-HOUSE_MARKS = {"village": "PY23", "market_town": "P56234", "fortified_town": "P56D234"}
-BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street", "fortified_town_breach", "fortified_town_yard", "fortified_town_corner", "fortified_town_street"}  # beside HOUSES
+HOUSE_MARKS = {"village": "PY23", "market_town": "P56234", "fortified_town": "P56D234", "slums": "P567234"}
+BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street", "fortified_town_breach", "fortified_town_yard", "fortified_town_corner", "fortified_town_street", "slums_shacks", "slums_fences", "slums_plots", "slums_street"}  # beside HOUSES
 # Each map's houses, north to south: (those on three cells, those on four). No two alike side by side.
 HOUSES = {
     "village_green": (("cottage_3_cross", "cottage_3_gable"), ("cottage_4_long",)),
