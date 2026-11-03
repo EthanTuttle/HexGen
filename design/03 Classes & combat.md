@@ -667,6 +667,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 ## Open questions
 
+- [ ] **New:** cover on combat maps: whether crops and forest brush hide anyone or give any other bonus (for now they're walkable with no rule, Nov 2, 2026)
 - [ ] **New (Nov 2, 2026):** giant enemies take up 3 cells (a triangle) or 7 cells (a flower) (chosen Nov 2, 2026): how they move, get targeted and block on the grid
 - [ ] **New (Nov 2, 2026):** high ground on combat maps (07 → Combat maps) gives ranged attacks longer range, and ascending or descending is its own action, separate from Move (Ethan's direction, Nov 2, 2026). How far is the range bonus, how much AP does the action cost, and does a ledge need a check where there are no steps or ramp?
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)

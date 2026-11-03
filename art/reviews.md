@@ -12,3 +12,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-02 | `art/preview/badlands_map_v2.png` | rejected | Wider mesas still too few |
 | 2026-11-02 | `art/preview/badlands_stronghold_alone_corner_v1.png` | rejected | Ramp ends in empty space; ramps always connect; mesa still round |
 | 2026-11-02 | `art/preview/oasis_map_v2.png` | rejected | One pool and Bazaar stay; tents and rugs go, heat shimmer and a few camels instead |
+| 2026-11-02 | `art/preview/farmland_maps_all_v2.png` | rejected | Rework haystacks and charred barns, thicken fences; windmills should be bigger. Crops stay walkable with no rule |
