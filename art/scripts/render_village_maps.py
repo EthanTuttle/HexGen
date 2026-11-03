@@ -111,56 +111,56 @@ P T n . .
 """},
     "market_town_square": {"size": "wide oval", "idea": "A paved square, stalls and a well in the middle of it, townhouses at its corners. Stalls stop movement but leave lanes all round them.", "foes": BANDITS, "plan": """
   . . . w . v . .  
- P . n n n n n . P 
-P . n Y n n Y n . P
- P . n n x n n . P 
-. . n n Y N Y n . .
- . J n n n n n J . 
-. . . , . . , . . .
- . . . h . k s . . 
+ P U n n n n n J 6 
+P . n 8 n n E n . 6
+ P . n n x n n . 6 
+. . n n Y N 8 n . J
+ . 2 n n n n n 3 . 
+. 2 2 , . Q , 3 3 .
+ . 2 . h k s . 3 . 
   . . . . . . . .  
 """},
     "market_town_aisles": {"size": "big square", "idea": "Rows of stalls set in slanting aisles. Long runs along them, and a way across only at the end of each row.", "foes": BANDITS, "plan": """
 . . . w . v .
- . . . . x . 
-I . . . I . .
- I . . . I . 
-. I . . . I .
+ . E . . x . 
+I . . . D . Q
+ I . . . D . 
+. I . . . D .
  . , . . , . 
-. . I . . . J
- . . I . . . 
-J . . I . . .
- . . . . . . 
-. . . N . . .
+. . Z . . I .
+ . . Z . . I 
+J . . Z . . I
+ . . . U . . 
+8 . . N . . J
  . h . k s . 
 . . . . . . .
 """},
     "market_town_row": {"size": "small hex", "idea": "Townhouses pressing in on a tight little market. Two pinch points and almost nowhere to stand off.", "foes": BANDITS, "plan": """
    .   
   v w  
- P . P 
-P . x P
- P J P 
-. . . .
- . Y . 
-. . . .
- P . P 
-P , . P
- P h P 
+ . x . 
+P . . 5
+ P J 5 
+P . . 5
+ U Y Q 
+6 . . P
+ 6 U P 
+6 . . P
+ . h . 
   k s  
    .   
 """},
     "market_town_street": {"kind": "path", "size": "wide rectangle", "idea": "A wide market street across the map, stalls along both sides of it. Fight in the open street, or slip behind the stalls.", "foes": BANDITS, "plan": """
-P . . . v . . . P
- P . x . . . w P 
-P Y . Y . Y . Y P
+P J . . v . . U 5
+ P . x . . . w 5 
+P Y . 8 . E . Y 5
  . . . . . . . . 
 n n n n n n n n n
  n n n n n n n n 
-. . . . . . . . .
- Y . Y J . Y . Y 
-. . h . k . s . .
- . . . . . . . . 
+. . . . Q . . . .
+ 2 . 8 J . E . 4 
+2 2 h . k . s 4 4
+ 2 . . . . . . 4 
 """},
     "fortified_town_breach": {"size": "wide oval", "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.", "foes": BANDITS, "plan": """
   N . . . . . w .  
@@ -350,6 +350,8 @@ c c n c c
 }
 
 
+HOUSE_MARKS = {"village": "PY23", "market_town": "P56234"}
+BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street"}  # beside HOUSES
 # Each map's houses, north to south: (those on three cells, those on four). No two alike side by side.
 HOUSES = {
     "village_green": (("cottage_3_cross", "cottage_3_gable"), ("cottage_4_long",)),
@@ -517,11 +519,14 @@ def build_map(t, col, name):
                 assert "cross" not in kind or abs(o.rotation_euler.z) < 0.1, f"{name}: {kind} turned away"
                 piece = f"ob_village_{kind}"
                 o.data, o["piece"] = t[piece].data, piece
-        houses = {c for c, mark in cells.items() if mark in "PY23"}
+    if v in HOUSE_MARKS:
+        houses = {c for c, mark in cells.items() if mark in HOUSE_MARKS[v]}
         for c, mark in cells.items():
             if mark in fm.MINI_MARKS:
                 beside = houses & {(c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS}
                 assert not beside, f"{name}: start {mark} at {c} is beside a house at {beside}"
+        for o in col.objects:  # a house turned half round would have a wing behind it, on the far side from the camera
+            assert "cross" not in o.get("piece", "") or abs(o.rotation_euler.z) < 0.1, f"{name}: {o['piece']} turned away"
     return cells
 
 
@@ -615,7 +620,7 @@ if __name__ == "__main__":
             rp.stage(target, distance, fm.PITCH)
             rp.render(f"village_map_{name}")
             mc.keep_image("village_map_", name)
-            if name in TURNED or name in HOUSES:  # the houses' backs matter too
+            if name in TURNED or name in HOUSES or name in BACK_VIEWS:  # the houses' backs matter too
                 rb.turn_camera(180, target)
                 rp.render(f"village_map_{name}_turned")
     if not only_check and wanted == list(MAPS):

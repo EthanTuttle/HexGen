@@ -319,28 +319,28 @@
   "idea": "Rows of stalls set in slanting aisles. Long runs along them, and a way across only at the end of each row.",
   "kind": "terrain",
   "shape": "big square",
-  "walkable": 73
+  "walkable": 66
  },
  "market_town_row": {
   "cells": 37,
   "idea": "Townhouses pressing in on a tight little market. Two pinch points and almost nowhere to stand off.",
   "kind": "terrain",
   "shape": "small hex",
-  "walkable": 23
+  "walkable": 20
  },
  "market_town_square": {
   "cells": 82,
   "idea": "A paved square, stalls and a well in the middle of it, townhouses at its corners. Stalls stop movement but leave lanes all round them.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 69
+  "walkable": 59
  },
  "market_town_street": {
   "cells": 85,
   "idea": "A wide market street across the map, stalls along both sides of it. Fight in the open street, or slip behind the stalls.",
   "kind": "path",
   "shape": "wide rectangle",
-  "walkable": 70
+  "walkable": 61
  },
  "meadows_camp": {
   "cells": 89,

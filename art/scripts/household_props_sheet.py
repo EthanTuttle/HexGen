@@ -56,7 +56,7 @@ def measure(t):
         thing(p, hk.seeded(name), ZERO, 0.0)
         print("PROP", name, "%d %.2f %.2f %.2f" % size(p.finish(col)))
     for name in HOUSES:
-        print("HOUSE", name, "%d" % size(t[f"ob_village_{name}"])[0])
+        print("HOUSE", name, "%d" % size(t[f"ob_market_town_{name}"] if name.startswith("town") else t[f"ob_village_{name}"])[0])
     print("HERO", "%d %.2f %.2f %.2f" % size(t["standin_hero"]))
 
 
@@ -105,11 +105,11 @@ def houses(stem):
     t = templates()
     col = hk.new_collection("houses")
     for k, name in enumerate(HOUSES):
-        o = t[f"ob_village_{name}"]
+        o = t[f"ob_market_town_{name}"] if name.startswith("town") else t[f"ob_village_{name}"]
         cells = json.loads(o["footprint"])
         mid = sum((hk.cell_position(*c) for c in cells), Vector()) / len(cells)
         slot = Vector((4.3 * (k % 5 - 2.2), 4.2 * (0.5 - k // 5), 0))
-        rp.place(t, f"ob_village_{name}", col, slot - mid)
+        rp.place(t, o.name, col, slot - mid)
         rp.place(t, "standin_hero", col, slot + Vector((1.75, -0.85, 0)), 0.0)
         label(name.replace("cottage_", ""), col, slot + Vector((0, -1.6, 0.02)), math.pi / 2 - math.radians(fm.PITCH))
     rp.stage(ZERO, 33, fm.PITCH)
@@ -123,7 +123,18 @@ def houses(stem):
     rp.render(f"{stem}_back")
 
 
+MARKET = [("cloth", bv.yard_cloth), ("grain sacks", bv.yard_sacks), ("produce", bv.yard_produce), ("jars", bv.yard_jars), ("cheese", bv.yard_cheese), ("wares", "ob_market_town_wares"), ("cart", "ob_market_town_cart"),
+          ("stall", "ob_market_town_stall"), ("stall blue", "ob_market_town_stall_blue"), ("stall green", "ob_market_town_stall_green")]
+
+
 if __name__ == "__main__":
     hk.empty_scene()
+    if "--market" in sys.argv:
+        YARD[:] = MARKET
+        HOUSES[:] = ["town_3_side", "town_3_gable", "town_3_cross", "town_4_long", "town_4_gable", "town_4_cross"]
+        measure(templates())
+        sheet(MARKET, 5, (2.6, 3.2), 35, 20, "market_props_close")
+        houses("market_houses")
+        sys.exit()
     measure(templates())
     houses("household_houses")

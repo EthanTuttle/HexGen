@@ -28,7 +28,7 @@ GROUND = {"village": "plains", "market_town": "cobble", "fortified_town": "town_
 BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "street"}
 hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
-hk.PALETTE.update({"hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
+hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
                    "flower_red": "#D6455A", "flower_yellow": "#F0C53C", "cabbage": "#8DBB5A", "pumpkin": "#E0802A", "stack_band": fc.mix("#D1B668", "#6E5A3C", 0.5),
                    "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
@@ -102,25 +102,45 @@ def house_row(p, rng, make, cells=LINE3, eaves=(0.12, 0.16), tall=1.45):
         grown(p, (1, 1, tall), c, lambda c=c: make(p, rng, c, ONE_WIDE - eaves[0], ONE_DEEP - eaves[1], ROW_SPIN))
 
 
-def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False, paint="trunk", door_x=None, back_door=None, front_door=True, boxes=False, vines=(), back_windows=(0.0,), back_upper=(), back_boxes=(), back_vines=()):
+def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=None, chimney=False, upstairs=False, end_door=False, paint="trunk", door_x=None, back_door=None, front_door=True, boxes=False, vines=(), back_windows=(0.0,), back_upper=(), back_boxes=(), back_vines=(), timber=False, awning=(), sign=None):
     """A cottage with a clear front: its door and shuttered windows on the south side, or in a gable's south end. Its back is laid out differently, as the camera turns all the way round, usually with no door. Flat quads on the walls, so they cost little.
     The rest varies it: wall height, roof pitch and colour, a chimney, a row of upper windows, a painted door and shutters, flower boxes (on the camera's side) and vines.
     door_x: the front door, along the wall; front_door False: none in the south wall, where a wing stands instead. back_door: a smaller door at the back, if any.
     back_windows, back_upper, back_boxes: where the back's plain windows, upper windows and flower boxes go along the wall. vines, back_vines: where vines climb the front and back.
+    timber: a townhouse's two storeys, the upper jutting out over a timber band, framed in dark timber. awning: (x, width) of striped awnings over the front. sign: x of a shop sign on a bracket.
     Doors stand at a mini's shoulder."""
     p.doors = getattr(p, "doors", [])
     wall = wall or rng.choice(("wall", "wall", "wall_warm"))
-    p.box(at, (w, d, h), wall, spin=spin)
-    p.gable_roof(at, w + 0.12, d + 0.1, pitch, roof or rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
+    floor = FLOOR if timber else h  # where the upper storey starts
+    jut = 0.04 if timber else 0.0
+    if timber:
+        p.box(at, (w, d, floor), wall, spin=spin)
+        p.box(at, (w + 0.05, d + 0.05, 0.06), "timber", z=floor - 0.03, spin=spin)
+        p.box(at, (w + jut * 2, d + jut * 2, h - floor), wall, z=floor, spin=spin)
+    else:
+        p.box(at, (w, d, h), wall, spin=spin)
+    p.gable_roof(at, w + 0.12 + jut * 2, d + 0.1 + jut * 2, pitch, roof or rng.choice(("roof", "roof", "roof_brown")), z=h, spin=spin)
     if chimney:
         c = at + vr.turn(Vector((w * 0.28, d * 0.1, 0)), spin)
         p.box(c, (0.16, 0.16, h + pitch + 0.12), "rock_dark", spin=spin)
 
     def quad(x, y, half, z0, z1, mat, off, end=False):
-        """A rectangle on a wall's face, off from it; x along the ridge, y across it."""
+        """A rectangle on a wall's face, off from it; x along the ridge, y across it. On the upper storey it sits out with the wall."""
+        off += jut if z0 >= floor else 0.0
         side = Vector((0, 1, 0)) if end else Vector((1, 0, 0))
         face = Vector((x, y, 0)) + (Vector((off if x > 0 else -off, 0, 0)) if end else Vector((0, off if y > 0 else -off, 0)))
-        points = [face - side * half + Vector((0, 0, z0)), face + side * half + Vector((0, 0, z0)), face + side * half + Vector((0, 0, z1)), face - side * half + Vector((0, 0, z1))]
+        plate([face - side * half + Vector((0, 0, z0)), face + side * half + Vector((0, 0, z0)), face + side * half + Vector((0, 0, z1)), face - side * half + Vector((0, 0, z1))], x, y, mat, end)
+
+    def brace(x, y, s0, z0, s1, z1, end=False):
+        """A slanting timber on the upper storey's face, from (s0, z0) to (s1, z1) along it."""
+        off = jut + 0.01
+        out = Vector((off if x > 0 else -off, 0, 0)) if end else Vector((0, off if y > 0 else -off, 0))
+        along = Vector((0, 1, 0)) if end else Vector((1, 0, 0))
+        base = Vector((x if end else 0.0, 0.0 if end else y, 0)) + out
+        n = Vector((-(z1 - z0), s1 - s0)).normalized() * 0.018
+        plate([base + along * (s + a * n.x) + Vector((0, 0, z + a * n.y)) for s, z, a in ((s0, z0, 1), (s0, z0, -1), (s1, z1, -1), (s1, z1, 1))], x, y, "timber", end)
+
+    def plate(points, x, y, mat, end):
         turned_points = [at + vr.turn(q, spin) for q in points]
         out = vr.turn(Vector((x, 0, 0)) if end else Vector((0, y, 0)), spin)
         verts = [p.bm.verts.new(q) for q in turned_points]
@@ -130,8 +150,8 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
     def door(x, y, end=False):
         assert end or abs(x) + 0.16 <= w / 2, f"a door at {x} hangs off a wall {w} long"
         p.doors.append((at + vr.turn(Vector((x, y, 0)), spin), vr.turn(Vector((x, 0, 0)) if end else Vector((0, y, 0)), spin).normalized()))
-        quad(x, y, 0.13, 0.0, min(0.8, h - 0.08), paint if paint != "trunk" else "timber", 0.012, end)
-        quad(x, y, 0.16, 0.0, min(0.85, h - 0.03), "trunk", 0.006, end)
+        quad(x, y, 0.13, 0.0, min(0.8, floor - 0.08), paint if paint != "trunk" else "timber", 0.012, end)
+        quad(x, y, 0.16, 0.0, min(0.85, floor - 0.03), "trunk", 0.006, end)
 
     def shutters(x, y):
         if paint != "trunk":
@@ -150,8 +170,8 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
         """Blocky leaves climbing a wall in a wandering line, with a few flowers."""
         def leaf(along, half, z0, z1, mat, off):
             quad(x, y + along, half, z0, z1, mat, off, True) if end else quad(x + along, y, half, z0, z1, mat, off)
-        leaf(0.0, 0.02, 0.0, h - 0.04, "timber", 0.008)
-        for k in range(int((h - 0.1) / 0.15)):
+        leaf(0.0, 0.02, 0.0, floor - 0.04, "timber", 0.008)
+        for k in range(int((floor - 0.1) / 0.15)):
             z = 0.03 + k * 0.15
             lean = 0.03 * math.sin(k * 1.7 + (x + y) * 9)
             leaf(lean, 0.085 - 0.015 * (k % 2), z, z + 0.17, "vine" if k % 2 else "vine_light", 0.01)
@@ -179,6 +199,28 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
         quad(x, y, 0.1, 0.0, 0.62, "timber", 0.012, end)
         quad(x, y, 0.13, 0.0, 0.66, "trunk", 0.006, end)
 
+    if timber:  # the frame: corner posts and slanting braces on the upper storey, and posts on the lower
+        for wall_x in (-w / 2, w / 2):
+            for wall_y in (-d / 2, d / 2):
+                quad(wall_x - 0.02 if wall_x > 0 else wall_x + 0.02, wall_y, 0.025, 0.0, floor - 0.03, "timber", 0.006)
+                quad(wall_x + jut - 0.02 if wall_x > 0 else wall_x - jut + 0.02, wall_y, 0.025, floor, h, "timber", 0.006)
+                quad(wall_x, wall_y - 0.02 if wall_y > 0 else wall_y + 0.02, 0.025, 0.0, floor - 0.03, "timber", 0.006, True)
+                quad(wall_x, wall_y + jut - 0.02 if wall_y > 0 else wall_y - jut + 0.02, 0.025, floor, h, "timber", 0.006, True)
+        for wall_y in (-d / 2, d / 2):
+            for sd in (-1, 1):
+                brace(0.0, wall_y, sd * (w / 2 - 0.02), floor + 0.02, sd * (w / 2 - 0.2), h - 0.02)
+        for wall_x in (-w / 2, w / 2):
+            for sd in (-1, 1):
+                brace(wall_x, 0.0, sd * (d / 2 - 0.02), floor + 0.02, sd * (d / 2 - 0.16), h - 0.02, True)
+    for ax, width in awning:
+        n = max(3, int(width / 0.14))
+        for k in range(n):
+            q = at + vr.turn(Vector((ax - width / 2 + width * (k + 0.5) / n, -d / 2 - 0.1, 0)), spin)
+            p.box_rot(q + Vector((0, 0, floor - 0.12)), (width / n, 0.26, 0.03), ("awning_a", "awning_b")[k % 2], Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(-0.35, 3, "X"))
+    if sign is not None:
+        q = at + vr.turn(Vector((sign, -d / 2, 0)), spin)
+        p.box(q + vr.turn(Vector((0, -0.09, 0)), spin), (0.03, 0.18, 0.03), "timber", z=floor - 0.1, spin=spin)
+        p.box(q + vr.turn(Vector((0, -0.14, 0)), spin), (0.03, 0.14, 0.17), "paint_green", z=floor - 0.28, spin=spin)
     if not end_door and front_door:
         door(-0.12 * w if door_x is None else door_x, -d / 2)
     for y in (-d / 2, d / 2):
@@ -222,7 +264,7 @@ def fitted_cottage(p, rng, at, w, d, spin, h=1.0, pitch=0.62, roof=None, wall=No
 FOOTING = 0.07  # how high a house's foundation stands
 
 
-def footing(p, cells, h):
+def footing(p, cells, h, stone="rock"):
     """A stone foundation over exactly these cells, its edge on the cells' own outline, so the blocked cells read as one shape."""
     corners = fc.cell_loop(cells)
     inset = hk.CELL_FLATS / 2 * (1 - fc.GAP)
@@ -231,12 +273,12 @@ def footing(p, cells, h):
         a, b = (q - corners[k - 1]).normalized(), (corners[(k + 1) % len(corners)] - q).normalized()
         left_a, left_b = Vector((-a.y, a.x, 0)), Vector((-b.y, b.x, 0))
         outline.append(q + (left_a + left_b) * (inset / (1 + left_a.dot(left_b))))
-    p.prism(outline, 0.0, h, "rock", side_mat="rock_dark")
+    p.prism(outline, 0.0, h, stone, side_mat="rock_dark")
 
 
-def on_footing(p, cells, make):
-    """A house on its foundation: whatever make adds stands on top of the stone."""
-    footing(p, cells, FOOTING)
+def on_footing(p, cells, make, stone="rock"):
+    """A house on its foundation: whatever make adds stands on top of the stone. stone: darker where the ground round it is paved."""
+    footing(p, cells, FOOTING, stone)
     n = len(p.bm.verts)
     make()
     for v in list(p.bm.verts)[n:]:
@@ -484,10 +526,53 @@ def yard_broom(p, rng, at, spin=0.0):
     vr.frustum(p, at, at + rot @ Vector((0, 0, 0.22)), 0.11, 0.035, "thatch", segments=5)
 
 
+def yard_cloth(p, rng, at, spin=0.0):
+    """Bolts of cloth on a low trestle, in three colours, their ends to the camera."""
+    for sd in (-1, 1):
+        p.box(at + vr.turn(Vector((sd * 0.2, 0, 0)), spin), (0.05, 0.3, 0.2), "timber", spin=spin)
+    p.box(at, (0.54, 0.3, 0.03), "boards", z=0.2, spin=spin)
+    for x, z, c in ((-0.16, 0.3, "patch_red"), (0.0, 0.3, "paint_blue"), (0.16, 0.3, "flower_yellow"), (-0.08, 0.44, "paint_teal"), (0.08, 0.44, "awning_b")):
+        q = at + vr.turn(Vector((x, 0, 0)), spin)
+        p.log(q, 0.075, 0.34, c, spin=spin + math.pi / 2, z=z, segments=6)
+
+
+def yard_sacks(p, rng, at, spin=0.0):
+    """Fat sacks of grain, open at the top."""
+    for x, y, r in ((-0.15, 0.02, 0.15), (0.15, 0.03, 0.14), (0.0, -0.12, 0.13)):
+        q = at + vr.turn(Vector((x, y, 0)), spin)
+        p.blob(q, r, "sack", z=r * 0.95, squash=1.0)
+        lathe(p, q, ((r * 1.6, r * 0.5, "sack"), (r * 1.95, r * 0.55, "sack")), "hay", segments=5)
+
+
+def yard_produce(p, rng, at, spin=0.0):
+    """Two open crates heaped with apples and oranges."""
+    for x, y, c in ((-0.17, 0.0, "apple"), (0.17, -0.02, "fruit")):
+        q = at + vr.turn(Vector((x, y, 0)), spin)
+        p.box(q, (0.3, 0.28, 0.2), "crate", spin=spin)
+        for dx, dy in ((-0.07, -0.05), (0.07, -0.04), (0.0, 0.06)):
+            p.blob(q + vr.turn(Vector((dx, dy, 0)), spin), 0.07, c, z=0.22, squash=0.9)
+
+
+def yard_jars(p, rng, at, spin=0.0):
+    """Tall pottery jars for oil and wine, stoppered."""
+    for x, y, tall in ((-0.15, 0.03, 0.46), (0.13, 0.04, 0.38), (0.0, -0.12, 0.3)):
+        q = at + vr.turn(Vector((x, y, 0)), spin)
+        lathe(p, q, ((0.0, 0.05, "terracotta"), (tall * 0.55, 0.11, "terracotta"), (tall * 0.85, 0.06, "terracotta"), (tall, 0.05, "log_end")), "log_end", segments=6)
+
+
+def yard_cheese(p, rng, at, spin=0.0):
+    """Wheels of cheese stacked on a board."""
+    p.box(at, (0.5, 0.3, 0.04), "boards", spin=spin)
+    for x, y, z, r in ((-0.11, 0.0, 0.04, 0.13), (-0.11, 0.0, 0.13, 0.12), (0.13, -0.01, 0.04, 0.12)):
+        q = at + vr.turn(Vector((x, y, 0)), spin) + Vector((0, 0, z))
+        lathe(p, q, ((0.0, r * 0.95, "cheese"), (0.045, r, "cheese"), (0.09, r * 0.95, "cheese")), "cheese_cut", segments=7)
+
+
 def yard_crate(p, rng, at, spin=0.0):
     p.box(at, (0.32, 0.32, 0.32), "crate", spin=spin + 0.4)
 
 
+FLOOR = 0.9  # where a townhouse's upper storey starts
 DOORSTEP = 0.55  # how far out from a door its way stays clear
 
 
@@ -500,7 +585,7 @@ def clear_of_doors(p, thing, n):
             assert not (0.0 <= d.dot(out) <= DOORSTEP and abs(d.dot(across)) <= 0.16), f"{p.name}: {thing.__name__} stands in front of a door"
 
 
-def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard=(), **kw):
+def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard=(), stone="rock", **kw):
     """A house and its household things on these cells' stone. wall_w, wall_d: its walls, along and across its ridge; x: its middle, east of the cells' middle.
     gable: ridge north to south, an end to the camera. lean: the east end of its length a low shed. wing: (x, width, length), a lower gabled wing running south.
     yard: (thing, x, y, spin) from the cells' middle, about as much behind the house as before it, as the camera turns all the way round."""
@@ -526,7 +611,7 @@ def house(cells, wall_w, wall_d, x=0.0, gable=False, lean=False, wing=None, yard
                 n = len(p.bm.verts)
                 thing(p, rng, mid + Vector((tx, ty, 0)), tspin)
                 clear_of_doors(p, thing, n)
-        on_footing(p, cells, build_it)
+        on_footing(p, cells, build_it, stone)
     make.layout = dict(cells=cells, wall_w=wall_w, wall_d=wall_d, x=x, gable=gable, wing=wing, yard=yard)
     return make
 
@@ -565,13 +650,39 @@ def goods(p, rng):
         p.cylinder(at, 0.15, 0.42, "trunk", segments=8)
 
 
-def stall_at(p, rng, at, spin):
-    grown(p, 1.28, at, lambda: vr.stall(p, rng, at, spin, extras=False))
+def market_stall(p, rng, at, spin, stripes=("awning_a", "awning_b"), goods=("fruit", "hay", "lily")):
+    """The tiles' stall, true to scale, with its own stripes and goods."""
+    def make():
+        p.box(at, (0.8, 0.4, 0.38), "crate", spin=spin)
+        for dx in (-0.38, 0.38):
+            for dy in (-0.18, 0.18):
+                p.box(at + vr.turn(Vector((dx, dy, 0)), spin), (0.04, 0.04, 0.9), "trunk", spin=spin)
+        for k in range(4):
+            p.box(at + vr.turn(Vector((-0.3 + 0.2 * k, 0, 0)), spin), (0.2, 0.55, 0.03), stripes[k % 2], z=0.9, spin=spin)
+        for k in range(3):
+            p.blob(at + vr.turn(Vector((-0.25 + 0.25 * k, 0.02, 0)), spin), 0.08, goods[k % len(goods)], z=0.42, squash=0.7)
+    grown(p, 1.28, at, make)
 
 
-def stalls_row(p, rng):
-    for c in fc.centres(LINE3):
-        stall_at(p, rng, c, math.radians(-30))
+STALLS = {"stall": (("awning_a", "awning_b"), ("fruit", "cabbage", "fruit")), "stall_blue": (("paint_blue", "awning_b"), ("patch_red", "flower_yellow", "paint_teal")), "stall_green": (("paint_green", "cheese"), ("apple", "apple", "cabbage"))}
+
+
+def stall_at(p, rng, at, spin, kind="stall"):
+    market_stall(p, rng, at, spin, *STALLS[kind])
+
+
+def stalls_row(kind):
+    def make(p, rng):
+        for c in fc.centres(LINE3):
+            stall_at(p, rng, c, math.radians(-30), kind)
+    return make
+
+
+def wares(p, rng):
+    """Sacks, jars and cheese set out on the paving."""
+    yard_sacks(p, rng, Vector((-0.1, 0.17, 0)))
+    yard_jars(p, rng, Vector((0.22, -0.1, 0)))
+    yard_cheese(p, rng, Vector((-0.16, -0.24, 0)))
 
 
 def wagon(p, rng):
@@ -667,11 +778,22 @@ KIT = {
         "J": ("goods", SINGLE, goods),
     },
     "market_town": {
-        "P": ("townhouse_3", TRIANGLE, lambda p, r: building(p, r, vr.townhouse, eaves=(0.2, 0.26), tall=1.15)),
-        "D": ("townhouse_row", LINE3, lambda p, r: house_row(p, r, vr.townhouse, eaves=(0.2, 0.26), tall=1.1)),
+        # Plans use P or 5 for a townhouse on three cells, 2 or 3 for one on four, as in the village; render_village_maps.py picks the kinds in turn.
+        "P": ("town_3_side", TRIANGLE, house(TRIANGLE, 1.06, 0.74, X3, timber=True, h=1.62, pitch=0.6, stone="flagstone", roof="roof", wall="wall", chimney=True, paint="paint_red", upstairs=True, door_x=0.3, awning=((-0.2, 0.46),), back_windows=(-0.25,), back_upper=(0.0, 0.3), yard=((yard_produce, -0.35, -0.69, 0.0), (yard_flowers, -0.36, 0.62, 0.0), (yard_pots, 0.86, 0.0, math.pi / 2), (yard_small_pot, 0.06, 0.54, 0.0)))),
+        "5": ("town_3_gable", TRIANGLE, house(TRIANGLE, 0.78, 0.96, X3, timber=True, h=1.62, pitch=0.6, stone="flagstone", gable=True, roof="roof_brown", wall="wall_warm", paint="paint_teal", vines=(-0.3,), back_windows=(0.2,), back_upper=(-0.2,), yard=((yard_jars, -0.34, -0.72, 0.0), (yard_rain_barrel, -0.54, -0.34, 0.0), (yard_cloth, 0.84, 0.0, math.pi / 2), (yard_barrels, -0.38, 0.72, 0.0), (yard_broom, 0.19, 0.44, 0.0)))),
+        "6": ("town_3_cross", TRIANGLE, house(TRIANGLE, 1.06, 0.74, X3, timber=True, h=1.62, pitch=0.6, stone="flagstone", wing=(-0.22, 0.46, 0.74), front_door=False, roof="roof", wall="wall", paint="paint_blue", chimney=True, upstairs=True, back_door=0.3, back_windows=(-0.3,), back_upper=(0.1,), yard=((yard_cheese, 0.84, 0.03, math.pi / 2), (yard_small_pot, 0.14, -0.56, 0.0), (yard_chair, -0.62, -0.52, 0.0), (yard_bench, -0.34, 0.56, 0.0), (yard_pots, -0.34, 0.82, 0.0)))),
+        "2": ("town_4_long", DIAMOND, house(DIAMOND, 1.62, 0.76, timber=True, h=1.62, pitch=0.6, stone="flagstone", door_x=-0.56, roof="roof_brown", wall="wall", chimney=True, paint="paint_green", upstairs=True, awning=((-0.04, 0.6),), sign=0.38, back_windows=(-0.5, 0.2), back_upper=(-0.3, 0.45), back_boxes=(-0.5,), yard=((yard_cloth, 0.0, -0.62, 0.0), (yard_sacks, 1.1, 0.0, 0.0), (yard_lantern, -1.0, -0.18, 0.0), (yard_broom, -0.98, 0.14, 0.0), (yard_jars, -0.14, 0.62, 0.0), (yard_crate, 0.3, 0.62, 0.0)))),
+        "3": ("town_4_gable", DIAMOND, house(DIAMOND, 0.78, 1.2, timber=True, h=1.62, pitch=0.6, stone="flagstone", gable=True, roof="roof", wall="wall_warm", paint="paint_red", back_windows=(0.24,), back_upper=(-0.24,), yard=((yard_produce, 0.94, -0.14, math.pi / 2), (yard_crate, 0.9, 0.26, 0.0), (yard_sacks, -0.92, -0.08, 0.0), (yard_small_pot, -0.92, 0.32, 0.0), (yard_pot, 0.31, -0.56, 0.0), (yard_small_pot, -0.34, -0.6, 0.0), (yard_jars, -0.21, 0.65, 0.0), (yard_small_pot, 0.3, 0.6, 0.0)))),
+        "4": ("town_4_cross", DIAMOND, house(DIAMOND, 1.5, 0.76, timber=True, h=1.62, pitch=0.6, stone="flagstone", wing=(0.0, 0.5, 0.74), front_door=False, roof="roof", wall="wall", chimney=True, paint="paint_teal", upstairs=True, back_door=-0.55, back_windows=(0.1,), back_upper=(-0.2, 0.35), yard=((yard_produce, 1.04, 0.0, math.pi / 2), (yard_trough, -1.06, 0.02, math.pi / 2), (yard_pot, -0.38, -0.56, 0.0), (yard_pot, 0.38, -0.56, 0.0), (yard_bench, 0.08, 0.56, 0.0), (yard_cheese, 0.04, 0.82, 0.0)))),
         "Y": ("stall", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0)),
-        "I": ("stalls_3", LINE3, stalls_row),
+        "8": ("stall_blue", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0, "stall_blue")),
+        "E": ("stall_green", SINGLE, lambda p, r: stall_at(p, r, ZERO, 0.0, "stall_green")),
+        "I": ("stalls_3", LINE3, stalls_row("stall")),
+        "D": ("stalls_3_blue", LINE3, stalls_row("stall_blue")),
+        "Z": ("stalls_3_green", LINE3, stalls_row("stall_green")),
         "J": ("goods", SINGLE, goods),
+        "U": ("wares", SINGLE, wares),
+        "Q": ("cart", SINGLE, lambda p, r: bf.short_cart(p, r, "sack")),
         "N": ("well", SINGLE, well),
     },
     "fortified_town": {
@@ -725,9 +847,10 @@ def build():
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
-    for mark, (kind, cells, _) in KIT["village"].items():
-        if kind.startswith("cottage_"):
-            check_inside(bpy.data.objects[f"ob_village_{kind}"], cells)
+    for v in ("village", "market_town"):
+        for mark, (kind, cells, _) in KIT[v].items():
+            if kind.startswith(("cottage_", "town_")):
+                check_inside(bpy.data.objects[f"ob_{v}_{kind}"], cells)
     bf.check_overhangs(col)
     for o in sorted(col.objects, key=lambda o: o.name):
         o.data.calc_loop_triangles()
