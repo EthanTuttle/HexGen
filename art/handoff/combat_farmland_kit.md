@@ -1,12 +1,12 @@
-# Combat farmland kit hand-off (combat_farmland_v12, combat_maps_farmland_v5)
+# Combat farmland kit hand-off (combat_farmland_v13, combat_maps_farmland_v7)
 
 Sixteen custom farmland combat maps, four per variant: three terrain maps and one path map. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest and plains kits: see [combat_forest_kit.md](combat_forest_kit.md) and [combat_plains_kit.md](combat_plains_kit.md).
 
-- **Models:** `art/export/combat_farmland.glb` (from `art/combat/combat_farmland_v12.blend`), `art/export/combat_maps_farmland.glb` (`art/combat/combat_maps_farmland_v5.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_farmland.glb` (from `art/combat/combat_farmland_v13.blend`), `art/export/combat_maps_farmland.glb` (`art/combat/combat_maps_farmland_v7.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_farmland.json`, the same format as `combat_maps.json`, plus `"kind": "path"` on path maps. `variant` is `windmill_country`, `haunted_homesteads`, `raided_farms` or `cider_orchards`.
 - **Scripts:** `art/scripts/build_farmland_cells.py`, `art/scripts/render_farmland_maps.py` (the plans, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
-- **Previews:** `art/preview/farmland_maps_all_v6.png`, `farmland_maps_<variant>_v6.png`, `farmland_maps_turned_v6.png`, props `farmland_obstacles_v6.png`.
+- **Previews:** `art/preview/farmland_maps_all_v8.png`, `farmland_maps_<variant>_v7.png`, `farmland_maps_turned_v7.png`, props `farmland_obstacles_v7.png`.
 
 ## Pieces
 

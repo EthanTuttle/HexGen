@@ -29,7 +29,7 @@
  },
  "battlefield_mound": {
   "cells": 37,
-  "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side, a banner at its foot. Nowhere is far from the top, so the fight is over who stands on it.",
+  "idea": "A small field with a raised mound in the middle, two stepped ways up its south side, a banner at its foot. Nowhere is far from the top, so the fight is over who stands on it.",
   "kind": "terrain",
   "shape": "small hex",
   "walkable": 36
@@ -64,7 +64,7 @@
  },
  "cider_orchards_terrace": {
   "cells": 74,
-  "idea": "A raised terrace in the orchard, steps and a ramp up its south side, apple trees all round. Whoever's on top looks down over the trees' feet.",
+  "idea": "A raised terrace in the orchard, two stepped ways up its south side, apple trees all round. Whoever's on top looks down over the trees' feet.",
   "kind": "terrain",
   "shape": "round oval",
   "walkable": 64
@@ -134,7 +134,7 @@
  },
  "deep_forest_groves": {
   "cells": 114,
-  "idea": "Wide ground with groves dotted over it, a big boulder and a rise of raised rock in the west with one stair up. No front line: lanes run between the groves and anyone can be flanked.",
+  "idea": "Wide ground with groves dotted over it, a big boulder and a rise of raised rock in the west with one way up. No front line: lanes run between the groves and anyone can be flanked.",
   "kind": "terrain",
   "shape": "wide oval",
   "walkable": 91
@@ -239,7 +239,7 @@
  },
  "heartwood_great_tree": {
   "cells": 100,
-  "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with an earth ramp stands by the party.",
+  "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with a stepped way up stands by the party.",
   "kind": "terrain",
   "shape": "large oval",
   "walkable": 79
@@ -281,7 +281,7 @@
  },
  "heartwood_shelf": {
   "cells": 93,
-  "idea": "A ridge of raised rock crosses the map's middle, cut by two gaps, with steps and ramps up from both sides. Hold the gaps, or take the top: each side picks what to force.",
+  "idea": "A ridge of raised rock crosses the map's middle, cut by two gaps, with stepped ways up from both sides. Hold the gaps, or take the top: each side picks what to force.",
   "kind": "terrain",
   "shape": "rectangle",
   "walkable": 84
@@ -351,7 +351,7 @@
  },
  "stormy_plains_scarp": {
   "cells": 102,
-  "idea": "A cliff at the north with a broad terrace of raised ground under it, stepped down to the burnt field. Enemies hold the terrace; there's one stair and one ramp, a long way apart.",
+  "idea": "A cliff at the north with a broad terrace of raised ground under it, stepped down to the burnt field. Enemies hold the terrace; there are two stepped ways up, a long way apart.",
   "kind": "terrain",
   "shape": "rectangle",
   "walkable": 77

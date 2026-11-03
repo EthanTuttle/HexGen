@@ -267,14 +267,14 @@ T . . . T
   h . s  
    k T   
     T    """},
-    "cider_orchards_terrace": {"size": "round oval", "idea": "A raised terrace in the orchard, steps and a ramp up its south side, apple trees all round. Whoever's on top looks down over the trees' feet.", "foes": BANDITS, "plan": """
+    "cider_orchards_terrace": {"size": "round oval", "idea": "A raised terrace in the orchard, two stepped ways up its south side, apple trees all round. Whoever's on top looks down over the trees' feet.", "foes": BANDITS, "plan": """
    . v .   
   . . x .  
  T . . . T 
 . H H H . .
  . H W . T 
 . H H H . .
- . ^ . / . 
+ . ^ . ^ . 
 T . . . . T
  . c . . . 
 . . T . . .

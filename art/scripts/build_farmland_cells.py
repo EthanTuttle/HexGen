@@ -29,7 +29,7 @@ fc.ROCK.update({"windmill_country": ("rock", "rock_dark", "grass_ink"), "haunted
 fc.BARK.update({"windmill_country": "trunk", "haunted_homesteads": "bark_grey", "raided_farms": "char", "cider_orchards": "trunk"})
 ZERO, SINGLE, LINE3, TRIANGLE, FLOWER7 = pc.ZERO, pc.SINGLE, pc.LINE3, pc.TRIANGLE, pc.FLOWER7
 
-hk.PALETTE.update({"stack": "#BFA873", "stack_dark": "#99865A", "stack_light": "#CDB98A", "ash": "#8D877B", "burnt_wood": "#5C5044"})
+hk.PALETTE.update({"stack": "#D1B668", "stack_dark": fc.mix("#D1B668", "#000000", 0.2), "stack_light": fc.mix("#D1B668", "#FFFFFF", 0.15), "ash": "#8D877B", "burnt_wood": "#5C5044"})
 for v in VARIANTS:
     g = hk.PALETTE[GROUND[v]]
     hk.PALETTE.update({f"cell_{v}_a": g, f"cell_{v}_b": fc.mix(g, "#FFFFFF", 0.05), f"cell_{v}_c": fc.mix(g, "#000000", 0.05),
