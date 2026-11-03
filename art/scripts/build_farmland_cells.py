@@ -22,7 +22,7 @@ import variants as vr  # noqa: E402
 
 VARIANTS = ["windmill_country", "haunted_homesteads", "raided_farms", "cider_orchards"]
 GROUND = {"windmill_country": "plains", "haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass"}
-BARE = {"windmill_country": "worn_track", "haunted_homesteads": "dead_earth", "raided_farms": "worn_track", "cider_orchards": "worn_track"}
+BARE = {v: "road" for v in VARIANTS}  # the tile tracks' colour
 FIELD = {"windmill_country": "hay", "haunted_homesteads": "withered_soil", "raided_farms": "scorched", "cider_orchards": None}
 fc.ROCK.update({"windmill_country": ("rock", "rock_dark", "grass_ink"), "haunted_homesteads": ("rock_shade", "bark_grey", None),
                 "raided_farms": ("rock_dark", "rock_shade", None), "cider_orchards": ("rock", "rock_dark", "grass_ink")})

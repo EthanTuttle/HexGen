@@ -78,7 +78,7 @@
  },
  "dark_wood_furrow": {
   "cells": 107,
-  "idea": "A furrow worn by something dragged, strewn with bones, runs the length of the map to a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait where it ends.",
+  "idea": "A straight furrow worn by something dragged, strewn with bones, runs the length of the map to a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait where it ends.",
   "kind": "path",
   "shape": "tall oval",
   "walkable": 87
@@ -155,10 +155,10 @@
  },
  "deep_forest_stone_path": {
   "cells": 111,
-  "idea": "An old stone path winding through pines, with mossy marker stones beside it. The path is the only long clear run; the pines break up everything to either side.",
+  "idea": "An old stone path in a long soft curve through pines, with mossy marker stones beside it. The path is the only long clear run; the pines break up everything to either side.",
   "kind": "path",
   "shape": "big square",
-  "walkable": 92
+  "walkable": 91
  },
  "fey_wood_crescent": {
   "cells": 37,
@@ -267,7 +267,7 @@
  },
  "heartwood_prayer_path": {
   "cells": 121,
-  "idea": "A lantern-lit prayer path up the map, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.",
+  "idea": "A prayer path up the map, under wooden gates, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.",
   "kind": "path",
   "shape": "tall rectangle",
   "walkable": 100
