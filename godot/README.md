@@ -496,7 +496,51 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - Working out a route up, climbing a ledge, and a real rise with the party on it, the worst frame of each.
 - Touch on the plateau: tapping raised ground on a real screen.
 - The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
+- **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (255 ms on the Mac), and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
+
+## Desert kit (tiles v60)
+
+Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (add `--shots` for `screens/desert_*.png`, and `--perf` for timings) checks all of it and ends `DESERT DONE`. `tools/canyon_check.gd` compares the ports with the Python (commands in the tool's header); 40 random regions, 0 differ, with one known gap: a lane's first section, at z = 0 exactly, can differ in width by up to 0.72 m, since which side of a band's line a point falls on comes down to float32 against double.
+
+| Item | Where | How |
+| --- | --- | --- |
+| Tier 0 desert, wasteland, Sphinx | `sand.gd`, brought up to `sand.py` v60 | `LOOKS`, the dune, `sphinx_turn`, `sphinx_routes`, ruins in corners by steps from the Sphinx, props off the routes. Its routes are a path graph, so the party stops before the altar in file |
+| Badlands | `desert_lands.gd`, `MapBoard._update_badlands` | Corner features by the tile that holds them, so they sink with it. A later tile can change the corners it touches. Each corner's tiles are sorted, where the Python takes the dict's order |
+| Raider Stronghold | `DesertLands.stronghold_routes`, `MapBoard.walk_z` | Always turn 3. Heights follow the route like a ledge's, so no collision for the mesa or ramp. Walking through the tile keeps to the ground |
+| Oasis | `DesertLands.oasis_tiles`, `pool_ring`, `bazaar_routes` | Two converted tiles, `Game.new_region`. Flow thickens toward both |
+| Ripples | `DesertLands.oasis_ripples`, `MapBoard._add_ripples` | World space at 25 degrees. One mesh a tile, not a node per ripple: each is that piece's plain strip. Their reach is a fixed number, not the map's, so a later tile moves none |
+| Canyon rock, lanes, dwellings, Echo Cave | `canyon.gd` | Generated once when the region finishes, off the main thread (`MapBoard.start_canyon`), one mesh to a tile so the tile transition and culling work as usual. No slab, no kit pieces |
+| Routes and walls | `MapBoard._canyon_graph`, `edge_open`, `canyon_open` | Corridors as a path graph; a closed edge is refused when planning a walk. Height comes from `walk_z`, so **the canyon has no collision** |
+| Silhouette through rock | `shaders/mini_silhouette.gdshader`, `PartyWalker._update_silhouette` | An overlay with an inverted depth test that reads the stencil the rock writes, so only rock sets it off. On only while the party's in a canyon |
+| `shimmer`, `glint` | `desert_fx.gd`, called from `FarmFx.for_piece` | Shimmer reads the screen, and fades out at night. Glint is sparks plus a soft glow at night. `Kit` now also reads the extras of nodes with no mesh, as `oasis_centre` is |
+| `fire`, `smoke` | `FarmFx` | As elsewhere |
+| Stall detector | `scripts/game/stall_watch.gd` | On any check, demo or touch run: prints `STALL` with the game's state after 60 s with nothing moving. Test output only |
+
+**Where the engine differs from `canyon.py`:** a wall's facing comes from the triangle's highest corner, not a test of the field beside it, and skirts are drawn on both sides. The preview renders both sides of every face, so neither shows there; here both showed the sky. Hulls (`_loft`) wind outward for the same reason.
+
+### Numbers (Mac, Mobile renderer, phone size)
+
+| | |
+| --- | --- |
+| The art's 12-tile region | 41,850 triangles, 3,487 a tile, worst tile 4,004 (hand-off: 41,439, about 3,450; budget 4,816). The difference is mainly the skirts' second side and different random stones |
+| Generating it | About 255 ms: field 68 ms, mesh 185 ms (plain Python about 450 ms; the hand-off expected GDScript to be slower, and it isn't) |
+| Finishing in play | Off the main thread. Worst frame while generating 9.4 ms; worst frame at the swap, with the retile, 25.8 ms; commit 9 ms |
+| Worst other desert tile | 4,806 triangles, the Sphinx's |
+| Draw calls and triangles | Canyon at the opening zoom 274 and 183,000; badlands 1,104 and 489,000; oasis 516 and 333,000; wasteland 1,513 and 687,000, each with whatever else is in view of the debug map |
+| Frame time | Reads 8.3 ms everywhere, a 120 Hz cap even with vsync off, so it says nothing |
+| Sand retile | Placing a tile next to sand: 117 ms for 5 tiles. A 12-tile sand region changing look: 395 ms on the main thread, inside the transition's sink |
+
+### PLACEHOLDER, for Ethan or the planner
+
+- **Adding a tile to a finished canyon (unsolved: hand-off → Open item):** it joins the region, as design/02 says, but stays plain desert, and no wall, entrance or rock changes (`Game.region_look`). An old entrance facing it still opens onto it. A tile that fills a hole can have no way in. Nothing here is a design decision.
+- **Stopping on the pool's tile:** the kit routes across it but gives no stop, so the party stands on the ring, on the side toward the camera.
+- **Looks:** shimmer strength and speed, the silhouette's colour and strength, glint size and count, the night glow.
+- **Silhouette:** it shows a mini's inner parts too, since the pass doesn't hide a mini's own surfaces.
+
+### Accepted rough spots (hand-off)
+
+A base clip at shallow junctions; plate-like shoulders on lanes; no ground-colour fade inside the canyon's edge (the neighbour's slab does fade toward it). Design/07's "overhangs and arches" aren't built, as the rock is a height field; Ethan approved it without them.
 
 ## Terrains and region variants (tiles v13)
 
@@ -522,7 +566,7 @@ What's ported, and from where:
 | Hills mountains: a lone tile's peak, a third of one mountain on each corner shared by three hills tiles, half of one on an edge shared by two | `map_board.gd` `_build_tile` | `render_preview.build_map` |
 | Ranges (tiles v11): a hills tile holding parts of two or more mountains adds `<name>_ridge_knot` in its middle and a `ridge_edge` / `ridge_corner` toward each part, turned like it; highlands have their own taller set | `map_board.gd` `_build_tile` | `render_preview.build_map`; rule in `design/06 Multiplayer & tech.md` |
 | Swamp pools across joined edges, ruins streets across joined edges | the kit's `edge_same` pieces, nothing extra | |
-| Desert sand: world-space swells, flat near other terrain, cacti, rocks and bushes; the wasteland's lower swells, cracked flats, buried columns, walls, statues, bones and dead trees | `scripts/sand.gd` | `sand.py` (and `build_tiles.cactus`), line by line, with the same hashes and random numbers |
+| Desert sand: world-space swells, flat near other sand or terrain, cacti, rocks and bushes; the wasteland's lower swells, cracked flats, buried columns, walls, statues, bones and dead trees | `scripts/sand.gd` | `sand.py` (and `build_tiles.cactus`), with the same hashes and random numbers: see Desert kit |
 | Variant pieces: their terrain's base recoloured with the variant's ground colour, `<variant>_centre`, edges picked by the terrain (a variant next to its plain terrain counts as joined) | `scripts/variants.gd` (`GROUND`), `map_board.gd` | `variants.py` (`VARIANTS`), `render_preview.build_map` and `linked` |
 | The shared `kit` material (tiles v9): colours in the vertex colours | `map_board.gd` `_setup_materials` turns on vertex colour as albedo | `hexkit.OWN_MATERIAL` |
 | Windmills on about half the windmill country tiles | `map_board.gd` | the preview's rule, `hash01(q, r, 7) < 0.5` |

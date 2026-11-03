@@ -54,6 +54,8 @@ var _footprints: Array[MeshInstance3D] = []
 var _entered := {}                      # tiles the hero has stepped onto this walk (a detour can cross back)
 var _rock_at := {}                       # grid point -> what its rock adds to a step's cost, till the map changes
 var _rock_version := -1
+var _silhouette_on := false             # the minis' silhouettes through canyon rock are on
+var _silhouette: ShaderMaterial
 var _ledge_tops := PackedVector2Array() # where this stretch meets a ledge
 const JOIN := 5                         # route samples (about 1.2 m) either side of a blocked stretch
 
@@ -118,7 +120,7 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 ## DOCS (Exploration screen -> Walking): on a town or farm tile the party stands at the hub in the tight line, after a
 ## fight too. One already in that line stays in it; else it takes a line along the tile's streets. False on other tiles.
 func _hub_line(tile: Vector2i) -> bool:
-	if not map.tile_node(tile) or not Variants.terrain_of(map.terrains.get(tile)) in ["village", "farmland", "river"]:
+	if not map.tile_node(tile) or not (Variants.terrain_of(map.terrains.get(tile)) in ["village", "farmland", "river"] or map.walks_in_file(tile)):
 		return false
 	var graph := map.path_graph(tile)
 	if graph.stand == null:
@@ -554,6 +556,9 @@ static func _arc(pts: PackedVector2Array, centre: Vector2, radius: float, to: fl
 
 func _set_path(pts: PackedVector2Array, heights: PackedFloat32Array) -> void:
 	_path = pts
+	for k in pts.size():   # the canyon's and the Stronghold's heights come from their routes, like a ledge's
+		if is_nan(heights[k]):
+			heights[k] = map.walk_z(pts[k])
 	_heights = heights
 	_len = PackedFloat32Array([0.0])
 	for k in range(1, pts.size()):
@@ -834,6 +839,7 @@ func _trail_s(time: float) -> float:
 # --- Every frame ----------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	_update_silhouette()
 	if walking:
 		if not holding:
 			_step(delta)
@@ -905,7 +911,7 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 	# companion walks beside it): pushed in toward the route as far as it takes, spreading back out slowly.
 	var squeeze := minf(1.0, m.squeeze + delta * Rules.SQUEEZE_RATE)
 	var height := _height_at(s) if m.leg.is_empty() or s >= m.join else NAN
-	if map.gates.has(GroundCover.tile_at(_point_at(s))) or map.water_shapes.has(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses, or on a water tile's line
+	if map.gates.has(GroundCover.tile_at(_point_at(s))) or map.water_shapes.has(GroundCover.tile_at(_point_at(s))) or map.walks_in_file(GroundCover.tile_at(_point_at(s))):   # single file between a fenced tile's crops and houses, or on a water tile's line
 		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 2.0)
 	elif not is_nan(_height_at(s + Rules.LEDGE_NARROW)) or not is_nan(_height_at(s - Rules.LEDGE_NARROW)):
 		squeeze = maxf(0.0, m.squeeze - delta * Rules.SQUEEZE_RATE * 3.0)   # a ledge is one base wide
@@ -944,6 +950,21 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 		_footstep(m, p, wet)
 
 
+## Rock is held low only for the default camera, so a turned one can hide a mini: while the party's in a canyon its
+## minis' silhouettes show through rock (DOCS: design/07 -> Region variant looks; shaders/mini_silhouette.gdshader).
+func _update_silhouette() -> void:
+	var hero: Vector3 = members[0].node.position
+	var on := map.canyons.has(GroundCover.tile_at(Vector2(hero.x, -hero.z))) or map.canyons.has(_tile)
+	if on == _silhouette_on:
+		return
+	_silhouette_on = on
+	if _silhouette == null:
+		_silhouette = ShaderMaterial.new()
+		_silhouette.shader = load("res://shaders/mini_silhouette.gdshader")
+	for m in members:
+		(m.body as MeshInstance3D).material_overlay = _silhouette if on else null
+
+
 # --- Ground ----------------------------------------------------------------------------
 
 ## The ground's height at a plan point: the hills' and mountains' surfaces and the desert sand (they have
@@ -953,7 +974,8 @@ func ground(p: Vector2) -> float:
 	var q := PhysicsRayQueryParameters3D.create(Hex.to3(p, 40.0), Hex.to3(p, -2.0), _level(p))
 	var hit := space.intersect_ray(q)
 	if hit.is_empty():
-		return Variants.RAISE if map.raised.has(GroundCover.tile_at(p)) else 0.0
+		var z := map.walk_z(p)
+		return z if not is_nan(z) else Variants.RAISE if map.raised.has(GroundCover.tile_at(p)) else 0.0
 	return maxf(0.0, (hit.position as Vector3).y)
 
 
@@ -978,6 +1000,10 @@ func _feel(m: Dictionary, p: Vector2) -> Dictionary:
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Hex.to3(p + o, 40.0), Hex.to3(p + o, -2.0), level))
 		# Nothing under a corner: flat land, or on raised ground past the lip, where the middle's height stands in.
 		var y := 0.0 if level == 1 else at[0].y if k > 0 else Variants.RAISE
+		if level == 1 and hit.is_empty():
+			var z := map.walk_z(p + o)
+			if not is_nan(z):
+				y = z
 		if not hit.is_empty():
 			y = maxf(0.0, (hit.position as Vector3).y)
 			on = on or (hit.collider as Object).get_meta("mountain", false)
@@ -1331,8 +1357,8 @@ func _footstep(m: Dictionary, p: Vector2, wet: bool) -> void:
 	if wet:
 		_burst(node.position + Vector3(0, 0.3, 0), Color("#E8F4FA"), 10, 0.45, 1.8, -9.8, 0.035)
 		_ripple(node.position)
-	elif terrain in Sand.DESERTS:
-		_burst(node.position + Vector3(0, 0.05, 0), Color(Hex.colour(terrain), 0.7), 5, 0.9, 0.5, 0.15, 0.09)
+	elif Sand.LOOKS.has(terrain):
+		_burst(node.position + Vector3(0, 0.05, 0), Color(Hex.colour(Sand.LOOKS[terrain]), 0.7), 5, 0.9, 0.5, 0.15, 0.09)
 		_footprint(node, m.side)
 
 

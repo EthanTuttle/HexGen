@@ -46,6 +46,11 @@ const PALETTE := {
 	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A",
 	# town variants (hexkit.COLOURS, tiles v50)
 	"mud_ground": "#CDB48A", "pale_paving": "#B7BF9F", "lantern_red": "#E5432D",
+	# desert variants (hexkit.COLOURS, tiles v60)
+	"badlands_ground": "#DDBD92", "oasis_ground": "#EAD9AE", "oasis_water": "#4FC9C4", "oasis_ripple": "#DFC99A",
+	"canyon_top": "#DBA877", "canyon_rust_top": "#C87A4E", "canyon_lane_a": "#E7BF8D", "canyon_lane_b": "#E2B785",
+	"canyon_lane_c": "#DEAF7E", "canyon_cream": "#F0CE96", "canyon_orange": "#E2914F", "canyon_rust": "#B85C35",
+	"canyon_floor": "#EBC795", "canyon_side": "#8F5233", "adobe": "#D9AE7E", "cave_dark": "#141210", "sphinx_light": "#DDBB86",
 }
 
 

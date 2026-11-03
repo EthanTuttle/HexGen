@@ -16,6 +16,7 @@ func _ready() -> void:
 
 
 func _check(ok: bool, what: String) -> void:
+	StallWatch.beat(what)
 	print("PLAINS %s: %s" % ["OK" if ok else "FAIL", what])
 	if not ok:
 		failed += 1

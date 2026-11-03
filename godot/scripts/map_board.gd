@@ -85,6 +85,12 @@ var _links := {}                       # Vector4i(a, b) of two neighbours -> the
 var _shape := {}                       # raised tile -> what its cliffs were built from, to spot changes
 var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
 var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
+## The canyon (Canyon; art/handoff/desert_kit.md): generated once when a region finishes, and kept.
+var canyons := {}                      # canyon tile -> {openset, entrances, landmark, turn} of its region
+var canyon_stats := []                 # each generated region's triangles and times, for the check's report
+var _canyon_meshes := {}               # canyon tile -> its mesh
+var _canyon_mat: StandardMaterial3D    # marks the stencil, for the minis' silhouette through rock
+var _features := {}                    # badlands tile -> what stands at its corners (DesertLands.badlands_features)
 var _clip_mats := {}                   # surface material -> its cut-off version while a region rises
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
 var time_of_day: TimeOfDay
@@ -100,6 +106,8 @@ static func variant_map() -> Dictionary:
 
 ## Joined for edge pieces: the same terrain (a region variant counts as its terrain), or linked terrains.
 static func linked(a, b) -> bool:
+	if Variants.is_canyon(a) or Variants.is_canyon(b):
+		return false   # a canyon has no edge pieces, and meets other land as rock
 	if a != null and b != null:
 		var ka := Variants.wedges_of(a)
 		var kb := Variants.wedges_of(b)
@@ -119,6 +127,7 @@ func build(map := MAP) -> void:
 	_update_gates()
 	_update_streets()
 	_update_water()
+	_update_badlands()
 	for t: Vector2i in terrains:
 		_build_tile(t)
 	for t: Vector2i in terrains:
@@ -157,6 +166,8 @@ func retile(changes: Dictionary) -> void:
 	touched.merge(_update_raised())
 	touched.merge(_update_gates())
 	touched.merge(_update_streets())
+	if changes.values().any(func(n): return n in ["badlands", "raiderstronghold"]):
+		_update_badlands()
 	for t: Vector2i in touched:
 		_build_tile(t)
 	for t: Vector2i in touched:
@@ -170,12 +181,125 @@ func retile(changes: Dictionary) -> void:
 
 
 ## Works out a finished region's trails to its landmark (LandmarkFlow.flow and turn), once, when it finishes.
-## Call before retiling the region, so its tiles pick their trail and near pieces.
-func set_flow(region: Array, landmark: Vector2i) -> void:
+## Call before retiling the region, so its tiles pick their trail and near pieces. variant: the Sphinx and Echo Cave turn to
+## show their face, and the Stronghold its ramp, to the default camera. pool: an oasis has two tiles to thicken toward.
+func set_flow(region: Array, landmark: Vector2i, variant := "", pool = null) -> void:
 	var f := LandmarkFlow.flow(region, landmark)
 	flow_dist.merge(f.dist, true)
 	flow_toward.merge(f.toward, true)
 	landmark_turns[landmark] = LandmarkFlow.turn(landmark, f.dist, f.toward)
+	if variant in ["wasteland", "canyon"]:
+		landmark_turns[landmark] = Sand.sphinx_turn(landmark, region)
+	elif variant == "badlands":
+		landmark_turns[landmark] = DesertLands.STRONGHOLD_TURN
+	if pool != null:
+		var g := LandmarkFlow.flow(region, pool)
+		for t: Vector2i in g.dist:
+			flow_dist[t] = mini(flow_dist.get(t, 99), g.dist[t])
+		landmark_turns[pool] = LandmarkFlow.turn(pool, g.dist, g.toward)
+
+
+## A region's canyon, generated here and now (the debug spawn). start_canyon does it off the main thread.
+func generate_canyon(region: Array, landmark: Vector2i) -> void:
+	_keep_canyon(Canyon.generate(region, landmark, landmark_turns.get(landmark, 0), GroundCover.hash01(landmark.x, landmark.y, 80)))
+
+
+## Starts generating a finished region's canyon off the main thread. Poll canyon_done, then call finish_canyon.
+func start_canyon(region: Array, landmark: Vector2i) -> Dictionary:
+	var job := {result = null}
+	var tiles := region.duplicate()
+	var turn: int = landmark_turns.get(landmark, 0)
+	var seed_value := GroundCover.hash01(landmark.x, landmark.y, 80)
+	job.id = WorkerThreadPool.add_task(func(): job.result = Canyon.generate(tiles, landmark, turn, seed_value))
+	return job
+
+
+func canyon_done(job: Dictionary) -> bool:
+	return WorkerThreadPool.is_task_completed(job.id)
+
+
+func finish_canyon(job: Dictionary) -> void:
+	WorkerThreadPool.wait_for_task_completion(job.id)
+	_keep_canyon(job.result)
+
+
+func _keep_canyon(r: Dictionary) -> void:
+	var t0 := Time.get_ticks_usec()
+	var info := {openset = r.openset, entrances = r.entrances, landmark = r.landmark, turn = r.turn}
+	for t: Vector2i in r.tiles:
+		canyons[t] = info
+		_canyon_meshes[t] = (r.pieces[t] as Piece).mesh()
+		_graphs.erase(t)
+	canyon_stats.append({tiles = r.tiles.size(), triangles = r.triangles, per_tile = r.per_tile, field_ms = r.field_ms, mesh_ms = r.mesh_ms,
+			commit_ms = (Time.get_ticks_usec() - t0) / 1000.0, entrances = r.entrances.size()})
+	if "--perf" in OS.get_cmdline_user_args():
+		print("PERF canyon %d tiles: %d triangles; field %d ms, mesh %d ms off the main thread, commit %d ms on it" % [r.tiles.size(), r.triangles, r.field_ms, r.mesh_ms, canyon_stats[-1].commit_ms])
+
+
+## Whether tile t's edge i can be walked: a canyon's closed edges are rock (DOCS: design/02 -> Canyon walls).
+func canyon_open(t: Vector2i, i: int) -> bool:
+	var c: Dictionary = canyons[t]
+	return Canyon.is_open(c.openset, c.entrances, t, i)
+
+
+## Where the party walks in file on a line of its own: the canyon's corridors, and the landmarks with routes of their own.
+func walks_in_file(t: Vector2i) -> bool:
+	return canyons.has(t) or terrains.get(t) in ["sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool"]
+
+
+## The ground's height at a plan point where the tile gives it rather than collision, or NAN: on the canyon's lanes and
+## floor (an entrance's height comes from its lane's line, everywhere else is the floor) and the Stronghold's ramp and top.
+func walk_z(p: Vector2) -> float:
+	var t := GroundCover.tile_at(p)
+	if canyons.has(t):
+		return _canyon_z(t, p - Hex.tile_position(t.x, t.y))
+	if terrains.get(t) == "raiderstronghold":
+		var local := Water.turned(p - Hex.tile_position(t.x, t.y), -landmark_turns.get(t, 0))
+		var hit := _along_line(local, DesertLands.ramp_walk())
+		return hit.y if hit.x < 0.8 else 0.0
+	return NAN
+
+
+func _canyon_z(t: Vector2i, local: Vector2) -> float:
+	var c: Dictionary = canyons[t]
+	var best := INF
+	var z := Canyon.FLOOR
+	for e: Vector3i in c.entrances:
+		if e.x == t.x and e.y == t.y:
+			var hit := _along_line(local, Canyon.ramp_line(t, e.z, c.landmark, c.turn))
+			if hit.x < best:
+				best = hit.x
+				z = hit.y
+	if best == INF:
+		return Canyon.FLOOR
+	for i in 6:   # nearer another corridor than the lane: that's floor
+		if Canyon.is_open(c.openset, [], t, i):
+			var line := Canyon.line_to_junction(t, i, c.landmark, c.turn)
+			for k in range(1, line.size()):
+				if Canyon.seg_dist(local, line[k - 1], line[k]) < best - 0.01:
+					return Canyon.FLOOR
+	return z
+
+
+## (how far p is from a line of (x, y, z) points, the line's z at the nearest place).
+static func _along_line(p: Vector2, line: PackedVector3Array) -> Vector2:
+	var best := Vector2(INF, 0.0)
+	for k in range(1, line.size()):
+		var a := Vector2(line[k - 1].x, line[k - 1].y)
+		var b := Vector2(line[k].x, line[k].y)
+		var q := Geometry2D.get_closest_point_to_segment(p, a, b)
+		var d := p.distance_to(q)
+		if d < best.x:
+			var f := 0.0 if a == b else a.distance_to(q) / a.distance_to(b)
+			best = Vector2(d, lerpf(line[k - 1].z, line[k].z, f))
+	return best
+
+
+## Works out what stands at the badlands' corners, by the tile that holds each. Later tiles can change the corners they touch.
+func _update_badlands() -> void:
+	_features.clear()
+	for f in DesertLands.badlands_features(terrains, flow_dist):
+		_features.get_or_add(f[0], []).append(f)
 
 
 ## Works out the fence gates; returns the tiles whose gates changed, as they need rebuilding.
@@ -213,6 +337,9 @@ func _update_streets() -> Dictionary:
 ## Whether a party can step between neighbours a and b: fences are only crossed through a gate (DOCS: Walking), a
 ## cliff only by its ledge, and from one village tile to the next only by a street.
 func edge_open(a: Vector2i, b: Vector2i) -> bool:
+	var edge: int = Hex.NEIGHBOURS.find(b - a)
+	if (canyons.has(a) and not canyon_open(a, edge)) or (canyons.has(b) and not canyon_open(b, (edge + 3) % 6)):
+		return false
 	if raised.has(a) != raised.has(b):
 		return not climb_between(a, b).is_empty()
 	if streets.has(a) and streets.has(b):
@@ -465,6 +592,10 @@ func _update_smoke() -> void:
 func path_graph(t: Vector2i) -> TilePaths:
 	if not _graphs.has(t) and water_shapes.has(t):
 		_graphs[t] = _water_graph(t)
+	if not _graphs.has(t) and canyons.has(t):
+		_graphs[t] = _canyon_graph(t)
+	if not _graphs.has(t) and terrains.get(t) in ["sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool"]:
+		_graphs[t] = _desert_graph(t)
 	if not _graphs.has(t):
 		var pieces := []
 		var node := tile_node(t)
@@ -493,8 +624,8 @@ func _has_trail(name) -> bool:
 
 ## The ground cover of tile t, kept off its and its neighbours' pieces' no_cover circles (plans, world space).
 func _add_cover(t: Vector2i) -> void:
-	if raised.has(t):
-		return   # raised ground holds no cover, not even tufts fading in from neighbours
+	if raised.has(t) or canyons.has(t):
+		return   # raised ground holds no cover, not even tufts fading in from neighbours; nor does the canyon's floor
 	var clear := []
 	for c: Vector2i in [t, t + Hex.NEIGHBOURS[0], t + Hex.NEIGHBOURS[1], t + Hex.NEIGHBOURS[2], t + Hex.NEIGHBOURS[3],
 			t + Hex.NEIGHBOURS[4], t + Hex.NEIGHBOURS[5]]:
@@ -670,6 +801,15 @@ func _build_tile(t: Vector2i) -> void:
 	var at := Hex.tile_position(t.x, t.y)
 	var high := raised.has(t)
 	node.position.y = lift.get(t, 0.0)
+	if Variants.is_canyon(name):   # no slab and no pieces: the region's generated rock is its ground
+		if _canyon_meshes.has(t):
+			var rock := MeshInstance3D.new()
+			rock.name = "canyon"
+			rock.mesh = _canyon_meshes[t]
+			rock.material_override = _canyon_material()
+			rock.position = Hex.to3(at)
+			node.add_child(rock)
+		return
 	if not high:   # raised ground covers the tile, and a base's soil would stick out of the cliff
 		var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
 		base.set_surface_override_material(0, _ground)
@@ -701,8 +841,12 @@ func _build_tile(t: Vector2i) -> void:
 	var farm_fx := FarmFx.for_piece(name + centre, at, turn) if terrain != "village" else null   # towns: _town_smoke
 	if farm_fx:
 		node.add_child(farm_fx)
-	if terrain == "desert":
-		node.add_child(Sand.build_tile(terrains, t))
+	if name in Sand.LOOKS:
+		node.add_child(Sand.build_tile(terrains, t, flow_dist.get(t), landmark_turns.get(t, 0)))
+	if name == "oasis":
+		_add_ripples(node, t, at)
+	for f in _features.get(t, []):
+		Kit.place(node, _kit, f[1], Vector2(f[2], f[3]), deg_to_rad(f[4]))
 	if name == "bog":
 		node.add_child(_mist(at))
 	var fx := ForestFx.for_tile(name, at, t, landmark_turns.get(t, 0))
@@ -762,6 +906,31 @@ func _build_tile(t: Vector2i) -> void:
 		_add_ground_collision(node, terrain == "hills", high)
 	if high:
 		_add_cliffs(t, node, kit, at)
+
+
+## The oasis's wind ripples on this tile, all one way across the region (desert_lands.oasis_ripples), in one mesh rather than
+## a node per oasis_ripple piece; each is that piece's plain strip.
+func _add_ripples(node: Node3D, t: Vector2i, at: Vector2) -> void:
+	var p := Piece.new()
+	var col := Hex.colour("oasis_ripple")
+	for r in DesertLands.oasis_ripples(terrains, t):
+		p.box(Vector3(r[0] - at.x, r[1] - at.y, 0), Vector3(r[2], 0.05, 0.008), col, 0.01, deg_to_rad(DesertLands.RIPPLE_DEG))
+	if not p.is_empty():
+		var mi := p.instance("ripples")
+		mi.position = Hex.to3(at)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(mi)
+
+
+## The canyon's material: the kit's vertex colours, and it marks the stencil, for the silhouette through rock.
+func _canyon_material() -> StandardMaterial3D:
+	if _canyon_mat == null:
+		_canyon_mat = Piece.material().duplicate() as StandardMaterial3D
+		_canyon_mat.stencil_mode = BaseMaterial3D.STENCIL_MODE_CUSTOM
+		_canyon_mat.stencil_flags = BaseMaterial3D.STENCIL_FLAG_WRITE
+		_canyon_mat.stencil_compare = BaseMaterial3D.STENCIL_COMPARE_ALWAYS
+		_canyon_mat.stencil_reference = 1
+	return _canyon_mat
 
 
 ## The shared mountains on tile t: ["corner", i] where corner i has one, ["edge", i] where edge i has.
@@ -1049,6 +1218,47 @@ func wet_between(t: Vector2i, in_edge: int, out_edge: int) -> bool:
 			if wet_at(way[k - 1].lerp(way[k], u)):
 				return true
 	return false
+
+
+## A canyon tile's walk corridors, each from an open edge's midpoint to the tile's junction (canyon.route).
+func _canyon_graph(t: Vector2i) -> TilePaths:
+	var g := TilePaths.new()
+	var c: Dictionary = canyons[t]
+	var at := Hex.tile_position(t.x, t.y)
+	var lines := Canyon.tile_lines(t, c.openset, c.entrances, c.landmark, c.turn)
+	for e: int in lines:
+		g.add_line(lines[e], at)
+		g.edge_node[e] = g._node(at + lines[e][0])
+	g.stand = g._node(at + Canyon.junction(t, c.landmark, c.turn))
+	return g
+
+
+## The routes of the desert's landmarks, which aren't in their pieces' path data (desert_lands.py, sand.sphinx_routes).
+func _desert_graph(t: Vector2i) -> TilePaths:
+	var g := TilePaths.new()
+	var at := Hex.tile_position(t.x, t.y)
+	var turn: int = landmark_turns.get(t, 0)
+	var name: String = terrains[t]
+	if name == "oasispool":
+		# PLACEHOLDER: the kit routes across the pool but gives no place to stop: on the ring, on the side toward the camera.
+		var ring := DesertLands.pool_ring()
+		for k in ring.size():
+			g.add_line(PackedVector2Array([ring[k], ring[(k + 1) % ring.size()]]), at)
+		for e in 6:
+			var spoke := PackedVector2Array([Water.normal(e) * Hex.A, ring[e * 3]])
+			g.add_line(spoke, at)
+			g.edge_node[e] = g._node(at + spoke[0])
+		g.stand = g._node(at + ring[13])
+		return g
+	var routes: Dictionary = Sand.sphinx_routes(turn) if name == "sandstonesphinx" else DesertLands.stronghold_routes(turn) if name == "raiderstronghold" else DesertLands.bazaar_routes(turn)
+	for e: int in routes:
+		var line := PackedVector2Array()
+		for q in routes[e]:
+			line.append(Vector2(q.x, q.y))
+		g.add_line(line, at)
+		g.edge_node[e] = g._node(at + line[0])
+		g.stand = g._node(at + line[-1])
+	return g
 
 
 ## The routes across a water tile, as a graph like a piece's drawn paths (water.py has them, not the glb).
@@ -1386,6 +1596,7 @@ func _process(delta: float) -> void:
 		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
 		_lava.emission_energy_multiplier = (0.75 + 0.25 * sin(TAU * _time / 4.0)) * (0.8 + 2.0 * night)   # PLACEHOLDER: pulses slowly, glows at night
 		ForestFx.set_night(night)
+		DesertFx.set_night(night)
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 		for style in _water_mats:
 			_water_mats[style].set_shader_parameter("night", night)

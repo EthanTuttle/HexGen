@@ -11,8 +11,9 @@ static func meshes(path: String) -> Dictionary:
 		return _cache[path]
 	var root: Node = (load(path) as PackedScene).instantiate()
 	var out := {}
-	for child in root.find_children("*", "MeshInstance3D", true, false):
-		out[String(child.name)] = (child as MeshInstance3D).mesh
+	for child in root.find_children("*", "Node3D", true, false):   # a piece with no mesh can still have effect points (the oasis's open sand)
+		if child is MeshInstance3D:
+			out[String(child.name)] = (child as MeshInstance3D).mesh
 		if child.has_meta("extras"):
 			_paths[String(child.name)] = _path_extras(child.get_meta("extras"))
 	root.free()

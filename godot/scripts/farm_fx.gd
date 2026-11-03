@@ -35,6 +35,8 @@ static func for_piece(piece: String, at: Vector2, turn: int) -> Node3D:
 			"smoke": smokes.append(p)
 			"crows": holder.add_child(_crows(p))
 			"crackle": crackles.append(p)
+			"shimmer": holder.add_child(DesertFx.shimmer(p))
+			"glint": holder.add_child(DesertFx.glint(p, 0.28 if piece == "oasisbazaar_centre" else 1.5))
 	if not fires.is_empty():
 		holder.add_child(_particles(piece + "|fire", fires, 6, 0.6, _fire(), Vector3(0, 0.9, 0), 0.25))
 	if not smokes.is_empty():

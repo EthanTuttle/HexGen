@@ -132,12 +132,20 @@ func _ready() -> void:
 		var pc := PlainsCheck.new()
 		pc.game = self
 		add_child(pc)
+	elif "--desertcheck" in OS.get_cmdline_user_args():
+		var dc := DesertCheck.new()
+		dc.game = self
+		add_child(dc)
 	elif "--forestcheck" in OS.get_cmdline_user_args():
 		var fc := ForestCheck.new()
 		fc.game = self
 		add_child(fc)
 	if PhoneCheck.wanted():
 		add_child(PhoneCheck.new())
+	if debug_auto_cross:
+		var sw := StallWatch.new()
+		sw.game = self
+		add_child(sw)
 	if "--touchtest" in OS.get_cmdline_user_args():
 		var tt := TouchTest.new()
 		tt.game = self
@@ -281,9 +289,24 @@ func _warm_up() -> void:
 		var s := _slot_icon(party_tile, icon[0], icon[1], icon[2])
 		s.reparent(under)
 		s.position.y = -1.0
+	# The desert's: canyon rock, the minis' silhouette, heat shimmer.
+	var rock := MeshInstance3D.new()
+	rock.mesh = (map.slot_nodes.values()[0] as MeshInstance3D).mesh
+	rock.material_override = map._canyon_material()
+	rock.material_overlay = _silhouette_material()
+	rock.position = Hex.to3(at, -1.0)
+	under.add_child(rock)
+	var heat := DesertFx.shimmer(Hex.to3(at, -3.0))
+	under.add_child(heat)
 	for _f in 3:
 		await get_tree().process_frame
 	under.queue_free()
+
+
+func _silhouette_material() -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://shaders/mini_silhouette.gdshader")
+	return m
 
 
 ## Slots the held card can take light up (cream, pulsing, with the terrain's icon); slots it can't take
@@ -447,6 +470,11 @@ func new_region(terrain: String, tiles: Array[Vector2i], variant: String, landma
 			else Variants.TIER2_NAMES.get(variant, ["[Tier 2 %s variant]" % Rules.NAMES[terrain].to_lower(), "[landmark]"])
 	var region := {terrain = terrain, tiles = tiles, tier = tier, variant = variant, name = names[0],
 			landmark = names[1], landmark_tile = landmark_tile}
+	if variant == "oasis":   # DOCS (design/02 -> Landmarks): an oasis converts two, the pool tile and the Bazaar beside it
+		var two := DesertLands.oasis_tiles(tiles)
+		if not two.is_empty():
+			region.landmark_tile = two[0]
+			region.pool_tile = two[1]
 	regions.append(region)
 	for c in tiles:
 		finished[c] = regions.size() - 1
@@ -463,6 +491,12 @@ func _roll_tier2(terrain: String) -> String:
 ## The look a finished region's tile takes: its landmark's on the landmark tile (where the variant has landmark
 ## art), else the variant's.
 func region_look(region: Dictionary, c: Vector2i) -> String:
+	if c == region.get("pool_tile"):
+		return "oasispool"
+	# PLACEHOLDER (art/handoff/desert_kit.md -> Open item, unsolved): a tile added to a finished canyon joins the region but
+	# stays plain desert, its edges to the canyon staying rock, so no wall moves under the party. Ethan or the planner to decide.
+	if region.has("canyon_tiles") and not c in region.canyon_tiles:
+		return Variants.terrain_of(region.variant)
 	var lm: String = Variants.LANDMARK_OF.get(region.variant, "")
 	if lm == "" or c != region.landmark_tile or not _landmark_fits(lm, region.variant, c, region.tiles, {}):
 		return region.variant
@@ -474,7 +508,7 @@ func _set_flow(region: Dictionary) -> void:
 	if region.get("flowed", false) or not Variants.LANDMARK_OF.has(region.variant):
 		return
 	region.flowed = true
-	map.set_flow(region.tiles, region.landmark_tile)
+	map.set_flow(region.tiles, region.landmark_tile, region.variant, region.get("pool_tile"))
 
 
 ## A raised region comes up over a few seconds with dust and shaking, carrying the party, and nobody walks until it's
@@ -533,6 +567,7 @@ const DEBUG_RIVER_SHAPES := {   # channels for the delta and rapids, so islands 
 	"rapids": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, -1), Vector2i(3, -1), Vector2i(4, -2), Vector2i(-1, 0), Vector2i(-2, 1)],
 	"still_waters": DEBUG_PLAINS_SHAPE}
 const DEBUG_RIVER_T0 := [Vector2i(13, 3), Vector2i(14, 3), Vector2i(15, 2), Vector2i(16, 2), Vector2i(17, 1), Vector2i(17, 2), Vector2i(18, 1)]   # tier 0: a river into a small lake
+const DEBUG_DESERTS := ["wasteland", "badlands", "oasis", "canyon"]   # 12 tiles each, like plains; where's found at the spawn
 const DEBUG_HILLS_T0 := Vector2i(9, 2)    # tier 0: a hills group, and one lone tile beside it
 const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
 const DEBUG_FARMS := Vector2i(3, 3)      # tier 0: farmland in the middle and half the ring, village the other half
@@ -633,6 +668,7 @@ func spawn_forest_regions() -> void:
 			changes[x] = "village" if k < 3 else "farmland"
 			order[x] = order.size()
 			_debug_fill[x] = true
+	_spawn_deserts(changes)
 	# Plains between them, so the party can walk there (they show no cluster goal).
 	var land_now := changes.keys()
 	land_now.append(Rules.START_TILE)
@@ -645,6 +681,50 @@ func spawn_forest_regions() -> void:
 				_debug_fill[x] = true
 	map.retile(changes)
 	_refresh()
+
+
+## Debug: a 12-tile region of each desert variant and a tier 0 group, on free land out past the rest, with plains laid to them.
+func _spawn_deserts(changes: Dictionary) -> void:
+	for v: String in DEBUG_DESERTS:
+		var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_PLAINS_SHAPE:
+			tiles.append(anchor + s)
+		var region := new_region("desert", tiles, v, tiles[0])
+		_set_flow(region)
+		if v == "canyon":
+			region.canyon_tiles = tiles.duplicate()
+			map.generate_canyon(tiles, region.landmark_tile)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
+		_debug_road(anchor + Vector2i(-3, 3), changes)
+	var t0: Array = [Vector2i.ZERO]
+	t0.append_array(Hex.NEIGHBOURS)
+	var at := _free_spot(t0, changes)
+	for s: Vector2i in t0:
+		changes[at + s] = "desert"
+		order[at + s] = order.size()
+		_debug_fill[at + s] = true
+	_debug_road(at + Vector2i(-2, 2), changes)
+
+
+## Debug: the nearest place to the start where a shape, and a tile's margin round it, is empty.
+func _free_spot(shape: Array, changes: Dictionary) -> Vector2i:
+	for r in range(8, Rules.MAP_LIMIT):
+		for q in range(-r, r + 1):
+			for s in range(-r, r + 1):
+				var c := Vector2i(q, s)
+				if Rules.hex_distance(c, Rules.START_TILE) != r:
+					continue
+				var free := true
+				for x: Vector2i in shape:
+					for n in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(-1, 1), Vector2i(0, 1)]:
+						if map.terrains.has(c + x + n) or changes.has(c + x + n):
+							free = false
+				if free:
+					return c
+	return Vector2i(Rules.MAP_LIMIT, 0)
 
 
 ## Debug: plains from this tile back toward the start until they meet land, so the party can walk there.
@@ -669,6 +749,10 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 	if region.variant == "":
 		return
 	_set_flow(region)
+	var job := {}
+	if region.variant == "canyon" and not region.has("canyon_tiles"):
+		region.canyon_tiles = tiles.duplicate()
+		job = map.start_canyon(tiles, region.landmark_tile)
 	var todo := tiles.filter(func(c): return map.terrains[c] != region_look(region, c))
 	if todo.is_empty():
 		return
@@ -696,10 +780,16 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		tw.tween_interval(k * STEP)
 		tw.tween_property(node, "scale:y", 0.04, SINK).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await get_tree().create_timer((todo.size() - 1) * STEP + SINK).timeout
+	if not job.is_empty():   # the tiles wait flat if the rock isn't ready
+		while not map.canyon_done(job):
+			await get_tree().process_frame
+		map.finish_canyon(job)
 	var changes := {}
 	for c in todo:
 		changes[c] = region_look(region, c)
 	map.retile(changes)
+	if not job.is_empty() and map.canyons.has(party_tile):
+		party_node.place_at(party_tile)   # down on the floor, while the tile's flat
 	for k in todo.size():
 		var node := map.tile_node(todo[k])
 		node.scale.y = 0.04
@@ -1251,6 +1341,11 @@ func ground_point(screen: Vector2) -> Vector2:
 		if map.raised.has(GroundCover.tile_at(Vector2(high.x, -high.z))):
 			return Vector2(high.x, -high.z)
 	var p := o + d * (-o.y / d.y)
+	# Past the land's level over a canyon, the ray goes on down to its floor.
+	if map.canyons.has(GroundCover.tile_at(Vector2(p.x, -p.z))):
+		var low := o + d * ((Canyon.FLOOR - o.y) / d.y)
+		if map.canyons.has(GroundCover.tile_at(Vector2(low.x, -low.z))):
+			return Vector2(low.x, -low.z)
 	return Vector2(p.x, -p.z)
 
 

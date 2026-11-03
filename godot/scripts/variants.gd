@@ -15,7 +15,7 @@ const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
 	"plains": ["battlefield", "stormy_plains", "tourney_fields"],
 	"hills": ["snowy_peaks", "volcanic_peaks", "monastery_heights"],
 	"village": ["fortified_town", "slums", "scholars_town"],
-	"river": ["great_lake", "rapids", "still_waters"]}
+	"river": ["great_lake", "rapids", "still_waters"], "desert": ["badlands", "oasis", "canyon"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
@@ -26,7 +26,8 @@ const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark
 	"volcanic_peaks": ["Volcanic peaks", "Salamander Den"], "monastery_heights": ["Monastery heights", "Library"],
 	"fortified_town": ["Fortified town", "Keep"], "slums": ["Slums", "Black Market"],
 	"scholars_town": ["Scholars' town", "College"], "great_lake": ["Great lake", "Lake Serpent's Lair"],
-	"rapids": ["Rapids", "Troll Bridge"], "still_waters": ["Still waters", "Meditation Rock"]}
+	"rapids": ["Rapids", "Troll Bridge"], "still_waters": ["Still waters", "Meditation Rock"], "badlands": ["Badlands", "Raider Stronghold"],
+	"oasis": ["Oasis", "Oasis Bazaar"], "canyon": ["Canyon", "Echo Cave"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
@@ -36,7 +37,8 @@ const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "da
 	"highlands": "clanhall", "snowy_peaks": "yeticave", "volcanic_peaks": "salamanderden",
 	"monastery_heights": "library", "market_town": "tradinghouse", "fortified_town": "keep", "slums": "blackmarket",
 	"scholars_town": "college", "delta": "riverport", "great_lake": "serpentlair", "rapids": "trollbridge",
-	"still_waters": "meditationrock"}
+	"still_waters": "meditationrock", "wasteland": "sandstonesphinx", "badlands": "raiderstronghold", "oasis": "oasisbazaar",
+	"canyon": "echocave"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
@@ -46,12 +48,14 @@ const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "f
 	"clanhall": "highlands", "yeticave": "snowy_peaks", "salamanderden": "volcanic_peaks",
 	"library": "monastery_heights", "tradinghouse": "market_town", "keep": "fortified_town", "blackmarket": "slums",
 	"college": "scholars_town", "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids",
-	"meditationrock": "still_waters"}
+	"meditationrock": "still_waters", "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis",
+	"oasispool": "oasis", "echocave": "canyon"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
 	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
-	"library", "tradinghouse", "keep", "blackmarket", "college", "riverport", "serpentlair", "trollbridge", "meditationrock"]
+	"library", "tradinghouse", "keep", "blackmarket", "college", "riverport", "serpentlair", "trollbridge", "meditationrock",
+	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave"]
 
 ## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
 const RAISE := 5.0
@@ -78,7 +82,9 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"clanhall": "highland_grass", "yeticave": "snow_ground", "salamanderden": "ash_ground", "library": "hill_grass",
 	"fortified_town": "cobble", "slums": "mud_ground", "scholars_town": "pale_paving", "tradinghouse": "cobble",
 	"keep": "cobble", "blackmarket": "mud_ground", "college": "pale_paving", "great_lake": "plains", "rapids": "plains",
-	"still_waters": "plains", "riverport": "plains", "serpentlair": "plains", "trollbridge": "plains", "meditationrock": "plains"}
+	"still_waters": "plains", "riverport": "plains", "serpentlair": "plains", "trollbridge": "plains", "meditationrock": "plains",
+	"sandstonesphinx": "wasteland", "badlands": "badlands_ground", "raiderstronghold": "badlands_ground", "oasis": "oasis_ground",
+	"oasisbazaar": "oasis_ground", "oasispool": "oasis_ground", "canyon": "canyon_top", "echocave": "canyon_top"}
 
 static var _base := {}
 
@@ -101,6 +107,11 @@ static func terrain_of(name) -> String:
 ## Whose wedges a tile uses: its own, or its variant's for a centre-only landmark (variants.wedges_of).
 static func wedges_of(name: String) -> String:
 	return LANDMARKS[name] if name in LANDMARK_CENTRES else name
+
+
+## A canyon tile or its Echo Cave: part of the region's generated rock (Canyon), with no pieces of its own.
+static func is_canyon(name) -> bool:
+	return name != null and wedges_of(name) == "canyon"
 
 
 static func is_water(name) -> bool:

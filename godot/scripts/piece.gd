@@ -6,6 +6,8 @@ extends RefCounted
 var _st := SurfaceTool.new()
 var _empty := true
 var offset := Vector3.ZERO        # plan offset (x, y, z) added to every point
+var spin := 0.0                   # plan turn about the origin, before the offset (a part drawn in a turned frame)
+var triangles := 0
 
 static var _material: StandardMaterial3D
 
@@ -24,6 +26,9 @@ static func material() -> StandardMaterial3D:
 
 
 func _v(p: Vector3) -> Vector3:
+	if spin != 0.0:
+		var q := Vector2(p.x, p.y).rotated(spin)
+		p = Vector3(q.x, q.y, p.z)
 	p += offset
 	return Vector3(p.x, p.z, -p.y)
 
@@ -39,6 +44,7 @@ func tri(a: Vector3, b: Vector3, c: Vector3, col: Color) -> void:
 	_st.set_normal(n)
 	# Godot draws clockwise triangles as front faces.
 	_st.add_vertex(va); _st.add_vertex(vc); _st.add_vertex(vb)
+	triangles += 1
 	_empty = false
 
 
@@ -49,6 +55,7 @@ func tri_smooth(a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc
 		var n: Vector3 = k[1]
 		_st.set_normal(Vector3(n.x, n.z, -n.y).normalized())
 		_st.add_vertex(_v(k[0]))
+	triangles += 1
 	_empty = false
 
 
