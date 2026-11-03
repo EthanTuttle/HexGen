@@ -171,6 +171,10 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v64:** rapids rebuilt as a gorge cut below ground (`scripts/gorge.py`), with cut lanes to the water, bridges from ground to ground and a long, low Troll Bridge. Ethan approved it. Hand-off: `handoff/river_kit.md`.
+- **tiles_v63:** tiles_v61 with lava streaks kept off the ledges' corners. Ethan approved it. tiles_v62 is the rejected first Rapids gorge, on its own branch.
+- **tiles_v62:** (rejected) rapids as rock piles on the surface: a river gorge: a narrow channel between dark wet rock banks (`water.gorge_banks`), a rebuilt plain bridge with 25° ramps and room for a mini's base, and a wider search for bridge spots. Hand-off: `handoff/river_kit.md`.
+- **tiles_v61:** hills ledges on snowy and volcanic peaks get the canyon's cut-lane look and a broken lip, wider with a new walked line and foot (28.9°). `hay` is now #D1B668, the one hay and straw colour for tiles and combat maps. Hand-off: `handoff/hills_kit.md`, `handoff/farmland_kit.md`.
 - **tiles_v60:** desert round 5, with Ethan's ramp picks. Canyon entrances are paths cut between the walls (`scripts/canyon.py`), the Raider Stronghold's ramp is timber (`scripts/ramp_parts.py`), and the oasis's ripples run one way across the region (`oasis_ripple_*`, `desert_lands.oasis_ripples`).
 - **tiles_v59:** desert round 4. Canyon as a maze walked on the floor (`scripts/canyon.py`, `--canyon-maze`; not in the kit), wide badlands mesas at any corner (`badlands_kite_*`), Raider Stronghold on an angular mesa with a ramp that joins at both ends, oasis as open sand with camels, ramp-join checks. See `handoff/desert_kit.md`.
 - **tiles_v58:** desert round 3. Badlands mesas per tile corner (`desert_lands.badlands_features`), Raider Stronghold rebuilt, one oasis pool tile beside the Bazaar (`oasis_tiles`), and two canyon takes for comparison (`scripts/canyon_takes.py`, `--canyon-takes`; not in the kit). Also fixes a helper name clash in tiles_v57 that moved props on other pieces. See `handoff/desert_kit.md`.
