@@ -1,4 +1,6 @@
-"""A comparison of ways up with steps on every side, for Ethan to choose: not used by any map. Plans, JSON and heights stay as they are. The way up's cell keeps
+"""Retired: Ethan chose the long steps, now render_forest_maps.ramp_piece (Nov 3, 2026), so this no longer shows the original styles. Kept for reference.
+
+A comparison of ways up with steps on every side, for Ethan to choose: not used by any map. Plans, JSON and heights stay as they are. The way up's cell keeps
 its flat stone landing at 0.45, and steps run out from it into each neighbouring cell by what's there:
   low ground        steps down onto it
   raised ground     steps up into it, in a notch cut from that cell and its rock

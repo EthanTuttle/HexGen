@@ -1,4 +1,6 @@
-"""A comparison of crops and straw on combat maps, for Ethan to choose: not used by any map. Three farm maps as they are today beside a version with
+"""Retired: Ethan kept the tufts (Nov 3, 2026). Kept for reference.
+
+A comparison of crops and straw on combat maps, for Ethan to choose: not used by any map. Three farm maps as they are today beside a version with
 straight rows like the tiles' fields (build_tiles.crop_field: rows run straight across a block, on soil, in the tiles' crop colours), still walkable,
 and with one straw colour for haystacks and cart hay. A mini stands on a crop cell in each close view.
 

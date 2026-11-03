@@ -2,7 +2,7 @@
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_forest_maps.py
 Pass names after -- to render only those maps (for example -- deep_forest_gorge), --check to run the checks without
-rendering, --sheets to redo the sheets from the latest renders, --close for rock close-ups, --kit for the obstacles laid out, and --export for the engines' data: art/combat/combat_maps_vN.blend (each map's plate, shelves and cliffs)
+rendering, --sheets to redo the sheets from the latest renders, --close for rock close-ups, --kit for the obstacles laid out, --ways for a test plan with every side a way up can have, and --export for the engines' data: art/combat/combat_maps_vN.blend (each map's plate, shelves and cliffs)
 and art/export/combat_maps.json (each map's cells, placements and sample starts; format in art/handoff/combat_forest_kit.md). Uses the latest combat_cells, enemy_minis, giant_minis and standin_minis.
 Writes art/preview/forest_map_<map>_vN.png and the sheets forest_maps_<variant>_vN.png (never overwrites).
 
@@ -12,7 +12,7 @@ column of cells runs down one column of text, and each next column is half a cel
   T tree   O stump   R boulder   S standing stone   b bramble   (one cell each)
   G grove (2, 3 or 7 cells)   L fallen trunk (2 or 3 in a line)   B big boulder (3)   F giant mushrooms (3)
   E web-choked hollow (3)   Z bramble mass (3)   Q huge tree (7)   U big roots (3 in a line)
-  K cliff wall (any shape, made per map)   H raised ground, walkable   ^ stone steps up to it   / earth ramp up to it
+  K cliff wall (any shape, made per map)   H raised ground, walkable   ^ a way up: a landing at half height with steps into every neighbouring cell
   n a path map's path, walkable, drawn per variant from its tile trail: old stone slabs, stepping lights, a drag furrow or a prayer path
   g the same, under a wooden gate (a north-south stretch of heartwood's path)
   M marker stone (one cell)
@@ -52,8 +52,12 @@ MINI_MARKS = {"h": "standin_hero", "k": "standin_chelmsford", "s": "standin_smal
 NEIGHBOURS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
 GROUPED = {"G": "grove", "L": "log", "B": "boulder_3", "F": "mushrooms_3", "E": "hollow_3", "Z": "thicket_3", "Q": "great_7", "U": "roots_3"}
 SINGLE = {"T": "tree", "O": "stump", "S": "stone"}
-RAISED, RAMPS = "HWVX", "^/"
+RAISED, RAMPS = "HWVX", "^"
 RAISED_HEIGHT, CLIFF_HEIGHT = 0.9, 2.0
+HALF = RAISED_HEIGHT / 2  # a way up's landing
+LANDING = 0.46  # from a way up's middle to its landing's edge; a base's flat side is at 0.45
+# What runs out from a landing into each neighbour: how far from the way up's middle each tread reaches, and its height.
+FLIGHTS = {"down": ((0.56, 0.375), (0.66, 0.225), (0.76, 0.075)), "up": ((0.56, 0.6), (0.66, 0.75), (0.76, 0.9)), "level": ((0.505, HALF),), "blocked": ((0.49, 0.3), (0.52, 0.15)), "edge": ((0.5, HALF),)}
 BRUSH_Z = 0.26  # where the camera check samples a brush cell: above its plants
 ROAD_Z = 0.16  # the same for a path cell: above its slabs, caps and bones
 ROAD = "ng"
@@ -91,7 +95,7 @@ O k s T
  . . . 
   R T  
    T   """},
-    "deep_forest_groves": {"size": "wide oval", "idea": "Wide ground with groves dotted over it, a big boulder and a rise of raised rock in the west with one stair up. No front line: lanes run between the groves and anyone can be flanked.", "giant": "giant_wolf_3", "plan": """
+    "deep_forest_groves": {"size": "wide oval", "idea": "Wide ground with groves dotted over it, a big boulder and a rise of raised rock in the west with one way up. No front line: lanes run between the groves and anyone can be flanked.", "giant": "giant_wolf_3", "plan": """
     . . T . . T .    
    . G . . . . G .   
   . . G . A . . G T  
@@ -242,7 +246,7 @@ T . . . . T
   . . . .  
    . n .   
 """},
-    "heartwood_great_tree": {"size": "large oval", "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with an earth ramp stands by the party.", "plan": """
+    "heartwood_great_tree": {"size": "large oval", "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with a stepped way up stands by the party.", "plan": """
      . T .     
     . . . .    
    T . . . G   
@@ -255,18 +259,18 @@ v . U Q . U . .
 H . . Q . . . .
  H . . . . . . 
 H H . . . . O .
- H / . . . . T 
+ H ^ . . . . T 
   . k h s . .  
    . . . . .   
     . T . .    """},
-    "heartwood_shelf": {"size": "rectangle", "idea": "A ridge of raised rock crosses the map's middle, cut by two gaps, with steps and ramps up from both sides. Hold the gaps, or take the top: each side picks what to force.", "plan": """
+    "heartwood_shelf": {"size": "rectangle", "idea": "A ridge of raised rock crosses the map's middle, cut by two gaps, with stepped ways up from both sides. Hold the gaps, or take the top: each side picks what to force.", "plan": """
  . v T . w . T . 
 . . . y . x . . .
  . T . ^ . . T . 
 H H . H H H . H H
  H . . H H . . H 
 H . . H X H . . H
- ^ . . / . . . / 
+ ^ . . ^ . . . ^ 
 . . T . . . T , .
  . . h . . . . . 
 . k . . s . . . .
@@ -314,6 +318,19 @@ T . . . . T
  . . n . . 
 """},
 }
+
+
+WAY_CASES = """
+H H H H V
+ H H H H 
+H H H H H
+ ^ H H H 
+. ^ . . ^
+ O . . . 
+. . . . .
+ h k s . 
+. . . . .
+"""
 
 
 def parse(plan):
@@ -405,6 +422,14 @@ def middle_of(cells):
     return sum((hk.cell_position(*c) for c in cells), Vector((0, 0, 0))) / len(cells)
 
 
+def sample_z(cells, c, mark):
+    """Where the camera check samples a cell: above brush's own plants, a litter mark's height, a way up's landing, and a way up's lowest tread on a neighbour's outer part, as treads count as ground."""
+    z = BRUSH_Z if mark == "c" else ROAD_Z if mark in ROAD else 0.08 if mark == "," else HALF + 0.02 if mark in RAMPS else ground_z(mark) + 0.02
+    if mark not in RAISED and mark not in RAMPS and any(cells.get((c[0] + a, c[1] + b), " ") in RAMPS for a, b in NEIGHBOURS):
+        z = max(z, FLIGHTS["down"][-1][1] + 0.02)
+    return z
+
+
 def visibility(name, cells):
     """From how many camera angles each walkable cell shows, at the engine's tilt and opening distance, with the minis left
     out since they move. An obstacle's own cells aren't checked: what stands there is what shows."""
@@ -418,7 +443,7 @@ def visibility(name, cells):
         if mark not in WALKABLE:
             continue
         # Above brush's own plants, a litter mark's height, and the steps of a ramp at any of the points.
-        z = BRUSH_Z if mark == "c" else ROAD_Z if mark in ROAD else 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
+        z = sample_z(cells, c, mark)
         points = [hk.cell_position(*c) + Vector((0, 0, z))]
         points += [p + Vector((0.3 * math.cos(k * math.pi / 3), 0.3 * math.sin(k * math.pi / 3), 0)) for p in points[:1] for k in range(6)]
         seen[c] = seen_step[c] = 0
@@ -444,7 +469,7 @@ def ground_z(mark):
 
 def seen_default(scene, depsgraph, c, target, el, mark):
     cam = target + Vector((0, -math.cos(el), math.sin(el))) * ENGINE_DISTANCE
-    at = hk.cell_position(*c) + Vector((0, 0, 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02))
+    at = hk.cell_position(*c) + Vector((0, 0, 0.08 if mark == "," else HALF + 0.02 if mark in RAMPS else ground_z(mark) + 0.02))
     to = cam - at
     return not scene.ray_cast(depsgraph, at, to.normalized(), distance=to.length)[0]
 
@@ -470,7 +495,7 @@ def midpoints(corners):
     return loop
 
 
-def raised_piece(col, v, group):
+def raised_piece(col, v, group, cells):
     """The rock under a group of raised cells: full width at the top so every cell keeps its whole hex, and three thick ledges
     stepping out as it falls, the lowest just over the cells round it. Ground cells stand on top of it."""
     p = hk.Piece(f"raised_{min(group)}")
@@ -479,6 +504,9 @@ def raised_piece(col, v, group):
     loop = midpoints(fc.cell_loop(group))
     layers = [(-0.15, 0.0, 0.0), (-0.15, 0.22, 0.015), (-0.09, 0.28, 0.015), (-0.09, 0.6, 0.02), (-0.04, 0.66, 0.015), (-0.04, 0.95, 0.0), (0.0, 1.0, 0.0)]
     rings = [rock_ring(p, rng, loop, 0, inset, RAISED_HEIGHT * z - 0.01 * (z == 1.0), RAISED_HEIGHT * jag) for inset, z, jag in layers]
+    for ring in rings:
+        for w in ring:
+            clear_way_ups(w.co, cells)
     n = len(loop)
     for band, (a, b) in enumerate(zip(rings, rings[1:])):
         for k in range(n):
@@ -504,39 +532,108 @@ def clipped(outline, normal, at):
     return out
 
 
-def up_from(cells, c):
-    """The cell a ramp climbs to: the raised neighbour straight ahead when several touch it."""
-    near = [(c[0] + dq, c[1] + dr) for dq, dr in NEIGHBOURS if cells.get((c[0] + dq, c[1] + dr), " ") in RAISED]
-    assert near, f"ramp at {c} touches no raised ground"
-    aim = sum((hk.cell_position(*n) for n in near), Vector((0, 0, 0))) / len(near)
-    return min(near, key=lambda n: ((hk.cell_position(*n) - aim).length, n))
+def way_sides(cells, c):
+    """What each of a way up's six sides meets, with the side's direction in radians."""
+    for i, (dq, dr) in enumerate(NEIGHBOURS):
+        mark = cells.get((c[0] + dq, c[1] + dr))
+        kind = "edge" if mark is None else "up" if mark in RAISED else "level" if mark in RAMPS else "down" if mark in WALKABLE else "blocked"
+        yield kind, math.radians(60 * i - 30)
+
+
+def clear_way_ups(q, cells):
+    """Pushes a point of rock above a landing's height back from every way up: to the landing's edge, and to the end of a flight going up."""
+    if q.z <= HALF - 0.02:
+        return
+    for c, mark in cells.items():
+        if mark not in RAMPS:
+            continue
+        at = hk.cell_position(*c)
+        d = Vector((q.x - at.x, q.y - at.y, 0))
+        far = max(abs(d.x * math.cos(a) + d.y * math.sin(a)) for a in (math.pi / 6, math.pi / 2, 5 * math.pi / 6))
+        if not 0 < far < 0.77:
+            continue
+        angle = math.atan2(d.y, d.x)
+        up = any(kind == "up" and abs((angle - a + math.pi) % math.tau - math.pi) < math.radians(31) for kind, a in way_sides(cells, c))
+        reach = 0.77 if up else LANDING + 0.01
+        if far < reach:
+            d *= reach / far
+            q.x, q.y = at.x + d.x, at.y + d.y
+
+
+def way_tones(v):
+    """A dull stone for the treads, mixed from the variant's rock and ground."""
+    main = hk.PALETTE[fc.ROCK[v][0]]
+    worn = fc.mix(fc.mix(main, hk.PALETTE.get(f"cell_{v}_a", main), 0.25), "#FFFFFF", 0.12)
+    hk.PALETTE.update({f"way_{v}": worn, f"way_{v}_b": fc.mix(worn, "#000000", 0.12), f"way_{v}_c": fc.mix(worn, "#000000", 0.26)})
+    return f"way_{v}", f"way_{v}_b", f"way_{v}_c"
 
 
 def ramp_piece(col, v, cells, c):
-    """A way up on one cell: stone steps for ^, an earth ramp for /."""
-    at, up = hk.cell_position(*c), up_from(cells, c)
-    aim = (hk.cell_position(*up) - at).normalized()
-    p = hk.Piece(f"{'steps' if cells[c] == '^' else 'ramp'}_{c}")
-    main, side, top = fc.ROCK[v]
-    outline = [at + q for q in hk.hex_corners(hk.CELL_RADIUS, pointy=False)[::-1]]
-    low = at.dot(aim) - hk.CELL_FLATS / 2
-    if cells[c] == "^":
-        treads = 5
-        for k in range(treads):
-            p.prism(clipped(outline, aim, low + k * hk.CELL_FLATS / treads), RAISED_HEIGHT * k / treads, RAISED_HEIGHT * (k + 1) / treads,
-                    "rock" if k % 2 else "rock_shade" if v == "dark_wood" else main, side_mat=side)
-    else:
-        foot = [p.bm.verts.new(q) for q in outline]
-        head = [p.bm.verts.new(q + Vector((0, 0, RAISED_HEIGHT * (q.dot(aim) - low) / hk.CELL_FLATS + 0.02))) for q in outline]
-        p.bm.faces.new(head).material_index = p._slot("soil_light")
-        for k in range(6):
-            m = (k + 1) % 6
-            p.bm.faces.new((foot[k], foot[m], head[m], head[k])).material_index = p._slot(side)
-        for k in (0.2, 0.45, 0.7):  # logs set across the slope, so it reads as a way up
-            band = clipped(clipped(outline, aim, low + k * hk.CELL_FLATS), -aim, -(low + (k + 0.09) * hk.CELL_FLATS))
-            verts = [p.bm.verts.new(q + Vector((0, 0, RAISED_HEIGHT * (q.dot(aim) - low) / hk.CELL_FLATS + 0.05))) for q in band]
-            p.bm.faces.new(verts).material_index = p._slot("bark_dark")
+    """A way up on one cell, all in one mesh with nothing hidden: a flat landing at half height, and from each side what its neighbour calls for.
+    A flight's sides lie on the neighbour's own edges, so a notch in raised ground is that cell cut straight across (notched_cell)."""
+    at = hk.cell_position(*c)
+    p = hk.Piece(f"steps_{c}")
+    top, tread, riser = way_tones(v)
+    main = fc.ROCK[v][0]
+
+    def out(r, angle, z):
+        return at + Vector((math.cos(angle), math.sin(angle), 0)) * (r / math.cos(math.pi / 6)) + Vector((0, 0, z))
+
+    def face(points, mat, facing):
+        verts = [p.bm.verts.new(q) for q in points]
+        normal = (points[1] - points[0]).cross(points[2] - points[1])
+        p.bm.faces.new(verts if normal.dot(facing) > 0 else verts[::-1]).material_index = p._slot(mat)
+
+    def height(flight, r):
+        return next((z for outer, z in flight if r <= outer), 0.0)
+
+    sides = list(way_sides(cells, c))
+    up = Vector((0, 0, 1))
+    face([out(LANDING, a - math.pi / 6, HALF) for _, a in sides], top, up)
+    for k, (kind, a) in enumerate(sides):
+        flight, l, r0 = FLIGHTS[kind], a - math.pi / 6, LANDING
+        z0, facing = HALF, Vector((math.cos(a), math.sin(a), 0))
+        m = a + math.pi / 6
+        for n, (r1, z1) in enumerate(flight):
+            if z1 != z0:
+                face([out(r0, l, min(z0, z1)), out(r0, m, min(z0, z1)), out(r0, m, max(z0, z1)), out(r0, l, max(z0, z1))], riser, facing if z1 < z0 else -facing)
+            face([out(r0, l, z1), out(r1, l, z1), out(r1, m, z1), out(r0, m, z1)], (tread, top)[n % 2], up)
+            r0, z0 = r1, z1
+        if kind != "up" and kind != "level":
+            face([out(r0, l, 0.0), out(r0, m, 0.0), out(r0, m, z0), out(r0, l, z0)], main if kind == "edge" else riser, facing)
+        next_kind = sides[(k + 1) % 6][0]
+        if next_kind != kind:  # a wall where two sides' heights differ
+            stops = sorted({LANDING} | {s[0] for s in flight} | {s[0] for s in FLIGHTS[next_kind]})
+            for r_in, r_out in zip(stops, stops[1:]):
+                mid = (r_in + r_out) / 2
+                h0, h1 = height(flight, mid), height(FLIGHTS[next_kind], mid)
+                if abs(h0 - h1) > 0.001:
+                    tangent = Vector((-math.sin(m), math.cos(m), 0))
+                    face([out(r_in, m, min(h0, h1)), out(r_out, m, min(h0, h1)), out(r_out, m, max(h0, h1)), out(r_in, m, max(h0, h1))], main, tangent if h0 > h1 else -tangent)
     p.finish(col)
+
+
+def notched_cells(t, col, v, cells):
+    """Raised cells beside a way up, cut straight across where its flight comes up into them: each a mesh of its own, in place of the kit's cell."""
+    for c, mark in cells.items():
+        if mark not in RAISED:
+            continue
+        ways = [(c[0] + a, c[1] + b) for a, b in NEIGHBOURS if cells.get((c[0] + a, c[1] + b), " ") in RAMPS]
+        if not ways:
+            continue
+        at = hk.cell_position(*c)
+        tint = "abc"[(c[0] - c[1]) % 3]
+        for o in list(col.objects):
+            if o.get("piece", "").startswith(f"cell_{v}_ground") and (o.location.xy - at.xy).length < 0.01:
+                bpy.data.objects.remove(o)
+        outline = [at + q for q in hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]]
+        for w in ways:
+            way = hk.cell_position(*w)
+            d = (at - way).normalized()
+            outline = clipped(outline, d, way.dot(d) + FLIGHTS["up"][-1][0])
+        p = hk.Piece(f"notched_{c}")
+        p.prism([q + Vector((0, 0, 0)) for q in outline], RAISED_HEIGHT - 0.08, RAISED_HEIGHT, f"cell_{v}_{tint}", side_mat=fc.ROCK[v][0])
+        p.finish(col)
 
 
 def shaped_piece(col, v, group, mark):
@@ -720,10 +817,11 @@ def build_map(t, col, name):
             if rb.hash_cell(c) % 3 == 0 and all((c[0] + a, c[1] + b) in group or (c[0] + a, c[1] + b) not in cells for a, b in NEIGHBOURS):
                 rp.place(t, f"ob_{v}_tree_{'abc'[c[0] % 3]}", col, hk.cell_position(*c) + Vector((0, 0, CLIFF_HEIGHT * 0.98)), math.radians(60 * (rb.hash_cell(c) % 6)))
     for _, group in groups({c: "H" for c, mark in cells.items() if mark in RAISED}, "H"):
-        raised_piece(col, v, group)
+        raised_piece(col, v, group, cells)
     for c, mark in cells.items():
         if mark in RAMPS:
             ramp_piece(col, v, cells, c)
+    notched_cells(t, col, v, cells)
     if set(ROAD + "M") & set(cells.values()):
         road(col, v, cells)
     if m.get("ring"):
@@ -848,7 +946,7 @@ def export(maps, build, load, variant_of, stem):
             if mark in RAISED:
                 row["z"] = RAISED_HEIGHT
             elif mark in RAMPS:
-                row.update(z=RAISED_HEIGHT / 2, ramp="steps" if mark == "^" else "earth", up=list(up_from(cells, (q, r))))
+                row.update(z=HALF, way_up=True)
             rows.append(row)
         starts = [{"mini": mini_of(m, mark), "q": c[0], "r": c[1], **({"z": RAISED_HEIGHT} if mark in RAISED else {})} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
         for mark, group in groups(cells, "A"):
@@ -896,6 +994,29 @@ if __name__ == "__main__":
             if turn:
                 rb.turn_camera(turn, target)
             rp.render(f"forest_highground_{name}{'_back' if turn else ''}")
+        sys.exit()
+    if "--ways" in args:  # every side a way up can have, on a test plan that's no map: a raised neighbour, low ground, a blocked cell, another way up, the map's edge
+        name = "deep_forest_ways"
+        MAPS[name] = {"size": "test", "idea": "", "plan": WAY_CASES}
+        shots = []
+        for label, at, dist, turn in (("all", (4.0, -2.0), 13, 0), ("blocked_level", (1.3, -2.5), 7, 0), ("edge", (6.9, -2.0), 7, 0), ("behind", (1.3, -2.5), 8, 180)):
+            hk.empty_scene()
+            col = hk.new_collection("map")
+            t = rb.templates()
+            cells = build_map(t, col, name)
+            visibility(name, cells)
+            print("WAYS", {c: rb_kinds for c, rb_kinds in ((c, [kind for kind, _ in way_sides(cells, c)]) for c, mark in cells.items() if mark in RAMPS)}, "triangles", {o.name: len(o.data.polygons) for o in col.objects if o.name.startswith("steps_")})
+            place_minis(t, col, MAPS[name], cells)
+            for c, mark in cells.items():
+                if mark in RAMPS:
+                    rp.place(t, "standin_small", col, hk.cell_position(*c) + Vector((0, 0, HALF)), rb.FACE_NORTH)
+            target = Vector((at[0], at[1], 0.5))
+            rp.stage(target, dist, PITCH)
+            if turn:
+                rb.turn_camera(turn, target)
+            rp.render(f"ways_up_case_{label}")
+            shots.append(f"ways_up_case_{label}")
+        sheet(shots, "ways_up_cases", 2)
         sys.exit()
     if "--export" in args:
         export(MAPS, build_map, rb.templates, lambda name: next(v for v in fc.VARIANTS if name.startswith(v)), "combat_maps")

@@ -1,4 +1,6 @@
-"""A comparison of ways up on combat maps, for Ethan to choose: not used by any map. Three maps with stone steps and earth ramps, each as it is
+"""Retired: Ethan chose the long steps, now render_forest_maps.ramp_piece (Nov 3, 2026), so this no longer shows the original styles. Kept for reference.
+
+A comparison of ways up on combat maps, for Ethan to choose: not used by any map. Three maps with stone steps and earth ramps, each as it is
 today beside two styles from the desert's ramp study (ramp_study.py on claude/art-desert), fitted to one cell and the 0.9 rise of raised ground:
   today   render_forest_maps.ramp_piece: whole-cell stone treads for ^, an earth ramp with logs for /
   B       steps set in a cut: five worn treads in a lane, rock cheeks either side
