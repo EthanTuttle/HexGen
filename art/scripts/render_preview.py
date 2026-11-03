@@ -1234,6 +1234,33 @@ if __name__ == "__main__":
                     if gc.tile_at(q.x, q.y) == t and not bpy.context.scene.ray_cast(dg, Vector((q.x, q.y, 20)), Vector((0, 0, -1)))[0]:
                         missed += 1
         print(f"RAMPS NOT JOINED {bad_}; HOLES {missed}")
+        # sky through rock: fired from inside the rock, from every side and height a camera could be, a ray must always hit the rock's skin
+        sky_, fired_ = 0, 0
+        inside_ = []
+        for m_ in field.mesas:
+            c_ = (sum(q_[0] for q_ in m_) / len(m_), sum(q_[1] for q_ in m_) / len(m_))
+            for q_ in [c_] + [(q2_[0] * 0.8 + c_[0] * 0.2, q2_[1] * 0.8 + c_[1] * 0.2) for q2_ in m_]:
+                if wt.point_in(m_, q_):
+                    inside_.append((q_[0], q_[1], cn.level_z(cn.TOP_LEVEL) + 0.5))
+        for ix in range(int(field.nx / 3)):
+            for iy in range(int(field.ny / 3)):
+                q_ = (field.x0 + ix * 0.6 + 0.013, field.y0 + iy * 0.6 + 0.017)
+                if gc.tile_at(*q_) in field.region:
+                    if field.ridge_at(*q_) > 0.4:  # well inside, so the mesh's straight sides don't leave it out
+                        inside_.append((q_[0], q_[1], cn.level_z(1) - 0.4))
+                    if field.land_at(*q_) > 0.4:
+                        inside_.append((q_[0], q_[1], cn.level_z(2) - 0.4))
+        for x_, y_, z_ in inside_:
+            for az_ in range(0, 360, 15):
+                for el_ in (10, 25, 40, 50, 65, 85):
+                    fired_ += 1
+                    d_ = Vector((math.cos(math.radians(el_)) * math.cos(math.radians(az_)), math.cos(math.radians(el_)) * math.sin(math.radians(az_)), math.sin(math.radians(el_))))
+                    ok_, loc_, *_ = bpy.context.scene.ray_cast(dg, Vector((x_, y_, z_)), d_)
+                    if not ok_:
+                        sky_ += 1
+                        if sky_ < 6:
+                            print("SKY", (round(x_, 2), round(y_, 2), round(z_, 2)), az_, el_)
+        print(f"SKY THROUGH ROCK {sky_} of {fired_} rays from {len(inside_)} points inside it")
         spots = []
         t, i = field.entrances[0]
         c = hk.tile_position(*t)
@@ -1286,6 +1313,12 @@ if __name__ == "__main__":
             cam.data.lens = 50
         view(Vector((0, 0, -0.5)), 44, 6, -math.pi / 2)
         shot("canyon_maze_side")
+        # the top rock up close, round the region's rim, where it was thinnest
+        for name_, t_, el_, ang_ in (("north", (0, 2), 50, -90), ("east", (2, 0), 50, -90), ("south", (0, -2), 50, -90), ("west", (-2, 0), 50, -90), ("low_a", (1, 1), 22, -60), ("low_b", (-1, -1), 22, 120)):
+            if t_ not in region:
+                t_ = min(region, key=lambda u: math.dist(u, t_))
+            view(hk.tile_position(*t_) + Vector((0, 0, -0.5)), 20, el_, math.radians(ang_))
+            shot(f"canyon_mesa_{name_}")
         sys.exit(0)
     if "stronghold-alone" in flags:
         # The Raider Stronghold on its own, on a bare tile, from several angles.

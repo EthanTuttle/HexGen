@@ -9,6 +9,7 @@ def steps(a, b):
 rng = random.Random(5)
 worst = {}
 tot = 0; floor_lost = 0
+mesas_lost = set()
 for trial in range(60):
     region = {(0,0)}
     while len(region) < rng.randint(8,14):
@@ -31,7 +32,7 @@ for trial in range(60):
     free = [k for k,m in enumerate(cn.neighbours(x)) if m not in region]
     if free: ent.append((x, free[0]))
     cn.open_edges = lambda *_: (op, ent)
-    b = cn.Field(region | {x}, lm, facing)
+    b = cn.Field(region | {x}, lm, facing, before=a)
     cn.open_edges = real
     if b.x0 != a.x0 or b.y0 != a.y0: continue  # the grid moved: only compare on the same grid
     tot += 1
@@ -41,8 +42,10 @@ for trial in range(60):
             t = gc.tile_at(px, py)
             if t not in region: continue
             va, vb = a.value(px,py), b.value(px,py)
+            if a.mesa_depth(px,py) > 0 and vb < cn.TOP_LEVEL + 1 and steps(t, x) > 1: mesas_lost.add(id(a) + round(px))
+            va, vb = min(va, cn.TOP_LEVEL), min(vb, cn.TOP_LEVEL)  # bands only: a mesa is its own solid, counted above
             if va < 0.01 and vb > va + 0.05: floor_lost += 1
             if abs(va-vb) > 0.02:
                 s = steps(t, x); worst[s] = worst.get(s,0)+1
-print("trials", tot, "changed cells by steps from the new tile", sorted(worst.items()), "old floor that became rock", floor_lost)
+print("trials", tot, "changed cells by steps from the new tile", sorted(worst.items()), "old floor that became rock", floor_lost, "cells of mesa lost further away", len(mesas_lost))
 assert all(s == 1 for s in worst) and floor_lost == 0, "a new tile changed more than the tiles touching it"

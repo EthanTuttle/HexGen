@@ -35,6 +35,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [ ] New: walkable wall on combat maps: last trial after all sets, a real wall about 1.5 high reached by two stacked flights or a ladder (Ethan, Nov 3)
 - [ ] New: a pass on combat map buildings over the 0.15 overhang limit (haunted house, two barns; see Presentation)
 - [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
 - [x] ~~Combat map ways up~~ (settled Nov 3: landing with steps into every neighbouring cell; see Presentation)
@@ -132,7 +133,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Rarity rethink~~ (settled Oct 23–24: terrain-only deck, regions roll all landmarks from variant pools, Legendary landmarks are rare outcomes that start quests, hand limit 7, milestone terrain picks, class quests guarantee the class variant)
 - [x] ~~Where the former Rare landmarks appear~~ (settled Nov 1, 2026: folded in or minor landmarks rolled on tile placement)
 - [ ] New: Legendary odds; minor landmark odds per placed tile
-- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills, village, river and desert done by Nov 2, 2026)
+- [ ] New: landmark tile looks for every core location (forest, farmland, plains, hills, village, river and desert done by Nov 2, 2026; swamp Nov 3)
 - [x] ~~Terrain lean per class, background and god~~ (settled Oct 24: Cards & progression → Starting decks)
 - [ ] New: milestone terrain picks: how many cards and choices
 - [ ] New: class quests: what the task rewards; Rogue's manor in a bayou
