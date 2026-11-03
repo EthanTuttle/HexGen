@@ -7,11 +7,11 @@ centre on the ground, facing -Y in Blender (+Z in the glb), shared kit material 
 No animation: the engine moves a mini whole (hop, recoil), so each pose has to read on its own.
 
   enemy_wolf          plain wolf, stalking
-  enemy_wolf_elite    bigger and darker, hackles up, gold line inside the ring
+  enemy_wolf_elite    bigger and darker, hackles up, a spiked iron collar
   enemy_spider        plain giant spider, all feet down
-  enemy_spider_elite  bigger, red hourglass mark, front legs raised, gold line inside the ring
+  enemy_spider_elite  bigger, red hourglass mark, spines down its back, front legs raised
 
-Plain and elite are options for Ethan to judge, not settled enemies; colours and marks are proposals.
+An elite shows on the model itself, with no mark on its base (design/07). Stats and the roster are still open.
 """
 import math
 import os
@@ -45,7 +45,6 @@ hk.PALETTE.update({
     "spider_elite_back": "#1E1923",
     "spider_elite_band": "#A8352C",
     "spider_elite_mark": "#E2483A",
-    "ring_elite": "#E8C25A",
 })
 
 Z0 = sm.BASE_H + 0.005  # top of the base
@@ -145,23 +144,15 @@ def limb(p, points, radii, paints, sides=4):
         bm.faces.new(tuple(verts[0])).material_index = p._slot(paints[0])
 
 
-def enemy_base(p, elite):
+def enemy_base(p):
     sm.base(p, "ring_enemy")
-    if elite:
-        # A thin gold line just inside the red ring, so an elite shows even when only its base is in view.
-        r = sm.BASE_FLATS / math.sqrt(3)
-        outer = hk.hex_corners(r * 0.84, pointy=False)[::-1]
-        inner = hk.hex_corners(r * 0.76, pointy=False)[::-1]
-        for i in range(6):
-            j = (i + 1) % 6
-            p.prism([outer[i], outer[j], inner[j], inner[i]], Z0, Z0 + 0.008, "ring_elite")
 
 
 # --- Wolf -------------------------------------------------------------------
 
 def wolf(col, elite=False):
     p = hk.Piece("enemy_wolf_elite" if elite else "enemy_wolf")
-    enemy_base(p, elite)
+    enemy_base(p)
     wolf_shape(p, elite)
     return p.finish(col)
 
@@ -169,7 +160,7 @@ def wolf(col, elite=False):
 def wolf_shape(p, elite=False):
     """The wolf itself, without a base (build_giant_minis.py resizes it)."""
     back, coat, belly = ("elite_back", "elite_coat", "elite_belly") if elite else ("wolf_back", "wolf", "wolf_belly")
-    sx, sy, sz = (1.14, 1.02, 1.16) if elite else (1.0, 1.0, 1.0)
+    sx, sy, sz = (1.24, 1.1, 1.3) if elite else (1.0, 1.0, 1.0)
 
     def at(x, y, z):
         return Vector((x * sx, y * sy, Z0 + z * sz))
@@ -232,6 +223,13 @@ def wolf_shape(p, elite=False):
     limb(p, tail, [0.045, 0.07, 0.052, 0.0], [coat, coat, back])
 
     if elite:
+        # A spiked iron collar on the neck.
+        ring = [section(at(0, y, 0.45), 0.135 * sx, 0.135 * sz, along=d, sides=8) for y in (-0.205, -0.25)]
+        loft(p, ring, lambda c, n: "steel")
+        for k in range(5):
+            a = 0.5 + k * 0.54
+            spike = at(math.cos(a) * 0.135, -0.228, 0.45 + math.sin(a) * 0.135)
+            hk.spike_up(p, spike, spike + Vector((math.cos(a), -0.1, math.sin(a))) * 0.1, 0.022, "steel", segments=3)
         # Hackles: pale fur raised up the neck and along the spine, lying back, the part of him that reads from the camera.
         for y, z, height, width in [(-0.255, 0.555, 0.10, 0.052), (-0.17, 0.555, 0.13, 0.058), (-0.08, 0.525, 0.12, 0.055),
                                     (0.02, 0.475, 0.10, 0.048), (0.12, 0.465, 0.08, 0.042)]:
@@ -253,7 +251,7 @@ LEG_ANGLES = (27, 62, 112, 152)
 
 def spider(col, elite=False):
     p = hk.Piece("enemy_spider_elite" if elite else "enemy_spider")
-    enemy_base(p, elite)
+    enemy_base(p)
     spider_shape(p, elite)
     return p.finish(col)
 
@@ -262,7 +260,7 @@ def spider_shape(p, elite=False, reach_of=tip_reach, angles=LEG_ANGLES):
     """The spider itself, without a base. reach_of(angle): how far a foot may stand from the centre that way."""
     body, back = ("spider_elite_body", "spider_elite_back") if elite else ("spider_body", "spider_back")
     band, mark = ("spider_elite_band", "spider_elite_mark") if elite else ("spider_band", "spider_mark")
-    grow = 1.18 if elite else 1.0
+    grow = 1.32 if elite else 1.0
 
     def at(y, z, x=0.0):
         return Vector((x, y, Z0 + z))
@@ -284,6 +282,12 @@ def spider_shape(p, elite=False, reach_of=tip_reach, angles=LEG_ANGLES):
         rings.append([at(y, z)] if w == 0 else section(at(y, z), w, h, along=Vector((0, 1, 0.18)), sides=8))
 
     loft(p, rings, lambda c, n: back if n.z > 0.35 else body)
+
+    if elite:  # Spines down its back, like armour.
+        for r in rings[1:4]:
+            for sd in (-1, 1):
+                c = rings_centre(r) + Vector((sd * 0.12, 0, 0.13))
+                hk.spike_up(p, c, c + Vector((sd * 0.05, 0.05, 0.16)), 0.035, mark, segments=3)
 
     # The mark: a thin plate along the abdomen's crest, its width changing along the length. It's a shape of its own
     # because whole facets are too coarse for it. Plain: a pale folium. Elite: a red hourglass.
