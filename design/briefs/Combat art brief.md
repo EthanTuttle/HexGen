@@ -18,6 +18,8 @@ For the Combat Art session: enemy minis and combat map art, drafted with Blender
 - Hand-off goes through the planner session, never directly to Godot. Ethan reviews previews before anything reaches the engine.
 - Never overwrite: versioned files only. The tile art session also uses `art/`, so keep your scripts and files separate from its (`art/minis/enemies/`, `art/combat/`) and don't use its `tiles_vN` numbers.
 - Content comes from Ethan. Where the docs don't decide a look, offer options through the planner rather than settling it.
+- Map catalogue: `art/combat/maps/README.md` lists the maps in use and the retired ones, generated from `art/export/combat_maps*.json` by `art/scripts/map_catalogue.py`. Each in-use map's current image is at `art/combat/maps/<map id>.png`, an unversioned path that the render scripts refresh whenever the map changes (an exception to versioned files). Pull maps up from there, not from `art/preview`. Retire a map by taking it out of its plans, and the catalogue moves it to the retired list.
+- A variant's maps differ clearly in overall base shape and size, not just props.
 
 ## First job: enemy minis
 

@@ -170,6 +170,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: custom combat maps: size range (forest set is 37–114 cells; check how long maps feel in play). Count settled Nov 2, 2026: 3 per variant, plus 1 path map if it has roads
 - [x] ~~Crossing water~~ (settled Nov 2, 2026: Athletics check, a failure costs the whole party HP but they still cross; a permanent raft from the River Port; see Map & exploration → Obstacles)
 - [ ] New: HP lost on a failed crossing, raft price, and how the raft looks on the map
+- [ ] New: rethink the Rapids variant (reads weakest; Troll Bridge doesn't fit every water shape); see Map & exploration
 - [ ] New: minimum test phone, and a sustained-play heat and battery check (see Multiplayer & tech)
 - [x] ~~Hills look~~ (settled Oct 30: raised slopes; joined hills share one mountain on their edge or corner)
 - [x] ~~Desert dunes~~ (settled Oct 30: rolling sand swells, shaped by the engine in world space)

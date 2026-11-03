@@ -11,6 +11,27 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 | `export/` | `.glb` files the engines import; always the latest version |
 | `preview/` | Rendered test views, `*_vN.png` |
 
+## Finding the current version
+
+The most recent version is the working version, unless `reviews.md` says Ethan rejected it. Some older previews have numbers out of order (`forest_map_fey_wood_glades_v3` is older than `_v1`), so go by commit, not by the highest number:
+
+```bash
+git log --diff-filter=A --name-only --format= <branch> -- 'art/preview/*glades*' | head -1
+```
+
+Live work is usually on a branch, so name it, and make the pattern narrow, as a broad one also matches related views such as `_turned`. This only sees committed files.
+
+| To find | Look in |
+| --- | --- |
+| Newest render | The command above |
+| Ethan's verdicts | `reviews.md`: approved or rejected, by date. No entry means no verdict recorded |
+| Combat maps in use, and retired ones | `combat/maps/README.md`, with each map's current image beside it |
+| Live `.blend` | The highest `tiles_vN.blend` on that branch. Numbers there are in order |
+| Source of an export | `git show --name-only --format=%h $(git log -1 --format=%h -- art/export/tiles.glb)`, which shows the blend committed with it |
+| What Godot has | `handoff/<kit>_kit.md`, then `git diff --stat main claude/godot-prototype-0a3fde -- art/export art/handoff art/scripts` |
+
+If two branches add the same file name with different content, the merge stops with a conflict. Renumber one side.
+
 ## Rules for the art session
 
 New art assets are made in their own **Art Planning** session (set up Nov 1, 2026). These rules apply to that session, and to anyone else adding art.
@@ -18,7 +39,7 @@ New art assets are made in their own **Art Planning** session (set up Nov 1, 202
 - **The docs decide the look.** Build from the design docs: tier 1 and tier 2 variant looks are in `design/07 Presentation.md` → Art direction → Region variant looks, and the variants and their landmarks are in `design/02 Map & exploration.md`. Don't invent looks, names or rules. Where the docs leave a choice open, give Ethan 3–4 options with the question tool, or list them in the report.
 - **Hand-off goes through the planner session.** Report finished work to the session that started you, never to the Godot session directly. The planner shows Ethan the previews and passes approved kits to Godot.
 - **Ethan reviews previews before the engine sees them.** Each group gets Blender preview renders: the region-finished map (`render_preview.py -- --variants`, or a map staged for the group) and a close-up of each variant. Nothing counts as done until he approves it.
-- **Never overwrite.** Each change builds the next `tiles_vN.blend` and `preview/*_vN.png`. Older versions stay for reference. Add a line to **Versions** below for each new kit, and a section under **Units and pieces** for each new kind of piece.
+- **Never overwrite.** Each change builds the next `tiles_vN.blend` and `preview/*_vN.png`, one past the highest number. Older versions stay for reference. Add a line to **Versions** below for each new kit, and a section under **Units and pieces** for each new kind of piece.
 - **Keep the piece contract.** A variant has `<variant>_centre`, `<variant>_edge_same` and `<variant>_edge_other`, registered in `scripts/variants.py` (`VARIANTS`). It uses its terrain's base with the top recoloured, picks edge pieces by terrain (`terrain_of`), and keeps origins at the tile centre on the ground, with edge pieces facing +X. Pieces must join seamlessly with every neighbour, including other variants of the same terrain.
 - **Blend in, no rim.** A finished region changes to its variant's look but keeps blending into the land round it (`design/07 Presentation.md` → Exploration screen → Cluster goals).
 - **True scale.** Minis are about 1.3 tall on a base that fills one combat cell. Trees and props are sized against them, and mountains stay bigger than trees.
@@ -107,6 +128,7 @@ Blender -b --factory-startup --python art/scripts/render_animation.py
 - **Forest obstacles (from combat_cells_v6):** full-bodied pieces sitting on whole cells, each with its cells in the `footprint` property: `ob_<variant>_tree_a/b/c`, `_grove_2/3/7`, `_log_2/3`, `_stump`, `_boulder_3`, plus `ob_fey_wood_stone`, `_mushrooms_3`, `ob_dark_wood_hollow_3`, `_thicket_3`, `ob_heartwood_great_7`, `_roots_3`. `cell_<variant>_brush` is walkable cover and `cell_<variant>_floor` flat stony ground. Earlier corner trees (`tree_<variant>_*`) stay in the file but the maps no longer use them.
 - **Bandit and undead minis (`minis/enemies/humanoid_minis_vN.blend`, `scripts/build_humanoid_minis.py`):** `enemy_bandit_melee`, `_ranged`, `_elite`; `enemy_skeleton`, `enemy_zombie`, `enemy_ghost`, each with `_elite`. 272 to 557 triangles. Same contract as `build_enemy_minis.py`; elites show on the model, with no mark on the base. Ghosts use `ghost_glow`, their own material with a faint emission. Previews: `render_humanoid_minis.py`, `preview/humanoid_*_vN.png`.
 - **Forest combat maps (`scripts/render_forest_maps.py`, samples for Ethan to judge):** twelve plans, three per forest variant, 37 to 114 cells on solid hex, oval or rectangle bases, each written as a top-down text plan with its tactical idea beside it. Cliffs, raised rock with its steps and ramps, and the soil plate are made per map (`shaped_piece`, `raised_piece`, `ramp_piece`, `fc.plate`), saved in `combat/combat_maps_vN.blend` with `-- --export`, which also writes `export/combat_maps.json`. Hand-off: `handoff/combat_forest_kit.md`. The script checks that the base is solid and at least as deep as the Gorge, that every walkable cell can be reached and shows from at least 2 of 12 camera angles, one of them a 60 degree rotate step (`-- --check`: rays from points on each cell, at the Godot prototype's combat tilt of 52 degrees and distance 22, minis left out; an obstacle's own cells aren't checked). `-- --kit` renders the obstacles laid out. Previews: `preview/forest_map_<map>_vN.png`, a few `_turned`, sheets `preview/forest_maps_<variant>_vN.png` and `preview/forest_maps_all_vN.png` (`-- --sheets` redoes them from the newest renders), close-ups `preview/forest_highground_*_vN.png` (`-- --close`), `preview/forest_obstacles_vN.png`.
+- **Plains combat maps (`scripts/render_plains_maps.py`, kit `combat/combat_plains_vN.blend` from `scripts/build_plains_cells.py`, samples for Ethan to judge):** twelve plans, three per plains variant, 61 to 114 cells, with the variants' own props from the tile art at true scale. Same plan format, checks and export as the forest maps. Hand-off: `handoff/combat_plains_kit.md`. Previews: `preview/plains_map_<map>_vN.png`, sheets `preview/plains_maps_<variant>_vN.png` and `preview/plains_maps_all_vN.png`, `preview/plains_obstacles_vN.png`.
 
 Terrains: plains, forest, farmland, river (river/lake) and village, plus (from tiles_v5) hills, swamp, desert and ruins. Colours are the mockup placeholders, set in one table (`PALETTE` in `scripts/hexkit.py`).
 
