@@ -1,3 +1,37 @@
+# Rapids river gorge (tiles_v62)
+
+Rapids are rebuilt as a river gorge (design/07 → Region variant looks). Ethan hasn't seen this, and it hasn't been tried in Godot. The rest of this kit holds, and where the sections below describe rapids, this wins.
+
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v62.blend`, which also carries the ledges and hay of tiles_v61. Banks are drawn per tile from `water.py`, not kit pieces.
+- **Channel:** `RAPIDS_WIDTH` 1.4, was 2.0. Where a gorge starts, its pool has a radius of 0.85 (`RAPIDS_POOL`), was 1.3 to 1.7. The water plate stays at the usual height, so it joins plain river with no step. No sand bank strip or reeds.
+- **Banks:** `water.gorge_banks(water, seed, widths, landmark)` returns triangles (all facing up) and stones, in the tile's frame. Dark wet rock on the tile's ground, reaching 1.02 out from the shore. Height is by direction, 1.9 behind the water from the default camera and 0.6 in front of it, so it hides little of the water; a turned camera sees less. `gorge_rows` is the plan, and `cover_shape` keeps ground cover off it.
+- **Gaps:** banks sink under the ground round each landing and bridge walk (`gorge_ways`), and fade out at any edge that isn't rapids on both sides.
+- **Joins:** at a shared rapids edge, both tiles' banks end at the same points and height (`GORGE_JOIN`, 1.2), so no slit shows.
+- **Falls and foam:** `rapids_fall` is narrower, in wet rock. There's more foam, and `water_fast` is darker, #6FAFC9, so foam reads white. Colours are placeholders.
+- **Plain bridge:** `rapids_bridge` is rebuilt with straight 25° ramps (was about 43° at its ends) and 1.1 clear between its low walls (was 0.6, narrower than a mini's base). Path data is updated.
+- **Bridge spots:** `bridge_spot` now falls back to `bridge_search`, any line over one channel near the tile's middle whose water fits under the arch. `rapids_spot` picks the tile's bridge, and leaves out a plain bridge whose walks would meet a bank at a shared edge.
+
+| Fits | Before | Now |
+| --- | --- | --- |
+| Troll Bridge, across all patterns of water neighbours, 12 seeds each | 363 of 744 | 733 of 744 |
+| Plain bridge, same test | 375 of 744 | 533 of 744 |
+| 7-tile random regions with no Troll spot | About 21–31% | 0 of 600 |
+
+**"A bridge fits every tile" isn't quite true (design/02, 07).** A plain bridge needs land on both sides to lead anywhere, so tiles whose water edges are all side by side don't get one. Nor do tiles with two opposite land edges between two pairs of water edges. The Troll Bridge can end on a spit of land in those tiles, since it's a place in itself. A later water neighbour can still take away a Troll spot where the bridge already stands: that open question below hasn't changed or been re-measured.
+
+**Rough spots:**
+
+- **Gaps break the walls:** a tile with several land edges has several gaps, so the banks read as separate walls rather than one long gorge (`river_rapids_map_v2`). They're there so the Athletics crossing can reach the water: a landing cut as a narrow notch would be the next thing to try.
+- **Troll Bridge's ramps:** not changed. Its curve is about 55° at its ends, against the minis' 28° limit. It's Ethan's approved look, so it's his call.
+- **Known in `test_water.py 20`:** 1 failure of 19,200 route lines, an Athletics line at a junction cutting over a spit (16,3, three water edges side by side). 2 tiles have a landing passing a bank at a shared edge, where a bank can't sink for one tile alone. It reports these separately.
+- **Colour at a join:** rapids meeting plain river still change colour sharply at the edge.
+
+**Checks:** `check_town.py -- water` has 0 failures on 209 lines. `test_water.py` also checks banks stay in their tile, face up, stand clear of a base on every way, keep off land edges and end on shared edges. Worst banks on one tile are about 1,160 triangles, counted with stones; the whole tile wasn't measured in the map.
+
+**Previews:** `art/preview/river_rapids_map_v2`, `_turned_v2`, `_paths_v2`, `_closeup_v2`, `_closeup_b_v2`.
+
+---
+
 # River kit hand-off, rounds 1 and 2 (tiles_v53)
 
 This kit holds tier 0 river and lake, river delta and the River Port (tier 1), routes on water, the party's raft, and from round 2 great lake, rapids and still waters with their landmarks. Ethan has approved rounds 1 and 2, with the changes from his round 2 feedback built here: no tree on Meditation Rock's tile, and the rules for rapids below. He hasn't seen the rock without its tree.

@@ -4158,20 +4158,21 @@ def lake_wreck(p, rng):
 
 def rapids_fall(p, rng):
     """A small waterfall where two rapids tiles meet: a ledge of rock across the channel on the edge, with foam spilling over it. In the edge's frame; the engine adds spray."""
-    half = 1.05
-    p.flat([Vector((-0.34, -0.98, 0)), Vector((0.2, -0.98, 0)), Vector((0.34, -0.45, 0)), Vector((0.24, 0.1, 0)), Vector((0.36, 0.55, 0)), Vector((0.2, 0.98, 0)), Vector((-0.34, 0.98, 0)), Vector((-0.42, 0.3, 0)), Vector((-0.3, -0.3, 0))], 0.037, "foam")
-    for k in range(7):
-        y = -0.82 + 1.64 * k / 6
-        lump(p, Vector((0.14, y, 0)), rng.uniform(0.11, 0.17), "foam", z=0.05, squash=0.55)
-        lump(p, Vector((-0.14, y + 0.08, 0)), rng.uniform(0.08, 0.13), "foam", z=0.05, squash=0.5)
-    for y, r in ((-half, 0.3), (half, 0.27)):
-        lump(p, Vector((0.05, y, 0)), r, "rock", z=0.08, squash=0.8)
+    half = 0.68
+    p.flat([Vector((-0.3, -half, 0)), Vector((0.16, -half, 0)), Vector((0.28, -0.3, 0)), Vector((0.2, 0.08, 0)), Vector((0.3, 0.36, 0)), Vector((0.16, half, 0)), Vector((-0.3, half, 0)), Vector((-0.22, 0.1, 0))], 0.05, "rock_wet")
+    for k in range(6):
+        y = -0.56 + 1.12 * k / 5
+        lump(p, Vector((0.16, y, 0)), rng.uniform(0.1, 0.15), "foam", z=0.05, squash=0.55)
+        lump(p, Vector((-0.12, y + 0.06, 0)), rng.uniform(0.07, 0.11), "foam", z=0.05, squash=0.5)
+    for y, r in ((-half, 0.24), (half, 0.22)):
+        lump(p, Vector((0.05, y, 0)), r, "rock_wet_dark", z=0.08, squash=0.8)
     p.effects.append(("spray", Vector((0, 0, 0.3))))
 
 
-def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=None, n=12):
-    """A humped stone bridge along X, its ends at x = +-half on the ground: a solid with a round arch under the middle. Returns its deck height at x."""
-    top = lambda x: crown * (1 - (x / half) ** 2) + 0.02  # noqa: E731
+def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=None, n=12, flat=None):
+    """A humped stone bridge along X, its ends at x = +-half on the ground: a solid with a round arch under the middle. Returns its deck height at x.
+    flat: the deck is level within this of the middle, with a straight ramp each side, instead of a curve."""
+    top = lambda x: crown * (1 - (x / half) ** 2) + 0.02 if flat is None else crown * min(1.0, (half - abs(x)) / (half - flat)) + 0.02  # noqa: E731
     under = lambda x: rise * math.sqrt(max(0.0, 1 - (x / open_half) ** 2)) if abs(x) < open_half else 0.0  # noqa: E731
 
     def block(a, b, c, d, y0, y1, mat):  # a solid from a quad in the (x, z) plane, from y0 to y1
@@ -4183,7 +4184,7 @@ def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=Non
 
     # breakpoints: the arch's springing lies on one, so the solid meets the ground cleanly either side of it
     xs = sorted(set([-half, half, -open_half, open_half] + [-half + (half - open_half) * k / 3 for k in (1, 2)] + [half - (half - open_half) * k / 3 for k in (1, 2)]
-                    + [open_half * math.cos(math.pi * k / n) for k in range(n + 1)]))
+                    + [open_half * math.cos(math.pi * k / n) for k in range(n + 1)] + ([-flat, flat] if flat else [])))
     for a, b in zip(xs, xs[1:]):
         block((a, under(a)), (b, under(b)), (b, top(b)), (a, top(a)), -width / 2, width / 2, stone)
         for s_ in (-1, 1):
@@ -4193,13 +4194,13 @@ def arch_bridge(p, half, crown, width, open_half, rise, stone, parapet, ring=Non
                 y1 = s_ * (width / 2 + 0.02)
                 block((a, under(a)), (b, under(b)), (b, under(b) + 0.18), (a, under(a) + 0.18), y0, y1, ring)
     p.flat([Vector((-open_half, -width / 2, 0)), Vector((open_half, -width / 2, 0)), Vector((open_half, width / 2, 0)), Vector((-open_half, width / 2, 0))], 0.036, "water_shade")  # the shade under it
-    p.paths.append([Vector((x, 0, top(x))) for x in xs[::2] + xs[-1:]])
+    p.paths.append([Vector((x, 0, top(x))) for x in (xs if flat else xs[::2] + xs[-1:])])
     return top
 
 
 def rapids_bridge(p, rng):
     """A plain stone bridge over rapids, walked with no check (water.bridge_spot says where). Ramps run out on to the land each side."""
-    arch_bridge(p, 1.95, 0.92, 0.8, 1.2, 0.6, "stone_tan", "stone_block", n=8)
+    arch_bridge(p, 1.95, 0.6, 1.3, 0.95, 0.36, "stone_block_dark", "stone_block", n=8, flat=0.67)  # ramps of 25 degrees; 1.1 clear between its low walls, for a mini's base
 
 
 def still_willow(p, rng):

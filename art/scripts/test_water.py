@@ -25,6 +25,7 @@ def inside(outlines, p):
 def main():
     seeds = int(sys.argv[1]) if len(sys.argv) > 1 else 40
     bad = lines_ = lands_ = dropped = props = bridges = no_bridge = troll = stones = walls = 0
+    bank_joins = set()
 
     def fail(*a):
         nonlocal bad
@@ -76,6 +77,34 @@ def main():
                             fail("prop outside its tile", prop, mask, seed)
             # Rapids: a bridge, ordinary or the Troll's, in its tile with its ends and walks on land
             widths = [wt.RAPIDS_WIDTH if x else wt.RIVER_WIDTH for x in m]
+            # The gorge's banks: in the tile, facing up, clear of every way the party walks, and agreeing with the neighbour at a shared edge
+            for landmark in (False, True):
+                tris, stones_ = wt.gorge_banks(m, seed, widths, landmark)
+                # the Troll's deck stands over the banks, so only its landings count
+                ways = [[e, s_, w] for e, s_, w in wt.landings(m, seed, widths, "rapids").values()] if landmark else wt.gorge_ways(m, seed, widths)
+                for tri, mat in tris:
+                    if not all(wt.inside_tile(q, -0.02) for q in tri):
+                        fail("bank outside its tile", mask, seed)
+                    if (tri[1][0] - tri[0][0]) * (tri[2][1] - tri[0][1]) - (tri[1][1] - tri[0][1]) * (tri[2][0] - tri[0][0]) <= 0:
+                        fail("bank facing down", mask, seed)
+                    if max(q[2] for q in tri) > 0.12:  # a mini's base, half 0.52, on any way
+                        for u, w_ in ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.5, 0.0), (0.0, 0.5), (0.5, 0.5), (0.33, 0.33)):
+                            c = tuple(tri[0][k] + (tri[1][k] - tri[0][k]) * u + (tri[2][k] - tri[0][k]) * w_ for k in range(3))
+                            if c[2] > 0.12 and min((wt.seg_dist(c, a, b) for l_ in ways for a, b in zip(l_, l_[1:])), default=9.0) < 0.56:
+                                if any(c[2] > 0.12 and abs(wt.dot(c, wt.normal(i)) - wt.A) < 0.7 and widths[i] == wt.RAPIDS_WIDTH for i in range(6)):
+                                    bank_joins.add((mask, seed))  # a known rough spot: at a shared edge a bank can't sink for one tile alone
+                                else:
+                                    fail("bank on a way", mask, seed, tuple(round(x, 2) for x in c))
+                                break
+                    for i in range(6):
+                        if not (m[i] and widths[i] == wt.RAPIDS_WIDTH) and any(wt.A - wt.dot(q, wt.normal(i)) < 0.02 and q[2] > 0.03 for q in tri):
+                            fail("bank standing on a land edge", mask, seed, i)
+            for grid, _, (e0, e1) in wt.gorge_rows(m, seed, widths):
+                for e, k_ in ((e0, 0), (e1, -1)):
+                    if e is not None:
+                        for row, (d, _) in zip(grid, wt.GORGE_ROWS):
+                            if abs(wt.dot(row[k_], wt.normal(e)) - wt.A) > 1e-6:
+                                fail("bank's end off the edge", mask, seed, e)
             outlines = wt.tile_water(m, seed, widths, "rapids")[0]
             for half in (wt.BRIDGE_HALF, wt.TROLL_HALF):
                 spot = wt.bridge_spot(m, seed, widths, half)
@@ -158,6 +187,7 @@ def main():
             ib = wt.edge_interval(b_mask, 3, wt.edge_widths(NAMES[sb], [NAMES[sa]] * 6))
             if abs(ia[0] - (1 - ib[1])) > 1e-9 or abs(ia[1] - (1 - ib[0])) > 1e-9:
                 fail("edge disagrees", sa, sb, start, end, ia, ib)
+    print(f"{len(bank_joins)} tiles where a way passes a bank at a shared edge (known rough spot)")
     print(f"{lines_} route lines, {lands_} landings, {props} props, {bridges} bridges ({troll} Troll), {no_bridge} bridge tries with no spot, {stones} stepping stones, {walls} port walls, {dropped} tiles lost a boat to a route, {bad} failures")
     sys.exit(1 if bad else 0)
 
