@@ -1,3 +1,54 @@
+# Rapids: sunken pool and waterfall
+
+Where rapids flow out into a plain river or lake, the gorge ends in a pool sunk into the ground, and a waterfall comes down into it from the river's level (design/07). **Ethan approved it with the cascade (Nov 3, 2026). It hasn't been tried in Godot.** Code only, no kit change: everything is drawn per tile, except one new colour, `fall_light`. Where this differs from the section below, this wins.
+
+## Which joins get it, and how the game knows
+
+`water.downhill(q, r)` is `r - 0.3 * q`, and water flows toward the higher number. Both tiles compare the same two numbers, so they always agree, and it needs no walk through the river. `water.with_falls(widths, water, q, r)` marks a rapids tile's plain river or lake edges whose neighbour is higher with `FALL_WIDTH`. Lakes follow the same rule. Pass the result as `widths`, everywhere for that tile. The neighbour's own widths don't change. Edges flowing the other way keep the slope down into the gorge.
+
+**That rule is still a placeholder** (design/07, open question "which way water flows"). If it changes, only `downhill` changes, but which joins get a fall changes with it. Today only edges 3, 4 and 5 (west, south-west and south) can have one.
+
+## What Godot has to change
+
+- **Flow must follow the fall (Ethan):** feed `flow_signs` from `water.flow_in(q, r, water, rapids, own)`, not from `downhill` directly as `map_board.gd` does now. The last river tile above a fall then runs toward it from all its plain river edges, so the fall has a source. On that tile's far edge it parts from the next river tile, which still runs away by `downhill`: both run away from that edge. No water changes shape, only the direction. A lake turns only at the fall's edge, and a pool tile counts the fall as water coming in. The pool has no visible outlet, as design/07 accepts.
+- **Refuse routes across falls:** nothing walks or rafts over a fall edge in either direction. `water_routes` already leaves out the rapids tile's line for it, but the river or lake tile's own line still reaches that edge, because its widths don't mark the fall. So the route planner has to refuse the crossing, by testing `water.falling` on the rapids tile's widths.
+- **Pass `with_falls` widths** for every rapids tile, as below.
+
+## What's built
+
+- **Pool:** `water.pooled` pushes the shore out round a circle, radius `POOL_RADIUS` 1.45, its middle `POOL_BACK` 1.75 in from the edge. The water is 1.2 down, as in the gorge.
+- **Waterfall:** `gorge.fall_sheet`, a stepped cascade from z = 0.03 at the edge to the pool 1.2 in, fanning out as it drops, about 45°. Both tiles' water meets at the edge, and `build()["falls"]` gives (top's middle, foot's middle, top half width, foot half width) for each.
+- **Walls** stand straight at the fall's edge, so the neighbour's land isn't cut, and lean back further in.
+- **Foam, two rocks at the top and a `spray` effect** are placed from `falls`, as in `water.add_water`.
+- **No route up or down it:** `water_routes` drops that edge's line. Route planning has to refuse walking or rafting across a fall edge.
+- **Lanes** can run round the outside of a pool, up to about 96° of turn. A pool's tile keeps its other rules.
+
+**Why a cascade and not a sheer fall:** by the flow rule the fall mostly faces away from the map camera. It drops behind the land at the edge, and the camera sees nothing within about 1.0 of it. My first sheer version was invisible from the default view, so the river seemed to stop at a hole. At 45° it shows from every side, but it's less of a plunge.
+
+## Rough spots
+
+- **The pool has no way out.** Rapids and the fall both run into it. Ethan accepted this (design/07).
+- **The fall looks grey in shade,** since it faces away from the sun. An unlit foam colour in Godot would help.
+- **Fewer ways down:** 9.3% of land edges on a pool's tile have none, against 1.6% without a pool (58 and 10 of 624).
+- **Fewer bridges:** a plain bridge fits 42% of tiles with one fall (161 of 384), against 58% overall (434 of 744). The Troll Bridge fits 76% (293 of 384), against 92% (685 of 744). Regions usually have other tiles, but I haven't measured whole regions with pools.
+- **A bridge can stand right beside a pool** (`river_pool_river_v4`).
+
+## Checks
+
+| Check | Result |
+| --- | --- |
+| `test_gorge.py 6`, now with falls on one and two edges: 2,268 tiles | 0 failures, 0 holes; worst 1,358 triangles; steepest walk 25.9° |
+| `test_water.py 8` | 0 failures |
+| `check_town.py -- water` | 0 failures |
+
+Its reported rough counts aren't comparable with the 756-tile run below, as the tile mix changed; the worst rise is still 1.15.
+
+## Previews
+
+In `art/preview/`, with minis: `river_pool_river_v4` and `river_pool_lake_v3` (default camera), `river_pool_map_v3`, `river_pool_turned_v1`, `river_pool_lane_v1` and `_lane_turned_v1` (a party on a lane; the clearest look at the fall), `river_pool_river_back_v4`, `river_pool_lake_back_v2`, `river_pool_river_low_v3`, `river_pool_lake_low_v1`. Water flowing in, for comparison: `river_inflow_river_v1`, `river_inflow_lake_v2`.
+
+---
+
 # Rapids river gorge, dug in (tiles_v64)
 
 Ethan rejected the first gorge (tiles_v62), rock piles on the surface, and asked for a channel cut below ground, as the canyon is. This is that rebuild, and he approved it (Nov 3, 2026). It hasn't been tried in Godot. The rest of this kit holds, and where the sections below describe rapids, this wins.

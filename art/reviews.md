@@ -46,3 +46,10 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/river_rapids_parties_map_v1.png` | approved | Gorge and flatter Troll Bridge; pool and waterfall to add where rapids meet a river |
 | 2026-11-03 | `godot/screens/desert_05_canyon_map.png` | rejected | On the Godot branch: top mesas have thin wall-like parts, especially near the canyon's edges; also check the art |
 | 2026-11-03 | `godot/screens/desert_30_silhouette_on.png` | rejected | On the Godot branch: silhouette must be solid, no inner overlaps |
+| 2026-11-03 | `art/preview/household_props_sheet_v2.png` | rejected | Yard things too small, brown and scattered; rework and add new sets; slight overhang fine |
+| 2026-11-03 | `art/preview/household_houses_v2.png` | rejected | With village_map_village_lanes_v18, lanes_turned_v18, green_v19, street_v17: more props at the back; 3_lean door hangs off and a case blocks it; 4_thatch flowers block the door |
+| 2026-11-03 | `godot/screens/desert_09_lane_0.png` | approved | On the Godot branch at 4a1eff7: triangle pattern fixed; judge lanes again in motion on the phone |
+| 2026-11-03 | `art/preview/household_houses_v6.png` | rejected | With houses_back_v4: nitpick; fronts and backs shouldn't mirror, not every house needs a back door |
+| 2026-11-03 | `art/preview/canyon_mesa_before_after_v2.png` | rejected | Still thin edges on top mesa rocks |
+| 2026-11-03 | `art/preview/river_pool_river_v4.png` | approved | Keep the cascade; last river tile flows into the fall |
+| 2026-11-03 | `art/preview/household_houses_back_v5.png` | approved | With houses_v7 and the Village set (green_v23, lanes_v22, street_v21, gardens): Village set done, merges with the rest of village |

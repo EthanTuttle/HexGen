@@ -46,9 +46,29 @@ def surface(tris, p):
     return best
 
 
-def widths_of(m, plain=()):
-    return [wt.RIVER_WIDTH if not x or i in plain else wt.RAPIDS_WIDTH for i, x in enumerate(m)]
+def widths_of(m, plain=(), falls=()):
+    return [wt.FALL_WIDTH if x and i in falls else wt.RIVER_WIDTH if not x or i in plain else wt.RAPIDS_WIDTH for i, x in enumerate(m)]
 
+
+# a waterfall's source: every pair of tiles agrees on its edge, and the last river tile runs toward the fall
+for q, r in itertools.product(range(-3, 4), repeat=2):
+    for i, (dq, dr) in enumerate(wt.EDGE_STEPS):
+        n = (q + dq, r + dr)
+        fall_here = wt.downhill(*n) > wt.downhill(q, r)  # this tile is rapids, n a river: a fall on this edge when n is lower down
+        back = (i + 3) % 6
+        for other in range(6):
+            if other in (i, back):
+                continue
+            water = [k == i for k in range(6)]
+            river_water = [k in (back, other) for k in range(6)]
+            r_in = wt.flow_in(q, r, water, [False] * 6, "rapids")
+            n_in = wt.flow_in(*n, river_water, [k == back for k in range(6)])
+            if r_in[i] == n_in[back] and fall_here:
+                fail("the two tiles disagree at a fall", None, f"{q},{r}", i)
+            if fall_here and not n_in[other]:
+                fail("the last river tile doesn't flow toward its fall", None, f"{q},{r}", i)
+            if fall_here and n_in[back]:
+                fail("the fall's edge runs back into the river", None, f"{q},{r}", i)
 
 SEEDS = int(sys.argv[1]) if len(sys.argv) > 1 else 4
 masks = [m for m in itertools.product([False, True], repeat=6) if any(m)]
@@ -57,8 +77,8 @@ for m in masks:
     wet = [i for i in range(6) if m[i]]
     for s_ in range(SEEDS):
         seed = f"{s_},{sum(m)}"
-        for plain in ((), wet[:1]):  # all its water rapids, or one edge meeting plain river or a lake
-            w = widths_of(m, plain)
+        for plain, falls in (((), ()), (wet[:1], ()), ((), wet[:1]), ((), wet[1:2]), (wet[:1], wet[1:2]), ((), wet[:2])):  # all its water rapids, an edge meeting plain river or a lake on the way in, or on the way out in a waterfall
+            w = widths_of(m, plain, falls)
             g = gorge.build(list(m), seed, w)
             tiles += 1
             all_tris = [t for t, _ in g["tris"]]
@@ -81,7 +101,7 @@ for m in masks:
                         fail("hole", m, seed, plain, p)
             for i in wet:  # water at each water edge
                 z = gorge.water_z(list(m), w, wt.mul(wt.normal(i), wt.A))
-                want = gorge.WATER_TOP if w[i] != wt.RAPIDS_WIDTH else -gorge.DEPTH
+                want = gorge.WATER_TOP if w[i] not in (wt.RAPIDS_WIDTH, wt.FALL_WIDTH) else -gorge.DEPTH
                 if abs(z - want) > 1e-6:
                     fail("water at edge", m, seed, i, z)
             routes = g["spot"][2] if g["spot"] else {}
