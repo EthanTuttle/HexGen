@@ -380,7 +380,10 @@ if __name__ == "__main__":
         make_sheets()
         sys.exit()
     if "--close" in args:
+        names = [a for a in args if not a.startswith("--")]
         for name, at, dist in (("battlefield_graves", (3.46, -4.5), 11), ("tourney_fields_lists", (3.46, -7.5), 12)):
+            if names and name not in names:
+                continue
             hk.empty_scene()
             col = hk.new_collection("map")
             t = templates()

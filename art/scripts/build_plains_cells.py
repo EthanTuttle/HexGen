@@ -188,15 +188,16 @@ def collapsed(p, rng, cells, r):
 
 
 def graves(p, rng, cells):
-    """A row of big old graves, one to a cell: a raised earth mound with a pale headstone at its head, nearly a mini's height, so the row reads as a wall."""
-    for k, c in enumerate(fc.centres(cells)):
-        p.blob(c + Vector((0, -0.08, 0)), 0.44, "grave_mound", squash=0.62)
-        head = c + Vector((0, 0.24, 0))
-        tilt = Matrix.Rotation(rng.uniform(-0.12, 0.12), 3, "X") @ Matrix.Rotation(rng.uniform(-0.12, 0.12), 3, "Y")
-        p.box_rot(head + tilt @ Vector((0, 0, 0.42)), (0.52, 0.16, 0.84), "rock", tilt)
-        p.box_rot(head + tilt @ Vector((0, 0, 0.9)), (0.34, 0.15, 0.14), "rock", tilt)  # a stepped top, so it reads as a headstone from any side
-        p.box_rot(head + tilt @ Vector((0, -0.09, 0.56)), (0.26, 0.02, 0.06), "rock_dark", tilt)  # a worn carved line
-        p.box_rot(head + tilt @ Vector((0, -0.09, 0.42)), (0.2, 0.02, 0.06), "rock_dark", tilt)
+    """A row of big old graves, one to a cell: a pale headstone standing on its own stepped stone base, nearly a mini's height, so the row reads as a wall."""
+    for c in fc.centres(cells):
+        p.box(c, (0.8, 0.5, 0.12), "rock_dark")
+        p.box(c, (0.66, 0.34, 0.12), "rock_shade", z=0.12)
+        tilt = Matrix.Rotation(rng.uniform(-0.05, 0.05), 3, "X") @ Matrix.Rotation(rng.uniform(-0.05, 0.05), 3, "Y")
+        at = c + Vector((0, 0, 0.24))
+        p.box_rot(at + tilt @ Vector((0, 0, 0.32)), (0.52, 0.16, 0.64), "rock", tilt)
+        p.box_rot(at + tilt @ Vector((0, 0, 0.7)), (0.34, 0.15, 0.14), "rock", tilt)  # a stepped top, so it reads as a headstone from any side
+        for sd in (-1, 1):  # a worn carved line on each face
+            p.box_rot(at + tilt @ Vector((0, sd * 0.085, 0.42)), (0.26, 0.015, 0.06), "rock_dark", tilt)
 
 
 def spire(p, rng):

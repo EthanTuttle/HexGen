@@ -1,6 +1,6 @@
 """Writes art/combat/maps/README.md, the list of the combat maps in use, from art/export/combat_maps*.json, so it can't drift.
 
-Run: python3 art/scripts/map_catalogue.py (the map render scripts also call it, and keep_image, whenever a map changes).
+Run: python3 art/scripts/map_catalogue.py with no arguments; any argument prints this and writes nothing. (The map render scripts also call it, and keep_image, whenever a map changes.)
 In use: every map in the JSON files, its current image at the stable, unversioned path art/combat/maps/<map id>.png.
 Retired: every other map with a render in art/preview. history.json beside the README remembers each map's details from the
 last time it was in use, so a map keeps its idea, shape and size after it leaves the JSON.
@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 
 ART = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 MAPS = os.path.join(ART, "combat", "maps")
@@ -91,4 +92,6 @@ def write(prune=False):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        sys.exit(__doc__)
     write(prune=True)
