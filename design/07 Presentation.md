@@ -72,7 +72,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | River/lake | Still waters (*class*) | Lily pads with pink and white lotus near the shores; rounded stepping stones and small balanced stone stacks; weeping willows trailing into the water and thin mist on the surface at dawn |
   | Desert | Badlands | Wide, irregular flat-topped red-orange mesas and buttes of varied size and spacing (not evenly spaced pillars; Nov 2, 2026) on hard-packed ground instead of sand swells; heat shimmer and bleached colours; raider camps with spiked barricades, burnt-out wagons and watch posts with ragged flags |
   | Desert | Oasis | One oasis tile per region: date palms round a clear turquoise pool ringed with grass, which glints blue-white and glows faintly at night, with the Oasis Bazaar on the tile next to it (chosen Nov 2, 2026). The rest of the region is open sand under shimmering heat waves, with a few resting camels near the pool and Bazaar and no tents (chosen Nov 2, 2026) |
-  | Desert | Canyon | A maze of winding gorges cut down into the land (unlike the badlands' mesas, which rise). The party walks the floor between continuous cliff walls along complicated paths (direction chosen Nov 2, 2026; being built); walls banded cream, orange and rust, with overhangs and arches; adobe cliff dwellings with ladders and dark doorways set into the cliffs |
+  | Desert | Canyon | A maze of winding gorges cut down into the land (unlike the badlands' mesas, which rise). The party walks the floor between continuous cliff walls along complicated paths (chosen Nov 3, 2026), and Godot draws a mini's silhouette through rock that hides it (chosen Nov 3, 2026; not built yet); walls banded cream, orange and rust, with overhangs and arches; adobe cliff dwellings with ladders and dark doorways set into the cliffs |
   | Farmland | Haunted homesteads | Grey withered crops and weeds overrunning the plots, broken fences; ragged scarecrows with crows perched and circling; boarded-up farmhouses with sagging roofs and dead trees in the yards |
   | Farmland | Bandit-raided farms | Scorched plots with a few small fires and rising smoke; charred barns and farmhouses beside intact ones; trampled crop paths with spilled sacks and broken crates |
   | Farmland | Cider orchards | Rows of round fruit trees with red apples fill the whole tile instead of sitting in plots like wheat, spread out enough not to look busy, with ladders, baskets and fallen fruit; tracks still run between tiles, with fences and gates as on other farms (chosen Nov 1, 2026) |
@@ -107,7 +107,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Rapids | Troll Bridge | A big old mossy stone arch bridge over white water, with a dark hollow under it, a toll post and bones (chosen Nov 2, 2026) |
   | Still waters | Meditation Rock | A broad smooth rock out on still water, reached by stepping stones, with stone stacks and no tree on its tile (chosen Nov 2, 2026) |
   | Dunes/wasteland | Sandstone Sphinx | A huge crouching sandstone sphinx, about 4.6 tall (just over a hill peak), its haunches under a dune and its forelegs and paws out front, with a stern, regal, worn face and a small offering altar between its paws. It faces the neighbouring tile nearest the default camera, unlike other landmarks (chosen Nov 2, 2026) |
-  | Badlands | Raider Stronghold | A fort built on top of a mesa, with a ramp up, spiked walls and flags of rags (chosen Nov 2, 2026). The ramp joins the ground and the top; ramps on the map never end in empty space (Nov 2, 2026) |
+  | Badlands | Raider Stronghold | A fort built on top of a mesa, with a ramp up, spiked walls and flags of rags (chosen Nov 2, 2026). The ramp joins the ground and the top; ramps on the map never end in empty space (Nov 2, 2026). How ramps should look is open (Nov 3, 2026): see Open questions |
   | Oasis | Oasis Bazaar | Long awning-covered lanes of stalls leading to a domed well-house (chosen Nov 2, 2026) |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
@@ -560,6 +560,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 
 ## Open questions
 
+- [ ] **New (Nov 3, 2026):** how ramps should look. Ethan: the canyon entrance and Raider Stronghold ramps look terrible, so this comes first. A style study is under way; the result may also reach raised-ground ramps on combat maps
 - [ ] Final palette and fonts for the "Game pieces" style (the mockup's colours and fonts are placeholders)
 - [ ] **New (Nov 1, 2026):** landmark tile looks for every other core location (Art direction → Landmark tiles; forest, farmland, plains, hills, village, river and desert done)
 - [ ] Rarity cue that doesn't rely on colour alone, now that gear has no text labels (for colour-blind players)
