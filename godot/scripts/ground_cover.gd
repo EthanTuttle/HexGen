@@ -124,7 +124,7 @@ static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: i
 	if water_shapes.has(t):
 		var local := p - Hex.tile_position(t.x, t.y)
 		var w: Dictionary = water_shapes[t]
-		if w.outlines.any(func(o): return Water.point_in(o, local)):
+		if w.get("cover_outlines", w.outlines).any(func(o): return Water.point_in(o, local)):
 			return []
 		if _near_shore(local, w.get("cover_shores", w.shores), 0.45):
 			return []

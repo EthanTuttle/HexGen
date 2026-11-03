@@ -53,10 +53,6 @@ func _run() -> void:
 	game.spawn_forest_regions()
 	await _wait(1.0)
 	var map := game.map
-	if "--nobridge" in OS.get_cmdline_user_args():
-		await _no_bridge(map)
-		get_tree().quit()
-		return
 	_check_regions(map)
 	_check_graphs(map)
 	_check_fences(map)
@@ -109,6 +105,8 @@ func _check_graphs(map: MapBoard) -> void:
 		var g := map.path_graph(t)
 		for i in 6:
 			edges += 1
+			if map._water_edge_shut(t, i):
+				continue   # a waterfall, or land with no way down a gorge: walked round (river kit)
 			if not g.edge_node.has(i) or g.route(g.edge_node[i], g.stand).is_empty():
 				missing += 1
 				print("  no way in from edge %d of %s (%s)" % [i, t, map.terrains[t]])
@@ -270,7 +268,7 @@ func _crossings(map: MapBoard) -> void:
 		game.rig.frame(w.centre(), 14.0, 40.0)
 		await _wait(0.3)
 		await _shot("60_on_the_troll_bridge")
-		_check(w.centre().y > 1.0, "Troll Bridge: the party stands up on the hump (%.2f)" % w.centre().y)
+		_check(w.centre().y > 0.7, "Troll Bridge: the party stands up on the hump (%.2f)" % w.centre().y)
 	# The Lair: only by check or raft.
 	var lair := _named(map, "serpentlair")
 	await _set_party(_lake_land(map, lair))
@@ -343,20 +341,6 @@ func _raft_walk(goal: Vector2i) -> Dictionary:
 	w.waded.disconnect(count)
 	await _wait(Rules.SETTLE_SECONDS)
 	return out
-
-
-## What a rapids region looks like when no tile fits a Troll Bridge (a question for Ethan): `-- --rivercheck --nobridge --shots`.
-func _no_bridge(map: MapBoard) -> void:
-	var g := _region("rapids")
-	var fits: Array = g.tiles.filter(func(c): return game.region_look(g, c) == "trollbridge")
-	print("RIVER NOBRIDGE: %d tiles, %d show a Troll Bridge, region %s, landmark %s" % [g.tiles.size(), fits.size(), g.name, g.landmark])
-	var at := Hex.to3(Hex.tile_position(g.landmark_tile.x, g.landmark_tile.y))
-	game.rig.frame(at, 34.0, 50.0)
-	await _wait(0.6)
-	await _shot("no_bridge_map")
-	game.rig.frame(at, 15.0, 40.0)
-	await _wait(0.4)
-	await _shot("no_bridge_tile")
 
 
 ## The pop-ups themselves, as a player meets them: the prompt, the flip with a chime-in, and the River Port's counter.

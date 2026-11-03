@@ -277,7 +277,7 @@ func _check_cliffs(map: MapBoard, v: String) -> void:
 		var length := 0.0
 		for k in range(1, line.size()):
 			length += line[k].distance_to(line[k - 1])
-		_check(line[0].z < 0.3 and absf(line[-1].z - 5.215) < 0.05 and steep < 33.0, "%s: ledge climbs from %.2f to %.2f, %.1f m, steepest %.1f degrees" % [v, line[0].z, line[-1].z, length, steep])
+		_check(line[0].z < 0.3 and absf(line[-1].z - 5.27) < 0.05 and steep < 33.0, "%s: ledge climbs from %.2f to %.2f, %.1f m, steepest %.1f degrees" % [v, line[0].z, line[-1].z, length, steep])
 
 
 ## test_cliffs.check: straight ahead of the foot is low walkable land, with no other cliff ahead or beside it.
@@ -286,7 +286,7 @@ func _foot_wrong(map: MapBoard, c: Array) -> String:
 	var edge: int = posmod(c[1] - 1, 6)
 	var at := Hex.tile_position(t.x, t.y)
 	var out := Water.normal(edge)
-	var foot := at + Vector2(Hex.A, -0.135).rotated(deg_to_rad(60.0 * edge))
+	var foot := at + Vector2(Hex.A, -0.7425).rotated(deg_to_rad(60.0 * edge))
 	var front := GroundCover.tile_at(foot + out * 3.0)
 	if front != Cliffs.beside(t, edge):
 		return "straight ahead is %s" % front

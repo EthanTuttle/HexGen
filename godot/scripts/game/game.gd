@@ -132,6 +132,10 @@ func _ready() -> void:
 		var pc := PlainsCheck.new()
 		pc.game = self
 		add_child(pc)
+	elif "--gorgecheck" in OS.get_cmdline_user_args():
+		var gc := GorgeCheck.new()
+		gc.game = self
+		add_child(gc)
 	elif "--desertcheck" in OS.get_cmdline_user_args():
 		var dc := DesertCheck.new()
 		dc.game = self
@@ -442,8 +446,8 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 
 
 ## Which of a finished region's tiles gets its landmark: at random, from the tiles where it fits (DOCS: design/02 ->
-## Crossing water, Bridges on rapids). PLACEHOLDER (a question for Ethan): if none fits, a random tile keeps the plain
-## look (region_look), so a rapids region can have no Troll Bridge.
+## Crossing water, Bridges on rapids). If none fits, a random tile keeps the plain look (region_look); no 7- or 12-tile
+## rapids region tested by the art session came to that.
 func _landmark_tile(variant: String, tiles: Array[Vector2i], placed := {}) -> Vector2i:
 	var lm: String = Variants.LANDMARK_OF.get(variant, "")
 	var fits := tiles.filter(func(c): return _landmark_fits(lm, variant, c, tiles, placed))
@@ -460,7 +464,10 @@ func _landmark_fits(lm: String, variant: String, c: Vector2i, tiles: Array[Vecto
 		var x = variant if tiles.has(c + n) else placed.get(c + n, map.terrains.get(c + n))
 		near.append(x)
 		mask.append(Variants.is_water(x))
-	return Water.landmark_fits(lm, mask, "%d,%d" % [c.x, c.y], Water.edge_widths(variant, near))
+	var widths := Water.edge_widths(variant, near)
+	if Water.FAMILY.get(variant) == "rapids":
+		widths = Water.with_falls(widths, mask, c.x, c.y)
+	return Water.landmark_fits(lm, mask, "%d,%d" % [c.x, c.y], widths)
 
 
 ## Records a finished region. variant "" means a tier 2 region with no art yet (it keeps its terrain's look).
@@ -612,7 +619,7 @@ func spawn_forest_regions() -> void:
 		_debug_road(DEBUG_HILLS[v] + Vector2i(-3, 3), changes)
 	for v: String in DEBUG_RIVERS:
 		var tiles: Array[Vector2i] = []
-		var river_shape: Array = DEBUG_PLAINS_SHAPE if v == "rapids" and "--nobridge" in OS.get_cmdline_user_args() else DEBUG_RIVER_SHAPES[v]
+		var river_shape: Array = DEBUG_RIVER_SHAPES[v]
 		for s: Vector2i in river_shape:
 			tiles.append(DEBUG_RIVERS[v] + s)
 		if tiles.any(func(x): return map.terrains.has(x) or changes.has(x)):
@@ -774,6 +781,10 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		map.flow_toward.merge(toward, true)
 	todo.sort_custom(func(a, b): return Rules.hex_distance(a, from) < Rules.hex_distance(b, from))
 	busy = true
+	var changes := {}
+	for c in todo:
+		changes[c] = region_look(region, c)
+	var gorges := map.start_gorges(changes)
 	const SINK := 0.22
 	const STEP := 0.09
 	for k in todo.size():
@@ -786,9 +797,8 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		while not map.canyon_done(job):
 			await get_tree().process_frame
 		map.finish_canyon(job)
-	var changes := {}
-	for c in todo:
-		changes[c] = region_look(region, c)
+	while not map.gorges_done(gorges):
+		await get_tree().process_frame
 	map.retile(changes)
 	if not grew.is_empty():
 		map.canyon_dust(grew)

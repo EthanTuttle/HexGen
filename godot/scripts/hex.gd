@@ -20,7 +20,7 @@ const PALETTE := {
 	"hills": "#BFAE8E", "swamp": "#7F9A6E", "desert": "#EDD49A", "ruins": "#B3ADA4", "soil_light": "#8A6446",
 	"soil_dark": "#6B4C35", "grass_ink": "#7FA95A", "leaf": "#4E8049", "leaf_dark": "#3B6A3A",
 	"trunk": "#7A5236", "field_a": "#DCC562", "field_b": "#C9A94A", "field_c": "#9DBF5E", "hedge": "#4F7A33",
-	"water": "#86BEDB", "water_deep": "#5E9CC7", "water_fast": "#9CCFE3", "water_still": "#93CFC7", "foam": "#F4FAF8",
+	"water": "#86BEDB", "water_deep": "#5E9CC7", "water_fast": "#6FAFC9", "fall_light": "#A8D5E2", "water_still": "#93CFC7", "foam": "#F4FAF8",
 	"wave_light": "#8FC2DE", "smooth_stone": "#BDB9AB", "stone_block": "#A3A6A8", "stone_block_dark": "#85898C", "bank": "#C9B58A", "reed": "#6E8F3E", "lily": "#5E9E4E", "boat": "#E9DCC0",
 	"wall": "#EFE2C6", "roof": "#B5523B", "road": "#CDB58A", "cobble": "#BCB2A4", "cobble_dark": "#A69C8E",
 	"fence": "#8A6446", "rock": "#A9A39A", "rock_dark": "#8F897F", "rock_light": "#BEB8AE",
@@ -29,7 +29,7 @@ const PALETTE := {
 	"cactus": "#6E9A5A", "bog_water": "#5F7F6C", "mud": "#7A7152", "hummock": "#6F8E5C", "deadwood": "#7C6E5E",
 	"deep_forest": "#466F47", "pine_deep": "#3A6A41", "hide": "#8A6A4E", "hide_light": "#C9B79C",
 	"flower_pink": "#E9A3B8", "flower_white": "#F4F1E8", "flower_blue": "#9DB4E0", "highland_grass": "#9FB07E",
-	"heather": "#9C6FA0", "hay": "#E3C45E", "stubble": "#D9C27A", "sail": "#EFE6D2", "timber": "#5E4532",
+	"heather": "#9C6FA0", "hay": "#D1B668", "stubble": "#D9C27A", "sail": "#EFE6D2", "timber": "#5E4532",
 	"awning_a": "#C8553D", "awning_b": "#F2E8D5", "crate": "#A7825A", "fruit": "#D9822B", "sandbar": "#E3D3A8",
 	"bog": "#6B8462", "bog_dark": "#4A6457", "toadstool": "#F0C24E", "poison_purple": "#8E4FA6",
 	"poison_yellow": "#E6D23F", "spiky": "#4F6B3A", "wasteland": "#E2CFA2", "sandstone": "#D6B484",
@@ -44,6 +44,8 @@ const PALETTE := {
 	"haunted": "#8C937C", "raided": "#94A06A", "orchard_grass": "#7FAE57", "window_faint": "#E6D79A",
 	# hills variants (hexkit.COLOURS, tiles v45)
 	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A",
+	"rock_wet": "#4B4D52", "rock_wet_dark": "#35373C", "rock_wet_moss": "#56704A", "gorge_lane_a": "#4F5155", "gorge_lane_b": "#575A5C",
+	"gorge_lane_c": "#62655F", "gorge_lane_d": "#7B8A66",
 	# town variants (hexkit.COLOURS, tiles v50)
 	"mud_ground": "#CDB48A", "pale_paving": "#B7BF9F", "lantern_red": "#E5432D",
 	# desert variants (hexkit.COLOURS, tiles v60)

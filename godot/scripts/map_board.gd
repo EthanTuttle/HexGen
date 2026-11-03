@@ -49,7 +49,7 @@ var _tile_nodes := {}
 var _water_node: Node3D
 var _water_cache := {}     # (q, r) -> _water_info(), reused while what it depends on stays the same
 var _water_mats := {}      # style -> its water material
-var _troll_spots := {}     # Troll Bridge tile -> where its bridge was placed
+var _troll_water := {}     # Troll Bridge tile -> {mask, widths} when it stood: its water is frozen from then on (design/02)
 var _port_boats := []      # the River Port's boats, which bob
 var _still_mists := []     # still waters' mist, shown at dawn
 var _slots_node: Node3D
@@ -91,6 +91,13 @@ var canyon_stats := []                 # each generated region's triangles and t
 var _canyon_meshes := {}               # canyon tile -> its mesh
 var _canyon_dirty := {}                # canyon tiles with new rock, waiting to be rebuilt
 var _canyon_mat: StandardMaterial3D    # marks the stencil, for the minis' silhouette through rock
+var _gorge_ground: ShaderMaterial      # a gorge's land: the ground's colours, and marks the stencil too
+var _fall_mat: ShaderMaterial          # a waterfall: unlit, so it doesn't go grey in shade
+var _gorge_foam_mat: ShaderMaterial   # a gorge's white water: unlit, so walls don't shade it grey
+var _dressing_cache := {}              # water tile -> its banks, dressing and boats' spots
+var _surface_cache := {}               # water tile -> [what its surface depends on, its surface]
+var gorge_build_us := 0                # the slowest Gorge.build so far on the main thread, for the check's report
+var gorge_job_ms := 0                  # the last region's gorges, off the main thread
 var _features := {}                    # badlands tile -> what stands at its corners (DesertLands.badlands_features)
 var _clip_mats := {}                   # surface material -> its cut-off version while a region rises
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
@@ -289,7 +296,31 @@ func walk_z(p: Vector2) -> float:
 		var local := Water.turned(p - Hex.tile_position(t.x, t.y), -landmark_turns.get(t, 0))
 		var hit := _along_line(local, DesertLands.ramp_walk())
 		return hit.y if hit.x < 0.8 else 0.0
+	if water_shapes.has(t) and water_shapes[t].has("lane_lines"):
+		var local := p - Hex.tile_position(t.x, t.y)
+		for line: PackedVector3Array in water_shapes[t].lane_lines:
+			var hit := _along_line(local, line)
+			if hit.x < 0.35:
+				return hit.y
 	return NAN
+
+
+## The water's height under a mini in a gorge, felt at q (a corner of its base) with its middle at centre; NAN if it isn't
+## down in the cut. A corner over the wall or the land beyond counts as water, so a wader isn't lifted off the bed by a wall.
+func wading_z(centre: Vector2, q: Vector2) -> float:
+	var t := GroundCover.tile_at(centre)
+	if not water_shapes.has(t) or not water_shapes[t].has("gorge"):
+		return NAN
+	var w: Dictionary = water_shapes[t]
+	var local := centre - Hex.tile_position(t.x, t.y)
+	if not Water.in_water(w.gorge.cut, local):
+		return NAN
+	var t2 := GroundCover.tile_at(q)
+	if t2 != t and water_shapes.has(t2) and water_shapes[t2].has("gorge"):
+		var l2 := q - Hex.tile_position(t2.x, t2.y)
+		if Water.in_water(water_shapes[t2].gorge.cut, l2):
+			return Gorge.water_z(water_shapes[t2].mask, water_shapes[t2].widths, l2)
+	return Gorge.water_z(w.mask, w.widths, q - Hex.tile_position(t.x, t.y) if t2 == t else local)
 
 
 func _canyon_z(t: Vector2i, local: Vector2) -> float:
@@ -372,6 +403,8 @@ func edge_open(a: Vector2i, b: Vector2i) -> bool:
 	var edge: int = Hex.NEIGHBOURS.find(b - a)
 	if (canyons.has(a) and not canyon_open(a, edge)) or (canyons.has(b) and not canyon_open(b, (edge + 3) % 6)):
 		return false
+	if _water_edge_shut(a, edge) or _water_edge_shut(b, (edge + 3) % 6):
+		return false
 	if raised.has(a) != raised.has(b):
 		return not climb_between(a, b).is_empty()
 	if streets.has(a) and streets.has(b):
@@ -381,6 +414,17 @@ func edge_open(a: Vector2i, b: Vector2i) -> bool:
 	var fenced := a if gates.has(a) else b
 	var other := b if gates.has(a) else a
 	return Hex.NEIGHBOURS.find(other - fenced) in gates[fenced]
+
+
+## Nothing walks or floats over a rapids tile's waterfall (river kit), and a land edge of a gorge with no way down it or
+## bridge over it is walked round.
+func _water_edge_shut(t: Vector2i, edge: int) -> bool:
+	if not water_shapes.has(t):
+		return false
+	var w: Dictionary = water_shapes[t]
+	if Water.falling(w.widths, edge):
+		return true
+	return w.has("gorge") and not w.mask[edge] and not w.gorge.walks.has(edge) and not w.get("bridge", {}).get("routes", {}).has(edge)
 
 
 ## Works out which tiles are raised, their cliffs and ledges; returns the raised tiles whose cliffs changed.
@@ -842,10 +886,13 @@ func _build_tile(t: Vector2i) -> void:
 			rock.position = Hex.to3(at)
 			node.add_child(rock)
 		return
-	if not high:   # raised ground covers the tile, and a base's soil would stick out of the cliff
+	var dug := terrain == "river" and _is_gorge(t)   # rapids: no slab, what's left of the land is its ground
+	if not high and not dug:   # raised ground covers the tile, and a base's soil would stick out of the cliff
 		var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
 		base.set_surface_override_material(0, _ground)
 	if terrain == "river":
+		if dug:
+			_add_gorge(node, t, at)
 		_place_water_pieces(node, t, at)
 		return
 	var centre := "_centre"
@@ -1159,16 +1206,64 @@ func _update_water() -> void:
 		_build_water()
 
 
-## One water tile's shape, routes, props and landmark spot; unchanged while what they depend on is.
-func _water_info(t: Vector2i) -> Dictionary:
+## [water edges, widths] of a tile called name, with pending's changes taken as made.
+func _water_inputs(t: Vector2i, name: String, pending := {}) -> Array:
 	var near := []
 	var mask := []
-	for n in Hex.NEIGHBOURS:
-		near.append(terrains.get(t + n))
-		mask.append(Variants.is_water(near[-1]))
+	for i in 6:
+		var n: Vector2i = t + Hex.NEIGHBOURS[i]
+		near.append(pending.get(n, terrains.get(n)))
+		mask.append(Variants.is_water(near[-1]) and not _frozen_shut(t, n, i))
+	var widths := Water.edge_widths(name, near)
+	for i in 6:   # both tiles keep the width the frozen tile has at their shared edge
+		var n: Vector2i = t + Hex.NEIGHBOURS[i]
+		if _troll_water.has(n) and mask[i]:
+			var across: float = _troll_water[n].widths[(i + 3) % 6]
+			widths[i] = Water.RIVER_WIDTH if across == Water.FALL_WIDTH else across
+	if Water.FAMILY.get(name) == "rapids":
+		widths = Water.with_falls(widths, mask, t.x, t.y)
+	if _troll_water.has(t):
+		return [_troll_water[t].mask, _troll_water[t].widths]
+	return [mask, widths]
+
+
+## Works out the gorges of tiles about to become rapids off the main thread, as Gorge.build keeps them: retile then finds
+## them ready. Wait on gorges_done before anything else asks Gorge for a tile.
+func start_gorges(changes: Dictionary) -> Dictionary:
+	var todo := []
+	for t: Vector2i in changes:
+		if Water.FAMILY.get(changes[t]) == "rapids":
+			var inputs := _water_inputs(t, changes[t], changes)
+			if inputs[0].has(true):
+				todo.append([inputs[0], "%d,%d" % [t.x, t.y], inputs[1], Variants.LANDMARK_CENTRES.has(changes[t])])
+	if todo.is_empty():
+		return {}
+	var job := {ms = 0}
+	job.id = WorkerThreadPool.add_task(func():
+		var t0 := Time.get_ticks_usec()
+		for a in todo:
+			Gorge.build(a[0], a[1], a[2], a[3])
+		job.ms = (Time.get_ticks_usec() - t0) / 1000)
+	return job
+
+
+func gorges_done(job: Dictionary) -> bool:
+	if job.is_empty():
+		return true
+	if not WorkerThreadPool.is_task_completed(job.id):
+		return false
+	WorkerThreadPool.wait_for_task_completion(job.id)
+	gorge_job_ms = job.ms
+	return true
+
+
+## One water tile's shape, routes, props and landmark spot; unchanged while what they depend on is.
+func _water_info(t: Vector2i) -> Dictionary:
 	var name: String = terrains[t]
 	var band: int = flow_dist.get(t, 0) if flow_dist.get(t, 0) in [1, 2] else 0
-	var widths := Water.edge_widths(name, near)
+	var inputs := _water_inputs(t, name)
+	var mask: Array = inputs[0]
+	var widths: Array = inputs[1]
 	var key := [name, mask, widths, band]
 	if _water_cache.has(t) and _water_cache[t].key == key:
 		return _water_cache[t]
@@ -1177,6 +1272,13 @@ func _water_info(t: Vector2i) -> Dictionary:
 	var w := Water.tile_water(mask, seed, widths, style)
 	var landmark := Variants.LANDMARK_CENTRES.has(name)
 	w.merge({key = key, style = style, mask = mask, widths = widths, seed = seed, band = band, landmark = landmark, dry = []})
+	if style == "rapids" and mask.has(true):
+		var t0 := Time.get_ticks_usec()
+		w.gorge = Gorge.build(mask, seed, widths, landmark)
+		gorge_build_us = maxi(gorge_build_us, Time.get_ticks_usec() - t0)
+		w.cover_outlines = w.gorge.cut
+		w.cover_shores = [Water._closed(w.gorge.cut[0])]
+		w.lane_lines = _lane_lines(w.gorge.walks)
 	w.props = Water.tile_props(mask, seed, widths, style, band, landmark)
 	var turn := 0
 	if name == "riverport":
@@ -1202,16 +1304,14 @@ func _water_info(t: Vector2i) -> Dictionary:
 		var lt: int = landmark_turns.get(t, 0)
 		w.dry.append([Water.turned(Water.LAIR_LAND, lt), Water.turned(Water.LAIR_STOP, lt), 0.5])
 	elif name == "trollbridge":
-		# PLACEHOLDER: design/02 hasn't said what happens if a later water neighbour takes the spot away: it stays where it was.
-		var spot := Water.bridge_spot(mask, seed, widths, Water.TROLL_HALF)
-		if not _troll_spots.has(t) and not spot.is_empty():
-			_troll_spots[t] = spot
-		w.bridge = _troll_spots.get(t, {})
+		w.bridge = Water.rapids_spot(mask, seed, widths, true)
 		w.bridge_piece = "trollbridge_centre"
+		if not w.bridge.is_empty():   # it stands: from here its water is frozen (design/02)
+			_troll_water[t] = {mask = mask, widths = widths}
 	else:
 		for prop in w.props:
 			if prop[0] == "rapids_bridge":
-				w.bridge = Water.bridge_spot(mask, seed, widths)
+				w.bridge = Water.rapids_spot(mask, seed, widths)
 				w.bridge_piece = "rapids_bridge"
 	if not w.get("bridge", {}).is_empty():
 		var half := Water.TROLL_HALF if w.bridge_piece == "trollbridge_centre" else Water.BRIDGE_HALF
@@ -1219,6 +1319,76 @@ func _water_info(t: Vector2i) -> Dictionary:
 		w.dry.append([w.bridge.middle - axis * half, w.bridge.middle + axis * half, 0.75])
 	_water_cache[t] = w
 	return w
+
+
+## Once the Troll Bridge stands, a later water neighbour's channel doesn't reach it: the shared edge is land for both tiles.
+func _frozen_shut(t: Vector2i, n: Vector2i, i: int) -> bool:
+	return (_troll_water.has(t) and not _troll_water[t].mask[i]) or (_troll_water.has(n) and not _troll_water[n].mask[(i + 3) % 6])
+
+
+func _is_gorge(t: Vector2i) -> bool:
+	if not water_shapes.has(t):
+		water_shapes[t] = _water_info(t)
+	return water_shapes[t].has("gorge")
+
+
+## The stretches of a gorge's walks that are on a lane, each once: from its top down to its foot, with their heights.
+static func _lane_lines(walks: Dictionary) -> Array:
+	var seen := {}
+	for e: int in walks:
+		var walk: PackedVector3Array = walks[e]
+		var first := 0
+		while first < walk.size() - 2 and walk[first + 1].z >= 0.0:
+			first += 1
+		seen[walk[-1]] = walk.slice(first, walk.size() - 1)
+	return seen.values()
+
+
+func _gorge_foam() -> ShaderMaterial:
+	if _gorge_foam_mat == null:
+		_gorge_foam_mat = ShaderMaterial.new()
+		_gorge_foam_mat.shader = load("res://shaders/fall.gdshader")
+		_gorge_foam_mat.set_shader_parameter("bands_on", 0.0)
+	return _gorge_foam_mat
+
+
+## A rapids tile's rock, its ground and any waterfall, one mesh each, kept with its shape.
+func _add_gorge(node: Node3D, t: Vector2i, at: Vector2) -> void:
+	var w: Dictionary = water_shapes[t]
+	if not w.has("gorge_meshes"):
+		var rock := Piece.new()
+		var ground := Piece.new()
+		var fall := Piece.new()
+		for tri in w.gorge.tris:
+			if tri[3] == "ground":
+				ground.tri(tri[0], tri[1], tri[2], Color.WHITE)
+			elif tri[3] in Gorge.FALL_MATS:
+				fall.tri(tri[0], tri[1], tri[2], Hex.colour(tri[3]))
+			else:
+				rock.tri(tri[0], tri[1], tri[2], Hex.colour(tri[3]))
+		for side in w.gorge.sides:
+			rock.poly(side[0], Hex.colour(side[1]))
+		w.gorge_triangles = rock.triangles + ground.triangles + fall.triangles
+		w.gorge_meshes = [rock.mesh(), ground.mesh(), fall.mesh() if not fall.is_empty() else null]
+	if _gorge_ground == null:
+		_gorge_ground = ShaderMaterial.new()
+		_gorge_ground.shader = load("res://shaders/ground_stencil.gdshader")
+		_gorge_ground.set_shader_parameter("terrain_map", _ground_tex)
+		_gorge_ground.set_shader_parameter("blend_width", BLEND_WIDTH)
+		_fall_mat = ShaderMaterial.new()
+		_fall_mat.shader = load("res://shaders/fall.gdshader")
+	var mats := [_canyon_material(), _gorge_ground, _fall_mat]
+	for k in 3:
+		if w.gorge_meshes[k] == null:
+			continue
+		var mi := MeshInstance3D.new()
+		mi.name = ["gorge_rock", "gorge_ground", "gorge_fall"][k]
+		mi.mesh = w.gorge_meshes[k]
+		mi.material_override = mats[k]
+		mi.position = Hex.to3(at)
+		if k == 2:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(mi)
 
 
 ## Whether a point is in the water, not on a bridge, stepping stones, a rock or the port's quay.
@@ -1331,12 +1501,22 @@ func _water_graph(t: Vector2i) -> TilePaths:
 		for e in r.lines:
 			g.add_line(r.lines[e], at)
 			g.edge_node[e] = g._node(at + r.lines[e][0])
-		var lands := Water.landings(w.mask, w.seed, w.widths, w.style)
 		var bridge: Dictionary = w.get("bridge", {})
-		for e in lands:
-			if bridge.is_empty() or not bridge.routes.has(e):
-				g.add_line(PackedVector2Array([lands[e][0], lands[e][1], lands[e][2], r.hub]), at)
-				g.edge_node[e] = g._node(at + lands[e][0])
+		if w.has("gorge"):   # each land edge's walk down a lane (Gorge), where a bridge doesn't serve it
+			for e: int in w.gorge.walks:
+				if bridge.is_empty() or not bridge.routes.has(e):
+					var line := PackedVector2Array()
+					for q: Vector3 in w.gorge.walks[e]:
+						line.append(Vector2(q.x, q.y))
+					line.append(r.hub)
+					g.add_line(line, at)
+					g.edge_node[e] = g._node(at + line[0])
+		else:
+			var lands := Water.landings(w.mask, w.seed, w.widths, w.style)
+			for e in lands:
+				if bridge.is_empty() or not bridge.routes.has(e):
+					g.add_line(PackedVector2Array([lands[e][0], lands[e][1], lands[e][2], r.hub]), at)
+					g.edge_node[e] = g._node(at + lands[e][0])
 		if not bridge.is_empty():
 			var ends := []
 			for e in bridge.routes:
@@ -1364,12 +1544,18 @@ func _place_water_pieces(node: Node3D, t: Vector2i, at: Vector2) -> void:
 	var name: String = terrains[t]
 	for prop in w.props:
 		var mi := Kit.place(node, _kit, prop[0], at + prop[1], prop[2])
+		var z := Water.prop_z(prop[0])
+		if mi:
+			mi.position.y = z
 		if prop[0] == "rapids_fall" and mi:
 			for e in Kit.path_data("rapids_fall").get("effects", []):
 				if e.kind == "spray":
-					node.add_child(FarmFx.spray(Hex.to3(at + prop[1], e.at[1])))
+					node.add_child(FarmFx.spray(Hex.to3(at + prop[1], z + e.at[1])))
 		if prop[0] == "rapids_bridge":
 			_deck(node, at, prop[0], w.bridge.middle, w.bridge.angle, 0.6)
+	if w.has("gorge"):
+		for f in w.gorge.falls:
+			node.add_child(FarmFx.spray(Hex.to3(at + f.foot, -Gorge.DEPTH + 0.3)))
 	var turn: int = landmark_turns.get(t, 0)
 	if name == "serpentlair":
 		Kit.place(node, _kit, "serpentlair_centre", at, deg_to_rad(60.0 * turn))
@@ -1465,59 +1651,204 @@ func _water_material(style: String) -> ShaderMaterial:
 			m.set_shader_parameter("sparkle_strength", 1.0)
 		elif style == "rapids":
 			m.set_shader_parameter("period", 1.2)
+			m.set_shader_parameter("deep", Vector3(c.r, c.g, c.b) * 0.85)
 		_water_mats[style] = m
 	return _water_mats[style]
 
 
 func _build_water() -> void:
-	var dressing := Piece.new()
-	var groups := {}        # water style -> {shores = [world plan points, flow sign, speed], outlines = world plan outlines}
-	var bank := Hex.colour("bank")
+	var dressing_arrays := [PackedVector3Array(), PackedVector3Array(), PackedColorArray()]
+	var foam_arrays := [PackedVector3Array(), PackedVector3Array(), PackedColorArray()]   # a gorge's white water, unlit
+	var by_tile := {}           # water tile -> [its shores (world plan points, flow sign, speed), its flow signs]
 	for t: Vector2i in water_shapes:
 		var w: Dictionary = water_shapes[t]
 		var at := Hex.tile_position(t.x, t.y)
-		var seed := "%d,%d" % [t.x, t.y]
-		var h := Water.downhill(t.x, t.y)
-		var inflow := []
+		var near_rapids := []
 		for n in Hex.NEIGHBOURS:
-			inflow.append(Water.downhill(t.x + n.x, t.y + n.y) < h)
+			near_rapids.append(Water.FAMILY.get(terrains.get(t + n)) == "rapids")
+		var own := "rapids" if w.style == "rapids" else "lake" if w.kind in ["lake", "pond"] else "river"
 		var speed := RIVER_SPEED if w.kind in ["river", "spring"] else LAKE_SPEED
-		var signs := Water.flow_signs(w.ends, inflow)
-		var group: Dictionary = groups.get_or_add(w.style if Water.WATER_MAT.has(w.style) else "", {shores = [], outlines = []})
-		var shores: Array = group.shores
-		var outlines: Array = group.outlines
+		var signs := Water.flow_signs(w.ends, Water.flow_in(t.x, t.y, w.mask, near_rapids, own))
+		var shores := []
 		for k in w.shores.size():
 			var pts := PackedVector2Array()
 			for p in w.shores[k]:
 				pts.append(at + p)
 			shores.append([pts, signs[k], speed])
-		for poly: PackedVector2Array in w.outlines:
-			var pts := PackedVector2Array()
-			for p in poly:
-				pts.append(at + p)
-			outlines.append(pts)
-		# Banks and dressing (water.add_water with plates=False, boats=False)
-		dressing.offset = Vector3(at.x, at.y, 0)
-		if w.has("quads"):
-			for quad: PackedVector2Array in w.quads:
-				dressing.flat(quad, 0.025, bank)
-			for wall in w.walls:   # the port's stone, where its land meets water
-				var d: Vector2 = wall[1] - wall[0]
-				var mid: Vector2 = (wall[0] + wall[1]) * 0.5
-				dressing.box(Vector3(mid.x, mid.y, 0), Vector3(d.length(), 0.22, 0.17), Hex.colour("stone_block_dark"), 0.0, d.angle())
-				dressing.box(Vector3(mid.x, mid.y, 0), Vector3(d.length() + 0.02, 0.26, 0.04), Hex.colour("stone_block"), 0.17, d.angle())
-		else:
-			for curve: PackedVector2Array in w.shores:
-				for quad in Water.bank_strip(curve, 0.22):
-					dressing.flat(quad, 0.025, bank)
-			_add_dressing(dressing, w, seed, at)
-	_water_node.add_child(dressing.instance("water_dressing"))
+		by_tile[t] = [shores, signs]
+	var groups := {}            # water style -> [vertices, depths, flows]
+	for t: Vector2i in water_shapes:
+		var w: Dictionary = water_shapes[t]
+		var at := Hex.tile_position(t.x, t.y)
+		var seed := "%d,%d" % [t.x, t.y]
+		var style: String = w.style if Water.WATER_MAT.has(w.style) else ""
+		var surface := _tile_surface(t, w, style, by_tile)
+		var group: Array = groups.get_or_add(style, [PackedVector3Array(), PackedVector2Array(), PackedVector2Array()])
+		for k in 3:
+			group[k].append_array(surface[k])
+		var parts := _tile_dressing(t, w, seed, at)
+		for k in 3:
+			dressing_arrays[k].append_array(parts.dressing[k])
+			foam_arrays[k].append_array(parts.foam[k])
+		for b in parts.boats:
+			var piece := Piece.new()
+			var ang: float = b[1]
+			piece.box(Vector3.ZERO, Vector3(0.9, 0.36, 0.14), Hex.colour("trunk"), 0.03, ang)
+			piece.box(Vector3.ZERO, Vector3(0.5, 0.26, 0.06), Hex.colour("boat"), 0.17, ang)
+			var boat := Node3D.new()
+			boat.name = "boat"
+			boat.position = Hex.to3(at + b[0])
+			boat.add_child(piece.instance("hull"))
+			_water_node.add_child(boat)
+			boats.append(boat)
+	_water_node.add_child(_flat_mesh("water_dressing", dressing_arrays, Piece.material()))
+	if not foam_arrays[0].is_empty():
+		var mi := _flat_mesh("gorge_foam", foam_arrays, _gorge_foam())
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_water_node.add_child(mi)
 	for style in groups:
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = groups[style][0]
+		arrays[Mesh.ARRAY_TEX_UV] = groups[style][1]
+		arrays[Mesh.ARRAY_TEX_UV2] = groups[style][2]
+		var normals := PackedVector3Array()
+		normals.resize(groups[style][0].size())
+		normals.fill(Vector3.UP)
+		arrays[Mesh.ARRAY_NORMAL] = normals
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		var mi := MeshInstance3D.new()
 		mi.name = "water_surface" if style == "" else "water_surface_" + style
-		mi.mesh = _water_mesh(groups[style].outlines, groups[style].shores)
+		mi.mesh = mesh
 		mi.material_override = _water_material(style)
 		_water_node.add_child(mi)
+
+
+## One mesh from a piece's [vertices, normals, colours].
+func _flat_mesh(name: String, parts: Array, mat: Material) -> MeshInstance3D:
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = parts[0]
+	arrays[Mesh.ARRAY_NORMAL] = parts[1]
+	arrays[Mesh.ARRAY_COLOR] = parts[2]
+	var mi := MeshInstance3D.new()
+	mi.name = name
+	if not parts[0].is_empty():
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		mi.mesh = mesh
+		mi.material_override = mat
+	return mi
+
+
+static func _piece_parts(p: Piece) -> Array:
+	if p.is_empty():
+		return [PackedVector3Array(), PackedVector3Array(), PackedColorArray()]
+	var arrays := p.mesh().surface_get_arrays(0)
+	return [arrays[Mesh.ARRAY_VERTEX], arrays[Mesh.ARRAY_NORMAL], arrays[Mesh.ARRAY_COLOR]]
+
+
+## A tile's banks and dressing (water.add_water with plates=False, boats=False), kept while its shape stays the same.
+func _tile_dressing(t: Vector2i, w: Dictionary, seed: String, at: Vector2) -> Dictionary:
+	if _dressing_cache.has(t) and _dressing_cache[t].key == w.key:
+		return _dressing_cache[t]
+	var dressing := Piece.new()
+	var foam := Piece.new()
+	var bank := Hex.colour("bank")
+	dressing.offset = Vector3(at.x, at.y, 0)
+	foam.offset = dressing.offset
+	var boat_spots := []
+	if w.has("gorge"):
+		_add_gorge_dressing(dressing, foam, w, seed)
+	elif w.has("quads"):
+		for quad: PackedVector2Array in w.quads:
+			dressing.flat(quad, 0.025, bank)
+		for wall in w.walls:   # the port's stone, where its land meets water
+			var d: Vector2 = wall[1] - wall[0]
+			var mid: Vector2 = (wall[0] + wall[1]) * 0.5
+			dressing.box(Vector3(mid.x, mid.y, 0), Vector3(d.length(), 0.22, 0.17), Hex.colour("stone_block_dark"), 0.0, d.angle())
+			dressing.box(Vector3(mid.x, mid.y, 0), Vector3(d.length() + 0.02, 0.26, 0.04), Hex.colour("stone_block"), 0.17, d.angle())
+	else:
+		for curve: PackedVector2Array in w.shores:
+			for quad in Water.bank_strip(curve, 0.22):
+				dressing.flat(quad, 0.025, bank)
+		boat_spots = _add_dressing(dressing, w, seed)
+	var out := {key = w.key, dressing = _piece_parts(dressing), foam = _piece_parts(foam), boats = boat_spots}
+	_dressing_cache[t] = out
+	return out
+
+
+## A tile's water surface, kept until its shape or flow, or a neighbour's, changes: only the shores of the tile and those
+## round it can be the nearest to a point on it. [vertices, depths, flows].
+func _tile_surface(t: Vector2i, w: Dictionary, style: String, by_tile: Dictionary) -> Array:
+	var key := [w.key, by_tile[t][1]]
+	var shores: Array = by_tile[t][0].duplicate()
+	for n in Hex.NEIGHBOURS:
+		var o: Vector2i = t + n
+		if by_tile.has(o):
+			var same: bool = (water_shapes[o].style if Water.WATER_MAT.has(water_shapes[o].style) else "") == style
+			key.append([water_shapes[o].key, by_tile[o][1]])
+			if same:
+				shores.append_array(by_tile[o][0])
+		else:
+			key.append(null)
+	if _surface_cache.has(t) and _surface_cache[t][0] == key:
+		return _surface_cache[t][1]
+	var at := Hex.tile_position(t.x, t.y)
+	var outlines := []
+	for poly: PackedVector2Array in w.outlines:
+		var pts := PackedVector2Array()
+		for p in poly:
+			pts.append(at + p)
+		outlines.append(pts)
+	var surface := _water_surface(outlines, shores, [w.mask, w.widths, at] if w.has("gorge") else null)
+	_surface_cache[t] = [key, surface]
+	return surface
+
+
+## What water.add_water puts on a gorge: foam where a waterfall lands and a rock either side of its top, the white water and boulders.
+func _add_gorge_dressing(p: Piece, white: Piece, w: Dictionary, seed: String) -> void:
+	var foam := Hex.colour("foam")
+	var rf := PyRandom.new(seed + "-falls")
+	for f in w.gorge.falls:
+		var d: Vector2 = f.foot - f.top
+		var l := d.length()
+		var into: Vector2 = d / (l if l != 0.0 else 1.0)
+		var side := Vector2(-into.y, into.x)
+		for k in 9:
+			var q: Vector2 = f.foot + side * (f.half * (-0.8 + 1.6 * k / 8.0)) + into * rf.uniform(-0.05, 0.2)
+			var ring := []
+			for j in 7:
+				var a := TAU * j / 7.0
+				var x: float = q.x + rf.uniform(0.2, 0.34) * cos(a)
+				var y: float = q.y + rf.uniform(0.14, 0.26) * sin(a)
+				ring.append(Vector3(x, y, -Gorge.DEPTH + 0.02))
+			white.poly(ring, foam)
+		for k in 6:
+			var q: Vector2 = f.foot + side * (rf.uniform(-f.half, f.half) * 0.8) + into * rf.uniform(0.35, 1.05)
+			var ring := []
+			for j in 8:
+				var a := TAU * j / 8.0
+				var x: float = q.x + rf.uniform(0.2, 0.42) * cos(a)
+				var y: float = q.y + rf.uniform(0.07, 0.16) * sin(a)
+				ring.append(Vector3(x, y, -Gorge.DEPTH + 0.015))
+			white.poly(ring, foam)
+		for sign_ in [-1, 1]:
+			var q: Vector2 = f.top + side * (sign_ * (f.top_half + 0.06)) + into * 0.14
+			p.blob(Vector3(q.x, q.y, -0.06), rf.uniform(0.15, 0.2), Hex.colour("rock_wet"), 0.0, 0.7)
+	var marks := Water.rapids_marks(w.mask, seed, w.widths, w.band)
+	for q in marks.foam:
+		var z := Gorge.water_z(w.mask, w.widths, q[0]) + 0.012
+		var ring := []
+		for k in 8:
+			var a := TAU * k / 8.0
+			var at: Vector2 = q[0] + Vector2(q[2] * cos(a), q[3] * sin(a)).rotated(q[1])
+			ring.append(Vector3(at.x, at.y, z))
+		white.poly(ring, foam)
+	var rr := PyRandom.new(seed + "-boulders")
+	for q in marks.boulders:
+		p.blob(Vector3(q[0].x, q[0].y, Gorge.water_z(w.mask, w.widths, q[0])), q[1], Hex.colour(["rock_wet", "rock_wet_dark"][rr.randbelow(2)]), 0.0, 0.75)
 
 
 func _add_lens(p: Piece, at: Vector2, ang: float, long_: float, wide: float, col: String, z: float) -> void:
@@ -1528,7 +1859,8 @@ func _add_lens(p: Piece, at: Vector2, ang: float, long_: float, wide: float, col
 	p.flat(outline, z, Hex.colour(col))
 
 
-func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
+## Returns where its boats go: they're their own nodes, so they can bob (render_animation.bob_boats).
+func _add_dressing(p: Piece, w: Dictionary, seed: String) -> Array:
 	var d := Water.dressing(w.outlines, w.shores, w.kind, seed)
 	var style: String = w.style
 	var lands := Water.landings(w.mask, seed, w.widths, style)
@@ -1542,18 +1874,9 @@ func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
 		d.lilies = []
 		d.jetties = []
 		d.boats = []
-	if style == "rapids":
-		d.reeds = []
 	if style == "great_lake":
 		for q in Water.lake_waves(w.outlines, w.shores, seed):
 			_add_lens(p, q[0], q[1], q[2], q[3], "wave_light", 0.034)
-	elif style == "rapids":
-		var marks := Water.rapids_marks(w.mask, seed, w.widths, w.band)
-		for q in marks.foam:
-			_add_lens(p, q[0], q[1], q[2], q[3], "foam", 0.034)
-		var rr := PyRandom.new(seed + "-boulders")
-		for q in marks.boulders:
-			p.blob(Vector3(q[0].x, q[0].y, 0), q[1], Hex.colour(["rock", "rock_dark"][rr.randbelow(2)]), 0.0, 0.75)
 	elif style == "still_waters":
 		for q in Water.still_lilies(w.outlines, w.shores, seed, w.band):
 			p.cylinder(Vector3(q[0].x, q[0].y, 0), q[1], 0.012, Hex.colour("lily"), 7, 0.032)
@@ -1598,18 +1921,7 @@ func _add_dressing(p: Piece, w: Dictionary, seed: String, at: Vector2) -> void:
 			for s in [-1, 1]:  # cargo crates on the bank beside it
 				var crate: Vector2 = j[0] - (dir * 0.45 + Vector2(-dir.y, dir.x) * (0.45 * s))
 				p.box(Vector3(crate.x, crate.y, 0), Vector3(0.3, 0.3, 0.28), Hex.colour("crate"), 0.0, ang + 0.2 * s)
-	# Boats are their own nodes so they can bob (render_animation.bob_boats).
-	for b in boat_spots:
-		var piece := Piece.new()
-		var ang: float = b[1]
-		piece.box(Vector3.ZERO, Vector3(0.9, 0.36, 0.14), Hex.colour("trunk"), 0.03, ang)
-		piece.box(Vector3.ZERO, Vector3(0.5, 0.26, 0.06), Hex.colour("boat"), 0.17, ang)
-		var boat := Node3D.new()
-		boat.name = "boat"
-		boat.position = Hex.to3(at + b[0])
-		boat.add_child(piece.instance("hull"))
-		_water_node.add_child(boat)
-		boats.append(boat)
+	return boat_spots
 
 
 var _time := 0.0
@@ -1632,6 +1944,10 @@ func _process(delta: float) -> void:
 		(load("res://shaders/water.tres") as ShaderMaterial).set_shader_parameter("night", night)
 		for style in _water_mats:
 			_water_mats[style].set_shader_parameter("night", night)
+		if _fall_mat:
+			_fall_mat.set_shader_parameter("night", night)
+		if _gorge_foam_mat:
+			_gorge_foam_mat.set_shader_parameter("night", night)
 		for m in _still_mists:   # thin mist at dawn on still waters (PLACEHOLDER: while the light is low)
 			if is_instance_valid(m):
 				m.visible = night > 0.15 and night < 0.85
@@ -1651,11 +1967,12 @@ static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 	return (p - (a + ab * t)).length()
 
 
-## One mesh for all water, with depth (UV.x) and flow (UV2, world XZ) per vertex, like
-## render_animation.water_mesh(): outline points, a staggered grid inside, Delaunay triangles.
-func _water_mesh(outlines: Array, shores: Array) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+## One tile's water, with depth (UV.x) and flow (UV2, world XZ) per vertex, like render_animation.water_mesh(): outline
+## points, a staggered grid inside, Delaunay triangles. slope: a gorge's water, [mask, widths, tile], Gorge.water_z.
+func _water_surface(outlines: Array, shores: Array, slope) -> Array:
+	var verts := PackedVector3Array()
+	var depths := PackedVector2Array()
+	var flows := PackedVector2Array()
 	for raw: PackedVector2Array in outlines:
 		var poly := PackedVector2Array()
 		for k in raw.size():
@@ -1678,6 +1995,7 @@ func _water_mesh(outlines: Array, shores: Array) -> ArrayMesh:
 				x += GRID
 			y += GRID
 		# Godot has no constrained Delaunay: triangulate all points, keep triangles inside the outline.
+		var at_point := {}
 		var tris := Geometry2D.triangulate_delaunay(pts)
 		for k in range(0, tris.size(), 3):
 			var a := pts[tris[k]]; var b := pts[tris[k + 1]]; var c := pts[tris[k + 2]]
@@ -1686,12 +2004,13 @@ func _water_mesh(outlines: Array, shores: Array) -> ArrayMesh:
 			if (b - a).cross(c - a) < 0:
 				var tmp := b; b = c; c = tmp
 			for p in [a, c, b]:   # clockwise for Godot's front face
-				var df := _depth_flow(p, shores)
-				st.set_uv(Vector2(df.x, 0))
-				st.set_uv2(Vector2(df.y, df.z))
-				st.set_normal(Vector3.UP)
-				st.add_vertex(Hex.to3(p, 0.03))
-	return st.commit()
+				if not at_point.has(p):
+					at_point[p] = _depth_flow(p, shores)
+				var df: Vector3 = at_point[p]
+				depths.append(Vector2(df.x, 0))
+				flows.append(Vector2(df.y, df.z))
+				verts.append(Hex.to3(p, 0.03 if slope == null else Gorge.water_z(slope[0], slope[1], p - slope[2])))
+	return [verts, depths, flows]
 
 
 static func _min_dist(p: Vector2, poly: PackedVector2Array) -> float:

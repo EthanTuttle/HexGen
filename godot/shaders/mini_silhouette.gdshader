@@ -6,8 +6,18 @@ render_mode unshaded, depth_draw_never, depth_test_inverted, cull_back, shadows_
 stencil_mode read, compare_equal, 1;
 
 uniform vec4 tint : source_color = vec4(0.16, 0.1, 0.08, 1.0);
+instance uniform float water_y = -100.0;  // a mini wading in a gorge: what's under the water doesn't show
+
+varying float world_y;
+
+void vertex() {
+	world_y = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+}
 
 void fragment() {
+	if (world_y < water_y) {
+		discard;
+	}
 	ALBEDO = tint.rgb;
 	ALPHA = tint.a;
 }

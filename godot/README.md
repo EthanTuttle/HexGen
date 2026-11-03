@@ -484,7 +484,7 @@ Rules: `design/02` -> Obstacles, `design/06` -> Tile build, `design/07` -> Water
 
 **PLACEHOLDERS on the counter (`shop_counter.gd`):** no town scene or service cards, shopkeeper token, Sell or gold in the loop, so "[Shopkeeper]", "[Shopkeeper line]", "[gold]", "[price]" and "[Item stats]" show as in the mockup and the raft costs nothing; its icon is the river terrain's.
 
-**For Ethan (kit's questions):** no tile fits a Troll Bridge: the region keeps plain rapids with no landmark piece (`region_look`). A later water neighbour takes the spot away: the bridge stays where it was (`_troll_spots`), though the water under it can change.
+**Superseded (rapids, tiles v64):** the kit's old questions about a tile with no Troll Bridge spot and a later neighbour taking it. See "Rapids gorge" below: a region with no spot keeps plain rapids (`region_look`), which no 7- or 12-tile region tested by the art session came to, and a standing Troll tile's water is frozen.
 
 ### Waiting for the phone
 
@@ -496,9 +496,49 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - Working out a route up, climbing a ledge, and a real rise with the party on it, the worst frame of each.
 - Touch on the plateau: tapping raised ground on a real screen.
 - The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
+- **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (260 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
+
+## Rapids gorge, falls and new ledges (tiles v64)
+
+Built from the top sections of `art/handoff/river_kit.md` and `art/handoff/hills_kit.md`. `-- --gorgecheck` (add `--shots` for `screens/gorge_*.png`, `--perf` for timings) checks it and ends `GORGE DONE`. `-- --gorgecheck --gorgemovie` under `--write-movie` stands the camera on moving water: `screens/gorge_flow_movie.mp4`. Compare with the Python: `python3 -I godot/tools/gorge_cases.py art/scripts <cases.json>`, then `tools/gorge_check.gd -- <cases.json>`.
+
+| Part | Where | Notes |
+| --- | --- | --- |
+| Gorge | `scripts/gorge.gd`, port of `gorge.py`; `MapBoard._add_gorge` | No slab on a rapids tile with a water neighbour. Three meshes on the tile: rock with lanes and soil (`gorge_rock`), land (`gorge_ground`, the ground's own blended colours) and any fall (`gorge_fall`). A lone rapids tile keeps the slab and a small pool |
+| Water | `MapBoard._water_surface` | Heights from `Gorge.water_z`. Still on the grid the flow shader needs, not the reference's ear clip: more triangles, smoother flow |
+| Lanes | `MapBoard._lane_lines`, `walk_z` | Heights from `Gorge.build().walks`, as a ledge's. Waders feel the water through `wading_z`, 0.4 below it |
+| Bridges | `Water.rapids_spot`, `bridge_spot`, `_bridge_search` | New pieces come from the glb; decks as before. Walked with no check |
+| Frozen Troll tile | `MapBoard._troll_water`, `_frozen_shut`, `_water_inputs` | The tile's water edges and widths are kept when its bridge first stands. A shared edge it didn't have is land for both tiles. A new tile with other water ends in a gorge head; one with only the Troll tile beside it keeps a slab and a small pool |
+| Falls | `Water.with_falls`, `pooled`, `flow_in`, `falling`; `MapBoard._water_edge_shut` | Every rapids tile takes `with_falls` widths. Flow signs come from `flow_in`. The route planner refuses a fall edge from both sides, and a gorge's land edge with no lane or bridge |
+| Silhouette | `_canyon_material`, `shaders/ground_stencil.gdshader`, `PartyWalker._update_silhouette` | Gorge rock and land write the canyon's stencil. It's on in a gorge, and doesn't show below the water |
+| Foam and falls unlit | `shaders/fall.gdshader` | So walls don't shade them grey |
+| Hills ledges, hay | The glb's pieces and paths; `Hex` palette | No code but the palette and the check's foot position |
+
+**Where the engine differs from `gorge.py`:** soil sides are wound to face out (the preview draws both sides of a face; Godot culls). Water's grid as above. 110 of 154,637 compared values differ: lips a hair apart where they fold on a bend (70), ear clips of those (12 counts, 6 areas), and in one case in 500 a different lane by a hair's difference (20 walk values, 2 of them from a bridge's route where both ends are the same distance).
+
+**Also changed:** a water tile's surface and dressing are kept per tile instead of being redrawn for the whole map. On the debug map, placing a tile beside water took about 10 s; it's now 66-233 ms.
+
+| Measure (Mac, Mobile renderer, phone size) | Result |
+| --- | --- |
+| Worst tile in 500 random cases | 1,274 triangles before foam and boulders, plus the water's grid |
+| Gorge in the debug region | 416 triangles at worst, in rock, land and fall |
+| `Gorge.build` | 21.8 ms a tile on average, 132 ms at worst in the random cases; 27 ms at worst in the debug region's play |
+| A 7-tile region turning into rapids | 32 ms off the main thread (`MapBoard.start_gorges`), worst frame 243 ms at the swap, while the tiles lie flat |
+| Placing one tile beside rapids | 66-233 ms on the main thread, with up to 7 tiles rebuilt, on the debug map |
+| View | 129 draw calls, 204,358 triangles, with the debug map's other regions in view |
+
+### PLACEHOLDER, for Ethan or the planner
+
+- **Waterfall's look:** the moving bands' speed and strength, and how far falls and foam dim at night. `fall_light`, `water_fast` and the `gorge_lane_*` and `rock_wet_moss` colours are the kit's placeholders.
+- **`downhill`:** still the placeholder flow rule (design/07's open question). If it changes, which joins get a fall changes with it.
+
+### Rough spots
+
+- **A wader on a bridged tile climbs onto the deck,** quickly rather than at once, as there's no telling from a plan point whether a mini is on the deck or under it, and a side a bridge serves has no lane.
+- From the hand-off: a pool has no way out, a bridge can stand beside a pool, and water runs uphill going downstream where no fall applies.
 
 ## Desert kit (tiles v60)
 

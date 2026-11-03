@@ -963,7 +963,13 @@ func _place_member(m: Dictionary, s: float, from: float, stop: float, delta: flo
 ## minis' silhouettes show through rock (DOCS: design/07 -> Region variant looks; shaders/mini_silhouette.gdshader).
 func _update_silhouette() -> void:
 	var hero: Vector3 = members[0].node.position
-	var on := map.canyons.has(GroundCover.tile_at(Vector2(hero.x, -hero.z))) or map.canyons.has(_tile)
+	var here := GroundCover.tile_at(Vector2(hero.x, -hero.z))
+	var on: bool = map.canyons.has(here) or map.canyons.has(_tile) or (map.water_shapes.has(here) and map.water_shapes[here].has("gorge"))
+	if on:
+		for m in members:
+			var at: Vector3 = m.node.position
+			var z := map.wading_z(Vector2(at.x, -at.z), Vector2(at.x, -at.z))
+			(m.body as MeshInstance3D).set_instance_shader_parameter("water_y", z if not is_nan(z) else -100.0)
 	if on == _silhouette_on:
 		return
 	_silhouette_on = on
@@ -995,6 +1001,8 @@ func ground(p: Vector2) -> float:
 	var hit := space.intersect_ray(q)
 	if hit.is_empty():
 		var z := map.walk_z(p)
+		if is_nan(z):
+			z = map.wading_z(p, p)
 		return z if not is_nan(z) else Variants.RAISE if map.raised.has(GroundCover.tile_at(p)) else 0.0
 	return maxf(0.0, (hit.position as Vector3).y)
 
@@ -1022,6 +1030,8 @@ func _feel(m: Dictionary, p: Vector2) -> Dictionary:
 		var y := 0.0 if level == 1 else at[0].y if k > 0 else Variants.RAISE
 		if level == 1 and hit.is_empty():
 			var z := map.walk_z(p + o)
+			if is_nan(z):
+				z = map.wading_z(p, p + o)
 			if not is_nan(z):
 				y = z
 		if not hit.is_empty():
@@ -1064,6 +1074,8 @@ func _stand_on(m: Dictionary, p: Vector2, felt: Dictionary, k: float, snap := fa
 	var old: Vector3 = m.node.position
 	if not snap:
 		y = maxf(y, lerpf(old.y, y, minf(1.0, k * Rules.HEIGHT_RATE)))
+		if y > old.y + 0.3:   # out of a gorge onto a bridge's deck: quick, not at once
+			y = old.y + k * Rules.LEDGE_EASE
 	m.node.position = Hex.to3(p, y)
 	_tilt(m)
 

@@ -15,7 +15,11 @@ const SAMPLES := 18
 const SWERVE := 1.12             # how far a delta's route swings round each island
 const LAKE_WIDTH := 3.4          # great lake: tiles join into one body, nearly a whole edge wide
 const STILL_WIDTH := 2.8         # still waters: broad, calm pools
-const RAPIDS_WIDTH := 2.0        # rapids: always a channel, even round a triangle of tiles
+const FALL_WIDTH := 1.501        # a plain river's width, on a rapids tile's edge where the rapids flow out into it: the gorge ends in a pool there, with a waterfall (Gorge)
+const POOL_BACK := 1.75          # that pool: its middle's distance from the edge
+const POOL_RADIUS := 1.45        # and its size
+const RAPIDS_WIDTH := 1.4        # rapids: a narrow gorge, always a channel, even round a triangle of tiles
+const RAPIDS_POOL := 0.85        # where a gorge starts: no wide pools
 const BROAD := {"great_lake": 0.7, "still_waters": 1.05}   # styles drawn as one body, and how far their shore stands in
 ## Water tile names and landmarks -> their style. Both tiles on an edge must share a style for its width to apply.
 const FAMILY := {"delta": "delta", "riverport": "delta", "great_lake": "great_lake", "serpentlair": "great_lake",
@@ -65,6 +69,8 @@ static func edge_interval(water: Array, i: int, widths: Array = []) -> Array:
 	var start_tri: bool = water[posmod(i - 1, 6)]
 	var end_tri: bool = water[(i + 1) % 6]
 	var width: float = widths[i] if not widths.is_empty() else RIVER_WIDTH
+	if width == FALL_WIDTH:
+		width = RIVER_WIDTH
 	if width == RAPIDS_WIDTH or not (start_tri or end_tri):
 		var half: float = width / R / 2.0
 		return [0.5 - half, 0.5 + half]
@@ -179,6 +185,36 @@ static func edge_widths(own: String, neighbours: Array) -> Array:
 	return out
 
 
+static func falling(widths: Array, i: int) -> bool:
+	return not widths.is_empty() and widths[i] == FALL_WIDTH
+
+
+## A rapids tile's widths, marking the plain river or lake edges its water flows out through (downhill): water can't climb
+## out of a gorge, so those get a pool and a waterfall.
+static func with_falls(widths: Array, water: Array, q: int, r: int) -> Array:
+	var here := downhill(q, r)
+	var out := []
+	for i in 6:
+		var n: Vector2i = Hex.NEIGHBOURS[i]
+		out.append(FALL_WIDTH if water[i] and widths[i] != RAPIDS_WIDTH and downhill(q + n.x, r + n.y) > here else widths[i])
+	return out
+
+
+## A rapids shore, pushed out round each fall's pool.
+static func pooled(curve: PackedVector2Array, widths: Array) -> PackedVector2Array:
+	var out := curve
+	for i in 6:
+		if falling(widths, i):
+			var c := normal(i) * (A - POOL_BACK)
+			var pushed := PackedVector2Array()
+			for k in out.size():
+				var d := out[k] - c
+				var ln := d.length()
+				pushed.append(c + d * (POOL_RADIUS / ln) if k > 0 and k < out.size() - 1 and ln > 1e-6 and ln < POOL_RADIUS else out[k])
+			out = pushed
+	return out
+
+
 static func tile_water(water: Array, seed: String, widths: Array = [], style := "") -> Dictionary:
 	var rng := PyRandom.new(seed)
 	var sway_angle := rng.uniform(0, TAU)
@@ -186,7 +222,7 @@ static func tile_water(water: Array, seed: String, widths: Array = [], style := 
 
 	var inset: float = BROAD.get(style, 0.0)
 	if not water.has(true):
-		var ring := circle(Vector2.ZERO, A - inset if inset != 0.0 else 1.7, rng, 0.06 if inset != 0.0 else 0.12)
+		var ring := circle(Vector2.ZERO, A - inset if inset != 0.0 else (RAPIDS_POOL if style == "rapids" else 1.7), rng, 0.06 if inset != 0.0 else 0.12)
 		return {outlines = [ring], shores = [_closed(ring)], kind = "pond", ends = [[-1, -1]]}
 
 	var spans := []
@@ -209,6 +245,23 @@ static func tile_water(water: Array, seed: String, widths: Array = [], style := 
 		var channel := PackedVector2Array([edge_point(i, t0), edge_point(i, t1)])
 		channel.append_array(bank_a.slice(1))
 		channel.append_array(bank_b.slice(0, bank_b.size() - 1))
+		if style == "rapids":   # no pool: the gorge just ends, in a rounded head
+			var side := Vector2(-n.y, n.x)
+			var half := (t1 - t0) * R / 2.0
+			var a_ := pond_at + side * (half if (p - q).dot(side) > 0 else -half)   # on p's side
+			var b_ := pond_at + (pond_at - a_)
+			bank_a = bezier(p, p - n * 1.3, a_ + n * 1.3, a_, 14)   # running straight in to the head, so no overshoot where they meet
+			bank_b = bezier(b_, b_ + n * 1.3, q - n * 1.3, q, 14)
+			var start := (a_ - pond_at).angle()
+			var way := 1.0 if Vector2(cos(start + 1.57), sin(start + 1.57)).dot(n) < 0 else -1.0
+			var curve := bank_a.duplicate()
+			for k in range(1, 6):
+				curve.append(pond_at + Vector2.from_angle(start + way * PI * k / 6.0) * half)
+			curve.append_array(bank_b)
+			curve = pooled(curve, widths)
+			var outline := PackedVector2Array([edge_point(i, t0), edge_point(i, t1)])
+			outline.append_array(curve.slice(1, curve.size() - 1))
+			return {outlines = [outline], shores = [curve], kind = "spring", ends = [[i, i]]}
 		var pond := circle(pond_at + sway, 1.3, rng, 0.12)
 		return {outlines = [channel, pond], shores = [bank_a, bank_b, _closed(pond)], kind = "spring",
 				ends = [[i, -1], [-1, i], [-1, -1]]}
@@ -253,6 +306,8 @@ static func tile_water(water: Array, seed: String, widths: Array = [], style := 
 		else:
 			curve = shore(run.pts[-1], run.end_edge, nxt.pts[0], nxt.start_edge,
 					sway if not lake else sway * 0.4, rng, WOBBLE if lake else 0.0)
+		if style == "rapids":
+			curve = pooled(curve, widths)
 		outline.append_array(curve.slice(1, curve.size() - 1))
 		shores.append(curve)
 		ends.append([run.end_edge, nxt.start_edge])
@@ -264,6 +319,29 @@ static func tile_water(water: Array, seed: String, widths: Array = [], style := 
 ## Placeholder flow rule from water.py: water flows toward higher values (down the screen).
 static func downhill(q: int, r: int) -> float:
 	return r - 0.3 * q
+
+
+## Which water edges water comes in through, for flow_signs. downhill decides, but a waterfall needs a source: the last river
+## tile above one flows toward it, from all its plain river edges, so the far edge is where it parts from the next river
+## tile. A lake only turns at the fall's edge. rapids[i]: the tile across edge i is rapids. own: "river", "lake" or "rapids".
+static func flow_in(q: int, r: int, water: Array, rapids: Array, own := "river") -> Array:
+	var here := downhill(q, r)
+	var inflow := []
+	var falls := []
+	for i in 6:
+		var n: Vector2i = Hex.NEIGHBOURS[i]
+		var lower := downhill(q + n.x, r + n.y) < here
+		inflow.append(lower)
+		if water[i] and rapids[i] and lower:
+			falls.append(i)
+	if own == "rapids":
+		for i in 6:
+			inflow[i] = inflow[i] or (water[i] and not rapids[i])
+		return inflow
+	if not falls.is_empty():
+		for i in 6:
+			inflow[i] = false if i in falls else inflow[i] if rapids[i] or own == "lake" else true
+	return inflow
 
 
 static func flow_signs(ends: Array, inflow: Array) -> Array:
@@ -463,8 +541,17 @@ static func _mean(pts: Array) -> Vector2:
 	return sum / pts.size()
 
 
-## {hub, lines}: lines[i] is the route on the water from edge i's midpoint to the hub, for each water edge i.
+## {hub, lines}: lines[i] is the route on the water from edge i's midpoint to the hub, for each water edge i. No line up or
+## down a rapids waterfall: nothing can walk or float over one.
 static func water_routes(water: Array, seed: String, widths: Array = [], style := "") -> Dictionary:
+	var r := _water_routes(water, seed, widths, style)
+	for i in r.lines.keys():
+		if falling(widths, i):
+			r.lines.erase(i)
+	return r
+
+
+static func _water_routes(water: Array, seed: String, widths: Array = [], style := "") -> Dictionary:
 	var w := tile_water(water, seed, widths, style)
 	var mids := {}
 	for i in 6:
@@ -476,7 +563,7 @@ static func water_routes(water: Array, seed: String, widths: Array = [], style :
 		if style == "delta":
 			whole = swung(whole)
 		var mid := PackedVector2Array()
-		if n % 3 == 0:
+		if n % 3 == 0 and style != "rapids":   # rapids: a narrow channel, so its line keeps every bend
 			for k in range(0, whole.size(), 3):
 				mid.append(whole[k])
 		else:
@@ -719,8 +806,10 @@ static func _turned_line(line: Array, t: int) -> PackedVector2Array:
 
 # --- 7. Rapids: white water and bridges ---------------------------------------------
 
-const BRIDGE_HALF := 1.95    # half the length of a rapids_bridge, ramps included
-const TROLL_HALF := 2.9      # half the length of the Troll Bridge
+const BRIDGE_HALF := 2.35    # half the length of a rapids_bridge, from ground to ground over the gorge
+const TROLL_HALF := 3.1      # half the length of the Troll Bridge
+const BRIDGE_OPEN := 0.85    # half the width of its arch
+const TROLL_OPEN := 1.42     # and the Troll Bridge's
 const BRIDGE_CHANCE := 0.35  # the share of rapids tiles that have a bridge, where one fits
 
 
@@ -743,6 +832,9 @@ static func land_sides(water: Array, i: int) -> Array:
 ## {middle, angle, routes}, or {} if no bridge fits. routes[e] walks from land edge e's midpoint to the nearer end.
 static func bridge_spot(water: Array, seed: String, widths: Array = [], half := BRIDGE_HALF) -> Dictionary:
 	var w := tile_water(water, seed, widths, "rapids")
+	var outlines := Gorge.cut_outlines(water, seed, widths)   # both ends on the land beyond the cut
+	if outlines.is_empty():
+		return {}
 	var wet := []
 	for i in 6:
 		if water[i]:
@@ -784,9 +876,9 @@ static func bridge_spot(water: Array, seed: String, widths: Array = [], half := 
 			axis = -axis
 		var end_a := c + axis * half
 		var end_b := c - axis * half
-		if in_water(w.outlines, c + axis * (half - 0.5)) or in_water(w.outlines, c - axis * (half - 0.5)):
+		if in_water(outlines, c + axis * (half - 0.35)) or in_water(outlines, c - axis * (half - 0.35)):
 			continue
-		if not inside_tile(end_a, 0.1) or not inside_tile(end_b, 0.1) or in_water(w.outlines, end_a) or in_water(w.outlines, end_b):
+		if not inside_tile(end_a, 0.1) or not inside_tile(end_b, 0.1) or in_water(outlines, end_a) or in_water(outlines, end_b):
 			continue
 		var routes := {}
 		for e in after:
@@ -796,11 +888,81 @@ static func bridge_spot(water: Array, seed: String, widths: Array = [], half := 
 		var clear := true
 		for e in routes:
 			for k in 13:
-				if in_water(w.outlines, routes[e][0] + (routes[e][1] - routes[e][0]) * (k / 12.0)):
+				if in_water(outlines, routes[e][0] + (routes[e][1] - routes[e][0]) * (k / 12.0)):
 					clear = false
 		if not clear:
 			continue
 		return {middle = c, angle = atan2(axis.y, axis.x), routes = routes}
+	return _bridge_search(water, w.outlines, outlines, half)
+
+
+## Where the channel's shape leaves bridge_spot's usual tries no room: any line over one channel, near the tile's middle, whose
+## water fits under the arch, with each land edge a dry walk from one end. A plain bridge must join land on both sides; the
+## Troll's may end on a spit, since it's a place in itself.
+static func _bridge_search(water: Array, wet_outlines: Array, outlines: Array, half: float) -> Dictionary:
+	var land := []
+	for e in 6:
+		if not water[e]:
+			land.append(e)
+	if land.is_empty():
+		return {}
+	var arch := (BRIDGE_OPEN if half <= BRIDGE_HALF else TROLL_OPEN) * 2.0 - 0.05
+	var spots := []
+	for x in range(-10, 11):
+		for y in range(-10, 11):
+			spots.append(Vector2(x * 0.4, y * 0.4))
+	# Python's sort keeps ties in order (x, then y), and Godot's doesn't: they break ties the same way here.
+	spots.sort_custom(func(a, b): return snappedf(a.length_squared(), 0.0001) < snappedf(b.length_squared(), 0.0001) \
+			or (snappedf(a.length_squared(), 0.0001) == snappedf(b.length_squared(), 0.0001) and (a.x < b.x or (a.x == b.x and a.y < b.y))))
+	var firm_by := half - 0.35
+	var dry := func(a: Vector2, b: Vector2) -> bool:
+		for k in 13:
+			if in_water(outlines, a + (b - a) * (k / 12.0)):
+				return false
+		return true
+	for c: Vector2 in spots:
+		if not inside_tile(c, 0.5) or not in_water(wet_outlines, c):
+			continue
+		for k in 12:
+			var axis := Vector2.from_angle(PI * k / 12.0)
+			var ends := [c + axis * half, c - axis * half]
+			if in_water(outlines, c + axis * firm_by) or in_water(outlines, c - axis * firm_by) or in_water(outlines, ends[0]) or in_water(outlines, ends[1]):
+				continue
+			if not inside_tile(ends[0], 0.1) or not inside_tile(ends[1], 0.1):
+				continue
+			var wet_n := 0
+			for j in 41:
+				if in_water(wet_outlines, c + axis * (-half + 2.0 * half * j / 40.0)):
+					wet_n += 1
+			if wet_n * 2.0 * half / 40.0 > arch:
+				continue
+			var routes := {}
+			var used := {}
+			var ok := true
+			for e: int in land:
+				var mid := normal(e) * A
+				var near: Array = ends if (ends[0] - mid).length() <= (ends[1] - mid).length() else [ends[1], ends[0]]
+				var way = null
+				for q: Vector2 in near:
+					if dry.call(mid, q):
+						way = q
+						break
+				if way == null:
+					ok = false
+					break
+				routes[e] = PackedVector2Array([mid, way])
+				used[way] = true
+			if ok and (half > BRIDGE_HALF or used.size() == 2):
+				return {middle = c, angle = atan2(axis.y, axis.x), routes = routes}
+	return {}
+
+
+## This tile's bridge, as bridge_spot gives it, or {}. Landmark: the Troll Bridge. Otherwise some tiles have one (design/02).
+static func rapids_spot(water: Array, seed: String, widths: Array = [], landmark := false) -> Dictionary:
+	if landmark:
+		return bridge_spot(water, seed, widths, TROLL_HALF)
+	if PyRandom.new(seed + "-bridge").random() < BRIDGE_CHANCE:
+		return bridge_spot(water, seed, widths)
 	return {}
 
 
@@ -811,7 +973,7 @@ static func rapids_marks(water: Array, seed: String, widths: Array = [], near :=
 	var rng := PyRandom.new(seed + "-rapids")
 	var foam := []
 	var boulders := []
-	var step := 3 if near != 0 else 4
+	var step := 2 if near != 0 else 3
 	for curve: PackedVector2Array in w.shores.slice(0, 6):
 		for k in range(2, curve.size() - 2, step):
 			var tan := curve[k + 1] - curve[k - 1]
@@ -819,13 +981,13 @@ static func rapids_marks(water: Array, seed: String, widths: Array = [], near :=
 				continue
 			var into := Vector2(-tan.y, tan.x) / tan.length()
 			var ang := atan2(tan.y, tan.x)
-			var p := curve[k] + into * rng.uniform(0.28, 0.5)
-			if rng.random() < (0.5 if near != 0 else 0.34) and in_water(w.outlines, p) and inside_tile(p, 0.25) and _line_dist(p, lines) > 0.32:
-				var r := rng.uniform(0.13, 0.3)
+			var p := curve[k] + into * rng.uniform(0.2, 0.34)
+			if rng.random() < (0.45 if near != 0 else 0.3) and in_water(w.outlines, p) and inside_tile(p, 0.25) and _line_dist(p, lines) > 0.32:
+				var r := rng.uniform(0.12, 0.22)
 				boulders.append([p, r])
 				var off := Vector2(cos(ang), sin(ang)) * rng.uniform(-0.1, 0.1)
 				foam.append([p + off, ang, r + rng.uniform(0.2, 0.42), r * 0.72])
-			var q := curve[k] + into * rng.uniform(0.35, 0.8)
+			var q := curve[k] + into * rng.uniform(0.15, 0.6)
 			if in_water(w.outlines, q) and inside_tile(q, 0.4):
 				var a2 := ang + rng.uniform(-0.2, 0.2)
 				var l2 := rng.uniform(0.28, 0.55)
@@ -1019,10 +1181,9 @@ static func tile_props(water: Array, seed: String, widths: Array = [], style := 
 		for i in 3:   # a shared edge's fall is placed by one of its two tiles
 			if water[i] and not widths.is_empty() and widths[i] == RAPIDS_WIDTH:
 				out.append(["rapids_fall", normal(i) * A, deg_to_rad(60.0 * i)])
-		if not landmark and PyRandom.new(seed + "-bridge").random() < BRIDGE_CHANCE:
-			var spot := bridge_spot(water, seed, widths)
-			if not spot.is_empty():
-				out.append(["rapids_bridge", spot.middle, spot.angle])
+		var spot := {} if landmark else rapids_spot(water, seed, widths)
+		if not spot.is_empty():
+			out.append(["rapids_bridge", spot.middle, spot.angle])
 	else:
 		for c: PackedVector2Array in long_shores:
 			var sh := at_shore(c, rng.uniform(0.3, 0.7))
@@ -1040,6 +1201,11 @@ static func tile_props(water: Array, seed: String, widths: Array = [], style := 
 				if in_water(w.outlines, p) and inside_tile(p, 0.7) and not on_route.call(p, sh[1], 0.0) and (not landmark or p.length() > ROCK_R + 0.6):
 					out.append(["still_stones", p, rng.uniform(0, TAU)])
 	return out
+
+
+## How high to place a prop from tile_props: a rapids fall stands on the gorge's water, at a shared edge.
+static func prop_z(prop: String) -> float:
+	return -Gorge.DEPTH if prop == "rapids_fall" else 0.0
 
 
 ## Short pale strokes on deep water, all lying the same way: [point, angle, long, wide].
@@ -1084,4 +1250,7 @@ static func cover_shape(own: String, neighbours: Array, seed: String) -> Array:
 		var t := port_turn(mask, seed)
 		return [port_shape(mask, seed, widths, t).outlines, [port_water(t)[1]]]
 	var w := tile_water(mask, seed, widths, FAMILY.get(own, ""))
+	if FAMILY.get(own) == "rapids" and mask.has(true):   # off the cut too
+		var cut: Array = Gorge.build(mask, seed, widths, own == "trollbridge").cut
+		return [cut if not cut.is_empty() else w.outlines, w.shores]
 	return [w.outlines, w.shores]
