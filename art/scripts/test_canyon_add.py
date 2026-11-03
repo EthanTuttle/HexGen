@@ -1,4 +1,4 @@
-"""What adding a tile to a finished canyon would change, if the old maze is kept (art/handoff/desert_kit.md, open item). Rock heights only. Plain Python, about a minute."""
+"""What adding a tile to a finished canyon would change, if the old maze is kept (art/handoff/desert_kit.md, Adding tiles). Rock heights only. Plain Python, about a minute."""
 import os, random, sys
 sys.path.insert(0, os.path.dirname(__file__))
 import canyon as cn, ground_cover as gc
