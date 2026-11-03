@@ -210,11 +210,11 @@
   "walkable": 46
  },
  "fortified_town_breach": {
-  "cells": 101,
+  "cells": 120,
   "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 75
+  "walkable": 92
  },
  "fortified_town_corner": {
   "cells": 37,

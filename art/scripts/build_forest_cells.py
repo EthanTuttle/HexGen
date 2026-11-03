@@ -466,6 +466,8 @@ def obstacle(col, name, cells, make):
     make(p, rng)
     obj = p.finish(col)
     obj["footprint"] = json.dumps([list(c) for c in cells])
+    if getattr(p, "doors", None):
+        obj["doors"] = json.dumps([[c.x, c.y, out.x, out.y] for c, out in p.doors])
 
 
 def build():

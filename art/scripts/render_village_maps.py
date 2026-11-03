@@ -18,6 +18,7 @@ L a fence, town wall, patched fence or hedge (any line). Per variant:
 
 A map's foes are samples, as enemy mixes aren't decided.
 """
+import json
 import math
 import os
 import sys
@@ -165,15 +166,17 @@ n n n n n n n n n
     "fortified_town_breach": {"size": "wide oval", "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.", "foes": BANDITS, "plan": """
   N . . . . . w .  
  . L . . . . . v . 
-. . N . . J . . . .
- P . , . . . U . . 
+. . L . . J . . . .
+ P . L . . . U . . 
 P . . N . . x . 2 .
  P E . , . . . 2 2 
 . . . . N . . 8 2 .
- . I . . L . E . . 
-. h . . . L . Y . .
- k s J U . L . . J 
-  . . . . . N . .  
+ . I . . , . E . . 
+. . . . . N . Y . .
+ . . J U . L . . J 
+. h . . . . L . . .
+ k s . . . . L . . 
+  . . . . . . N .  
 """},
     "fortified_town_yard": {"size": "medium hex", "idea": "A supply yard round a smithy, with wagons, stores and spear racks scattered about. Lots of small corners and no clear line.", "foes": BANDITS, "plan": """
     .    
@@ -217,13 +220,13 @@ U E n . 8
 5 . n 4 4
  5 n n 4 
 5 . n . I
- J n n . 
+ . n n . 
 Y . Y . J
- . n n 8 
+ J n n . 
 D . n . P
  D n n P 
 D . n . P
- . n n . 
+ . n n 8 
 U . n s I
  k n n h 
 . . n . .
@@ -459,6 +462,19 @@ def line_wall(col, v, group):
     p.finish(col)
 
 
+def doors_clear(t, col, name):
+    """No prop standing on another cell hides a house's door from the camera either. Houses and trees may stand between: the camera turns."""
+    bpy.context.view_layer.update()
+    props = [o for o in col.objects if o.get("piece", "").startswith("ob_") and "doors" not in t[o["piece"]] and not any(k in o["piece"] for k in ("tree", "tower"))]
+    for house in col.objects:
+        if "doors" not in t.get(house.get("piece", ""), {}):
+            continue
+        for x, y, ox, oy in json.loads(t[house["piece"]]["doors"]):
+            c, out = house.matrix_world @ Vector((x, y, 0)), (house.matrix_world.to_3x3() @ Vector((ox, oy, 0))).normalized()
+            for o in props:
+                assert not any(bv.hides_door(o.matrix_world @ v.co, c, out) for v in o.data.vertices), f"{name}: {o['piece']} is in front of a door of {house['piece']}"
+
+
 def join_towers(col, cells):
     """A town wall runs right up to the towers beside its ends, so no daylight shows between them."""
     p = hk.Piece("wall_to_towers")
@@ -537,6 +553,7 @@ def build_map(t, col, name):
     if v == "fortified_town":
         join_towers(col, cells)
     if v in HOUSE_MARKS:
+        doors_clear(t, col, name)
         houses = {c for c, mark in cells.items() if mark in HOUSE_MARKS[v]}
         for c, mark in cells.items():
             if mark in fm.MINI_MARKS:
@@ -597,6 +614,16 @@ if __name__ == "__main__":
         rp.place(t, "standin_hero", col, spot, rb.FACE_NORTH)
         rp.stage(hk.cell_position(*house) + Vector((0.3, 0.5, 0.5)), 8.5, fm.PITCH)
         rp.render("village_house_yard")
+        sys.exit()
+    if "--look" in args:  # close on the houses marked so on a map: --look <map> <mark>
+        name, mark = args[args.index("--look") + 1:args.index("--look") + 3]
+        hk.empty_scene()
+        col = hk.new_collection("map")
+        t = templates()
+        cells = build_map(t, col, name)
+        fm.place_minis(t, col, MAPS[name], cells)
+        rp.stage(fm.middle_of([c for c, m in cells.items() if m == mark]) + Vector((0, 0, 0.5)), 8, fm.PITCH)
+        rp.render(f"village_look_{name}_{mark}")
         sys.exit()
     if "--close" in args:
         shots = []
