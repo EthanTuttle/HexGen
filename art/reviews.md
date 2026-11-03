@@ -62,3 +62,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_map_fortified_town_breach_v11.png` | rejected | With street_v11: taller map and longer top wall, two gaps stay; smaller house banners, fewer windows; clear a blocked door |
 | 2026-11-03 | `art/preview/village_map_fortified_town_breach_v12.png` | approved | Fortified set done, no objection raised; merges with the rest of village |
 | 2026-11-03 | `art/preview/village_map_slums_plots_v9.png` | rejected | Slums set (with shacks_v9, fences_v9, street_v9): flag-like tarp, more lopsided shacks, vegetable plots look terrible |
+| 2026-11-03 | `art/preview/swamp_bog_map_v1.png` | rejected | Swamp round 1, all variants: break the pool pattern, softer winding trails, denser swamp |

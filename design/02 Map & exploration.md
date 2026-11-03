@@ -61,6 +61,7 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 Decided Oct 22, 2026 (replaces "some terrain, such as a ravine, is impassable without the right gear or ability").
 
 - **Kinds:** cliffs and ravines, deep water (rivers and lakes), dense growth (thick forest or swamp) and harsh climate (deep desert or high peaks).
+- **Swamp water** (decided Nov 3, 2026, for now): scenery. Nothing stops the party, which walks dry through the swamp. Revisit in the full obstacles pass.
 - **Canyon walls** (decided Nov 3, 2026): a canyon region is a maze with solid rock on many shared tile edges. Walls can't be crossed: the party walks round, some tiles are dead ends, and the Echo Cave has one way in. **Adding a tile to a finished canyon** (trying, Nov 3, 2026): the maze stays fixed. A new tile opens onto one old neighbour, never the Echo Cave, and gets its own entrance, and only tiles touching it are rebuilt. Fallback if this doesn't work in play: a finished canyon can't grow.
 - **Crossing:** three ways. Gear made for that obstacle always works. A traversal check can also get the party across, at a cost if it fails (e.g. HP or time). Or the party walks around.
 - **Who crosses:** one party member leads with the check (e.g. ties off a rope) and the rest follow; for water it's the hero (decided Nov 2, 2026).
