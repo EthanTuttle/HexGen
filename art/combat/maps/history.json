@@ -41,6 +41,34 @@
   "shape": "big oval",
   "walkable": 74
  },
+ "cider_orchards_clearing": {
+  "cells": 61,
+  "idea": "A clearing ringed by apple trees, closed north and south with gaps east and west. Open ground in the middle, with trees to fall back to.",
+  "kind": "terrain",
+  "shape": "medium hex",
+  "walkable": 44
+ },
+ "cider_orchards_lane": {
+  "cells": 90,
+  "idea": "A lane through the orchard, fenced both sides, with a gate each way halfway up. Keep to the lane, or slip through a gate and come at them through the trees.",
+  "kind": "path",
+  "shape": "tall rectangle",
+  "walkable": 65
+ },
+ "cider_orchards_rows": {
+  "cells": 93,
+  "idea": "Rows of apple trees run north and south, with one open row across the middle. Long lanes to shoot down, and only one place to change lanes easily.",
+  "kind": "terrain",
+  "shape": "wide rectangle",
+  "walkable": 76
+ },
+ "cider_orchards_terrace": {
+  "cells": 74,
+  "idea": "A raised terrace in the orchard, steps and a ramp up its south side, apple trees all round. Whoever's on top looks down over the trees' feet.",
+  "kind": "terrain",
+  "shape": "round oval",
+  "walkable": 64
+ },
  "dark_wood_bend": {
   "cells": 88,
   "idea": "A cliff fills the map's north-west, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.",
@@ -160,6 +188,34 @@
   "shape": "medium hex",
   "walkable": 46
  },
+ "haunted_homesteads_crops": {
+  "cells": 121,
+  "idea": "Big blocks of withered crop with a scarecrow standing in each. The crop can be walked through and hides what's in it; the open ground between is the only safe way across.",
+  "kind": "terrain",
+  "shape": "big oval",
+  "walkable": 112
+ },
+ "haunted_homesteads_house": {
+  "cells": 37,
+  "idea": "A tight yard round one boarded-up farmhouse. The house hides half the map, so you're never sure which way round they're coming.",
+  "kind": "terrain",
+  "shape": "small hex",
+  "walkable": 28
+ },
+ "haunted_homesteads_track": {
+  "cells": 93,
+  "idea": "A wide farm track across the map between two broken fences, each with gaps. The track is the quick way along, and it's open to both sides.",
+  "kind": "path",
+  "shape": "wide rectangle",
+  "walkable": 74
+ },
+ "haunted_homesteads_yards": {
+  "cells": 99,
+  "idea": "A long walk through old farmyards, broken fences across it with gaps on alternate sides, houses and dead trees between. A winding advance from yard to yard.",
+  "kind": "terrain",
+  "shape": "tall rectangle",
+  "walkable": 77
+ },
  "heartwood_great_tree": {
   "cells": 100,
   "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with an earth ramp stands by the party.",
@@ -230,6 +286,34 @@
   "shape": "tall rectangle",
   "walkable": 67
  },
+ "raided_farms_barns": {
+  "cells": 121,
+  "idea": "A burnt farm spread wide: charred barns, one left standing, small fires and a block of trampled crop in the middle. Big blocks of cover far apart, with long open runs between.",
+  "kind": "terrain",
+  "shape": "big oval",
+  "walkable": 105
+ },
+ "raided_farms_crossroads": {
+  "cells": 99,
+  "idea": "A farm track up the map crossing another in the middle, barricades, fires and spilled crates along it. The crossing is the one wide place, and everyone has to pass it.",
+  "kind": "path",
+  "shape": "tall rectangle",
+  "walkable": 87
+ },
+ "raided_farms_fires": {
+  "cells": 66,
+  "idea": "A small burnt plot with sheds and fires scattered close together. Nothing big to hide behind, and lots of small things in the way.",
+  "kind": "terrain",
+  "shape": "small rectangle",
+  "walkable": 54
+ },
+ "raided_farms_stand": {
+  "cells": 61,
+  "idea": "The party starts inside a ring of farmers' barricades with four gaps, raiders coming from north and south. A map for holding gaps.",
+  "kind": "terrain",
+  "shape": "medium hex",
+  "walkable": 48
+ },
  "stormy_plains_outcrop": {
   "cells": 61,
   "idea": "A big rock outcrop fills the middle of the map and blocks everything behind it. The fight circles it, with split trees and boulders closing the ring in places.",
@@ -278,5 +362,33 @@
   "kind": "terrain",
   "shape": "small rectangle",
   "walkable": 55
+ },
+ "windmill_country_fields": {
+  "cells": 101,
+  "idea": "Two fields of ripe wheat with a small mill between them. Anyone can walk through the wheat, so it hides who's coming; the mill and haystacks are the only hard corners.",
+  "kind": "terrain",
+  "shape": "wide oval",
+  "walkable": 94
+ },
+ "windmill_country_mill": {
+  "cells": 61,
+  "idea": "A mill in a fenced yard with a gate north and south. Whoever gets inside fights round the mill with their backs to the fence.",
+  "kind": "terrain",
+  "shape": "medium hex",
+  "walkable": 44
+ },
+ "windmill_country_road": {
+  "cells": 90,
+  "idea": "A cart road up the middle between fenced fields, a cart stuck on it. The gates are halfway up: stay on the road and be seen, or go through and flank.",
+  "kind": "path",
+  "shape": "tall rectangle",
+  "walkable": 78
+ },
+ "windmill_country_stacks": {
+  "cells": 66,
+  "idea": "A small cut field dotted with haystacks. Every stack is one cell of cover, with short sight lines between them, and no lines to hold.",
+  "kind": "terrain",
+  "shape": "small rectangle",
+  "walkable": 58
  }
 }

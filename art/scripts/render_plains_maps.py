@@ -272,12 +272,29 @@ def line_wall(col, v, group):
     p.finish(col)
 
 
+def track(col, v, cells):
+    """A path map's road: a strip joining its bare cells across the gaps between them, so it reads as one road."""
+    p = hk.Piece("track")
+    for c, mark in cells.items():
+        if mark == "n":
+            a = hk.cell_position(*c)
+            for dq, dr in fm.NEIGHBOURS[:3]:
+                n = (c[0] + dq, c[1] + dr)
+                if cells.get(n) == "n":
+                    b = hk.cell_position(*n)
+                    d = b - a
+                    p.box((a + b) / 2, (d.length, 0.62, 0.004), f"cell_{v}_track", spin=math.atan2(d.y, d.x))
+    p.finish(col)
+
+
 def build_map(t, col, name):
-    m = MAPS[name]
+    return build_from_plan(t, col, name, MAPS[name], variant_of(name), pc.KIT[variant_of(name)], line_wall, LINE_WALLS, {"battlefield": "J"})
+
+
+def build_from_plan(t, col, name, m, v, kit, wall, wall_variants, free_turn):
+    """Builds one map from its plan and a kit. wall makes L in wall_variants; free_turn: for each variant, single props that may turn."""
     cells = fm.parse(m["plan"])
     fm.check_reach(name, m, cells)
-    v = variant_of(name)
-    kit = pc.KIT[v]
     p = hk.Piece("plate")
     fc.plate(p, cells)
     p.finish(col)
@@ -293,10 +310,10 @@ def build_map(t, col, name):
             piece = f"cell_{v}_block_{'ab'[n % 2]}"
         elif mark in fm.RAMPS:
             continue
-        elif mark in "BKLOTGQDNPJIY" and mark != "T" or (mark == "T" and v == "stormy_plains"):
+        elif mark in "BKLOQDNPJIY" or mark == "G":
             piece = f"cell_{v}_floor"
         elif mark == "T":
-            piece = f"cell_{v}_cover"
+            piece = f"cell_{v}_floor" if v == "stormy_plains" else f"cell_{v}_cover"
         else:
             piece = f"cell_{v}_ground_{'abc'[(c[0] - c[1]) % 3]}"
         rp.place(t, piece, col, hk.cell_position(*c) + Vector((0, 0, fm.ground_z(mark))), math.radians(60 * (n % 6)) if mark in "R,c" or v == "meadows" else 0.0)
@@ -304,13 +321,13 @@ def build_map(t, col, name):
     for c, mark in cells.items():
         turn = math.radians(60 * (rb.hash_cell(c) % 6))
         if mark == "T":
-            rp.place(t, f"ob_{v}_split_tree" if v == "stormy_plains" else f"ob_{v}_tree_{'abc'[k % 3]}", col, hk.cell_position(*c), turn)
+            rp.place(t, f"ob_{v}_{kit['T'][0]}" if "T" in kit else f"ob_{v}_tree_{'abc'[k % 3]}", col, hk.cell_position(*c), turn)
             k += 1
         elif mark == "O":
             rp.place(t, f"ob_{v}_stump", col, hk.cell_position(*c), turn)
         elif mark in kit and len(kit[mark][1]) == 1:
             # Tents, pavilions and props keep their doors and faces to the south; heaps can turn.
-            rp.place(t, f"ob_{v}_{kit[mark][0]}", col, hk.cell_position(*c), turn if mark == "J" and v == "battlefield" else 0.0)
+            rp.place(t, f"ob_{v}_{kit[mark][0]}", col, hk.cell_position(*c), turn if mark in free_turn.get(v, "") else 0.0)
     for mark, group in fm.groups(cells, "BG" + "".join(m_ for m_, s in kit.items() if len(s[1]) > 1)):
         if mark == "B":
             piece, foot = f"ob_{v}_boulder_3", fc.TRIANGLE
@@ -326,11 +343,13 @@ def build_map(t, col, name):
                 anchor, turn = hk_other_end(anchor, along), (turn + 3) % 6
         rp.place(t, piece, col, hk.cell_position(*anchor), math.radians(60 * turn))
     for _, group in fm.groups(cells, "L"):
-        if v in LINE_WALLS:
-            line_wall(col, v, group)
+        if v in wall_variants:
+            wall(col, v, group)
         else:
             anchor, turn = fm.fit(group, {2: fc.LINE2, 3: fc.LINE3}[len(group)])
             rp.place(t, f"ob_{v}_log_{len(group)}", col, hk.cell_position(*anchor), math.radians(60 * turn))
+    if m.get("kind") == "path":
+        track(col, v, cells)
     for mark, group in fm.groups(cells, "K"):
         fm.shaped_piece(col, v, group, mark)
     for _, group in fm.groups({c: "H" for c, mark in cells.items() if mark in fm.RAISED}, "H"):
