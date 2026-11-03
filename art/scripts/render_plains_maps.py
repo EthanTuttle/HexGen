@@ -66,7 +66,7 @@ T . c . D . . . c .
  . H H R 
 . . H . .
  . . . . 
-. c / c .
+. c ^ c .
  T . . T 
   h . s  
    k .   
@@ -104,7 +104,7 @@ L L L . L L . . L L
   . P h . k . . .  
    , P s . . J .   
     . . . . . .    """},
-    "battlefield_mound": {"size": "small hex", "idea": "A small field with a raised mound in the middle, a stair and a ramp up its south side, a banner at its foot. Nowhere is far from the top, so the fight is over who stands on it.", "foes": UNDEAD, "plan": """
+    "battlefield_mound": {"size": "small hex", "idea": "A small field with a raised mound in the middle, two stepped ways up its south side, a banner at its foot. Nowhere is far from the top, so the fight is over who stands on it.", "foes": UNDEAD, "plan": """
    .   
   v .  
  w . I 
@@ -113,7 +113,7 @@ L L L . L L . . L L
 . H H .
  . W . 
 . H H .
- ^ H / 
+ ^ H ^ 
 . . . .
  . c . 
   h k  
@@ -159,14 +159,14 @@ T . . . .
   . h .  
    k s   
     .    """},
-    "stormy_plains_scarp": {"size": "rectangle", "idea": "A cliff at the north with a broad terrace of raised ground under it, stepped down to the burnt field. Enemies hold the terrace; there's one stair and one ramp, a long way apart.", "foes": BANDITS, "plan": """
+    "stormy_plains_scarp": {"size": "rectangle", "idea": "A cliff at the north with a broad terrace of raised ground under it, stepped down to the burnt field. Enemies hold the terrace; there are two stepped ways up, a long way apart.", "foes": BANDITS, "plan": """
 K K K K K K K K K
  K K K K K K K K 
 H H H H H . T . .
  H H X H . . x . 
 H H W H . . . T .
  H H ^ . . R . . 
-/ . . . . . . . .
+^ . . . . . . . .
  . c . T . . T . 
 . . . . . , . . .
  . . h . . . T . 
@@ -353,10 +353,11 @@ def build_from_plan(t, col, name, m, v, kit, wall, wall_variants, free_turn):
     for mark, group in fm.groups(cells, "K"):
         fm.shaped_piece(col, v, group, mark)
     for _, group in fm.groups({c: "H" for c, mark in cells.items() if mark in fm.RAISED}, "H"):
-        fm.raised_piece(col, v, group)
+        fm.raised_piece(col, v, group, cells)
     for c, mark in cells.items():
         if mark in fm.RAMPS:
             fm.ramp_piece(col, v, cells, c)
+    fm.notched_cells(t, col, v, cells)
     for _, group in fm.groups(cells, "n"):
         if v == "tourney_fields" and len(group) == 7:
             rp.place(t, "tourney_fields_ring", col, fm.middle_of(group))
