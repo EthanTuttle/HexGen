@@ -106,7 +106,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Great lake | Lake Serpent's Lair | A craggy rock rising from the water with a dark cave at the waterline, wrecked boats and bones around it (chosen Nov 2, 2026) |
   | Rapids | Troll Bridge | A big old mossy stone arch bridge over white water, with a dark hollow under it, a toll post and bones (chosen Nov 2, 2026) |
   | Still waters | Meditation Rock | A broad smooth rock out on still water, reached by stepping stones, with stone stacks and no tree on its tile (chosen Nov 2, 2026) |
-  | Dunes/wasteland | Sandstone Sphinx | A huge sandstone sphinx half buried in a dune, its face worn, with a small offering altar at its paws (chosen Nov 2, 2026) |
+  | Dunes/wasteland | Sandstone Sphinx | A huge sandstone sphinx half buried in a dune, with a stern, regal, worn face, taller than a hill peak so it stands out as a giant monument, and a small offering altar at its paws (chosen Nov 2, 2026) |
   | Badlands | Raider Stronghold | A fort built on top of a mesa, with a ramp up, spiked walls and flags of rags (chosen Nov 2, 2026) |
   | Oasis | Oasis Bazaar | Long awning-covered lanes of stalls leading to a domed well-house (chosen Nov 2, 2026) |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
