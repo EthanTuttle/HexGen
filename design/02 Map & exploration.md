@@ -61,6 +61,7 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 Decided Oct 22, 2026 (replaces "some terrain, such as a ravine, is impassable without the right gear or ability").
 
 - **Kinds:** cliffs and ravines, deep water (rivers and lakes), dense growth (thick forest or swamp) and harsh climate (deep desert or high peaks).
+- **Canyon walls** (decided Nov 3, 2026): a canyon region is a maze with solid rock on many shared tile edges. Walls can't be crossed: the party walks round, some tiles are dead ends, and the Echo Cave has one way in.
 - **Crossing:** three ways. Gear made for that obstacle always works. A traversal check can also get the party across, at a cost if it fails (e.g. HP or time). Or the party walks around.
 - **Who crosses:** one party member leads with the check (e.g. ties off a rope) and the rest follow; for water it's the hero (decided Nov 2, 2026).
 - **Bridges on rapids** (decided Oct 31, 2026): some tiles of a Rapids region (river tier 2) have a bridge. Walking over it crosses the river with no check, and the party's route uses it. Rapids tiles without a bridge stay an obstacle: a raft can't run them, but a party can still try the Athletics crossing (decided Nov 2, 2026). The Troll Bridge only rolls on a rapids tile where a bridge fits; the river gorge look (Nov 2, 2026) has no wide pools, so one always fits once built. Other rivers don't get bridges.
