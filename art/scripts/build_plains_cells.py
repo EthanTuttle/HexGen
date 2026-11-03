@@ -99,10 +99,29 @@ def split_big(p, rng, at, h=None):
         vr.spike(p, low, low + Vector((-math.sin(a) * 0.42, math.cos(a) * 0.42, 0.34)), 0.06, "char")
 
 
+def beast(p, rng, at, spin, k=0.82):
+    """A grazing beast with a body rather than boxes: a barrel, tapered legs, a neck up or down, a head, a tail. Under a mini's height."""
+    def q(x, y, z):
+        return at + vr.turn(Vector((x, y, 0)) * k, spin) + Vector((0, 0, z * k))
+    hide = rng.choice(["hide", "hide", "hide_light"])
+    vr.frustum(p, q(-0.34, 0, 0.62), q(0.3, 0, 0.67), 0.17 * k, 0.2 * k, hide, segments=6)
+    for x in (-0.25, 0.22):
+        for y in (-0.09, 0.09):
+            vr.frustum(p, q(x, y, 0.6), q(x * 1.08, y * 1.1, 0.0), 0.065 * k, 0.03 * k, hide, segments=4)
+    grazing = rng.random() < 0.5
+    top = q(0.56, 0, 0.2) if grazing else q(0.64, 0, 1.0)
+    vr.frustum(p, q(0.28, 0, 0.72), top, 0.1 * k, 0.06 * k, hide, segments=5)
+    vr.frustum(p, top, top + vr.turn(Vector((0.2, 0, 0)) * k, spin) + Vector((0, 0, -0.07 * k)), 0.075 * k, 0.04 * k, hide, segments=5)
+    vr.spike(p, q(-0.34, 0, 0.68), q(-0.44, 0, 0.26), 0.035 * k, "trunk")
+
+
 def herd(p, rng, cells):
-    """A grazing herd, one big beast to a cell, true to the minis' scale."""
-    for c in fc.centres(cells):
-        vr.grazer(p, rng, c, rng.uniform(0, 6.3), k=1.45)
+    """A small grazing herd on its cells: a beast to each, and one more in the middle."""
+    middle = mean(cells)
+    a = rng.uniform(0, 6.3)
+    for k, c in enumerate(fc.centres(cells)):
+        beast(p, rng, c + (c - middle) * 0.2, a + rng.uniform(-0.6, 0.6) + k * 0.5)
+    beast(p, rng, middle, a + 2.6, k=0.72)
 
 
 def great_tent(p, rng, cells, r):
@@ -204,6 +223,19 @@ def stands(p, rng, cells):
         p.box(q + d * 0.16, (0.3, 0.03, 0.55), "banner", z=1.32, spin=spin)
 
 
+def bunting_fence(p, rng, cells):
+    """A low rail with poles and a cord of flags, roping off a lane along a line of cells."""
+    at = fc.centres(cells)
+    for c in at:
+        p.box(c, (0.14, 0.14, 1.75), "wall")
+        vr.pennant_pole(p, c + Vector((0, 0, 1.75)), 0.3)
+    for a, b in zip(at, at[1:]):
+        d = b - a
+        p.box((a + b) / 2, (d.length, 0.1, 0.1), "trunk", z=0.62, spin=math.atan2(d.y, d.x))
+        p.box((a + b) / 2, (d.length, 0.08, 0.08), "trunk", z=0.3, spin=math.atan2(d.y, d.x))
+        vr.bunting(p, rng, a + Vector((0, 0, 0)), b, 1.62)
+
+
 def hay_foot(p, rng):
     fc.patch(p, rng, ZERO, 0.42, "lane_mown")
 
@@ -244,7 +276,8 @@ KIT = {
         "N": ("pavilion", SINGLE, lambda p, r: vr.pavilion(p, r, ZERO, 0.46, door_to=Vector((0, -1, 0)))),
         "P": ("pavilion_3", TRIANGLE, lambda p, r: vr.pavilion(p, r, mean(TRIANGLE), 0.82, cols=("ribbon_blue", "wall"), door_to=mean(TRIANGLE) + Vector((0, -1, 0)))),
         "Q": ("pavilion_7", FLOWER7, lambda p, r: vr.pavilion(p, r, ZERO, 1.3, door_to=Vector((0, -1, 0)))),
-        "D": ("stands_3", LINE3, lambda p, r: stands(p, r, LINE3)),
+        "D": ("bunting_3", LINE3, lambda p, r: bunting_fence(p, r, LINE3)),
+        "U": ("stands_3", LINE3, lambda p, r: stands(p, r, LINE3)),  # the Training Grounds' kind of stands: kept for landmark fights, on no map yet
         "J": ("butt", SINGLE, lambda p, r: (hay_foot(p, r), vr.archery_butt(p, r, ZERO, -math.pi / 2))),
         "I": ("dummy", SINGLE, lambda p, r: (hay_foot(p, r), vr.dummy(p, r, ZERO, 0.0))),
         "Y": ("quintain", SINGLE, lambda p, r: (hay_foot(p, r), vr.quintain(p, r, ZERO, 0.5))),

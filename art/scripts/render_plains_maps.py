@@ -12,7 +12,7 @@ Letters as in render_forest_maps.py (. , c T O R G L B K H ^ / and the minis), p
   battlefield     D heap of wreckage (3)   J wreckage   I tattered banner   P collapsed tent (3)   Q great collapsed tent (7)
                   Y row of graves (3 in a line)   L palisade (any line)
   stormy_plains   T split tree   G split trees (2 or 3)   Q rock spire with its nest (7)   L charred trunk (2 or 3 in a line)
-  tourney_fields  N pavilion   P big pavilion (3)   Q grand pavilion (7)   D stands (3 in a line)   J archery butt   I dummy
+  tourney_fields  N pavilion   P big pavilion (3)   Q grand pavilion (7)   D bunting fence (3 in a line)   J archery butt   I dummy
                   Y quintain   L tilt barrier (any line)   seven n cells in a flower get a roped ring
 
 A map's "foes" say which mini w, v and x stand for: samples, as enemy mixes aren't decided. Herds, wreckage and the rest count
@@ -167,7 +167,7 @@ H H W H . . . T .
 . . . L . . G . . .
  . h . L . . G . . 
   k . s . . . T .  """},
-    "tourney_fields_lists": {"size": "tall rectangle", "idea": "The jousting lists: a tilt barrier down the middle with one crossing, and stands closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.", "foes": BANDITS, "plan": """
+    "tourney_fields_lists": {"size": "tall rectangle", "idea": "Jousting lists: a tilt barrier down the middle with one crossing, and bunting fences closing both sides. Two long lanes side by side; you can see across the barrier but only meet at the gap.", "foes": BANDITS, "plan": """
 D . . v . . D
  . w . . x . 
 D . . L . . D
