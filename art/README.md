@@ -171,6 +171,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v65:** swamp/marsh, first round: tier 0, bog/fen, will-o'-wisp marsh, rot swamp, smugglers' bayou, with the Witch's Hut, Wisp Hollow, Plague Pit and Thieves Guild (`scripts/swamp_lands.py`). Not reviewed yet. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v64:** rapids rebuilt as a gorge cut below ground (`scripts/gorge.py`), with cut lanes to the water, bridges from ground to ground and a long, low Troll Bridge. Ethan approved it. Hand-off: `handoff/river_kit.md`.
 - **tiles_v63:** tiles_v61 with lava streaks kept off the ledges' corners. Ethan approved it. tiles_v62 is the rejected first Rapids gorge, on its own branch.
 - **tiles_v62:** (rejected) rapids as rock piles on the surface: a river gorge: a narrow channel between dark wet rock banks (`water.gorge_banks`), a rebuilt plain bridge with 25° ramps and room for a mini's base, and a wider search for bridge spots. Hand-off: `handoff/river_kit.md`.

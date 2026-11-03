@@ -211,6 +211,129 @@ def main():
                 bad += 1
                 print("RAMP TOP NOT AT GROUND", name)
         print(f"{lines_} route lines")
+    if kit == "swamp-lands":  # swamp_lands: nothing standing on a usual route or a landmark's ring; each landmark's routes against its piece; ramps join at both ends; no floating bits; triangles against the budget
+        import bmesh
+        import sand as sd
+        import variants as vr_
+        sl = vr_.sl
+        kits = ("swamp", "bog", "wisp_marsh", "rot_swamp", "smugglers_bayou")
+        wedges = [o for o in objs if o.name.startswith(tuple(k + "_" for k in kits)) and "_edge_" in o.name]
+        centres = [o for o in objs if o.name.startswith(tuple(k + "_" for k in kits)) and "_centre" in o.name and "steps" not in o.name]
+        ring_ = [sl.ring_point(k, sl.RING) for k in range(12)]
+        ring_lines = [[ring_[k - 1], ring_[k]] for k in range(12)]
+        lines_ = 0
+        for o in wedges + centres:
+            pts = [q for q in standing(o)]
+            for ang in range(6):
+                c, s_ = math.cos(math.radians(60 * ang)), math.sin(math.radians(60 * ang))
+                turned = [Vector((q.x * c - q.y * s_, q.x * s_ + q.y * c)) for q in pts]
+                for line in sd.ROUTES + (ring_lines if o in wedges else []):
+                    lines_ += 1
+                    for a, b in zip(line, line[1:]):
+                        a2, b2 = Vector(a), Vector(b)
+                        hit = next((q for q in turned if seg_dist(q, a2, b2) < (0.15 if o in wedges else CLEAR)), None)
+                        if hit is not None:
+                            bad += 1
+                            print("ROUTE TOUCHES", o.name, tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a))
+                            break
+                    else:
+                        continue
+                    break
+                else:
+                    continue
+                break
+        for name in ("witchhut", "wisphollow", "thievesguild", "plaguepit"):
+            o = objs[f"{name}_centre"]
+            routes = sl.landmark_routes(name, 0)
+            solid = [] if name == "plaguepit" else [q for q in standing(o) if not (0.55 < q.x < 1.8 and abs(q.y) < 0.65)]  # less the gangway
+            for line in routes.values():
+                for a, b in zip(line, line[1:]):
+                    if a[2] != 0 or b[2] != 0:
+                        continue  # on its gangway or lane: checked below
+                    a2, b2 = Vector(a[:2]), Vector(b[:2])
+                    lines_ += 1
+                    hit = next((q for q in solid if seg_dist(q, a2, b2) < 0.2), None)
+                    if hit is not None:
+                        bad += 1
+                        print("ROUTE TOUCHES", name, tuple(round(c_, 2) for c_ in hit), "on", a[:2], b[:2])
+                        break
+            line = routes[0]
+            for a, b in zip(line, line[1:]):
+                if a[2] == 0 and b[2] == 0:
+                    continue
+                for f_ in range(9):
+                    q = [a[k_] + (b[k_] - a[k_]) * f_ / 8 for k_ in range(3)]
+                    hit, loc, _, _ = o.ray_cast(Vector((q[0], q[1], q[2] + 0.6)), Vector((0, 0, -1)), distance=1.2)
+                    if not hit or abs(loc.z - q[2]) > 0.13:
+                        bad += 1
+                        print("RAMP GAP", name, tuple(round(c_, 2) for c_ in q), round(loc.z, 2) if hit else None)
+                        break
+            # head room: nothing of the piece over a mini standing along the way in
+            for a, b in zip(line, line[1:]):
+                for f_ in range(5):
+                    q = [a[k_] + (b[k_] - a[k_]) * f_ / 4 for k_ in range(3)]
+                    d_ = Vector((b[0] - a[0], b[1] - a[1]))
+                    if d_.length < 1e-6:
+                        continue
+                    d_.normalize()
+                    for dy in (-0.4, 0.0, 0.4):
+                        hit, loc, _, _ = o.ray_cast(Vector((q[0] - d_.y * dy, q[1] + d_.x * dy, q[2] + 0.2)), Vector((0, 0, 1)), distance=1.5)
+                        if hit:
+                            bad += 1
+                            print("NO HEAD ROOM", name, tuple(round(c_, 2) for c_ in q), dy, round(loc.z, 2))
+                            break
+        # floating bits: every loose part touches the ground, or another part
+        for o in wedges + centres + [objs[f"{n}_centre"] for n in ("witchhut", "wisphollow", "thievesguild", "plaguepit")]:
+            bm = bmesh.new()
+            bm.from_mesh(o.data)
+            bm.verts.ensure_lookup_table()
+            seen, parts = set(), []
+            for v_ in bm.verts:
+                if v_.index in seen:
+                    continue
+                stack, part = [v_], []
+                seen.add(v_.index)
+                while stack:
+                    u = stack.pop()
+                    part.append(u.co.copy())
+                    for e in u.link_edges:
+                        w = e.other_vert(u)
+                        if w.index not in seen:
+                            seen.add(w.index)
+                            stack.append(w)
+                parts.append(part)
+            boxes = [(min(q.x for q in pt) - 0.02, max(q.x for q in pt) + 0.02, min(q.y for q in pt) - 0.02, max(q.y for q in pt) + 0.02, min(q.z for q in pt) - 0.02, max(q.z for q in pt) + 0.02) for pt in parts]
+            floor_z = -1.25 if o.name.startswith("plaguepit") else 0.03
+            grounded = [b_[4] <= floor_z for b_ in boxes]
+            changed = True
+            while changed:
+                changed = False
+                for k_, b_ in enumerate(boxes):
+                    if grounded[k_]:
+                        continue
+                    for j_, c_ in enumerate(boxes):
+                        if grounded[j_] and b_[0] < c_[1] and c_[0] < b_[1] and b_[2] < c_[3] and c_[2] < b_[3] and b_[4] < c_[5] and c_[4] < b_[5]:
+                            grounded[k_] = True
+                            changed = True
+                            break
+            loose = [k_ for k_, g_ in enumerate(grounded) if not g_ and not (0.3 < boxes[k_][1] - boxes[k_][0] < 0.0)]
+            mats = {m.name for m in o.data.materials}
+            wisps = [k_ for k_ in loose if boxes[k_][1] - boxes[k_][0] < 0.2 and mats & {"wisp", "wisp_green"}]  # the marsh's lights float on purpose
+            for k_ in loose:
+                if k_ not in wisps:
+                    bad += 1
+                    print("FLOATING", o.name, [round(x_, 2) for x_ in boxes[k_]])
+            bm.free()
+        # triangles for a full tile: the busiest centre and six of its busiest wedges
+        tri = lambda o_: sum(len(f.vertices) - 2 for f in o_.data.polygons)  # noqa: E731
+        for k_ in kits:
+            cs = [o for o in centres if o.name.startswith(k_ + "_")]
+            ws = [o for o in wedges if o.name.startswith(k_ + "_")]
+            print(k_, "centre", max(map(tri, cs)), "wedge", max(map(tri, ws)), "worst full tile", max(map(tri, cs)) + 6 * max(map(tri, ws)), "budget 4816")
+        for name, k_ in (("witchhut", "bog"), ("wisphollow", "wisp_marsh"), ("thievesguild", "smugglers_bayou"), ("plaguepit", "plaguepit")):
+            ws = [o for o in objs if o.name.startswith(k_ + "_edge_")]
+            print(name, "centre", tri(objs[f"{name}_centre"]), "worst full tile", tri(objs[f"{name}_centre"]) + 6 * max(map(tri, ws)), "top", round(max(v_.co.z for v_ in objs[f"{name}_centre"].data.vertices), 2))
+        print(f"{lines_} route lines")
     if kit == "water":  # round 2: the Serpent's Lair's lines, Meditation Rock's walks and the Troll Bridge's path, against their own pieces
         import itertools
         import water as wt
