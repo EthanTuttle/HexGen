@@ -34,6 +34,7 @@ import sys
 from collections import deque
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bmesh  # noqa: E402
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
@@ -541,9 +542,8 @@ def way_sides(cells, c):
 
 
 def clear_way_ups(q, cells):
-    """Pushes a point of rock above a landing's height back from every way up: to the landing's edge, and to the end of a flight going up."""
-    if q.z <= HALF - 0.02:
-        return
+    """Keeps rock off a way up. Above a landing's height it's pushed back to the landing's edge, and to the end of a flight going up. Lower down, a ledge that
+    comes out over a flight going down swings back round to the side of the flight that has the raised ground, or failing that to the flight's end."""
     for c, mark in cells.items():
         if mark not in RAMPS:
             continue
@@ -553,11 +553,25 @@ def clear_way_ups(q, cells):
         if not 0 < far < 0.77:
             continue
         angle = math.atan2(d.y, d.x)
-        up = any(kind == "up" and abs((angle - a + math.pi) % math.tau - math.pi) < math.radians(31) for kind, a in way_sides(cells, c))
-        reach = 0.77 if up else LANDING + 0.01
-        if far < reach:
-            d *= reach / far
-            q.x, q.y = at.x + d.x, at.y + d.y
+        sides = list(way_sides(cells, c))
+        off = lambda a: (angle - a + math.pi) % math.tau - math.pi  # noqa: E731
+        up = any(kind == "up" and abs(off(a)) < math.radians(31) for kind, a in sides)
+        if q.z > HALF - 0.02:
+            reach = 0.77 if up else LANDING + 0.01
+            if far < reach:
+                d *= reach / far
+                q.x, q.y = at.x + d.x, at.y + d.y
+        elif not up and far > LANDING:
+            k, (kind, a) = min(enumerate(sides), key=lambda e: abs(off(e[1][1])))
+            if kind != "down":
+                continue
+            turn_to = [a + sd * (math.pi / 6 + 0.02) for sd in (-1, 1) if sides[(k + sd) % 6][0] == "up"]
+            if turn_to:
+                b = min(turn_to, key=lambda t: abs(off(t)))
+                q.x, q.y = at.x + d.length * math.cos(b), at.y + d.length * math.sin(b)
+            else:
+                d *= 0.77 / far
+                q.x, q.y = at.x + d.x, at.y + d.y
 
 
 def way_tones(v):
@@ -613,8 +627,45 @@ def ramp_piece(col, v, cells, c):
     p.finish(col)
 
 
+def trim_brush(col, v, cells):
+    """A brush cell beside a way up keeps only the plants clear of the treads: its own mesh, in place of the kit's cell."""
+    ways = [hk.cell_position(*c) for c, mark in cells.items() if mark in RAMPS]
+    for o in list(col.objects):
+        if o.get("piece") != f"cell_{v}_brush":
+            continue
+        near = [w for w in ways if (w.xy - o.location.xy).length < 1.05]
+        if not near:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        seen = set()
+        spin = Matrix.Rotation(o.rotation_euler.z, 3, "Z")
+        for start in list(bm.verts):
+            if start in seen or not start.is_valid:
+                continue
+            island, todo = {start}, [start]
+            while todo:
+                v0 = todo.pop()
+                for e in v0.link_edges:
+                    w = e.other_vert(v0)
+                    if w not in island:
+                        island.add(w)
+                        todo.append(w)
+            seen |= island
+            if max(w.co.z for w in island) > 0.01 and any((o.location.xy + (spin @ w.co).xy - way.xy).length < 0.86 for w in island for way in near):
+                bmesh.ops.delete(bm, geom=list(island), context="VERTS")
+        mesh = o.data.copy()
+        bm.to_mesh(mesh)
+        bm.free()
+        trimmed = bpy.data.objects.new(f"brush_{o.location.x:.2f}_{o.location.y:.2f}", mesh)
+        trimmed.location, trimmed.rotation_euler = o.location, o.rotation_euler
+        col.objects.link(trimmed)
+        bpy.data.objects.remove(o)
+
+
 def notched_cells(t, col, v, cells):
     """Raised cells beside a way up, cut straight across where its flight comes up into them: each a mesh of its own, in place of the kit's cell."""
+    trim_brush(col, v, cells)
     for c, mark in cells.items():
         if mark not in RAISED:
             continue
