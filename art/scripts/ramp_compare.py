@@ -98,6 +98,14 @@ def timber(col, v, cells, c):
 PIECE = {"today": today, "B": steps_in_cut, "C": timber}
 
 
+def restage(target, distance):
+    """A new camera view on the same scene: stage adds its own lights and camera, so the last view's go first, or the colours wash out."""
+    for o in list(bpy.data.objects):
+        if o.type in ("LIGHT", "CAMERA"):
+            bpy.data.objects.remove(o)
+    rp.stage(target, distance, fm.PITCH)
+
+
 def focus(cells):
     """The southernmost way up of each kind."""
     south = lambda c: hk.cell_position(*c).y  # noqa: E731
@@ -139,7 +147,7 @@ if __name__ == "__main__":
             rp.stage(target, distance, fm.PITCH)
             rp.render(f"{stem}_wide")
             at = sum((hk.cell_position(*c) for c in spots), Vector((0, 0, 0))) / 2
-            rp.stage(at + Vector((0, 0, 0.5)), max(8.0, (hk.cell_position(*spots[0]) - hk.cell_position(*spots[1])).length * 2.2), fm.PITCH)
+            restage(at + Vector((0, 0, 0.5)), max(8.0, (hk.cell_position(*spots[0]) - hk.cell_position(*spots[1])).length * 2.2))
             rp.render(f"{stem}_close")
             wide.append(f"{stem}_wide")
             close.append(f"{stem}_close")

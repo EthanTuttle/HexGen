@@ -267,7 +267,7 @@
  },
  "heartwood_prayer_path": {
   "cells": 121,
-  "idea": "A prayer path up the map, under wooden gates, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.",
+  "idea": "A prayer path up the map, under two wooden gates, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.",
   "kind": "path",
   "shape": "tall rectangle",
   "walkable": 100

@@ -289,7 +289,7 @@ K . . U .
   . h k  
    s .   
     T    """},
-    "heartwood_prayer_path": {"kind": "path", "size": "tall rectangle", "idea": "A prayer path up the map, under wooden gates, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.", "plan": """
+    "heartwood_prayer_path": {"kind": "path", "size": "tall rectangle", "idea": "A prayer path up the map, under two wooden gates, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.", "plan": """
 T . n . . T
  . v n w . 
 . . . . . .
@@ -301,7 +301,7 @@ T U . . U T
 . U n n U .
  . n . n . 
 T . . . . T
- . g G g . 
+ . n G n . 
 . . G . . .
  T n G n T 
 . . n n . .
@@ -611,6 +611,13 @@ def gate_over(p, rng, at):
         w.co = at + Vector((d.y, -d.x, d.z))
 
 
+def road_joins(p, v, cells):
+    """Earth paths are cells of the path's colour; strips across the gaps between them make one road, as on the farm maps."""
+    for a, b in road_edges(cells):
+        d = b - a
+        p.box((a + b) / 2, (d.length, 0.62, 0.004), fc.BARE[v], spin=math.atan2(d.y, d.x))
+
+
 def cap(p, rng, at):
     """A stepping light: a low domed cap on a short stem, under a mini's base."""
     r = rng.uniform(0.13, 0.16)
@@ -628,13 +635,9 @@ def road(col, v, cells):
             if rng.random() < 0.88:
                 side = Vector((-d.y, d.x, 0))
                 p.box(at + side * rng.uniform(-0.06, 0.06), (rng.uniform(0.38, 0.46), rng.uniform(0.32, 0.4), 0.06), rng.choice(["stone_moss", "rock"]), spin=math.atan2(d.y, d.x) + rng.uniform(-0.3, 0.3))
-    elif v == "dark_wood":  # the furrow, with bones lying across it
-        pts = road_line(cells)
-        for a, b in zip(pts, pts[1:]):
-            d = (b - a).normalized()
-            s0 = Vector((-d.y, d.x, 0)) * 0.25
-            p.prism([a - s0, b - s0, b + s0, a + s0], 0.0, 0.015, "drag_scrape")
-        for at, d in along(pts, 1.5):
+    elif v == "dark_wood":  # the furrow's cells, with bones lying across them
+        road_joins(p, v, cells)
+        for at, d in along(road_line(cells), 1.5):
             vr.bones(p, rng, at + Vector((-d.y, d.x, 0)) * rng.uniform(-0.1, 0.1), skull=rng.random() < 0.4)
     elif v == "fey_wood":
         for a, b in road_edges(cells):
@@ -643,9 +646,8 @@ def road(col, v, cells):
         for c, mark in cells.items():
             if mark in ROAD:
                 cap(p, rng, hk.cell_position(*c) + Vector((rng.uniform(-0.1, 0.1), rng.uniform(-0.1, 0.1), 0)))
-    else:  # trodden earth, with the tiles' wooden gates over it
-        for a, b in road_edges(cells):
-            vr.path_strip(p, rng, a, b, vr.PATH_W, "path_earth")
+    else:  # the path's cells, with the tiles' wooden gates over them
+        road_joins(p, v, cells)
         for c, mark in cells.items():
             if mark == "g":
                 gate_over(p, rng, hk.cell_position(*c))
@@ -680,6 +682,8 @@ def build_map(t, col, name):
             piece = "cell_dark_wood_block_b"
         elif mark in "TGQEZU":
             piece = f"cell_{v}_cover"
+        elif mark in ROAD and v in fc.BARE:
+            piece = f"cell_{v}_bare"
         elif mark in RAMPS:
             continue
         elif mark in "BKSFLOM":
