@@ -89,6 +89,7 @@ var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
 var canyons := {}                      # canyon tile -> {openset, entrances, landmark, turn} of its region
 var canyon_stats := []                 # each generated region's triangles and times, for the check's report
 var _canyon_meshes := {}               # canyon tile -> its mesh
+var _canyon_dirty := {}                # canyon tiles with new rock, waiting to be rebuilt
 var _canyon_mat: StandardMaterial3D    # marks the stencil, for the minis' silhouette through rock
 var _features := {}                    # badlands tile -> what stands at its corners (DesertLands.badlands_features)
 var _clip_mats := {}                   # surface material -> its cut-off version while a region rises
@@ -166,6 +167,8 @@ func retile(changes: Dictionary) -> void:
 	touched.merge(_update_raised())
 	touched.merge(_update_gates())
 	touched.merge(_update_streets())
+	touched.merge(_canyon_dirty)   # a far tile that had to take an entrance (Canyon._repair)
+	_canyon_dirty.clear()
 	if changes.values().any(func(n): return n in ["badlands", "raiderstronghold"]):
 		_update_badlands()
 	for t: Vector2i in touched:
@@ -214,6 +217,33 @@ func start_canyon(region: Array, landmark: Vector2i) -> Dictionary:
 	return job
 
 
+## Starts rebuilding a finished canyon that's growing, off the main thread (DOCS: design/02 -> Canyon walls). The maze is
+## saved, never worked out again: Canyon.grow only adds to it. Only the new tiles and the old ones touching them come back.
+func start_canyon_growth(old_tiles: Array, new_tiles: Array, landmark: Vector2i) -> Dictionary:
+	var c: Dictionary = canyons[landmark]
+	var grown := {tiles = old_tiles.duplicate(), openset = c.openset, entrances = c.entrances,
+			grow = Canyon.grow(c.openset, c.entrances, old_tiles, new_tiles, landmark, terrains)}
+	var tiles := old_tiles + new_tiles
+	var turn: int = c.turn
+	var seed_value := GroundCover.hash01(new_tiles[0].x, new_tiles[0].y, 81)
+	var job := {result = null, rebuild = grown.grow.rebuild}
+	job.id = WorkerThreadPool.add_task(func(): job.result = Canyon.generate(tiles, landmark, turn, seed_value, grown))
+	return job
+
+
+## Dust along a new canyon tile's edges, to cover the rock changing beside it (PLACEHOLDER: the tile comes up like any
+## other, and its neighbours swap under the dust).
+func canyon_dust(new_tiles: Array) -> void:
+	var pts := PackedVector2Array()
+	for t: Vector2i in new_tiles:
+		var c := Hex.tile_position(t.x, t.y)
+		for i in 6:
+			var along := Water.normal(i).orthogonal()
+			for u in [-1.5, 0.0, 1.5]:
+				pts.append(c + Water.normal(i) * Hex.A + along * u)
+	RiseDust.start(self, pts, 0.5)
+
+
 func canyon_done(job: Dictionary) -> bool:
 	return WorkerThreadPool.is_task_completed(job.id)
 
@@ -228,10 +258,12 @@ func _keep_canyon(r: Dictionary) -> void:
 	var info := {openset = r.openset, entrances = r.entrances, landmark = r.landmark, turn = r.turn}
 	for t: Vector2i in r.tiles:
 		canyons[t] = info
-		_canyon_meshes[t] = (r.pieces[t] as Piece).mesh()
-		_graphs.erase(t)
+		if r.pieces.has(t):
+			_canyon_meshes[t] = (r.pieces[t] as Piece).mesh()
+			_graphs.erase(t)
+			_canyon_dirty[t] = true
 	canyon_stats.append({tiles = r.tiles.size(), triangles = r.triangles, per_tile = r.per_tile, field_ms = r.field_ms, mesh_ms = r.mesh_ms,
-			commit_ms = (Time.get_ticks_usec() - t0) / 1000.0, entrances = r.entrances.size()})
+			commit_ms = (Time.get_ticks_usec() - t0) / 1000.0, entrances = r.entrances.size(), rebuilt = r.pieces.size()})
 	if "--perf" in OS.get_cmdline_user_args():
 		print("PERF canyon %d tiles: %d triangles; field %d ms, mesh %d ms off the main thread, commit %d ms on it" % [r.tiles.size(), r.triangles, r.field_ms, r.mesh_ms, canyon_stats[-1].commit_ms])
 

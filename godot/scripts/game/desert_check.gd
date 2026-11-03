@@ -64,6 +64,10 @@ func _run() -> void:
 	game.spawn_forest_regions()
 	print("DESERT spawn of every debug region took %d ms" % (Time.get_ticks_msec() - t0))
 	await _wait(1.0)
+	if "--shimmeronly" in OS.get_cmdline_user_args():
+		await _shimmer_shows(map)
+		get_tree().quit()
+		return
 	_check_variants(map)
 	_check_ripples(map)
 	_check_effects(map)
@@ -79,6 +83,7 @@ func _run() -> void:
 	await _walk_canyon(map)
 	await _silhouette(map)
 	await _runtime_canyon(map)
+	await _wait(1.0)   # the last ray test's frames
 	print("DESERT DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
@@ -475,12 +480,25 @@ func _shimmer_shows(map: MapBoard) -> void:
 	for n in nodes:
 		n.visible = true
 	DesertFx.set_night(1.0)
+	DesertFx.test_hold = true   # the map sets these from the clock every frame
 	var resting := await _grab()
+	DesertFx.test_hold = false
 	DesertFx.set_night(0.0)
+	for n in nodes:
+		n.visible = false
+	var without_b := await _grab()
+	for n in nodes:
+		n.visible = true
+	if shots:
+		var dir := ProjectSettings.globalize_path("res://screens")
+		by_day.save_png(dir.path_join("desert_33_shimmer_on.png"))
+		without.save_png(dir.path_join("desert_34_shimmer_off.png"))
+		resting.save_png(dir.path_join("desert_35_shimmer_at_rest.png"))
+	var noise := _differs(without, without_b)   # fire and smoke move between frames whatever the heat does
 	var bent := _differs(by_day, without)
-	var shape := _differs(resting, without)
-	_check(bent > 200, "by day the heat waves bend the view: %d pixels change" % bent)
-	_check(shape < bent / 4, "and leave no shape of their own at rest: %d pixels change" % shape)
+	var shape := _differs(resting, without_b)
+	_check(bent > noise + 200, "by day the heat waves bend the view: %d pixels change, against %d from fire and smoke" % [bent, noise])
+	_check(shape <= noise * 2 + 50, "and leave no shape of their own at rest: %d pixels change" % shape)
 	game.ui.visible = true
 
 
@@ -755,7 +773,7 @@ static func _differs(a: Image, b: Image) -> int:
 	return n
 
 
-## A canyon generated off the main thread while the game runs, the party standing on one of its tiles, then a tile added.
+## A canyon generated off the main thread while the game runs, the party standing on one of its tiles, then tiles added.
 func _runtime_canyon(map: MapBoard) -> void:
 	var anchor := game._free_spot(Game.DEBUG_PLAINS_SHAPE, {})
 	var tiles: Array[Vector2i] = []
@@ -802,29 +820,286 @@ func _runtime_canyon(map: MapBoard) -> void:
 	await _wait(0.2)
 	var y: float = game.party_node.members[0].node.position.y
 	_check(absf(y - Canyon.FLOOR) < 0.2, "a party standing on the region goes down to the floor (%.2f)" % y)
-	# Adding a tile (art/handoff/desert_kit.md -> Open item): nothing moves.
-	var info: Dictionary = map.canyons[region.landmark_tile]
-	var open_before := str(info.openset) + str(info.entrances)
-	var meshes := old.map(func(t): return map._canyon_meshes[t])
-	var add := Vector2i.MAX
+	await _grow_in_play(map, region, old)
+	_grow_cases()
+
+
+## A tile added to the finished canyon in play (DOCS: design/02 -> Canyon walls): the maze stays fixed, only touching tiles rebuild.
+func _grow_in_play(map: MapBoard, region: Dictionary, old: Array) -> void:
+	game.minute = Rules.START_MINUTE   # by day, for the shots
+	game._shown_minute = -1.0
+	var lm: Vector2i = region.landmark_tile
+	var maze_before: Dictionary = map.canyons[lm].openset.duplicate()
+	var doors_before: Array = map.canyons[lm].entrances.duplicate()
+	var meshes := {}
+	for t: Vector2i in old:
+		meshes[t] = map._canyon_meshes[t]
+	# West or south of the region, to test the anchored grid, on a tile that touches an old entrance if it can.
+	var slots := []
 	for t: Vector2i in old:
 		for n in Hex.NEIGHBOURS:
-			if not map.terrains.has(t + n) and add == Vector2i.MAX:
-				add = t + n
+			if not map.terrains.has(t + n) and not (t + n) in slots:
+				slots.append(t + n)
+	slots.sort_custom(func(a, b): return Hex.tile_position(a.x, a.y).x < Hex.tile_position(b.x, b.y).x)
+	var add: Vector2i = slots[0]
+	var party_on: Vector2i = game.party_tile
+	var party_y: float = game.party_node.members[0].node.position.y
+	var worst := await _place_and_time(map, add, region)
+	var info: Dictionary = map.canyons[lm]
+	_check(add in region.tiles and Variants.is_canyon(map.terrains[add]), "a tile added to a finished canyon joins it and turns to canyon, %s, west of the rest" % add)
+	var kept := true
+	for key in maze_before:
+		kept = kept and info.openset.has(key)
+	_check(kept, "no opening closes: the maze only gains")
+	var added := 0
+	var added_old := 0
+	for key: Vector3i in info.openset:
+		if not maze_before.has(key):
+			added += 1
+			var a := Vector2i(key.x, key.y)
+			var b: Vector2i = a + Hex.NEIGHBOURS[key.z]
+			if a != add and b != add:
+				added_old += 1
+	_check(added_old == 0, "the only new openings are the new tile's (%d)" % added)
+	for i in 6:
+		if add + Hex.NEIGHBOURS[i] == lm:
+			_check(not map.canyon_open(lm, (i + 3) % 6), "it stays closed to the Echo Cave")
+	var door_count: int = info.entrances.filter(func(e: Vector3i): return Vector2i(e.x, e.y) == add).size()
+	_check(door_count == 1, "it has its own entrance")
+	var rebuilt := []
+	var same := true
+	for t: Vector2i in old:
+		if map._canyon_meshes[t] != meshes[t]:
+			rebuilt.append(t)
+			same = same and Rules.hex_distance(t, add) == 1
+	_check(same, "only touching tiles rebuilt (%d of %d)" % [rebuilt.size(), old.size()])
+	print("DESERT PERF growing a canyon in play on this Mac: %d tiles rebuilt, %d triangles; field %d ms and mesh %d ms off the main thread; worst frame %.1f ms" % [
+			map.canyon_stats[-1].rebuilt, map.canyon_stats[-1].triangles, map.canyon_stats[-1].field_ms, map.canyon_stats[-1].mesh_ms, worst])
+	_check(absf(game.party_node.members[0].node.position.y - party_y) < 0.3 and game.party_tile == party_on, "a party on the canyon stays put, on the ground")
+	# In by the new entrance, on to every tile.
+	var e: Vector3i = info.entrances.filter(func(q: Vector3i): return Vector2i(q.x, q.y) == add)[0]
+	var through: Vector2i = add + Hex.NEIGHBOURS[e.z]
+	map.place(through, "plains")
+	game.order[through] = game.order.size()
+	game._debug_fill[through] = true
+	await _wait(0.1)
+	var seen := Canyon.reached(info.openset, info.entrances, _set_of(region.tiles))
+	_check(seen.size() == region.tiles.size(), "every tile can still be walked to from an entrance")
+	game.party_tile = through
+	game.party_node.place_at(through)
+	var height := func(p: Vector2) -> float:
+		return map.walk_z(p) if not is_nan(map.walk_z(p)) else 0.0
+	var r := await _follow(add, height)
+	_check(game.party_tile == add and r.gap < 0.15 and absf(game.party_node.members[0].node.position.y - Canyon.FLOOR) < 0.05, "the party walks down the new lane to the new tile's floor (gap %.3f)" % r.gap)
+	var far := await _follow(lm, height)
+	_check(game.party_tile == lm and far.gap < 0.15, "and from there on to the Echo Cave (gap %.3f)" % far.gap)
+	game.ui.visible = false
+	game.rig.frame(Hex.to3(Hex.tile_position(add.x, add.y)), 44.0, 50.0)
+	await _wait(1.0)
+	await _shot("40_canyon_grown")
+	game.ui.visible = true
+	_check_rock_of(map, region)
+	await _wait(0.5)
+	# Filling a hole: place tiles round a gap so one has no outer edge at all.
+	await _fill_hole(map, region)
+
+
+static func _set_of(tiles: Array) -> Dictionary:
+	var out := {}
+	for t in tiles:
+		out[t] = true
+	return out
+
+
+func _place_and_time(map: MapBoard, add: Vector2i, _region_d: Dictionary) -> float:
 	map.place(add, "desert")
 	game.order[add] = game.order.size()
 	game._check_region(add, "desert")
-	await _wait(0.1)
-	_check(add in region.tiles, "a tile added to a finished canyon joins the region (DOCS: design/02)")
-	_check(map.terrains[add] == "desert" and not map.canyons.has(add), "PLACEHOLDER: it stays plain desert, as the open item isn't decided")
-	_check(str(info.openset) + str(info.entrances) == open_before, "no wall or entrance changes")
-	var same := true
-	for k in old.size():
-		same = same and map._canyon_meshes[old[k]] == meshes[k] and map.tile_node(old[k]).get_node("canyon").mesh == meshes[k]
-	_check(same, "no rock changes")
-	var through := true
-	for k in 6:
-		var n: Vector2i = add + Hex.NEIGHBOURS[k]
-		if map.canyons.has(n):
-			through = through and map.edge_open(add, n) == map.canyon_open(n, (k + 3) % 6)
-	_check(through, "its edges to the canyon stay closed, except where an old entrance faces it")
+	var worst := 0.0
+	var last := Time.get_ticks_usec()
+	var shot_taken := false
+	while game.busy:
+		await get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		worst = maxf(worst, (now - last) / 1000.0)
+		last = now
+	return worst
+
+
+## The rock of a grown region against rays, by the same test as the first.
+func _check_rock_of(map: MapBoard, g: Dictionary) -> void:
+	var holes := 0
+	var body := StaticBody3D.new()
+	body.collision_layer = 1 << 9
+	var faces := PackedVector3Array()
+	for t: Vector2i in g.tiles:
+		var mi: MeshInstance3D = map.tile_node(t).get_node("canyon")
+		var v: PackedVector3Array = mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		for q in v:
+			faces.append(q + mi.global_position)
+	var cs := CollisionShape3D.new()
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
+	cs.shape = shape
+	body.add_child(cs)
+	add_child(body)
+	_rock_rays.call_deferred(map, g, body)
+
+
+## A tile with no outer edge, in play: nothing's cut off, and the party can walk onto it.
+func _fill_hole(map: MapBoard, region: Dictionary) -> void:
+	var info: Dictionary = map.canyons[region.landmark_tile]
+	# A slot of the region's with the most old neighbours; the rest of its ring are placed as new canyon tiles first.
+	var best := Vector2i.MAX
+	var most := 0
+	for t: Vector2i in region.tiles:
+		for n in Hex.NEIGHBOURS:
+			var s: Vector2i = t + n
+			if not map.terrains.has(s):
+				var c := 0
+				for m in Hex.NEIGHBOURS:
+					c += 1 if region.tiles.has(s + m) else 0
+				if c > most:
+					most = c
+					best = s
+	for m in Hex.NEIGHBOURS:
+		var ring: Vector2i = best + m
+		if not map.terrains.has(ring):
+			await _place_and_time(map, ring, region)
+	await _wait(0.2)
+	info = map.canyons[region.landmark_tile]
+	var doors_near: int = info.entrances.filter(func(e: Vector3i): return Vector2i(e.x, e.y) + Hex.NEIGHBOURS[e.z] == best).size()
+	await _place_and_time(map, best, region)
+	info = map.canyons[region.landmark_tile]
+	var inside := _set_of(region.tiles)
+	_check(Variants.is_canyon(map.terrains[best]) and Canyon.reached(info.openset, info.entrances, inside).size() == region.tiles.size(), "a tile filling a hole cuts nothing off (%d old entrances faced it, %d entrances left)" % [doors_near, info.entrances.size()])
+	_check(info.entrances.filter(func(e: Vector3i): return Vector2i(e.x, e.y) == best).is_empty(), "and has no entrance of its own, with no edge facing out")
+	_check(range(6).any(func(i): return map.canyon_open(best, i)), "it opens onto the maze")
+	var height := func(p: Vector2) -> float:
+		return map.walk_z(p) if not is_nan(map.walk_z(p)) else 0.0
+	var r := await _follow(best, height)
+	_check(game.party_tile == best and r.gap < 0.15, "the party can walk onto it (gap %.3f)" % r.gap)
+	game.ui.visible = false
+	game.rig.frame(Hex.to3(Hex.tile_position(best.x, best.y)), 40.0, 50.0)
+	await _wait(0.8)
+	await _shot("41_canyon_hole_filled")
+	game.ui.visible = true
+
+
+## Random regions and tiles, off the map: every side of a region (the anchored grid), holes among them. Compares rock before and after.
+func _grow_cases() -> void:
+	var rnd := RandomNumberGenerator.new()
+	rnd.seed = 5
+	var cases := 0
+	var west_south := 0
+	var holes := 0
+	var far_cells := 0
+	var far_worst := 0.0
+	var near_cells := 0
+	var floor_lost := 0
+	var cut_off := 0
+	var echo_opened := 0
+	var closed := 0
+	var no_door := 0
+	var seam_bad := 0
+	for _n in 40:
+		var region: Array = [Vector2i.ZERO]
+		var size := rnd.randi_range(8, 14)
+		while region.size() < size:
+			var c: Vector2i = region[rnd.randi_range(0, region.size() - 1)] + Hex.NEIGHBOURS[rnd.randi_range(0, 5)]
+			if not c in region:
+				region.append(c)
+		var lm: Vector2i = region[rnd.randi_range(0, region.size() - 1)]
+		var turn := Sand.sphinx_turn(lm, region)
+		var old := Canyon.open_edges(region, lm, turn)
+		var a := Canyon.Field.new(region, lm, turn, true, old)
+		var slots := {}
+		for t: Vector2i in region:
+			for k in Hex.NEIGHBOURS:
+				if not region.has(t + k):
+					slots[t + k] = true
+		# Each slot in turn is too slow: the westmost, the southmost, a random one, and any that's a hole.
+		var picks := {}
+		var keys := slots.keys()
+		keys.sort_custom(func(p, q): return Hex.tile_position(p.x, p.y).x < Hex.tile_position(q.x, q.y).x)
+		picks[keys[0]] = true
+		keys.sort_custom(func(p, q): return Hex.tile_position(p.x, p.y).y < Hex.tile_position(q.x, q.y).y)
+		picks[keys[0]] = true
+		picks[keys[rnd.randi_range(0, keys.size() - 1)]] = true
+		for s: Vector2i in slots:
+			if Hex.NEIGHBOURS.all(func(k): return region.has(s + k)):
+				picks[s] = true
+		for x: Vector2i in picks:
+			var g := Canyon.grow(old.openset, old.entrances, region, [x], lm, {})
+			var tiles := region + [x]
+			var b := Canyon.Field.new(tiles, lm, turn, true, g)
+			cases += 1
+			var at_x := Hex.tile_position(x.x, x.y)
+			var west := region.all(func(t): return Hex.tile_position(t.x, t.y).x > at_x.x) or region.all(func(t): return Hex.tile_position(t.x, t.y).y > at_x.y)
+			west_south += 1 if west else 0
+			var hole: bool = Hex.NEIGHBOURS.all(func(k): return region.has(x + k))
+			holes += 1 if hole else 0
+			var inside := _set_of(tiles)
+			if Canyon.reached(g.openset, g.entrances, inside).size() != tiles.size():
+				cut_off += 1
+			if g.entrances.is_empty():
+				no_door += 1
+			for k in 6:
+				var n: Vector2i = x + Hex.NEIGHBOURS[k]
+				if n == lm and g.openset.has(Canyon.edge_key(x, k)):
+					echo_opened += 1
+			for key in old.openset:
+				if not g.openset.has(key):
+					closed += 1
+			for ix in range(0, a.nx, 2):
+				for iy in range(0, a.ny, 2):
+					var px := a.x0 + ix * Canyon.CELL + 0.03
+					var py := a.y0 + iy * Canyon.CELL + 0.03
+					var t := GroundCover.tile_at(Vector2(px, py))
+					if not region.has(t):
+						continue
+					var va := a.value(px, py)
+					var vb := b.value(px, py)
+					if va < 0.01 and vb > va + 0.05:
+						floor_lost += 1
+					if absf(va - vb) > 0.02:
+						if t in g.rebuild:
+							near_cells += 1
+						else:
+							far_cells += 1
+							far_worst = maxf(far_worst, absf(va - vb))
+	# Holes: rings and rings of rings round a gap. All the entrances facing the gap is the worst case: the gap's tile has no
+	# outer edge, so the maze must find a new way in.
+	for radius in [1, 2]:
+		for shift in [Vector2i.ZERO, Vector2i(3, -2), Vector2i(-4, 1), Vector2i(2, 5)]:
+			var x: Vector2i = shift
+			var region: Array = []
+			for q in range(-radius, radius + 1):
+				for r in range(-radius, radius + 1):
+					if Rules.hex_distance(Vector2i(q, r), Vector2i.ZERO) <= radius and Vector2i(q, r) != Vector2i.ZERO:
+						region.append(x + Vector2i(q, r))
+			for lm_k in [0, 3]:
+				var lm: Vector2i = x + Hex.NEIGHBOURS[lm_k]
+				var turn := Sand.sphinx_turn(lm, region)
+				var made := Canyon.open_edges(region, lm, turn)
+				var doors_at_gap := []
+				for e in 6:
+					var n: Vector2i = x + Hex.NEIGHBOURS[e]
+					if n != lm:
+						doors_at_gap.append(Vector3i(n.x, n.y, (e + 3) % 6))
+				for maze in [made, {openset = made.openset, entrances = doors_at_gap}]:
+					var g := Canyon.grow(maze.openset, maze.entrances, region, [x], lm, {})
+					cases += 1
+					holes += 1
+					if Canyon.reached(g.openset, g.entrances, _set_of(region + [x])).size() != region.size() + 1 or g.entrances.is_empty():
+						cut_off += 1
+					if g.openset.has(Canyon.edge_key(x, lm_k)):
+						echo_opened += 1
+	print("DESERT grow cases: %d tiles added, %d west or south of all, %d holes; rock changed at %d cells on touching tiles and %d further off (worst %.2f bands; pinned at the seam)" % [cases, west_south, holes, near_cells, far_cells, far_worst])
+	_check(west_south > 10, "the cases include tiles west and south of the region (%d)" % west_south)
+	_check(holes > 0, "and holes (%d)" % holes)
+	_check(cut_off == 0, "no added tile cuts anything off")
+	_check(no_door == 0, "every grown canyon keeps an entrance")
+	_check(echo_opened == 0, "none opens onto the Echo Cave")
+	_check(closed == 0, "none closes an opening")
+	_check(floor_lost == 0, "no old floor becomes rock")

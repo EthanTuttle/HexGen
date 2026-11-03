@@ -117,6 +117,14 @@ func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 		_rock(m, 0.0, 0.0)
 
 
+## Sets the standing party back on the ground, where it stands (the ground under it has been rebuilt).
+func reseat() -> void:
+	for m in members:
+		var p := Vector2(m.node.position.x, -m.node.position.z)
+		_stand_on(m, p, _feel(m, p), 1.0, true)
+		_rock(m, 0.0, 0.0)
+
+
 ## DOCS (Exploration screen -> Walking): on a town or farm tile the party stands at the hub in the tight line, after a
 ## fight too. One already in that line stays in it; else it takes a line along the tile's streets. False on other tiles.
 func _hub_line(tile: Vector2i) -> bool:

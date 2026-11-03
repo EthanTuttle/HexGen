@@ -11,6 +11,7 @@ static var _glow_mat: ShaderMaterial
 static var _spark_mat: StandardMaterial3D
 static var _spark_process: ParticleProcessMaterial
 static var _shimmer_mesh: QuadMesh
+static var test_hold := false      # a test aid: the map's clock leaves the strengths alone
 
 
 ## Heat waves rising from the effect point (`at`, in the piece's frame).
@@ -90,6 +91,8 @@ static func glint(at: Vector3, radius: float) -> Node3D:
 
 ## 0 by day, 1 at night: heat waves fade out, and the water's glow fades in.
 static func set_night(night: float) -> void:
+	if test_hold:
+		return
 	if _shimmer_mat:
 		_shimmer_mat.set_shader_parameter("strength", 1.0 - night)
 	if _glow_mat:

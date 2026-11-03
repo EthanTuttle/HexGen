@@ -493,10 +493,6 @@ func _roll_tier2(terrain: String) -> String:
 func region_look(region: Dictionary, c: Vector2i) -> String:
 	if c == region.get("pool_tile"):
 		return "oasispool"
-	# PLACEHOLDER (art/handoff/desert_kit.md -> Open item, unsolved): a tile added to a finished canyon joins the region but
-	# stays plain desert, its edges to the canyon staying rock, so no wall moves under the party. Ethan or the planner to decide.
-	if region.has("canyon_tiles") and not c in region.canyon_tiles:
-		return Variants.terrain_of(region.variant)
 	var lm: String = Variants.LANDMARK_OF.get(region.variant, "")
 	if lm == "" or c != region.landmark_tile or not _landmark_fits(lm, region.variant, c, region.tiles, {}):
 		return region.variant
@@ -750,9 +746,15 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		return
 	_set_flow(region)
 	var job := {}
+	var grew := []
 	if region.variant == "canyon" and not region.has("canyon_tiles"):
 		region.canyon_tiles = tiles.duplicate()
 		job = map.start_canyon(tiles, region.landmark_tile)
+	elif region.has("canyon_tiles") and tiles.size() > region.canyon_tiles.size():
+		var added := tiles.filter(func(c): return not c in region.canyon_tiles)
+		job = map.start_canyon_growth(region.canyon_tiles, added, region.landmark_tile)
+		grew = added
+		region.canyon_tiles = tiles.duplicate()
 	var todo := tiles.filter(func(c): return map.terrains[c] != region_look(region, c))
 	if todo.is_empty():
 		return
@@ -788,8 +790,13 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 	for c in todo:
 		changes[c] = region_look(region, c)
 	map.retile(changes)
+	if not grew.is_empty():
+		map.canyon_dust(grew)
 	if not job.is_empty() and map.canyons.has(party_tile):
-		party_node.place_at(party_tile)   # down on the floor, while the tile's flat
+		if grew.is_empty() or party_tile in grew:
+			party_node.place_at(party_tile)   # down on the floor, while the tile's flat
+		else:
+			party_node.reseat()               # a lane it stood on may have gone
 	for k in todo.size():
 		var node := map.tile_node(todo[k])
 		node.scale.y = 0.04

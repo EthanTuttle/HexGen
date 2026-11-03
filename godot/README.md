@@ -496,12 +496,12 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - Working out a route up, climbing a ledge, and a real rise with the party on it, the worst frame of each.
 - Touch on the plateau: tapping raised ground on a real screen.
 - The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
-- **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (255 ms on the Mac), and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
+- **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (260 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
 ## Desert kit (tiles v60)
 
-Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (add `--shots` for `screens/desert_*.png`, and `--perf` for timings) checks all of it and ends `DESERT DONE`. `tools/canyon_check.gd` compares the ports with the Python (commands in the tool's header); 40 random regions, 0 differ, with one known gap: a lane's first section, at z = 0 exactly, can differ in width by up to 0.72 m, since which side of a band's line a point falls on comes down to float32 against double.
+Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (add `--shots` for `screens/desert_*.png`, and `--perf` for timings) checks all of it, including a canyon growing in play, and ends `DESERT DONE`. `tools/canyon_check.gd` compares the ports with the Python (commands in the tool's header); 40 random regions, 0 differ, with one known gap: a lane's first section, at z = 0 exactly, can differ in width by up to 0.72 m, since which side of a band's line a point falls on comes down to float32 against double.
 
 | Item | Where | How |
 | --- | --- | --- |
@@ -519,13 +519,28 @@ Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (a
 
 **Where the engine differs from `canyon.py`:** a wall's facing comes from the triangle's highest corner, not a test of the field beside it, and skirts are drawn on both sides. The preview renders both sides of every face, so neither shows there; here both showed the sky. Hulls (`_loft`) wind outward for the same reason.
 
+### Adding a tile to a finished canyon (design/02 -> Canyon walls, trying it, Nov 3, 2026)
+
+The maze is saved when the region finishes and never worked out again. `Canyon.grow` adds to it: a new tile opens onto one old neighbour, never the Echo Cave, and gets its own entrance; an old entrance facing it becomes an ordinary opening, and is then its way in. The new tile and the old ones touching it are rebuilt, off the main thread (`MapBoard.start_canyon_growth`).
+
+| Needed | Simplest choice, for the prototype |
+| --- | --- |
+| A world-anchored grid | The field's grid starts on a multiple of its cell (`Field`, `anchored`), so no tile can shift it. Heights differ a hair from `canyon.py`, which starts it at the region's corner; the compare tool still checks the port unanchored |
+| Rock changing past the touching tiles | A new corridor on an old tile can reach into the next tile's rock. Those tiles aren't rebuilt, so a rebuilt tile takes their old height along the shared edge (`_seam_value`), and they still join |
+| Tiles that fill a hole | No outer edge, so no entrance; it still opens onto the maze. If that cuts anything off, `_repair` opens the new tile onto the part cut off; failing that, a touching tile takes an entrance |
+| Rock changing on screen | PLACEHOLDER: the new tile comes up like any other (sink and spring), and at the swap its neighbours change under a burst of dust along its edges. No fade |
+
+If it doesn't work in play, the agreed fallback is that a finished canyon can't grow.
+
 ### Numbers (Mac, Mobile renderer, phone size)
 
 | | |
 | --- | --- |
-| The art's 12-tile region | 41,850 triangles, 3,487 a tile, worst tile 4,004 (hand-off: 41,439, about 3,450; budget 4,816). The difference is mainly the skirts' second side and different random stones |
-| Generating it | About 255 ms: field 68 ms, mesh 185 ms (plain Python about 450 ms; the hand-off expected GDScript to be slower, and it isn't) |
-| Finishing in play | Off the main thread. Worst frame while generating 9.4 ms; worst frame at the swap, with the retile, 25.8 ms; commit 9 ms |
+| The art's 12-tile region | 41,759 triangles, 3,479 a tile, worst tile 4,028 (hand-off: 41,439, about 3,450; budget 4,816). The difference is mainly the skirts' second side and different random stones |
+| Generating it | About 260 ms: field 69 ms, mesh 187 ms (plain Python about 450 ms; the hand-off expected GDScript to be slower, and it isn't) |
+| Finishing in play | Off the main thread. Worst frame while generating 9.4 ms; worst frame at the swap, with the retile, 12.9 ms; commit 3 ms |
+| Growing it in play | A new tile west of the region, 2 tiles rebuilt: field 135 ms (it works out the old one too, for the seams), mesh 37 ms, off the main thread; worst frame 13.1 ms. The cost rises with the region: 17 tiles took 190 ms and 124 ms |
+| Grow cases | 147 tiles added, 89 west or south of all the rest, 32 holes, among them all the entrances facing the hole: nothing cut off, no opening closed, none onto the Echo Cave, no old floor turned to rock. Rock changed only on touching tiles in these cases |
 | Worst other desert tile | 4,806 triangles, the Sphinx's |
 | Draw calls and triangles | Canyon at the opening zoom 274 and 183,000; badlands 1,104 and 489,000; oasis 516 and 333,000; wasteland 1,513 and 687,000, each with whatever else is in view of the debug map |
 | Frame time | Reads 8.3 ms everywhere, a 120 Hz cap even with vsync off, so it says nothing |
@@ -533,7 +548,6 @@ Built from `art/handoff/desert_kit.md`, its first section. `-- --desertcheck` (a
 
 ### PLACEHOLDER, for Ethan or the planner
 
-- **Adding a tile to a finished canyon (unsolved: hand-off → Open item):** it joins the region, as design/02 says, but stays plain desert, and no wall, entrance or rock changes (`Game.region_look`). An old entrance facing it still opens onto it. A tile that fills a hole can have no way in. Nothing here is a design decision.
 - **Stopping on the pool's tile:** the kit routes across it but gives no stop, so the party stands on the ring, on the side toward the camera.
 - **Looks:** shimmer strength and speed, the silhouette's colour and strength, glint size and count, the night glow.
 - **Silhouette:** it shows a mini's inner parts too, since the pass doesn't hide a mini's own surfaces.

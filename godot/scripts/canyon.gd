@@ -131,6 +131,120 @@ static func open_edges(region: Array, landmark: Vector2i, facing: int) -> Dictio
 	return {openset = openset, entrances = entrances}
 
 
+## A finished canyon growing (DOCS: design/02 -> Canyon walls): the maze stays fixed. Each new tile opens onto one old
+## neighbour, never the Echo Cave, and gets its own entrance on an edge facing outside; an old entrance facing it becomes an
+## ordinary opening, and then that is its way in. land: edges facing placed land are preferred for an entrance.
+## Returns {openset, entrances, rebuild: the new tiles and the old ones touching them}.
+static func grow(openset: Dictionary, entrances: Array, region: Array, new_tiles: Array, landmark: Vector2i, land: Dictionary) -> Dictionary:
+	var open := openset.duplicate()
+	var doors := entrances.duplicate()
+	var inside := {}
+	for t: Vector2i in region:
+		inside[t] = true
+	var rebuild := {}
+	var todo := new_tiles.duplicate()
+	while not todo.is_empty():
+		var k := 0   # one that touches the canyon so far, if any does
+		for j in todo.size():
+			if neighbours(todo[j]).any(func(n): return inside.has(n)):
+				k = j
+				break
+		var x: Vector2i = todo.pop_at(k)
+		rebuild[x] = true
+		var old_door := false
+		for i in 6:
+			var n: Vector2i = x + Hex.NEIGHBOURS[i]
+			if inside.has(n):
+				rebuild[n] = true
+				var e := Vector3i(n.x, n.y, (i + 3) % 6)
+				if e in doors:
+					doors.erase(e)
+					open[edge_key(n, e.z)] = true
+					old_door = true
+		if not old_door:
+			var best := -1
+			for i in 6:
+				var n: Vector2i = x + Hex.NEIGHBOURS[i]
+				if inside.has(n) and n != landmark and (best < 0 or _h(x, i, 76) < _h(x, best, 76)):
+					best = i
+			if best >= 0:
+				open[edge_key(x, best)] = true
+		inside[x] = true
+		var door := _door(x, inside, land)
+		if door >= 0:
+			doors.append(Vector3i(x.x, x.y, door))
+	_repair(open, doors, inside, new_tiles, rebuild, landmark, land)
+	return {openset = open, entrances = doors, rebuild = rebuild.keys()}
+
+
+## Tile t's best edge for an entrance: facing outside, placed land first, then by hash; -1 if it has none.
+static func _door(t: Vector2i, inside: Dictionary, land: Dictionary) -> int:
+	var best := -1
+	var best_at := INF
+	for i in 6:
+		var n: Vector2i = t + Hex.NEIGHBOURS[i]
+		if not inside.has(n):
+			var at := _h(t, i, 73) + (0.0 if land.has(n) and not Variants.is_canyon(land[n]) else 2.0)
+			if at < best_at:
+				best_at = at
+				best = i
+	return best
+
+
+## Holes (DOCS: nothing gets cut off): a new tile with no outer edge has no entrance, and old entrances that faced it have
+## gone, so a part of the maze, or all of it, can lose its way in. Tiles that can't be reached from an entrance are opened
+## onto a new tile they touch; failing that, a tile touching a new one takes an entrance, or at the very last any other.
+static func _repair(open: Dictionary, doors: Array, inside: Dictionary, new_tiles: Array, rebuild: Dictionary, landmark: Vector2i, land: Dictionary) -> void:
+	for _pass in inside.size() + 1:
+		var seen := reached(open, doors, inside)
+		if seen.size() == inside.size():
+			return
+		var opened := false
+		if not seen.is_empty():
+			for x: Vector2i in new_tiles:
+				for i in 6:
+					var n: Vector2i = x + Hex.NEIGHBOURS[i]
+					if inside.has(n) and n != landmark and seen.has(x) != seen.has(n) and not open.has(edge_key(x, i)):
+						open[edge_key(x, i)] = true
+						opened = true
+						break
+				if opened:
+					break
+		if opened:
+			continue
+		var keys := rebuild.keys()
+		keys.sort()
+		var rest := inside.keys()
+		rest.sort()
+		keys.append_array(rest)
+		for t: Vector2i in keys:
+			if t != landmark and not seen.has(t):
+				var door := _door(t, inside, land)
+				if door >= 0:
+					doors.append(Vector3i(t.x, t.y, door))
+					rebuild[t] = true
+					break
+
+
+## The tiles that can be walked to from the entrances.
+static func reached(open: Dictionary, doors: Array, inside: Dictionary) -> Dictionary:
+	var seen := {}
+	var todo: Array[Vector2i] = []
+	for e: Vector3i in doors:
+		var t := Vector2i(e.x, e.y)
+		if not seen.has(t):
+			seen[t] = true
+			todo.append(t)
+	while not todo.is_empty():
+		var t: Vector2i = todo.pop_back()
+		for i in 6:
+			var n: Vector2i = t + Hex.NEIGHBOURS[i]
+			if inside.has(n) and not seen.has(n) and open.has(edge_key(t, i)):
+				seen[n] = true
+				todo.append(n)
+	return seen
+
+
 static func is_open(openset: Dictionary, entrances: Array, t: Vector2i, i: int) -> bool:
 	return openset.has(edge_key(t, i)) or Vector3i(t.x, t.y, i) in entrances
 
@@ -209,13 +323,17 @@ class Field:
 	var ny: int
 	var dist: PackedFloat32Array
 	var north: PackedFloat32Array
+	var before: Field = null   # a canyon that has grown: the field its unrebuilt tiles were made from
+	var kept := {}             # those tiles
 
-	func _init(tiles: Array, lm: Vector2i, t: int) -> void:
+	## anchored: the grid sits on the world's, so a tile that grows the region west or south can't shift it (canyon.py starts
+	## it at the region's corner, which is what the compare tool checks). maze: the saved maze, in place of working one out.
+	func _init(tiles: Array, lm: Vector2i, t: int, anchored := false, maze := {}) -> void:
 		for c: Vector2i in tiles:
 			region[c] = true
 		landmark = lm
 		turn = t
-		var o := Canyon.open_edges(tiles, lm, t)
+		var o := maze if not maze.is_empty() else Canyon.open_edges(tiles, lm, t)
 		openset = o.openset
 		entrances = o.entrances
 		var lo := Vector2(INF, INF)
@@ -231,6 +349,9 @@ class Field:
 		segs.append([c_lm + Water.turned(Vector2(-0.2, 1.05), t), c_lm + Water.turned(Vector2(-0.2, -1.05), t)])
 		x0 = lo.x - 5.0
 		y0 = lo.y - 5.0
+		if anchored:
+			x0 = floorf(x0 / Canyon.CELL) * Canyon.CELL
+			y0 = floorf(y0 / Canyon.CELL) * Canyon.CELL
 		nx = int((hi.x + 5.0 - x0) / Canyon.CELL) + 2
 		ny = int((hi.y + 5.0 - y0) / Canyon.CELL) + 2
 		var near := {}
@@ -372,7 +493,7 @@ static func tile_grid(t: Vector2i, field: Field) -> Array:
 				var p := n * d + tv * ((-1.0 + 2.0 * b / NV) * d * TAN30)
 				var key := Vector2i(roundi(p.x * 1000.0), roundi(p.y * 1000.0))
 				if not memo.has(key):
-					memo[key] = Vector3(c.x + p.x, c.y + p.y, field.value(c.x + p.x, c.y + p.y))
+					memo[key] = Vector3(c.x + p.x, c.y + p.y, _seam_value(t, p, field))
 				row.append(memo[key])
 			pts.append(row)
 		for a in ND:
@@ -387,6 +508,17 @@ static func tile_grid(t: Vector2i, field: Field) -> Array:
 					tris.append([q00, q10, q11])
 					tris.append([q00, q11, q01])
 	return tris
+
+
+## The rock's height at p in tile t, tile-frame. Along an edge shared with a tile that isn't being rebuilt, it's the height
+## that tile was built with, so the two still join if a new corridor's reach has changed the rock there.
+static func _seam_value(t: Vector2i, p: Vector2, field: Field) -> float:
+	var c := Hex.tile_position(t.x, t.y)
+	if field.before != null:
+		for i in 6:
+			if field.kept.has(t + Hex.NEIGHBOURS[i]) and absf(p.dot(Water.normal(i)) - Water.A) < 0.001:
+				return field.before.value(c.x + p.x, c.y + p.y)
+	return field.value(c.x + p.x, c.y + p.y)
 
 
 ## Cross-sections of an entrance's lane, top to foot, world space: [x, y, z, nx, ny, left, right], with (nx, ny) pointing
@@ -506,16 +638,25 @@ static func _reach(field: Field, others: Array, p: Vector3, n: Vector2, sign: fl
 # --- Meshes ----------------------------------------------------------------------------------
 
 ## The generated region: {openset, entrances, landmark, turn, pieces: tile -> Piece, triangles, field_ms, mesh_ms}. Safe
-## off the main thread; turn the pieces into meshes on the main thread.
-static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: float) -> Dictionary:
+## off the main thread; turn the pieces into meshes on the main thread. grown: a finished canyon growing, {tiles, openset,
+## entrances} as they were, and the result of grow(): only its rebuild tiles get pieces.
+static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: float, grown := {}) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
-	var field := Field.new(tiles, landmark, turn)
+	var field: Field
+	if grown.is_empty():
+		field = Field.new(tiles, landmark, turn, true)
+	else:
+		field = Field.new(tiles, landmark, turn, true, {openset = grown.grow.openset, entrances = grown.grow.entrances})
+		field.before = Field.new(grown.tiles, landmark, turn, true, {openset = grown.openset, entrances = grown.entrances})
+		for t: Vector2i in tiles:
+			if not t in grown.grow.rebuild:
+				field.kept[t] = true
 	var t1 := Time.get_ticks_usec()
 	var rng := PyRandom.new(seed_value)
 	var cols := {}
 	for key: String in Hex.PALETTE:
 		cols[key] = Color.html(Hex.PALETTE[key])
-	var ordered: Array = tiles.duplicate()
+	var ordered: Array = tiles.duplicate() if grown.is_empty() else grown.grow.rebuild.duplicate()
 	ordered.sort()
 	var pieces := {}
 	for t: Vector2i in ordered:
@@ -536,9 +677,11 @@ static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: fl
 		var line := ramp_line(t, e.z, landmark, turn)
 		for k in range(1, line.size()):
 			ramp_segs.append([c + Vector2(line[k - 1].x, line[k - 1].y), c + Vector2(line[k].x, line[k].y)])
-		_lane(pieces[t], rng, t, e.z, field, cols)
+		if pieces.has(t):
+			_lane(pieces[t], rng, t, e.z, field, cols)
 	_dwellings(pieces, rng, field, ramp_segs, cols)
-	_echo_cave(pieces[landmark], rng, landmark, turn, cols)
+	if pieces.has(landmark):
+		_echo_cave(pieces[landmark], rng, landmark, turn, cols)
 	for t: Vector2i in ordered:   # craggy rock on the highest ground
 		var c := Hex.tile_position(t.x, t.y)
 		for k in 6:
@@ -784,7 +927,8 @@ static func _dwellings(pieces: Dictionary, rng: PyRandom, field: Field, ramp_seg
 			if hit == Vector2.INF or GroundCover.tile_at(hit) == field.landmark:
 				continue
 			spots.append(m)
-			_dwelling(pieces[GroundCover.tile_at(hit)], Vector3(hit.x - nrm.x * 0.02, hit.y - nrm.y * 0.02, FLOOR), atan2(-nrm.y, -nrm.x), cols)
+			if pieces.has(GroundCover.tile_at(hit)):
+				_dwelling(pieces[GroundCover.tile_at(hit)], Vector3(hit.x - nrm.x * 0.02, hit.y - nrm.y * 0.02, FLOOR), atan2(-nrm.y, -nrm.x), cols)
 
 
 ## canyon_takes.dwelling: adobe rooms against the rock, doors facing along spin, with a ladder down.
