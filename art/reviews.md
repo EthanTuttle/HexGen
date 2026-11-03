@@ -28,3 +28,7 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/landing_compare_close_v1.png` | rejected | Only the long steps read right, but they jut out; try steps out to every neighbouring hex, up and down |
 | 2026-11-03 | `art/preview/crop_rows_close_v3.png` | rejected | Don't look good; try fuller, tightly packed rows that read as a solid field |
 | 2026-11-03 | `art/preview/allround_compare_close_v1.png` | approved | Long column: three even steps all round, treads count as ground, neighbour clipping accepted; eased column not taken |
+| 2026-11-03 | `art/preview/badlands_stronghold_alone_ramp_v2.png` | approved | With the turn toward the default camera |
+| 2026-11-03 | `art/preview/canyon_lane_close_1_v4.png` | rejected | Cut path good, but fix the slivers at the open side |
+| 2026-11-03 | `art/preview/oasis_map_v4.png` | approved | |
+| 2026-11-03 | `art/preview/crop_rows_close_v5.png` | rejected | Rows dropped; tufts stay, straw stays #D1B668 |
