@@ -13,6 +13,9 @@ column of cells runs down one column of text, and each next column is half a cel
   G grove (2, 3 or 7 cells)   L fallen trunk (2 or 3 in a line)   B big boulder (3)   F giant mushrooms (3)
   E web-choked hollow (3)   Z bramble mass (3)   Q huge tree (7)   U big roots (3 in a line)
   K cliff wall (any shape, made per map)   H raised ground, walkable   ^ stone steps up to it   / earth ramp up to it
+  n a path map's path, walkable, drawn per variant from its tile trail: old stone slabs, stepping lights, a drag furrow or a prayer path
+  g the same, under a wooden gate (a north-south stretch of heartwood's path)
+  M marker stone (one cell)
   A a giant's cells   h k s the party (hero, Chelmsford stand-in, small stand-in)   w v wolf and elite   x y spider and elite
   W V X a wolf, elite wolf or spider standing on raised ground
 Cells of one letter that touch make one obstacle; its turn is found from its shape.
@@ -42,6 +45,7 @@ import hexkit as hk  # noqa: E402
 import map_catalogue as mc  # noqa: E402
 import render_forest_boards as rb  # noqa: E402
 import render_preview as rp  # noqa: E402
+import variants as vr  # noqa: E402
 
 MINI_MARKS = {"h": "standin_hero", "k": "standin_chelmsford", "s": "standin_small", "w": "enemy_wolf", "v": "enemy_wolf_elite",
               "x": "enemy_spider", "y": "enemy_spider_elite", "W": "enemy_wolf", "V": "enemy_wolf_elite", "X": "enemy_spider"}
@@ -51,7 +55,9 @@ SINGLE = {"T": "tree", "O": "stump", "S": "stone"}
 RAISED, RAMPS = "HWVX", "^/"
 RAISED_HEIGHT, CLIFF_HEIGHT = 0.9, 2.0
 BRUSH_Z = 0.26  # where the camera check samples a brush cell: above its plants
-WALKABLE = ".,c" + "".join(MINI_MARKS) + "A" + RAISED + RAMPS
+ROAD_Z = 0.16  # the same for a path cell: above its slabs, caps and bones
+ROAD = "ng"
+WALKABLE = ".,c" + ROAD + "".join(MINI_MARKS) + "A" + RAISED + RAMPS
 # The combat camera of the Godot prototype: game/fight.gd frames rig at distance 22, pitch 52; camera_rig.gd has a 50 mm lens,
 # Q / E turn it by Rules.ROTATE_STEP (60 degrees) and a two-finger twist turns it freely.
 PITCH, ENGINE_DISTANCE = 52, 22
@@ -98,6 +104,25 @@ H H . B . . G . L . .
  . . . . . G G . . . 
   , . h . . G . . T  
    k . s . . . . .   """},
+    "deep_forest_stone_path": {"kind": "path", "size": "big square", "idea": "An old stone path in a long soft curve through pines, with mossy marker stones beside it. The path is the only long clear run; the pines break up everything to either side.", "plan": """
+T . . n . . T
+ . T w . . T 
+. T . n . v .
+ . . . M . . 
+. . . n . T .
+ T . . n . x 
+. . . . n . T
+ . T . . M . 
+T . . . n . .
+ . . . . . T 
+. O . . n . .
+ . . . n T . 
+T . . n . . T
+ . . M . . . 
+. . . n s . .
+ . k . . h T 
+T . . n . . .
+"""},
     "fey_wood_stones": {"size": "medium hex", "idea": "A ring of standing stones round a fairy ring. Each stone is one cell to step behind; what the ring itself does is a rule still to make.", "ring": (4, 8), "plan": """
     T    
    G T   
@@ -140,6 +165,19 @@ T G . T
  h k . 
   . .  
    R   """},
+    "fey_wood_lights": {"kind": "path", "size": "long wide rectangle", "idea": "A line of glowing caps weaves across the map through the trees, with giant mushrooms at its far end. Both sides come at each other along the lights or cut the corners between them.", "plan": """
+. T . . T F . . T
+ . . T . . F w . 
+T . . . . F n x n
+ . c . T . n n n 
+. c n . . n . n v
+ . n n . n . . . 
+n n . n n . T . .
+ n h T n . . . . 
+. . k . . . c c .
+ . . s . T . c T 
+T . . O . . . . T
+"""},
     "dark_wood_bend": {"size": "square-ish rectangle", "idea": "A cliff fills the map's north-west, leaving an L-shaped run with a web-choked hollow at the corner. Neither side can see round the bend until it's too late: an ambush map.", "plan": """
 K K K T x T
  K K T . . 
@@ -181,6 +219,29 @@ x . h . w
  . b b . 
   . . w  
    x .   """},
+    "dark_wood_furrow": {"kind": "path", "size": "tall oval", "idea": "A straight furrow worn by something dragged, strewn with bones, runs the length of the map past a web-choked hollow. Bramble masses press in on its west side twice, and the spiders wait by the hollow.", "plan": """
+   E . n   
+  . E n x  
+ . E . . . 
+T . x n . T
+ T . . . y 
+. . . n . .
+ . Z . . . 
+. Z . n . T
+ . Z . . . 
+. . . n . Z
+ T . . . Z 
+. . T n . Z
+ . . n . . 
+T . . . . T
+ . Z n . . 
+. Z . . . .
+ . Z n . . 
+. . s . k .
+ . . n h . 
+  . . . .  
+   . n .   
+"""},
     "heartwood_great_tree": {"size": "large oval", "idea": "A huge tree fills the middle, so nobody can come straight at you; the fight goes round it both ways, over its roots and between lesser trees. A rise of raised rock with an earth ramp stands by the party.", "plan": """
      . T .     
     . . . .    
@@ -228,6 +289,30 @@ K . . U .
   . h k  
    s .   
     T    """},
+    "heartwood_prayer_path": {"kind": "path", "size": "tall rectangle", "idea": "A prayer path up the map, under two wooden gates, forking round a small grove and joining again, with big roots walling its top end. Take either arm of the fork, and whoever holds the join reaches both.", "plan": """
+T . n . . T
+ . v n w . 
+. . . . . .
+ . . n x . 
+. U . . U .
+ . . g . . 
+T U . . U T
+ . . n . . 
+. U n n U .
+ . n . n . 
+T . . . . T
+ . n G n . 
+. . G . . .
+ T n G n T 
+. . n n . .
+ . . n . . 
+. . . . . .
+ . k g s . 
+. O h . T .
+ . . n . . 
+T . . . . T
+ . . n . . 
+"""},
 }
 
 
@@ -333,7 +418,7 @@ def visibility(name, cells):
         if mark not in WALKABLE:
             continue
         # Above brush's own plants, a litter mark's height, and the steps of a ramp at any of the points.
-        z = BRUSH_Z if mark == "c" else 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
+        z = BRUSH_Z if mark == "c" else ROAD_Z if mark in ROAD else 0.08 if mark == "," else RAISED_HEIGHT * 0.8 + 0.05 if mark in RAMPS else ground_z(mark) + 0.02
         points = [hk.cell_position(*c) + Vector((0, 0, z))]
         points += [p + Vector((0.3 * math.cos(k * math.pi / 3), 0.3 * math.sin(k * math.pi / 3), 0)) for p in points[:1] for k in range(6)]
         seen[c] = seen_step[c] = 0
@@ -483,6 +568,99 @@ def shaped_piece(col, v, group, mark):
     p.finish(col)
 
 
+def road_edges(cells):
+    """Each pair of touching path cells, as their two centres."""
+    found = []
+    for c, mark in cells.items():
+        if mark in ROAD:
+            for dq, dr in NEIGHBOURS[:3]:
+                n = (c[0] + dq, c[1] + dr)
+                if cells.get(n, " ") in ROAD:
+                    found.append((hk.cell_position(*c), hk.cell_position(*n)))
+    return found
+
+
+def road_line(cells):
+    """A single path's points, north to south, with its corners rounded off, as the tile trails run straight or in soft curves."""
+    pts = sorted((hk.cell_position(*c) for c, mark in cells.items() if mark in ROAD), key=lambda q: -q.y)
+    for _ in range(3):
+        pts = [pts[0]] + [q for a, b in zip(pts, pts[1:]) for q in (a.lerp(b, 0.25), a.lerp(b, 0.75))] + [pts[-1]]
+    return pts
+
+
+def along(pts, step):
+    """Points every step along a line, each with its direction."""
+    found, left = [], step / 2
+    for a, b in zip(pts, pts[1:]):
+        d = b - a
+        while left <= d.length:
+            found.append((a + d.normalized() * left, d.normalized()))
+            d, a = b - found[-1][0], found[-1][0]
+            left = step
+        left -= d.length
+    return found
+
+
+def gate_over(p, rng, at):
+    """The tiles' wooden gate over a north-south path cell, grown so its posts stand on the cell's corners, where they never cut a base."""
+    before = set(p.bm.verts)
+    vr.trail_gate(p, rng)
+    pivot = Vector((vr.X0 + 0.6, 0, 0))
+    for w in set(p.bm.verts) - before:
+        d = (w.co - pivot) * 1.2
+        w.co = at + Vector((d.y, -d.x, d.z))
+
+
+def road_joins(p, v, cells):
+    """Earth paths are cells of the path's colour; strips across the gaps between them make one road, as on the farm maps."""
+    for a, b in road_edges(cells):
+        d = b - a
+        p.box((a + b) / 2, (d.length, 0.62, 0.004), fc.BARE[v], spin=math.atan2(d.y, d.x))
+
+
+def cap(p, rng, at):
+    """A stepping light: a low domed cap on a short stem, under a mini's base."""
+    r = rng.uniform(0.13, 0.16)
+    p.cylinder(at, 0.04, 0.05, "fey_stem", segments=4)
+    p.cylinder(at, r, 0.03, "fey_mushroom", segments=7, z=0.05)
+    p.cone(at, r, 0.05, "fey_mushroom", segments=7, z=0.08)
+
+
+def road(col, v, cells):
+    """A path map's path, in each forest variant's own look from its tile trail (variants.py): what lies on it is low enough for a mini to stand on."""
+    p = hk.Piece("road")
+    rng = hk.seeded(f"road_{v}")
+    if v == "deep_forest":  # old slabs in single file with gaps, as on the tile trail
+        for at, d in along(road_line(cells), 0.5):
+            if rng.random() < 0.88:
+                side = Vector((-d.y, d.x, 0))
+                p.box(at + side * rng.uniform(-0.06, 0.06), (rng.uniform(0.38, 0.46), rng.uniform(0.32, 0.4), 0.06), rng.choice(["stone_moss", "rock"]), spin=math.atan2(d.y, d.x) + rng.uniform(-0.3, 0.3))
+    elif v == "dark_wood":  # the furrow's cells, with bones lying across them
+        road_joins(p, v, cells)
+        for at, d in along(road_line(cells), 1.5):
+            vr.bones(p, rng, at + Vector((-d.y, d.x, 0)) * rng.uniform(-0.1, 0.1), skull=rng.random() < 0.4)
+    elif v == "fey_wood":
+        for a, b in road_edges(cells):
+            d = b - a
+            cap(p, rng, a.lerp(b, 0.5) + Vector((-d.y, d.x, 0)).normalized() * rng.uniform(-0.1, 0.1))  # a cap at each join
+        for c, mark in cells.items():
+            if mark in ROAD:
+                cap(p, rng, hk.cell_position(*c) + Vector((rng.uniform(-0.1, 0.1), rng.uniform(-0.1, 0.1), 0)))
+    else:  # the path's cells, with the tiles' wooden gates over them
+        road_joins(p, v, cells)
+        for c, mark in cells.items():
+            if mark == "g":
+                gate_over(p, rng, hk.cell_position(*c))
+    for c, mark in cells.items():
+        if mark == "M":
+            at = hk.cell_position(*c)
+            before = set(p.bm.verts)
+            vr.marker_stone(p, rng, at)
+            for w in set(p.bm.verts) - before:
+                w.co = at + (w.co - at) * 1.6
+    p.finish(col)
+
+
 def build_map(t, col, name):
     """The map's cells and obstacles, without minis."""
     m = MAPS[name]
@@ -504,9 +682,11 @@ def build_map(t, col, name):
             piece = "cell_dark_wood_block_b"
         elif mark in "TGQEZU":
             piece = f"cell_{v}_cover"
+        elif mark in ROAD and v in fc.BARE:
+            piece = f"cell_{v}_bare"
         elif mark in RAMPS:
             continue
-        elif mark in "BKSFLO":
+        elif mark in "BKSFLOM":
             piece = f"cell_{v}_floor"
         else:
             piece = f"cell_{v}_ground_{'abc'[(c[0] - c[1]) % 3]}"
@@ -544,6 +724,8 @@ def build_map(t, col, name):
     for c, mark in cells.items():
         if mark in RAMPS:
             ramp_piece(col, v, cells, c)
+    if set(ROAD + "M") & set(cells.values()):
+        road(col, v, cells)
     if m.get("ring"):
         at = m["ring"]
         rp.place(t, "fey_wood_ring", col, hk.cell_position(at[0], (at[1] - at[0]) // 2))
@@ -612,9 +794,10 @@ def sheet(stems, out, cols=3):
 
 def make_sheets():
     for v in fc.VARIANTS:
-        sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}")
+        sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}", 4)
     sheet([f"forest_map_{n}_turned" for n in MAPS if n in TURNED], "forest_maps_turned", 2)
     sheet([f"forest_map_{n}" for n in MAPS], "forest_maps_all", 4)
+    sheet([f"forest_map_{n}" for n in MAPS if MAPS[n].get("kind") == "path"], "forest_maps_paths", 2)
 
 
 def kit_sheet(t, col):
