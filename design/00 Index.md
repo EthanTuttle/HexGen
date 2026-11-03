@@ -35,7 +35,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
-- [ ] New: how ramps should look (comes first, Nov 3, 2026; see Presentation)
+- [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
+- [ ] New: combat map ramps in the new styles (comparison first; see Presentation)
 - [ ] New: cover on combat maps: whether crops and forest brush hide anyone (walkable with no rule for now; see Classes & combat)
 **World & story**
 
