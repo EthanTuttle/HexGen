@@ -1097,11 +1097,10 @@ def bunting(p, rng, a, b, z, sag=0.15):
         frustum(p, q0, q1, 0.012, 0.012, "rope", segments=3)
     for k, q in enumerate(pts[1:-1]):
         side = turn(Vector((0.07, 0, 0)), spin)
-        cloth = [q - side, q + side, q - Vector((0, 0, 0.15))]
-        for corners in (cloth, cloth[::-1]):  # hangs in the air, so it needs a face each way
-            f = p.bm.faces.new([p.bm.verts.new(c) for c in corners])
-            f.material_index = p._slot(BUNTING[k % len(BUNTING)])
-            p.surface.add(f)
+        f = p.bm.faces.new([p.bm.verts.new(q - side), p.bm.verts.new(q + side),
+                            p.bm.verts.new(q - Vector((0, 0, 0.15)))])
+        f.material_index = p._slot(BUNTING[k % len(BUNTING)])
+        p.surface.add(f)
 
 
 def cider_orchards(p, rng, kind):
