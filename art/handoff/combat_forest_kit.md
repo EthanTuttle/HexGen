@@ -1,8 +1,8 @@
-# Combat forest kit hand-off (combat_cells_v8, combat_maps_v12)
+# Combat forest kit hand-off (combat_cells_v8, combat_maps_v13)
 
-Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and sixteen custom forest combat maps: twelve terrain maps and four path maps, one per variant. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
+Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and nineteen custom forest combat maps: fifteen terrain maps and four path maps, three terrain maps for plain forest and three plus one path map for each of the other four variants. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v8.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v12.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
+- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v8.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v13.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
 - **Map data:** `art/export/combat_maps.json`.
 - **Scripts:** `art/scripts/build_forest_cells.py`, `art/scripts/render_forest_maps.py` (the plans, in readable text, and the checks), `build_enemy_minis.py`, `build_humanoid_minis.py`, `build_giant_minis.py`.
 - **Rules:** `design/07 Presentation.md` → Combat maps; `design/briefs/Combat art brief.md`.
@@ -73,7 +73,7 @@ The maps, their shapes, sizes and ideas are in `art/combat/maps/README.md`, gene
 
 Each map's tactical idea is in the JSON. Two things the plans assume and nobody has decided: obstacles stop movement, and brush can be walked through. Whether obstacles stop sight, and what brush and the fairy ring do, are open. Height's direction is in `design/03`: longer ranged range from high ground, and going up or down is its own action, with a ledge possibly climbable, so the reach check doesn't require steps or a ramp. Every map's base is a solid hex, oval or rectangle; `check_base` in the script stops a plan with a notch, a hole, or a depth under 4 cells north to south (the Gorge's, the thinnest Ethan will take, and only with a reason such as its cliff wall).
 
-## Plain forest (tier 0, in review)
+## Plain forest (tier 0)
 
 `forest_glade`, `forest_windfall` and `forest_knoll`, `variant` `forest`, on the same format and with the same piece names as the other variants; `forest`'s older corner trees (`tree_<v>_*`) don't exist, as no map uses them. The plain tile has no drawn roads, so there's no path map. To judge on the phone, walkable cells seen from the default camera: Glade 41 of 45, Windfall 60 of 66, Knoll 51 of 59.
 

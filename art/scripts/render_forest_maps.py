@@ -79,12 +79,12 @@ MAPS = {
     O    
    x .   
   . v G  
- G . w G 
-G . . . T
- G . . . 
-. , A c .
- . A . L 
-T . A . L
+ G A w G 
+G . A . T
+ G A . . 
+. , . c .
+ . . . L 
+T . . . L
  L . . . 
 L . c . .
  . . . G 
