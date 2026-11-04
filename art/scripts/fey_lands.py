@@ -846,9 +846,8 @@ def arch_crown(p):
         fork = start + (end - start) * 0.42
         spar_box(p, start, fork, 0.14, 0.1, "fey_gate_bark", sides=5)
         spar_box(p, fork, end, 0.1, 0.05, "fey_gate_bark", sides=5)
-        out = Vector((x, y, 0)).normalized()
-        across = Vector((-out.y, out.x, 0)) * (1 if k % 2 else -1)
-        spar_box(p, fork, end + across * r * 1.2 + Vector((0, 0, r * 0.2)), 0.08, 0.025, "fey_gate_bark_b", sides=5)  # the fork shows: this one runs on past the crown
+        low = Vector((x * 1.5, y * 1.5, z - r * 1.12))  # the fork shows: this prong runs out under the crown, clear of it
+        spar_box(p, fork, low, 0.08, 0.025, "fey_gate_bark_b", sides=5)
         p.blob(end, r, mat_of(colour), squash=1.08)
 
 

@@ -1,9 +1,18 @@
-# Feywild crossing kit hand-off (tiles_v83)
+# Feywild crossing kit hand-off (tiles_v84)
 
-Forest tier 3. **Not approved yet.** `tiles.glb` isn't re-exported and nothing has been tried in Godot. The Fey Gate is the tree arch (Ethan, Nov 4, 2026).
+Forest tier 3, with the Fey Gate as its landmark. **Approved by Ethan on Nov 4, 2026; not yet tried in Godot.**
 
-- **Code:** `art/scripts/fey_lands.py`. Its first section is plain Python to copy. **Test:** `python3 art/scripts/test_fey.py 20`. **Previews:** `art/scripts/render_fey.py`.
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v84.blend`.
+- **Code:** `art/scripts/fey_lands.py`. Its first section is plain Python to copy, with `Region` and `fey_tile` as the entry points. **Test:** `python3 art/scripts/test_fey.py 60`. **Previews:** `art/scripts/render_fey.py`, `art/preview/fey_kit_*_v3.png`, `fey_gate_arch_*`.
 - **Looks:** `design/07` → Feywild crossing.
+
+**Godot must do these four things, or it will look wrong:**
+1. **Draw the Feywild mesh double-sided.** A crown cut at a seam with winter is open on its winter side.
+2. **Skip the ground shader's colour fade on this terrain's outer edges**, on both tiles, so they stay sharp (`design/07`).
+3. **Give the portal its own materials:** see Fey Gate below.
+4. **Add the wisps, and the falling snow, leaves and petals:** none of them are in the models.
+
+**Triangles,** worst across 60 random regions with slab and tufts (budget 4,816): spring 4,128, summer 4,151, autumn 4,175, winter 4,640. The gate's tile is at most about 3,025, with its piece at 906.
 
 ## How it works
 
@@ -69,3 +78,7 @@ Previews give them emission 0.6 by day and 0.42 at night, so it doesn't dominate
 | Light | None cast. Same by day and night, so it shows more at night |
 
 The preview's hex-shaped beads are stand-ins and a still; soft sprites should look much better.
+
+The party stops at (1.25, 0) on the entrance side, in the gate's frame, turned with the piece. `fey_wisp` and `fey_wisp_halo` are only for the previews' stills and aren't in the kit.
+
+All colours, spacings and timings here are placeholders to tune, apart from what `design/07` fixes.
