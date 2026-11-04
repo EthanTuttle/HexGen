@@ -67,3 +67,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/shack_b_compare_close_v3.png` | approved | Added-onto style with patched roofs (F), for all seven shacks |
 | 2026-11-03 | `art/preview/village_map_slums_shacks_v14.png` | approved | After swapping lone laundry with trees near houses; Slums set done, merges with the rest of village |
 | 2026-11-03 | `art/preview/swamp_bog_map_v2.png` | rejected | Swamp round 2 (all variants): rework mist, break up rot swamp's ooze line, link bayou shacks. Routes stay |
+| 2026-11-03 | `art/preview/village_map_scholars_town_lawns_v9.png` | rejected | Scholars set (with court_v7, cloister_v7, walk_v7): vibe off, needs nice courtyards and walkways. Its props kept |
