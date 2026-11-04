@@ -514,7 +514,7 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 - **Moving:** `Fight.step_cost` reads `cells`, `z` and `way_up`. A step onto or off a landing is an ordinary Move, +1 going up. A rise of 0.9 or more can't be crossed.
 - **Highlights** climb the treads beside a way up (`_lifted_mesh`); bases stay lined up with their cells.
 - **Hillsides (kit v7, maps v12):** lifts and terrace stairs are ordinary cells, so `step_cost`'s height rule covers them; `--combatcheck` holds the hand-off's lift table to it. `CombatMap.treads_of` reads where long steps are from the `lift_steps` and `path_steps` meshes, as the data doesn't say, and highlights climb them. A party member with no start goes on the nearest cell the first of the party can walk to.
-- **Lava:** `Fight._walk` burns per cell entered, `_enemy_phase` at the end of a turn. `lava_flow`'s glow scrolls down its UV in place; banks don't scroll.
+- **Lava:** `Fight._walk` burns per cell entered, `_enemy_phase` at the end of a turn. `lava_flow`'s look moves down its UV in place; banks don't move.
 - **Giants** (design/03): the whole body must fit at every step, any cell can be attacked, they melee from any cell, and nothing moves them.
 - **Facing:** the combat kits draw with back faces culled, except `web` (`Kit.combat_materials`). Minis stay double-sided, as they haven't had the winding fix (`enemy_skeleton_elite` loses faces when culled).
 
@@ -534,7 +534,7 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 | Lava damage | `Rules.LAVA_DAMAGE` 2, a foe's plain hit: each lava cell entered, and ending a turn in one (design/03, amount open) |
 | Lava: who it affects | Foes aren't told to avoid it; like everyone, of two paths that cost the same they take the one with less lava. Nobody is immune. Defend doesn't reduce it. Giants won't step on it. Nothing pushes anyone yet, so pushes in don't exist |
 | Lava on the Move highlight | `move_lava` colour |
-| Moving lava | `shaders/combat_lava.gdshader`: speed 0.45 m/s and colours from `render_lava_movie.py`, noise scale and softness by eye. The shared `lava` pulses on a 4 s beat. Smoke from craters and night aren't built |
+| Moving lava | `shaders/combat_lava.gdshader`: four flat looks on trial for Ethan (`CombatMap.lava_style`, 1 bands by default, `--lavaclip --lavastyle=<1..4>` to film one); the rest go once he picks. Speeds, colours and sizes are by eye. Smoke from craters and night aren't built |
 | Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in `Rules.FIGHT_OPEN` at `FIGHT_FOCUS`, 14 to 28 m back (`FIGHT_DISTANCE_*`, to judge on the phone). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
 
 **Not built:** fire, smoke and other effects on maps (`combat_*_paths.json`), night on maps. 21 `map_*_gates` and `_wall_to_towers` placements have no mesh on purpose; the art export will stop writing them.

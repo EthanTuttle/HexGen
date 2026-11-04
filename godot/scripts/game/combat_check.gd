@@ -513,29 +513,32 @@ func _hills_shots() -> void:
 	fight._clear_overlays()
 
 
-## Fissures' cone, then its fall, without the panels.
+## Fissures' cone, river and fall, without the panels, in the look `--lavastyle=<1..4>` asks for.
 func _lava_clip() -> void:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--lavastyle="):
+			CombatMap.lava_style = int(arg.trim_prefix("--lavastyle="))
 	await _wait(0.5)
 	game.debug_fight("volcanic_peaks_fissures")
 	await _wait(Rules.ZOOM_SECONDS * 2.0 + 0.5)
 	game.fight.hud.visible = false
 	game.rig.focus = Vector2(422, 195)
-	var data: Dictionary = CombatMap.all()["volcanic_peaks_fissures"]
-	var into := {}
-	var ends := []
-	var flow := []
-	for c: Dictionary in data.cells:
-		if c.kind == "lava":
-			flow.append(c)
-			if c.has("flow_to"):
-				into[Vector2i(int(c.flow_to[0]), int(c.flow_to[1]))] = true
-			else:
-				ends.append(c)
-	var first: Dictionary = flow.filter(func(c): return not into.has(Vector2i(int(c.q), int(c.r))))[0]
+	var mesh: Mesh = Kit.meshes("res://art/combat_maps_hills.glb")["map_volcanic_peaks_fissures_lava_flow"]
 	var f := game.fight
-	for view: Array in [[first, 11.0, 42.0, 0.0], [ends[0], 11.0, 32.0, 0.0], [ends[0], 9.0, 25.0, 60.0]]:
-		game.rig.frame(f.global_position + f.cell_point(Vector2i(int(view[0].q), int(view[0].r))), view[1], view[2], view[3])
-		await _wait(4.0)
+	for view: Array in [[2.6, 8.5, 40.0, 0.0], [10.0, 9.0, 48.0, 0.0], [17.2, 7.5, 26.0, 60.0]]:
+		var at := Vector3.ZERO
+		var best := INF
+		for k in mesh.get_surface_count():
+			if mesh.surface_get_material(k).resource_name == "lava_flow":
+				var data := mesh.surface_get_arrays(k)
+				var uv: PackedVector2Array = data[Mesh.ARRAY_TEX_UV]
+				for i in uv.size():
+					var off := absf(1.0 - uv[i].y - view[0])
+					if off < best:
+						best = off
+						at = data[Mesh.ARRAY_VERTEX][i]
+		game.rig.frame(f.global_position + at, view[1], view[2], view[3])
+		await _wait(5.0)
 
 
 ## Is this unit's foot between the panels?

@@ -10,6 +10,7 @@ const SETS := {"combat_maps": "combat_cells", "combat_maps_farmland": "combat_fa
 const NOT_WIRED := ["forest", "plains"]   # tier 0 sets the art has in progress, not approved: these tiles keep the old board
 
 static var _maps := {}
+static var lava_style := 1              # PLACEHOLDER: which of the flow's four looks, until Ethan picks (combat_lava.gdshader)
 static var _flow: ShaderMaterial
 static var _pulse: ShaderMaterial
 
@@ -84,20 +85,13 @@ static func build(id: String, parent: Node3D) -> int:
 ## The kit's `lava` and `lava_flow` surfaces get the moving material; banks and rims stay as they are.
 static func _lava_materials(kit: Dictionary) -> void:
 	if _flow == null:
-		var look := FastNoiseLite.new()
-		look.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		look.frequency = 0.03
-		look.fractal_type = FastNoiseLite.FRACTAL_NONE
-		var img := look.get_seamless_image(128, 128)
-		img.convert(Image.FORMAT_L8)
-		img.generate_mipmaps()
 		_flow = ShaderMaterial.new()
 		_flow.shader = load("res://shaders/combat_lava.gdshader")
 		_flow.resource_name = "lava_flow"
-		_flow.set_shader_parameter("noise", ImageTexture.create_from_image(img))
+		_flow.set_shader_parameter("style", lava_style)
 		_pulse = _flow.duplicate() as ShaderMaterial
 		_pulse.resource_name = "lava"
-		_pulse.set_shader_parameter("flow", false)
+		_pulse.set_shader_parameter("style", 0)
 	for mesh: Mesh in kit.values():
 		for k in mesh.get_surface_count():
 			match Kit.material_name(mesh, k):
