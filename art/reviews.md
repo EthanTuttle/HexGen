@@ -114,3 +114,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/fey_gate_arch_v3.png` | rejected | Go back to several ball crowns per season, as in `fey_gate_arch_v1.png`, which match the fey trees |
 | 2026-11-04 | `art/preview/fey_gate_arch_v4.png` | rejected | Four balls, one per season, off the intertwined branches at the top, not on the portal's sides |
 | 2026-11-04 | `art/preview/plains_maps_plains_beside_tile_v2.png` | approved | Plain plains tier 0: Trees, Stones, Long Grass |
+| 2026-11-04 | `art/preview/fey_gate_arch_v6.png` | approved | Feywild crossing and Fey Gate; nudge the fork prong clear of the orange ball; merges |
+| 2026-11-04 | `art/preview/farmland_maps_farmland_beside_tile_v1.png` | rejected | Plain farmland: more wheat, brighter, in blocks like the tile; same fights |
