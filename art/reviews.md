@@ -110,3 +110,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/fey_gate_stones_v1.png` | rejected | Not chosen |
 | 2026-11-04 | `art/preview/fey_kit_map_v1.png` | note | Fewer trails, more trees; off-trail spoke walk accepted |
 | 2026-11-04 | `art/preview/forest_maps_forest_beside_tile_v1.png` | approved | Plain forest tier 0: Glade, Windfall, Knoll; Glade giant moves back |
+| 2026-11-04 | `art/preview/plains_maps_plains_beside_tile_v1.png` | rejected | Plain plains: replace Shelf; bigger, more spread-out maps for wide open space |
