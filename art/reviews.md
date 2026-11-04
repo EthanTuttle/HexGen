@@ -79,3 +79,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/ruins_excavation_map_v1.png` | rejected | All of ruins round 1, on claude/art-ruins: not good; paused while Ethan thinks |
 | 2026-11-03 | `art/preview/hillside_c_front_v1.png` | approved | Slope look for Hills maps |
 | 2026-11-03 | `art/preview/hillside_m_front_v1.png` | rejected | Stairs through cliffs fine; build height from hexes, not a curved cliff face |
+| 2026-11-03 | `art/preview/village_scholars_map_v4.png` | rejected | Replaces earlier line: back to v3's hex paths, fuller courtyards, features in path middles |
