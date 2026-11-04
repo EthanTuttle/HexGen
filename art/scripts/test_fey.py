@@ -46,7 +46,7 @@ def make(rng):
         d = gc.NEIGHBOURS[rng.randrange(6)]
         tiles.add((t[0] + d[0], t[1] + d[1]))
     lm = rng.choice(sorted(tiles))
-    gate = rng.choice(fl.GATES)
+    gate = fl.GATES[0]
     dist, toward = lf.flow(tiles, lm)
     turns = {lm: lf.turn(lm, dist, toward)}
     terrains = {t: fl.VARIANT for t in tiles}
@@ -86,14 +86,7 @@ def check(terrains, toward, turns, dist, lm):
     for a_, b_, d_, part, tid, tier in test.tris:
         if part not in ("limb", "twig"):
             whole[tid] = whole.get(tid, 0.0) + area([a_, b_, d_])
-    for t in terrains:
-        if terrains[t] == "feygate_seams":
-            continue
-    seam_gate = any(n == "feygate_seams" for n in terrains.values())
-    if not seam_gate:
-        for t in terrains:
-            for _, poly, part in test.forest_faces(t):
-                pass
+    if True:
         per = {}
         for t in terrains:
             reach = None
@@ -111,6 +104,20 @@ def check(terrains, toward, turns, dist, lm):
             note("most drawn twice or missed, share of a thing", abs(got - w) / max(w, 1e-6))
             if abs(got - w) > 0.02 * w:
                 fail("a thing drawn twice or partly missing", tid, round(got, 3), round(w, 3))
+    # trails only on the routes toward the gate
+    with_trails = [t for t in terrains if region.edges[t]]
+    note("most tiles with trails, share", len(with_trails) / len(terrains))
+    for t in with_trails:
+        u = t
+        for _ in range(40):
+            if terrains[u] in fl.GATES:
+                break
+            if u not in region.toward:
+                if not region.edges[t]:
+                    break
+                fail("trail tile not on a route to the gate", t)
+                break
+            u = region.toward[u]
     # walked lines
     for t in terrains:
         c = gc.tile_centre(*t)

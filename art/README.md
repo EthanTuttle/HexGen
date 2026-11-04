@@ -172,6 +172,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v79:** Feywild crossing round 2, not approved: the Fey Gate is the tree arch (`feygate`) with a purple portal in bands; v78's other options are gone; trails only on routes toward the gate; denser forest. Hand-off: `handoff/feywild_kit.md`.
 - **tiles_v78:** Feywild crossing kit (forest tier 3), not approved: each tile in one of four seasons, one world-space forest cut at the seams, per-tile layer in `scripts/fey_lands.py` (hand-off: `handoff/feywild_kit.md`), three rough Fey Gate options. On branch `claude/art-feywild`; v77 is on the ruins branch.
 - **tiles_v76:** Swamp fixes from Godot: marsh mist's alpha now in `COLOR_0`; the Plague Pit's two gaps closed at the ends of the lane's cut. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v75:** Scholars' Town as approved (Ethan, Nov 3, 2026): spoke paths, no fence, no row houses, courts in the corners between streets, a feature at each tile's middle, lantern posts where a walk leaves, narrowing into the grass past them. Hand-off: `handoff/village_kit.md`.

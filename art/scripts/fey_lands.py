@@ -4,8 +4,8 @@ The forest is worked out from world position, as desert sand and the swamp's wet
 1. season_of: a tile's season comes from its own coordinates, so neighbours always differ and placing a tile never changes another's season.
 2. World-space candidates (a jittered grid, each kept if no nearby candidate outranks it by hash) say where trees stand, with no regard for tiles. Only the walked lines of the tile under a trunk and its neighbours take trees out, so tiles either side of a seam agree on every tree.
 3. Each tile draws the part of every tree, log and boulder inside its hexagon in its own season, so a crown on a seam splits. Over an outer edge nothing cuts it, so crowns hang over it whole; the ground there stays sharp.
-4. Trails come from landmark_flow, along swamp_lands' trail lines. On a trail, a party walks that line, and neither trunks nor crowns stand over it. Off a trail, a party walks in along one spoke and out along another: trunks keep clear of the spokes, but crowns reach over them.
-5. A region's far tile ends its trail at a glade in a corner of the tile, never in the open.
+4. Trails run only on the routes toward the gate (gate_paths): from the region's farthest tile, and on a bigger region from one other far tile, along landmark_flow's steps and swamp_lands' trail lines. On a trail, a party walks that line, and neither trunks nor crowns stand over it. Everywhere else a party walks in along one spoke and out along another: trunks keep clear of the spokes, but crowns reach over them.
+5. Where a trail starts, it starts at a glade in a corner of the tile, never in the open.
 
 The first section is plain Python so the engines can copy it, and test_fey.py checks it. fey_tile is the entry point. The rest uses the Piece API.
 """
@@ -33,16 +33,15 @@ sl = _plain_swamp()
 A, R = wt.A, wt.R
 NEIGHBOURS = gc.NEIGHBOURS
 VARIANT = "feywild_crossing"
-GATES = ("feygate_arch", "feygate_stones", "feygate_seams")  # rough options until one is picked
+GATES = ("feygate",)
 LOOKS = {VARIANT: VARIANT, **{g: VARIANT for g in GATES}}
-SEASONS = ("spring", "summer", "autumn", "winter")
 
-RINGS = 8            # ground grid: rings from a tile's middle to its edge. Edge samples sit where the neighbour's do
+RINGS = 7            # ground grid: rings from a tile's middle to its edge. Edge samples sit where the neighbour's do
 GROUND_Z = 0.012
 TRAIL_Z = 0.02
 TRAIL_HALF = 0.26
 CELL = 0.5           # candidate trees: one per cell, jittered
-GAP = 0.48           # no two trees closer than this
+GAP = 0.45           # no two trees closer than this
 TRAIL_CLEAR = 0.9    # a trunk from a trail's line: a mini's half width and a crown's reach
 SPOKE_CLEAR = 0.38   # a trunk from a spoke: a mini's half width and a trunk's
 HUB_CLEAR = 0.75     # and from a tile's middle
@@ -50,6 +49,7 @@ OUTER_GAP = 0.22     # and from an outer edge. The crown may hang over
 ITEM_CLEAR = 0.62    # logs and boulders from any walked line
 GREAT_RATE = 0.18    # share of three-way corners with a great tree
 GREAT_H = 3.0
+SECOND_TRAIL = 10    # a region this big gets a second route to the gate
 GATE_KEEP = 2.9      # trees stay out of this circle on a gate's tile
 RING_R = 2.45        # the circle a gate's routes walk round
 GATE_STOP = (1.25, 0.0)
@@ -115,6 +115,41 @@ def gate_routes(turn=0):
     return routes
 
 
+def gate_paths(toward, gate):
+    """The steps that get trails: {tile: its toward neighbour}, for the path from the region's farthest tile (the one landmark_flow.turn faces the gate toward) and, on a bigger region, the far tile with the longest way before it joins that path."""
+    dist = {gate: 0}
+    for t in toward:
+        n, u = 0, t
+        while u != gate:
+            u = toward[u]
+            n += 1
+        dist[t] = n
+    if not toward:
+        return {}
+    first = max(toward, key=lambda t: (dist[t], gc.hash01(t[0], t[1], 10)))
+    kept = {}
+    u = first
+    while u != gate:
+        kept[u] = toward[u]
+        u = toward[u]
+
+    def fresh(t):
+        n = 0
+        while t not in kept and t != gate:
+            t = toward[t]
+            n += 1
+        return n
+
+    if len(toward) + 1 >= SECOND_TRAIL:
+        second = max(toward, key=lambda t: (fresh(t), dist[t], gc.hash01(t[0], t[1], 10)))
+        if fresh(second) >= 2:
+            u = second
+            while u not in kept and u != gate:
+                kept[u] = toward[u]
+                u = toward[u]
+    return kept
+
+
 def walk_line(region, t, i, j):
     """How a party walks across tile t from edge i to edge j, tile-local. Past a gate it goes round the ring and back out."""
     if region.names[t] in GATES:
@@ -129,12 +164,13 @@ class Region:
 
     def __init__(self, terrains, toward=None, turns=None, seasons=None):
         self.names = {t: n for t, n in terrains.items() if n in LOOKS}
-        self.toward = toward or {}
+        gates = [t for t, n in self.names.items() if n in GATES]
+        self.toward = gate_paths({t: u for t, u in (toward or {}).items() if t in self.names}, gates[0]) if gates and toward else {}
         self.turns = turns or {}
         self.season = seasons or season_of
         self.edges, self.out, self.trails, self.routes, self.glades = {}, {}, {}, {}, {}
         for t in self.names:
-            self.edges[t] = tuple(i for i in lf.trail_edges(t, self.toward)) if self.toward else ()
+            self.edges[t] = tuple(lf.trail_edges(t, self.toward)) if self.toward else ()
             self.out[t] = lf.toward_edge(t, self.toward) if t in self.toward else None
             if self.names[t] in GATES:
                 self.routes[t] = gate_routes(self.turns.get(t, 0))
@@ -383,13 +419,13 @@ class Region:
         """Winter's tree: what stands inside every crown. Fewer twigs than limbs, for the budget."""
         base = (at[0], at[1], GROUND_Z + h * 0.4)
         reach = h * (0.36 if big else 0.28)
-        spread = 5 if big else 4
+        spread = 5 if big else 3
         for k in range(spread):
             ang = spin + k * 6.28 / spread + 0.5 * gc.hash01(self.number, k, 61)
             lift = h * (0.2 + 0.2 * gc.hash01(self.number, k, 62))
             tip = (at[0] + reach * math.cos(ang), at[1] + reach * math.sin(ang), base[2] + lift)
             self.spar(base, tip, 0.055 if big else 0.045, 0.02, "limb")
-            if big or k % 2 == 0:
+            if big or k == 0:
                 j = 0.7 if gc.hash01(self.number, k, 63) < 0.5 else -0.7
                 self.spar(tip, (tip[0] + reach * 0.5 * math.cos(ang + j), tip[1] + reach * 0.5 * math.sin(ang + j), tip[2] + h * 0.13), 0.02, 0.006, "twig")
         self.spar(base, (at[0], at[1], base[2] + h * 0.42), 0.06, 0.012, "twig")
@@ -458,34 +494,12 @@ class Region:
                 out.append((c, wt.normal(i), A))
         return out
 
-    def sectors(self, t):
-        """(season, world half planes) per part of a tile. One, unless its gate is where the seams meet: then six, one per side, none the season of the tile across its edge or of the sector beside it."""
-        if self.names[t] != "feygate_seams":
-            return [(self.season(*t), [])]
-        c = gc.tile_centre(*t)
-        out, last = [], None
-        chosen = []
-        for i, d in enumerate(NEIGHBOURS):
-            n = (t[0] + d[0], t[1] + d[1])
-            banned = {self.season(*n), last}
-            if i == 5 and chosen:
-                banned.add(chosen[0])
-            pick = next(s for s in SEASONS[int(gc.hash01(t[0] * 6 + i, t[1], 77) * 4):] + SEASONS if s not in banned)
-            chosen.append(pick)
-            last = pick
-        for i, pick in enumerate(chosen):
-            a, b = wt.corner((i - 1) % 6), wt.corner(i)  # both round the tile's middle: everything anticlockwise of a, clockwise of b
-            na = (a[1] / R, -a[0] / R)   # outward of the side toward a
-            nb = (-b[1] / R, b[0] / R)
-            out.append((pick, [(c, na, 0.0), (c, nb, 0.0)]))
-        return out
-
     def forest_faces(self, t):
         """[(colour, [points])] world-space, for everything standing on tile t."""
         c = gc.tile_centre(*t)
         reach = (R + 2.2) ** 2
         out = []
-        secs = self.sectors(t)
+        season = self.season(*t)
         base = self.planes(t)
         whole = self.planes(t, True)
         for a, b, d, part, tid, tier in self.tris:
@@ -494,12 +508,10 @@ class Region:
                 continue
             if not self.may_draw(t, tid):
                 continue
-            for season, extra in secs:
-                if (season == "winter") != (part in ("limb", "twig")) and part in ("crown", "limb", "twig"):
-                    continue
-                poly = clip([a, b, d], (whole if part == "tuft" else base) + extra)
-                if len(poly) < 3:
-                    continue
+            if (season == "winter") != (part in ("limb", "twig")) and part in ("crown", "limb", "twig"):
+                continue
+            poly = clip([a, b, d], whole if part == "tuft" else base)
+            if len(poly) >= 3:
                 out.append((part_colour(part, tid, tier, season, face_normal(a, b, d), (a[0] + b[0] + d[0]) / 3, (a[1] + b[1] + d[1]) / 3), poly, part))
         return out
 
@@ -595,16 +607,13 @@ def ground_faces(region, t):
         f = ring / RINGS
         return (c[0] + a[0] * f + (b[0] - a[0]) * f * s / ring, c[1] + a[1] * f + (b[1] - a[1]) * f * s / ring, GROUND_Z)
 
-    secs = region.sectors(t)
+    season = region.season(*t)
 
     def tri(a, b, d):
         cx, cy = (a[0] + b[0] + d[0]) / 3, (a[1] + b[1] + d[1]) / 3
         pick = world_noise(cx / 1.7, cy / 1.7, 33) * 0.65 + world_noise(cx / 0.8, cy / 0.8, 34) * 0.35  # the same patches in every season
         k = 0 if pick < 0.5 else 1 if pick < 0.6 else 2
-        for season, extra in secs:
-            poly = clip([a, b, d], extra) if extra else [a, b, d]
-            if len(poly) >= 3:
-                out.append((GROUND[season][k], poly))
+        out.append((GROUND[season][k], [a, b, d]))
 
     for ring in range(1, RINGS + 1):
         for side in range(6):
@@ -618,7 +627,7 @@ def ground_faces(region, t):
 def trail_faces(region, t):
     """Ribbons along a tile's drawn trails, in its season. Edge ends sit on an edge's middle, so they meet the next tile's."""
     c = gc.tile_centre(*t)
-    secs = region.sectors(t)
+    season = region.season(*t)
     whole = region.planes(t, True)
     out = []
     for _, drawn in region.trails[t]:
@@ -633,10 +642,9 @@ def trail_faces(region, t):
             sa, sb = side(k), side(k + 1)
             quad = [(c[0] + a[0] + sa[0], c[1] + a[1] + sa[1], TRAIL_Z), (c[0] + a[0] - sa[0], c[1] + a[1] - sa[1], TRAIL_Z), (c[0] + b[0] - sb[0], c[1] + b[1] - sb[1], TRAIL_Z), (c[0] + b[0] + sb[0], c[1] + b[1] + sb[1], TRAIL_Z)]
             quad = quad[::-1] if face_normal(*quad[:3])[2] < 0 else quad
-            for season, extra in secs:
-                poly = clip(quad, whole + extra)
-                if len(poly) >= 3:
-                    out.append((TRAIL[season], poly))
+            poly = clip(quad, whole)
+            if len(poly) >= 3:
+                out.append((TRAIL[season], poly))
     return out
 
 
@@ -659,16 +667,42 @@ def fey_tile(region, t):
     trail = [(col, local(poly)) for col, poly in trail_faces(region, t)]
     stand = [(col, local(poly), part) for col, poly, part in region.forest_faces(t)]
     tris = lambda faces: sum(len(f[1]) - 2 for f in faces)  # noqa: E731
-    seasons = [s for s, _ in region.sectors(t)]
-    return dict(season=seasons[0], seasons=seasons, ground=ground, trail=trail, stand=stand, trails=region.trails[t], effects=sorted({EFFECT[s] for s in seasons if s in EFFECT}),
+    season = region.season(*t)
+    return dict(season=season, ground=ground, trail=trail, stand=stand, trails=region.trails[t], effects=[EFFECT[season]] if season in EFFECT else [],
                 counts=dict(ground=tris(ground), trail=tris(trail), forest=tris([f for f in stand if f[2] != "tuft"]), cover=tris([f for f in stand if f[2] == "tuft"])))
+
+
+PORTAL_MID = (0.0, 0.0, 1.35)   # the wisps drift to this point, gate-local
+WISPS = 16
+
+
+def gate_wisps(turn=0, phase=0.0):
+    """A still of the wisps drifting into the portal, tile-local: [(x, y, z, size)]. Each comes in along a spiral from a ring round the gate, on both sides of it, and shrinks as it reaches the portal. Heads and their short trails. The engine's particles should follow the same paths (see the hand-off)."""
+    out = []
+    for k in range(WISPS):
+        a0 = gc.hash01(k, 3, 81) * 6.283
+        r0 = 1.8 + 1.6 * gc.hash01(k, 3, 82)
+        z0 = 0.5 + 1.9 * gc.hash01(k, 3, 83)
+        f0 = (gc.hash01(k, 3, 84) + phase) % 1.0
+        for j, back in enumerate((0.0, 0.035, 0.07, 0.105)):
+            f = max(0.0, f0 - back)
+            r = r0 * (1 - f) ** 1.3
+            a = a0 + 1.7 * f
+            x, y = r * math.cos(a), r * math.sin(a)
+            x *= 1 - 0.25 * f  # flattening toward the portal's plane
+            z = z0 + (PORTAL_MID[2] - z0) * f
+            q = wt.turned((x, y), turn)
+            out.append((q[0], q[1], z, (0.055 - 0.03 * f) * (1 - j * 0.24)))
+    return out
 
 
 # Blender -------------------------------------------------------------------------------------------------
 
 PALETTE = {f"fey_{c[1:].lower()}": c for table in (GROUND, CROWN, PINE, ROCK_TOP, TUFT, TRAIL) for row in table.values() for c in ((row,) if isinstance(row, str) else row) if c.startswith("#")}
 PALETTE.update({f"fey_{c[1:].lower()}": c for c in ["#F2F5FA", "#6E5240", "#7A5236", "#E8EDF3", "#6E4E36", "#6F7A3C", "#B99C70", "#8E8F8A", "#77787A", "#D6E2EC", "#B9C0C6", "#5F5048", "#EDEDC4"]})
-PALETTE.update({"feywild_crossing": "#6E9158", "fey_gate": "#FFE9B8", "fey_gate_stone": "#A8A79B", "fey_gate_stone_b": "#8F8E85", "fey_root": "#6B4F38"})
+PORTAL = (("fey_portal_a", "#8E78D2", 0.62), ("fey_portal_b", "#A995E2", 0.8), ("fey_portal_c", "#C6B6F0", 0.92), ("fey_portal_d", "#DFD5F9", 1.0))  # rim to core: material, colour, alpha
+PALETTE.update({"feywild_crossing": "#6E9158", "fey_wisp": "#E2D4FF", "fey_wisp_halo": "#D8C8FF", "fey_gate_bark": "#7A6556", "fey_gate_bark_b": "#6E5A4D", **{m: c for m, c, _ in PORTAL}})
+OWN = {m for m, _, _ in PORTAL} | {"fey_wisp", "fey_wisp_halo"}
 
 
 def mat_of(colour):
@@ -690,22 +724,6 @@ def feywild(p, rng, kind):
     """All of it lives in the per-tile layer (add_fey), as the desert's sand does."""
 
 
-def pane(p, y, h, x=0.0, sides=9):
-    """The way through: a flat bright shape facing +X and -X. y(z) gives its half width at height z."""
-    import bmesh  # noqa: F401
-    pts = []
-    for k in range(sides + 1):
-        z = 0.06 + (h - 0.06) * k / sides
-        pts.append((y(z / h), z))
-    verts = [p.bm.verts.new((x, w, z)) for w, z in pts] + [p.bm.verts.new((x, -w, z)) for w, z in reversed(pts)]
-    f = p.bm.faces.new(verts)
-    f.material_index = p._slot("fey_gate")
-    p.surface.add(f)
-    back = p.bm.faces.new([p.bm.verts.new(v.co) for v in reversed(verts)])
-    back.material_index = p._slot("fey_gate")
-    p.surface.add(back)
-
-
 def spar_box(p, a, b, r0, r1, mat, sides=6):
     """A tapered limb between two points."""
     from mathutils import Vector
@@ -725,54 +743,99 @@ def spar_box(p, a, b, r0, r1, mat, sides=6):
     f.material_index = p._slot(mat)
 
 
+def arch_path(side):
+    """A trunk's middle line and radius: up from its root, leaning in, crossing the other near the top and running on past it. Points (x, y, z, radius); they twist round each other as they cross."""
+    out = []
+    for k in range(10):
+        f = k / 9
+        y = side * (1.08 * (1 - f ** 2.1) - 0.42 * max(0.0, f - 0.74) / 0.26)
+        z = 0.0 + 3.85 * f ** 0.92
+        x = 0.14 * side * math.sin(f * 3.0) * f
+        out.append((x, y, z, 0.3 - 0.24 * f ** 0.8))
+    return out
+
+
+def tube(p, line, mat, mat_b, sides=7):
+    """Rings round a line of (x, y, z, radius), faces alternating two barks, so it looks twisted."""
+    from mathutils import Vector
+    rings = []
+    for k, q in enumerate(line):
+        a = Vector(line[max(k - 1, 0)][:3])
+        b = Vector(line[min(k + 1, len(line) - 1)][:3])
+        d = (b - a).normalized()
+        s = d.cross(Vector((1, 0, 0))).normalized()
+        u = s.cross(d).normalized()
+        rings.append([p.bm.verts.new(Vector(q[:3]) + (s * math.cos(j * 6.283 / sides + k * 0.5) + u * math.sin(j * 6.283 / sides + k * 0.5)) * q[3]) for j in range(sides)])
+    for k in range(len(rings) - 1):
+        for j in range(sides):
+            f = p.bm.faces.new((rings[k][j], rings[k][(j + 1) % sides], rings[k + 1][(j + 1) % sides], rings[k + 1][j]))
+            f.material_index = p._slot(mat if j % 2 else mat_b)  # the rings are turned a little each, so these run round it
+
+
+def portal_outline(scale, k, sides=22):
+    """The shape inside the arch, drawn in toward the portal's middle, a little uneven and twisted more with each band, so the bands swirl. (y, z)."""
+    path = arch_path(1)
+    def half(z):
+        for a, b in zip(path, path[1:]):
+            if a[2] <= z <= b[2]:
+                f = (z - a[2]) / max(1e-6, b[2] - a[2])
+                return max(0.0, a[1] + (b[1] - a[1]) * f - 0.02)
+        return 0.0
+    top = next(q[2] for a, q in zip(path, path[1:]) if q[1] <= 0.0)
+    mid = PORTAL_MID[2]
+    out = []
+    for j in range(sides):
+        ang = j * 6.283 / sides
+        # from the middle out to the arch's inside along this direction
+        dy, dz = math.cos(ang), math.sin(ang)
+        r = 0.0
+        while r < 4.0:
+            y_, z_ = dy * r, mid + dz * r
+            if z_ < 0.03 or z_ > top or abs(y_) > half(z_):
+                break
+            r += 0.02
+        wob = 1 + 0.05 * math.sin(3 * ang + k * 1.3) * (0 if k == 0 else 1)
+        out.append((dy * r * scale * wob, mid + dz * r * scale * wob))
+    return out
+
+
+def portal(p):
+    """Bands of soft purple, one inside another and a little proud of it, on both faces. The outer ones are see-through (materials and alphas: PORTAL)."""
+    scales = (1.0, 0.78, 0.55, 0.3)
+    for k, ((mat, _, _), scale) in enumerate(zip(PORTAL, scales)):
+        outline = portal_outline(scale, k)
+        for side in (1, -1):
+            verts = [p.bm.verts.new((side * 0.012 * k, y, z)) for y, z in (outline if side > 0 else outline[::-1])]
+            f = p.bm.faces.new(verts)
+            f.material_index = p._slot(mat)
+            p.surface.add(f)
+
+
 def gate_arch(p, rng, kind="centre"):
-    """Option 1: two great trees grown together into a pointed arch, its crown in all four seasons, the way through under it."""
+    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad. Small crowns on the outer shoulders, one tree spring and summer, the other autumn and bare."""
     from mathutils import Vector
     if kind != "centre":
         return
     for side in (1, -1):
-        pts = [(0.0, side * 1.05, 0.0), (0.0, side * 0.98, 0.9), (0.0, side * 0.72, 1.8), (0.0, side * 0.3, 2.5), (0.0, 0.0, 2.8)]
-        for k in range(4):
-            spar_box(p, pts[k], pts[k + 1], 0.27 - k * 0.05, 0.22 - k * 0.05, "trunk")
-        for ang in (0.5, 2.6, 4.4):  # roots
-            spar_box(p, (0.0, side * 1.05, 0.12), (0.8 * math.cos(ang), side * 1.05 + 0.8 * math.sin(ang) * 0.6, 0.0), 0.2, 0.06, "trunk")
-    for c, r, col in (((0.0, 0.85, 3.05), 0.9, "#E5A92F"), ((0.0, -0.85, 3.05), 0.9, "#F2F5FA"), ((0.45, 0.0, 3.5), 0.85, "#B7D86A"), ((-0.45, 0.0, 3.5), 0.85, "#4E8049")):
-        p.blob(Vector(c), r, mat_of(col) if col in PALETTE.values() else "fey_gate_stone", squash=0.85)
-    pane(p, lambda f: 0.95 * (1 - f ** 2.6), 2.65)
-
-
-def gate_stones(p, rng, kind="centre"):
-    """Option 2: a door of two tall stones and a lintel with low stones round it, the way through between."""
-    from mathutils import Vector
-    if kind != "centre":
-        return
-    for side in (1, -1):
-        spar_box(p, (0.0, side * 0.92, 0.0), (0.0, side * 0.82, 2.65), 0.36, 0.27, "fey_gate_stone" if side > 0 else "fey_gate_stone_b", sides=5)
-    spar_box(p, (0.0, 1.32, 2.72), (0.0, -1.32, 2.78), 0.3, 0.26, "fey_gate_stone", sides=5)
-    for k, ang in enumerate((1.2, 1.75, 2.4, 3.14, 3.88, 4.53, 5.08)):
-        p.blob(Vector((1.55 * math.cos(ang), 1.55 * math.sin(ang), 0.1)), 0.24 + 0.08 * (k % 3), "fey_gate_stone_b", squash=0.8)
-    pane(p, lambda f: 0.66, 2.5)
-
-
-def gate_seams(p, rng, kind="centre"):
-    """Option 3: every seam meets here. The tile's six sides each keep their own season, and a hoop of roots stands where they meet."""
-    if kind != "centre":
-        return
-    n = 16
-    r_ = 1.3
-    cz = 1.42
-    ring = [(0.0, r_ * math.sin(k * 6.283 / n), cz + r_ * math.cos(k * 6.283 / n)) for k in range(n)]
-    for k in range(n):
-        a, b = ring[k], ring[(k + 1) % n]
-        if a[2] < 0.1 and b[2] < 0.1:
-            continue
-        spar_box(p, a, b, 0.14 if k % 2 else 0.11, 0.11 if k % 2 else 0.14, "fey_root", sides=5)
-    for side in (1, -1):
-        for ang, far in ((0.3, 0.8), (2.8, 0.9)):
-            spar_box(p, (0.0, side * 0.55, 0.22), (far * math.cos(ang), side * (0.55 + far * abs(math.sin(ang))), 0.0), 0.14, 0.05, "fey_root", sides=5)
-    pane(p, lambda f: 1.2 * math.sqrt(max(0.0, 1 - (2 * f - 1) ** 2)) + 0.001, 2.62, sides=12)
+        line = arch_path(side)
+        tube(p, line, "fey_gate_bark", "fey_gate_bark_b")
+        for ang, far in ((0.55, 0.72), (2.6, 0.72), (-0.1 if side > 0 else 0.1, 0.0)):
+            if far == 0.0:
+                continue
+            spar_box(p, (0.0, side * 1.08, 0.16), (far * math.cos(ang), side * (1.08 + 0.42), 0.0), 0.2, 0.05, "fey_gate_bark_b", sides=5)
+        spar_box(p, (0.0, side * 1.08, 0.14), (0.0, side * 1.58, 0.0), 0.2, 0.05, "fey_gate_bark", sides=5)
+    # small crowns hugging the arch's outer shoulders, a season to each: spring and summer on one tree, autumn and snow on the other
+    for side, z, colour, reach, r in ((1, 1.95, "#B7D86A", 0.44, 0.42), (1, 2.75, "#4E8049", 0.42, 0.46), (-1, 1.95, "#DB7A2E", 0.44, 0.42), (-1, 2.75, "#F2F5FA", 0.42, 0.46)):
+        path = arch_path(side)
+        q = min(path, key=lambda m: abs(m[2] - z))
+        tip = (q[0] * 0.5, q[1] + side * reach, q[2] + 0.2)
+        spar_box(p, q[:3], tip, 0.08, 0.03, "fey_gate_bark", sides=5)
+        p.blob(Vector(tip), r, mat_of(colour), squash=0.9)
+        p.blob(Vector(tip) + Vector((0.2, side * 0.08, -r * 0.62)), r * 0.68, mat_of(colour), squash=0.9)
+        p.blob(Vector(tip) + Vector((-0.2, -side * 0.06, r * 0.66)), r * 0.62, mat_of(colour), squash=0.9)
+    portal(p)
 
 
 VARIANTS = {VARIANT: ("forest", feywild, VARIANT, ())}
-LANDMARK_CENTRES = {"feygate_arch": gate_arch, "feygate_stones": gate_stones, "feygate_seams": gate_seams}
+LANDMARK_CENTRES = {"feygate": gate_arch}
 LANDMARKS = {g: VARIANT for g in GATES}

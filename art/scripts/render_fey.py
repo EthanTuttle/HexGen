@@ -1,6 +1,6 @@
 """Previews of the Feywild crossing kit, built by the same build_map as every other terrain.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b art/tiles/tiles_vN.blend --factory-startup --python art/scripts/render_fey.py -- [map] [seam] [fold] [low] [night] [gates]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b art/tiles/tiles_vN.blend --factory-startup --python art/scripts/render_fey.py -- [map] [seam] [fold] [low] [fold] [gate]
 Writes art/preview/fey_kit_*_vN.png. Night uses the values in godot/scripts/time_of_day.gd.
 """
 import math
@@ -22,6 +22,7 @@ import water as wt  # noqa: E402
 
 LAND = {(0, 0)} | set(hk.NEIGHBOURS) | {(2, -1), (2, 0), (1, 1), (0, 2), (-1, 2), (-2, 1), (1, -2)}
 LM = (-1, 1)
+GATE = fl.GATES[0]
 FOLD = {(0, 0), (1, 0), (2, -1), (2, -2), (1, -2), (0, -2), (-1, -1), (-1, 0)}  # a ring with a notch: the outline folds in round (1, -1)
 
 
@@ -41,11 +42,35 @@ def ring_of(tiles, far=2):
 
 
 def set_material_glow(night=False):
-    mat = bpy.data.materials.get("fey_gate")
-    if mat:
+    """How the portal and wisps should look: seen-through bands that give their own soft light, shown from the side they face. The engine needs the same (see the hand-off)."""
+    for name, _, alpha in fl.PORTAL:
+        mat = bpy.data.materials.get(name)
+        if mat:
+            bsdf = mat.node_tree.nodes.get("Principled BSDF")
+            bsdf.inputs["Alpha"].default_value = alpha
+            bsdf.inputs["Emission Color"].default_value = (*hk.linear(name), 1.0)
+            bsdf.inputs["Emission Strength"].default_value = 0.42 if night else 0.6
+            mat.surface_render_method = "BLENDED"
+            mat.use_backface_culling = True
+
+
+def add_wisps(turn, at, night=False):
+    """Stand-ins for the engine's wisps."""
+    p = hk.Piece("gate_wisps")
+    halo = hk.Piece("gate_wisp_halos")
+    for x, y, z, size in fl.gate_wisps(turn):
+        p.blob(Vector((x, y, z)), size, "fey_wisp")
+        halo.blob(Vector((x, y, z)), size * 2.3, "fey_wisp_halo")
+    col = bpy.data.collections["map"]
+    p.finish(col, at)
+    halo.finish(col, at)
+    for name, alpha, strength in (("fey_wisp", 1.0, 1.5 if night else 2.2), ("fey_wisp_halo", 0.13, 1.0)):
+        mat = bpy.data.materials.get(name)
         bsdf = mat.node_tree.nodes.get("Principled BSDF")
-        bsdf.inputs["Emission Color"].default_value = (*hk.linear("fey_gate"), 1.0)
-        bsdf.inputs["Emission Strength"].default_value = 0.9 if night else 0.45
+        bsdf.inputs["Alpha"].default_value = alpha
+        bsdf.inputs["Emission Color"].default_value = (*hk.linear("fey_wisp"), 1.0)
+        bsdf.inputs["Emission Strength"].default_value = strength
+        mat.surface_render_method = "BLENDED"
 
 
 def lit_as_godot_night():
@@ -104,12 +129,15 @@ def seam_corner(region):
     return best
 
 
-def do_map(gate="feygate_stones"):
+def do_map(gate=None):
+    gate = gate or GATE
     world, minis, region, turn = scene(LAND, LM, gate)
     party_at(minis, (0, 0), region)
     rp.stage(Vector((1.0, -2.0, 0)), 72, 50)
     set_material_glow()
     rp.render("fey_kit_map")
+    add_wisps(turn, Vector((*gc.tile_centre(*LM), 0)))
+    set_material_glow()
     a, b, p, q, mid = seam_corner(region)
     ang = math.atan2(q[1] - p[1], q[0] - p[0]) - math.pi
     view(Vector((mid[0], mid[1], 0.6)), 13, 42, ang)
@@ -127,7 +155,7 @@ def do_map(gate="feygate_stones"):
 
 
 def do_low():
-    world, minis, region, turn = scene(LAND, LM, "feygate_stones")
+    world, minis, region, turn = scene(LAND, LM, GATE)
     x, y, ang = party_at(minis, (0, 0), region)
     rp.stage(Vector((1.0, -2.0, 0)), 72, 50)
     set_material_glow()
@@ -140,37 +168,47 @@ def do_low():
 
 def do_fold():
     lm = (1, 0)
-    world, minis, region, turn = scene(FOLD, lm, "feygate_stones")
+    world, minis, region, turn = scene(FOLD, lm, GATE)
     rp.stage(Vector((3.0, 5.0, 0)), 30, 55)
     rp.render("fey_kit_fold")
 
 
-def do_gates():
-    for gate in fl.GATES:
-        world, minis, region, turn = scene(LAND, LM, gate)
-        at = Vector((*gc.tile_centre(*LM), 0))
-        a = math.radians(60 * turn)
-        stop = at + Vector((math.cos(a) * 2.0, math.sin(a) * 2.0, 0))
-        ct._mini_spots(bpy.data.collections["map"], minis, [((stop.x, stop.y, 0.03), a + math.pi)])
-        rp.stage(Vector((1.0, -2.0, 0)), 72, 50)
-        set_material_glow()
-        view(at + Vector((0, 0, 1.0)), 15, 28, a - 0.5)
-        rp.render(f"fey_gate_{gate[8:]}")
-        view(at, 40, 50, -math.pi / 2)
-        rp.render(f"fey_gate_{gate[8:]}_map")
-        lit_as_godot_night()
-        set_material_glow(True)
-        view(at + Vector((0, 0, 1.0)), 15, 28, a - 0.5)
-        rp.render(f"fey_gate_{gate[8:]}_night")
+def do_gate():
+    world, minis, region, turn = scene(LAND, LM, GATE)
+    at = Vector((*gc.tile_centre(*LM), 0))
+    a = math.radians(60 * turn)
+    add_wisps(turn, at)
+    stop = at + Vector((math.cos(a) * 1.6, math.sin(a) * 1.6, 0))
+    ct._mini_spots(bpy.data.collections["map"], minis, [((stop.x, stop.y, 0.03), a + math.pi)])
+    rp.stage(Vector((1.0, -2.0, 0)), 72, 50)
+    set_material_glow()
+    view(at + Vector((0, 0, 1.5)), 13, 30, a + 0.55)
+    rp.render("fey_gate_arch")
+    view(at + Vector((0, 0, 0.8)), 26, 48, -math.pi / 2 + 0.15)
+    rp.render("fey_gate_arch_map")
+    cam = bpy.context.scene.camera
+    cam.data.lens = 20
+    rp.look_at(cam, at + Vector((math.cos(a) * 1.9 + math.sin(a) * 2.7, math.sin(a) * 1.9 - math.cos(a) * 2.7, 0.75)), at + Vector((0, 0, 1.7)))
+    rp.render("fey_gate_arch_low")
+    cam.data.lens = 50
+    lit_as_godot_night()
+    set_material_glow(True)
+    add_wisps_night()
+    view(at + Vector((0, 0, 1.5)), 13, 30, a + 0.55)
+    rp.render("fey_gate_arch_night")
+
+
+def add_wisps_night():
+    bpy.data.materials["fey_wisp"].node_tree.nodes.get("Principled BSDF").inputs["Emission Strength"].default_value = 1.5
 
 
 if __name__ == "__main__":
-    wants = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["map", "low", "fold", "gates"]
+    wants = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["map", "low", "fold", "gate"]
     if "map" in wants:
         do_map()
     if "low" in wants:
         do_low()
     if "fold" in wants:
         do_fold()
-    if "gates" in wants:
-        do_gates()
+    if "gate" in wants:
+        do_gate()
