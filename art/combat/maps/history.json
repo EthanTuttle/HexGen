@@ -209,6 +209,27 @@
   "shape": "medium hex",
   "walkable": 46
  },
+ "forest_glade": {
+  "cells": 61,
+  "idea": "A round open glade with groves and fallen trunks ringing it and gaps between them. Everything meets in the middle, and the ring is what you back onto or slip through.",
+  "kind": "terrain",
+  "shape": "medium hex",
+  "walkable": 45
+ },
+ "forest_knoll": {
+  "cells": 69,
+  "idea": "A rocky knoll in the middle of the wood, walkable on top, with one way up on its west and one on its south-east. Whoever holds it looks down on everything; going round means trees either side.",
+  "kind": "terrain",
+  "shape": "big oval",
+  "walkable": 59
+ },
+ "forest_windfall": {
+  "cells": 83,
+  "idea": "A storm has felled three great trunks across a wide wood, all lying the same way. Lanes run down between them, so a fight slides along the trunks towards the gaps at their ends.",
+  "kind": "terrain",
+  "shape": "wide rectangle",
+  "walkable": 66
+ },
  "fortified_town_breach": {
   "cells": 120,
   "idea": "A stretch of town wall and its towers runs across the map on the slant, with two gaps. Everyone has to come through a gap, or wait for the other side to.",

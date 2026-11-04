@@ -48,7 +48,7 @@ import hexkit as hk  # noqa: E402
 import variants as vr  # noqa: E402
 
 GAP = first_draft.GAP
-VARIANTS = ["deep_forest", "fey_wood", "dark_wood", "heartwood"]
+VARIANTS = ["forest", "deep_forest", "fey_wood", "dark_wood", "heartwood"]
 CORNERS = hk.hex_corners(hk.CELL_RADIUS, pointy=False)
 TREE_CORNERS = (0, 2, 4)  # every second corner; the rest of the board's corners stay clear
 FLOWER = [(0, 0), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
@@ -207,7 +207,7 @@ def litter(p, rng, v):
     if v == "deep_forest":  # needles gathered in dark patches
         patch(p, rng, Vector((-0.12, 0.08, 0)), 0.26, f"cell_{v}_mark")
         patch(p, rng, Vector((0.2, -0.16, 0)), 0.15, f"cell_{v}_mark")
-    elif v == "fey_wood":  # the ground only; the colour stays with the ring and the trees
+    elif v in ("forest", "fey_wood"):  # the ground only; the colour stays with the ring and the trees
         patch(p, rng, Vector((-0.1, 0.12, 0)), 0.2, f"cell_{v}_mark")
         patch(p, rng, Vector((0.2, -0.12, 0)), 0.14, f"cell_{v}_mark")
     elif v == "dark_wood":  # old bones lying flat, under a base's height
@@ -281,8 +281,8 @@ def board_plate(p):
 LINE2, LINE3 = [(0, 0), (1, 0)], [(0, 0), (1, 0), (2, 0)]
 TRIANGLE = [(0, 0), (0, -1), (1, -1)]
 FLOWER7 = FLOWER
-BARK = {"deep_forest": "trunk", "fey_wood": "trunk", "dark_wood": "bark_dark", "heartwood": "trunk_old"}
-ROCK = {"deep_forest": ("rock_dark", "rock_shade", "moss"), "fey_wood": ("rock", "rock_dark", None),
+BARK = {"forest": "trunk", "deep_forest": "trunk", "fey_wood": "trunk", "dark_wood": "bark_dark", "heartwood": "trunk_old"}
+ROCK = {"forest": ("rock", "rock_dark", None), "deep_forest": ("rock_dark", "rock_shade", "moss"), "fey_wood": ("rock", "rock_dark", None),
         "dark_wood": ("rock_shade", "bark_grey", None), "heartwood": ("rock", "rock_dark", "moss")}
 FEY_ORDER = ["fey_teal", "leaf", "leaf_dark", "fey_rose", "leaf", "leaf_dark", "fey_violet", "leaf_dark", "leaf"]
 hk.PALETTE.update({"stump_top": "#C9A876"})
@@ -313,7 +313,14 @@ def dead_big(p, rng, at, h, bark):
 
 def full_tree(p, rng, v, at, k=0):
     """A tree of the map's body on a cell's middle."""
-    if v == "deep_forest":
+    if v == "forest":  # the plain tile's mix: dark pines and round broadleaves
+        h = rng.uniform(2.4, 3.1)
+        if k % 2 == 0:
+            vr.pine(p, rng, at, h, "leaf_dark")
+        else:
+            p.cylinder(at, 0.1, h * 0.42, "trunk")
+            p.blob(at, h * 0.27, "leaf", z=h * 0.62, squash=1.15)
+    elif v == "deep_forest":
         vr.pine(p, rng, at, rng.uniform(2.5, 3.3), "pine_deep")
     elif v == "fey_wood":
         h = rng.uniform(2.3, 2.9)
@@ -454,7 +461,7 @@ def big_roots(p, rng):
 
 
 def brush(p, rng, v):
-    leaf = {"deep_forest": "pine_deep", "fey_wood": "leaf", "dark_wood": "bramble_leaf", "heartwood": "leaf_green_dark"}[v]
+    leaf = {"forest": "leaf_dark", "deep_forest": "pine_deep", "fey_wood": "leaf", "dark_wood": "bramble_leaf", "heartwood": "leaf_green_dark"}[v]
     for k in range(6):
         a, d = k * 1.05 + rng.uniform(-0.3, 0.3), rng.uniform(0.2, 0.38)
         p.cone(Vector((math.cos(a), math.sin(a), 0)) * d, rng.uniform(0.09, 0.13), rng.uniform(0.14, 0.2), leaf, segments=4, spin=rng.uniform(0, 1))
@@ -491,11 +498,11 @@ def build():
         litter(p, hk.seeded(p.name), v)
         p.finish(col)
         cell(f"cell_{v}_cover", f"cell_{v}_cover").finish(col)
-        for k, tree in enumerate(TREES[v]):
+        for k, tree in enumerate(TREES.get(v, ())):
             p = hk.Piece(f"tree_{v}_{'abcdef'[k]}")
             tree(p, hk.seeded(p.name))
             p.finish(col)
-        for k, tree in enumerate(TALL_TREES[v]):
+        for k, tree in enumerate(TALL_TREES.get(v, ())):
             p = hk.Piece(f"tree_{v}_tall_{'abcdef'[k]}")
             tree(p, hk.seeded(p.name))
             p.finish(col)

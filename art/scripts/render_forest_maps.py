@@ -72,9 +72,53 @@ ANGLES = 12  # checked round the rotation, every 30 degrees; every second one is
 MIN_ANGLES = 2  # a cell has to show from at least this many of them, one of them a Q / E step
 SAMPLES_CLEAR = 6  # of 7 points on a cell, for it to count as seen from an angle
 MIN_DEPTH = 4  # cells north to south, the Gorge's, the thinnest Ethan will take, and only with a reason such as its cliff wall
-TURNED = {"deep_forest_groves", "fey_wood_stones", "dark_wood_bend", "heartwood_great_tree"}
+TURNED = {"forest_glade", "forest_windfall", "forest_knoll", "deep_forest_groves", "fey_wood_stones", "dark_wood_bend", "heartwood_great_tree"}
 
 MAPS = {
+    "forest_glade": {"size": "medium hex", "giant": "giant_wolf_3", "idea": "A round open glade with groves and fallen trunks ringing it and gaps between them. Everything meets in the middle, and the ring is what you back onto or slip through.", "plan": """
+    O    
+   x .   
+  . v G  
+ G . w G 
+G . . . T
+ G . . . 
+. , A c .
+ . A . L 
+T . A . L
+ L . . . 
+L . c . .
+ . . . G 
+. . . G .
+ O . . G 
+  . h .  
+   k s   
+    .    """},
+    "forest_windfall": {"size": "wide rectangle", "idea": "A storm has felled three great trunks across a wide wood, all lying the same way. Lanes run down between them, so a fight slides along the trunks towards the gaps at their ends.", "plan": """
+. T . . . v T .
+ . L . . . w . 
+. . L . T . . x
+ O . L . . L . 
+T . . . . L . .
+ . c . . L . . 
+. . . T . . , .
+ . L . . . . T 
+. . L . . c . .
+ h . L . . O . 
+. k . s . . . ."""},
+    "forest_knoll": {"size": "big oval", "idea": "A rocky knoll in the middle of the wood, walkable on top, with one way up on its west and one on its south-east. Whoever holds it looks down on everything; going round means trees either side.", "plan": """
+    T . T    
+   . . . .   
+  T . H . .  
+ . . H X . . 
+. G ^ H H . T
+ G . H V . . 
+. . . H W . .
+ . c . H ^ . 
+T . . . . . T
+ O . . . c . 
+  , . . . T  
+   . h k .   
+    . s .    """},
     "deep_forest_gorge": {"size": "long rectangle", "idea": "A long gorge under a cliff, closed twice by fallen trunks that each leave a one-cell gap. A running fight from gap to gap.", "plan": """
 K K K K K K K K
  K K K K K K K 
@@ -947,13 +991,14 @@ def make_sheets():
     for v in fc.VARIANTS:
         sheet([f"forest_map_{n}" for n in MAPS if n.startswith(v)], f"forest_maps_{v}", 4)
     sheet([f"forest_map_{n}_turned" for n in MAPS if n in TURNED], "forest_maps_turned", 2)
+    sheet([stem for n in ("forest_glade", "forest_windfall", "forest_knoll") for stem in ("terrains", f"forest_map_{n}", f"forest_map_{n}_turned")], "forest_maps_forest_beside_tile", 3)
     sheet([f"forest_map_{n}" for n in MAPS], "forest_maps_all", 4)
     sheet([f"forest_map_{n}" for n in MAPS if MAPS[n].get("kind") == "path"], "forest_maps_paths", 2)
 
 
 def kit_sheet(t, col):
     """Every obstacle by variant, on its cells, beside a hero for size."""
-    specials = {"fey_wood": ["stone", "mushrooms_3"], "dark_wood": ["hollow_3", "thicket_3"], "heartwood": ["great_7", "roots_3"], "deep_forest": []}
+    specials = {"forest": [], "fey_wood": ["stone", "mushrooms_3"], "dark_wood": ["hollow_3", "thicket_3"], "heartwood": ["great_7", "roots_3"], "deep_forest": []}
     for row, v in enumerate(fc.VARIANTS):
         x = -13.5
         y = 7.0 * (1.5 - row)
