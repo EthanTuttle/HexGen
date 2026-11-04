@@ -98,7 +98,7 @@ def main():
         for w in wedges:
             for i in range(6):
                 rings.append((f"{w.name} on edge {i}", standing(w, math.radians(60 * i))))
-        lm_wedges = {f"{kit}_edge_block", f"{kit}_edge_other", f"{kit}_edge_open"}
+        lm_wedges = {f"{kit}_edge_block", f"{kit}_edge_other"}
         for name, pts in rings:
             if name.split(" on edge")[0] in lm_wedges:
                 continue  # not used on a landmark tile: it has _lm versions
