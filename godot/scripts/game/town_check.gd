@@ -69,6 +69,9 @@ func _run() -> void:
 		get_tree().quit()
 		return
 	if "--scholars" in OS.get_cmdline_user_args():   # only a walk through the scholars' town
+		game.ui.visible = false
+		await _scholars_shots(map)
+		game.ui.visible = true
 		await _walk_town(map, "scholars_town")
 		print("TOWN DONE: %d failed" % failed)
 		get_tree().quit()
@@ -408,6 +411,25 @@ func _scholars_shots(map: MapBoard) -> void:
 				game.rig.frame(Hex.to3(Hex.tile_position(t.x, t.y)), 11.0, 35.0)
 				await _wait(0.2)
 				await _shot("30_%s" % piece)
+	# A hash-picked feature the debug town didn't roll: shown in a plain centre's place.
+	var kit := Kit.meshes("res://art/tiles.glb")
+	for suffix in ["_centre", "_centre_b", "_centre_c", "_centre_d"]:
+		var piece: String = "scholars_town" + suffix
+		if seen.has(piece):
+			continue
+		for t: Vector2i in g.tiles:
+			var spot = null
+			for c in map.tile_node(t).get_children():
+				if String(c.get_meta("piece", "")) in ["scholars_town_centre", "scholars_town_centre_b", "scholars_town_centre_c", "scholars_town_centre_d"]:
+					spot = c
+			if spot != null:
+				var was: Mesh = spot.mesh
+				spot.mesh = kit[piece]
+				game.rig.frame(Hex.to3(Hex.tile_position(t.x, t.y)), 11.0, 35.0)
+				await _wait(0.2)
+				await _shot("30_%s" % piece)
+				spot.mesh = was
+				break
 	for t: Vector2i in g.tiles:
 		for i: int in map.gates.get(t, []):
 			if map.terrains.has(t + Hex.NEIGHBOURS[i]) and not map.streets.has(t + Hex.NEIGHBOURS[i]):

@@ -1218,6 +1218,7 @@ func _merge_props(node: Node3D, props: Array, at: Vector2) -> void:
 			for q in idx:
 				b.i.append(q + base)
 	var solid := ArrayMesh.new()
+	var mist := ArrayMesh.new()   # see-through, but a blended material still casts a solid shadow
 	for mat: Material in buckets:
 		var b: Dictionary = buckets[mat]
 		var arrays := []
@@ -1227,8 +1228,16 @@ func _merge_props(node: Node3D, props: Array, at: Vector2) -> void:
 		if b.c.size() == b.v.size():
 			arrays[Mesh.ARRAY_COLOR] = b.c
 		arrays[Mesh.ARRAY_INDEX] = b.i
-		solid.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		solid.surface_set_material(solid.get_surface_count() - 1, mat)
+		var into := mist if mat.resource_name == "mist_low" else solid
+		into.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		into.surface_set_material(into.get_surface_count() - 1, mat)
+	if mist.get_surface_count() > 0:
+		var low := MeshInstance3D.new()
+		low.name = "marsh_mist"
+		low.mesh = mist
+		low.position = Hex.to3(at)
+		low.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(low)
 	if solid.get_surface_count() > 0:
 		var mi := MeshInstance3D.new()
 		mi.name = "marsh_props"
