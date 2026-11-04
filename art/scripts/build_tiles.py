@@ -869,17 +869,9 @@ def swamp_dressing(p, rng, pools, inside, bounds, hummocks, trees):
 
 
 def swamp(p, rng, kind):
-    """Murky pools between grassy hummocks; a pool on the edge's middle runs on into joined swamp."""
-    if kind == "centre":
-        pools = [round_pool(p, rng, Vector((-0.45, 0.35, 0)), 0.75), round_pool(p, rng, Vector((0.8, -0.7, 0)), 0.4)]
-        swamp_dressing(p, rng, pools, lambda q: hk.in_centre(q, 0.2), hk.CENTRE_BOUNDS, 3, 1)
-        return
-    if kind == "same":
-        pools = [edge_pool(p, rng)]
-        swamp_dressing(p, rng, pools, lambda q: hk.in_edge_wedge(q, margin=0.3), hk.WEDGE_BOUNDS, 2, 0)
-        return
-    pools = [round_pool(p, rng, Vector((X0 + 0.9, rng.uniform(-0.4, 0.4), 0)), 0.38)] if rng.random() < 0.7 else []
-    swamp_dressing(p, rng, pools, lambda q: hk.in_edge_wedge(q, margin=0.35), hk.WEDGE_BOUNDS, 2, 1)
+    """Tier 0: swamp_lands.py."""
+    import variants
+    variants.sl.swamp(p, rng, kind)
 
 
 # --- Ruins -------------------------------------------------------------------
@@ -955,6 +947,7 @@ def build():
         kinds += ("centre_b", "edge_side", "edge_block") if terrain == "village" else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += ("centre_b",) if terrain == "plains" else ()
+        kinds += ("centre_b", "edge_same_b") if terrain == "swamp" else ()
         kinds += ("centre_b", "edge_same_b", "edge_other_b") if terrain == "hills" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
         for kind in kinds:

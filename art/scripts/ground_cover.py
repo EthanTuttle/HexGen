@@ -22,12 +22,13 @@ BLEND = 1.6
 
 # Share of cells that get a prop, per terrain (placeholders, tune by eye).
 DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
-           "hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
+           "hills": 0.0, "swamp": 0.22, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
            # tier 1 region variants
            "deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0, "tradinghouse": 0.0, "riverport": 0.3, "fortified_town": 0.0, "keep": 0.0, "slums": 0.0, "blackmarket": 0.0, "scholars_town": 0.0, "college": 0.0,
-           "delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.0, "wasteland": 0.0, "sandstonesphinx": 0.0, "badlands": 0.0, "raiderstronghold": 0.0, "oasis": 0.0, "oasisbazaar": 0.0, "oasispool": 0.0, "canyon": 0.0, "echocave": 0.0, "excavation": 0.3,
+           "delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.16, "wasteland": 0.0, "sandstonesphinx": 0.0, "badlands": 0.0, "raiderstronghold": 0.0, "oasis": 0.0, "oasisbazaar": 0.0, "oasispool": 0.0, "canyon": 0.0, "echocave": 0.0, "excavation": 0.3,
            # tier 2 and class variants
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
+           "wisp_marsh": 0.1, "rot_swamp": 0.14, "smugglers_bayou": 0.14, "witchhut": 0.16, "wisphollow": 0.1, "plaguepit": 0.08, "thievesguild": 0.14,
            # landmark tiles
            "treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05,
            "greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0, "nomadcamp": 0.0, "oldbattlefield": 0.03, "thunderbirdnest": 0.1, "traininggrounds": 0.0, "clanhall": 0.0, "yeticave": 0.0, "salamanderden": 0.0, "library": 0.0,
@@ -38,9 +39,9 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05}
 # Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
 # tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
-TUFT = {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
+TUFT = {"swamp": "tuft_swamp", "bog": "tuft_bog", "witchhut": "tuft_bog", "wisp_marsh": "tuft_wisp", "wisphollow": "tuft_wisp", "rot_swamp": "tuft_rot", "plaguepit": "tuft_rot", "smugglers_bayou": "tuft_swamp", "thievesguild": "tuft_swamp", "dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
         "oldbattlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "thunderbirdnest": "tuft_storm"}
-NO_FLOWERS = {"oasis", "dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
+NO_FLOWERS = {"swamp", "bog", "witchhut", "wisp_marsh", "wisphollow", "rot_swamp", "plaguepit", "smugglers_bayou", "thievesguild", "oasis", "dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
               "tourney_fields", "traininggrounds"}
 BENT = {"stormy_plains", "thunderbirdnest"}  # tufts lean hard one way (+X in world space), the wind's direction
 WATER = {"river"} | set(wt.FAMILY)
@@ -114,9 +115,9 @@ def tuft_colour(terrains, x, y, k):
     return own
 
 
-def scatter(terrains, water_shapes, clear=()):
+def scatter(terrains, water_shapes, clear=(), wet=None):
     """List of (kind, x, y, cell) for the whole map. water_shapes maps (q, r) -> (outlines, shores) in tile space.
-    clear: (x, y, radius) world-space circles to keep off (placed pieces' no_cover circles)."""
+    clear: (x, y, radius) world-space circles to keep off (placed pieces' no_cover circles). wet(x, y, tile): true where the swamp's own water or mud lies."""
     xs = [tile_centre(q, r)[0] for q, r in terrains]
     ys = [tile_centre(q, r)[1] for q, r in terrains]
     out = []
@@ -129,6 +130,8 @@ def scatter(terrains, water_shapes, clear=()):
                 continue
             if any((x - cx) ** 2 + (y - cy) ** 2 < r * r for cx, cy, r in clear):
                 continue  # a piece's no_cover circle: burns, yards
+            if wet is not None and wet(x, y, (q, r)):
+                continue
             if (q, r) in water_shapes:
                 cx, cy = tile_centre(q, r)
                 p = (x - cx, y - cy)
@@ -150,7 +153,7 @@ def scatter(terrains, water_shapes, clear=()):
     return out
 
 
-def add_ground_cover(piece, terrains, clear=()):
+def add_ground_cover(piece, terrains, clear=(), wet=None):
     """Builds the scatter into a hexkit.Piece placed at the world origin."""
     from hexkit import spike_up as hk_spike
     from mathutils import Vector
@@ -160,7 +163,7 @@ def add_ground_cover(piece, terrains, clear=()):
         if t in WATER:
             near = [terrains.get((q + dq, r + dr)) for dq, dr in NEIGHBOURS]
             water_shapes[(q, r)] = wt.cover_shape(t, near, f"{q},{r}")
-    for kind, x, y, (ix, iy) in scatter(terrains, water_shapes, clear):
+    for kind, x, y, (ix, iy) in scatter(terrains, water_shapes, clear, wet):
         rng = random.Random(hash01(ix, iy, 4))
         at = Vector((x, y, 0))
         if kind == "tuft":

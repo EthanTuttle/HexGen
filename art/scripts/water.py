@@ -424,7 +424,7 @@ def delta_dressing(outlines, shores, kind, seed, near=0):
 # When it does cross, it uses these lines, and it steps in and out at the landings. Nothing here is drawn.
 
 def water_routes(water, seed, widths=None, style=None):
-    """As _water_routes, with no line up or down a rapids waterfall: nothing can walk or float over one."""
+    """As _water_routes, with no line up or down a rapids waterfall: nothing can walk or float over one. On rapids these lines only mark the channel's middle: a party crosses bank to bank by the lanes and the hub, and never follows them (design/02)."""
     hub, lines = _water_routes(water, seed, widths, style)
     return hub, {i: l_ for i, l_ in lines.items() if not falling(widths, i)}
 

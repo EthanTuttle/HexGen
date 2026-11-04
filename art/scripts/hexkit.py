@@ -96,6 +96,15 @@ PALETTE = {
     "stone_pale_col": "#E3DBC8",
     "slate_blue": "#5E7A9A",
     "pale_paving": "#B7BF9F",
+    "quad_paving": "#E4DCCB",
+    "terracotta": "#C4683F",
+    "flagstone": "#8B8783",
+    "flower_red": "#D6455A",
+    "flower_yellow": "#F0C53C",
+    "paint_blue": "#4E7FB5",
+    "paint_teal": "#3F8F8A",
+    "paint_green": "#5C8F52",
+    "paint_red": "#B0473A",
     "patch_cream": "#CDBE9F",
     "lawn": "#8FBF6A",
     "brass": "#C9A24A",
@@ -115,6 +124,10 @@ PALETTE = {
     "scrub": "#9C9A5C",
     "cactus": "#6E9A5A",
     "bog_water": "#5F7F6C",
+    "mist_low": "#E4EADF",
+    "swamp_bank": "#6B6549",
+    "bog_bank": "#585A42",
+    "bayou_bank": "#5D5943",
     "mud": "#7A7152",
     "hummock": "#6F8E5C",
     "deadwood": "#7C6E5E",
@@ -138,7 +151,54 @@ PALETTE = {
     "fruit": "#D9822B",
     "sandbar": "#E3D3A8",
     "bog": "#6B8462",
-    "bog_dark": "#4A6457",
+    "bog_dark": "#3F5A4F",
+    "mud_dark": "#4F4A3B",
+    "tuft_swamp": "#64804F",
+    "tuft_bog": "#4F6A4E",
+    "tuft_wisp": "#5C8A73",
+    "tuft_rot": "#5A6134",
+    "track_bog": "#74795A",
+    "herb": "#7E9A48",
+    "cauldron": "#2E2C2A",
+    "window_green": "#8CF56A",
+    "thatch": "#A08A55",
+    "thatch_dark": "#7D6A40",
+    "thatch_light": "#B9A56C",
+    "wisp_ground": "#6F9C86",
+    "wisp_water": "#A2DCCD",
+    "wisp_bank": "#A9B98F",
+    "wisp_pool": "#C8F5E6",
+    "wisp": "#E2FFF8",
+    "wisp_green": "#BFF9B4",
+    "track_wisp": "#94AE8C",
+    "cattail": "#6B4A2C",
+    "chest_wood": "#6A4A2A",
+    "chest_band": "#4C3A25",
+    "gold": "#E8C04A",
+    "rot_ground": "#6E7440",
+    "rot_water": "#A8A83E",
+    "rot_mud": "#59522F",
+    "track_rot": "#5F5F34",
+    "ooze": "#C9E04A",
+    "ooze_bright": "#E6F57A",
+    "scum": "#8E9A3A",
+    "slime": "#B7D45A",
+    "fungus_pale": "#E6DFC2",
+    "shelf": "#C9A97A",
+    "rot_wood": "#5B4A33",
+    "rot_stone": "#4E4C3A",
+    "pit_wall": "#5E5A42",
+    "pit_wall_b": "#6B6749",
+    "pit_wall_dark": "#3F3E2E",
+    "lane_rot_a": "#4C4A34",
+    "lane_rot_b": "#5A5A3A",
+    "lane_rot_c": "#676C3E",
+    "bayou_ground": "#6C8258",
+    "bayou_water": "#4F6E5E",
+    "tarp": "#6B7A5A",
+    "plank": "#9A7B52",
+    "plank_dark": "#6F5638",
+    "sign_board": "#7C5A36",
     "toadstool": "#F0C24E",
     "poison_purple": "#8E4FA6",
     "poison_yellow": "#E6D23F",
@@ -339,7 +399,7 @@ SLUM_GROUND = {"tan": ("#CDB48A", "#B59C73", "#A38A63", "#BFA67E"),
                "clay": ("#D2A566", "#BE9458", "#A9804A", "#C69C60"),
                "dun": ("#B9B083", "#A0976A", "#8D8559", "#ABA277")}
 PALETTE.update(zip(("mud_ground", "mud_street", "mud_dark", "mud_damp"), SLUM_GROUND[os.environ.get("HEX_SLUM", "tan")]))
-OWN_MATERIAL = {"lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
+OWN_MATERIAL = {"mist_low", "wisp_water", "wisp_pool", "wisp", "wisp_green", "rot_water", "ooze", "ooze_bright", "bayou_water", "window_green", "lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
@@ -383,6 +443,13 @@ def material(name):
         mat.surface_render_method = "BLENDED"
         mat.use_backface_culling = False
         mat.diffuse_color = (*rgb, WEB_ALPHA)
+    if name == "mist_low":  # its alpha is in the vertex colours, so it fades to nothing at its edge
+        attr = mat.node_tree.nodes.new("ShaderNodeVertexColor")
+        attr.layer_name = "Col"
+        mat.node_tree.links.new(attr.outputs["Alpha"], bsdf.inputs["Alpha"])
+        mat.surface_render_method = "BLENDED"
+        mat.use_backface_culling = False
+        mat.diffuse_color = (*rgb, 0.2)
     return mat
 
 
@@ -481,6 +548,7 @@ class Piece:
         self.hub = None
         self.no_cover = []  # (centre, radius): circles the engine's ground cover keeps off (burns, yards, feathers)
         self.spokes = {}  # edge -> polyline: centre paths the engine uses only where that edge's wedge has a path
+        self.alpha = {}  # (x, y) -> alpha in the vertex colours, for a material that fades (mist_low)
         self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
     def _slot(self, mat_name):
@@ -578,6 +646,9 @@ class Piece:
                 name = self.mats[poly.material_index]
                 for li in poly.loop_indices:
                     colours.data[li].color = rgba[name]
+                    if self.alpha:
+                        co = mesh.vertices[mesh.loops[li].vertex_index].co
+                        colours.data[li].color = (*rgba[name][:3], self.alpha.get((round(co.x, 4), round(co.y, 4)), 1.0))
                 poly.material_index = keep.index(name if name in OWN_MATERIAL else "kit")
             self.mats = keep
         for m in self.mats:

@@ -121,7 +121,7 @@ def draw_effects(col, templates, thin=False):
                 for k in range(4):
                     a_ = 2 * math.pi * k / 4
                     p.box(at + Vector((math.cos(a_) * 0.2, math.sin(a_) * 0.2, 0.15 * k)), (0.07, 0.07, 0.07), "ember")
-            elif e["kind"] in ("glint", "shimmer"):
+            elif e["kind"] in ("glint", "shimmer", "wisp", "mist", "bubbles", "haze", "glow_green", "glow_pale", "glow_ooze", "smoke_green"):
                 pass  # engine effects, on the pool's surface and over open ground
             elif e["kind"] == "fire":
                 p.cone(at, 0.14, 0.32, "ember", segments=5)
@@ -275,6 +275,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     (dist, toward, turn) to keep from when its region finished, rather than working them out from the map. hollow: tiles left to the caller, with no empty slot drawn."""
     MAP = tiles or globals()["MAP"]
     water_tiles = []
+    marsh_tiles = {}
     col = hk.new_collection("map")
     # Landmark flow (landmark_flow.py): each landmark's region is its variant's tiles joined to it. In the game
     # the region is known; here it's the connected group of the variant's tiles round the landmark.
@@ -315,7 +316,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
         kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
-        no_slab = kit == "canyon" or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
+        no_slab = kit in ("canyon", "plaguepit") or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
         base = place(templates, f"base_{terrain}", col, at) if not no_slab else None
         if kit in vr.VARIANTS and base:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
@@ -362,6 +363,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             centre = "centre_mid"  # two steps from the landmark: on the way to it
         if centre == "centre" and f"{name}_centre_b" in templates and gc.hash01(q, r, 13) < 0.5:
             centre = "centre_b"  # a second version of the centre, so a big group doesn't repeat
+        if centre in ("centre", "centre_b") and f"{name}_centre_d" in templates:  # scholars: four features at the tile's middle
+            centre = ("centre", "centre_b", "centre_c", "centre_d")[int(gc.hash01(q, r, 13) * 4)]
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
             centre = "centre_mill"  # windmills stand on about half the tiles (placeholder rule)
         spin = math.radians(60 * turns.get((q, r), 0))
@@ -382,6 +385,14 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             p.finish(col, at)
         joined = [linked(name, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
         trails = lf.trail_edges((q, r), toward)
+        if name in vr.sl.LOOKS:
+            # The wetland, worked out in world space, the way the engines will.
+            tile_ = marsh_tiles[(q, r)] = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
+            p = hk.Piece(f"marsh_{q}_{r}")
+            vr.sl.add_marsh(p, tile_)
+            p.finish(col, at)
+            for prop, x_, y_, spin_ in tile_["props"]:
+                place(templates, prop, col, at + Vector((x_, y_, 0)), spin_)
         if terrain == "hills":
             # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
             # meet; otherwise half on each edge shared with one other hills tile.
@@ -448,7 +459,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
                     place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-            if terrain in BORDERED and kin[i] and "border_join_l" in templates:
+            if terrain in BORDERED and kin[i] and "border_join_l" in templates and kit != "scholars_town":  # no fence round a scholars' town
                 join = f"{kit}_border_join" if walled else "border_join"
                 if not kin[(i + 1) % 6]:
                     place(templates, f"{join}_l", col, at, math.radians(60 * i))
@@ -470,7 +481,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 w = obj.matrix_world @ Vector((x, -z, y))
                 clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP, clear)
+    gc.add_ground_cover(p, MAP, clear, vr.sl.cover_wet(MAP, marsh_tiles))
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP) - set(hollow)
@@ -1320,6 +1331,103 @@ if __name__ == "__main__":
             view(hk.tile_position(*t_) + Vector((0, 0, -0.5)), 20, el_, math.radians(ang_))
             shot(f"canyon_mesa_{name_}")
         sys.exit(0)
+    if "swamp" in flags:
+        # Swamp/marsh: tier 0, then each variant's region with its landmark and parties: on a trail, and at the landmark's stop. Map, turned, close to the landmark from the map camera, and low.
+        import canyon_takes as ct
+        import swamp_lands as sl
+
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                render(stem)
+
+        def wanted(*stems):
+            return not flags.get("only") or any(s_ in flags["only"].split(",") for s_ in stems)
+
+        def view(focus_, dist_, el_deg, ang):
+            el = math.radians(el_deg)
+            cam = bpy.context.scene.camera
+            cam.location = focus_ + Vector((dist_ * math.cos(el) * math.cos(ang), dist_ * math.cos(el) * math.sin(ang), dist_ * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
+
+        region12 = [(0, 0)] + list(hk.NEIGHBOURS) + [(1, 1), (2, -1), (1, -2), (-1, 2), (-2, 1)]
+        ring_ = {t: ("river" if t == (3, -1) else "plains") for b_ in region12 for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in region12}
+        minis_file = max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1)))
+        if wanted("swamp_t0_map", "swamp_t0_close"):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            build_map(templates, tiles={**ring_, **{t: "swamp" for t in region12}})
+            draw_effects(bpy.data.collections["map"], templates, thin=True)
+            stage(Vector((0.5, -1.0, -0.2)), 60, 50)
+            shot("swamp_t0_map")
+            view(hk.tile_position(0, 0), 20, 50, -math.pi / 2)
+            shot("swamp_t0_close")
+        for variant, lm in (("bog", "witchhut"), ("wisp_marsh", "wisphollow"), ("rot_swamp", "plaguepit"), ("smugglers_bayou", "thievesguild")):
+            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail", "shack", "shack_low", "end", "end_low")]
+            if not wanted(*stems):
+                continue
+            lm_at = (1, 0)
+            scene_map = {**ring_, **{t: variant for t in region12}, lm_at: lm}
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            minis = load_templates(minis_file)
+            build_map(templates, tiles=scene_map)
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates, thin=True)
+            d_, t_ = lf.flow(set(region12), lm_at)
+            turn_ = lf.turn(lm_at, d_, t_)
+            at = hk.tile_position(*lm_at)
+            routes = sl.landmark_routes(lm, turn_)
+            stop_ = routes[turn_][-1]
+            prev_ = routes[turn_][-2]
+            face_ = math.atan2(stop_[1] - prev_[1], stop_[0] - prev_[0])
+            spots = [((at.x + stop_[0], at.y + stop_[1], stop_[2]), face_)]
+            # a party strung along the walk in, on the ring
+            line_ = routes[(turn_ + 2) % 6]
+            q_ = line_[2]
+            spots.append(((at.x + q_[0], at.y + q_[1], q_[2]), math.atan2(line_[3][1] - q_[1], line_[3][0] - q_[0])))
+            # and one on a trail, on the farthest tile's way in
+            far_ = max(d_, key=lambda t2: d_[t2])
+            step_ = t_[far_]
+            c_ = hk.tile_position(*far_)
+            i_ = hk.NEIGHBOURS.index((step_[0] - far_[0], step_[1] - far_[1]))
+            trail_ = sl.trail_end(far_[0], far_[1], i_)
+            q_, d2_ = sl.along(trail_, sl.line_length(trail_) * 0.7)
+            a_ = math.atan2(d2_[1], d2_[0])
+            spots.append(((c_.x + q_[0], c_.y + q_[1], 0.045 if variant == "smugglers_bayou" else 0.0), a_))
+            trail_at = c_ + Vector((q_[0], q_[1], 0))
+            ct._mini_spots(col, minis, spots)
+            bpy.context.view_layer.update()
+            focus = Vector((0.5, -1.0, -0.2))
+            stage(focus, 60, 50)
+            shot(f"swamp_{variant}_map")
+            view(focus, 58, 50, math.radians(140))
+            shot(f"swamp_{variant}_turned")
+            view(at, 17, 50, -math.pi / 2)
+            shot(f"swamp_{variant}_landmark")
+            view(at, 17, 45, math.radians(60 * turn_))
+            shot(f"swamp_{variant}_landmark_turned")
+            view(at + Vector((0, 0, 0.3)), 15, 16, math.radians(60 * turn_ - 35))
+            shot(f"swamp_{variant}_low")
+            view(trail_at, 15, 50, -math.pi / 2)
+            shot(f"swamp_{variant}_trail")
+            tile2 = sl.marsh_tile(scene_map, far_[0], far_[1], lf.trail_edges(far_, t_), lf.toward_edge(far_, t_), 0, d_.get(far_, 9))  # what the trail ends at
+            e2 = c_ + Vector((tile2["finish"][1], tile2["finish"][2], 0))
+            view(e2, 11, 50, -math.pi / 2)
+            shot(f"swamp_{variant}_end")
+            view(e2 + Vector((0, 0, 0.3)), 8, 18, tile2["finish"][3] + 2.2)
+            shot(f"swamp_{variant}_end_low")
+            if variant == "smugglers_bayou":  # a shack, its rope walkway and the spur to the boardwalk
+                for t2 in sorted(region12):
+                    tile2 = sl.marsh_tile(scene_map, t2[0], t2[1], lf.trail_edges(t2, t_), lf.toward_edge(t2, t_) if t2 in t_ else None, 0, d_.get(t2, 9))
+                    if tile2["spurs"]:
+                        s2 = tile2["spurs"][0]
+                        m2 = hk.tile_position(*t2) + Vector((*s2[len(s2) // 2], 0))
+                        view(m2, 10, 50, -math.pi / 2)
+                        shot("swamp_smugglers_bayou_shack")
+                        view(m2 + Vector((0, 0, 0.3)), 8, 18, math.atan2(s2[0][1] - s2[-1][1], s2[0][0] - s2[-1][0]) + 1.2)
+                        shot("swamp_smugglers_bayou_shack_low")
+                        break
+        sys.exit(0)
     if "stronghold-alone" in flags:
         # The Raider Stronghold on its own, on a bare tile, from several angles.
         hk.empty_scene()
@@ -1683,6 +1791,22 @@ if __name__ == "__main__":
                     d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (vr.LANDMARKS[lm], lm)), LANDMARK_AT)
                     look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
                     shot(f"village_{lm}_closeup")
+                if stem == "village_scholars":
+                    look(hk.tile_position(*max(t for t, n in tiles_map.items() if n == "scholars_town")), -math.pi / 2, 17, math.radians(40))
+                    shot("village_scholars_close")
+                    c_ = hk.tile_position(0, 0)
+                    look(c_, -math.pi / 2, 12, math.radians(45))
+                    shot("village_scholars_middle")
+                    look(c_, -1.1, 9, math.radians(17), 0.3)
+                    shot("village_scholars_middle_low")
+                    g_ = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})  # a walk's end: its lantern posts
+                    t2_, end_i = next((t, i) for t, e in sorted(g_.items()) for i in e if tiles_map[t] == "scholars_town" and tiles_map.get((t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])) == "plains")
+                    a_ = math.radians(60 * end_i)
+                    end_ = hk.tile_position(*t2_) + Vector((math.cos(a_), math.sin(a_), 0)) * 3.5
+                    look(end_, a_ + 0.5, 8, math.radians(30), 0.3)
+                    shot("village_scholars_end")
+                    look(end_, a_ + 0.9, 6, math.radians(12), 0.3)
+                    shot("village_scholars_end_low")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no

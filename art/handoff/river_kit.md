@@ -1,3 +1,5 @@
+> **Rule change, Nov 3, 2026 (`design/02` → Bridges on rapids): rapids are crossing only.** A party crosses from one bank to the other within a tile, by the lanes, and finishes on the far bank. It can't wade along the gorge or into the next water tile, and can't stop in the water. **Lanes and models don't change.** On a rapids tile, `water_routes`' lines stay as the channel's middle, which `rapids_marks` and `tile_props` use to keep foam and boulders clear, but **they aren't walkable routes**. A crossing is one bank's lane (`gorge.landing_routes`) to the hub, then the other bank's lane. A tile with land edges on only one bank has no crossing. Where this file describes an Athletics crossing using the water lines, or wading along rapids, this replaces it.
+
 # Rapids: sunken pool and waterfall
 
 Where rapids flow out into a plain river or lake, the gorge ends in a pool sunk into the ground, and a waterfall comes down into it from the river's level (design/07). **Ethan approved it with the cascade (Nov 3, 2026). It hasn't been tried in Godot.** Code only, no kit change: everything is drawn per tile, except one new colour, `fall_light`. Where this differs from the section below, this wins.
@@ -153,7 +155,7 @@ Water tiles have no pieces, so there's no path data in the glb for them: the rou
   - Lakes, ponds and junctions run straight to the hub.
 - **`landings` → `lands[i]`:** for each land edge `i`: the edge's midpoint, the shore point on the way to the hub, and a point just in the water. A party walks to the shore point, steps in there, and floats to the hub.
 - **Land side:** the land tile's own route still has to reach that edge's midpoint. Most land has the usual curved route. Farm and village edges facing water are fences with no gate, because `fence_gates.py` is unchanged, so a party leaves those groups by a gate and walks to another shore.
-- **The water itself** is still an obstacle: the engine only uses these lines when the party has a raft or has passed its Athletics check. A raft can't enter rapids or the Troll Bridge's tile (`raft_can_enter(name)`), but an Athletics crossing can: it uses the same lines.
+- **The water itself** is still an obstacle: the engine only uses these lines when the party has a raft or has passed its Athletics check. A raft can't enter rapids or the Troll Bridge's tile (`raft_can_enter(name)`). An Athletics crossing on rapids goes bank to bank only, by the lanes and the hub (see the top of this file).
 
 ## The raft: `raft` (464 triangles)
 

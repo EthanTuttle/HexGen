@@ -72,3 +72,14 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_map_scholars_town_court_v9.png` | approved | Quad direction, towers as shown; for all four Scholars maps |
 | 2026-11-03 | `art/preview/village_map_scholars_town_lawns_v11.png` | rejected | Add a hall or cloister along the north, three-sided quad |
 | 2026-11-03 | `art/preview/swamp_smugglers_bayou_map_v4.png` | approved | Swamp, all variants (bog_v4, wisp_v3, rot_v4), with trail finishes |
+| 2026-11-03 | `art/preview/village_map_scholars_town_walk_v9.png` | approved | Scholars' Town done (with court_v11, lawns_v13, cloister_v8); all 20 village maps merge |
+| 2026-11-03 | `art/preview/village_scholars_map_v3.png` | rejected | On claude/art-scholars-tiles: hexagons show in the paths; more critical path pass |
+| 2026-11-03 | `art/preview/hills_map_hills_shoulder_v5.png` | rejected | Hills set (with saddle_v5, crags_v5): try whole maps sloped as a hillside. Only Monastery gets a path map |
+| 2026-11-03 | `art/preview/village_scholars_map_v4.png` | approved | Direction: keep paths, add halls wrapping quads, hedges follow curves, no fence |
+| 2026-11-03 | `art/preview/ruins_excavation_map_v1.png` | rejected | All of ruins round 1, on claude/art-ruins: not good; paused while Ethan thinks |
+| 2026-11-03 | `art/preview/hillside_c_front_v1.png` | approved | Slope look for Hills maps |
+| 2026-11-03 | `art/preview/hillside_m_front_v1.png` | rejected | Stairs through cliffs fine; build height from hexes, not a curved cliff face |
+| 2026-11-03 | `art/preview/village_scholars_map_v4.png` | rejected | Replaces earlier line: back to v3's hex paths, fuller courtyards, features in path middles |
+| 2026-11-03 | `art/preview/hills_map_hills_shoulder_v9.png` | rejected | Hills set: use tiles' big peak clusters and darker pines, more trees |
+| 2026-11-03 | `art/preview/village_scholars_open_map_v1.png` | approved | No fence, hex paths, middle features; lanterns at walk ends; try courts without row houses |
+| 2026-11-03 | `art/preview/village_scholars_bare_map_v1.png` | approved | Without row houses; walk ends softened; merges |
