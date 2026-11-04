@@ -305,48 +305,48 @@ I . . . U . . . .
    . E   
     I    
 """},
-    "scholars_town_lawns": {"size": "wide oval", "idea": "A great open quad: lawn panels split by paved walks that cross at a fountain, statues along them, halls, towers and cloisters round its edges. Few corners, long open runs: ranged shine, and every statue matters.", "foes": BANDITS, "plan": """
-  . N . . n v . .  
- . 2 D . n . w . . 
-. 2 2 . . . . Q . .
- . 2 n . n . x D . 
-. n . 8 c c . . Y .
- n n I n J n I n 4 
-n n n n n n n n 4 4
- P n . c n c 8 n 4 
+    "scholars_town_lawns": {"size": "wide oval", "idea": "A great three-sided quad: a library and cloisters along the north, a gate at the north-east corner to a back walk behind them, where foes hold the gate and come through it, halls and towers at the corners, open to the south. Lawn panels and paved walks cross at a fountain, statues along them. Few corners inside, long runs: ranged shine, and every statue matters.", "foes": BANDITS, "plan": """
+  . N   4 . . . .  
+ . 2 D 4 4 . v w . 
+. 2 2 D 4 D D Q . .
+ . 2 n . n D D x . 
+. n c 8 n c . n Y .
+ n n I n J n I n 3 
+n n n n n n n n 3 3
+ P n . c n c 8 n 3 
 . P n . . . . . n .
  P n h . k . s . . 
   . . . . . . U .  
 """},
-    "scholars_town_cloister": {"size": "small rectangle", "idea": "Two hedge lines on the slant make three narrow walks, all opening onto a small court at the south end.", "foes": BANDITS, "plan": """
+    "scholars_town_cloister": {"size": "small rectangle", "idea": "Two cloister runs on the slant, towers at their heads, make three narrow paved walks, all opening onto a small paved court round a fountain at the south end.", "foes": BANDITS, "plan": """
 . v . . w .
- . . x . E 
-L . . L . .
- L . . L . 
-. L . . L .
- . L . . L 
-6 . L . . L
- 6 . . . . 
-6 I . . J 7
- . h k s 7 
-. . . . . 7
+ . n x . E 
+N . n Q . .
+ D . n D . 
+. D . n D .
+ n D . n D 
+6 n D . n n
+ 6 n n n n 
+6 I c J c 7
+ n h k s 7 
+n n 8 n n 7
 """},
-    "scholars_town_walk": {"kind": "path", "size": "tall rectangle", "idea": "A broad paved walk up the map, lined with hedges and statues, houses and towers beyond them. Hedges hold you to the walk for much of its length.", "foes": BANDITS, "plan": """
+    "scholars_town_walk": {"kind": "path", "size": "tall rectangle", "idea": "A broad paved walk up the map, lined with hedges and cloisters, halls and towers beyond them, with a small court off it to the east and a cross walk at the south. Hedges hold you to the walk for much of its length.", "foes": BANDITS, "plan": """
 . . n . .
  v n n w 
-N . n . Q
+I . n . I
  . n n x 
-I L n L I
- . n n . 
+N L n L Q
+ D n n n 
 P L n L 7
  P n n 7 
 P L n L 7
- 3 n n . 
-3 3 n . I
- 3 n n Z 
-c c n c c
- c n n c 
-. . n . I
+ 3 n n n 
+3 3 n n c
+ 3 n n I 
+c c n n c
+ c n n 8 
+n n n n n
  h n n k 
 . s n . .
 """},
@@ -492,7 +492,7 @@ def quad_joins(col, cells):
                 across = Vector((-d.y, d.x, 0)).normalized() * 0.2
                 for side in (-1, 1):  # a covered walk: columns on both sides, a low wall between them on one
                     p.box(mid + across * side, (run, 0.07, 0.06), "cream_stone", z=0.62, spin=spin)
-                    for t in (0.1, 0.55, 1.0):
+                    for t in (0.15, 0.85):
                         p.box(a.lerp(end, t) + across * side, (0.065, 0.065, 0.62), "cream_stone", spin=spin)
                 p.box(mid + across, (run, 0.06, 0.2), "stone_block", spin=spin)
                 p.gable_roof(mid, run + 0.02, 0.6, 0.16, "slate_blue", z=0.68, spin=spin)
