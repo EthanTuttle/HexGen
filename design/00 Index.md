@@ -35,6 +35,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [ ] New: once Scholars' Town's combat maps are approved, recheck its terrain tiles so the courtyards and walkways line up with them (Ethan, Nov 3)
 - [ ] New: walkable wall on combat maps: last trial after all sets, a real wall about 1.5 high reached by two stacked flights or a ladder (Ethan, Nov 3)
 - [ ] New: a pass on combat map buildings over the 0.15 overhang limit (haunted house, two barns; see Presentation)
 - [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
