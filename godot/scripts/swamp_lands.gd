@@ -78,7 +78,7 @@ const SPUR_MAX := 2.6       # how far a shack may stand from the walkway its spu
 const SHACK_FOOT := 0.62    # where its rope walkway meets the ground, ahead of its point
 const MIST_POINTS := {"swamp": 2, "bog": 4, "wisp_marsh": 2}  # the engine's mist effect, per tile
 const PROP_BUDGET := 3900   # everything on a tile but its slab (412)
-const LANDMARK_TRIS := {"witchhut": 1098, "wisphollow": 641, "thievesguild": 1050, "plaguepit": 1156}
+const LANDMARK_TRIS := {"witchhut": 1098, "wisphollow": 641, "thievesguild": 1050, "plaguepit": 1167}
 
 static var _grid := {}
 static var _centre_gaps := []

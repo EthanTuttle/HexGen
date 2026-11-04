@@ -830,6 +830,8 @@ func _setup_materials() -> void:
 				var m := _still_water.duplicate() as StandardMaterial3D
 				m.albedo_color = (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
 				mesh.surface_set_material(k, m)
+			elif name == "mist_low":   # colour and alpha both in COLOR_0 (art/handoff/swamp_kit.md): draws white without this
+				(mesh.surface_get_material(k) as BaseMaterial3D).vertex_color_use_as_albedo = true
 			elif name == "toadstool":
 				mesh.surface_set_material(k, _glow)
 			elif name == "lantern":
@@ -1118,15 +1120,6 @@ func _add_marsh(node: Node3D, t: Vector2i, at: Vector2) -> void:
 	var pieces: Array = tile.props
 	if Variants.LANDMARKS.has(name):
 		Kit.place(node, _kit, name + "_centre", at, deg_to_rad(60.0 * turn))
-		if name == "plaguepit":   # no slab: a plate under the pit, or the sky shows through a gap beside its lane
-			var under := Piece.new()
-			var ring := Hex.hex_corners(Hex.R * 0.9, true)
-			ring.reverse()
-			under.flat(ring, -1.7, Color("#2A2618"))
-			var plate := under.instance("pit_under")
-			plate.position = Hex.to3(at)
-			plate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			node.add_child(plate)
 		pieces = pieces + [[name + "_centre", 0.0, 0.0, deg_to_rad(60.0 * turn)]]
 	var flat := Piece.new()
 	_marsh_flats(flat, tile.bank, 0.012, Hex.colour(look.rim))
@@ -1197,13 +1190,12 @@ func _boards(p: Piece, line: PackedVector2Array, top: float, seed_: int) -> void
 			p.tri(Vector3(a.x, a.y, 0.0), Vector3(c.x, c.y, top), Vector3(a.x, a.y, top), col)
 
 
-## Kit pieces joined into one mesh per material. The marsh_mist fallback pieces are left out, as the hand-off allows with the effect in:
-## the glb's COLOR_0 has no alpha, so they'd be solid white.
+## Kit pieces joined into one mesh per material.
 func _merge_props(node: Node3D, props: Array, at: Vector2) -> void:
 	var buckets := {}
 	for item: Array in props:
 		var mesh: Mesh = _kit.get(item[0])
-		if mesh == null or String(item[0]).begins_with("marsh_mist"):
+		if mesh == null:
 			continue
 		var xf := Transform3D(Basis(Vector3.UP, item[3]), Vector3(item[1], 0.0, -item[2]))
 		var turn := Transform3D(xf.basis, Vector3.ZERO)

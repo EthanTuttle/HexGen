@@ -221,9 +221,36 @@ func _check_cover() -> void:
 	_check(count > 0 and bad == 0, "%d tufts on the regions, none on water, mud, planks or tracks (%d)" % [count, bad])
 
 
+## The mist pieces on bayou and rot swamp (tiles v76: alpha in COLOR_0, white if it's not used), and the Plague Pit from any side with nothing beside it.
+func _mist_and_pit() -> void:
+	for v in ["smugglers_bayou", "rot_swamp"]:
+		for t: Vector2i in _region(v).tiles:
+			if map.marsh_of(t).props.any(func(p): return String(p[0]).begins_with("marsh_mist")):
+				_check(true, "%s: mist pieces on %s" % [v, t])
+				await _look(Hex.to3(Hex.tile_position(t.x, t.y)), 12.0, 32.0, "mist_%s" % v)
+				break
+	var pit: Vector2i = _region("rot_swamp").landmark_tile
+	await _look(Hex.to3(Hex.tile_position(pit.x, pit.y)), 11.0, 45.0, "pit_top")
+	# As on a map's edge: nothing beside it. Its tile's pieces don't depend on its neighbours, so hide those.
+	var hidden: Array[Node3D] = []
+	for t: Vector2i in map.terrains:
+		var node := map.tile_node(t)
+		if t != pit and Rules.hex_distance(t, pit) <= 2 and node and node.visible:
+			node.visible = false
+			hidden.append(node)
+	for i in [0, 2, 4]:
+		var out := Water.normal(i)
+		game.rig.frame(Hex.to3(Hex.tile_position(pit.x, pit.y) + out * Hex.A), 11.0, 18.0, rad_to_deg(atan2(-out.x, -out.y)))
+		await _wait(0.6)
+		await _shot("pit_edge_%d" % i)
+	for node in hidden:
+		node.visible = true
+
+
 func _pictures() -> void:
 	game.ui.visible = false
 	var n := 1
+	await _mist_and_pit()
 	for v: String in Game.DEBUG_SWAMPS:
 		var g := _region(v)
 		await _look(_middle(g.tiles), 34.0, 50.0, "%02d_%s_map" % [n, v]); n += 1
