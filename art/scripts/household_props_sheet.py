@@ -36,7 +36,7 @@ def templates():
 
 
 def piece_of(name):
-    return f"ob_market_town_{name}" if name.startswith("town") else f"ob_fortified_town_{name}" if name.startswith(("stone_", "smithy", "armoury")) else f"ob_slums_{name}" if name.startswith("shack") else f"ob_village_{name}"
+    return f"ob_market_town_{name}" if name.startswith("town") else f"ob_fortified_town_{name}" if name.startswith(("stone_", "smithy", "armoury")) else f"ob_slums_{name}" if name.startswith("shack") else f"ob_scholars_town_{name}" if name.startswith(("scholar_", "study_", "cloister_", "library_")) else f"ob_village_{name}"
 
 
 def size(obj):
@@ -149,6 +149,14 @@ MARKET = [("cloth", bv.yard_cloth), ("grain sacks", bv.yard_sacks), ("produce", 
 
 if __name__ == "__main__":
     hk.empty_scene()
+    if "--scholars" in sys.argv:
+        YARD[:] = [("books", bv.yard_books), ("lectern", bv.yard_lectern), ("desk", bv.yard_desk), ("globe", bv.yard_globe), ("telescope", bv.yard_telescope), ("sundial", bv.yard_sundial), ("scrolls", bv.yard_scrolls), ("topiary", bv.yard_topiary),
+                   ("cloister", bv.yard_arcade), ("study corner", "ob_scholars_town_study_corner"), ("book cart", "ob_scholars_town_book_cart"), ("sundial garden", "ob_scholars_town_sundial_garden"), ("statue", "ob_scholars_town_statue"), ("fountain", "ob_scholars_town_fountain")]
+        HOUSES[:] = ["scholar_3_side", "scholar_3_gable", "scholar_3_cross", "study_3", "scholar_4_long", "cloister_4", "library_4"]
+        measure(templates())
+        sheet(YARD, 5, (2.6, 3.2), 35, 20, "scholars_props_close")
+        houses("scholars_houses")
+        sys.exit()
     if "--slums" in sys.argv:
         YARD[:] = [("tarp", bv.yard_tarp), ("red lantern", bv.yard_red_lantern), ("scrap", bv.yard_scrap), ("weeds", bv.yard_weeds), ("brazier", bv.yard_brazier), ("bucket", bv.yard_bucket),
                    ("junk", "ob_slums_junk"), ("lantern heap", "ob_slums_lantern_heap"), ("broken cart", "ob_slums_broken_cart"), ("lean-to", "ob_slums_lean_to"), ("washing", "ob_slums_washing")]

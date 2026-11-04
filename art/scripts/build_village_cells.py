@@ -702,6 +702,104 @@ def yard_tarp(p, rng, at, spin=0.0):
     p.box(at + vr.turn(Vector((-0.08, 0.02, 0)), spin), (0.24, 0.24, 0.2), "crate", spin=spin + 0.3)
 
 
+def book_stack(p, rng, at, count, spin=0.0):
+    z = 0.0
+    for k in range(count):
+        w, d, h = rng.uniform(0.18, 0.24), rng.uniform(0.14, 0.18), rng.uniform(0.045, 0.07)
+        p.box(at, (w, d, h), rng.choice(("paint_red", "paint_blue", "paint_green", "trunk", "patch_ochre")), z=z, spin=spin + rng.uniform(-0.2, 0.2))
+        z += h
+    return z
+
+
+def open_book(p, at, z, spin=0.0, tilt=0.0):
+    """An open book lying on something: a dark cover and two pale pages."""
+    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(tilt, 3, "X")
+    q = at + Vector((0, 0, z))
+    p.box_rot(q, (0.24, 0.16, 0.012), "trunk", rot)
+    for sd in (-1, 1):
+        p.box_rot(q + rot @ Vector((sd * 0.058, 0, 0.012)), (0.105, 0.135, 0.012), "cheese_cut", rot)
+
+
+def yard_books(p, rng, at, spin=0.0):
+    """Stacks of books, the tallest at a mini's knee."""
+    for x, y, n in ((-0.13, 0.04, 6), (0.13, 0.07, 4), (0.03, -0.13, 2)):
+        book_stack(p, rng, at + vr.turn(Vector((x, y, 0)), spin), n, spin)
+
+
+def yard_lectern(p, rng, at, spin=0.0):
+    """A reading stand at a mini's chest, with a book open on its sloping top, facing south at spin 0."""
+    p.box(at, (0.24, 0.2, 0.04), "timber", spin=spin)
+    p.box(at, (0.06, 0.06, 0.66), "timber", spin=spin)
+    p.box_rot(at + Vector((0, 0, 0.68)), (0.28, 0.2, 0.03), "trunk", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.5, 3, "X"))
+    open_book(p, at, 0.71, spin, 0.5)
+
+
+def yard_desk(p, rng, at, spin=0.0):
+    """A writing desk at a mini's hip with an open book, an ink pot and a stack of books."""
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p.box(at + vr.turn(Vector((sx * 0.24, sy * 0.1, 0)), spin), (0.04, 0.04, 0.42), "timber", spin=spin)
+    p.box(at, (0.58, 0.28, 0.04), "trunk", z=0.42, spin=spin)
+    open_book(p, at + vr.turn(Vector((-0.1, 0, 0)), spin), 0.47, spin)
+    p.cylinder(at + vr.turn(Vector((0.08, 0.05, 0)), spin), 0.022, 0.05, "rock_dark", segments=5, z=0.46)
+    book_stack(p, rng, at + vr.turn(Vector((0.17, -0.02, 0)), spin) + Vector((0, 0, 0.46)), 2, spin)
+
+
+def yard_globe(p, rng, at, spin=0.0):
+    """A globe on a turned stand, its top at a mini's chest."""
+    lathe(p, at, ((0.0, 0.14, "timber"), (0.05, 0.05, "timber"), (0.46, 0.035, "brass"), (0.5, 0.05, "brass")), "brass", segments=6)
+    p.blob(at, 0.19, "paint_blue", z=0.68)
+    p.cylinder(at, 0.205, 0.016, "brass", segments=8, z=0.67)
+    for x, y, z, r in ((-0.09, -0.14, 0.75, 0.07), (0.1, -0.13, 0.61, 0.06), (0.14, 0.08, 0.76, 0.06), (-0.12, 0.12, 0.6, 0.06)):
+        p.blob(at + Vector((x, y, 0)), r, "lawn", z=z, squash=0.7)
+
+
+def yard_telescope(p, rng, at, spin=0.0):
+    """A brass telescope on three legs, its eyepiece at a mini's head, pointed at the sky."""
+    top = at + Vector((0, 0, 0.72))
+    for k in range(3):
+        a = spin + k * 2.1 + 0.5
+        vr.frustum(p, at + Vector((math.cos(a) * 0.2, math.sin(a) * 0.2, 0)), top, 0.016, 0.016, "timber", segments=3)
+    d = vr.turn(Vector((0.3, 0, 0.26)), spin)
+    vr.frustum(p, top - d * 0.8, top + d, 0.04, 0.062, "brass", segments=6)
+
+
+def yard_sundial(p, rng, at, spin=0.0):
+    """A stone sundial at a mini's hip, with a brass blade."""
+    lathe(p, at, ((0.0, 0.14, "cream_stone"), (0.08, 0.09, "cream_stone"), (0.42, 0.08, "cream_stone"), (0.46, 0.17, "cream_stone")), "stone_block", segments=7)
+    p.box_rot(at + Vector((0, 0, 0.51)), (0.17, 0.016, 0.09), "brass", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(-0.4, 3, "Y"))
+
+
+def yard_scrolls(p, rng, at, spin=0.0):
+    """A tall basket of rolled scrolls."""
+    lathe(p, at, ((0.0, 0.1, "boards"), (0.26, 0.135, "boards"), (0.3, 0.14, "trunk")), "soil_dark", segments=7)
+    for x, y, h, c in ((-0.06, 0.02, 0.5, "cheese_cut"), (0.06, 0.05, 0.56, "canvas"), (0.0, -0.06, 0.46, "cheese_cut"), (0.07, -0.05, 0.5, "canvas"), (-0.06, -0.05, 0.54, "canvas")):
+        p.cylinder(at + Vector((x, y, 0)), 0.024, h, c, segments=4, z=0.05)
+
+
+def yard_topiary(p, rng, at, spin=0.0):
+    """A clipped ball of hedge on a stem in a stone planter."""
+    lathe(p, at, ((0.0, 0.09, "cream_stone"), (0.16, 0.12, "cream_stone")), "soil_dark", segments=6)
+    p.cylinder(at, 0.022, 0.42, "trunk", segments=4, z=0.14)
+    p.blob(at, 0.15, "hedge", z=0.56)
+
+
+def yard_arcade(p, rng, at, spin=0.0):
+    """A stretch of cloister: stone columns and a slate-blue roof along a wall behind it, south at spin 0, as long as its cell's width."""
+    for x in (-0.26, -0.09, 0.09, 0.26):
+        p.cylinder(at + vr.turn(Vector((x, -0.06, 0)), spin), 0.03, 0.66, "cream_stone", segments=6)
+    p.box(at + vr.turn(Vector((0, -0.06, 0)), spin), (0.62, 0.08, 0.06), "cream_stone", z=0.66, spin=spin)
+    p.box_rot(at + vr.turn(Vector((0, 0.0, 0)), spin) + Vector((0, 0, 0.77)), (0.66, 0.26, 0.025), "slate_blue", Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(0.32, 3, "X"))
+
+
+def yard_turret(p, rng, at, spin=0.0):
+    """A slim stair tower rising past the roof, with a pointed cap."""
+    p.cylinder(at, 0.17, 1.62, "cream_stone", segments=8)
+    p.cylinder(at, 0.2, 0.05, "slate_blue", segments=8, z=1.62)
+    p.cone(at, 0.2, 0.5, "slate_blue", segments=8, z=1.66)
+    p.box(at + Vector((0, -0.165, 0)), (0.08, 0.014, 0.16), "window_glow", z=1.3)
+
+
 def yard_red_lantern(p, rng, at, spin=0.0):
     """A red lantern hung from an arm on a crooked post."""
     p.box_rot(at + Vector((0, 0, 0.56)), (0.05, 0.05, 1.12), "timber", Matrix.Rotation(spin + 0.1, 3, "Y"))
@@ -1120,6 +1218,27 @@ def slum_washing(p, rng):
     p.box(Vector((0.24, -0.16, 0)), (0.3, 0.24, 0.18), "crate", spin=0.3)
 
 
+def study_corner(p, rng):
+    """Somewhere to read out of doors: a bench, a stand with a book on it, and books left in piles."""
+    yard_bench(p, rng, Vector((0.02, 0.18, 0)))
+    yard_lectern(p, rng, Vector((-0.26, -0.12, 0)))
+    yard_books(p, rng, Vector((0.2, -0.17, 0)))
+
+
+def book_cart(p, rng):
+    """A cart loaded with crates of books."""
+    bf.short_cart(p, rng, "crate")
+    for x, y, n in ((-0.17, 0.02, 4), (0.05, -0.03, 5), (0.2, 0.05, 3)):
+        book_stack(p, rng, vr.turn(Vector((x, y, 0)), 0.4) + Vector((0, 0, 0.62)), n, 0.4)
+
+
+def sundial_garden(p, rng):
+    """A sundial between clipped hedge balls."""
+    yard_sundial(p, rng, Vector((0.0, 0.1, 0)))
+    yard_topiary(p, rng, Vector((-0.28, -0.1, 0)))
+    yard_topiary(p, rng, Vector((0.28, -0.08, 0)))
+
+
 def scrag(p, rng):
     grown(p, 1.8, ZERO, lambda: vr.scraggly_tree(p, rng, ZERO))
 
@@ -1129,7 +1248,16 @@ def slim(top):
 
 
 def statue(p, rng):
-    grown(p, 1.8, ZERO, lambda: vr.scholar_statue(p, ZERO))
+    """A robed scholar on a stepped plinth, reading a book held out in front."""
+    p.box(ZERO, (0.62, 0.62, 0.12), "cream_stone")
+    p.box(ZERO, (0.46, 0.46, 0.2), "cream_stone", z=0.12)
+    vr.frustum(p, Vector((0, 0, 0.32)), Vector((0, 0, 0.98)), 0.19, 0.11, "stone_block", segments=7)
+    p.blob(ZERO, 0.135, "stone_block", z=1.02, squash=0.7)
+    p.blob(ZERO, 0.095, "stone_block", z=1.2)
+    vr.frustum(p, Vector((0, 0, 1.2)), Vector((0, 0.03, 1.33)), 0.1, 0.03, "stone_block_dark", segments=6)
+    for sd in (-1, 1):
+        vr.frustum(p, Vector((sd * 0.13, 0, 1.02)), Vector((sd * 0.07, -0.2, 0.86)), 0.045, 0.035, "stone_block", segments=4)
+    open_book(p, Vector((0, -0.23, 0)), 0.88, 0.0, 0.4)
 
 
 def fount(p, rng):
@@ -1228,13 +1356,22 @@ KIT = {
         "E": ("lean_to", SINGLE, lean_to),
     },
     "scholars_town": {
-        "P": ("scholar_house_3", TRIANGLE, lambda p, r: building(p, r, vr.scholar_house, tall=1.4)),
-        "D": ("scholar_row", LINE3, lambda p, r: house_row(p, r, vr.scholar_house, tall=1.35)),
+        # Plans use P, 5, 6 or 7 for a building on three cells, 2, 3 or 4 for one on four.
+        "P": ("scholar_3_side", TRIANGLE, house(TRIANGLE, 1.08, 0.82, X3, h=1.02, pitch=0.5, wall="cream_stone", stone="flagstone", roof="slate_blue", chimney=True, paint="paint_blue", door_x=0.3, boxes=True, back_windows=(-0.3, 0.05), vines=(-0.38,), yard=((yard_books, -0.42, -0.7, 0.0), (yard_topiary, 0.0, -0.52, 0.0), (yard_globe, 0.86, 0.0, 0.0), (yard_desk, -0.36, 0.72, 0.0), (yard_pot, 0.04, 0.56, 0.0)))),
+        "5": ("scholar_3_gable", TRIANGLE, house(TRIANGLE, 0.82, 1.0, X3, gable=True, h=1.26, pitch=0.6, wall="cream_stone", stone="flagstone", roof="slate_blue", paint="paint_teal", back_windows=(0.22,), yard=((yard_lectern, -0.4, -0.7, 0.0), (yard_flowers, 0.77, 0.0, math.pi / 2), (yard_topiary, -0.54, 0.3, 0.0), (yard_bench, -0.28, 0.6, math.pi), (yard_books, -0.3, 0.82, 0.0)))),
+        "6": ("scholar_3_cross", TRIANGLE, house(TRIANGLE, 1.08, 0.8, X3, h=1.02, pitch=0.5, wing=(-0.22, 0.46, 0.74), front_door=False, wall="cream_stone", stone="flagstone", roof="slate_blue", chimney=True, paint="paint_green", front_windows=(0.15,), back_windows=(-0.35, 0.2), back_vines=(0.4,), yard=((yard_sundial, 0.9, 0.02, 0.0), (yard_scrolls, -0.64, -0.5, 0.0), (yard_small_pot, 0.14, -0.56, 0.0), (yard_desk, -0.34, 0.58, math.pi), (yard_books, -0.34, 0.82, 0.0)))),
+        "7": ("study_3", TRIANGLE, house(TRIANGLE, 1.02, 0.82, X3, h=1.02, pitch=0.5, wall="cream_stone", stone="flagstone", roof="slate_blue", paint="paint_red", door_x=0.28, front_windows=(-0.2,), back_windows=(0.2,), yard=((yard_turret, -0.2, 0.3, 0.0), (yard_telescope, -0.4, -0.68, 0.0), (yard_globe, 0.86, 0.0, 0.0), (yard_scrolls, -0.52, 0.66, 0.0), (yard_books, -0.1, 0.6, 0.0)))),
+        "2": ("scholar_4_long", DIAMOND, house(DIAMOND, 1.7, 0.86, h=1.42, pitch=0.5, wall="cream_stone", stone="flagstone", door_x=-0.6, roof="slate_blue", chimney=True, paint="paint_blue", upstairs=True, back_windows=(-0.5, 0.4), back_upper=(-0.1, 0.55), vines=(0.72,), yard=((yard_bench, 0.0, -0.56, 0.0), (yard_books, 0.0, -0.76, 0.0), (yard_flowers, 1.06, 0.0, math.pi / 2), (yard_lantern, -1.0, -0.18, 0.0), (yard_topiary, -0.98, 0.14, 0.0), (yard_desk, 0.0, 0.62, math.pi), (yard_small_pot, 0.0, 0.88, 0.0)))),
+        "3": ("cloister_4", DIAMOND, house(DIAMOND, 1.56, 0.86, h=1.1, pitch=0.5, wall="cream_stone", stone="flagstone", door_x=-0.62, roof="slate_blue", chimney=True, paint="paint_teal", front_windows=(0.55,), back_windows=(-0.2, 0.3), back_vines=(-0.5,), yard=((yard_arcade, 0.08, -0.56, 0.0), (yard_small_pot, 0.0, -0.84, 0.0), (yard_globe, 1.0, -0.12, 0.0), (yard_sundial, 1.0, 0.24, 0.0), (yard_topiary, -1.02, 0.0, 0.0), (yard_scrolls, 0.0, 0.6, 0.0), (yard_books, 0.0, 0.8, 0.0)))),
+        "4": ("library_4", DIAMOND, house(DIAMOND, 0.8, 1.24, gable=True, h=1.26, pitch=0.62, wall="cream_stone", stone="flagstone", roof="slate_blue", paint="paint_red", back_windows=(0.24,), yard=((yard_flowers, 0.94, -0.02, math.pi / 2), (yard_scrolls, -0.94, -0.14, 0.0), (yard_books, -0.96, 0.21, 0.0), (yard_small_pot, -0.36, -0.6, 0.0), (yard_small_pot, 0.31, -0.6, 0.0), (yard_desk, -0.1, 0.6, math.pi), (yard_small_pot, 0.2, 0.8, 0.0)))),
         "N": ("tower_pointed", SINGLE, slim("pointed")),
         "Q": ("tower_domed", SINGLE, slim("domed")),
         "Y": ("tower_telescope", SINGLE, slim("telescope")),
         "I": ("statue", SINGLE, statue),
         "J": ("fountain", SINGLE, fount),
+        "E": ("study_corner", SINGLE, study_corner),
+        "U": ("book_cart", SINGLE, book_cart),
+        "Z": ("sundial_garden", SINGLE, sundial_garden),
     },
 }
 
@@ -1262,9 +1399,9 @@ def build():
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
-    for v in ("village", "market_town", "fortified_town", "slums"):
+    for v in ("village", "market_town", "fortified_town", "slums", "scholars_town"):
         for mark, (kind, cells, _) in KIT[v].items():
-            if kind.startswith(("cottage_", "town_", "stone_", "smithy_", "armoury_", "shack_")):
+            if kind.startswith(("cottage_", "town_", "stone_", "smithy_", "armoury_", "shack_", "scholar_", "study_3", "cloister_", "library_")):
                 check_inside(bpy.data.objects[f"ob_{v}_{kind}"], cells)
     bf.check_overhangs(col)
     for fault in sorted(set(DOOR_FAULTS)):

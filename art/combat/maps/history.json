@@ -403,28 +403,28 @@
   "idea": "Two hedge lines on the slant make three narrow walks, all opening onto a small court at the south end.",
   "kind": "terrain",
   "shape": "small rectangle",
-  "walkable": 46
+  "walkable": 42
  },
  "scholars_town_court": {
   "cells": 61,
   "idea": "A hedged court round a fountain, gaps on three sides, a house and towers outside it. Hold the fountain, or come at it through any gap.",
   "kind": "terrain",
   "shape": "medium hex",
-  "walkable": 45
+  "walkable": 40
  },
  "scholars_town_lawns": {
   "cells": 101,
   "idea": "Wide lawns with slim towers and statues standing far apart. Few corners, long open runs: ranged shine, and every tower matters.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 90
+  "walkable": 81
  },
  "scholars_town_walk": {
   "cells": 77,
   "idea": "A broad paved walk up the map, lined with hedges and statues, houses and towers beyond them. Hedges hold you to the walk for much of its length.",
   "kind": "path",
   "shape": "tall rectangle",
-  "walkable": 59
+  "walkable": 54
  },
  "slums_fences": {
   "cells": 77,

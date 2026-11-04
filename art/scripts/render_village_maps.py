@@ -14,7 +14,7 @@ L a fence, town wall, patched fence or hedge (any line). Per variant:
   market_town     P townhouse (3)   D townhouses in a row (3)   Y stall   I stalls in a row (3)   J goods   N well
   fortified_town  P stone house (3)   D smithy (3)   N wall tower   Y supply wagon   J stores   I spear racks
   slums           P shack (3)   D shacks in a row (3)   T scraggly tree   J junk   N crates and a red lantern   I washing line
-  scholars_town   P house (3)   D houses in a row (3)   N Q Y slim towers (pointed, domed, telescope)   I statue   J fountain
+  scholars_town   P 5 6 7 hall or study (3)   2 3 4 long hall, cloister or library (4)   N Q Y slim towers (pointed, domed, telescope)   I statue   J fountain   E study corner   U book cart   Z sundial garden
 
 A map's foes are samples, as enemy mixes aren't decided.
 """
@@ -286,75 +286,75 @@ I . . . U . . . .
 2 2 h . k . s 4 4
  2 . . . . c . 4 
 """},
-    "scholars_town_court": {"size": "medium hex", "idea": "A hedged court round a fountain, gaps on three sides, a house and towers outside it. Hold the fountain, or come at it through any gap.", "foes": BANDITS, "plan": """
+    "scholars_town_court": {"size": "medium hex", "idea": "A hedged court round a fountain, gaps on three sides, houses and towers outside it. Hold the fountain, or come at it through any gap.", "foes": BANDITS, "plan": """
     .    
    v w   
   . . x  
  . N . Q 
 . . L . .
- P L L . 
-P L c L .
- P c c . 
+ 5 L L . 
+5 L c L .
+ 5 c c . 
 . . J . .
- . c c . 
-. L c L .
- , L L , 
-. . . . .
+ U c c . 
+. L c L P
+ , L L P 
+. . . . P
  h . k . 
   . s .  
-   . .   
+   . E   
     I    
 """},
     "scholars_town_lawns": {"size": "wide oval", "idea": "Wide lawns with slim towers and statues standing far apart. Few corners, long open runs: ranged shine, and every tower matters.", "foes": BANDITS, "plan": """
-  . . N . . v . .  
- . . . . . . w . . 
-. I . . Q . . . I .
- . . c . . . x . . 
+  . . N . . v N .  
+ . 2 . . . . w . . 
+. 2 2 . Q . . . I .
+ . 2 c . . . x . . 
 . . c c . . . Y . .
- I . . . . I . . . 
-. . . J . . . c c .
- . . . . . . c . . 
-N . . . Q . . . N .
+ . I . . . I . . 4 
+. . E J . . . c 4 4
+ . . . . . . c . 4 
+. N . . Q . . . . .
  . . h . k . s . . 
-  . . . . . . . .  
+  . . . . . . U .  
 """},
     "scholars_town_cloister": {"size": "small rectangle", "idea": "Two hedge lines on the slant make three narrow walks, all opening onto a small court at the south end.", "foes": BANDITS, "plan": """
 . v . . w .
- . . x . . 
+ . . x . E 
 L . . L . .
  L . . L . 
 . L . . L .
  . L . . L 
-P . L . . L
- P . . . . 
-P I . . J .
- . h k s . 
-. . . . . .
+6 . L . . L
+ 6 . . . . 
+6 I . . J 7
+ . h k s 7 
+. . . . . 7
 """},
     "scholars_town_walk": {"kind": "path", "size": "tall rectangle", "idea": "A broad paved walk up the map, lined with hedges and statues, houses and towers beyond them. Hedges hold you to the walk for much of its length.", "foes": BANDITS, "plan": """
 . . n . .
  v n n w 
 N . n . Q
- . n n . 
-I L n L I
  . n n x 
-P L n L P
- P n n P 
-P L n L P
+I L n L I
  . n n . 
-I . n . I
- . n n . 
+P L n L 7
+ P n n 7 
+P L n L 7
+ 3 n n . 
+3 3 n . I
+ 3 n n Z 
 c c n c c
  c n n c 
-. . n . .
+. . n . I
  h n n k 
 . s n . .
 """},
 }
 
 
-HOUSE_MARKS = {"village": "PY23", "market_town": "P56234", "fortified_town": "P56D234", "slums": "P567234"}
-BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street", "fortified_town_breach", "fortified_town_yard", "fortified_town_corner", "fortified_town_street", "slums_shacks", "slums_fences", "slums_plots", "slums_street"}  # beside HOUSES
+HOUSE_MARKS = {"village": "PY23", "market_town": "P56234", "fortified_town": "P56D234", "slums": "P567234", "scholars_town": "P567234"}
+BACK_VIEWS = {"market_town_square", "market_town_aisles", "market_town_row", "market_town_street", "fortified_town_breach", "fortified_town_yard", "fortified_town_corner", "fortified_town_street", "slums_shacks", "slums_fences", "slums_plots", "slums_street", "scholars_town_court", "scholars_town_lawns", "scholars_town_cloister", "scholars_town_walk"}  # beside HOUSES
 # Each map's houses, north to south: (those on three cells, those on four). No two alike side by side.
 HOUSES = {
     "village_green": (("cottage_3_cross", "cottage_3_gable"), ("cottage_4_long",)),
