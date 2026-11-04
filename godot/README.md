@@ -516,7 +516,7 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 - **Hillsides (kit v7, maps v12):** lifts and terrace stairs are ordinary cells, so `step_cost`'s height rule covers them; `--combatcheck` holds the hand-off's lift table to it. `CombatMap.treads_of` reads where long steps are from the `lift_steps` and `path_steps` meshes, as the data doesn't say, and highlights climb them. A party member with no start goes on the nearest cell the first of the party can walk to.
 - **Lava:** `Fight._walk` burns per cell entered, `_enemy_phase` at the end of a turn. `lava_flow`'s bands move down the flow in place; banks don't move.
 - **Giants** (design/03): the whole body must fit at every step, any cell can be attacked, they melee from any cell, and nothing moves them.
-- **Facing:** the combat kits draw with back faces culled, except `web` (`Kit.combat_materials`). Minis stay double-sided, as they haven't had the winding fix (`enemy_skeleton_elite` loses faces when culled).
+- **Facing:** the combat kits and minis draw with back faces culled, except `web` (`Kit.combat_materials`).
 
 | PLACEHOLDER | What it is now |
 | --- | --- |

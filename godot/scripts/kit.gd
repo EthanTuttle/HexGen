@@ -35,13 +35,13 @@ static func _path_extras(extras: Dictionary) -> Dictionary:
 
 ## Combat kits' materials: colours in the vertex colours, and drawn from both sides. PLACEHOLDER until the art turns its door and window
 ## plates round: some face into their walls (godot/README.md -> Combat kit).
-static func combat_materials(kit: Dictionary, two_sided := false) -> void:
+static func combat_materials(kit: Dictionary) -> void:
 	for mesh: Mesh in kit.values():
 		for k in mesh.get_surface_count():
 			var m := mesh.surface_get_material(k) as BaseMaterial3D
 			if m:
 				m.vertex_color_use_as_albedo = true
-				m.cull_mode = BaseMaterial3D.CULL_DISABLED if two_sided or m.resource_name == "web" else BaseMaterial3D.CULL_BACK   # webs show from both sides (combat_forest_kit.md -> Facing)
+				m.cull_mode = BaseMaterial3D.CULL_DISABLED if m.resource_name == "web" else BaseMaterial3D.CULL_BACK   # webs show from both sides (combat_forest_kit.md -> Facing)
 
 
 static func place(parent: Node3D, kit: Dictionary, name: String, at: Vector2, angle := 0.0) -> MeshInstance3D:
