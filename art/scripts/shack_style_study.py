@@ -3,6 +3,7 @@ Outside the kits and exports: it changes no kit piece and no map.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/shack_style_study.py
 Writes art/preview/shack_styles_vN.png and shack_styles_back_vN.png, and prints STYLE lines: style, house, triangles.
+With -- --compare: B plain and B with patched roofs, side by side: shack_b_compare_vN.png, _close, _back, _back_close.
 Every shack here has no yard things, so the building can be read, and passes the kit's check that nothing leaves its cells.
 """
 import math
@@ -22,7 +23,7 @@ import render_forest_maps as fm  # noqa: E402
 import render_preview as rp  # noqa: E402
 import variants as vr  # noqa: E402
 
-hk.PALETTE.update({"tin": "#9A958A", "rust": "#8F5B3C", "board_grey": "#8A8170", "board_pale": "#B09A78", "gap": "#2E2822"})
+hk.PALETTE.update({"tin": "#9A958A", "rust": "#8F5B3C", "board_grey": "#8A8170", "board_pale": "#B09A78", "gap": "#2E2822", "tin_dark": "#6F6A60", "rust_dull": "#85705C"})
 H, PITCH = 0.86, 0.42
 BOARDS = ("shack_a", "shack_b", "patch_brown", "board_grey", "board_pale", "boards")
 PANELS = ("tin", "rust", "patch_brown", "roof_tin", "board_grey")
@@ -89,6 +90,31 @@ def panel_roof(p, rng, at, w, d, h, pitch, overhang=0.06):
             x, last = x + step, mat
 
 
+def scraps(p, rng, surface, u0, u1, flip=False, rows=2):
+    """Odd sheets laid over a roof in quiet, near-matching colours, staggered in rows that stop short of each other, so nothing runs in a stripe from eave to ridge.
+    surface(u, v): the point on the roof, u along it and v from 0 to 1 up it."""
+    for row in range(rows):
+        v0 = row / rows + 0.04
+        v1 = (row + 1) / rows - rng.uniform(0.02, 0.1)
+        u = u0 + rng.uniform(0.0, 0.14) + row * 0.07
+        last = None
+        while u < u1 - 0.1:
+            step = min(rng.uniform(0.16, 0.34), u1 - u)
+            if rng.random() > 0.4:
+                mat = rng.choice([m for m in ("tin", "tin_dark", "board_grey", "rust_dull") if m != last])
+                low, high = v0 + rng.uniform(0.0, 0.1), v1 - rng.uniform(0.0, 0.12)
+                q = [surface(u, low), surface(u + step - 0.015, low + rng.uniform(-0.03, 0.03)), surface(u + step - 0.015, high), surface(u, high + rng.uniform(-0.03, 0.03))]
+                face(p, q[::-1] if flip else q, mat)
+                last = mat
+            u += step
+
+
+def gable_scraps(p, rng, at, w, d, h, pitch):
+    for sd in (-1, 1):
+        eave = at.y + sd * (d / 2 + 0.05)
+        scraps(p, rng, lambda u, v, eave=eave: Vector((at.x + u, eave + (at.y - eave) * v, h + pitch * v + 0.012)), -w / 2 - 0.05, w / 2 + 0.05, flip=sd > 0)
+
+
 def gable_ends(p, rng, at, w, d, h, pitch):
     """Boards over the dark triangles at a gable's ends."""
     for x in (-w / 2 - 0.06, w / 2 + 0.06):
@@ -142,8 +168,8 @@ def patched(p, rng, at, h):
     stovepipe(p, at, h["w"] * 0.25, 0.1, H + 0.2, H + PITCH + 0.16)
 
 
-def additions(p, rng, at, h, patch=False):
-    """B: a small core with bits added on: lean-tos of other stuff at its ends and back, and a little room stacked on top. patch: each in mismatched boards and panels, with stones on the tin."""
+def additions(p, rng, at, h, patch=False, roofs=False):
+    """B: a small core with bits added on: lean-tos of other stuff at its ends and back, and a little room stacked on top. patch: each in mismatched boards and panels, with stones on the tin. roofs: plain walls, with quiet odd sheets on the roofs alone."""
     w, d = h["w"], h["d"]
     long = w > 1.3
     core_w, core_d = (0.72, 0.6) if long else (0.6, 0.58)
@@ -155,6 +181,8 @@ def additions(p, rng, at, h, patch=False):
         planks(p, rng, core, core_w, core_d, 0.8, 1)
         panel_roof(p, rng, core, core_w, core_d, 0.8, 0.3, 0.04)
         gable_ends(p, rng, core, core_w, core_d, 0.8, 0.3)
+    if roofs:
+        gable_scraps(p, rng, core, core_w, core_d, 0.8, 0.3)
 
     def shed(x0, x1, y0, y1, tall, wall, roof, slope=0.12):
         """A plain box and a roof pitched down to the south."""
@@ -163,6 +191,8 @@ def additions(p, rng, at, h, patch=False):
         if patch:
             planks(p, rng, mid, x1 - x0 - 0.03, y1 - y0 - 0.03, tall, 1)
         slab(p, x0, x1, y0, y1, tall - slope / 2 + 0.03, tall + slope / 2 + 0.03, roof)
+        if roofs:
+            scraps(p, rng, lambda u, v: Vector((u, y0 + (y1 - y0) * v, tall - slope / 2 + 0.03 + slope * v + 0.008)), x0, x1, rows=1 if y1 - y0 < 0.4 else 2)
         return mid
 
     east0 = core.x + core_w / 2
@@ -186,6 +216,8 @@ def additions(p, rng, at, h, patch=False):
     on_long_wall(p, room, -0.17, -0.07, 0.07, 1.04, 1.24, "trunk", 0.008)
     on_long_wall(p, room, -0.17, -0.05, 0.05, 1.06, 1.22, "window_glow", 0.012)
     slab(p, room.x - 0.21, room.x + 0.21, room.y - 0.21, room.y + 0.21, 1.31, 1.42, "rust")
+    if roofs:
+        scraps(p, rng, lambda u, v: Vector((u, room.y - 0.21 + 0.42 * v, 1.31 + 0.11 * v + 0.008)), room.x - 0.21, room.x + 0.21, rows=1)
     stovepipe(p, room, 0.1, 0.1, 1.38, 1.62)
     if patch:
         for k in range(2):
@@ -234,6 +266,11 @@ def swayback(p, rng, at, h):
             x += rng.uniform(0.11, 0.2)
 
 
+def quiet_roofs(p, rng, at, h):
+    """B with its roofs patched."""
+    additions(p, rng, at, h, roofs=True)
+
+
 def built_up(p, rng, at, h):
     """E: B's shape with A's stuff."""
     additions(p, rng, at, h, patch=True)
@@ -242,35 +279,44 @@ def built_up(p, rng, at, h):
 STYLES = (("A patched together", patched), ("B added onto", additions), ("C propped up", propped), ("D sagging roof", swayback), ("E added onto and patched", built_up))
 
 
-def main():
+def sheet(styles, pitch_x, hero, name, distance, turned, label_y, back_shift):
+    """Each style in a column, the two shacks in rows, from one view."""
     hk.empty_scene()
     t = hp.templates()
     col = hk.new_collection("styles")
-
-    for k, (title, make) in enumerate(STYLES):
+    n = len(styles)
+    for k, (title, make) in enumerate(styles):
         for row, (key, h) in enumerate(HOUSES.items()):
             p = hk.Piece(f"shack_{key}_{k}")
-            rng = hk.seeded(p.name)
+            rng = hk.seeded(f"shack_{key}")
             mid = bv.pc.mean(h["cells"])
             bv.on_footing(p, h["cells"], lambda make=make, h=h, mid=mid: make(p, rng, mid + Vector((h["x"], 0, 0)), h))
             o = p.finish(col)
             bv.check_inside(o, h["cells"])
             o.data.calc_loop_triangles()
             print("STYLE", title, key, len(o.data.loop_triangles))
-            slot = Vector((4.3 * (k - 2), 3.6 * (0.5 - row), 0))
+            slot = Vector((pitch_x * (k - (n - 1) / 2), 3.6 * (0.5 - row), 0))
             o.location = slot - mid
-            rp.place(t, "standin_hero", col, slot + Vector((1.5, -1.0, 0)), 0.0)
-        hp.label(title[:1] + " " + title[2:], col, Vector((4.3 * (k - 2), -3.45, 0.02)), math.pi / 2 - math.radians(fm.PITCH))
-    rp.stage(Vector((0, 0, 0)), 34, fm.PITCH)
-    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 3200, 1300
-    rp.render("shack_styles")
-    rb.turn_camera(180, Vector((0, 0, 0)))
-    for o in col.objects:
-        if o.type == "FONT":
-            o.rotation_euler = (o.rotation_euler.x, 0, math.pi)
-            o.location.y += 7.1
-    rp.render("shack_styles_back")
+            rp.place(t, "standin_hero", col, slot + hero, 0.0)
+        hp.label(title[:1] + " " + title[2:], col, Vector((pitch_x * (k - (n - 1) / 2), label_y, 0.02)), math.pi / 2 - math.radians(fm.PITCH))
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 3200, 1800 if n < 5 else 1300
+    rp.stage(Vector((0, 0, 0)), distance, fm.PITCH)
+    if turned:
+        rb.turn_camera(180, Vector((0, 0, 0)))
+        for o in col.objects:
+            if o.type == "FONT":
+                o.rotation_euler = (o.rotation_euler.x, 0, math.pi)
+                o.location.y += back_shift
+    rp.render(name)
+
+
+COMPARE = (("B added onto", additions), ("F added onto, patched roofs", quiet_roofs))
 
 
 if __name__ == "__main__":
-    main()
+    if "--compare" in sys.argv:
+        for name, distance, turned in (("shack_b_compare", 21, False), ("shack_b_compare_close", 17.5, False), ("shack_b_compare_back", 21, True), ("shack_b_compare_back_close", 17.5, True)):
+            sheet(COMPARE, 5.4, Vector((1.9, -1.15, 0)), name, distance, turned, -3.95, 7.9)
+        sys.exit()
+    for name, turned in (("shack_styles", False), ("shack_styles_back", True)):
+        sheet(STYLES, 4.3, Vector((1.5, -1.0, 0)), name, 34, turned, -3.45, 7.1)
