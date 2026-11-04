@@ -512,7 +512,8 @@ Built from the top sections of `art/handoff/river_kit.md` and `art/handoff/hills
 | Lanes | `MapBoard._lane_lines`, `walk_z` | Heights from `Gorge.build().walks`, as a ledge's. Waders feel the water through `wading_z`, 0.4 below it |
 | Bridges | `Water.rapids_spot`, `bridge_spot`, `_bridge_search` | New pieces come from the glb; decks as before. Walked with no check |
 | Frozen Troll tile | `MapBoard._troll_water`, `_frozen_shut`, `_water_inputs` | The tile's water edges and widths are kept when its bridge first stands. A shared edge it didn't have is land for both tiles. A new tile with other water ends in a gorge head; one with only the Troll tile beside it keeps a slab and a small pool |
-| Falls | `Water.with_falls`, `pooled`, `flow_in`, `falling`; `MapBoard._water_edge_shut` | Every rapids tile takes `with_falls` widths. Flow signs come from `flow_in`. The route planner refuses a fall edge from both sides, and a gorge's land edge with no lane or bridge |
+| Falls | `Water.with_falls`, `pooled`, `flow_in`, `falling` | Every rapids tile takes `with_falls` widths. Flow signs come from `flow_in` |
+| Crossing only (design/02 -> Bridges on rapids) | `MapBoard._water_edge_shut`, `_rapids_graph`, `wet_leaving`; `TilePaths.edge_stand`, `settle`, `dry_line`; `Game._off_rapids` | No route steps over a rapids tile's water edge, from either side, or a land edge with no lane or bridge. A tile's graph has its banks' stops, on land, and lanes that meet in the water, so a crossing runs bank to bank. Walking onto a tile stops on the near bank with no check. A party on a tile that becomes rapids is put on a bank (PLACEHOLDER: nothing says how), or on the nearest other tile with a way on if it has no land. Walks can't be interrupted at all today, so a party can't be stopped mid-crossing. `--gorgecheck` holds it for every route on the debug region, with `GORGE WALLED` numbers for what it leaves cut off |
 | Silhouette | `_canyon_material`, `shaders/ground_stencil.gdshader`, `PartyWalker._update_silhouette` | Gorge rock and land write the canyon's stencil. It's on in a gorge, and doesn't show below the water |
 | Foam and falls | `shaders/fall.gdshader`, `shaders/gorge_foam.gdshader`, `MapBoard._foam_ring` | Unlit, so walls don't shade them grey. Foam moves in the shader (Ethan, Nov 3, 2026): streaks swell, run along the tile's flow at `FOAM_SPEED` and shrink away; foam held by a boulder or under a fall stays and churns |
 | Walls | `MapBoard._gorge_rock` | Two-sided: a wall that folds at a tile's edge showed the board through its back from some angles |
@@ -538,7 +539,7 @@ Built from the top sections of `art/handoff/river_kit.md` and `art/handoff/hills
 
 ### Rough spots
 
-- **A wader stepping into a bridged tile by water** rises about 1.7 m in about 0.3 s, through the bridge's side wall, onto its deck, as there's no telling from a plan point whether a mini is on the deck or under it, and a side a bridge serves has no lane. Of the debug region's routes, 0 of 600 do it with land placed round the region, and 24 of 42 with none (`GORGE HOP` lines; `screens/gorge_35`, `36`, `37`). With Ethan to decide.
+- **Lane ends:** coming out of the water a mini steps up 0.45 m in under 0.1 s onto the lane's foot, and there's about 0.1 m of jitter at the foot and the top of the far lane. The lane itself is 25.8 degrees at most.
 - **The silhouette in a gorge** shows from a low camera (`screens/gorge_23_silhouette_low.png`). At the game's fixed 50-degree tilt the walls lean back too far to hide a wader in the two turned views checked (`gorge_22_*`).
 - From the hand-off: a pool has no way out, a bridge can stand beside a pool, and water runs uphill going downstream where no fall applies.
 

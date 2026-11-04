@@ -11,7 +11,24 @@ var links := {}          # node -> {node -> distance}
 var edge_node := {}      # edge i -> the node at the edge's middle, where its wedge has a path
 var edge_inner := {}     # edge i -> the wedge path's inner end
 var stand = null         # the node a party stops on: the landmark's entrance, the hub, or the tile's middle
+var edge_stand := {}     # rapids: land edge -> the node on its bank a party stops on, which is never in the water (design/02)
+var dry_line := false    # rapids: a party's line on the tile stays out of the water
 var climb_edges := 0     # how many of edge_node are a ledge's top, not a wedge's path out to its neighbour
+
+
+## The node a party coming in by this edge stops on.
+func stand_from(edge: int):
+	return edge_stand.get(edge, stand)
+
+
+## A tile with banks: stands on the one nearest p from now on.
+func settle(p: Vector2) -> void:
+	var best := INF
+	for e in edge_stand:
+		var d := nodes[edge_stand[e]].distance_to(p)
+		if d < best:
+			best = d
+			stand = edge_stand[e]
 
 
 ## pieces: [piece name, its turn in 60 degree steps] for each centre and wedge on the tile, at plan point `at`.

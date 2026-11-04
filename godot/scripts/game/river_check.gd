@@ -107,7 +107,7 @@ func _check_graphs(map: MapBoard) -> void:
 			edges += 1
 			if map._water_edge_shut(t, i):
 				continue   # a waterfall, or land with no way down a gorge: walked round (river kit)
-			if not g.edge_node.has(i) or g.route(g.edge_node[i], g.stand).is_empty():
+			if not g.edge_node.has(i) or g.route(g.edge_node[i], g.stand_from(i)).is_empty():
 				missing += 1
 				print("  no way in from edge %d of %s (%s)" % [i, t, map.terrains[t]])
 	_check(missing == 0, "water tiles: all %d edges have a way to the stopping point" % edges)
@@ -297,7 +297,13 @@ func _crossings(map: MapBoard) -> void:
 	if rapid != Vector2i(99, 99):
 		await _set_party(_land_beside(map, rapid)[0])
 		r = await _walk(rapid)
-		_check(r.checks == 1 and not r.raft, "rapids with no bridge: no raft, one check (%d)" % r.checks)
+		_check(r.checks == 0 and not r.raft and not map.wet_at(Vector2(w.centre().x, -w.centre().z)), "rapids: a party walking onto the tile stops on its near bank, with no check (%d)" % r.checks)
+	var cross := Crossing.find(map, _region("rapids").tiles)
+	_check(not cross.is_empty(), "rapids: a tile with a lane on each bank")
+	if not cross.is_empty():
+		await _set_party(cross[1])
+		var route: Array[Vector2i] = [cross[0], cross[2]]
+		_check(game._needs_check(route), "rapids: crossing to the far bank is the check")
 	game.debug_fail_crossing = false
 	w.has_raft = false
 
@@ -494,17 +500,11 @@ func _popups(map: MapBoard) -> void:
 	while game.busy:
 		await get_tree().process_frame
 	await _wait(Rules.SETTLE_SECONDS)
-	var rapid := Vector2i(99, 99)
-	for t: Vector2i in _region("rapids").tiles:
-		if map.terrains[t] == "rapids" and not map.water_shapes[t].has("bridge") and not _land_beside(map, t).is_empty():
-			rapid = t
-	if rapid != Vector2i(99, 99):
-		await _set_party(_land_beside(map, rapid)[0])
-		game.walk_to(rapid)
-		await _wait(0.1)
-		_check(check.visible, "rapids ask even with a raft")
-		_press(check, "Back")
-		await _wait(0.1)
+	var cross := Crossing.find(map, _region("rapids").tiles)
+	if not cross.is_empty():
+		await _set_party(cross[1])
+		var route: Array[Vector2i] = [cross[0], cross[2]]
+		_check(game._needs_check(route), "rapids ask even with a raft")
 	w.has_raft = false
 	game.debug_auto_cross = true
 

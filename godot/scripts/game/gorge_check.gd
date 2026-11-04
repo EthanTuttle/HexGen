@@ -67,9 +67,11 @@ func _run() -> void:
 	await _look(g.landmark_tile, 16.0, 45.0, "02_troll")
 	await _falls(tiles)
 	await _walks(tiles)
-	await _hop(g.landmark_tile)
+	await _no_route_along(g.tiles)
 	await _frozen(g.landmark_tile)
 	await _region_turning()
+	await _stranded()
+	_walled_off()
 	_perf()
 	print("GORGE DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
@@ -176,7 +178,7 @@ func _falls(tiles: Array) -> void:
 		var u: Dictionary = map.water_shapes[top]
 		_check(not Water.falling(u.widths, up), "%s: no fall where a river flows in" % top)
 		_check(absf(Gorge.water_z(u.mask, u.widths, Water.normal(up) * Water.A) - Gorge.WATER_TOP) < 0.01, "the water joins the river's level at that edge")
-		_check(map.edge_open(top, inr), "that edge can be crossed")
+		_check(not map.edge_open(top, inr) and not map.edge_open(inr, top), "and no route steps over it (design/02: crossing only)")
 		var at2 := Hex.tile_position(top.x, top.y) + Water.normal(up) * 2.0
 		game.rig.frame(Hex.to3(at2), 14.0, 45.0)
 		await _wait(0.5)
@@ -191,36 +193,33 @@ func _land_slot(t: Vector2i, e: int) -> Vector2i:
 
 
 func _walks(tiles: Array) -> void:
-	# A lane: from land, down it and into the water.
-	var lane_tile = null
-	var edge := -1
-	for t: Vector2i in tiles:
-		var w: Dictionary = map.water_shapes[t]
-		if w.has("gorge") and map.terrains[t] == "rapids" and not w.has("bridge"):
-			for e: int in w.gorge.walks:
-				var n: Vector2i = t + Hex.NEIGHBOURS[e]
-				if not map.terrains.has(n) or not Variants.is_water(map.terrains[n]):
-					lane_tile = t
-					edge = e
-					break
-		if lane_tile != null:
-			break
-	_check(lane_tile != null, "a tile with a lane and no bridge")
-	if lane_tile == null:
+	# A crossing: from land, down one bank's lane, over the water, up the other bank's, and on to the land beyond it.
+	var picked := Crossing.find(map, tiles)
+	_check(not picked.is_empty(), "a tile with a lane on each bank and no bridge")
+	if picked.is_empty():
 		return
-	var from := _land_slot(lane_tile, edge)
+	var cross_tile: Vector2i = picked[0]
+	var from: Vector2i = picked[1]
+	var far: Vector2i = picked[2]
 	var pw := game.party_node
 	pw.has_raft = false
 	game.party_tile = from
 	pw.place_at(from)
 	game.rig.frame(pw.centre(), 16.0, 45.0)
 	await _wait(0.3)
-	game.walk_to(lane_tile)
+	var waded := {n = 0}
+	var on_wade := func(): waded.n += 1
+	pw.waded.connect(on_wade)
+	var route: Array[Vector2i] = [cross_tile, far]
+	_check(game._needs_check(route), "that route needs the check")
+	game._walk(route)
 	var lowest := 0.0
 	var steep := 0.0
 	var last := pw.centre()
 	var was_on := false
-	var shot := false
+	var on_lane := false
+	var in_water := false
+	var at_water: Vector3
 	while game.busy:
 		await get_tree().process_frame
 		var h: Vector3 = pw.members[0].node.position
@@ -228,36 +227,55 @@ func _walks(tiles: Array) -> void:
 		var run := Vector2(h.x - last.x, h.z - last.z).length()
 		if run > 0.05:
 			if last.y > -1.05 and h.y > -1.05:   # on the lane: the wade's sink at its foot is on purpose
-				steep = maxf(steep, rad_to_deg(atan2(absf(h.y - last.y), run)))
+				if h.y < -0.1 and not in_water:   # going down the first lane, before the steps at its ends
+					steep = maxf(steep, rad_to_deg(atan2(absf(h.y - last.y), run)))
 			last = h
 		was_on = was_on or pw._silhouette_on
-		if not shot and h.y < -0.5:
-			shot = true
+		if not on_lane and h.y < -0.5:
+			on_lane = true
 			game.rig.frame(h, 12.0, 45.0)
 			await _shot("20_on_the_lane")
-	await _wait(Rules.SETTLE_SECONDS)
-	_check(game.party_tile == lane_tile, "the party reached %s by its lane" % lane_tile)
-	_check(lowest < -1.3, "and waded down in the gorge, at %.2f (0.4 below the water)" % lowest)
-	print("GORGE steepest walk on the way, by the hero: %.1f degrees" % steep)
-	_check(was_on, "the silhouette is on in a gorge")
-	game.rig.frame(pw.centre(), 12.0, 45.0)
-	await _wait(0.3)
-	await _shot("21_wading")
-	await _wait(0.3)
-	# From across the channel the near wall hides a wader: at the game's camera angle, and lower, to see the silhouette whole.
-	var hero: Vector3 = pw.members[0].node.position
-	var along := Water.normal(edge)
-	var yaw := rad_to_deg(atan2(along.x, along.y))
-	for k in 2:
-		var turn: float = yaw + 180.0 * k
-		game.rig.frame(hero, 12.0, 45.0, turn)
-		await _wait(0.3)
-		await _shot("22_silhouette_%d_game_angle" % k)
-		if k == 1:
-			game.rig.frame(hero, 9.0, 18.0, turn)
+		if not in_water and h.y < -1.4 and map.wet_at(Vector2(h.x, -h.z)):
+			in_water = true
+			at_water = h
+			pw.process_mode = Node.PROCESS_MODE_DISABLED   # held mid-crossing for its pictures
+			game.rig.frame(h, 12.0, 45.0)
 			await _wait(0.3)
-			await _shot("23_silhouette_low")
-	game.rig.frame(hero, 12.0, 45.0, 0.0)
+			await _shot("21_crossing")
+			var yaw := rad_to_deg(atan2(Water.normal(picked[3]).x, Water.normal(picked[3]).y))
+			for k in 2:
+				game.rig.frame(h, 12.0, 45.0, yaw + 180.0 * k)
+				await _wait(0.3)
+				await _shot("22_silhouette_%d_game_angle" % k)
+				if k == 1:
+					game.rig.frame(h, 9.0, 18.0, yaw + 180.0)
+					await _wait(0.3)
+					await _shot("23_silhouette_low")
+			game.rig.frame(h, 16.0, 45.0)
+			pw.process_mode = Node.PROCESS_MODE_INHERIT
+	pw.waded.disconnect(on_wade)
+	await _wait(Rules.SETTLE_SECONDS)
+	_check(game.party_tile == far, "the party crossed %s and reached %s" % [cross_tile, far])
+	_check(lowest < -1.3, "wading in the gorge, at %.2f (0.4 below the water)" % lowest)
+	_check(waded.n == 1, "one check for the crossing (%d)" % waded.n)
+	print("GORGE steepest walk down the lane, by the hero: %.1f degrees" % steep)
+	_check(was_on, "the silhouette is on in a gorge")
+	# Walking onto the tile from a bank stops on that bank, with no check; leaving by the far side is a crossing.
+	game.party_tile = from
+	pw.place_at(from)
+	await _wait(0.2)
+	waded.n = 0
+	pw.waded.connect(on_wade)
+	game.walk_to(cross_tile)
+	while game.busy:
+		await get_tree().process_frame
+	pw.waded.disconnect(on_wade)
+	await _wait(Rules.SETTLE_SECONDS)
+	var stood: Vector3 = pw.members[0].node.position
+	_check(game.party_tile == cross_tile and waded.n == 0 and absf(stood.y) < 0.05 and not map.wet_at(Vector2(stood.x, -stood.z)), "stepping onto it stops on the near bank, dry, with no check (y %.2f, %d)" % [stood.y, waded.n])
+	var out: Array[Vector2i] = [far]
+	_check(game._needs_check(out), "and going on from there to the far side is the check")
+	await _shot("24_stopped_on_a_bank")
 	# A plain bridge or the Troll Bridge: over it with no check.
 	var troll: Vector2i = _region("rapids").landmark_tile
 	var br: Dictionary = map.water_shapes[troll].get("bridge", {})
@@ -288,90 +306,285 @@ func _walks(tiles: Array) -> void:
 			break
 
 
-## What the player sees when a wader reaches a bridged tile, and how many routes on this region do it.
-func _hop(troll: Vector2i) -> void:
-	var pw := game.party_node
-	var from = null
-	for i in 6:
-		var n: Vector2i = troll + Hex.NEIGHBOURS[i]
-		if map.water_shapes.has(n) and map.water_shapes[n].has("gorge") and map.water_shapes[troll].mask[i] and map.edge_open(n, troll):
-			from = n
-			break
-	_check(from != null, "a gorge tile joining the Troll tile by water")
-	if from == null:
-		return
-	game.party_tile = from
-	pw.place_at(from)
-	await _wait(0.4)
-	game.rig.frame(Hex.to3(Hex.tile_position(troll.x, troll.y)), 15.0, 45.0)
-	await _wait(0.3)
-	await _shot("35_hop_before")
-	var low := pw.members[0].node.position.y as float
-	# Straight over the shared edge, as a route does when there's no dry way round (on this map there is one).
-	var straight: Array[Vector2i] = [troll]
-	game._walk(straight)
-	var t0 := -1.0
-	var took := 0.0
-	var last := low
-	var worst_step := 0.0
-	var mid_shot := false
-	var at_shot := false
-	while game.busy:
-		await get_tree().process_frame
-		var y: float = pw.members[0].node.position.y
-		var rise := y - last
-		worst_step = maxf(worst_step, rise)
-		last = y
-		if y > low + 0.3 and t0 < 0.0:
-			t0 = Time.get_ticks_msec()
-		if t0 >= 0.0 and took == 0.0 and y > -0.05:
-			took = Time.get_ticks_msec() - t0
-		if t0 >= 0.0 and not mid_shot and y > -0.9:
-			mid_shot = true
-			game.rig.frame(pw.members[0].node.position, 12.0, 45.0)
-			await _shot("36_hop_rising")
-		if took > 0.0 and not at_shot:
-			at_shot = true
-			game.rig.frame(pw.members[0].node.position, 12.0, 45.0)
-			await _shot("37_hop_on_deck")
-	print("GORGE HOP from the water at %.2f up to the deck: %d ms, the most in one frame %.2f m" % [low, took, worst_step])
-	# How often: every land or water start next to the region, to every tile of it and across it.
-	var region: Array = _region("rapids").tiles
+## design/02 -> Bridges on rapids: crossing only. Every route on the region and round it, tile by tile and point by point.
+func _no_route_along(region: Array) -> void:
 	var around := {}
 	for t: Vector2i in region:
 		for n in Hex.NEIGHBOURS:
 			if map.terrains.has(t + n) and not (t + n) in region:
 				around[t + n] = true
-	var starts := {"from the land round it": around.keys(), "from inside the gorge": region}
-	for label: String in starts:
-		_count_hops(label, starts[label], region + around.keys())
-
-
-func _count_hops(label: String, from_tiles: Array, goals: Array) -> void:
-	var routes := 0
-	var hops := 0
 	var was_at := game.party_tile
-	for a: Vector2i in from_tiles:
-		for goal: Vector2i in goals:
+	var routes := 0
+	var along := 0
+	var spans_bad := 0
+	var starts: Array = region + around.keys()
+	for a: Vector2i in starts:
+		if map.water_shapes.has(a) and map.path_graph(a).stand == null:
+			continue
+		game.party_tile = a
+		game.party_node.place_at(a)
+		for goal: Vector2i in starts:
 			if a == goal:
 				continue
-			game.party_tile = a
 			var path := game.path_to(goal)
 			if path.is_empty():
 				continue
 			routes += 1
-			var was: Vector2i = a
-			var hop := false
+			var from: Vector2i = a
 			for t: Vector2i in path:
-				var edge := Hex.NEIGHBOURS.find(t - was)
-				if edge >= 0 and map.water_shapes.has(t):
-					var w: Dictionary = map.water_shapes[t]
-					if w.has("gorge") and w.mask[(edge + 3) % 6] and w.has("bridge"):
-						hop = true
-				was = t
-			hops += 1 if hop else 0
+				var e := Hex.NEIGHBOURS.find(t - from)
+				if map._water_edge_shut(from, e) or map._water_edge_shut(t, (e + 3) % 6):
+					along += 1
+				from = t
+			var points: PackedVector2Array = game.party_node.route_preview(path)
+			var wet_tile = null
+			for p in points:
+				if map.wet_at(p):
+					var here := GroundCover.tile_at(p)
+					if map.water_shapes[here].style == "rapids":
+						if wet_tile != null and wet_tile != here:
+							spans_bad += 1
+						wet_tile = here
+				else:
+					wet_tile = null
+			if not points.is_empty() and map.wet_at(points[-1]) and map.water_shapes[GroundCover.tile_at(points[-1])].style == "rapids":
+				spans_bad += 1
 	game.party_tile = was_at
-	print("GORGE HOP %s: %d routes, %d step into a bridged tile by water" % [label, routes, hops])
+	game.party_node.place_at(was_at)
+	_check(routes > 0 and along == 0, "no route steps along the gorge or over a fall, of %d" % routes)
+	_check(spans_bad == 0, "no route wades from one rapids tile into the next, or ends in the water")
+	var in_water := 0
+	for t: Vector2i in region:
+		var g := map.path_graph(t)
+		for e in g.edge_stand:
+			if map.wet_at(g.nodes[g.edge_stand[e]]):
+				in_water += 1
+		if map.water_shapes[t].has("gorge"):
+			for i in 6:
+				if map.water_shapes[t].mask[i] and g.edge_node.has(i):
+					in_water += 1
+	_check(in_water == 0, "no stop in the water, no line out by a water edge")
+
+
+## A party on a plain river when it becomes rapids.
+func _stranded() -> void:
+	var c := Vector2i(-24, -8)
+	var shape: Array = Game.DEBUG_RIVER_SHAPES["rapids"]
+	var tiles: Array[Vector2i] = []
+	var changes := {}
+	for s: Vector2i in shape:
+		if map.terrains.has(c + s):
+			print("GORGE stranded test: ground taken, skipped")
+			return
+		tiles.append(c + s)
+		changes[c + s] = "river"
+	map.retile(changes)
+	await _wait(0.2)
+	var on: Vector2i = tiles[2]
+	game.party_tile = on
+	game.party_node.place_at(on)
+	await _wait(0.2)
+	var h: Vector3 = game.party_node.members[0].node.position
+	var was_wet := map.wet_at(Vector2(h.x, -h.z))
+	var region := game.new_region("river", tiles, "rapids", game._landmark_tile("rapids", tiles))
+	game._transform(tiles, region, on)
+	await get_tree().process_frame
+	while game.busy:
+		await get_tree().process_frame
+	await _wait(0.3)
+	var wet := 0
+	for m in game.party_node.members:
+		var p: Vector3 = m.node.position
+		wet += 1 if map.wet_at(Vector2(p.x, -p.z)) else 0
+	_check(wet == 0, "a party on a river that turns to rapids (in the water before: %s) ends on a bank, on %s, none in the water" % [was_wet, game.party_tile])
+	await _shot("45_party_put_on_a_bank")
+	# In the middle of a ring of rapids, with no land on its tile, there's no bank at all: the nearest tile that has a way on.
+	var mid := Vector2i(-30, 6)
+	var ring := {mid: "river"}
+	for n in Hex.NEIGHBOURS:
+		ring[mid + n] = "river"
+	if ring.keys().any(func(q): return map.terrains.has(q)):
+		print("GORGE stranded test: ground taken, skipped the ring")
+		return
+	map.retile(ring)
+	await _wait(0.2)
+	game.party_tile = mid
+	game.party_node.place_at(mid)
+	await _wait(0.2)
+	for q: Vector2i in ring:
+		ring[q] = "rapids"
+	map.retile(ring)
+	game._off_rapids()
+	await _wait(0.3)
+	var off := game.party_tile
+	_check(off != mid and map.path_graph(mid).stand == null, "a party on a tile left with no land moves to %s, off it" % off)
+	for m in game.party_node.members:
+		var p: Vector3 = m.node.position
+		wet += 1 if map.wet_at(Vector2(p.x, -p.z)) else 0
+	print("GORGE stranded ring: moved %s to %s; in the water after: %d; can it walk anywhere: %d steps to the next land" % [mid, off, wet, game.path_to(Vector2i(-24, 0)).size()])
+	await _shot("46_party_off_a_tile_with_no_land")
+
+
+## What crossing-only leaves walled off: random rapids regions, each with two rings of land round it. A land tile's reach goes
+## over land, bridges and crossings. Water.* and Gorge only: no map needed.
+func _walled_off() -> void:
+	var rnd := RandomNumberGenerator.new()
+	rnd.seed = 31
+	var regions := 200
+	var cut_regions := 0
+	var land_total := 0
+	var land_cut := 0
+	var tiles_total := 0
+	var no_land := 0
+	var no_stop := 0
+	var one_lane := 0
+	var side_shut := 0
+	var edges_total := 0
+	var under_deck := 0
+	var two_sides := 0
+	var two_bridge := 0
+	var two_lanes := 0
+	var two_neither := 0
+	for _n in regions:
+		var region: Array = [Vector2i(rnd.randi_range(-12, 12), rnd.randi_range(-12, 12))]
+		var size := rnd.randi_range(3, 14)
+		while region.size() < size:
+			var c: Vector2i = region[rnd.randi_range(0, region.size() - 1)] + Hex.NEIGHBOURS[rnd.randi_range(0, 5)]
+			if not c in region:
+				region.append(c)
+		var land := {}
+		for t: Vector2i in region:
+			for n in Hex.NEIGHBOURS:
+				for m in Hex.NEIGHBOURS:
+					for q: Vector2i in [t + n, t + n + m]:
+						if not q in region:
+							land[q] = true
+		# Nodes: land tiles, and for each rapids tile its land edges; a union of what's joined.
+		var parent := {}
+		var find := func(x0):
+			var x := str(x0)
+			while parent.get(x, x) != x:
+				x = parent[x]
+			return x
+		var join := func(a, b):
+			parent[find.call(a)] = find.call(b)
+		for t: Vector2i in land:
+			for n in Hex.NEIGHBOURS:
+				if land.has(t + n):
+					join.call(t, t + n)
+		for t: Vector2i in region:
+			var mask := []
+			var near := []
+			for n in Hex.NEIGHBOURS:
+				mask.append(t + n in region)
+				near.append("rapids" if t + n in region else "plains")
+			tiles_total += 1
+			if not mask.has(true):
+				continue
+			var widths := Water.edge_widths("rapids", near)
+			var g := Gorge.build(mask, "%d,%d" % [t.x, t.y], widths, false)
+			if not mask.has(false):
+				no_land += 1
+				continue
+			var lanes := {}
+			var stops := 0
+			for s: int in g.lanes:
+				lanes[s] = true
+			var banks := []
+			for e in 6:
+				if mask[e]:
+					continue
+				edges_total += 1
+				var by_walk: bool = g.walks.has(e)
+				var by_bridge: bool = not g.spot.is_empty() and g.spot.routes.has(e)
+				if not by_walk and not by_bridge:
+					side_shut += 1
+					continue
+				stops += 1
+				var nb: Vector2i = t + Hex.NEIGHBOURS[e]
+				var node := Vector3i(t.x, t.y, e)
+				if land.has(nb):
+					join.call(nb, node)
+				banks.append([e, by_walk and not by_bridge, by_bridge])
+			no_stop += 1 if stops == 0 else 0
+			# edges of one bank are joined; bridges join theirs; crossings join every bank with a lane
+			var shores := Water.tile_water(mask, "%d,%d" % [t.x, t.y], widths, "rapids")
+			var laned := []
+			for b in banks:
+				if b[2]:
+					join.call(Vector3i(t.x, t.y, b[0]), Vector3i(t.x, t.y, banks.filter(func(x): return x[2])[0][0]))
+				if b[1]:
+					laned.append(b[0])
+			for k in range(1, laned.size()):
+				join.call(Vector3i(t.x, t.y, laned[0]), Vector3i(t.x, t.y, laned[k]))
+			one_lane += 1 if g.lanes.size() == 1 else 0
+			var land_sides := 0
+			for sh in Gorge._shores(mask, "%d,%d" % [t.x, t.y], widths)[1]:
+				land_sides += 1 if not sh.land_edges().is_empty() else 0
+			if land_sides >= 2:
+				two_sides += 1
+				if not g.spot.is_empty():
+					two_bridge += 1
+				elif laned.size() >= 2 and _lanes_apart(mask, g):
+					two_lanes += 1
+				else:
+					two_neither += 1
+			if not g.spot.is_empty() and g.lanes.size() >= 2:
+				var hub: Vector2 = Water.water_routes(mask, "%d,%d" % [t.x, t.y], widths, "rapids").hub
+				var axis := Vector2.from_angle(g.spot.angle) * Water.BRIDGE_HALF
+				if Water.seg_dist(hub, g.spot.middle - axis, g.spot.middle + axis) < 0.75:
+					under_deck += 1
+		var roots := {}
+		for t: Vector2i in land:
+			var r = find.call(t)
+			roots[r] = roots.get(r, 0) + 1
+		var most := 0
+		for r in roots:
+			most = maxi(most, roots[r])
+		land_total += land.size()
+		land_cut += land.size() - most
+		cut_regions += 1 if roots.size() > 1 else 0
+	print("GORGE WALLED %d regions of 3 to 14 tiles, %d tiles, two rings of land round each" % [regions, tiles_total])
+	print("GORGE WALLED regions where some land can't reach the rest even by crossing: %d; land tiles cut off: %d of %d" % [cut_regions, land_cut, land_total])
+	print("GORGE WALLED tiles with no land at all, no way on or off: %d; tiles with land but no way onto it: %d; tiles with one lane, so no crossing on that tile unless by a bridge: %d" % [no_land, no_stop, one_lane])
+	print("GORGE WALLED tiles with land on two or more sides: %d; a bridge %d, lanes to cross by %d, neither %d" % [two_sides, two_bridge, two_lanes, two_neither])
+	_river_lines()
+	print("GORGE WALLED land edges with no lane or bridge: %d of %d; tiles where a crossing's middle is under a bridge's deck: %d" % [side_shut, edges_total, under_deck])
+
+
+static func _lanes_apart(_mask: Array, g: Dictionary) -> bool:
+	return g.lanes.size() >= 2
+
+
+## A river of rapids from one side of the land to the other, with nothing placed past its ends: can a party get across at all?
+func _river_lines() -> void:
+	var rnd := RandomNumberGenerator.new()
+	rnd.seed = 47
+	for size in [3, 5, 7, 12]:
+		var none := 0
+		var crossings := 0
+		const RUNS := 150
+		for _n in RUNS:
+			var line: Array = [Vector2i.ZERO]
+			var guard := 0
+			while line.size() < size and guard < 200:
+				guard += 1
+				var c: Vector2i = line[-1] + Hex.NEIGHBOURS[rnd.randi_range(0, 5)]
+				if not c in line and Hex.NEIGHBOURS.filter(func(n): return c + n in line).size() == 1:
+					line.append(c)
+			var ways := 0
+			for t: Vector2i in line:
+				var mask := []
+				var near := []
+				for n in Hex.NEIGHBOURS:
+					mask.append(t + n in line)
+					near.append("rapids" if t + n in line else "plains")
+				var g := Gorge.build(mask, "%d,%d" % [t.x + _n * 40, t.y], Water.edge_widths("rapids", near), false)
+				if not g.spot.is_empty() or g.lanes.size() >= 2:
+					ways += 1
+			crossings += ways
+			none += 1 if ways == 0 else 0
+		print("GORGE WALLED a %d-tile river: on average %.1f tiles to cross on, none at all in %d of %d" % [size, float(crossings) / RUNS, none, RUNS])
 
 
 ## design/02: once it stands, a later water neighbour's channel ends in a gorge head beside it.
@@ -445,7 +658,6 @@ func _region_turning() -> void:
 	game.rig.frame(Hex.to3(Hex.tile_position(ends[0].x, ends[0].y)), 16.0, 45.0)
 	await _wait(0.3)
 	await _shot("51_region_end")
-	_count_hops("in a region with no land placed round it", tiles, tiles)
 
 
 func _perf() -> void:

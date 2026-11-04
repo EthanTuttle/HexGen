@@ -368,6 +368,7 @@ func try_place(t: Vector2i) -> bool:
 	deck.hand.remove_at(held)      # DOCS: placing never draws a new card
 	held = -1
 	map.place(t, terrain)
+	_off_rapids()
 	order[t] = order.size()
 	_advance(Rules.PLACE_MINUTES)
 	hud.hide_toast()
@@ -746,6 +747,23 @@ func _debug_road(from: Vector2i, changes: Dictionary) -> void:
 
 ## A finished region's tiles change to its variant's look (DOCS: Exploration screen -> Cluster goals; no rim),
 ## and its landmark tile to the landmark's. Tier 2 regions without art keep their terrain's look for now.
+## A party on a tile that has just become rapids, or whose lanes have just moved, goes to a bank: it can't stop in the water
+## (design/02 -> Bridges on rapids). PLACEHOLDER: it's put there, as nothing says how. A tile with no land edge has no bank, so
+## it goes to the nearest tile that isn't like that.
+func _off_rapids() -> void:
+	if not map.water_shapes.has(party_tile) or map.water_shapes[party_tile].style != "rapids":
+		return
+	if map.path_graph(party_tile).stand == null:
+		var best = null
+		for t: Vector2i in map.terrains:
+			if t != party_tile and (best == null or Rules.hex_distance(t, party_tile) < Rules.hex_distance(best, party_tile)) \
+					and (not map.water_shapes.has(t) or map.path_graph(t).stand != null):
+				best = t
+		if best != null:
+			party_tile = best
+	party_node.place_at(party_tile)
+
+
 ## PLACEHOLDER transition: a wave spreading from the tile that finished it; each tile sinks flat into the
 ## ground (0.22 s), swaps to the variant's pieces, then springs back up with a small overshoot (0.45 s).
 func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> void:
@@ -800,6 +818,7 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 	while not map.gorges_done(gorges):
 		await get_tree().process_frame
 	map.retile(changes)
+	_off_rapids()
 	if not grew.is_empty():
 		map.canyon_dust(grew)
 	if not job.is_empty() and map.canyons.has(party_tile):
@@ -919,6 +938,12 @@ func path_to(goal: Vector2i, dry := false) -> Array[Vector2i]:
 				if dry:
 					continue
 				step += _cross_cost(c)
+			if at.z < 0:   # leaving rapids from where it stands, over to the far bank
+				var hero: Vector3 = party_node.members[0].node.position
+				if map.wet_leaving(c, Vector2(hero.x, -hero.z), i):
+					if dry:
+						continue
+					step += _cross_cost(c)
 			if m == goal and map.water_shapes.has(m) and map.wet_between(m, (i + 3) % 6, -1):
 				if dry:
 					continue

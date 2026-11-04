@@ -132,6 +132,7 @@ func _hub_line(tile: Vector2i) -> bool:
 	if not map.tile_node(tile) or not (Variants.terrain_of(map.terrains.get(tile)) in ["village", "farmland", "river"] or map.walks_in_file(tile)):
 		return false
 	var graph := map.path_graph(tile)
+	graph.settle(Vector2(members[0].node.position.x, -members[0].node.position.z))
 	if graph.stand == null:
 		return false
 	walking = false
@@ -191,6 +192,8 @@ func _line_to_hub(graph: TilePaths) -> PackedVector2Array:
 	var best_len := 0.0
 	for n: int in starts:
 		var way := graph.route(n, graph.stand)
+		if graph.dry_line and _gets_wet(way):
+			continue
 		var d := _leg_length(way)
 		if d > best_len:
 			best = way
@@ -204,6 +207,16 @@ func _line_to_hub(graph: TilePaths) -> PackedVector2Array:
 	for k in range(1, best.size()):
 		_line(out, best[k])
 	return out
+
+
+func _gets_wet(way: PackedVector2Array) -> bool:
+	for k in way.size():
+		if map.wet_at(way[k]):
+			return true
+	for k in range(1, way.size()):
+		if map.wet_at(way[k - 1].lerp(way[k], 0.5)):
+			return true
+	return false
 
 
 static func _no_heights(n: int) -> PackedFloat32Array:
@@ -398,7 +411,7 @@ func _way_on_paths(graph: TilePaths, from: Vector2, k: int, in_edge: int, out_ed
 	if graph.nodes.is_empty():
 		return PackedVector2Array()
 	var a: int = graph.edge_node.get(in_edge, -1) if k > 0 else graph.nearest(from)
-	var b = graph.stand if last_tile else graph.edge_node.get(out_edge, -1)
+	var b = graph.stand_from(in_edge) if last_tile else graph.edge_node.get(out_edge, -1)
 	if a < 0 or b == null or b < 0:
 		return PackedVector2Array()
 	return graph.route(a, b)
@@ -1074,8 +1087,6 @@ func _stand_on(m: Dictionary, p: Vector2, felt: Dictionary, k: float, snap := fa
 	var old: Vector3 = m.node.position
 	if not snap:
 		y = maxf(y, lerpf(old.y, y, minf(1.0, k * Rules.HEIGHT_RATE)))
-		if y > old.y + 0.3:   # out of a gorge onto a bridge's deck: quick, not at once
-			y = old.y + k * Rules.LEDGE_EASE
 	m.node.position = Hex.to3(p, y)
 	_tilt(m)
 

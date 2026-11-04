@@ -418,15 +418,29 @@ func edge_open(a: Vector2i, b: Vector2i) -> bool:
 	return Hex.NEIGHBOURS.find(other - fenced) in gates[fenced]
 
 
-## Nothing walks or floats over a rapids tile's waterfall (river kit), and a land edge of a gorge with no way down it or
-## bridge over it is walked round.
+## Rapids are crossing only (design/02 -> Bridges on rapids): nothing walks or floats in or out of a gorge by its water, over a
+## waterfall or not. A land edge with no way down to the water or bridge over it is walked round.
 func _water_edge_shut(t: Vector2i, edge: int) -> bool:
 	if not water_shapes.has(t):
 		return false
 	var w: Dictionary = water_shapes[t]
-	if Water.falling(w.widths, edge):
-		return true
-	return w.has("gorge") and not w.mask[edge] and not w.gorge.walks.has(edge) and not w.get("bridge", {}).get("routes", {}).has(edge)
+	if not w.has("gorge"):
+		return false
+	return w.mask[edge] or (not w.gorge.walks.has(edge) and not w.get("bridge", {}).get("routes", {}).has(edge))
+
+
+## Whether leaving water tile t by this edge, from where a party stands at p, means getting wet: a crossing, on rapids.
+func wet_leaving(t: Vector2i, p: Vector2, edge: int) -> bool:
+	if not water_shapes.has(t) or not water_shapes[t].has("gorge"):
+		return false
+	var g := path_graph(t)
+	if not g.edge_node.has(edge) or g.nodes.is_empty():
+		return false
+	var way := g.route(g.nearest(p), g.edge_node[edge])
+	for k in range(1, way.size()):
+		if wet_at(way[k - 1].lerp(way[k], 0.5)):
+			return true
+	return false
 
 
 ## Works out which tiles are raised, their cliffs and ledges; returns the raised tiles whose cliffs changed.
@@ -1415,7 +1429,7 @@ func wet_at(p: Vector2) -> bool:
 func wet_between(t: Vector2i, in_edge: int, out_edge: int) -> bool:
 	var g := path_graph(t)
 	var a: int = g.edge_node.get(in_edge, -1)
-	var b = g.stand if out_edge < 0 else g.edge_node.get(out_edge, -1)
+	var b = g.stand_from(in_edge) if out_edge < 0 else g.edge_node.get(out_edge, -1)
 	if a < 0 or b == null or b < 0:
 		return true
 	var way := g.route(a, b)
@@ -1500,42 +1514,68 @@ func _water_graph(t: Vector2i) -> TilePaths:
 			g.add_line(PackedVector2Array([l[0], l[1], Vector2.ZERO]), at)
 			g.edge_node[e] = g._node(at + l[0])
 	else:
+		if w.style == "rapids":
+			return _rapids_graph(t, w, at, g)
 		var r := Water.water_routes(w.mask, w.seed, w.widths, w.style)
 		stand = r.hub
 		for e in r.lines:
 			g.add_line(r.lines[e], at)
 			g.edge_node[e] = g._node(at + r.lines[e][0])
-		var bridge: Dictionary = w.get("bridge", {})
-		if w.has("gorge"):   # each land edge's walk down a lane (Gorge), where a bridge doesn't serve it
-			for e: int in w.gorge.walks:
-				if bridge.is_empty() or not bridge.routes.has(e):
-					var line := PackedVector2Array()
-					for q: Vector3 in w.gorge.walks[e]:
-						line.append(Vector2(q.x, q.y))
-					line.append(r.hub)
-					g.add_line(line, at)
-					g.edge_node[e] = g._node(at + line[0])
-		else:
-			var lands := Water.landings(w.mask, w.seed, w.widths, w.style)
-			for e in lands:
-				if bridge.is_empty() or not bridge.routes.has(e):
-					g.add_line(PackedVector2Array([lands[e][0], lands[e][1], lands[e][2], r.hub]), at)
-					g.edge_node[e] = g._node(at + lands[e][0])
-		if not bridge.is_empty():
-			var ends := []
-			for e in bridge.routes:
-				g.add_line(bridge.routes[e], at)
-				g.edge_node[e] = g._node(at + bridge.routes[e][0])
-				ends.append(bridge.routes[e][1])
-			var axis := Vector2.from_angle(bridge.angle)
-			var half := Water.TROLL_HALF if w.bridge_piece == "trollbridge_centre" else Water.BRIDGE_HALF
-			var top: Vector2 = bridge.middle
-			g.add_line(PackedVector2Array([top - axis * half, top, top + axis * half]), at)
-			# A wader coming down the channel climbs out at the nearer end.
-			var off: Vector2 = top - axis * half if r.hub.distance_to(top - axis * half) < r.hub.distance_to(top + axis * half) else top + axis * half
-			g.add_line(PackedVector2Array([r.hub, off]), at)
-			stand = top
+		var lands := Water.landings(w.mask, w.seed, w.widths, w.style)
+		for e in lands:
+			g.add_line(PackedVector2Array([lands[e][0], lands[e][1], lands[e][2], r.hub]), at)
+			g.edge_node[e] = g._node(at + lands[e][0])
 	g.stand = g._node(at + stand)
+	g.weigh_wet(wet_at, Rules.WET_ROUTE_WEIGHT)
+	return g
+
+
+## Rapids are crossing only (design/02 -> Bridges on rapids): each land edge has its way to its bank's stop, and a bank's lane
+## runs down to the water, where it meets any other lane on the tile, so a crossing is bank to bank. No lines along the water,
+## no stop in it. A bridge is walked with no check, from its land edges to its middle. A tile with no land edge has no way on.
+func _rapids_graph(t: Vector2i, w: Dictionary, at: Vector2, g: TilePaths) -> TilePaths:
+	g.dry_line = true
+	if not w.has("gorge"):   # a lone tile, with a small pool: round it, not through it
+		var n := 12
+		var ring := PackedVector2Array()
+		for k in n:
+			ring.append(Vector2.from_angle(TAU * k / n) * 1.9)
+		for k in n:
+			g.add_line(PackedVector2Array([ring[k], ring[(k + 1) % n]]), at)
+		for e in 6:
+			var spoke := PackedVector2Array([Water.normal(e) * Water.A, ring[e * 2]])
+			g.add_line(spoke, at)
+			g.edge_node[e] = g._node(at + spoke[0])
+		g.stand = g._node(at + ring[9])
+		return g
+	var bridge: Dictionary = w.get("bridge", {})
+	var hub: Vector2 = Water.water_routes(w.mask, w.seed, w.widths, w.style).hub
+	for e: int in w.gorge.walks:
+		if not bridge.is_empty() and bridge.routes.has(e):
+			continue
+		var walk: PackedVector3Array = w.gorge.walks[e]
+		var line := PackedVector2Array()
+		var top := 0   # the lane's top, then the last land before it
+		for k in walk.size():
+			line.append(Vector2(walk[k].x, walk[k].y))
+			if k < walk.size() - 1 and walk[k].z >= 0.0:
+				top = k
+		line.append(hub)
+		g.add_line(line, at)
+		g.edge_node[e] = g._node(at + line[0])
+		g.edge_stand[e] = g._node(at + line[maxi(top - 1, 0)])
+		g.stand = g.edge_stand[e]
+	if not bridge.is_empty():
+		for e in bridge.routes:
+			g.add_line(bridge.routes[e], at)
+			g.edge_node[e] = g._node(at + bridge.routes[e][0])
+		var axis := Vector2.from_angle(bridge.angle)
+		var half := Water.TROLL_HALF if w.bridge_piece == "trollbridge_centre" else Water.BRIDGE_HALF
+		var top: Vector2 = bridge.middle
+		g.add_line(PackedVector2Array([top - axis * half, top, top + axis * half]), at)
+		for e in bridge.routes:
+			g.edge_stand[e] = g._node(at + top)
+		g.stand = g._node(at + top)
 	g.weigh_wet(wet_at, Rules.WET_ROUTE_WEIGHT)
 	return g
 
