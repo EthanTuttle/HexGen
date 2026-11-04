@@ -69,3 +69,6 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/swamp_bog_map_v2.png` | rejected | Swamp round 2 (all variants): rework mist, break up rot swamp's ooze line, link bayou shacks. Routes stay |
 | 2026-11-03 | `art/preview/village_map_scholars_town_lawns_v9.png` | rejected | Scholars set (with court_v7, cloister_v7, walk_v7): vibe off, needs nice courtyards and walkways. Its props kept |
 | 2026-11-03 | `art/preview/swamp_smugglers_bayou_map_v3.png` | rejected | Swamp round 3: mist and ooze fine; ground cover through planks, spur gap, paths ending abruptly in open space |
+| 2026-11-03 | `art/preview/village_map_scholars_town_court_v9.png` | approved | Quad direction, towers as shown; for all four Scholars maps |
+| 2026-11-03 | `art/preview/village_map_scholars_town_lawns_v11.png` | rejected | Add a hall or cloister along the north, three-sided quad |
+| 2026-11-03 | `art/preview/swamp_smugglers_bayou_map_v4.png` | approved | Swamp, all variants (bog_v4, wisp_v3, rot_v4), with trail finishes |
