@@ -292,7 +292,7 @@ Skills (learned at class locations such as Training Grounds, Tree of Life and Co
 
 ### Lava
 
-On trial, Nov 4, 2026. Lava can be walked through. Entering it or ending a turn in it deals fire damage (amount still open).
+On trial, Nov 4, 2026. Lava can be walked through. Entering it or ending a turn in it deals fire damage: 2 for now, a placeholder until the combat balance pass.
 
 ### Giant enemies
 
@@ -684,7 +684,8 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] **New:** sight on combat maps: whether a low hedge or fence (0.35 high) stops sight or gives cover, against a town wall (1.5 high)
 - [ ] **New:** cover on combat maps: whether crops and forest brush hide anyone or give any other bonus (for now they're walkable with no rule, Nov 2, 2026)
 - [x] ~~Giant enemies' grid rules~~ (decided Nov 4, 2026: see Giant enemies)
-- [ ] **New (Nov 4, 2026):** lava: how much fire damage, do foes avoid it, is anyone immune (fire creatures), and can pushes send people in? Giants too?
+- [ ] **New (Nov 4, 2026):** a combat balance pass for damage, health and other stat numbers, all still placeholders (Ethan)
+- [ ] **New (Nov 4, 2026):** lava: do foes avoid it, is anyone immune (fire creatures), and can pushes send people in? Giants too?
 - [ ] **New (Nov 4, 2026):** giants: can a 3-cell giant turn in place, and what does turning cost? How do they stand and move on sloped maps and ways up?
 - [ ] **New (Nov 2, 2026):** high ground on combat maps (07 → Combat maps) gives ranged attacks longer range (Ethan's direction, Nov 2, 2026). Way-up stairs now use ordinary moves (Nov 4, 2026), so no current map needs a separate ascend or descend action. How far is the range bonus, and does a ledge need a check where there are no steps or ramp, or its own action?
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
