@@ -115,9 +115,9 @@ def tuft_colour(terrains, x, y, k):
     return own
 
 
-def scatter(terrains, water_shapes, clear=()):
+def scatter(terrains, water_shapes, clear=(), wet=None):
     """List of (kind, x, y, cell) for the whole map. water_shapes maps (q, r) -> (outlines, shores) in tile space.
-    clear: (x, y, radius) world-space circles to keep off (placed pieces' no_cover circles)."""
+    clear: (x, y, radius) world-space circles to keep off (placed pieces' no_cover circles). wet(x, y, tile): true where the swamp's own water or mud lies."""
     xs = [tile_centre(q, r)[0] for q, r in terrains]
     ys = [tile_centre(q, r)[1] for q, r in terrains]
     out = []
@@ -130,6 +130,8 @@ def scatter(terrains, water_shapes, clear=()):
                 continue
             if any((x - cx) ** 2 + (y - cy) ** 2 < r * r for cx, cy, r in clear):
                 continue  # a piece's no_cover circle: burns, yards
+            if wet is not None and wet(x, y, (q, r)):
+                continue
             if (q, r) in water_shapes:
                 cx, cy = tile_centre(q, r)
                 p = (x - cx, y - cy)
@@ -151,7 +153,7 @@ def scatter(terrains, water_shapes, clear=()):
     return out
 
 
-def add_ground_cover(piece, terrains, clear=()):
+def add_ground_cover(piece, terrains, clear=(), wet=None):
     """Builds the scatter into a hexkit.Piece placed at the world origin."""
     from hexkit import spike_up as hk_spike
     from mathutils import Vector
@@ -161,7 +163,7 @@ def add_ground_cover(piece, terrains, clear=()):
         if t in WATER:
             near = [terrains.get((q + dq, r + dr)) for dq, dr in NEIGHBOURS]
             water_shapes[(q, r)] = wt.cover_shape(t, near, f"{q},{r}")
-    for kind, x, y, (ix, iy) in scatter(terrains, water_shapes, clear):
+    for kind, x, y, (ix, iy) in scatter(terrains, water_shapes, clear, wet):
         rng = random.Random(hash01(ix, iy, 4))
         at = Vector((x, y, 0))
         if kind == "tuft":

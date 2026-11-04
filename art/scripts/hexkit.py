@@ -115,6 +115,10 @@ PALETTE = {
     "scrub": "#9C9A5C",
     "cactus": "#6E9A5A",
     "bog_water": "#5F7F6C",
+    "mist_low": "#E4EADF",
+    "swamp_bank": "#6B6549",
+    "bog_bank": "#585A42",
+    "bayou_bank": "#5D5943",
     "mud": "#7A7152",
     "hummock": "#6F8E5C",
     "deadwood": "#7C6E5E",
@@ -386,10 +390,11 @@ SLUM_GROUND = {"tan": ("#CDB48A", "#B59C73", "#A38A63", "#BFA67E"),
                "clay": ("#D2A566", "#BE9458", "#A9804A", "#C69C60"),
                "dun": ("#B9B083", "#A0976A", "#8D8559", "#ABA277")}
 PALETTE.update(zip(("mud_ground", "mud_street", "mud_dark", "mud_damp"), SLUM_GROUND[os.environ.get("HEX_SLUM", "tan")]))
-OWN_MATERIAL = {"wisp_water", "wisp_pool", "wisp", "wisp_green", "rot_water", "ooze", "ooze_bright", "bayou_water", "window_green", "lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
+OWN_MATERIAL = {"mist_low", "wisp_water", "wisp_pool", "wisp", "wisp_green", "rot_water", "ooze", "ooze_bright", "bayou_water", "window_green", "lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
+MIST_ALPHA = 0.09
 
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
@@ -430,6 +435,11 @@ def material(name):
         mat.surface_render_method = "BLENDED"
         mat.use_backface_culling = False
         mat.diffuse_color = (*rgb, WEB_ALPHA)
+    if name == "mist_low":
+        bsdf.inputs["Alpha"].default_value = MIST_ALPHA
+        mat.surface_render_method = "BLENDED"
+        mat.use_backface_culling = False
+        mat.diffuse_color = (*rgb, MIST_ALPHA)
     return mat
 
 

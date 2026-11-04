@@ -382,6 +382,14 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             p.finish(col, at)
         joined = [linked(name, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
         trails = lf.trail_edges((q, r), toward)
+        if name in vr.sl.LOOKS:
+            # The wetland, worked out in world space, the way the engines will.
+            tile_ = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
+            p = hk.Piece(f"marsh_{q}_{r}")
+            vr.sl.add_marsh(p, tile_)
+            p.finish(col, at)
+            for prop, x_, y_, spin_ in tile_["props"]:
+                place(templates, prop, col, at + Vector((x_, y_, 0)), spin_)
         if terrain == "hills":
             # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
             # meet; otherwise half on each edge shared with one other hills tile.
@@ -470,7 +478,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 w = obj.matrix_world @ Vector((x, -z, y))
                 clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP, clear)
+    gc.add_ground_cover(p, MAP, clear, vr.sl.cover_wet(MAP))
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP) - set(hollow)
@@ -1379,10 +1387,11 @@ if __name__ == "__main__":
             step_ = t_[far_]
             c_ = hk.tile_position(*far_)
             i_ = hk.NEIGHBOURS.index((step_[0] - far_[0], step_[1] - far_[1]))
-            a_ = math.radians(60 * i_)
-            q_ = Vector((math.cos(a_), math.sin(a_), 0)) * (sl.X0 + 0.95)
-            spots.append(((c_.x + q_.x, c_.y + q_.y, 0.045 if variant == "smugglers_bayou" else 0.0), a_))
-            trail_at = c_ + q_
+            trail_ = sl.trail_end(far_[0], far_[1], i_)
+            q_, d2_ = sl.along(trail_, sl.line_length(trail_) * 0.7)
+            a_ = math.atan2(d2_[1], d2_[0])
+            spots.append(((c_.x + q_[0], c_.y + q_[1], 0.045 if variant == "smugglers_bayou" else 0.0), a_))
+            trail_at = c_ + Vector((q_[0], q_[1], 0))
             ct._mini_spots(col, minis, spots)
             bpy.context.view_layer.update()
             focus = Vector((0.5, -1.0, -0.2))

@@ -1,100 +1,90 @@
-# Swamp/marsh kit hand-off, round 1 (tiles_v65)
+# Swamp/marsh kit hand-off, round 2 (tiles_v66)
 
-Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Hollow, rot swamp with the Plague Pit (tier 2), and smugglers' bayou with the Thieves Guild (class). **Ethan hasn't seen this, and it hasn't been tried in Godot.**
+Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Hollow, rot swamp with the Plague Pit (tier 2), and smugglers' bayou with the Thieves Guild (class). **Not yet approved, and not tried in Godot.**
 
-- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v65.blend`. Path data and effect points are in the glb's extras and `art/export/tiles_paths.json`.
-- **Code:** `art/scripts/swamp_lands.py`. Its first section is plain Python: water shapes, rings and `landmark_routes`.
-- **Looks:** `design/07` → Region variant looks, Landmark tiles. **Facts:** `design/02`.
+**Round 2 changes how the kit works.** Water, banks, trails and scattered props used to live in the wedge pieces. They now come from a per-tile layer worked out from world position, the way desert sand does (`sand.add_sand`).
 
-## How the water sits
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v66.blend`.
+- **Code:** `art/scripts/swamp_lands.py`. Its first section is plain Python to copy, with `marsh_tile` as the entry point.
+- **Looks:** `design/07` → Region variant looks, Landmark tiles. **Facts:** `design/02`. **Rule:** swamp water is scenery; parties walk dry.
 
-Routes between any two edges pass through each edge's midpoint and criss-cross the tile's middle, so water stays off them:
+## How the wetland works
 
-- **Shared edge:** two lobes cross it at y = ±1.22, mirrored, so the neighbour's halves meet them. That leaves a dry neck about 1.2 wide between the banks, through the edge's middle. A lobe's crossing never changes, whatever its shape further in, so any two swamp variants' edges meet in shape.
-- **Edge facing other terrain:** closed pools stay inside the wedge.
-- **Tile's middle:** dry. Only small props stand there, in the gaps between routes (`CENTRE_R` 0.72).
-- **No water on a route:** the closest bank to any route's line is 0.53, and no bank comes within 0.35 of a landmark's ring.
+`marsh_tile(terrains, q, r, trail_edges, toward_edge, turn, near)` returns everything on one tile, in tile-local coordinates:
 
-## Crossing water: for Ethan to decide
-
-`design/02` lists "dense growth (thick forest or swamp)" under Obstacles, and Crossing water covers rivers and lakes. Neither says what a swamp does, per variant. **I've invented no rule.** As built, a party can walk any swamp route dry with no check, and these options would all fit with few or no art changes:
-
-| Option | What it means | Art it needs |
+| Key | What it is | What to do with it |
 | --- | --- | --- |
-| A. Scenery | Swamp water never stops anyone. No check, no prompt | None |
-| B. Swamp is dense growth | The obstacle rule applies across the terrain, whatever it decides for thick forest. The bayou's boardwalks could be exempt | None, unless he wants the obstacle to show |
-| C. Per variant | For example, bog and rot swamp are dense growth, wisp marsh and bayou aren't. Which is which is his call | None, unless he wants them to read differently |
-| D. Water as water | Lobes count as Crossing water, with routes through them and an Athletics check | A rebuild: routes would have to cross water |
+| `water`, `bank` | Flat triangles (x, y), anticlockwise | Build a mesh: bank at z 0.012, water at z 0.022, in the look's colours (`VIEW`) |
+| `trails` | `[(walked line, drawn part)]` | Draw the drawn part (`add_marsh`: a ribbon, or `planks` on the bayou). A party on a trail walks the walked line |
+| `props` | `[(piece, x, y, spin)]` | Place the kit piece |
 
-Also open: a raft has no use here as built, as no route is on water. Swamp and river can touch, but a river's channel stops at a swamp's edge, because only river terrain counts as a water neighbour. That means no river flows into a swamp yet.
+It depends on the tile's position, which neighbours are marsh of its look, and the region's flow. **So rebuild a tile when a neighbour lands next to it, and when its region finishes.** The output for a given input never changes (only `gc.hash01` and arithmetic).
+
+- **Pools:** a world-space field (`wetness`). Two tiles' water never matches: the most alike pair in the test shares 82% (bog); usually far less. Water per tile runs from none to 14 m² of a 52 m² tile.
+- **Across edges:** each sixth of a tile is a triangle grid with samples on the edge, so a shared edge matches exactly. The test compares every shared edge.
+- **Where water stops:** at any edge whose neighbour isn't marsh of the same look, 0.34 short of it. So **water doesn't run between two different variants**, or into a Plague Pit's tile.
+- **Mud banks ignore routes.** They run across them, which is what ties the pools together. Only flat mud lies on a route.
+- **Dry:** water stays 0.54 or more from every route's line (a mini's base is about 1.04 wide) and from any trail.
+- **Ground cover:** pass `sl.cover_wet(MAP)` as `add_ground_cover`'s `wet`, so tufts stay off water and mud.
+
+## Trails
+
+A trail no longer runs up to the tile's middle. `tile_trails` draws from each edge it comes in by to the edge it leaves by, so trails join on the way. A tile where a trail starts runs out from its middle (`trail_end`).
+
+**This moves routes a little, and Godot needs it:**
+
+| Route | Before | Now |
+| --- | --- | --- |
+| Along a trail | The usual curve or spoke | `trail_line(q, r, i, j)`: the usual curve bent sideways, up to 0.3, differently per tile. It leaves each edge straight, so it meets the next tile's line |
+| Off a trail | The usual curve | Unchanged |
+| On a landmark's tile | Round a hexagon, with corners | `landmark_routes`: curved, round a circle of radius 2.25 (`RING`, was a 1.98 hexagon), the Pit's at 3.25 |
+
+If Godot keeps walking the usual curve on a trail, a mini stays within 0.3 of the track's middle, so it looks off but isn't broken.
 
 ## What Godot has to do
 
 | Item | What to do | Reference |
 | --- | --- | --- |
-| Pieces | `swamp_*`, `bog_*`, `wisp_marsh_*`, `rot_swamp_*`, `smugglers_bayou_*`: `centre`, `centre_b`, `centre_mid`, `centre_near`, `edge_same`, `edge_same_b`, `edge_other`, `edge_trail`, `steps_centre`, `steps_rise` (tier 0 only the first two centres and the plain edges) | `render_preview.build_map` |
-| Ground colours | `bog`, `wisp_ground`, `rot_ground`, `bayou_ground`; tier 0 `swamp` | `variants.VARIANTS` |
-| Trails | `steps_centre` goes on the centre per trail edge, with the piece's path, as monastery heights does. On a landmark, `steps_rise` is empty for now | `build_map` |
-| Landmark centres | `witchhut`, `wisphollow`, `thievesguild`: centre only, on their variant's wedges and ground | `variants.LANDMARKS` |
-| Plague Pit | `plaguepit_*` has its own wedges and **no slab**: don't place `base_swamp`. The centre piece is the tile's ground with the hole, and has soil sides | `no_slab` in `build_map` |
-| Routes on a landmark | `swamp_lands.landmark_routes(name, turn)`: {edge: walk (x, y, z)}. Each walks round a ring to the way in on edge 0, then to the stop. Turned by `landmark_flow.turn` | Also in path data |
-| Silhouette | A party in the Pit is hidden by its walls on some turns, so the silhouette through rock applies | `design/07` |
-| Ground cover | New `DENSITY`, `TUFT`, `NO_FLOWERS` entries, `no_cover` circles on water | `ground_cover.py` |
+| Wetland layer | Port the plain section and call `marsh_tile` per swamp tile | `build_map`, "The wetland" |
+| Old pieces | `swamp_*`, `bog_*`, `wisp_marsh_*`, `rot_swamp_*`, `smugglers_bayou_*` wedges, centres and steps are **now empty**. Effect points on bog wedges and rot centres remain. Skip placing the empty ones | `check_town` fails if any regains geometry |
+| Props | New pieces, from `sl.PROP`: `marsh_*`, `bog_*`, `wisp_*`, `rot_*`, `bayou_*`, `mudbank_*` | `marsh_props` |
+| Mist | New own material `mist_low`, see-through (alpha 0.09), both sides. It hangs in sheets at z 0.16 to 0.28, and a party walks through it. Could become your drifting mist | `marsh_mist_a`, `_b` |
+| Landmark centres | `witchhut`, `wisphollow`, `thievesguild`: as before. `plaguepit_*`: still its own centre, with no slab; its wedges are empty too | `variants.LANDMARKS` |
+| Bayou boardwalk | Width unchanged (half 0.52). Planks now follow the bend as trapezoids. Minis stand at z 0.045 | `planks` |
 
-**New own materials:** `wisp_water`, `wisp_pool`, `wisp`, `wisp_green`, `rot_water`, `ooze`, `ooze_bright`, `bayou_water`, `window_green`. **Glow at night:** `wisp`, `wisp_green`, `wisp_pool`, `ooze`, `ooze_bright`, `window_green`, and `toadstool`, `lantern` and `window_glow` as before.
-
-**New effects, at points in the pieces' data:**
-
-| Effect | Where | Meant to be |
-| --- | --- | --- |
-| `mist` | Bog centres and wedges, the Hut | Low drifting mist |
-| `wisp` | Wisp marsh, the Hollow | The small `wisp` shapes drift and brighten at night; they float on purpose |
-| `bubbles` | Rot water, ooze puddles, the Pit | Bubbling |
-| `haze` | Rot swamp, the Pit | Faint green haze |
-| `glow_green`, `smoke_green` | The cauldron, the Hut's stovepipe | Green light and smoke |
-| `glow_pale` | The Hollow's pool | Pale light from the water |
-| `glow_ooze` | The Pit | Yellow-green light from below |
-| `smoke` | The Guild's chimney | As elsewhere |
-
-None of these draw in the previews, apart from chimney smoke.
+**New own material:** `mist_low`. **New colours:** `swamp_bank`, `bog_bank`, `bayou_bank`. Earlier effects stay, now on props: `wisp` on `wisp_light_*`, `bubbles` on `rot_puddle` and `rot_scum`. The rest are as before (Hut, Hollow, Pit, Guild).
 
 ## Triangles against 4,816
 
-| Tile | Busiest centre | Busiest wedge | Worst full tile |
-| --- | --- | --- | --- |
-| Tier 0 | 114 | 320 | 2,034 |
-| Bog/fen | 462 | 542 | 3,714 |
-| Wisp marsh | 314 | 516 | 3,410 |
-| Rot swamp | 176 | 388 | 2,504 |
-| Bayou | 72 | 452 | 2,784 |
-| Witch's Hut | 1,098 | Bog's | 4,350 |
-| Wisp Hollow | 533 | Marsh's | 3,629 |
-| Plague Pit | 1,156 | Its own | 1,540 |
-| Thieves Guild | 1,050 | Bayou's | 3,762 |
+The layer caps each tile at `PROP_BUDGET`, 3,900: water, banks, trails, props and a landmark's piece. Add the slab (412) and that's **4,312**, which leaves about 500 for ground cover. The cap is what's limiting density: busy tiles reach it. The scatter thins evenly when it does.
 
-These don't count base slabs (412) or ground cover. Worst means six of the busiest wedge, which no tile has, as the wedges alternate. The Hut with its slab is 4,762.
+| Tile | Worst in the test, before the slab |
+| --- | --- |
+| Every tile but the Pit | 3,900 at most, the cap |
+| Plague Pit | About 2,500 (no slab) |
+
+Mist overlaps, so its overdraw on phones is worth watching.
 
 ## Checks
 
 | Check | Covers | Result |
 | --- | --- | --- |
-| `test_swamp.py` | Water off routes and rings, in its wedge, crossings fixed and mirrored; walks start at their edge, stay in the tile, avoid the Pit's rim and cut; tilt | 0 failures; steepest walk 25.5° |
-| `check_town.py -- swamp-lands` | 6,156 route lines against everything standing, turned every way; gangways and the Pit's lane under every step, joined at both ends; head room along each way in; loose parts that touch nothing | 0 failures |
+| `test_swamp.py 8` | Random regions, every look. Water off routes and trails, in its tile, stopping at other looks; every shared edge meets; no two tiles' water nearly alike; trails meet edges straight and stray 0.3 or less; props off routes, in the tile, uncrowded; repeatable; budget; landmark walks and tilt | 0 failures; closest water to a route 0.53; steepest walk 25.5° |
+| `check_town.py -- swamp-lands` | Each prop's real reach and triangles against the table; old pieces empty; landmark routes against their pieces; gangways, lane and head room; floating parts | 0 failures |
 | `test_water.py 3` | Unchanged water | 0 failures |
-
-Clearance from everything standing to a route's line: 0.15 in wedges and 0.1 in centres, as the town kits have. **A mini's base is about 1.04 wide, so a party's edge can pass through small props in a tile's middle.** I checked head room only along landmark ways in, and doors by looking.
 
 ## Rough spots
 
-- **Tile middles are plain.** Routes between any two edges leave only gaps about 0.35 from a line. Trees and shacks can't stand there.
-- **Pools repeat.** Every `edge_same` is the same piece, so the pattern shows on big regions, even with `edge_same_b` alternating. It reads strongest on tier 0.
-- **Colours step at an edge** where two swamp variants' water meets.
-- **Wisp channels** kink where they cross an edge (`swamp_wisp_marsh_low_v1`, foreground).
-- **Bayou walkways:** rope-and-plank walkways only run from a shack down to its bank, about 35° and not walked. Shacks aren't joined across edges, because the alternate edge piece is picked per tile, and a half walkway could end in the air. Boardwalks on trails do the joining.
-- **Guild's sign:** it hangs close to where the party stops. It's clear of the walked line, but I checked it only by eye.
-- **Pit:** the lane is hard to read from the default camera when it's on the near side, and the ooze is very bright. The party's stop is out of sight on some turns.
-- **Witch's Hut, Guild:** the stop is at the top of the gangway, not at the door, so minis stay clear of the door and eaves.
+- **Tile middles can only hold so much.** Routes between any two edges criss-cross out to about 2 m from the middle. What's there: flat mud, mist and 24 small gaps (0.2 to 0.35 from a route) for small reeds, toadstools, fungus and crates. **Trees, logs and pools can't stand within about 2 m of the middle without moving routes.**
+- **A party's base overlaps small props in the middle,** as its edge is wider than those gaps. These are soft things, but it's visible.
+- **Pools still favour tile corners,** as that's the room routes leave. Noise and a wobbling edge hide it, but a large region may show it.
+- **Rot swamp's ooze thread** now runs the whole length of each trail. It's bright at map zoom.
+- **Colours and water stop at a change of variant,** rather than blending.
+- **Clearance:** scattered props keep 0.42 or more from any walked line. Trail marks stand 0.16 or more off other routes, and the middle's small things 0.2 or more.
+- **Bayou:** shacks stand only in tile corners, the only room for them, on about 70% of tiles where one fits. Where a side boardwalk joins the main one, plank ends overlap roughly. Shack walkways run from a shack to the bank, about 35°, and aren't walked.
+- **Mist** looks like soft haze at map zoom and more like glass sheets in low views.
+- **Guild's sign, Pit's lane, Hut's stop:** as in round 1.
 
 ## Previews
 
-All in `art/preview/`, with minis except tier 0: `swamp_t0_map_v1`, `_close_v1`. For each of `bog`, `wisp_marsh`, `rot_swamp` and `smugglers_bayou`: `swamp_<variant>_map_v1`, `_turned_v1`, `_landmark_v1`, `_landmark_turned_v1`, `_low_v1`, `_trail_v1`. Re-render: `render_preview.py -- --swamp`.
+All in `art/preview/`, with minis except tier 0: `swamp_t0_map_v2`, `_close_v2`. For each of `bog`, `wisp_marsh`, `rot_swamp` and `smugglers_bayou`: `swamp_<variant>_map_v2`, `_turned_v2`, `_landmark_v2`, `_landmark_turned_v2`, `_low_v2`, `_trail_v2`. Re-render: `render_preview.py -- --swamp`.

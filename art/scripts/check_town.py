@@ -219,29 +219,19 @@ def main():
         kits = ("swamp", "bog", "wisp_marsh", "rot_swamp", "smugglers_bayou")
         wedges = [o for o in objs if o.name.startswith(tuple(k + "_" for k in kits)) and "_edge_" in o.name]
         centres = [o for o in objs if o.name.startswith(tuple(k + "_" for k in kits)) and "_centre" in o.name and "steps" not in o.name]
-        ring_ = [sl.ring_point(k, sl.RING) for k in range(12)]
-        ring_lines = [[ring_[k - 1], ring_[k]] for k in range(12)]
+        props = [objs[n] for n in sl.PROP]
         lines_ = 0
-        for o in wedges + centres:
-            pts = [q for q in standing(o)]
-            for ang in range(6):
-                c, s_ = math.cos(math.radians(60 * ang)), math.sin(math.radians(60 * ang))
-                turned = [Vector((q.x * c - q.y * s_, q.x * s_ + q.y * c)) for q in pts]
-                for line in sd.ROUTES + (ring_lines if o in wedges else []):
-                    lines_ += 1
-                    for a, b in zip(line, line[1:]):
-                        a2, b2 = Vector(a), Vector(b)
-                        hit = next((q for q in turned if seg_dist(q, a2, b2) < (0.15 if o in wedges else CLEAR)), None)
-                        if hit is not None:
-                            bad += 1
-                            print("ROUTE TOUCHES", o.name, tuple(round(c_, 2) for c_ in hit), "on", tuple(round(c_, 2) for c_ in a))
-                            break
-                    else:
-                        continue
-                    break
-                else:
-                    continue
-                break
+        # each prop against the table the wetland places it by: its reach and triangles
+        tri = lambda o_: sum(len(f.vertices) - 2 for f in o_.data.polygons)  # noqa: E731
+        for o in props:
+            reach, _, count = sl.PROP[o.name]
+            far = max((math.hypot(q.x, q.y) for q in standing(o)), default=0.0)
+            if reach and far > reach + 1e-3:
+                bad += 1
+                print("REACHES FURTHER THAN ITS TABLE", o.name, round(far, 2), reach)
+            if tri(o) > count:
+                bad += 1
+                print("MORE TRIANGLES THAN ITS TABLE", o.name, tri(o), count)
         for name in ("witchhut", "wisphollow", "thievesguild", "plaguepit"):
             o = objs[f"{name}_centre"]
             routes = sl.landmark_routes(name, 0)
@@ -283,7 +273,9 @@ def main():
                             print("NO HEAD ROOM", name, tuple(round(c_, 2) for c_ in q), dy, round(loc.z, 2))
                             break
         # floating bits: every loose part touches the ground, or another part
-        for o in wedges + centres + [objs[f"{n}_centre"] for n in ("witchhut", "wisphollow", "thievesguild", "plaguepit")]:
+        for o in props + [objs[f"{n}_centre"] for n in ("witchhut", "wisphollow", "thievesguild", "plaguepit")]:
+            if o.name.startswith("marsh_mist"):
+                continue  # mist hangs in the air
             bm = bmesh.new()
             bm.from_mesh(o.data)
             bm.verts.ensure_lookup_table()
@@ -324,15 +316,15 @@ def main():
                     bad += 1
                     print("FLOATING", o.name, [round(x_, 2) for x_ in boxes[k_]])
             bm.free()
-        # triangles for a full tile: the busiest centre and six of its busiest wedges
-        tri = lambda o_: sum(len(f.vertices) - 2 for f in o_.data.polygons)  # noqa: E731
-        for k_ in kits:
-            cs = [o for o in centres if o.name.startswith(k_ + "_")]
-            ws = [o for o in wedges if o.name.startswith(k_ + "_")]
-            print(k_, "centre", max(map(tri, cs)), "wedge", max(map(tri, ws)), "worst full tile", max(map(tri, cs)) + 6 * max(map(tri, ws)), "budget 4816")
-        for name, k_ in (("witchhut", "bog"), ("wisphollow", "wisp_marsh"), ("thievesguild", "smugglers_bayou"), ("plaguepit", "plaguepit")):
-            ws = [o for o in objs if o.name.startswith(k_ + "_edge_")]
-            print(name, "centre", tri(objs[f"{name}_centre"]), "worst full tile", tri(objs[f"{name}_centre"]) + 6 * max(map(tri, ws)), "top", round(max(v_.co.z for v_ in objs[f"{name}_centre"].data.vertices), 2))
+        for n in ("witchhut", "wisphollow", "thievesguild", "plaguepit"):
+            print(n, "centre", tri(objs[f"{n}_centre"]), "table", sl.LANDMARK_TRIS[n], "top", round(max(v_.co.z for v_ in objs[f"{n}_centre"].data.vertices), 2))
+            if tri(objs[f"{n}_centre"]) > sl.LANDMARK_TRIS[n]:
+                bad += 1
+                print("MORE TRIANGLES THAN ITS TABLE", n)
+        for o in wedges + centres:
+            if len(o.data.polygons):
+                bad += 1
+                print("STILL HOLDS GEOMETRY", o.name)
         print(f"{lines_} route lines")
     if kit == "water":  # round 2: the Serpent's Lair's lines, Meditation Rock's walks and the Troll Bridge's path, against their own pieces
         import itertools

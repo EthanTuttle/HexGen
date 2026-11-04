@@ -4973,6 +4973,7 @@ VARIANTS = {
     "hiddenshrine": ("forest", hidden_shrine, "deep_forest", ("edge_trail",)),
 }
 VARIANTS.update(sl.VARIANTS)
+PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG
 LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
