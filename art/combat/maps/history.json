@@ -631,10 +631,10 @@
  },
  "volcanic_peaks_fissures": {
   "cells": 94,
-  "idea": "Two lava fissures run in from the north corners and nearly meet at the middle of a dark slope. Three ways through: one narrow gap at the centre, the long ways round at each side. A cluster of cones with a crater stands to the south-east.",
+  "idea": "A cone on the high ground to the east pours a river of lava down the middle of the map and off its west edge, between two short fissures to the north. Walk through it and burn, or go the long way round behind the cone.",
   "kind": "terrain",
   "shape": "wide rectangle",
-  "walkable": 76
+  "walkable": 84
  },
  "volcanic_peaks_ledge": {
   "cells": 50,
