@@ -1789,6 +1789,9 @@ if __name__ == "__main__":
                     d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (vr.LANDMARKS[lm], lm)), LANDMARK_AT)
                     look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
                     shot(f"village_{lm}_closeup")
+                if stem == "village_scholars":
+                    look(hk.tile_position(*max(t for t, n in tiles_map.items() if n == "scholars_town")), -math.pi / 2, 17, math.radians(40))
+                    shot("village_scholars_close")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no

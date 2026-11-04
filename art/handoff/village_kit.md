@@ -11,7 +11,7 @@ This kit holds tier 0 villages with the street layout, market towns with the Tra
   - **Market town:** `village_market_map_v2.png`, `village_market_paths_v1.png`, `village_tradinghouse_closeup_v2.png`.
   - **Fortified town:** `village_fortified_map_v3.png`, `village_fortified_paths_v3.png`, `village_fortified_12_map_v2.png`, `village_fortified_join_map_v3.png`, `village_keep_closeup_v3.png`, and the Keep alone: `village_keep_alone_{front,corner,side,back,map,low}_v1.png`.
   - **Slums:** `village_slums_map_v3.png`, `village_slums_paths_v3.png`, `village_blackmarket_closeup_v3.png`. The ground options Ethan chose from: `village_slums_ground_{tan,clay,dun}_{map,closeup}_v1.png`. He picked tan.
-  - **Scholars' town:** `village_scholars_map_v1.png`, `village_scholars_paths_v2.png`, `village_college_closeup_v1.png`.
+  - **Scholars' town (tiles_v69, not yet approved):** `village_scholars_map_v3.png`, `village_scholars_close_v2.png`, `village_college_closeup_v2.png`. Before, on tiles_v68: `village_scholars_map_v2.png`, `village_scholars_close_v1.png`. Routes unchanged: `village_scholars_paths_v2.png`.
 - **In the previews, smoke is a stand-in** (`render_preview.draw_effects`, `thin=True`). The engine draws its own.
 
 ## Streets: `art/scripts/village_streets.py`
@@ -55,7 +55,7 @@ Reference: `art/scripts/render_preview.py` → `build_map`.
 
 ## Pieces
 
-`village`, `market_town` and `fortified_town` sit on `base_village` with `cobble` ground, `slums` with `mud_ground` and `scholars_town` with `pale_paving`. Triangle counts are per piece.
+`village`, `market_town` and `fortified_town` sit on `base_village` with `cobble` ground, `slums` with `mud_ground` and `scholars_town` with `lawn`. Triangle counts are per piece.
 
 | Kit | Centres | Street wedges | Other wedges |
 | --- | --- | --- | --- |
@@ -63,7 +63,7 @@ Reference: `art/scripts/render_preview.py` → `build_map`.
 | `market_town` | centre 804, centre_b 756, centre_near 1,284 | edge_same 400, edge_side 204, edge_trail 576 | edge_block 144, edge_block_lm 100, edge_other 236, edge_other_lm 192, edge_gate 416 |
 | `fortified_town` | centre 504, centre_b 508, centre_mid 764, centre_near 1,168 | edge_same 176, edge_side 176, edge_trail 352 | edge_block 72, edge_block_lm 52, edge_other 248, edge_other_lm 228, edge_gate 524, border_join_l / _r 96 |
 | `slums` | centre 954, centre_b 906, centre_near 820 | edge_same 368, edge_side 260, edge_trail 392 | edge_block 190, edge_block_lm 100, edge_other 410, edge_other_lm 352, edge_gate 336 |
-| `scholars_town` | centre 536, centre_b 596, centre_near 604 | edge_same 176, edge_side 156, edge_trail 292 | edge_block 120, edge_block_lm 140, edge_other 212, edge_other_lm 192, edge_gate 396 |
+| `scholars_town` | centre 1,524, centre_b 1,600, centre_near 1,532 | edge_same 244, edge_side 244, edge_trail 396 | edge_block 424, edge_block_lm 344, edge_other 272, edge_other_lm 192, edge_gate 316 |
 
 | Landmark | On | Triangles |
 | --- | --- | --- |
@@ -83,7 +83,7 @@ Reference: `art/scripts/render_preview.py` → `build_map`.
 | `market_town` | stalls thicken round the square and line the street |
 | `fortified_town` | smithies, armouries, supply wagons, barrels, hay and stables thicken; no flags or poles inside, only banners on the outer walls and flags on the Keep |
 | `slums` | red lantern posts and strings along the street |
-| `scholars_town` | statues and hedges line the street, courts thicken and towers thin out so the dome stands out |
+| `scholars_town` | clipped hedges and statues line the walk, quads thicken and towers thin out so the dome stands out. From tiles_v69 it follows the approved combat maps: mown lawn, pale walks (`quad_paving`), towers joined to a hall or at a cloister's head, little quads; `edge_block` paves to the edge, so two meet as one long quad. New colours: `quad_paving`, `flagstone`, `flower_red`, `flower_yellow`, `paint_blue`, `paint_teal`, `paint_green`, `paint_red`. Streets, routes and the wedge rules are unchanged |
 
 **Phone budget:** a typical market town tile is about 2,600 triangles, the busiest common kit. The worst case is a market town near tile with six trail edges, 4,740, just under deep forest's 4,816. That needs every neighbour's trail to pass through one tile, so it should be rare. Each tile is still seven pieces (eight or more with joins), so draw calls don't change, but towns have far more buildings than other terrain, so a big town is worth a phone run.
 
