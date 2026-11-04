@@ -461,6 +461,27 @@
   "shape": "small hex",
   "walkable": 24
  },
+ "plains_shelf": {
+  "cells": 69,
+  "idea": "A low grassy shelf across the north, walkable on top, with a way up at each end. The foes hold it and look down on open grass with a few trees and rocks to cross.",
+  "kind": "terrain",
+  "shape": "big oval",
+  "walkable": 63
+ },
+ "plains_stones": {
+  "cells": 77,
+  "idea": "Wide grass with two big boulders and scattered rocks standing in it. Long clear lines between them: the boulders are the only real cover, so a fight moves from one to the next.",
+  "kind": "terrain",
+  "shape": "wide rectangle",
+  "walkable": 65
+ },
+ "plains_trees": {
+  "cells": 37,
+  "idea": "A small patch of open grass round a pair of trees, a lone tree and a couple of rocks. Close and quick, with only a little to step behind.",
+  "kind": "terrain",
+  "shape": "small hex",
+  "walkable": 32
+ },
  "raided_farms_barns": {
   "cells": 121,
   "idea": "A burnt farm spread wide: charred barns, one left standing, small fires and a block of trampled crop in the middle. Big obstacles far apart, with long open runs between.",

@@ -38,9 +38,47 @@ fm.WALKABLE += "n"
 LINE_WALLS = {"battlefield", "tourney_fields"}  # L runs along any line of cells in these, and is a fallen trunk elsewhere
 BANDITS = {"w": "enemy_bandit_melee", "x": "enemy_bandit_ranged", "v": "enemy_bandit_elite", "W": "enemy_bandit_melee", "X": "enemy_bandit_ranged", "V": "enemy_bandit_elite"}
 UNDEAD = {"w": "enemy_skeleton", "x": "enemy_ghost", "v": "enemy_skeleton_elite", "X": "enemy_ghost", "W": "enemy_skeleton"}
-TURNED = {"meadows_tents", "battlefield_palisade", "stormy_plains_outcrop", "tourney_fields_lists"}
+TURNED = {"plains_trees", "plains_stones", "plains_shelf", "meadows_tents", "battlefield_palisade", "stormy_plains_outcrop", "tourney_fields_lists"}
 
 MAPS = {
+    "plains_trees": {"size": "small hex", "foes": BANDITS, "idea": "A small patch of open grass round a pair of trees, a lone tree and a couple of rocks. Close and quick, with only a little to step behind.", "plan": """
+   .   
+  x .  
+ . v . 
+. . w .
+ . R . 
+. . . T
+ G . . 
+G . . ,
+ . c . 
+. . . R
+ . . . 
+  h k  
+   s   """},
+    "plains_stones": {"size": "wide rectangle", "foes": BANDITS, "idea": "Wide grass with two big boulders and scattered rocks standing in it. Long clear lines between them: the boulders are the only real cover, so a fight moves from one to the next.", "plan": """
+. . T . . . v . .
+ . . . B . . w . 
+. R . B . . . . x
+ . . . B . . R . 
+. c . . . T . B .
+ . . R . . . B . 
+T . . . , . . B .
+ . . . c . . . . 
+. h . k . s . . ."""},
+    "plains_shelf": {"size": "big oval", "foes": BANDITS, "idea": "A low grassy shelf across the north, walkable on top, with a way up at each end. The foes hold it and look down on open grass with a few trees and rocks to cross.", "plan": """
+    H H H    
+   H H V H   
+  H X H W .  
+ ^ H . . ^ . 
+T . . R . . .
+ . c . . . c 
+. . T . . . .
+ . . . . . G 
+. R . . . . G
+ . . c . . . 
+  . , . . .  
+   . h k .   
+    . s .    """},
     "meadows_herds": {"size": "wide oval", "idea": "Wide open grass with nothing to hide behind but herds, lone trees and drifts of tall flowers. Ranged shine here; the herds are the only walls.", "plan": """
   . . T . . v . .  
  . D . . . . w . . 
@@ -377,6 +415,7 @@ def make_sheets():
         fm.sheet([f"plains_map_{n}" for n in MAPS if n.startswith(v)], f"plains_maps_{v}")
     fm.sheet([f"plains_map_{n}_turned" for n in MAPS if n in TURNED], "plains_maps_turned", 2)
     fm.sheet([f"plains_map_{n}" for n in MAPS], "plains_maps_all", 3)
+    fm.sheet([stem for n in ("plains_trees", "plains_stones", "plains_shelf") for stem in ("plains_t0", f"plains_map_{n}", f"plains_map_{n}_turned")], "plains_maps_plains_beside_tile", 3)
 
 
 def kit_sheet(t, col):

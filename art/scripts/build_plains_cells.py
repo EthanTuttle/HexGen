@@ -20,13 +20,13 @@ import build_forest_cells as fc  # noqa: E402
 import hexkit as hk  # noqa: E402
 import variants as vr  # noqa: E402
 
-VARIANTS = ["meadows", "battlefield", "stormy_plains", "tourney_fields"]
-GROUND = {"meadows": "plains", "battlefield": "steppe", "stormy_plains": "stormy", "tourney_fields": "mown"}
-BARE = {"meadows": "camp_earth", "battlefield": "war_earth", "stormy_plains": "scorch_earth", "tourney_fields": "arena_sand"}
-TUFT = {"meadows": "grass_ink", "battlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "tourney_fields": "grass_ink"}
-fc.ROCK.update({"meadows": ("rock", "rock_dark", "grass_ink"), "battlefield": ("war_earth", "rock_shade", "tuft_steppe"),
+VARIANTS = ["plains", "meadows", "battlefield", "stormy_plains", "tourney_fields"]
+GROUND = {"plains": "plains", "meadows": "plains", "battlefield": "steppe", "stormy_plains": "stormy", "tourney_fields": "mown"}
+BARE = {"plains": "camp_earth", "meadows": "camp_earth", "battlefield": "war_earth", "stormy_plains": "scorch_earth", "tourney_fields": "arena_sand"}
+TUFT = {"plains": "grass_ink", "meadows": "grass_ink", "battlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "tourney_fields": "grass_ink"}
+fc.ROCK.update({"plains": ("rock", "rock_dark", None), "meadows": ("rock", "rock_dark", "grass_ink"), "battlefield": ("war_earth", "rock_shade", "tuft_steppe"),
                 "stormy_plains": ("rock_wet", "rock_wet_dark", None), "tourney_fields": ("rock", "rock_dark", "grass_ink")})
-fc.BARK.update({"meadows": "trunk", "battlefield": "trunk_old", "stormy_plains": "char", "tourney_fields": "trunk"})
+fc.BARK.update({"plains": "trunk", "meadows": "trunk", "battlefield": "trunk_old", "stormy_plains": "char", "tourney_fields": "trunk"})
 ZERO = Vector((0, 0, 0))
 SINGLE, LINE3, TRIANGLE, FLOWER7 = [(0, 0)], fc.LINE3, fc.TRIANGLE, fc.FLOWER7
 
@@ -43,7 +43,9 @@ def mean(cells):
 
 
 def litter(p, rng, v):
-    if v == "meadows":  # a drift of flowers, flat, in a few soft colours
+    if v == "plains":  # a few small flowers, as the tile's ground cover
+        flower_drift(p, rng, "flower_soft_b", "flower_soft_c")
+    elif v == "meadows":  # a drift of flowers, flat, in a few soft colours
         fc.patch(p, rng, Vector((-0.05, 0.05, 0)), 0.3, "flower_soft_a")
         flower_drift(p, rng, "flower_soft_b", "flower_soft_c")
     elif v == "battlefield":
@@ -262,6 +264,7 @@ def rope_ring(p, rng):
 
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_plains_maps.py reads this.
 KIT = {
+    "plains": {},
     "meadows": {
         "D": ("herd_3", TRIANGLE, lambda p, r: herd(p, r, TRIANGLE)),
         "N": ("tent", SINGLE, lambda p, r: vr.felt_tent(p, r, ZERO, 0.46, Vector((0, -1, 0)))),
@@ -321,11 +324,16 @@ def build():
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
         for cells in (fc.LINE2, LINE3):
             fc.obstacle(col, f"ob_{v}_log_{len(cells)}", cells, lambda p, r, v=v, cells=cells: fc.fallen_log(p, r, v, cells))
-        if v != "stormy_plains":
+        if v == "plains":  # the tile's lone trees: dark pines and round broadleaves
+            for j, k in enumerate("abc"):
+                fc.obstacle(col, f"ob_{v}_tree_{k}", SINGLE, lambda p, r, j=j: fc.full_tree(p, r, "forest", ZERO, j))
+        elif v != "stormy_plains":
             for k in "abc":
                 fc.obstacle(col, f"ob_{v}_tree_{k}", SINGLE, lambda p, r: broad_tree(p, r, ZERO))
         for cells in (fc.LINE2, TRIANGLE):
             maker = (lambda p, r, cells=cells: [split_big(p, r, c) for c in fc.centres(cells)]) if v == "stormy_plains" else (lambda p, r, cells=cells: [broad_tree(p, r, c) for c in fc.centres(cells)])
+            if v == "plains":
+                maker = lambda p, r, cells=cells: [fc.full_tree(p, r, "forest", c, k) for k, c in enumerate(fc.centres(cells))]  # noqa: E731
             fc.obstacle(col, f"ob_{v}_grove_{len(cells)}", cells, maker)
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)

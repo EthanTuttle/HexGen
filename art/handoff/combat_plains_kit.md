@@ -1,8 +1,8 @@
-# Combat plains kit hand-off (combat_plains_v7, combat_maps_plains_v9)
+# Combat plains kit hand-off (combat_plains_v8, combat_maps_plains_v10)
 
-Twelve custom plains combat maps, three per variant, with their cell and prop kit. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest kit: see [combat_forest_kit.md](combat_forest_kit.md).
+Fifteen custom plains combat maps, three per variant including plain plains (tier 0), with their cell and prop kit. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest kit: see [combat_forest_kit.md](combat_forest_kit.md).
 
-- **Models:** `art/export/combat_plains.glb` (from `art/combat/combat_plains_v7.blend`), `art/export/combat_maps_plains.glb` (`art/combat/combat_maps_plains_v9.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_plains.glb` (from `art/combat/combat_plains_v8.blend`), `art/export/combat_maps_plains.glb` (`art/combat/combat_maps_plains_v10.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_plains.json`, the same format as `combat_maps.json`. `variant` is `meadows`, `battlefield`, `stormy_plains` or `tourney_fields`. Pieces come from `combat_plains.glb` or, for names starting `map_`, `combat_maps_plains.glb`.
 - **Scripts:** `art/scripts/build_plains_cells.py`, `art/scripts/render_plains_maps.py` (the plans, in readable text). It reuses the checks and export in `render_forest_maps.py`.
 - **Previews:** catalogue and current images `art/combat/maps/README.md`; sheet `art/preview/plains_maps_all_v9.png`, `plains_maps_<variant>_v7.png`, `plains_maps_turned_v7.png`, props `plains_obstacles_v6.png`.
@@ -25,6 +25,10 @@ Palisades (battlefield) and tilt barriers (tourney) are `map_` pieces, one per c
 The maps, their shapes, sizes and ideas are in `art/combat/maps/README.md`, generated from the JSON. Triangles without minis run 1,892 to 6,834; the worst cell shows from 3 of 12 angles.
 
 Three maps per variant, as `design/07` sets it, differing in shape and size; plains have no drawn paths, so no path maps. Only the landmark structures themselves are saved for landmark fights (07); generic props near landmarks are fine. On no map yet: `fire`, `collapsed_7`, `spire_7`. All are at least 5.5 cells deep. Herds are plain obstacles (Ethan, Nov 2, 2026). Wreckage, graves, dummies and the rest count as obstacles in the plans, which nobody has decided. Enemy mixes are samples.
+
+## Plain plains (tier 0, in review)
+
+`plains_trees`, `plains_stones` and `plains_shelf`, `variant` `plains`, with the same piece names as the other variants. The kit's `plains` has no props of its own: trees are the tile's mix of pines and broadleaves, plus rocks, boulders and stumps. The tile has no drawn roads, so there's no path map. To judge on the phone, walkable cells seen from the default camera: Trees 28 of 32, Stones 61 of 65, Shelf 59 of 63.
 
 ## Not done
 
