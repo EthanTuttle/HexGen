@@ -225,30 +225,32 @@ c . . L . L . . .
 . O . . c . . M M
  . . . . . . . M 
 . . h . k s . . O"""},
-    "volcanic_peaks_crater": {"size": "big hex", "foes": UNDEAD, "hill": (("north", 5),),
-                              "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with stairs at either end and a lava fissure on its east. The fight goes round it.", "plan": """
-    v .    
+    "volcanic_peaks_crater": {"size": "big hex", "foes": UNDEAD, "hill": (),
+                              "rows": {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 2, 9: 2, 10: 1, 11: 1, 12: 1, 13: 0, 14: 0}, "lift": {"1": 4, "2": 7, "H": 10},
+                              "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with a gradual lift at either end and a lava fissure on its east. The fight goes round it.", "plan": """
+    . .    
    w . .   
   x . . .  
- O . . . c 
+ v O . . c 
 . . . . L .
  . . M . L 
-^ . M M . L
+2 . M M . L
  H . M . . 
 H H M M . .
- H ^ M . O 
-. . . . . .
- . , . . c 
-  . h . k  
-   . s .   
+ 2 M M . O 
+H 1 . . . h
+ . , . c s 
+  . . . k  
+   . . .   
     . .    """},
-    "volcanic_peaks_ledge": {"size": "small rectangle", "foes": UNDEAD, "hill": (("north", 3),), "cliff": 14,
-                             "idea": "A wall of stacked basalt streaked with lava across the north, a sheer ledge under it with two stairs down, one lava fissure on the slant below. Small, close and hot.", "plan": """
+    "volcanic_peaks_ledge": {"size": "small rectangle", "foes": UNDEAD, "hill": (), "cliff": 14,
+                             "rows": {0: 3, 1: 3, 2: 3, 3: 3, 4: 3, 5: 2, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0}, "lift": {"1": 5, "2": 8},
+                             "idea": "A wall of stacked basalt streaked with lava across the north, a sheer ledge under it with two gradual lifts down, one lava fissure on the slant below. Small, close and hot.", "plan": """
 K K K K K
  K K K K 
-H H W H H
- H V H H 
-H ^ H ^ .
+H H H H H
+ H 2 2 H 
+V 1 W 1 .
  . . . . 
 . . . . O
  . . L . 
@@ -546,6 +548,7 @@ def peak_cluster(p, rng, v, group, z, ground):
         base = z[c]
         phases = [rng.uniform(0, 6.3) for _ in range(4)]
         crater = look.get("crater") and rank == 0
+        top_share = 0.36 if crater else shares[0]  # a crater's mouth is wide enough to see into from the map's camera
 
         def wobble(th, k):
             return 0.16 * math.sin((2 + k) * th + phases[k]) + 0.1 * math.sin((5 + k) * th + phases[k + 2])
@@ -564,19 +567,19 @@ def peak_cluster(p, rng, v, group, z, ground):
                 if not all(inside(at + foot[j].lerp(foot[m], t)) for t in (0.2, 0.4, 0.6, 0.8)):
                     foot[j], foot[m] = foot[j] * 0.85, foot[m] * 0.85
         rings = []
-        for k, share in enumerate(shares):
+        for k, share in enumerate((top_share, 0.55 if crater else shares[1], *shares[2:])):
             ring = []
             for j in range(n):
                 th = 2 * math.pi * j / n
                 q = at + foot[j] * share
                 if share < 1:
-                    drop = (1 - share) ** 1.25 * (1 + 1.2 * wobble(th + k, 1))
+                    drop = ((1 - share) / (1 - top_share)) ** 1.25 * (1 + (0.3 if crater and k == 0 else 1.2) * wobble(th + k, 1))
                     ring.append(p.bm.verts.new(q + Vector((0, 0, base + h * drop))))
                 else:
                     ring.append(p.bm.verts.new(q + Vector((0, 0, ground(q) - 0.1))))
             rings.append(ring)
         if crater:
-            inner = [p.bm.verts.new(q.co.lerp(Vector((at.x, at.y, q.co.z)), 0.5) - Vector((0, 0, 0.16))) for q in rings[0]]
+            inner = [p.bm.verts.new(q.co.lerp(Vector((at.x, at.y, q.co.z)), 0.25) - Vector((0, 0, 0.2))) for q in rings[0]]
             p.bm.faces.new(inner).material_index = p._slot("lava")
             for j in range(n):
                 m = (j + 1) % n
@@ -598,9 +601,10 @@ def peak_cluster(p, rng, v, group, z, ground):
                     p.bm.faces.new(tri).material_index = p._slot(mat)
         if look.get("crater"):  # lava down its sides, from the top ring
             for j in rng.sample(range(n), 2 if crater else 1):
-                u, w = rings[0][j].co, rings[2][j].co
-                off = (u - Vector((at.x, at.y, u.z))).normalized() * 0.04
-                vr.frustum(p, u + off, w + off, 0.06, 0.02, "lava", segments=3)
+                for k in range(2):  # ring by ring, so it follows the hollow of the side rather than standing off it
+                    u, w = rings[k][j].co, rings[k + 1][j].co
+                    off = (u - Vector((at.x, at.y, u.z))).normalized() * 0.04
+                    vr.frustum(p, u + off, w + off, 0.06 - 0.02 * k, 0.04 - 0.02 * k, "lava", segments=3)
 
 
 def line_wall(col, v, group, ground):
@@ -781,7 +785,8 @@ def make_sheets():
     # The tiles beside the maps, tile, front, turned on each row
     for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),
                            ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp")),
-                           ("snowy_peaks", "hills_snowy_7_raised", ("snowy_peaks_pass", "snowy_peaks_lake", "snowy_peaks_shelf"))):
+                           ("snowy_peaks", "hills_snowy_7_raised", ("snowy_peaks_pass", "snowy_peaks_lake", "snowy_peaks_shelf")),
+                           ("volcanic_peaks", "hills_volcanic_7_raised", ("volcanic_peaks_fissures", "volcanic_peaks_crater", "volcanic_peaks_ledge"))):
         fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
 
 

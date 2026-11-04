@@ -624,10 +624,10 @@
  },
  "volcanic_peaks_crater": {
   "cells": 67,
-  "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with stairs at either end and a lava fissure on its east. The fight goes round it.",
+  "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with a gradual lift at either end and a lava fissure on its east. The fight goes round it.",
   "kind": "terrain",
   "shape": "big hex",
-  "walkable": 55
+  "walkable": 54
  },
  "volcanic_peaks_fissures": {
   "cells": 94,
@@ -638,7 +638,7 @@
  },
  "volcanic_peaks_ledge": {
   "cells": 50,
-  "idea": "A wall of stacked basalt streaked with lava across the north, a sheer ledge under it with two stairs down, one lava fissure on the slant below. Small, close and hot.",
+  "idea": "A wall of stacked basalt streaked with lava across the north, a sheer ledge under it with two gradual lifts down, one lava fissure on the slant below. Small, close and hot.",
   "kind": "terrain",
   "shape": "small rectangle",
   "walkable": 36

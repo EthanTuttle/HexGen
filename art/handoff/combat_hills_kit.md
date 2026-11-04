@@ -1,19 +1,18 @@
-# Combat hills kit hand-off (combat_hills_v5, combat_maps_hills_v6)
+# Combat hills kit hand-off (combat_hills_v5, combat_maps_hills_v7)
 
-Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and stairs replace the forest kit's ways up, on these maps only.
+Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and lifts replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v5.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v6.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v5.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v7.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
-- **Previews:** `art/preview/hills_maps_all_v11.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Highlands v12, Snowy v12, the rest v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v2.png`; props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
+- **Previews:** `art/preview/hills_maps_all_v11.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Highlands v12, Snowy v12, Volcanic v11, the rest v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v2.png`, `hills_maps_volcanic_peaks_beside_tile_v1.png`; props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
 
 ## Heights in the data
 
 - **Cells:** `z` is the cell's level height, in steps of 0.15, left out when 0. A cell is always level.
 - **Placements:** `z` is on every placed piece that isn't at 0: glb position = (x, z, -y). `map_` pieces are already in place, at (0, 0, 0).
 - **Starts:** `z` is the cell's height.
-- **Stairs:** a cell with `way_up: true` also has `low` and `high`, each `[q, r]`, the two cells it joins, on opposite sides. Its `z` is halfway between them. This differs from the forest kit's way up, which has steps on every side and no `low` or `high`.
 - **Blocked cells** have a `z` too, the top of what stands there: on a stack of hex cells (`K` in a plan), up to 3.60 above the map's lowest cell.
 
 ## How a map's heights can be walked
@@ -23,13 +22,20 @@ The reach check (`check_hill`) stops any plan that breaks these, on all 16 maps:
 | Between two walkable neighbours | What it is | Rule (design/03) |
 |---|---|---|
 | A height gap of up to 0.45 | A step on the slope | An ordinary move, costing 1, or 2 going up by 0.3 or more. Smaller rises and going down cost 1. Whole numbers; a placeholder |
-| A gap of at least 0.9 | A sheer rise | Can't be crossed, except by way of stairs |
+| A gap of at least 0.9 | A sheer rise | Can't be crossed; a lift goes round it |
 | Anything between | Doesn't occur | The check refuses it |
-| Stairs | `low` to the stairs to `high`, and back | Two ordinary moves, with no separate action: each costs 2 going up and 1 going down, so a whole flight costs 4 up and 2 down. Side neighbours don't connect |
 
-**Lifts:** `snowy_peaks_shelf` has no stairs. Its ways through the cliff are lifts: ordinary cells climbing 0.45 each, joined by the slope rule above, with no extra fields. Two from the south rise 1.8 in 4 moves (3 lift cells, 8 to climb, 4 down); one from the north rises 1.35 in 3 moves (2 lift cells, 6 to climb, 3 down). Cells beside a lift stay sheer, so each is one cell wide through the cliff.
+**Lifts:** the maps' ways through a cliff are lifts: ordinary cells climbing 0.45 each, joined by the slope rule above, with no extra fields. Cells beside a lift stay sheer, so each is one cell wide through the cliff.
 
-**High ground:** a bonus needs a full step up, 0.9 or more between the two cells' `z` (design/03). Across a sheer rise it always holds, and on a long slope it can build up over several cells. Only `volcanic_peaks_crater` and `volcanic_peaks_ledge` still have stairs (4 in all); they get lifts when the Volcanic set is reached.
+| Map | Way | Rise | Moves | Lift cells | To climb | Down |
+|---|---|---|---|---|---|---|
+| `snowy_peaks_shelf` | South (two) | 1.8 | 4 | 3 each | 8 | 4 |
+| `snowy_peaks_shelf` | North (one) | 1.35 | 3 | 2 | 6 | 3 |
+| `volcanic_peaks_crater` | South (one) | 1.35 | 3 | 2 | 6 | 3 |
+| `volcanic_peaks_crater` | North (one) | 0.9 | 2 | 1 | 4 | 2 |
+| `volcanic_peaks_ledge` | Two | 1.35 | 3 | 2 each | 6 | 3 |
+
+**High ground:** a bonus needs a full step up, 0.9 or more between the two cells' `z` (design/03). Across a sheer rise it always holds, and on a long slope it can build up over several cells. 
 
 ## Pieces
 
@@ -45,7 +51,7 @@ As in the plains kit: `cell_<v>_ground_a/b/c`, `_floor`, `_cover`, `_litter`, `_
 
 `ob_highlands_banner` stands on one blocked cell of its own, or on stacked rock on `highlands_scarp`, so it takes no walkable cell there. Turned 45° in the map so both cloths show from the default camera.
 
-Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `stairs_*`, `lift_steps` (three long steps on every 0.45 rise that touches a lift cell, on the lower cell's edge, as on the forest's ways up: they cover up to 0.26 of that cell's edge at up to 0.34 high, so a mini's base clips them and a cell highlight needs to draw over them), `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
+Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `lift_steps` (three long steps on every 0.45 rise that touches a lift cell, on the lower cell's edge, as on the forest's ways up: they cover up to 0.26 of that cell's edge at up to 0.34 high, so a mini's base clips them and a cell highlight needs to draw over them), `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
 
 **Effects:** `lava` is the tiles' own material, meant to glow and pulse. Smoke from craters, as on the tiles, isn't in the pieces and would be an engine effect.
 
@@ -59,8 +65,8 @@ Peaks hide more cells from the default camera. Ethan accepts this for now and wi
 
 | Map | Seen | Map | Seen |
 |---|---|---|---|
-| `hills_shoulder` | 58 of 71 | `volcanic_peaks_fissures` | 72 of 76 |
-| `hills_saddle` | 39 of 43 | `volcanic_peaks_crater` | 46 of 55 |
+| `hills_shoulder` | 58 of 71 | `volcanic_peaks_fissures` | 70 of 76 |
+| `hills_saddle` | 39 of 43 | `volcanic_peaks_crater` | 43 of 54 |
 | `hills_crags` | 38 of 57 | `volcanic_peaks_ledge` | 36 of 36 |
 | `highlands_moor` | 72 of 80 | `monastery_heights_gardens` | 56 of 57 |
 | `highlands_knoll` | 29 of 30 | `monastery_heights_walled` | 20 of 23 |
