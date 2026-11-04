@@ -54,6 +54,8 @@ NEIGHBOURS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
 GROUPED = {"G": "grove", "L": "log", "B": "boulder_3", "F": "mushrooms_3", "E": "hollow_3", "Z": "thicket_3", "Q": "great_7", "U": "roots_3"}
 SINGLE = {"T": "tree", "O": "stump", "S": "stone"}
 RAISED, RAMPS = "HWVX", "^"
+RAISED_PATHS = {}  # a raised mark -> the colour of its cell, for a stone path that goes on up a way up
+STREAKS = {}  # a variant -> the colour of bright streaks down its cliff faces
 RAISED_HEIGHT, CLIFF_HEIGHT = 0.9, 2.0
 HALF = RAISED_HEIGHT / 2  # a way up's landing
 LANDING = 0.46  # from a way up's middle to its landing's edge; a base's flat side is at 0.45
@@ -684,7 +686,7 @@ def notched_cells(t, col, v, cells):
             d = (at - way).normalized()
             outline = clipped(outline, d, way.dot(d) + FLIGHTS["up"][-1][0])
         p = hk.Piece(f"notched_{c}")
-        p.prism([q + Vector((0, 0, 0)) for q in outline], RAISED_HEIGHT - 0.08, RAISED_HEIGHT, f"cell_{v}_{tint}", side_mat=fc.ROCK[v][0])
+        p.prism([q + Vector((0, 0, 0)) for q in outline], RAISED_HEIGHT - 0.08, RAISED_HEIGHT, RAISED_PATHS.get(mark, f"cell_{v}_{tint}"), side_mat=fc.ROCK[v][0])
         p.finish(col)
 
 
@@ -699,13 +701,16 @@ def shaped_piece(col, v, group, mark):
     layers = [(0, 0.0, 0.0, 0.0), (1, 0.1, 0.26, 0.03), (2, 0.2, 0.33, 0.015), (3, 0.17, 0.6, 0.03), (4, 0.27, 0.67, 0.015), (5, 0.25, 0.95, 0.06)]
     rings = [rock_ring(p, rng, loop, smooth, inset, h * z, h * jag) for smooth, inset, z, jag in layers]
     n = len(loop)
+    streak = STREAKS.get(v)
+    hot = {k for k in range(n) if streak and rng.random() < 0.13}
     for band, (a, b) in enumerate(zip(rings, rings[1:])):
         for k in range(n):
             m = (k + 1) % n
             pair = ((a[k], a[m], b[m]), (a[k], b[m], b[k])) if rng.random() < 0.5 else ((a[k], a[m], b[k]), (a[m], b[m], b[k]))
             for tri in pair:
                 # Ledges take the darker rock and faces mostly the lighter, so the layers show.
-                p.bm.faces.new(tri).material_index = p._slot(side if band % 2 or rng.random() < 0.3 else main)
+                mat = side if band % 2 or rng.random() < 0.3 else main
+                p.bm.faces.new(tri).material_index = p._slot(streak if k in hot else mat)
     # The top: one flat surface over the whole obstacle, meeting the jagged rim in a short slope.
     rim, plateau = rings[-1], rock_ring(p, rng, loop, 6, 0.36, h * 0.98, 0.0)
     for k in range(n):

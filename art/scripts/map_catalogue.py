@@ -18,7 +18,8 @@ MAPS = os.path.join(ART, "combat", "maps")
 PREVIEW = os.path.join(ART, "preview")
 HISTORY = os.path.join(MAPS, "history.json")
 TERRAINS = (("Forest", "combat_maps.json", "forest_map_"), ("Plains", "combat_maps_plains.json", "plains_map_"),
-            ("Farmland", "combat_maps_farmland.json", "farmland_map_"), ("Village", "combat_maps_village.json", "village_map_"))
+            ("Farmland", "combat_maps_farmland.json", "farmland_map_"), ("Village", "combat_maps_village.json", "village_map_"),
+            ("Hills", "combat_maps_hills.json", "hills_map_"))
 
 
 def keep_image(prefix, name):

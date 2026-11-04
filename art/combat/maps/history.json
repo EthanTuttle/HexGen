@@ -314,6 +314,48 @@
   "shape": "rectangle",
   "walkable": 84
  },
+ "highlands_knoll": {
+  "cells": 37,
+  "idea": "A small round knoll inside a ring of cairns, its top held from the start. Short walk, two long flights, and nowhere far from the top.",
+  "kind": "terrain",
+  "shape": "small hex",
+  "walkable": 33
+ },
+ "highlands_moor": {
+  "cells": 95,
+  "idea": "An open moor of heather round one big bare mountain, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.",
+  "kind": "terrain",
+  "shape": "wide oval",
+  "walkable": 82
+ },
+ "highlands_scarp": {
+  "cells": 91,
+  "idea": "A cliff fills the north-west corner, and a raised shelf of grass and bare rock runs down under it on the slant. Two long flights, and a low ridge to get behind on the way.",
+  "kind": "terrain",
+  "shape": "rectangle",
+  "walkable": 65
+ },
+ "hills_crags": {
+  "cells": 77,
+  "idea": "Up a long slope between two ridges set on the slant, an S to walk, to a raised brow across the top with two flights up.",
+  "kind": "terrain",
+  "shape": "tall rectangle",
+  "walkable": 68
+ },
+ "hills_saddle": {
+  "cells": 61,
+  "idea": "Two grassy knolls with a saddle between them. The straight way runs up the saddle under both; each knoll has its own long flight from the south and a shot down the middle.",
+  "kind": "terrain",
+  "shape": "medium hex",
+  "walkable": 55
+ },
+ "hills_shoulder": {
+  "cells": 94,
+  "idea": "A long grassy shoulder of raised ground along the north, two long flights up its south side. A ridge and a mountain break up the slope below, so climbing means picking a side first.",
+  "kind": "terrain",
+  "shape": "wide rectangle",
+  "walkable": 83
+ },
  "market_town_aisles": {
   "cells": 85,
   "idea": "Two long rows of stalls across the map, with crates and carts closing the gaps, one row open at its east end and one at its west. Long runs along them, and a way across only at the end of each row.",
@@ -369,6 +411,34 @@
   "kind": "terrain",
   "shape": "tall rectangle",
   "walkable": 67
+ },
+ "monastery_heights_climb": {
+  "cells": 77,
+  "idea": "A stone path zigzags up the map between low walls, climbs a long flight onto a raised terrace and goes on across it. The path is the quick way; a second flight to the east comes up behind the top.",
+  "kind": "path",
+  "shape": "tall rectangle",
+  "walkable": 66
+ },
+ "monastery_heights_gardens": {
+  "cells": 78,
+  "idea": "A raised terrace at the north, herb gardens in staggered rows below it, and two low walls closing in toward the middle. The gardens block: walk the rows or go through the gap.",
+  "kind": "terrain",
+  "shape": "rectangle",
+  "walkable": 61
+ },
+ "monastery_heights_ridge": {
+  "cells": 95,
+  "idea": "A big mountain with a raised terrace on its shoulder, three long flights up it. Prayer flags and gardens mark the south; the way round the mountain's west is long.",
+  "kind": "terrain",
+  "shape": "wide oval",
+  "walkable": 80
+ },
+ "monastery_heights_walled": {
+  "cells": 37,
+  "idea": "A small walled garden with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.",
+  "kind": "terrain",
+  "shape": "small hex",
+  "walkable": 25
  },
  "raided_farms_barns": {
   "cells": 121,
@@ -454,6 +524,27 @@
   "shape": "wide rectangle",
   "walkable": 63
  },
+ "snowy_peaks_lake": {
+  "cells": 88,
+  "idea": "A frozen lake in a hollow, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.",
+  "kind": "terrain",
+  "shape": "round",
+  "walkable": 78
+ },
+ "snowy_peaks_pass": {
+  "cells": 77,
+  "idea": "Ice cliffs close in from both sides to a pass one cell wide at the middle, with a frozen pond beyond it. One gap: whoever holds it holds the map.",
+  "kind": "terrain",
+  "shape": "tall rectangle",
+  "walkable": 54
+ },
+ "snowy_peaks_shelf": {
+  "cells": 83,
+  "idea": "A raised snow shelf across the whole map, a mountain behind it. Three long flights: two from the south, one from the north, so the shelf can be held or crossed.",
+  "kind": "terrain",
+  "shape": "wide rectangle",
+  "walkable": 78
+ },
  "stormy_plains_outcrop": {
   "cells": 61,
   "idea": "A big rock outcrop fills the middle of the map and blocks everything behind it. The fight circles it, with split trees and boulders closing the ring in places.",
@@ -530,6 +621,27 @@
   "kind": "path",
   "shape": "tall rectangle",
   "walkable": 60
+ },
+ "volcanic_peaks_crater": {
+  "cells": 67,
+  "idea": "A great crater cone in the middle of the map, a basalt rise on its west with two long flights and a lava fissure on its east. The fight goes round the cone.",
+  "kind": "terrain",
+  "shape": "big hex",
+  "walkable": 55
+ },
+ "volcanic_peaks_fissures": {
+  "cells": 94,
+  "idea": "Two lava fissures run in from the north corners and nearly meet at the middle. Three ways through: one narrow gap at the centre, the long ways round at each side. A smoking cone stands to the south-east.",
+  "kind": "terrain",
+  "shape": "wide rectangle",
+  "walkable": 79
+ },
+ "volcanic_peaks_ledge": {
+  "cells": 50,
+  "idea": "A cliff streaked with lava across the north, a raised ledge of ash under it, one lava fissure on the slant below. Small, close and hot: the ledge is two flights and a few steps away.",
+  "kind": "terrain",
+  "shape": "small rectangle",
+  "walkable": 36
  },
  "windmill_country_fields": {
   "cells": 101,
