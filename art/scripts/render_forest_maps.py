@@ -59,7 +59,7 @@ HALF = RAISED_HEIGHT / 2  # a way up's landing
 LANDING = 0.46  # from a way up's middle to its landing's edge; a base's flat side is at 0.45
 # What runs out from a landing into each neighbour: how far from the way up's middle each tread reaches, and its height.
 FLIGHTS = {"down": ((0.56, 0.375), (0.66, 0.225), (0.76, 0.075)), "up": ((0.56, 0.6), (0.66, 0.75), (0.76, 0.9)), "level": ((0.505, HALF),), "blocked": ((0.49, 0.3), (0.52, 0.15)), "edge": ((0.5, HALF),)}
-ROWED_BRUSH = {"slums"}  # brush in rows along the grid, so placed unturned
+ROWED_BRUSH = {"slums", "scholars_town"}  # brush laid out along the grid, so placed unturned
 BRUSH_Z = 0.26  # where the camera check samples a brush cell: above its plants
 ROAD_Z = 0.16  # the same for a path cell: above its slabs, caps and bones
 ROAD = "ng"

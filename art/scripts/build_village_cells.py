@@ -25,12 +25,12 @@ import variants as vr  # noqa: E402
 
 VARIANTS = ["village", "market_town", "fortified_town", "slums", "scholars_town"]
 GROUND = {"village": "plains", "market_town": "cobble", "fortified_town": "town_flag", "slums": "mud_ground", "scholars_town": "lawn"}
-BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "street"}
+BARE = {"village": "street", "market_town": "street", "fortified_town": "cobble_dark", "slums": "mud_street", "scholars_town": "quad_paving"}
 hk.PALETTE["thatch"] = fc.mix("#D1B668", "#6E5A3C", 0.25)
 hk.PALETTE["town_flag"] = fc.mix(hk.PALETTE["street"], hk.PALETTE["stone_block"], 0.45)
 hk.PALETTE.update({"cheese": "#E8C25A", "cheese_cut": "#F3DC8E", "flagstone": "#8B8783", "burlap": "#A9855A", "burlap_light": "#C4A478", "garrison": hk.PALETTE["banner_fort"], "coal": "#35322F", "ember": "#E2672A", "bale": "#D1B668", "char_dark": "#332D29", "hoop": "#3E3B3A", "axe": "#AEB6BC", "log_end": "#E0C79A", "terracotta": "#C4683F", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
                    "flower_red": "#D6455A", "flower_yellow": "#F0C53C", "cabbage": "#8DBB5A", "pumpkin": "#E0802A", "stack_band": fc.mix("#D1B668", "#6E5A3C", 0.5),
-                   "tin": "#9A958A", "tin_dark": "#6F6A60", "rust": "#8F5B3C", "rust_dull": "#85705C", "board_grey": "#8A8170", "board_pale": "#B09A78", "tarp_a": "#A39A84", "tarp_b": "#7E7259", "tarp_c": "#8F7F62", "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
+                   "quad_paving": "#E4DCCB", "tin": "#9A958A", "tin_dark": "#6F6A60", "rust": "#8F5B3C", "rust_dull": "#85705C", "board_grey": "#8A8170", "board_pale": "#B09A78", "tarp_a": "#A39A84", "tarp_b": "#7E7259", "tarp_c": "#8F7F62", "hen_white": "#F2EBDD", "hen_red": "#A5592F", "dog": "#8C5E3C", "vine": "#5E8F3C", "vine_light": "#84AE4E"})
 fc.ROCK.update({v: ("rock", "rock_dark", None) for v in VARIANTS})
 fc.BARK.update({v: "trunk" for v in VARIANTS})
 fc.BARK["slums"] = "deadwood"
@@ -78,6 +78,12 @@ def brush(p, rng, v):
             else:  # cabbages
                 for x in (-0.3, 0.0, 0.3):
                     p.blob(Vector((x, 0, 0)), rng.uniform(0.09, 0.105), "cabbage", z=0.09, squash=0.8)
+        return
+    if v == "scholars_town":  # a lawn panel: a stone kerb round mown grass, a clipped bush at its middle, flowers round it. Placed unturned.
+        p.flat(hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1], 0.012, "quad_paving")
+        p.flat(hk.hex_corners(hk.CELL_RADIUS * fc.GAP * 0.84, pointy=False)[::-1], 0.022, "lawn")
+        p.blob(ZERO, 0.13, "hedge", z=0.1, squash=0.8)
+        dots(p, [Vector((math.cos(k * 2.1 + 0.5) * 0.26, math.sin(k * 2.1 + 0.5) * 0.26, 0.04)) for k in range(3)], ("flower_blue", "flower_yellow", "flower_red"))
         return
     for k in range(7):
         a, d = k * 0.9 + rng.uniform(-0.3, 0.3), rng.uniform(0.12, 0.36)
@@ -1243,12 +1249,45 @@ def scrag(p, rng):
     grown(p, 1.8, ZERO, lambda: vr.scraggly_tree(p, rng, ZERO))
 
 
-def slim(top):
-    return lambda p, r: grown(p, 1.25, ZERO, lambda: vr.slim_tower(p, r, ZERO, top))
+def paved(p):
+    """Pale stone over the whole cell, for something standing in a court or on a walk."""
+    p.flat(hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1], 0.012, "quad_paving")
+
+
+def quad_tower(top):
+    """A broad stone tower for a building's or a wall's corner: a stepped base, a band, windows on two sides, and a pointed roof, a dome, or a dome with a telescope."""
+    def make(p, r):
+        paved(p)
+        p.cylinder(ZERO, 0.43, 0.14, "stone_block", segments=8)
+        p.cylinder(ZERO, 0.36, 1.72, "cream_stone", segments=8)
+        p.cylinder(ZERO, 0.385, 0.06, "stone_block", segments=8, z=1.02)
+        for q, size in ((Vector((0, -0.352, 0)), (0.14, 0.02, 0.28)), (Vector((0.352, 0, 0)), (0.02, 0.14, 0.28)), (Vector((-0.352, 0, 0)), (0.02, 0.14, 0.28)), (Vector((0, 0.352, 0)), (0.14, 0.02, 0.28))):
+            p.box(q, size, "window_glow", z=1.26)
+        p.cylinder(ZERO, 0.42, 0.07, "slate_blue", segments=8, z=1.72)
+        if top == "pointed":
+            p.cone(ZERO, 0.43, 0.68, "slate_blue", segments=8, z=1.79)
+        else:
+            vr.hemisphere(p, ZERO, 0.38, "slate_blue", 1.79, rings=3, segments=8)
+        if top == "telescope":
+            vr.frustum(p, Vector((-0.12, 0, 2.02)), Vector((0.44, 0, 2.36)), 0.07, 0.05, "brass", segments=6)
+    return make
+
+
+def benches(p, rng):
+    """Two benches back to back on paving."""
+    paved(p)
+    yard_bench(p, rng, Vector((0, 0.17, 0)))
+    yard_bench(p, rng, Vector((0, -0.17, 0)), math.pi)
+
+
+def cloister_cell(p, rng):
+    """The floor of a stretch of cloister; the map draws the columns and roof along its line, joined to what it meets."""
+    paved(p)
 
 
 def statue(p, rng):
     """A robed scholar on a stepped plinth, reading a book held out in front."""
+    paved(p)
     p.box(ZERO, (0.62, 0.62, 0.12), "cream_stone")
     p.box(ZERO, (0.46, 0.46, 0.2), "cream_stone", z=0.12)
     vr.frustum(p, Vector((0, 0, 0.32)), Vector((0, 0, 0.98)), 0.19, 0.11, "stone_block", segments=7)
@@ -1261,6 +1300,7 @@ def statue(p, rng):
 
 
 def fount(p, rng):
+    paved(p)
     grown(p, 1.45, ZERO, lambda: vr.fountain(p, ZERO))
 
 
@@ -1364,9 +1404,11 @@ KIT = {
         "2": ("scholar_4_long", DIAMOND, house(DIAMOND, 1.7, 0.86, h=1.42, pitch=0.5, wall="cream_stone", stone="flagstone", door_x=-0.6, roof="slate_blue", chimney=True, paint="paint_blue", upstairs=True, back_windows=(-0.5, 0.4), back_upper=(-0.1, 0.55), vines=(0.72,), yard=((yard_bench, 0.0, -0.56, 0.0), (yard_books, 0.0, -0.76, 0.0), (yard_flowers, 1.06, 0.0, math.pi / 2), (yard_lantern, -1.0, -0.18, 0.0), (yard_topiary, -0.98, 0.14, 0.0), (yard_desk, 0.0, 0.62, math.pi), (yard_small_pot, 0.0, 0.88, 0.0)))),
         "3": ("cloister_4", DIAMOND, house(DIAMOND, 1.56, 0.86, h=1.1, pitch=0.5, wall="cream_stone", stone="flagstone", door_x=-0.62, roof="slate_blue", chimney=True, paint="paint_teal", front_windows=(0.55,), back_windows=(-0.2, 0.3), back_vines=(-0.5,), yard=((yard_arcade, 0.08, -0.56, 0.0), (yard_small_pot, 0.0, -0.84, 0.0), (yard_globe, 1.0, -0.12, 0.0), (yard_sundial, 1.0, 0.24, 0.0), (yard_topiary, -1.02, 0.0, 0.0), (yard_scrolls, 0.0, 0.6, 0.0), (yard_books, 0.0, 0.8, 0.0)))),
         "4": ("library_4", DIAMOND, house(DIAMOND, 0.8, 1.24, gable=True, h=1.26, pitch=0.62, wall="cream_stone", stone="flagstone", roof="slate_blue", paint="paint_red", back_windows=(0.24,), yard=((yard_flowers, 0.94, -0.02, math.pi / 2), (yard_scrolls, -0.94, -0.14, 0.0), (yard_books, -0.96, 0.21, 0.0), (yard_small_pot, -0.36, -0.6, 0.0), (yard_small_pot, 0.31, -0.6, 0.0), (yard_desk, -0.1, 0.6, math.pi), (yard_small_pot, 0.2, 0.8, 0.0)))),
-        "N": ("tower_pointed", SINGLE, slim("pointed")),
-        "Q": ("tower_domed", SINGLE, slim("domed")),
-        "Y": ("tower_telescope", SINGLE, slim("telescope")),
+        "N": ("tower_pointed", SINGLE, quad_tower("pointed")),
+        "Q": ("tower_domed", SINGLE, quad_tower("domed")),
+        "Y": ("tower_telescope", SINGLE, quad_tower("telescope")),
+        "D": ("cloister_run", SINGLE, cloister_cell),
+        "8": ("benches", SINGLE, benches),
         "I": ("statue", SINGLE, statue),
         "J": ("fountain", SINGLE, fount),
         "E": ("study_corner", SINGLE, study_corner),

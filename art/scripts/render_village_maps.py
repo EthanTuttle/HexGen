@@ -14,7 +14,7 @@ L a fence, town wall, patched fence or hedge (any line). Per variant:
   market_town     P townhouse (3)   D townhouses in a row (3)   Y stall   I stalls in a row (3)   J goods   N well
   fortified_town  P stone house (3)   D smithy (3)   N wall tower   Y supply wagon   J stores   I spear racks
   slums           P shack (3)   D shacks in a row (3)   T scraggly tree   J junk   N crates and a red lantern   I washing line
-  scholars_town   P 5 6 7 hall or study (3)   2 3 4 long hall, cloister or library (4)   N Q Y slim towers (pointed, domed, telescope)   I statue   J fountain   E study corner   U book cart   Z sundial garden
+  scholars_town   P 5 6 7 hall or study (3)   2 3 4 long hall, cloister or library (4)   N Q Y towers (pointed, domed, telescope), joined to what they touch   D cloister run   I statue   J fountain   8 benches   E study corner   U book cart   Z sundial garden
 
 A map's foes are samples, as enemy mixes aren't decided.
 """
@@ -286,36 +286,36 @@ I . . . U . . . .
 2 2 h . k . s 4 4
  2 . . . . c . 4 
 """},
-    "scholars_town_court": {"size": "medium hex", "idea": "A hedged court round a fountain, gaps on three sides, houses and towers outside it. Hold the fountain, or come at it through any gap.", "foes": BANDITS, "plan": """
-    .    
+    "scholars_town_court": {"size": "medium hex", "idea": "A paved quad round a fountain, halls and towers to the north, a cloister and hedges round the rest, gaps on three sides. Hold the fountain, or come at it through any gap.", "foes": BANDITS, "plan": """
+    x    
    v w   
-  . . x  
- . N . Q 
-. . L . .
- 5 L L . 
-5 L c L .
- 5 c c . 
-. . J . .
- U c c . 
-. L c L P
- , L L P 
-. . . . P
- h . k . 
+  . n .  
+ . . . . 
+. P n 6 .
+ N P n 6 
+. P n 6 Q
+ D c c D 
+. 8 J n n
+ D c n n 
+. L n L 5
+ Y L L 5 
+. U n . 5
+ h n k . 
   . s .  
    . E   
     I    
 """},
-    "scholars_town_lawns": {"size": "wide oval", "idea": "Wide lawns with slim towers and statues standing far apart. Few corners, long open runs: ranged shine, and every tower matters.", "foes": BANDITS, "plan": """
-  . . N . . v N .  
- . 2 . . . . w . . 
-. 2 2 . Q . . . I .
- . 2 c . . . x . . 
-. . c c . . . Y . .
- . I . . . I . . 4 
-. . E J . . . c 4 4
- . . . . . . c . 4 
-. N . . Q . . . . .
- . . h . k . s . . 
+    "scholars_town_lawns": {"size": "wide oval", "idea": "A great open quad: lawn panels split by paved walks that cross at a fountain, statues along them, halls, towers and cloisters round its edges. Few corners, long open runs: ranged shine, and every statue matters.", "foes": BANDITS, "plan": """
+  . N . . n v . .  
+ . 2 D . n . w . . 
+. 2 2 . . . . Q . .
+ . 2 n . n . x D . 
+. n . 8 c c . . Y .
+ n n I n J n I n 4 
+n n n n n n n n 4 4
+ P n . c n c 8 n 4 
+. P n . . . . . n .
+ P n h . k . s . . 
   . . . . . . U .  
 """},
     "scholars_town_cloister": {"size": "small rectangle", "idea": "Two hedge lines on the slant make three narrow walks, all opening onto a small court at the south end.", "foes": BANDITS, "plan": """
@@ -475,6 +475,37 @@ def doors_clear(t, col, name):
                 assert not any(bv.hides_door(o.matrix_world @ v.co, c, out) for v in o.data.vertices), f"{name}: {o['piece']} is in front of a door of {house['piece']}"
 
 
+def quad_joins(col, cells):
+    """A scholars' town's lines meet: cloister runs (D) go on to whatever they touch, hedges run into towers, cloisters and buildings, and towers are tied to buildings beside them by a stretch of wall."""
+    p = hk.Piece("quad_joins")
+    houses, towers = HOUSE_MARKS["scholars_town"], "NQY"
+    for c, mark in cells.items():
+        a = hk.cell_position(*c)
+        for dq, dr in fm.NEIGHBOURS:
+            other = cells.get((c[0] + dq, c[1] + dr), ".")
+            b = hk.cell_position(c[0] + dq, c[1] + dr)
+            d, spin = b - a, math.atan2((b - a).y, (b - a).x)
+            if mark == "D" and (other in "DL" or other in houses or other in towers):
+                end = a.lerp(b, 0.5 if other == "D" else 0.62)
+                mid = (a + end) / 2
+                run = (end - a).length
+                across = Vector((-d.y, d.x, 0)).normalized() * 0.2
+                for side in (-1, 1):  # a covered walk: columns on both sides, a low wall between them on one
+                    p.box(mid + across * side, (run, 0.07, 0.06), "cream_stone", z=0.62, spin=spin)
+                    for t in (0.1, 0.55, 1.0):
+                        p.box(a.lerp(end, t) + across * side, (0.065, 0.065, 0.62), "cream_stone", spin=spin)
+                p.box(mid + across, (run, 0.06, 0.2), "stone_block", spin=spin)
+                p.gable_roof(mid, run + 0.02, 0.6, 0.16, "slate_blue", z=0.68, spin=spin)
+            elif mark == "L" and (other == "D" or other in towers or other in houses):
+                end = a.lerp(b, 0.55)
+                p.box((a + end) / 2, ((end - a).length, 0.36, 0.68), "hedge", spin=spin)
+            elif mark in towers and other in houses:
+                end = a.lerp(b, 0.62)
+                p.box((a + end) / 2, ((end - a).length, 0.26, 1.02), "cream_stone", spin=spin)
+                p.box((a + end) / 2, ((end - a).length, 0.32, 0.05), "slate_blue", z=1.02, spin=spin)
+    p.finish(col)
+
+
 def join_towers(col, cells):
     """A town wall runs right up to the towers beside its ends, so no daylight shows between them."""
     p = hk.Piece("wall_to_towers")
@@ -552,6 +583,8 @@ def build_map(t, col, name):
             assert mark not in "Y8E" or cells.get((q, r + 1), ".") in fm.WALKABLE, f"{name}: something stands in front of the stall at {(q, r)}"
     if v == "fortified_town":
         join_towers(col, cells)
+    if v == "scholars_town":
+        quad_joins(col, cells)
     if v in HOUSE_MARKS:
         doors_clear(t, col, name)
         for c, mark in cells.items():  # washing belongs with houses
