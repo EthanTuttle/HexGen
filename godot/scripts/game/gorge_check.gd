@@ -30,7 +30,7 @@ func _wait(s: float) -> void:
 func _shot(name: String) -> void:
 	for _f in 3:
 		await get_tree().process_frame
-	await RenderingServer.frame_post_draw
+	await StallWatch.drawn(get_tree())
 	if shots:
 		var dir := ProjectSettings.globalize_path("res://screens")
 		game.get_viewport().get_texture().get_image().save_png(dir.path_join("gorge_%s.png" % name))
@@ -421,6 +421,13 @@ func _stranded() -> void:
 	for m in game.party_node.members:
 		var p: Vector3 = m.node.position
 		wet += 1 if map.wet_at(Vector2(p.x, -p.z)) else 0
+	_check(not map.can_visit(mid), "a tile with no land can't be visited")
+	game.encounters.clear()
+	for _k in 200:
+		game.rng.seed = _k
+		game._maybe_spawn(mid)
+	_check(not game.encounters.has(mid), "encounters on its region skip it (%d spawned elsewhere)" % game.encounters.size())
+	game.encounters.clear()
 	print("GORGE stranded ring: moved %s to %s; in the water after: %d; can it walk anywhere: %d steps to the next land" % [mid, off, wet, game.path_to(Vector2i(-24, 0)).size()])
 	await _shot("46_party_off_a_tile_with_no_land")
 

@@ -884,7 +884,7 @@ func _tile_top(t: Vector2i) -> Vector3:
 
 # --- Encounters --------------------------------------------------------------
 
-## PLACEHOLDER spawn rule: a placement may spawn one encounter in its region (its cluster), on a random tile.
+## PLACEHOLDER spawn rule: a placement may spawn one encounter in its region (its cluster), on a random tile a party can reach.
 func _maybe_spawn(t: Vector2i) -> void:
 	var tiles := cluster(t)
 	var active := 0
@@ -893,7 +893,7 @@ func _maybe_spawn(t: Vector2i) -> void:
 			active += 1
 	if active >= Rules.ENCOUNTERS_PER_REGION or rng.randf() >= Rules.ENCOUNTER_CHANCE:
 		return
-	var free := tiles.filter(func(c): return c != party_tile)
+	var free := tiles.filter(func(c): return c != party_tile and map.can_visit(c))
 	if free.is_empty():
 		return
 	add_encounter(free[rng.randi_range(0, free.size() - 1)], false)

@@ -230,7 +230,7 @@ func shot(name: String) -> void:
 	_n += 1
 	if not shots:
 		return
-	await RenderingServer.frame_post_draw
+	await StallWatch.drawn(get_tree())
 	var dir := ProjectSettings.globalize_path("res://screens")
 	game.get_viewport().get_texture().get_image().save_png(dir.path_join("%s_%02d_%s.png" % [prefix, _n, name]))
 

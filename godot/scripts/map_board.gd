@@ -429,6 +429,17 @@ func _water_edge_shut(t: Vector2i, edge: int) -> bool:
 	return w.mask[edge] or (not w.gorge.walks.has(edge) and not w.get("bridge", {}).get("routes", {}).has(edge))
 
 
+## Whether a party can ever stand on tile t: rapids with no land, or with land no lane or bridge reaches, it can't (design/02 ->
+## Bridges on rapids). Encounters and anything else needing a visit skip those.
+func can_visit(t: Vector2i) -> bool:
+	if not water_shapes.has(t) or not water_shapes[t].has("gorge"):
+		return true
+	for e in 6:
+		if not _water_edge_shut(t, e):
+			return true
+	return false
+
+
 ## Whether leaving water tile t by this edge, from where a party stands at p, means getting wet: a crossing, on rapids.
 func wet_leaving(t: Vector2i, p: Vector2, edge: int) -> bool:
 	if not water_shapes.has(t) or not water_shapes[t].has("gorge"):

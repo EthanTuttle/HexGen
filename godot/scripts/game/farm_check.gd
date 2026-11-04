@@ -35,7 +35,7 @@ func _wait(s: float) -> void:
 func _shot(name: String) -> void:
 	for _f in 3:
 		await get_tree().process_frame
-	await RenderingServer.frame_post_draw
+	await StallWatch.drawn(get_tree())
 	if shots:
 		var dir := ProjectSettings.globalize_path("res://screens")
 		game.get_viewport().get_texture().get_image().save_png(dir.path_join("farm_%s.png" % name))

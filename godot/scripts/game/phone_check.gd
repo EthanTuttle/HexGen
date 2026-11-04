@@ -65,7 +65,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _shot(tag: String) -> void:
-	await RenderingServer.frame_post_draw
+	await StallWatch.drawn(get_tree())
 	get_viewport().get_texture().get_image().save_png(_dir.path_join(tag + ".png"))
 	_say("%s: shot, %.1f fps on average so far, %d fps now; touches %d, most fingers at once %d, drag events %d"
 			% [tag, _frames / _t, Engine.get_frames_per_second(), _touches, _most, _drags])
@@ -263,7 +263,7 @@ func _measure(vp: RID, seconds: float) -> Dictionary:
 
 
 func _shot_as(tag: String) -> void:
-	await RenderingServer.frame_post_draw
+	await StallWatch.drawn(get_tree())
 	get_viewport().get_texture().get_image().save_png(_dir.path_join(tag + ".png"))
 
 
