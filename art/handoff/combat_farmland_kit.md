@@ -1,8 +1,8 @@
-# Combat farmland kit hand-off (combat_farmland_v17, combat_maps_farmland_v12)
+# Combat farmland kit hand-off (combat_farmland_v18, combat_maps_farmland_v13)
 
 Sixteen custom farmland combat maps, four per variant: three terrain maps and one path map. Layouts are with Ethan. Rules, the camera check and the data format are the same as the forest and plains kits: see [combat_forest_kit.md](combat_forest_kit.md) and [combat_plains_kit.md](combat_plains_kit.md).
 
-- **Models:** `art/export/combat_farmland.glb` (from `art/combat/combat_farmland_v17.blend`), `art/export/combat_maps_farmland.glb` (`art/combat/combat_maps_farmland_v12.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_farmland.glb` (from `art/combat/combat_farmland_v18.blend`), `art/export/combat_maps_farmland.glb` (`art/combat/combat_maps_farmland_v13.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_farmland.json`, the same format as `combat_maps.json`, plus `"kind": "path"` on path maps. `variant` is `windmill_country`, `haunted_homesteads`, `raided_farms` or `cider_orchards`.
 - **Scripts:** `art/scripts/build_farmland_cells.py`, `art/scripts/render_farmland_maps.py` (the plans, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
@@ -25,7 +25,7 @@ All maps are at least 5.5 cells deep. Triangles without minis run 1,586 to 6,392
 
 ## Plain farmland (tier 0, in review)
 
-`farmland_fields`, `farmland_yard`, `farmland_paddocks` and the path map `farmland_track`, `variant` `farmland`, with the same piece names as the other variants, plus `ob_farmland_farmhouse_3` (3 cells), `_hay`, `_cart`, `_sacks` and trees `_tree_a/b/c`. Starts sit inside the fight camera's 28 m opening. To judge on the phone, walkable cells seen from the default camera: Fields 102 of 141, Yard 75 of 101, Paddocks 123 of 163, Track 145 of 181.
+`farmland_fields`, `farmland_yard`, `farmland_paddocks` and the path map `farmland_track`, `variant` `farmland`, with the same piece names as the other variants, plus `ob_farmland_farmhouse_3` (3 cells), `_hay`, `_cart`, `_sacks` and trees `_tree_a/b/c`. Starts sit inside the fight camera's 28 m opening. To judge on the phone, walkable cells seen from the default camera: Fields 141 of 141, Yard 97 of 101, Paddocks 163 of 163, Track 180 of 181. `cell_farmland_brush` is a bright field cell with a few broad tufts (40 triangles), so fields can fill these maps.
 
 ## Not done
 

@@ -66,6 +66,18 @@ def litter(p, rng, v):
 
 def brush(p, rng, v):
     """A walkable block of crop, up to a mini's knees: ripe wheat, withered stalks, trampled and burnt crop, tall orchard grass."""
+    if v == "farmland":  # the tile's yellow, the cell itself a field, with a few broad open tufts: fields fill these maps
+        for k in range(5):
+            a = (k - 1) * 2 * math.pi / 4 + rng.uniform(-0.3, 0.3)
+            at = Vector((math.cos(a), math.sin(a), 0)) * (0.26 if k else 0.0)
+            h = rng.uniform(0.3, 0.4)
+            ring = [p.bm.verts.new(at + Vector((math.cos(j * math.pi / 2 + a), math.sin(j * math.pi / 2 + a), 0)) * 0.17) for j in range(4)]
+            tip = p.bm.verts.new(at + Vector((0, 0, h)))
+            for j in range(4):
+                f = p.bm.faces.new((ring[j], ring[(j + 1) % 4], tip))
+                f.material_index = p._slot(("field_a", "field_b")[k % 2])
+                p.surface.add(f)
+        return
     if v == "cider_orchards":
         pc.brush(p, rng, "meadows")
         return
@@ -248,7 +260,7 @@ def build():
         p = fc.cell(f"cell_{v}_litter", f"cell_{v}_a")
         litter(p, hk.seeded(p.name), v)
         p.finish(col)
-        p = fc.cell(f"cell_{v}_brush", f"cell_{v}_cover")
+        p = fc.cell(f"cell_{v}_brush", "field_a" if v == "farmland" else f"cell_{v}_cover")
         brush(p, hk.seeded(p.name), v)
         p.finish(col)
         main, side, top = fc.ROCK[v]

@@ -162,14 +162,14 @@
  },
  "farmland_fields": {
   "cells": 150,
-  "idea": "Wide fields of ripe wheat in big blocks with grass between, a short fence, haystacks and a tree or two. The wheat can be walked through; the haystacks and fence are the only hard corners.",
+  "idea": "Ripe wheat fills the map in big blocks with grass lanes between, a short fence, haystacks and a tree or two. The wheat can be walked through; the haystacks and fence are the only hard corners.",
   "kind": "terrain",
   "shape": "wide rectangle",
   "walkable": 141
  },
  "farmland_paddocks": {
   "cells": 188,
-  "idea": "Long paddocks one above the other, each fence running in from both sides and leaving a wide gap in the middle. A walk north through two funnels, with wheat at either end.",
+  "idea": "Long paddocks one above the other, each fence running in from both sides and leaving a wide gap in the middle. A walk north through two funnels, wheat filling the paddocks.",
   "kind": "terrain",
   "shape": "tall rectangle",
   "walkable": 163
@@ -183,7 +183,7 @@
  },
  "farmland_yard": {
   "cells": 127,
-  "idea": "A fenced farmyard in the middle of the fields, with a door in the fence north and south, a farmhouse, haystacks and a cart. The foes are inside: go in by a door, or round to the other.",
+  "idea": "A fenced farmyard in the middle of wheat, with a door in the fence north and south, a farmhouse, haystacks and a cart. The foes are inside: go in by a door, or round to the other.",
   "kind": "terrain",
   "shape": "big hex",
   "walkable": 101
