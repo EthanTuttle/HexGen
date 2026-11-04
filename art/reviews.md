@@ -90,3 +90,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/hills_map_snowy_peaks_shelf_long_steps_v1.png` | approved | Option B, long steps on 0.45 lift cells; apply to volcanic Crater and Ledge |
 | 2026-11-04 | `art/preview/hills_map_snowy_peaks_shelf_v14.png` | rejected | Option A, plain lift: reads as a broken stack |
 | 2026-11-04 | `art/preview/hills_maps_snowy_peaks_beside_tile_v2.png` | approved | Snowy set: Pass v16, Lake v16, Shelf v15 |
+| 2026-11-04 | `art/preview/hills_maps_volcanic_peaks_beside_tile_v1.png` | rejected | Volcanic set: use the tile's smooth cones, not spiky clusters; flowing lava on trial on Fissures, crater to map edge |

@@ -290,6 +290,10 @@ Skills (learned at class locations such as Training Grounds, Tree of Life and Co
 - Design principle: 3 AP cards (e.g. Megaton Punch, Knockout, Aimed Shot) take a whole turn, which is what gives AP support (Action Surge and future ally moves that grant AP) a strong payoff: extra AP becomes another big hit. Guidelines: big cards cost the full 3 AP so two in one turn needs support; extra AP stays rare and visible (a cooldown, concentration or once-per-fight card); self discounts like Wind-Up and Flow are fine as long as support payoffs stay bigger.
 - Terrain effects on the grid: see [Map & exploration](02 Map & exploration.md) → Exploration and terrain.
 
+### Lava
+
+On trial, Nov 4, 2026. Lava can be walked through. Entering it or ending a turn in it deals fire damage (amount still open).
+
 ### Giant enemies
 
 Decided Nov 4, 2026. Giants stand on 3 cells (a triangle) or 7 cells (a flower).
@@ -680,6 +684,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] **New:** sight on combat maps: whether a low hedge or fence (0.35 high) stops sight or gives cover, against a town wall (1.5 high)
 - [ ] **New:** cover on combat maps: whether crops and forest brush hide anyone or give any other bonus (for now they're walkable with no rule, Nov 2, 2026)
 - [x] ~~Giant enemies' grid rules~~ (decided Nov 4, 2026: see Giant enemies)
+- [ ] **New (Nov 4, 2026):** lava: how much fire damage, do foes avoid it, is anyone immune (fire creatures), and can pushes send people in? Giants too?
 - [ ] **New (Nov 4, 2026):** giants: can a 3-cell giant turn in place, and what does turning cost? How do they stand and move on sloped maps and ways up?
 - [ ] **New (Nov 2, 2026):** high ground on combat maps (07 → Combat maps) gives ranged attacks longer range (Ethan's direction, Nov 2, 2026). Way-up stairs now use ordinary moves (Nov 4, 2026), so no current map needs a separate ascend or descend action. How far is the range bonus, and does a ledge need a check where there are no steps or ramp, or its own action?
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28, 2026: the player picks; see Checks outside combat)
