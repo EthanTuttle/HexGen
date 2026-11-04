@@ -4975,6 +4975,10 @@ VARIANTS = {
 VARIANTS.update(sl.VARIANTS)
 PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG
+import ruin_lands as rl  # noqa: E402
+VARIANTS.update(rl.VARIANTS)
+PROP_PIECES.update(rl.PROP_PIECES)
+LANDMARK_CENTRES.update(rl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
@@ -4989,6 +4993,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis", "oasispool": "oasis", "echocave": "canyon", "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 LANDMARKS.update(sl.LANDMARKS)
+LANDMARKS.update(rl.LANDMARKS)
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

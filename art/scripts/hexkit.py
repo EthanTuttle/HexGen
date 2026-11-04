@@ -96,6 +96,20 @@ PALETTE = {
     "stone_pale_col": "#E3DBC8",
     "slate_blue": "#5E7A9A",
     "pale_paving": "#B7BF9F",
+    "pave_tan": "#B8AF9F",
+    "haunted_pave": "#969F9C",
+    "golem_pave": "#C2BCAB",
+    "dig_ground": "#B4C07E",
+    "dig_dirt": "#9C7F57",
+    "haunted_ground": "#8FA88F",
+    "haunted_stone": "#A3ABA8",
+    "haunted_stone_dark": "#747F7D",
+    "spirit_glow": "#A8F0DC",
+    "golem_ground": "#A0C07E",
+    "golem_stone": "#CFC9B8",
+    "golem_stone_dark": "#95917F",
+    "rune_amber": "#F2B33D",
+    "pit_wall_b": "#7A5C40",
     "patch_cream": "#CDBE9F",
     "lawn": "#8FBF6A",
     "brass": "#C9A24A",
@@ -390,7 +404,7 @@ SLUM_GROUND = {"tan": ("#CDB48A", "#B59C73", "#A38A63", "#BFA67E"),
                "clay": ("#D2A566", "#BE9458", "#A9804A", "#C69C60"),
                "dun": ("#B9B083", "#A0976A", "#8D8559", "#ABA277")}
 PALETTE.update(zip(("mud_ground", "mud_street", "mud_dark", "mud_damp"), SLUM_GROUND[os.environ.get("HEX_SLUM", "tan")]))
-OWN_MATERIAL = {"mist_low", "wisp_water", "wisp_pool", "wisp", "wisp_green", "rot_water", "ooze", "ooze_bright", "bayou_water", "window_green", "lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
+OWN_MATERIAL = {"spirit_glow", "rune_amber", "mist_low", "wisp_water", "wisp_pool", "wisp", "wisp_green", "rot_water", "ooze", "ooze_bright", "bayou_water", "window_green", "lantern_red", "water", "water_deep", "water_fast", "water_still", "bog_water", "bog_dark", "toadstool", "lantern", "fey_mushroom", "web", "window_glow", "lava", "snow_ground", "ash_ground",
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3

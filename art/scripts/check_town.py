@@ -211,6 +211,72 @@ def main():
                 bad += 1
                 print("RAMP TOP NOT AT GROUND", name)
         print(f"{lines_} route lines")
+    if kit == "ruin-lands":  # ruin_lands: each prop's reach and triangles against its table; the old pieces empty; each landmark's routes against its piece; nothing floating
+        import variants as vr_
+        rl = vr_.rl
+        tri = lambda o_: sum(len(f.vertices) - 2 for f in o_.data.polygons)  # noqa: E731
+        for name, (reach, _, count) in rl.PROP.items():
+            o = objs[name]
+            far = max((math.hypot(q.x, q.y) for q in standing(o)), default=0.0)
+            if far > reach + 1e-3:
+                bad += 1
+                print("REACHES FURTHER THAN ITS TABLE", name, round(far, 2), reach)
+            if tri(o) > count:
+                bad += 1
+                print("MORE TRIANGLES THAN ITS TABLE", name, tri(o), count)
+        for name in rl.LANDMARK_TRIS:
+            o = objs[f"{name}_centre"]
+            print(name, "centre", tri(o), "table", rl.LANDMARK_TRIS[name], "top", round(max(u.co.z for u in o.data.vertices), 2))
+            if tri(o) > rl.LANDMARK_TRIS[name]:
+                bad += 1
+                print("MORE TRIANGLES THAN ITS TABLE", name)
+            solid = standing(o)
+            for i, line in rl.landmark_routes(name, 0).items():
+                pts = [Vector(q[:2]) for q in line]
+                for a_, b_ in zip(pts, pts[1:]):
+                    hit = next((q for q in solid if seg_dist(q, a_, b_) < 0.42), None)
+                    if hit is not None:
+                        bad += 1
+                        print("ROUTE TOUCHES", name, "edge", i, tuple(round(c, 2) for c in hit), "on", tuple(round(c, 2) for c in a_))
+                        break
+        for o in objs:
+            if o.name.startswith(("ruins_", "excavation_", "haunted_ruins_", "golem_ruins_")) and len(o.data.polygons) if o.type == "MESH" else False:
+                bad += 1
+                print("STILL HOLDS GEOMETRY", o.name)
+        for name in list(rl.PROP) + [f"{n}_centre" for n in rl.LANDMARK_TRIS]:  # what's lifted off the ground must rest on something
+            import bmesh
+            o = objs[name]
+            bm = bmesh.new()
+            bm.from_mesh(o.data)
+            seen, boxes = set(), []
+            for u in bm.verts:
+                if u.index in seen:
+                    continue
+                stack, part = [u], []
+                seen.add(u.index)
+                while stack:
+                    w = stack.pop()
+                    part.append(w.co.copy())
+                    for e in w.link_edges:
+                        n = e.other_vert(w)
+                        if n.index not in seen:
+                            seen.add(n.index)
+                            stack.append(n)
+                boxes.append([min(q[i] for q in part) - 0.025 if i < 3 else 0 for i in range(3)] + [max(q[i] for q in part) + 0.025 for i in range(3)])
+            floor_z = min(b[2] for b in boxes) + 0.03 if name.endswith("_centre") else 0.05
+            grounded = [b[2] <= floor_z for b in boxes]
+            changed = True
+            while changed:
+                changed = False
+                for k, b in enumerate(boxes):
+                    if not grounded[k] and any(grounded[j] and b[0] < c[3] and c[0] < b[3] and b[1] < c[4] and c[1] < b[4] and b[2] < c[5] and c[2] < b[5] for j, c in enumerate(boxes)):
+                        grounded[k] = True
+                        changed = True
+            for k, g in enumerate(grounded):
+                if not g:
+                    bad += 1
+                    print("FLOATING", name, [round(x, 2) for x in boxes[k]])
+            bm.free()
     if kit == "swamp-lands":  # swamp_lands: nothing standing on a usual route or a landmark's ring; each landmark's routes against its piece; ramps join at both ends; no floating bits; triangles against the budget
         import bmesh
         import sand as sd
