@@ -45,6 +45,7 @@ import build_giant_minis as gm  # noqa: E402
 import hexkit as hk  # noqa: E402
 import map_catalogue as mc  # noqa: E402
 import render_forest_boards as rb  # noqa: E402
+import check_winding as cw  # noqa: E402
 import render_preview as rp  # noqa: E402
 import variants as vr  # noqa: E402
 
@@ -968,17 +969,21 @@ def kit_sheet(t, col):
         rp.place(t, "standin_hero", col, Vector((x, y, 0)), rb.FACE_NORTH + 0.5)
 
 
-def export(maps, build, load, variant_of, stem):
-    """One blend holding every map's own pieces, and one JSON saying what goes where."""
+def export(maps, build, load, variant_of, stem, cell_extra=None):
+    """One blend holding every map's own pieces, and one JSON saying what goes where. cell_extra(name, cell, mark): fields for a cell that its mark can't give (hills' heights), put on its start too."""
     hk.empty_scene()
     t = load()
     keep = hk.new_collection("maps")
+    wound = cw.report([o for name, o in t.items() if name.startswith(("cell_", "ob_"))])
     data = {}
     for name in maps:
         col = hk.new_collection(f"building_{name}")
         cells = build(t, col, name)
         placements = []
         for o in list(col.objects):
+            if "piece" not in o and not o.data.polygons:  # a map's own piece with nothing in it this time
+                bpy.data.objects.remove(o)
+                continue
             if "piece" in o:
                 placed = {"piece": o["piece"], "x": round(o.location.x, 4), "y": round(o.location.y, 4), "turn": round(math.degrees(o.rotation_euler.z)) % 360}
                 if o.location.z:
@@ -999,8 +1004,18 @@ def export(maps, build, load, variant_of, stem):
                 row["z"] = RAISED_HEIGHT
             elif mark in RAMPS:
                 row.update(z=HALF, way_up=True)
+            if cell_extra:
+                row.pop("z", None)
+                row.pop("way_up", None)
+                row.update(cell_extra(name, (q, r), mark))
             rows.append(row)
         starts = [{"mini": mini_of(m, mark), "q": c[0], "r": c[1], **({"z": RAISED_HEIGHT} if mark in RAISED else {})} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
+        if cell_extra:
+            for start in starts:
+                start.pop("z", None)
+                z = cell_extra(name, (start["q"], start["r"]), cells[(start["q"], start["r"])]).get("z")
+                if z:
+                    start["z"] = z
         for mark, group in groups(cells, "A"):
             anchor, turn = fit(group, {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)])
             starts.append({"mini": m["giant"], "q": anchor[0], "r": anchor[1], "turn": 60 * turn})
@@ -1011,6 +1026,9 @@ def export(maps, build, load, variant_of, stem):
     for o in list(bpy.data.objects):
         if o.name not in keep.objects:
             bpy.data.objects.remove(o)
+    wound.update(cw.report(keep.objects))
+    if wound:
+        sys.exit(f"Not exported: faces wound into their pieces in {sorted(wound)}")
     path = hk.next_version(os.path.join(hk.ART, "combat"), stem)
     bpy.ops.wm.save_as_mainfile(filepath=path)
     print("SAVED", path)
