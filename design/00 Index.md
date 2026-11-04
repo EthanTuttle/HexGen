@@ -36,7 +36,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 ## Master open questions
 
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
-- [ ] New: ruins direction (Ethan, Nov 4: first round felt unoriginal). Rough studies, nothing chosen: hex columns of uneven height ("Hex-Makers"; no lore adopted), a sunken city, floating pieces over their foundations; plus Haunted's foundations by day with ghost buildings at night
+- [ ] New: ruins are hex-column land (Ethan, Nov 4): who built them, tier 3 looks, how Dunfaire Tower sits on it; art round to come
 - [x] ~~Path pass so hexes don't show~~ (cancelled Nov 3: the game is about hexes, so hexes showing in paths is fine; fix single things as they bother Ethan)
 - [x] ~~Recheck Scholars' Town tiles against its combat maps~~ (done Nov 3: see Presentation → Region variant looks)
 - [ ] New: walkable wall on combat maps: last trial after all sets, a real wall about 1.5 high reached by two stacked flights or a ladder (Ethan, Nov 3)

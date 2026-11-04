@@ -93,3 +93,7 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/hills_maps_volcanic_peaks_beside_tile_v1.png` | rejected | Volcanic set: use the tile's smooth cones, not spiky clusters; flowing lava on trial on Fissures, crater to map edge |
 | 2026-11-04 | `art/preview/hills_map_volcanic_peaks_fissures_v15.png` | note | Lava flow good, but the model of the lava flowing off the side looks off; see it in a short movie |
 | 2026-11-04 | `art/preview/lava_shot_volcanic_peaks_fissures_edge_v1.png` | rejected | Rework the edge fall; cone streak reads as a ribbon: try carved channel and stepped lobes, with a moving glow in the surface |
+| 2026-11-04 | `art/preview/ruin_study_hexmakers_map_v1.png` | approved | Direction only: hex-column land for all ruins. Not final art |
+| 2026-11-04 | `art/preview/ruin_study_sunken_map_v1.png` | rejected | Study not taken forward |
+| 2026-11-04 | `art/preview/ruin_study_unmoored_map_v1.png` | rejected | Study not taken forward |
+| 2026-11-04 | `art/preview/ruin_study_ghostcity_night_map_v1.png` | note | Glass boxes; idea stays, to be reworked later |

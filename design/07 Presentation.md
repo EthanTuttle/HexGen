@@ -34,6 +34,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   - **Ponds:** a water tile with no water neighbours is a small round pond.
   - **Stable while building:** a tile's water shape depends only on its own water neighbours, so placing a tile reshapes only that tile and the ones touching it.
   - **Look:** a slow ripple and sparkle that flows along rivers, a light foam rim at the shore and a darker deep middle, bank dressing (reeds, rocks, lily pads, a small jetty), and the boats above on lakes and wide rivers.
+- **Ruins land** (Ethan, Nov 4, 2026): all ruins tiles are land made of hex columns of uneven height, low and mossy at tier 0 and building from there. Whose ruins these are isn't decided. Colours and seams are still to be worked out.
 - **Region variant looks** (chosen Oct 30, 2026): when a region finishes, its tiles take on the variant's look (no rim: see the Exploration screen's cluster goals). A variant can change whatever makes it look best (colours, props, ground shape, borders), but its tiles keep blending into the land around them, except raised hills regions, which stand on cliffs (chosen Nov 1, 2026; [Multiplayer & tech](06 Multiplayer & tech.md) → Tile build). Variants and their landmarks: [Map & exploration](02 Map & exploration.md) → Region variants and locations.
 
   | Terrain | Tier 1 variant | Look |
@@ -46,7 +47,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | River/lake | River delta | The river splits into braided channels round low sandy islands; more boats, small jetties and cargo crates along the banks |
   | Swamp/marsh | Bog/fen | Darker water, low mist, crooked dead trees and toadstools that glow at night; clusters of bright purple and yellow flowers and spiky plants |
   | Desert | Dunes/wasteland | Sandstone columns, broken statues and wall tops poking out of the sand; lower swells between cracked flats, bleached bones and dead trees |
-  | Ruins | Excavation | Open pits with ladders, wooden scaffolding and spoil heaps; canvas tents, tables of sorted finds, crates and lanterns |
+  | Ruins | Excavation | Trenches and scaffolding cut into the hex columns (see Ruins land below), with some columns pulled up and tagged; ladders and spoil heaps; canvas tents, tables of sorted finds, crates and lanterns (reworked Nov 4, 2026) |
 
   **Tier 2 and class variant looks** (chosen Oct 31, 2026; class variants marked *class*):
 
@@ -76,8 +77,8 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Farmland | Haunted homesteads | Grey withered crops and weeds overrunning the plots, broken fences; ragged scarecrows with crows perched and circling; boarded-up farmhouses with sagging roofs and dead trees in the yards |
   | Farmland | Bandit-raided farms | Scorched plots with a few small fires and rising smoke; charred barns and farmhouses beside intact ones; trampled crop paths with spilled sacks and broken crates |
   | Farmland | Cider orchards | Rows of round fruit trees with red apples fill the whole tile instead of sitting in plots like wheat, spread out enough not to look busy, with ladders, baskets and fallen fruit; tracks still run between tiles, with fences and gates as on other farms (chosen Nov 1, 2026) |
-  | Ruins | Haunted ruins | Pale blue-green light seeping from cracks and doorways, with faint spirit wisps, stronger at night; toppled gravestones, sarcophagi and mausoleum fronts; thin mist pooling and drifting between the stones |
-  | Ruins | Golem-guarded ruins | Big dormant stone golems standing or kneeling, eyes and runes faintly lit; carved runes on walls and paving pulsing amber or blue; grander, less crumbled ruins with columns, arches and stairs still standing |
+  | Ruins | Haunted ruins | The hex columns are the tombs: hollow sockets glow pale blue-green with spirit wisps rising from them, stronger at night; thin mist pools in the low ground and drifts between the columns (reworked Nov 4, 2026). A ghost city at night, foundations by day, is to be reworked and tried later, with softer shapes and after a phone measure |
+  | Ruins | Golem-guarded ruins | Big dormant golems built of the same hex stone, half risen from the ground, with amber seams as runes and eyes faintly lit; stairs and walls made of the columns (reworked Nov 4, 2026) |
 
 - **Landmark tiles** (chosen Nov 1, 2026): each variant's core location (its landmark; rule: [Map & exploration](02 Map & exploration.md) → Landmarks) is a tile with its own look, built from the variant's look, on the random tile the region picks when it finishes. **The variant's other tiles play up or flow into the landmark** (Ethan, Nov 1, 2026), so the region leads the eye to it; how each variant does it is being tried in the art kits. **Not every terrain needs paths** (Ethan, Nov 1, 2026): open terrain such as the plains variants has no drawn trails, and leads the eye by what thickens toward the landmark instead.
 
@@ -115,7 +116,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Smugglers' bayou | Thieves Guild | A large two-storey house on stilts with a covered dock, boats underneath, a crooked sign and lanterns: a shady tavern at the hub of the walkways (chosen Nov 3, 2026) |
   | Excavation | Dig Site | A big stepped trench dug into the ground, revealing a half-buried stone facade, with scaffolding, a wooden crane and a large tent with a table of finds (chosen Nov 3, 2026) |
   | Haunted ruins | Crypt | A large mausoleum with a cracked dome and heavy doors ajar, pale light spilling from wide stairs going down, flanked by mourning statues (chosen Nov 3, 2026) |
-  | Golem-guarded ruins | Sentinel Hall | Two looks (chosen Nov 3, 2026): a columned hall up wide stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
+  | Golem-guarded ruins | Sentinel Hall | Two looks (chosen Nov 3, 2026): a hall of hex columns up wide column stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
 
