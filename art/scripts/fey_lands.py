@@ -677,7 +677,7 @@ def fey_tile(region, t):
                 counts=dict(ground=tris(ground), trail=tris(trail), forest=tris([f for f in stand if f[2] != "tuft"]), cover=tris([f for f in stand if f[2] == "tuft"])))
 
 
-PORTAL_MID = (0.0, 0.0, 1.35)   # the wisps drift to this point, gate-local
+PORTAL_MID = (0.0, 0.0, 1.2)   # the wisps drift to this point, gate-local
 WISPS = 16
 
 
@@ -748,15 +748,21 @@ def spar_box(p, a, b, r0, r1, mat, sides=6):
     f.material_index = p._slot(mat)
 
 
+ARCH_MEET = 2.45  # how high the two trunks meet
+ARCH_TWIST = 1.0  # how far up they then wind round each other
+
+
 def arch_path(side):
-    """A trunk's middle line and radius: up from its root, leaning in, crossing the other near the top and running on past it. Points (x, y, z, radius); they twist round each other as they cross."""
+    """A trunk's middle line and radius: up from its root, leaning in to meet the other, then winding round it. Points (x, y, z, radius)."""
     out = []
-    for k in range(10):
-        f = k / 9
-        y = side * (1.08 * (1 - f ** 2.1) - 0.42 * max(0.0, f - 0.74) / 0.26)
-        z = 0.0 + 3.85 * f ** 0.92
-        x = 0.14 * side * math.sin(f * 3.0) * f
-        out.append((x, y, z, 0.3 - 0.24 * f ** 0.8))
+    for k in range(8):
+        f = k / 7
+        out.append((0.0, side * (0.15 + 0.93 * (1 - f ** 2.1)), ARCH_MEET * f ** 0.92, 0.3 - 0.17 * f ** 0.8))
+    for k in range(1, 8):
+        g = k / 7
+        a = g * 3.0 * math.pi
+        rad = 0.15 * (1 - 0.35 * g)
+        out.append((side * rad * math.sin(a), side * rad * math.cos(a), ARCH_MEET + ARCH_TWIST * g, 0.13 - 0.07 * g))
     return out
 
 
@@ -816,28 +822,31 @@ def portal(p):
             p.surface.add(f)
 
 
-CROWN_BALLS = (  # round crowns, as fey wood's trees have: (x side, y side), colour, then (out from the arch's plane, out along it, up, radius) for each. Each tree holds two seasons, front and back, and autumn and snow stand on different trees, diagonally apart, so no snow sits on orange. All below the point, so the arch's point shows
-    ((1, 1), "#B7D86A", ((0.34, 0.92, 2.52, 0.46), (0.2, 0.74, 3.08, 0.35), (0.58, 0.62, 2.72, 0.25))),
-    ((1, -1), "#DB7A2E", ((0.3, 0.96, 2.62, 0.44), (0.26, 0.7, 3.14, 0.33), (0.6, 0.7, 2.5, 0.27))),
-    ((-1, 1), "#F2F5FA", ((0.32, 0.94, 2.62, 0.44), (0.24, 0.72, 3.14, 0.32), (0.58, 0.66, 2.46, 0.26))),
-    ((-1, -1), "#4E8049", ((0.34, 0.9, 2.5, 0.47), (0.2, 0.74, 3.06, 0.36), (0.58, 0.6, 2.7, 0.26))),
+CROWN_BALLS = (  # one round crown per season, off the wound trunks at the top: (out from the arch's plane, along it, up, radius), colour. Autumn and snow stand diagonally apart, so no snow sits on orange
+    ((0.4, 0.6, 3.62, 0.48), "#B7D86A"),
+    ((0.4, -0.6, 3.66, 0.47), "#DB7A2E"),
+    ((-0.4, 0.58, 3.78, 0.46), "#F2F5FA"),
+    ((-0.42, -0.58, 3.74, 0.48), "#4E8049"),
 )
 
 
 def arch_crown(p):
-    """Several round crowns per season on short branches off the arch's shoulders."""
+    """Four round crowns on branches off the top of the winding trunks, clear of the portal's sides."""
     from mathutils import Vector
-    for (sx, sy), colour, balls in CROWN_BALLS:
-        path = arch_path(sy)
-        for out, along, up, r in balls:
-            at = (sx * out, sy * along, up)
-            q = min(path, key=lambda m: abs(m[2] - (up - 0.3)))
-            spar_box(p, q[:3], at, 0.07, 0.03, "fey_gate_bark", sides=4)
-            p.blob(Vector(at), r, mat_of(colour), squash=1.08)
+    for k, ((x, y, z, r), colour) in enumerate(CROWN_BALLS):
+        best = None
+        for side in (1, -1):
+            for q in arch_path(side):
+                if ARCH_MEET + 0.45 <= q[2] <= ARCH_MEET + 0.85:
+                    d = math.dist(q[:2], (x, y))
+                    if best is None or d < best[0]:
+                        best = (d, q)
+        spar_box(p, best[1][:3], (x, y, z), 0.075, 0.03, "fey_gate_bark", sides=5)
+        p.blob(Vector((x, y, z)), r, mat_of(colour), squash=1.08)
 
 
 def gate_arch(p, rng, kind="centre"):
-    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other, with round crowns on its shoulders in the four seasons, as fey wood's trees have: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad."""
+    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other, winding round each other at the top, with four round crowns off them, one per season, as fey wood's trees have: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad."""
     from mathutils import Vector
     if kind != "centre":
         return

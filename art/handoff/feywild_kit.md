@@ -1,4 +1,4 @@
-# Feywild crossing kit hand-off (tiles_v81)
+# Feywild crossing kit hand-off (tiles_v82)
 
 Forest tier 3. **Not approved yet.** `tiles.glb` isn't re-exported and nothing has been tried in Godot. The Fey Gate is the tree arch (Ethan, Nov 4, 2026).
 
@@ -43,7 +43,7 @@ A trail starts at a glade (a stump and boulders) in a corner of the tile, as in 
 
 ## Fey Gate
 
-`feygate_centre`: a centre piece with its entrance on edge 0, a landmark of `feywild_crossing`, turned by `landmark_flow.turn`. Two slim trees cross into a pointed arch, 3.9 tall, with several round crowns per season on its shoulders, as fey wood's trees have: spring and autumn facing the entrance, snow and summer behind, so no snow sits on orange. Reference: `gate_arch`, `arch_crown`.
+`feygate_centre`: a centre piece with its entrance on edge 0, a landmark of `feywild_crossing`, turned by `landmark_flow.turn`. Two slim trees lean in to a pointed arch and wind round each other at the top, with four round crowns off them, one per season, as fey wood's trees have. Autumn and snow stand diagonally apart, so no snow sits on orange. Reference: `gate_arch`, `arch_crown`.
 
 **Portal:** four nested bands on each face of the arch, in materials of their own. Show each from the side it faces only (backface culling), unshaded or nearly so, alpha blended, with no shadows cast.
 
@@ -62,7 +62,7 @@ Previews give them emission 0.6 by day and 0.42 at night, so it doesn't dominate
 | --- | --- |
 | Count | 16 alive per gate, one particle system, always on |
 | Start | A random point on a ring 1.8–3.4 from the gate's middle, 0.5–2.4 up, on both sides of the arch |
-| Path, over 4–6 s | Spirals in, turning about 100° round the gate, to the portal's middle (0, 0, 1.35 in the gate's frame, turned with the piece). It flattens toward the portal's plane as it comes |
+| Path, over 4–6 s | Spirals in, turning about 100° round the gate, to the portal's middle (0, 0, 1.2 in the gate's frame, turned with the piece). It flattens toward the portal's plane as it comes |
 | Look | Soft round additive sprite, #E2D4FF, about 0.11 across shrinking to 0.05 |
 | Trail | A short fading trail, or 3 smaller sprites behind |
 | End | Fades over the last 15% of its life, at the portal |
