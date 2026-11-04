@@ -99,3 +99,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/ruin_study_ghostcity_night_map_v1.png` | note | Glass boxes; idea stays, to be reworked later |
 | 2026-11-04 | `art/preview/lava_shot_volcanic_peaks_fissures_channel_front_v1.png` | approved | Carved channel and new edge fall; volcanic set approved, Crater takes the same |
 | 2026-11-04 | `art/preview/lava_shot_volcanic_peaks_fissures_lobes_front_v1.png` | rejected | Stepped lobes read as a chain |
+| 2026-11-04 | `art/preview/ruins_hex_golem_hall_map_v1.png` | note | Ruins round 2 (tiles_v77, claude/art-ruins-2) not taken yet: Ethan sees the direction, wants to think more; paused |
+| 2026-11-04 | `art/preview/hills_maps_monastery_heights_beside_tile_v1.png` | rejected | Plain; green and purple mats make no sense; terrace idea underbaked, iterate and show more of it |
