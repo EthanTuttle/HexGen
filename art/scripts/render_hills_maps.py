@@ -53,6 +53,7 @@ STEP = 0.15
 MAX_STEP = 0.45  # the most a walker crosses between neighbours without stairs
 MAX_STEPS = round(MAX_STEP / STEP)
 FULL_STEP = 0.9  # one raised level, what high ground needs (design/03)
+fm.WALKABLE += "123"  # a lift's cells, by height
 BANNER_TURN = math.radians(45)  # both cloths show from the default camera and its opposite, as on the tiles
 RAISED, CLIFF = 8, 13  # in steps; RAISED leaves a sheer rise of at least FULL_STEP even where the hill falls away under it
 BOARD_TOP = -0.12  # the soil block's top, under the lowest cells' line colour
@@ -197,15 +198,16 @@ T . n n n n M .
    T h . k .   
     . s . .    
      . . .     """},
-    "snowy_peaks_shelf": {"size": "wide rectangle", "foes": WOLVES, "hill": (("north", 5),),
-                          "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.", "plan": """
+    "snowy_peaks_shelf": {"size": "wide rectangle", "foes": WOLVES, "hill": (),
+                          "rows": {0: 6, 1: 5, 2: 5, 3: 6, 4: 6, 5: 6, 6: 6, 7: 2, 8: 2, 9: 1, 10: 0}, "lift": {"1": 5, "2": 8, "3": 11},
+                          "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Gradual lifts of hex cells climb through it, each cell an ordinary move: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.", "plan": """
 . . v x w . M M
  . . . . . M M 
 . . . . . . M M
- H H ^ H H H H 
-H H H W H H H H
- H ^ H H H ^ H 
-. . . . . . . .
+ H H H 2 H H H 
+H H H W 3 H H H
+ H 2 H H H 2 H 
+H 1 3 H H 1 3 H
  . c . . . . R 
 . . . , . . . .
  . h . k . s . 
@@ -351,7 +353,11 @@ def heights_of(name, cells):
     """Each cell's height, in steps of STEP. What lies level or stands sheer is settled after the hill; stairs take the middle of what they join."""
     m = MAPS[name]
     v = variant_of(name)
-    steps = {c: round(steps_of(m, cells, c)) for c in cells}
+    if "rows" in m:  # a map that sets its heights by plan row, so its cliffs and lifts come out even
+        top_row = min(row_of(c) for c in cells)
+        steps = {c: m["rows"][row_of(c) - top_row] for c in cells}
+    else:
+        steps = {c: round(steps_of(m, cells, c)) for c in cells}
     low = min(steps.values())
     steps = {c: s - low for c, s in steps.items()}
     groups = list(fm.groups(cells, FLAT_MARKS))
@@ -362,7 +368,7 @@ def heights_of(name, cells):
         for c in group:
             steps[c] = floor
     level = {c for _, group in groups for c in group}
-    for _ in range(12):  # the ground eases into what stands level, so a walker's step stays a step
+    for _ in range(0 if "rows" in m else 12):  # the ground eases into what stands level, so a walker's step stays a step
         for c in cells:
             if c not in level:
                 near = [steps[n] for n in ((c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS) if n in level or n in steps]
@@ -370,7 +376,7 @@ def heights_of(name, cells):
     z = {}
     for c, mark in cells.items():
         add = RAISED if mark in "HWVX" else m.get("cliff", CLIFF) if mark == "K" else 0
-        z[c] = (steps[c] + add) * STEP
+        z[c] = m["lift"][mark] * STEP if mark in m.get("lift", ()) else (steps[c] + add) * STEP
     STAIRS[name] = {}
     for c, mark in cells.items():
         if mark == "^":
@@ -496,6 +502,24 @@ def stairs_piece(col, v, c, low, high, z):
         along = at.dot(d)
         outline = fm.clipped(fm.clipped(hex_out, d, along - 0.5 + k / 3), -d, -(along - 0.5 + (k + 1) / 3))
         p.prism(outline, base, z0 + (z1 - z0) * (k + 1) / 4, (top, tread)[k % 2], side_mat=rock)
+    p.finish(col)
+
+
+def lift_steps(col, v, name, cells, z):
+    """Trial: each rise of a lift dressed with three long steps on the lower cell's edge, as on the forest's ways up."""
+    p = hk.Piece("lift_steps")
+    tones = fm.way_tones(v)
+    for c in cells:
+        a = hk.cell_position(*c)
+        for dq, dr in fm.NEIGHBOURS:
+            n = (c[0] + dq, c[1] + dr)
+            rise = z.get(n, z[c]) - z[c]
+            if abs(rise - MAX_STEP) > 0.001 or (cells[c] not in MAPS[name]["lift"] and cells[n] not in MAPS[name]["lift"]):
+                continue
+            d = hk.cell_position(*n) - a
+            spin = math.atan2(d.y, d.x)
+            for k in range(3):
+                p.box(a + d * (0.46 - 0.085 * k), (0.085, 0.56, rise * (3 - k) / 4), tones[k % 2], z=z[c], spin=spin)
     p.finish(col)
 
 
@@ -690,10 +714,12 @@ def build_map(t, col, name):
         rp.place(t, piece, col, hk.cell_position(*anchor) + Vector((0, 0, z[anchor])), math.radians(60 * turn))
     for _, group in fm.groups(cells, "M"):
         r = hk.Piece(f"peaks_{min(group)}")
-        peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
+        peak_cluster(r, hk.seeded(f"{m.get('seed', name)}_{r.name}"), v, group, z, ground)
         r.finish(col)
     for _, group in fm.groups(cells, "L"):
         line_wall(col, v, group, ground)
+    if m.get("lift_steps"):
+        lift_steps(col, v, name, cells, z)
     if m.get("kind") == "path":
         hk.PALETTE.setdefault(f"cell_{v}_track", hk.PALETTE[hc.BARE[v]])
         path_steps(col, v, cells, z)
@@ -724,6 +750,8 @@ def checks_on_heights(name):
     stairs = STAIRS[name]
 
     def height(c, mark):
+        if MAPS[name].get("lift_steps") and any(abs(z.get((c[0] + dq, c[1] + dr), z[c]) - z[c] - MAX_STEP) < 0.001 for dq, dr in fm.NEIGHBOURS):
+            return z[c] + 0.36  # above the long steps on its edge
         return z[c] + (fm.BRUSH_Z if mark == "c" else 0.08 if mark == "," else (z[stairs[c][1]] - z[c]) * 0.5 + 0.02 if c in stairs else 0.02)
 
     fm.sample_z = lambda cells, c, mark: height(c, mark)
@@ -777,6 +805,9 @@ def kit_sheet(t, col):
 
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if "--lift-steps" in args:  # a trial render beside Shelf's plain lifts, not one of the set's maps
+        MAPS["snowy_peaks_shelf_long_steps"] = dict(MAPS["snowy_peaks_shelf"], lift_steps=True, seed="snowy_peaks_shelf")
+        TURNED.add("snowy_peaks_shelf_long_steps")
     only_check = "--check" in args
     if "--sheets" in args:
         make_sheets()
@@ -815,6 +846,8 @@ if __name__ == "__main__":
                 rp.render(f"hills_map_{name}_turned")
     if not only_check and wanted == list(MAPS):
         make_sheets()
-    if not only_check:
+    if "--lift-steps" in args:
+        fm.sheet(["hills_map_snowy_peaks_shelf", "hills_map_snowy_peaks_shelf_turned", "hills_map_snowy_peaks_shelf_long_steps", "hills_map_snowy_peaks_shelf_long_steps_turned"], "shelf_lift_options", 2)
+    elif not only_check:
         mc.write()
     print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)
