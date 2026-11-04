@@ -41,7 +41,7 @@ static func combat_materials(kit: Dictionary) -> void:
 			var m := mesh.surface_get_material(k) as BaseMaterial3D
 			if m:
 				m.vertex_color_use_as_albedo = true
-				m.cull_mode = BaseMaterial3D.CULL_DISABLED
+				m.cull_mode = BaseMaterial3D.CULL_DISABLED   # PLACEHOLDER stopgap until the art's facing tests clean; only webs need it then (combat_forest_kit.md -> Facing)
 
 
 static func place(parent: Node3D, kit: Dictionary, name: String, at: Vector2, angle := 0.0) -> MeshInstance3D:

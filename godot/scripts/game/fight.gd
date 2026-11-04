@@ -525,7 +525,7 @@ func _lifted_mesh(c: Vector2i) -> Mesh:
 			mask |= 1 << i
 	if treads.has(c):
 		mask = treads[c][0]
-		high = treads[c][1] + 0.03
+		high = treads[c][1] * 1.4
 		reach = Rules.LIFT_REACH
 	if mask == 0:
 		return _hex_mesh
