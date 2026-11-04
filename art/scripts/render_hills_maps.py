@@ -117,7 +117,7 @@ M M . . c
     "highlands_moor": {"size": "wide oval", "foes": BANDITS, "hill": (("north", 6), ("east", 4), ("bump", 3, 8, 3, 2)),
                        "idea": "An open moor of heather on a long slope, round one massif of bare peaks, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.", "plan": """
     v w . . T    
-   . . x . . .   
+   . x . . . .   
   T . . . , c .  
  c c . . . . . . 
 . c . I M . J . .
@@ -135,9 +135,9 @@ M M . . c
   M M  
  . M . 
 c . . I
- . v . 
-. . . .
- I x w 
+ . . . 
+. x v .
+ I . w 
 . . . .
  , . . 
 c . . T
@@ -149,17 +149,17 @@ c . . T
 K K K K K . T
  K K K K . v 
 K K K . . . .
- K K . w . . 
+ K K . . w . 
 K K . . . n .
- K . x . . . 
+ K . . x . . 
 K . . . n . c
  K . . n . . 
 K . . n . I .
  . . c . . . 
 . M . , . T .
  M M . . c . 
-. . M . . . .
- h . k . s . """},
+. M M . . . .
+ . M k h s . """},
     "snowy_peaks_pass": {"size": "tall rectangle", "foes": WOLVES, "hill": (("north", 6),), "cliff": 12,
                          "idea": "Stacked ice cliffs close in from both sides to a pass one cell wide at the middle, a frozen pond beyond it and snowy peaks below it. One gap: whoever holds it holds the map.", "plan": """
 K K . K K
@@ -746,7 +746,8 @@ def make_sheets():
         fm.sheet([f"hills_map_{n}_turned" for n in MAPS if n.startswith(v + "_")], f"hills_maps_{v}_turned", 2)
     fm.sheet([f"hills_map_{n}" for n in MAPS], "hills_maps_all", 4)
     # The tiles beside the maps, tile, front, turned on each row
-    for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),):
+    for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),
+                           ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp"))):
         fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
 
 

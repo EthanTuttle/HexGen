@@ -333,7 +333,7 @@
   "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A cluster of peaks to get behind on the way up.",
   "kind": "terrain",
   "shape": "rectangle",
-  "walkable": 64
+  "walkable": 62
  },
  "hills_crags": {
   "cells": 77,
