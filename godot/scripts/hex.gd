@@ -47,6 +47,9 @@ const PALETTE := {
 	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A",
 	"rock_wet": "#4B4D52", "rock_wet_dark": "#35373C", "rock_wet_moss": "#56704A", "gorge_lane_a": "#4F5155", "gorge_lane_b": "#575A5C",
 	"gorge_lane_c": "#62655F", "gorge_lane_d": "#7B8A66",
+	# scholars' town (hexkit.COLOURS, tiles v75)
+	"lawn": "#8FBF6A", "quad_paving": "#E4DCCB", "flagstone": "#8B8783", "terracotta": "#C4683F", "flower_red": "#D6455A",
+	"flower_yellow": "#F0C53C", "paint_blue": "#4E7FB5", "paint_teal": "#3F8F8A", "paint_green": "#5C8F52", "paint_red": "#B0473A",
 	# town variants (hexkit.COLOURS, tiles v50)
 	"mud_ground": "#CDB48A", "pale_paving": "#B7BF9F", "lantern_red": "#E5432D",
 	# desert variants (hexkit.COLOURS, tiles v60)

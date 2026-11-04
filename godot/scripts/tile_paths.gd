@@ -11,7 +11,7 @@ var links := {}          # node -> {node -> distance}
 var edge_node := {}      # edge i -> the node at the edge's middle, where its wedge has a path
 var edge_inner := {}     # edge i -> the wedge path's inner end
 var stand = null         # the node a party stops on: the landmark's entrance, the hub, or the tile's middle
-var edge_stand := {}     # rapids: land edge -> the node on its bank a party stops on, which is never in the water (design/02)
+var edge_stand := {}     # rapids: land edge -> the node on its bank a party stops on, which is never in the water (design/02); hub rings: edge -> where its way in meets the ring
 var dry_line := false    # rapids: a party's line on the tile stays out of the water
 var climb_edges := 0     # how many of edge_node are a ledge's top, not a wedge's path out to its neighbour
 
@@ -21,7 +21,7 @@ func stand_from(edge: int):
 	return edge_stand.get(edge, stand)
 
 
-## A tile with banks: stands on the one nearest p from now on.
+## A tile with banks or a ring: stands on the one nearest p from now on.
 func settle(p: Vector2) -> void:
 	var best := INF
 	for e in edge_stand:
@@ -68,8 +68,23 @@ static func build(pieces: Array, at: Vector2) -> TilePaths:
 		var spot = stand_point(p[0], p[1], at)
 		if spot != null:
 			g.stand = g._node(spot)
+		elif data.hub == null and not data.spokes.is_empty() and not Variants.LANDMARKS.has(String(p[0]).trim_suffix("_centre")):
+			g._ring_stands(data, p[1], at)
 	g._split()
 	return g
+
+
+## A centre with a ring and no hub (art/handoff/village_kit.md -> Hub rings): a party stops where its way in meets the ring.
+func _ring_stands(data: Dictionary, turn: int, at: Vector2) -> void:
+	for key in data.spokes:
+		var n := _node(_plan(data.spokes[key][-1], turn, at))
+		var edge := posmod(int(key) + turn, 6)
+		if stand == null:
+			stand = n
+		if edge_node.has(edge):
+			if edge_stand.is_empty():
+				stand = n
+			edge_stand[edge] = n
 
 
 ## Where a party stops on a piece with path data: a landmark's entrance (its approach's inner end), else the

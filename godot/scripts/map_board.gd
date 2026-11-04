@@ -967,6 +967,8 @@ func _build_tile(t: Vector2i) -> void:
 		centre = "_centre_mid"   # two steps from the landmark: on the way to it
 	if centre == "_centre" and _kit.has(name + "_centre_b") and GroundCover.hash01(t.x, t.y, 13) < 0.5:
 		centre = "_centre_b"     # a second version of the centre, so a big group doesn't repeat
+	if centre in ["_centre", "_centre_b"] and _kit.has(name + "_centre_d"):   # scholars: four features at the tile's middle
+		centre = ["_centre", "_centre_b", "_centre_c", "_centre_d"][int(GroundCover.hash01(t.x, t.y, 13) * 4)]
 	if _kit.has(name + "_centre_mill") and GroundCover.hash01(t.x, t.y, 7) < 0.5:
 		centre = "_centre_mill"  # windmills stand on about half the tiles (the preview's placeholder rule)
 	# A landmark's centre turns so its entrance (edge 0) faces its longest trail; a farm's turns by a hash of the
@@ -1036,7 +1038,7 @@ func _build_tile(t: Vector2i) -> void:
 			elif i != landmark_turns.get(t, 0):   # the entrance edge's steps are in the landmark's own piece
 				Kit.place(node, _kit, kit + "_steps_rise", at, angle)
 		# Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-		if terrain in BORDERED and kin[i]:
+		if terrain in BORDERED and kin[i] and kit != "scholars_town":   # no fence round a scholars' town
 			var join := kit + "_border_join" if walled else "border_join"
 			if not kin[(i + 1) % 6]:
 				Kit.place(node, _kit, join + "_l", at, angle)

@@ -68,6 +68,11 @@ func _run() -> void:
 		print("TOWN DONE: %d failed" % failed)
 		get_tree().quit()
 		return
+	if "--scholars" in OS.get_cmdline_user_args():   # only a walk through the scholars' town
+		await _walk_town(map, "scholars_town")
+		print("TOWN DONE: %d failed" % failed)
+		get_tree().quit()
+		return
 	_check_streets(map)
 	for v in KITS:
 		_check(not _region(v).is_empty(), "%s: spawned" % v)
@@ -75,6 +80,7 @@ func _run() -> void:
 	_check_centres(map)
 	_check_walls(map)
 	_check_effects(map)
+	_check_scholars(map)
 	_check_routes(map)
 	await _pictures(map)
 	for v in KITS:
@@ -177,6 +183,8 @@ func _check_centres(map: MapBoard) -> void:
 			var d: int = map.flow_dist[t]
 			var hash_turn := int(GroundCover.hash01(t.x * 31 + 7, t.y * 17 + 3, 14) * 6)
 			var piece: String = v + ("_centre_b" if GroundCover.hash01(t.x, t.y, 13) < 0.5 else "_centre")
+			if v == "scholars_town":
+				piece = v + ["_centre", "_centre_b", "_centre_c", "_centre_d"][int(GroundCover.hash01(t.x, t.y, 13) * 4)]
 			var turn := hash_turn
 			if d == 1:
 				piece = v + "_centre_near"
@@ -262,6 +270,70 @@ func _check_effects(map: MapBoard) -> void:
 	_check(none, "no smoke on market towns or scholars' towns")
 
 
+## A scholars' town has no fence and nothing in the art stops a party at its other edges: it's the routes that do
+## (art/handoff/village_kit.md -> Routes at the edge). An edge is open only where there's a walk, and the ring has no hub.
+func _check_scholars(map: MapBoard) -> void:
+	var g := _region("scholars_town")
+	var walks := true
+	var no_fence := true
+	var rings := true
+	var open := 0
+	var shut := 0
+	for t: Vector2i in g.tiles:
+		var graph := map.path_graph(t)
+		for c in map.tile_node(t).get_children():
+			if c.has_meta("piece") and "border_join" in String(c.get_meta("piece")):
+				no_fence = false
+		for i in 6:
+			var n: Vector2i = t + Hex.NEIGHBOURS[i]
+			if map.terrains.has(n):
+				var walk: bool = map.streets[t].has(i) if map.streets.has(n) else i in map.gates.get(t, [])
+				walks = walks and map.edge_open(t, n) == walk and (not walk or graph.edge_node.has(i))
+				open += 1 if walk else 0
+				shut += 0 if walk else 1
+		if t != g.landmark_tile:
+			var at := Hex.tile_position(t.x, t.y)
+			rings = rings and graph.stand != null and not graph.edge_stand.is_empty()
+			for e: int in graph.edge_stand:
+				var p: Vector2 = graph.nodes[graph.edge_stand[e]] - at
+				rings = rings and absf(p.length() - 1.15) < 0.01 and absf(angle_difference(p.angle(), deg_to_rad(60.0 * e))) < 0.01
+	_check(walks, "scholars_town: a party crosses an edge only along a walk (%d open, %d shut)" % [open, shut])
+	_check(no_fence, "scholars_town: no border joins")
+	_check(rings, "scholars_town: each way in stops where it meets the ring")
+	var heaviest := 0
+	for t: Vector2i in g.tiles:
+		var tris := 0
+		for c in map.tile_node(t).get_children():
+			if c is MeshInstance3D and c.has_meta("piece"):
+				for k in c.mesh.get_surface_count():
+					tris += c.mesh.surface_get_array_index_len(k) / 3
+		heaviest = maxi(heaviest, tris)
+	_check(heaviest <= 4816, "scholars_town: heaviest tile %d triangles of 4,816" % heaviest)
+
+
+## From inside a scholars' town, the way to every tile round it keeps to the walks until it's out, leaving at an edge's middle.
+func _check_ways_out(map: MapBoard) -> void:
+	var g := _region("scholars_town")
+	var worst := 0.0
+	var outs := 0
+	var seen := {}
+	for t: Vector2i in g.tiles:
+		for i in 6:
+			var n: Vector2i = t + Hex.NEIGHBOURS[i]
+			if not map.terrains.has(n) or g.tiles.has(n) or seen.has(n):
+				continue
+			seen[n] = true
+			var path := game.path_to(n)
+			if path.is_empty():
+				continue
+			outs += 1
+			for p in game.party_node.route_preview(path):
+				var c := GroundCover.tile_at(p)
+				if g.tiles.has(c):
+					worst = maxf(worst, map.path_graph(c).distance_to_paths(p))
+	_check(outs > 0 and worst <= 0.45, "scholars_town: %d ways out keep to the walks (at most %.2f m off)" % [outs, worst])
+
+
 ## Every tile of every town can be reached, on routes along the drawn streets, whichever way they come.
 func _check_routes(map: MapBoard) -> void:
 	for v in KITS:
@@ -305,6 +377,7 @@ func _pictures(map: MapBoard) -> void:
 		await _wait(0.2)
 		await _shot("%02d_street_%s" % [n, v])
 		n += 1
+	await _scholars_shots(map)
 	# A gatehouse from low down, and the walls against a plain village.
 	var g := _region("fortified_town")
 	for t: Vector2i in g.tiles:
@@ -320,6 +393,27 @@ func _pictures(map: MapBoard) -> void:
 				_tier0_shot(map)
 				await _wait(0.2)
 				await _shot("42_tier0_streets")
+				return
+
+
+## Each of a scholars' town's middle features, and a walk's end with its lanterns.
+func _scholars_shots(map: MapBoard) -> void:
+	var g := _region("scholars_town")
+	var seen := {}
+	for t: Vector2i in g.tiles:
+		for c in map.tile_node(t).get_children():
+			var piece := String(c.get_meta("piece", ""))
+			if piece.begins_with("scholars_town_centre") and not seen.has(piece):
+				seen[piece] = true
+				game.rig.frame(Hex.to3(Hex.tile_position(t.x, t.y)), 11.0, 35.0)
+				await _wait(0.2)
+				await _shot("30_%s" % piece)
+	for t: Vector2i in g.tiles:
+		for i: int in map.gates.get(t, []):
+			if map.terrains.has(t + Hex.NEIGHBOURS[i]) and not map.streets.has(t + Hex.NEIGHBOURS[i]):
+				game.rig.frame(Hex.to3(Hex.tile_position(t.x, t.y) + Water.normal(i) * Hex.A), 12.0, 30.0, 90.0 + 60.0 * i + 180.0)
+				await _wait(0.2)
+				await _shot("31_scholars_walk_end")
 				return
 
 
@@ -342,7 +436,9 @@ func _watched(goal: Vector2i, what: String) -> void:
 	var off_at := ""
 	var crossings := 0
 	var bad := 0
-	var last: Array = w.members.map(func(m): return GroundCover.tile_at(Vector2(m.node.position.x, -m.node.position.z)))
+	var last := {}   # by mini: turning back past a stopped file reorders w.members
+	for m: Dictionary in w.members:
+		last[m.node] = GroundCover.tile_at(Vector2(m.node.position.x, -m.node.position.z))
 	var first := game.party_tile
 	game.walk_to(goal)
 	while game.busy:
@@ -356,9 +452,10 @@ func _watched(goal: Vector2i, what: String) -> void:
 				if d > off:
 					off = d
 					off_at = "%s on %s" % [p, map.terrains[t]]
-			if t != last[k]:
-				var a: Vector2i = last[k]
-				last[k] = t
+			var mini: Node3D = w.members[k].node
+			if t != last[mini]:
+				var a: Vector2i = last[mini]
+				last[mini] = t
 				if map.gates.has(a) or map.gates.has(t):
 					crossings += 1
 					var mid := (Hex.tile_position(a.x, a.y) + Hex.tile_position(t.x, t.y)) * 0.5
@@ -404,6 +501,11 @@ func _walk_town(map: MapBoard, v: String) -> void:
 		if map.flow_dist[t] > map.flow_dist[far]:
 			far = t
 	await _watched(far, "%s: across the town" % v)
+	if v == "scholars_town":
+		var there := game.party_node.centre()
+		var off := Vector2(there.x, -there.z).distance_to(Hex.tile_position(far.x, far.y))
+		_check(absf(off - 1.15) < 0.1, "scholars_town: stops on the ring (%.2f m from the middle)" % off)
+		_check_ways_out(map)
 	# Out by a gate, to the land beyond it.
 	var out = null
 	for t: Vector2i in g.tiles:
