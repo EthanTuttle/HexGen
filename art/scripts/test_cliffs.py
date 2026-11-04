@@ -15,7 +15,7 @@ import ground_cover as gc
 
 X1 = 3.897  # the edge line, from a tile's middle
 HALF_EDGE = 2.25
-FOOT_Y = -0.135  # how far along edge i - 1 the foot is; variants.foot_y()
+FOOT_Y = -0.7425  # how far along edge i - 1 the foot is; variants.foot_y()
 AHEAD = 8.0  # straight out from the foot: over a whole neighbouring tile and a little beyond
 BESIDE = 4.0  # 45 degrees either way from straight out: the half of the tile the party comes through
 CLEAR = 1.5  # no other cliff section nearer the foot than this

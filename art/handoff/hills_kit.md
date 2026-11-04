@@ -1,3 +1,24 @@
+# Hills ledges update (tiles_v63)
+
+Snowy and volcanic ledges now use the canyon's cut-lane look, with a broken lip (design/07, settled Nov 3, 2026). Ethan approved it on Nov 3, 2026, with lava streaks kept off the ledge's corners, which is what tiles_v63 adds to tiles_v61. It hasn't been tried in Godot. Everything else in this kit holds, and only the `cliff_path_*`, `edge_climb*` pieces change.
+
+| | Before (v47) | Now (v63) |
+| --- | --- | --- |
+| Cut, wall to edge line (`LEDGE`) | 1.05 | 1.16 |
+| Broken lip inside that (`LEDGE_LIP`) | None | 0.1, up to 0.22 high, dipping to nothing at the foot, the top and here and there |
+| Walked line | 0.525 in from the edge line | `LEDGE_PATH`, 0.63 in, so a 1.04 base clears wall and lip |
+| Foot along edge `i - 1` (`foot_y()`) | -0.135 | -0.7425, to win back the run the inner line loses |
+| Slope | Worked out at about 29.7° | 28.88°, within the 29° ledge limit |
+| Colour | `print` or `stone_pale` | `ledge_snow_*` or `ledge_ash_*`: worn rock at the foot to the ground's colour at the top |
+
+**For Godot:** take the new pieces and path data from `art/export/tiles.glb` and `tiles_paths.json`. The rules (`cliffs.py`) don't change. The sections below still give the old width, slope and foot.
+
+**Checks:** `test_cliffs.py 20000` has 0 failures on 41,720 ledges, with the foot's distance to other cliffs now 1.51 against the 1.5 minimum. Worst tiles in the previews are 4,212 (snowy) and 3,650 (volcanic), against 4,816. The base-against-lip clearance comes from the numbers above, not from a mini placed in a render.
+
+**Previews:** `art/preview/hills_ledges_before_after_v1.png` has before on the left and after on the right. From the top: volcanic foot, snowy foot, volcanic climb, snowy climb. With the streak fix: `hills_volcanic_7_raised_v5`, `hills_volcanic_climb_raised_v5`, `hills_volcanic_7a_foot_raised_v3`. Also `hills_<snowy|volcanic>_7_raised_v4`, `_12_raised_v4`, `_low_raised_v4`, `_climb_raised_v4`, and `_<7|12><a|b|c>_foot_raised_v2`, `_top_raised_v2`.
+
+---
+
 # Hills kit hand-off (tiles_v47; range rules updated Nov 2, 2026, no piece changed)
 
 This kit holds tier 0 hills, highlands with the Clan Hall (tier 1), cold snowy peaks with the Yeti Cave and volcanic peaks with the Salamander Den (tier 2), and monastery heights with the Library (class variant). Everything below can be followed from the repo alone.
