@@ -500,8 +500,38 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Swamp:** a swamp card placed beside others and a region turning (`SWAMP PERF` lines; `marsh_tile` 26 ms a tile on the Mac, off the main thread when a region turns, on it when a card lands); the wisps, bubbles and mist on a real screen.
+- **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone), drawn double-sided; the zoom into a fight; tapping raised cells and giants on a real screen.
+- **Covered window, with Ethan at the Mac (not the phone):** cover a `--forestcheck` window and look for `UNDRAWN`, to confirm the stall's cause. Pixel failures after `UNDRAWN` mean rerun, not pass.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
+
+## Combat kit (forest, plains, farmland, village)
+
+Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatcheck` (add `--shots` for `screens/combat/`) checks it and ends `COMBAT DONE`. Debug: `-- --combatmap=<id>` or F10 (next map) jumps to any map by id. New: `combat_map.gd`, `game/combat_check.gd`; `Fight`, `CombatBoard`, `CameraRig.fly_to`, `Game.start_fight` changed.
+
+- **Which map:** the tile's variant's maps, its path maps too if the tile has paths. Tier 0 forest, plains and farmland, and terrains with no maps yet, keep the old board until their sets exist. A tier 0 village has its own maps. Hills maps come when they reach main.
+- **Drawing:** each piece is one MultiMesh, so a map costs about 20 to 30 draw calls.
+- **Moving:** `Fight.step_cost` reads `cells`, `z` and `way_up`. A step onto or off a landing is an ordinary Move, +1 going up. A rise of 0.9 or more can't be crossed.
+- **Highlights** climb the treads beside a way up (`_lifted_mesh`); bases stay lined up with their cells.
+- **Giants** (design/03): the whole body must fit at every step, any cell can be attacked, they melee from any cell, and nothing moves them.
+- **Door and window plates:** some face into their walls, so culled they vanish from outside. Stopgap: the combat kits draw double-sided (`Kit.combat_materials`). Take it out when the art turns them round. Whether the tiles' town pieces have this too hasn't been tested.
+
+| PLACEHOLDER | What it is now |
+| --- | --- |
+| Map roll | Even chance (07: how a fight picks is open) |
+| Landmark tile | Its variant's maps, until landmark fights exist |
+| Enemy mixes | The map's sample `starts`, all of them, ignoring the old count by distance |
+| Enemy stats | One stat line for every enemy, elite and giant alike |
+| Start spots | The sample starts; a fourth party member takes the nearest free level cell to the party |
+| Cover and sight | None: crops and brush do nothing, nothing blocks sight, as before |
+| Map size | No effect beyond the camera |
+| Uphill | +1 for a rise of 0.3 or more (`Rules.UPHILL_*`, design/03 open question) |
+| Giant facing and slopes | Facing fixed; level ground only, no landings (design/03 open question) |
+| Up arrow, its colour | `Fight._up_arrow`, on cells a Move goes up to |
+| Zoom | 0.6 s in, fade colour, the map coming up from 1.35 × its distance. Back to the world map is a cut, as before |
+| Camera | Maps fitted to `Rules.FIGHT_OPEN` up to `FIGHT_DISTANCE_MAX` 34 m |
+
+**Not built:** fire, smoke and other effects on maps (`combat_*_paths.json`), night on maps. **Art question open:** 21 `map_*_gates` and `_wall_to_towers` placements are in the glb with no mesh.
 
 ## Swamp kit (tiles v68)
 
@@ -510,9 +540,9 @@ Built from `art/handoff/swamp_kit.md`. `-- --swampcheck` (add `--shots` for `scr
 - **The wetland:** `SwampLands.marsh_tile`, per tile from world position. `MapBoard.marsh_of` keeps a tile's result while its look, its neighbours' looks and the region's flow hold; `start_marsh` works a turning region out off the main thread. Water, banks, tracks and planks are flat meshes; old swamp wedges and centres aren't placed.
 - **Props** are kit pieces merged into one mesh per tile (`_merge_props`), so a tile stays a few draw calls. The check reads what's placed from `marsh_of(t).props`, not from nodes.
 - **Walking:** between two trail edges a party walks the trail's bent line (`marsh_way`); otherwise the usual curve. Landmarks: `_marsh_graph` from `landmark_routes`. Heights: `_marsh_z`, gangways, the Pit's lane, the boardwalk at 0.045.
-- **Marsh mist pieces are left out**, as the hand-off allows once the effect is in: their alpha is in the glb's `COLOR_1`, and `COLOR_0`, the one Godot reads, has none, so they drew solid white.
-- **PLACEHOLDER:** `SwampFx` and `shaders/swamp_spark.gdshader` (wisps, glows, bubbles, mist, haze, green smoke), the glossy water, night glow strengths, and the dark plate under the Plague Pit, which has no slab, where the sky showed through a gap beside its lane.
-- **Not decided, left as it was:** only `swamp` and `bog` slow a walk (`Rules.TERRAIN_SPEED`); the tier 2 swamps walk at full speed, like other terrains' tier 2 variants.
+- **Marsh mist pieces** (tiles v76): colour and alpha both in `COLOR_0`, so `mist_low` needs `vertex_color_use_as_albedo` or it draws white.
+- **PLACEHOLDER:** `SwampFx` and `shaders/swamp_spark.gdshader` (wisps, glows, bubbles, mist, haze, green smoke), the glossy water, night glow strengths, and which swamps slow a walk (below).
+- **PLACEHOLDER, kept by Ethan's call for now:** only `swamp` and `bog` slow a walk (`Rules.TERRAIN_SPEED`); the tier 2 swamps walk at full speed, like other terrains' tier 2 variants.
 
 ## Rapids gorge, falls and new ledges (tiles v64)
 

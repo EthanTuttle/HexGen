@@ -1222,13 +1222,13 @@ func start_fight(t: Vector2i) -> void:
 	popup.visible = false
 	_encounter_tile = t
 	var id := _fight_map(t)
+	hud.visible = false
+	for m in _slot_marks:
+		m.visible = false
 	_fade_to(1.0, Rules.ZOOM_SECONDS, Rules.ZOOM_SECONDS - Rules.ZOOM_FADE)
 	await rig.fly_to(Hex.to3(Hex.tile_position(t.x, t.y)), Rules.ZOOM_TO, Rules.ZOOM_SECONDS)   # DOCS: a zoom into the hex, then a separate map
 	map.visible = false
 	party_node.visible = false
-	for m in _slot_marks:
-		m.visible = false
-	hud.visible = false
 	fight.visible = true
 	var distance := Rules.hex_distance(t, Rules.START_TILE)
 	var foes := mini(Rules.ENEMIES_BASE + distance / Rules.ENEMIES_PER_DISTANCE, Rules.ENEMIES_MAX)
