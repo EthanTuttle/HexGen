@@ -458,7 +458,7 @@ SPUR_MAX = 2.6         # how far a shack may stand from the walkway its spur joi
 SHACK_FOOT = 0.62      # where its rope walkway meets the ground, ahead of its point
 MIST_POINTS = {"swamp": 2, "bog": 4, "wisp_marsh": 2}  # the engine's mist effect, per tile
 PROP_BUDGET = 3900     # everything on a tile but its slab (412): water, trails, props and a landmark's piece. Leaves about 500 of 4,816 for ground cover
-LANDMARK_TRIS = {"witchhut": 1098, "wisphollow": 641, "thievesguild": 1050, "plaguepit": 1156}
+LANDMARK_TRIS = {"witchhut": 1098, "wisphollow": 641, "thievesguild": 1050, "plaguepit": 1167}
 CENTRE_GAPS = [(r_ * math.cos(math.radians(k_ * 60 + a_)), r_ * math.sin(math.radians(k_ * 60 + a_))) for k_ in range(6) for r_, a_ in ((0.74, 29.5), (1.25, 11.0), (1.25, 49.5), (1.46, 30.5))]  # the only room in a tile's middle: 0.2 to 0.35 from any route
 
 
@@ -1298,6 +1298,9 @@ def pit_centre(p, rng):
     def up(pts):  # anticlockwise from above, or for a wall, facing the pit's middle
         return pts
 
+    def cut_corner(a):
+        return wt.mul((math.cos(a), math.sin(a)), PIT_OUT + 0.5 * (0.1 * math.sin(a * 5 + 1) + 0.05 * math.sin(a * 11)))
+
     p.no_cover.append((v((0, 0)), 3.1))
     n = 72
     angles = sorted({PIT_TOP, PIT_END, PIT_FOOT} | {2 * math.pi * k / n - math.pi + 0.0 for k in range(n)})
@@ -1316,8 +1319,13 @@ def pit_centre(p, rng):
             return (PIT_OUT + 0.5 * lump) if span else (PIT_RIM + lump)
         qa, qb = wt.mul((math.cos(a0), math.sin(a0)), rim_at(a0)), wt.mul((math.cos(a1), math.sin(a1)), rim_at(a1))
         oa, ob = outer(a0), outer(a1)
-        face([(*qa, 0.0), (*oa, 0.0), (*ob, 0.0)], "rot_ground")
-        face([(*qa, 0.0), (*ob, 0.0), (*qb, 0.0)], "rot_ground")
+        if span or not {a0, a1} & {PIT_TOP, PIT_END}:
+            face([(*qa, 0.0), (*oa, 0.0), (*ob, 0.0)], "rot_ground")
+            face([(*qa, 0.0), (*ob, 0.0), (*qb, 0.0)], "rot_ground")
+        elif a0 == PIT_TOP:  # beside the cut: its ground's corner sits on this side's edge, so no crack opens there
+            face([(*qa, 0.0), (*cut_corner(a0), 0.0), (*oa, 0.0), (*ob, 0.0), (*qb, 0.0)], "rot_ground")
+        else:
+            face([(*qa, 0.0), (*oa, 0.0), (*ob, 0.0), (*cut_corner(a1), 0.0), (*qb, 0.0)], "rot_ground")
         # walls and the lane
         ca, sa, cb, sb = math.cos(a0), math.sin(a0), math.cos(a1), math.sin(a1)
         if span:
@@ -1330,7 +1338,12 @@ def pit_centre(p, rng):
             tone = "lane_rot_a" if za < -0.75 else "lane_rot_b" if za < -0.35 else "lane_rot_c"
             ia = PIT_RIM - 0.02 - 0.09 * (0.5 + 0.5 * math.sin(a0 * 19))
             ib = PIT_RIM - 0.02 - 0.09 * (0.5 + 0.5 * math.sin(a1 * 19))
-            face([wall(a0, ra - 0.03, za), wall(a1, rb - 0.03, zb), wall(a1, ib, zb), wall(a0, ia, za)], tone)
+            lane = [wall(a0, ra - 0.03, za), wall(a1, rb - 0.03, zb), wall(a1, ib, zb), wall(a0, ia, za)]
+            if a1 == PIT_TOP:  # the end walls' corners, on the lane's edge
+                lane.insert(2, wall(a1, PIT_RIM + 0.1 * math.sin(a1 * 5 + 1) + 0.05 * math.sin(a1 * 11), zb))
+            elif a0 == PIT_END:
+                lane.append(wall(a0, PIT_RIM + 0.1 * math.sin(a0 * 5 + 1) + 0.05 * math.sin(a0 * 11), za))
+            face(lane, tone)
             # below the lane's edge, down to the ooze
             face([wall(a0, ia, za), wall(a1, ib, zb), wall(a1, PIT_FLOOR_R, PIT_OOZE), wall(a0, PIT_FLOOR_R, PIT_OOZE)], rng.choice(("pit_wall", "pit_wall_dark")))
         else:
@@ -1348,6 +1361,16 @@ def pit_centre(p, rng):
     w = lambda r, z: (r * math.cos(a), r * math.sin(a), z)  # noqa: E731
     face([w(r_rim, 0.0), w(r_rim, PIT_FOOT_Z), w(r_hi - 0.03, PIT_FOOT_Z), w(r_hi, 0.0)], "pit_wall")
     face([w(r_rim, PIT_FOOT_Z), w(r_rim, 0.0), w(r_rim - 0.0, 0.0)], "pit_wall") if False else None
+
+    def wall_steps(a):  # the hole's wall down this angle, as (r, z), rim first
+        rim = PIT_RIM + 0.1 * math.sin(a * 5 + 1) + 0.05 * math.sin(a * 11)
+        return [(rim + (PIT_FLOOR_R - rim) * f, z) for f, z in ((0.0, 0.0), (0.42, -0.45), (0.8, -0.95), (1.0, PIT_OOZE))]
+    # the cut's two ends: the lane's slope and the hole's wall leave different lines, and what's between them looks under the ground
+    face([w(r, z) for r, z in [(r_low, PIT_FOOT_Z), (r_rim, PIT_FOOT_Z)] + wall_steps(a)][::-1], "pit_wall_dark")
+    a = PIT_TOP
+    r_top = PIT_RIM - 0.02 - 0.09 * (0.5 + 0.5 * math.sin(a * 19))
+    face([w(r, z) for r, z in wall_steps(a)[::-1] + [(r_top, 0.0)]], "pit_wall_dark")
+    a = PIT_END
     spit = [pit_stop()[:2]]
     a2 = PIT_FOOT
     a_ = 0
