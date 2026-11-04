@@ -1,0 +1,1282 @@
+"""Renders the custom hills combat maps from the combat camera with minis on them, and checks each plan. Plans read as in
+render_forest_maps.py; on top of a plan, each map says the shape of its hill.
+
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_hills_maps.py
+Pass names after -- to render only those maps, --check to run the checks without rendering, --sheets to redo the sheets from
+the newest renders, --kit for the props laid out, and --export for art/combat/combat_maps_hills_vN.blend and
+art/export/combat_maps_hills.json. Uses the latest combat_hills, enemy_minis, humanoid_minis and standin_minis.
+Writes art/preview/hills_map_<map>_vN.png, hills_map_<map>_turned_vN.png and the sheets hills_maps_<variant>_vN.png, hills_maps_all_vN.png.
+
+Every cell is level, at a height in steps of 0.15, set by the map's "hill": ("north", k) rises k steps across the map (likewise "west" and "east"),
+("bump", col, row, radius, k) adds or takes away k steps round a point of the plan. So a hill's shape needn't be a plane. Ice and kit pieces on
+several cells stand level, so nothing sinks into the slope.
+
+Letters as in render_forest_maps.py (. , c T O R G L B and the minis), plus n bare ground (walkable: stony ground, bare rock, ice, basalt or a stone path), and:
+  H W V X  raised ground, RAISED steps (at least 0.9) above the hill, with sheer hex sides. Snowy and volcanic only
+  K        a stack of blocked hex cells, as a cliff, CLIFF steps above the hill
+  M        a cluster of sharp peaks on any group of touching cells, made per map, one peak to a cell, the tile mountains' look, each foot on its own cell's ground
+  hills              N crag   U big broadleaf tree
+  highlands          N crag   I cairn   J clan banner
+  snowy_peaks        N ice crag
+  volcanic_peaks     I basalt columns   J lava vent   L lava fissure (any line)
+  monastery_heights  E herb terrace   I prayer flags   L low stone wall with flags (any line)
+
+The reach check walks only what a map allows: a step of up to MAX_STEP between neighbours. Anything else is a sheer rise, at least
+0.9, so a high-ground bonus (a full step up, design/03) always applies across one. Only monastery_heights has drawn roads, so only it has a path map. A map's
+"foes" say which mini w, v and x stand for: samples, as enemy mixes aren't decided. Obstacles stop movement in the plans, which nobody has decided.
+"""
+import math
+import os
+import sys
+import heapq
+from collections import deque
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bpy  # noqa: E402
+from mathutils import Vector  # noqa: E402
+
+import build_giant_minis as gm  # noqa: E402
+import build_hills_cells as hc  # noqa: E402
+import build_forest_cells as fc  # noqa: E402
+import hexkit as hk  # noqa: E402
+import map_catalogue as mc  # noqa: E402
+import render_forest_boards as rb  # noqa: E402
+import render_forest_maps as fm  # noqa: E402
+import render_plains_maps as pm  # noqa: E402
+import render_preview as rp  # noqa: E402
+import variants as vr  # noqa: E402
+
+BANDITS = pm.BANDITS
+UNDEAD = pm.UNDEAD | {"V": "enemy_skeleton_elite"}
+WOLVES = {"w": "enemy_wolf", "x": "enemy_wolf", "v": "enemy_wolf_elite", "W": "enemy_wolf", "X": "enemy_wolf", "V": "enemy_wolf_elite"}
+STEP = 0.15
+MAX_STEP = 0.45  # the most a walker crosses between neighbours
+MAX_STEPS = round(MAX_STEP / STEP)
+FULL_STEP = 0.9  # one raised level, what high ground needs (design/03)
+fm.WALKABLE += "123F"  # a lift's cells, by height; lava
+BANNER_TURN = math.radians(45)  # both cloths show from the default camera and its opposite, as on the tiles
+RAISED, CLIFF = 8, 13  # in steps; RAISED leaves a sheer rise of at least FULL_STEP even where the hill falls away under it
+BOARD_TOP = -0.12  # the soil block's top, under the lowest cells' line colour
+FLAT_MARKS = "BG"  # one piece on several cells: they stand level at the lowest
+hk.PALETTE.update({"hillside_turf": fc.mix(hk.PALETTE["hill_grass"], "#2C4020", 0.42), "highland_turf": fc.mix(hk.PALETTE["highland_grass"], "#2C4020", 0.4),
+                   "ash_shade": fc.mix(hk.PALETTE["ash_ground"], "#000000", 0.25), "snow_shade": fc.mix(hk.PALETTE["snow_ground"], "#8FA8BD", 0.5)})
+# A low step's turf, then the two rocks of a sheer side's bands.
+WALLS = {"hills": ("hillside_turf", "rock", "rock_dark"), "highlands": ("highland_turf", "rock", "rock_dark"), "snowy_peaks": ("snow_shade", "ice_rock", "ice_rock_dark"),
+         "volcanic_peaks": ("ash_shade", "basalt", "basalt_dark"), "monastery_heights": ("hillside_turf", "rock_light", "rock")}
+
+MAPS = {
+    "hills_shoulder": {"size": "wide rectangle", "foes": WOLVES, "hill": (("north", 10), ("bump", 3.5, 2, 3.6, 3), ("bump", 12, 2, 3, -2.5)),
+                       "idea": "A long grassy shoulder rising to the north-west, a gully falling away on the north-east, between two great clusters of peaks. Dark pines stand on the slope; the massif in the west splits the climb, so it means picking a side first.", "plan": """
+T . . . . . . M M
+ . . w . . . M M 
+. . . . v . . M .
+ . . . . . c . x 
+. M M . . . T . .
+ M M M . . R . . 
+. M M . , . . T .
+ c M . . . G . . 
+. . . . . G . . ,
+ T . h . k G . U 
+. . . s . . . T ."""},
+    "hills_saddle": {"size": "medium hex", "foes": BANDITS, "hill": (("north", 6), ("bump", 1, 6, 2.6, 6), ("bump", 7, 7, 2.6, 6)),
+                     "idea": "Two massifs of sharp peaks close in on a saddle. The only straight way runs up between them, past dark pines; the long ways go round each massif's outer side.", "plan": """
+    .    
+   v .   
+  T w .  
+ T . x O 
+M M . M M
+ M . . M 
+M M . M .
+ . . . . 
+T . c . T
+ R . . T 
+. . . . .
+ T . , . 
+. h . k U
+ . s . . 
+  . . .  
+   . .   
+    .    """},
+    "hills_crags": {"size": "tall rectangle", "foes": WOLVES, "hill": (("north", 13), ("east", 2)),
+                    "idea": "Up a long slope between two massifs of peaks set on the slant, an S to walk through dark pines, to a brow across the top.", "plan": """
+. . . v .
+ . x . w 
+T . . . T
+ . . . T 
+. M . . .
+ M M . . 
+M M . . c
+ M . . . 
+. . . . .
+ . . M M 
+. . M M M
+ T . M M 
+. . . M .
+ R . T . 
+. . . . .
+ h . k . 
+. s . . ."""},
+    "highlands_moor": {"size": "wide oval", "foes": BANDITS, "hill": (("north", 6), ("east", 4), ("bump", 3, 8, 3, 2)),
+                       "idea": "An open moor of heather on a long slope, round one massif of bare peaks, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.", "plan": """
+    v w . . T    
+   . x . . . .   
+  T . . . , c .  
+ c c . . . . . . 
+. c . I M . J . .
+ . . c M M . . . 
+. . . M M M c . .
+ . , n M M n . . 
+. . . n M . . c .
+ I . . n . . I . 
+  c . . . . . .  
+   . h . k c .   
+    . . s . .    """},
+    "highlands_knoll": {"size": "small hex", "foes": BANDITS, "hill": (("bump", 3, 5, 2.1, 7),),
+                        "idea": "A small round knoll inside a ring of cairns under a cluster of peaks, its top held from the start. A short walk, every way uphill, and nowhere far from the top.", "plan": """
+   M   
+  M M  
+ . M . 
+c . . J
+ . . . 
+. x v .
+ I . w 
+. . . .
+ , . . 
+c . . T
+ . , . 
+  h k  
+   s   """},
+    "highlands_scarp": {"size": "rectangle", "foes": WOLVES, "hill": (("north", 9), ("west", 4)), "cliff": 11, "banners": ((5, 1), (2, 4)),
+                        "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A cluster of peaks to get behind on the way up.", "plan": """
+K K K K K . T
+ K K K K . v 
+K K K . . . .
+ K K . . w . 
+K K . . . n .
+ K . . x . . 
+K . . . n . c
+ K . . n . . 
+K . . n . I .
+ . . c . . . 
+. M . , . T .
+ M M . . c . 
+. M M . . . .
+ . M k h s . """},
+    "snowy_peaks_pass": {"size": "tall rectangle", "foes": WOLVES, "hill": (("north", 6),), "cliff": 12,
+                         "idea": "Stacked ice cliffs close in from both sides to a pass one cell wide at the middle, a frozen pond beyond it and snowy peaks below it. One gap: whoever holds it holds the map.", "plan": """
+K K . K K
+ K v w K 
+K . x . K
+ . . . R 
+T . n . .
+ . n n . 
+. . n . T
+ K . . K 
+K K . K K
+ K . . K 
+. . . . M
+ T . . M 
+. R . M M
+ . . c . 
+. . . . T
+ . h k . 
+. s . . ."""},
+    "snowy_peaks_lake": {"size": "round", "foes": UNDEAD, "hill": (("north", 3), ("bump", 7, 7, 4.6, -6)),
+                         "idea": "A frozen lake lying level in a hollow under a cluster of snowy peaks, snow slopes all round, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.", "plan": """
+     . v .     
+    T w . T    
+   . . . x .   
+  R . . . . .  
+ . . n n n . . 
+T . n n n n M .
+ . n n n n M M 
+. . n n n n M .
+ . R n n n M . 
+. . . n n . . R
+ T . . . . . c 
+  . . , . . .  
+   T h . k .   
+    . s . .    
+     . . .     """},
+    "snowy_peaks_shelf": {"size": "wide rectangle", "foes": WOLVES, "hill": (),
+                          "rows": {0: 6, 1: 5, 2: 5, 3: 6, 4: 6, 5: 6, 6: 6, 7: 2, 8: 2, 9: 1, 10: 0}, "lift": {"1": 5, "2": 8, "3": 11},
+                          "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Gradual lifts of hex cells climb through it, each cell an ordinary move: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.", "plan": """
+. . v x w . M M
+ . . . . . M M 
+. . . . . . M M
+ H H H 2 H H H 
+H H H W 3 H H H
+ H 2 H H H 2 H 
+H 1 3 H H 1 3 H
+ . c . . . . R 
+. . . , . . . .
+ . h . k . s . 
+. . . . . . . T"""},
+    "volcanic_peaks_fissures": {"size": "wide rectangle", "foes": UNDEAD, "hill": (("east", 10),),
+                                "flow": ((12, 8), (11, 7), (10, 6), (9, 5), (8, 4), (7, 5), (6, 6), (5, 5), (4, 4), (3, 5), (2, 6), (1, 7), (0, 8), (0, 10)),
+                                "idea": "A cone on the high ground to the east pours a river of lava down the middle of the map and off its west edge, between two short fissures to the north. Walk through it and burn, or go the long way round behind the cone.", "plan": """
+. . v . w . x . .
+ . c . . . . . . 
+. L . . O . . L .
+ . L . . . . L . 
+. . F . F . . . .
+ . F F F F . . . 
+. F . F . F . . .
+ F . . . . F M M 
+F O . . c . F M .
+ . . . . . . . . 
+F . h . k s . . O"""},
+    "volcanic_peaks_crater": {"size": "big hex", "foes": UNDEAD, "hill": (),
+                              "rows": {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 2, 9: 2, 10: 1, 11: 1, 12: 1, 13: 0, 14: 0}, "lift": {"1": 4, "2": 7, "H": 10},
+                              "flow": ((6, 10), (5, 11), (6, 12), (5, 13), (6, 14)),
+                              "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with a gradual lift at either end and a lava fissure on its east. The fight goes round it.", "plan": """
+    . .    
+   w . .   
+  x . . .  
+ v O . . c 
+. . . . L .
+ . . M . L 
+2 . M M . L
+ H . M . . 
+H H M M . .
+ 2 M M . O 
+H 1 . F . h
+ . , F c s 
+  . . F k  
+   . F .   
+    . F    """},
+    "volcanic_peaks_ledge": {"size": "small rectangle", "foes": UNDEAD, "hill": (), "cliff": 14,
+                             "rows": {0: 3, 1: 3, 2: 3, 3: 3, 4: 3, 5: 2, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0}, "lift": {"1": 5, "2": 8},
+                             "idea": "A wall of stacked basalt streaked with lava across the north, a sheer ledge under it with two gradual lifts down, one lava fissure on the slant below. Small, close and hot.", "plan": """
+K K K K K
+ K K K K 
+H H H H H
+ H 2 2 H 
+V 1 W 1 .
+ . . . . 
+. . . . O
+ . . L . 
+. c L . ,
+ h L k . 
+. . s . O"""},
+    "monastery_heights_gardens": {"size": "rectangle", "foes": BANDITS, "hill": (),
+                                  "idea": "Straight terraces climb the whole slope in stone-walled bands, herbs in rows along them, under a cluster of peaks. The high walls can only be crossed at their stairs, so the fight runs along the bands from stair to stair; the low ones can be stepped up anywhere.", "levels": """
+G G G G G G G
+ G G G G G G 
+F F F F F F F
+ F F F F F F 
+E F F E F F F
+ D D D D D D 
+D D D D D D D
+ C C C C C C 
+C C C C C C C
+ C B C C B C 
+A A A A A A A
+ A A A A A A """, "plan": """
+T . v . x M M
+ . . w . M M 
+. . c c . M I
+ . c c . . . 
+1 . . 1 . . T
+ . . . c c . 
+I . . . c c I
+ . . c c . . 
+L . c c . . L
+ L 1 . . 1 L 
+. . . . . . .
+ . h . k s . """},
+    "monastery_heights_walled": {"size": "small hex", "foes": BANDITS, "hill": (),
+                                 "idea": "A small walled hilltop on stone bands, below a few peaks. A high retaining wall runs under the whole garden, crossed only by the stairs to its south door, then a low step up through the north door to the top, where the foes hold the high ground.", "levels": """
+   F   
+  F F  
+ F F F 
+F F F F
+ E E E 
+E E E E
+ D D D 
+D D D D
+ D C D 
+B B B B
+ B B B 
+  A A  
+   A   """, "plan": """
+   M   
+  M M  
+ v w . 
+. x . I
+ L . L 
+L c T L
+ c . . 
+L c . L
+ L 1 L 
+. . c c
+ . . c 
+  h k  
+   s   """},
+    "monastery_heights_ridge": {"size": "wide oval", "foes": BANDITS, "hill": (),
+                                "idea": "Terraces curve round a hilltop like the lines of a map, with a massif of peaks standing in them to the west. The hilltop's wall has two stairs, one on the south and one to the west; so does the wall below it, one on each side of the massif.", "levels": """
+    D E G G G    
+   B D E G G E   
+  A B E F G G E  
+ A B C E G G E D 
+A A B D E F E D B
+ A B D E E E E D 
+A A B D E E E D B
+ A A B D E E D B 
+A A B B D D D B B
+ A A B D D D D B 
+  A A B B C B B  
+   A A B B B B   
+    A A B B B    """, "plan": """
+    T . v . w    
+   . . . . x .   
+  . I . 1 . . .  
+ T . 1 . . . . . 
+. c . M . 1 . . .
+ c . M M . . . . 
+. c M M . . c . .
+ c . M M . c c . 
+. . . M . . . T c
+ . . . . . . . c 
+  . . . . 1 c c  
+   . h . k . .   
+    . . s . .    """},
+    "monastery_heights_climb": {"kind": "path", "size": "tall rectangle", "foes": BANDITS, "hill": (), "level_step": 1,
+                                "idea": "A stone path winds up through high terraces, crossing their walls at its own stairs and easing up between them, with low walls beside it. The only other way up is a few plain stairs far out on the west, up bands that rise in low steps that slow a walker, so the path is clearly the quick way. Herb plots sit on the bands; the top is held.", "levels": """
+Z Z Z Z Z
+ Z Z Z Z 
+Z Z Z W Z
+ W T T T 
+T T S T T
+ R R R R 
+R R R R R
+ O O R R 
+L L L L L
+ L L L L 
+L J K L L
+ J J J J 
+J G J G J
+ D D D D 
+D D D D D
+ A A C A 
+A A B A A""", "plan": """
+M M . . .
+ M v . n 
+M w . n .
+ 1 x n . 
+. . n L .
+ I n L T 
+. . . c .
+ 1 n c c 
+. . c c L
+ . n c L 
+. . n L .
+ L . n . 
+L 1 . n .
+ c . . n 
+c . . n T
+ h . n k 
+. . n s ."""},
+}
+TURNED = set(MAPS)
+HEIGHTS = {}  # map -> {cell: height}, filled by heights_of
+
+
+def variant_of(name):
+    return next(v for v in hc.VARIANTS if name.startswith(v + "_"))
+
+
+def row_of(c):
+    return 2 * c[1] + c[0]
+
+
+def steps_of(m, cells, c):
+    rows, cols = [row_of(k) for k in cells], [k[0] for k in cells]
+    q0, row0 = min(cols), min(rows)
+    col, row, total = c[0] - q0, row_of(c) - row0, 0.0
+    for term in m["hill"]:
+        if term[0] == "north":
+            total += term[1] * (max(rows) - row_of(c)) / (max(rows) - row0)
+        elif term[0] == "west":
+            total += term[1] * (max(cols) - c[0]) / (max(cols) - q0)
+        elif term[0] == "east":
+            total += term[1] * (c[0] - q0) / (max(cols) - q0)
+        else:
+            _, cc, rr, radius, k = term
+            total += k * math.exp(-(((col - cc) * 0.866) ** 2 + ((row - rr) * 0.5) ** 2) / radius ** 2)
+    return total
+
+
+def level_marks(m):
+    """A terraced map's "levels", drawn like its plan: the letter at each cell, as a character code."""
+    return {c: ord(ch) for c, ch in fm.parse(m["levels"]).items()}
+
+
+def heights_of(name, cells):
+    """Each cell's height, in steps of STEP. What lies level or stands sheer is settled after the hill."""
+    m = MAPS[name]
+    v = variant_of(name)
+    if "levels" in m:  # a terraced map draws its heights, a letter to a cell, each letter 0.45 above the last unless it says otherwise
+        steps = {c: (ch - 65) * m.get("level_step", MAX_STEPS) for c, ch in level_marks(m).items()}
+    elif "rows" in m:  # a map that sets its heights by plan row, so its cliffs and lifts come out even
+        top_row = min(row_of(c) for c in cells)
+        steps = {c: m["rows"][row_of(c) - top_row] for c in cells}
+    else:
+        steps = {c: round(steps_of(m, cells, c)) for c in cells}
+    path = flow_cells(m)
+    if path and "rows" not in m:  # banks rise from a flow, so it lies in a valley of its own
+        far = {c: 0 for c in path}
+        todo = deque(path)
+        while todo:
+            c = todo.popleft()
+            for a, b in fm.NEIGHBOURS:
+                n = (c[0] + a, c[1] + b)
+                if n in cells and n not in far:
+                    far[n] = far[c] + 1
+                    todo.append(n)
+        steps = {c: s + min(far[c], 3) for c, s in steps.items()}
+    low = min(steps.values())
+    steps = {c: s - low for c, s in steps.items()}
+    groups = list(fm.groups(cells, FLAT_MARKS))
+    if v == "snowy_peaks":
+        groups += [("n", g) for _, g in fm.groups(cells, "n")]
+    for _, group in groups:
+        floor = min(steps[c] for c in group)
+        for c in group:
+            steps[c] = floor
+    level = {c for _, group in groups for c in group}
+    for _ in range(0 if "rows" in m or "levels" in m else 12):  # the ground eases into what stands level, so a walker's step stays a step
+        for c in cells:
+            if c not in level:
+                near = [steps[n] for n in ((c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS) if n in level or n in steps]
+                steps[c] = max(max(near) - MAX_STEPS, min(min(near) + MAX_STEPS, steps[c]))
+    z = {}
+    for c, mark in cells.items():
+        add = RAISED if mark in "HWVX" else m.get("cliff", CLIFF) if mark == "K" else 0
+        z[c] = m["lift"][mark] * STEP if mark in m.get("lift", ()) else (steps[c] + add) * STEP
+    HEIGHTS[name] = z
+    return z
+
+
+def check_hill(name, cells, z):
+    """Everything walkable can be reached by what a map allows, each sheer rise is a full step, and prints what the plan offers."""
+    m = MAPS[name]
+    fm.check_base(name, cells)
+    walk = {c for c, mark in cells.items() if mark in fm.WALKABLE}
+
+    def linked(a, b):
+        return abs(z[a] - z[b]) <= MAX_STEP + 0.001
+
+    start = next(c for c, mark in cells.items() if mark == "h")
+    dist, todo = {start: 0}, deque([start])
+    while todo:
+        c = todo.popleft()
+        for a, b in fm.NEIGHBOURS:
+            n = (c[0] + a, c[1] + b)
+            if n in walk and n not in dist and linked(c, n):
+                dist[n] = dist[c] + 1
+                todo.append(n)
+    assert not walk - set(dist), f"{name}: cut off {sorted(walk - set(dist))}"
+    steepest, sheer = 0.0, 0
+    for c in walk:
+        for a, b in fm.NEIGHBOURS:
+            n = (c[0] + a, c[1] + b)
+            if n in walk:
+                gap = abs(z[c] - z[n])
+                if gap <= MAX_STEP + 0.001:
+                    steepest = max(steepest, gap)
+                else:
+                    sheer += 1
+                    assert gap >= FULL_STEP - 0.001, f"{name}: a rise of {gap:.2f} at {c}, {n}, neither a step nor a full step"
+    foes = [c for c, mark in cells.items() if mark in "wvxWVX"]
+    path = flow_cells(m)
+    if path:
+        assert set(path) == {c for c, mark in cells.items() if mark == "F"}, f"{name}: the flow's list and its plan differ"
+        assert any(cells.get((path[0][0] + a, path[0][1] + b)) == "M" for a, b in fm.NEIGHBOURS), f"{name}: the flow doesn't start at a cone"
+        assert any((path[-1][0] + a, path[-1][1] + b) not in cells for a, b in fm.NEIGHBOURS), f"{name}: the flow doesn't reach the map's edge"
+        for a, b in zip(path, path[1:]):
+            assert (b[0] - a[0], b[1] - a[1]) in fm.NEIGHBOURS, f"{name}: the flow breaks at {a}, {b}"
+            assert z[b] <= z[a] + 0.001, f"{name}: the flow runs uphill at {a}, {b}"
+
+        def cost(a, b):
+            return 2 if z[b] - z[a] >= 0.3 - 0.001 else 1
+
+        def cheapest(frm, to, through):
+            best, heap = {frm: 0}, [(0, frm)]
+            while heap:
+                d, c = heapq.heappop(heap)
+                if c == to:
+                    return d
+                for dq, dr in fm.NEIGHBOURS:
+                    n = (c[0] + dq, c[1] + dr)
+                    if n in walk and linked(c, n) and (through or cells[n] != "F") and d + cost(c, n) < best.get(n, 1e9):
+                        best[n] = d + cost(c, n)
+                        heapq.heappush(heap, (best[n], n))
+            return None
+
+        hero = next(c for c, mark in cells.items() if mark == "h")
+        lava = {c: mark for c, mark in cells.items() if mark in "hks" + "wvx"}
+        print(f"FLOW {name}: {len(path)} lava cells, hero to each foe through lava {[cheapest(hero, f, True) for f in foes]}, round it {[cheapest(hero, f, False) for f in foes]}; "
+              f"nearest lava from each start { {mark: min(fm.distance(c, q) if hasattr(fm, 'distance') else (abs(c[0] - q[0]) + abs(c[1] - q[1]) + abs(c[0] + c[1] - q[0] - q[1])) // 2 for q in path) for c, mark in lava.items()} }")
+    if m.get("kind") == "path":
+        def climb(frm, to, on_path):
+            """Cheapest moves by the rule's cost: only on the path, or touching it as little as there's any way to. Returns the moves and the path cells used."""
+            best, heap = {frm: (0, 0)}, [((0, 0), frm)]
+            while heap:
+                d, c = heapq.heappop(heap)
+                if c == to:
+                    return (d[1], d[0]) if not on_path else (d[1], None)
+                for dq, dr in fm.NEIGHBOURS:
+                    n = (c[0] + dq, c[1] + dr)
+                    if n not in walk or not linked(c, n) or (on_path and cells[n] != "n"):
+                        continue
+                    step = (d[0] + (not on_path and cells[n] == "n"), d[1] + (2 if z[n] - z[c] >= 0.3 - 0.001 else 1))
+                    if step < best.get(n, (1e9, 1e9)):
+                        best[n] = step
+                        heapq.heappush(heap, (step, n))
+            return None
+
+        ends = [c for c, mark in cells.items() if mark == "n"]
+        foot, head = min(ends, key=lambda c: z[c]), max(ends, key=lambda c: z[c])
+        off, used = climb(foot, head, False)
+        print(f"CLIMB {name}: foot {foot} to head {head}, rise {z[head] - z[foot]:.2f}: along the path {climb(foot, head, True)[0]} moves; keeping off it wherever possible {off} moves, on {used} of {len(ends)} path cells")
+    free = {c for c, mark in cells.items() if mark in ".,"}
+    print(f"PLAN {name} ({m['size']}): {len(cells)} cells, walkable {len(walk)}, brush {sum(v == 'c' for v in cells.values())}, blocked {len(cells) - len(walk)}, "
+          f"rise {max(z.values()) - min(z.values()):.2f} (walkable {max(z[c] for c in walk) - min(z[c] for c in walk):.2f}), steepest step {steepest:.2f}, sheer edges {sheer // 2}, "
+          f"nearest foe {min(dist[c] for c in foes)} steps, farthest cell {max(dist.values())}, 7-cell spots {sum(all((q + a, r + b) in free for a, b in gm.FLOWER) for q, r in cells)}")
+
+
+def surface(name, cells):
+    z = HEIGHTS[name]
+    return lambda q: z[min(cells, key=lambda c: (hk.cell_position(*c) - Vector((q.x, q.y, 0))).length)]
+
+
+def band_wall(p, rng, a, b, z0, z1, v):
+    """A cell's side from z0 up to z1: a low step in turf with some rock, a sheer side in bands of rock, as hex cells stacked up."""
+    if z1 - z0 < 0.001:
+        return
+    turf, rock_a, rock_b = WALLS[v]
+
+    def quad(h0, h1, mat):
+        verts = [p.bm.verts.new((u.x, u.y, h)) for u, h in ((a, h0), (b, h0), (b, h1), (a, h1))]
+        p.bm.faces.new(verts).material_index = p._slot(mat)
+
+    if z1 - z0 < 0.6:
+        quad(z0, z1, rock_b if rng.random() < (0.5 if v == "highlands" else 0.25) else turf)
+        return
+    n = max(2, round((z1 - z0) / 0.45))
+    for k in range(n):
+        quad(z0 + (z1 - z0) * k / n, z0 + (z1 - z0) * (k + 1) / n, (rock_a, rock_b)[(n - k) % 2])
+    if v == "volcanic_peaks" and rng.random() < 0.3:  # a streak of lava down the middle of a face, kept off its corners
+        out = Vector((-(b - a).y, (b - a).x, 0)).normalized() * 0.008
+        centre = (a + b) / 2 + (b - a) * rng.uniform(-0.2, 0.2)
+        half = (b - a).normalized() * rng.uniform(0.05, 0.1)
+        top = z1 - rng.uniform(0.05, 0.3)
+        for side in (out, -out):  # either way round, as the edge's direction doesn't say which side is out
+            verts = [p.bm.verts.new((u.x + side.x, u.y + side.y, h)) for u, h in ((centre - half, z0), (centre + half, z0), (centre + half, top), (centre - half, top))]
+            p.bm.faces.new(verts).material_index = p._slot("lava")
+
+
+def retaining_wall(p, a, b, z0, z1):
+    """A terrace's side: courses of dressed stone, coarser on the board's tall outer sides."""
+    n = max(1, round((z1 - z0) / (0.225 if z1 - z0 < 1.0 else 0.45)))
+    for k in range(n):
+        h0, h1 = z0 + (z1 - z0) * k / n, z0 + (z1 - z0) * (k + 1) / n
+        verts = [p.bm.verts.new((u.x, u.y, h)) for u, h in ((a, h0), (b, h0), (b, h1), (a, h1))]
+        p.bm.faces.new(verts).material_index = p._slot(("rock", "rock_light")[(n - k) % 2])
+
+
+def rail(p, a, b, inward, wide, high, z, mat):
+    """A low strip along a cell's edge, from a to b, set inward from it: its top and two long sides. Its underside and ends never show."""
+    up = Vector((0, 0, 1))
+    a0, b0 = a + inward, b + inward
+    a1, b1 = a0 + inward.normalized() * wide, b0 + inward.normalized() * wide
+    ring = [[p.bm.verts.new(q + up * h) for q in (a0, b0, b1, a1)] for h in (z - high, z)]
+    lay(p, (ring[1][0], ring[1][1], ring[1][2], ring[1][3]), up, mat)
+    lay(p, (ring[0][0], ring[0][1], ring[1][1], ring[1][0]), -inward, mat)
+    lay(p, (ring[0][3], ring[0][2], ring[1][2], ring[1][3]), inward, mat)
+
+
+def cell_edges(c, cells):
+    """A cell's six edges, each with the cell beyond it."""
+    at = hk.cell_position(*c)
+    for k in range(6):
+        a, b = at + fc.CORNERS[k], at + fc.CORNERS[(k + 1) % 6]
+        out = ((a + b) / 2 - at).normalized()
+        yield a, b, out, next((c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if (hk.cell_position(c[0] + dq, c[1] + dr) - at).normalized().dot(out) > 0.99)
+
+
+def terrace_curbs(col, cells, z):
+    """A stone lip along the top of every retaining wall, so a band's edge still reads from above, where its wall can't be seen."""
+    p = hk.Piece("terrace_curbs")
+    for c in cells:
+        for a, b, out, n in cell_edges(c, cells):
+            if n in cells and z[c] - z[n] > 0.4:
+                rail(p, a, b, -out * 0.0 + out * 0.03, -0.08, 0.1, z[c] + 0.035, "rock_light")
+    p.finish(col)
+
+
+def plot_edges(col, cells, z):
+    """A low timber edge round each herb plot, on its outside edges only, so touching herb cells read as one tended bed."""
+    p = hk.Piece("plot_edges")
+    for c, mark in cells.items():
+        if mark == "c":
+            for a, b, out, n in cell_edges(c, cells):
+                if cells.get(n) != "c":
+                    rail(p, a, b, -out * 0.05, 0.05, 0.06, z[c] + 0.05, "trunk_old")
+    p.finish(col)
+
+
+def hillside(col, seed, v, cells, z, name):
+    """What a kit cell can't give on a slope: under each cell a hex of line colour, a side on every edge above a lower neighbour, the board's outer sides."""
+    p = hk.Piece("hillside")
+    rng = hk.seeded(f"{seed}_hillside")
+    terraced = "levels" in MAPS[name]
+    for c in cells:
+        at, top = hk.cell_position(*c), z[c] - 0.07
+        corners = [at + fc.CORNERS[k] for k in range(6)]
+        p.bm.faces.new([p.bm.verts.new((q.x, q.y, top)) for q in corners]).material_index = p._slot("soil_dark")
+        for k in range(6):
+            a, b = corners[k], corners[(k + 1) % 6]
+            out = ((a + b) / 2 - at).normalized()
+            n = next((c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if (hk.cell_position(c[0] + dq, c[1] + dr) - at).normalized().dot(out) > 0.99)
+            if n in cells:
+                below = z[n]
+                if below < z[c] - 0.001:
+                    if terraced:
+                        retaining_wall(p, a, b, below - 0.07, top)
+                    else:
+                        band_wall(p, rng, a, b, below - 0.07, top, v)
+            else:
+                wall_from = max(BOARD_TOP, -0.07)
+                verts = [p.bm.verts.new((u.x, u.y, h)) for u, h in ((a, BOARD_TOP), (b, BOARD_TOP), (b, wall_from), (a, wall_from))]
+                p.bm.faces.new(verts).material_index = p._slot("soil_light")
+                if terraced:
+                    retaining_wall(p, a, b, wall_from, top)
+                else:
+                    band_wall(p, rng, a, b, wall_from, top, v)
+    p.finish(col)
+
+
+def lift_steps(col, v, name, cells, z):
+    """Each rise of a lift dressed with three long steps on the lower cell's edge, as on the forest's ways up."""
+    p = hk.Piece("lift_steps")
+    tones = fm.way_tones(v)
+    for c in cells:
+        a = hk.cell_position(*c)
+        for dq, dr in fm.NEIGHBOURS:
+            n = (c[0] + dq, c[1] + dr)
+            rise = z.get(n, z[c]) - z[c]
+            if abs(rise - MAX_STEP) > 0.001 or (cells[c] not in MAPS[name].get("lift", "1") and cells[n] not in MAPS[name].get("lift", "1")):
+                continue
+            d = hk.cell_position(*n) - a
+            spin = math.atan2(d.y, d.x)
+            for k in range(3):
+                p.box(a + d * (0.46 - 0.085 * k), (0.085, 0.56, rise * (3 - k) / 4), tones[k % 2], z=z[c], spin=spin)
+    p.finish(col)
+
+
+FLIGHTS = set()  # the cells a terrace's flights stand on, on the map being built
+
+
+def terrace_flights(col, v, cells, z):
+    """Each stair cell of a terrace is a landing on one straight flight: long steps up from it on its most northerly high side, and up to it on its most southerly low side."""
+    p = hk.Piece("lift_steps")
+    tones = fm.way_tones(v)
+    FLIGHTS.clear()
+    for c, mark in cells.items():
+        if mark != "1":
+            continue
+        at = hk.cell_position(*c)
+        near = [(c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS if (c[0] + a, c[1] + b) in cells]
+        ups = [n for n in near if abs(z[n] - z[c] - MAX_STEP) < 0.001 and cells[n] in fm.WALKABLE]
+        downs = [n for n in near if abs(z[c] - z[n] - MAX_STEP) < 0.001 and cells[n] in fm.WALKABLE]
+        assert ups and downs, f"stair cell {c} doesn't join two levels"
+        for low, high in ((c, max(ups, key=lambda n: hk.cell_position(*n).y)), (min(downs, key=lambda n: hk.cell_position(*n).y), c)):
+            a = hk.cell_position(*low)
+            d = hk.cell_position(*high) - a
+            for k in range(3):
+                p.box(a + d * (0.46 - 0.085 * k), (0.085, 0.56, MAX_STEP * (3 - k) / 4), tones[k % 2], z=z[low], spin=math.atan2(d.y, d.x))
+            FLIGHTS.add(low)
+    p.finish(col)
+
+
+def peak_cluster(p, rng, v, group, z, ground):
+    """Sharp massive peaks over a group of cells, as on the tiles: concave faceted sides and ragged rings in two shades of rock, each with a skirt on its lowest ring or a cap.
+    One to a cell, the tallest at the group's middle. Each foot reaches out as a tile mountain's does, as far as the group's own cells let it, and rests on the ground under it."""
+    look = hc.PEAK_LOOK[v]
+    main, side, _ = fc.ROCK[v]
+    middle = sum((hk.cell_position(*c) for c in group), Vector((0, 0, 0))) / len(group)
+    order = sorted(group, key=lambda c: ((hk.cell_position(*c) - middle).length, c))
+    centres = [hk.cell_position(*c) for c in group]
+    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
+
+    def inside(q):
+        return any(max(abs((q - c).dot(n)) for n in normals) <= hk.CELL_FLATS / 2 + 0.08 for c in centres)
+
+    top = min(5.2, 2.6 + 0.42 * len(group)) * look.get("tall", 1.0)
+    far = max((hk.cell_position(*c) - middle).length for c in group) or 1.0
+    n, shares = 10, (0.22, 0.45, 0.86, 1.0)
+    for rank, c in enumerate(order):
+        at = hk.cell_position(*c)
+        h = top * (1 - 0.42 * (at - middle).length / far) * (1.0 if rank == 0 else rng.uniform(0.76, 0.98))
+        reach = 0.62 * h
+        base = z[c]
+        phases = [rng.uniform(0, 6.3) for _ in range(4)]
+
+        def wobble(th, k):
+            return 0.16 * math.sin((2 + k) * th + phases[k]) + 0.1 * math.sin((5 + k) * th + phases[k + 2])
+
+        foot = []
+        for j in range(n):  # out along each direction until the group's cells end, not past a notch between them
+            th = 2 * math.pi * j / n
+            out = Vector((math.cos(th), math.sin(th), 0))
+            r, limit = 0.2, reach * (1 + wobble(th, 0))
+            while r + 0.04 <= limit and inside(at + out * (r + 0.04)):
+                r += 0.04
+            foot.append(out * r)
+        for _ in range(10):  # nor may the line from one direction to the next cut across a notch
+            for j in range(n):
+                m = (j + 1) % n
+                if not all(inside(at + foot[j].lerp(foot[m], t)) for t in (0.2, 0.4, 0.6, 0.8)):
+                    foot[j], foot[m] = foot[j] * 0.85, foot[m] * 0.85
+        rings = []
+        for k, share in enumerate(shares):
+            ring = []
+            for j in range(n):
+                th = 2 * math.pi * j / n
+                q = at + foot[j] * share
+                if share < 1:
+                    drop = (1 - share) ** 1.25 * (1 + 1.2 * wobble(th + k, 1))
+                    ring.append(p.bm.verts.new(q + Vector((0, 0, base + h * drop))))
+                else:
+                    ring.append(p.bm.verts.new(q + Vector((0, 0, ground(q) - 0.1))))
+            rings.append(ring)
+        apex = p.bm.verts.new(at + Vector((rng.uniform(-0.06, 0.06), rng.uniform(-0.06, 0.06), base + h)))
+        for j in range(n):
+            p.bm.faces.new((apex, rings[0][j], rings[0][(j + 1) % n])).material_index = p._slot(look.get("cap") or (main if rng.random() < 0.6 else side))
+        for band, (a, b) in enumerate(zip(rings, rings[1:])):
+            for j in range(n):
+                m = (j + 1) % n
+                for tri in ((a[j], b[j], b[m]), (a[j], b[m], a[m])):
+                    mat = main if rng.random() < 0.6 else side
+                    if band == 0 and look.get("cap") and rng.random() < 0.7:
+                        mat = look["cap"]
+                    if band == 2 and look.get("skirt"):
+                        mat = look["skirt"]
+                    p.bm.faces.new(tri).material_index = p._slot(mat)
+
+
+def cone_groups(group):
+    """A group's cells shared out to separate cones: the cell with the most of the group round it and those it touches, and so on with what's left."""
+    left, out = set(group), []
+    while left:
+        def round_it(c):
+            return [(c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS if (c[0] + a, c[1] + b) in left]
+        centre = max(sorted(left), key=lambda c: len(round_it(c)))
+        cells = [centre] + round_it(centre)
+        left -= set(cells)
+        out.append(cells)
+    return out
+
+
+def volcano(p, rng, v, cells, z, ground, run_to=None, line=None, flow=None):
+    """A smooth cone over its cells, as on the tiles: an open crater wide enough to see the lava in from the map's camera, gentle concave sides, an ash skirt.
+    Its foot goes as far as its own cells let it. run_to: where lava leaves the crater, down the side facing it."""
+    main, side, skirt = fc.ROCK[v]
+    centres = [hk.cell_position(*c) for c in cells]
+    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
+
+    def inside(q):
+        return any(max(abs((q - c).dot(n)) for n in normals) <= hk.CELL_FLATS / 2 + 0.08 for c in centres)
+
+    at = sum(centres, Vector((0, 0, 0))) / len(centres)
+    h = min(4.0, 1.5 + 0.36 * len(cells))
+    base = max(z[c] for c in cells)
+    n, shares = 14, (0.32, 0.56, 0.86, 1.0)
+    phases = [rng.uniform(0, 6.3) for _ in range(3)]
+
+    def wobble(th, k):
+        return 0.05 * math.sin((2 + k) * th + phases[k]) + 0.03 * math.sin((5 + k) * th + phases[k + 1])
+
+    foot = []
+    for j in range(n):
+        th = 2 * math.pi * j / n
+        out = Vector((math.cos(th), math.sin(th), 0))
+        r, limit = 0.2, 2.2
+        while r + 0.04 <= limit and inside(at + out * (r + 0.04)):
+            r += 0.04
+        foot.append(out * r)
+    for _ in range(10):
+        for j in range(n):
+            m = (j + 1) % n
+            if not all(inside(at + foot[j].lerp(foot[m], t)) for t in (0.2, 0.4, 0.6, 0.8)):
+                foot[j], foot[m] = foot[j] * 0.85, foot[m] * 0.85
+    round_r = sum(q.length for q in foot) / n
+    rings = []
+    for k, share in enumerate(shares):
+        ring = []
+        for j in range(n):
+            th = 2 * math.pi * j / n
+            # Round at the crater, easing out to the shape of its cells at the foot.
+            q = at + foot[j].normalized() * (foot[j].length + (round_r - foot[j].length) * (1 - k / 2 if k < 2 else 0)) * share
+            if share < 1:
+                drop = ((1 - share) / (1 - shares[0])) ** 1.1 * (1 + (0.2 if k == 0 else 1) * wobble(th + k, 1))
+                ring.append(p.bm.verts.new(q + Vector((0, 0, base + h * drop))))
+            else:
+                ring.append(p.bm.verts.new(q + Vector((0, 0, ground(q) - 0.1))))
+        rings.append(ring)
+    inner = [p.bm.verts.new(q.co.lerp(Vector((at.x, at.y, q.co.z)), 0.22) - Vector((0, 0, 0.1))) for q in rings[0]]
+    p.bm.faces.new(inner).material_index = p._slot("lava")
+    for j in range(n):
+        m = (j + 1) % n
+        for tri in ((rings[0][j], inner[j], inner[m]), (rings[0][j], inner[m], rings[0][m])):
+            p.bm.faces.new(tri).material_index = p._slot(side)
+    for band, (a, b) in enumerate(zip(rings, rings[1:])):
+        for j in range(n):
+            m = (j + 1) % n
+            for tri in ((a[j], b[j], b[m]), (a[j], b[m], a[m])):
+                mat = skirt if band == 2 else main if rng.random() < 0.6 else side
+                p.bm.faces.new(tri).material_index = p._slot(mat)
+
+    stack = [inner] + rings
+
+    def on_side(a, t):
+        """A point on the cone's side: a from the crater's pool (0) to the foot (len(stack) - 1), t round it in facets."""
+        k = min(int(a), len(stack) - 2)
+
+        def round_ring(ring):
+            m = math.floor(t)
+            return ring[m % n].co.lerp(ring[(m + 1) % n].co, t - m)
+
+        return round_ring(stack[k]).lerp(round_ring(stack[k + 1]), a - k)
+
+    def outward(q):
+        return (q - Vector((at.x, at.y, q.z))).normalized() + Vector((0, 0, 0.6))
+
+    def streak(j, thin, wide):
+        """A thin line of lava lying on the side, from the pool down."""
+        last, samples = None, 9
+        for i in range(samples):
+            a = (len(stack) - 1) * i / (samples - 1)
+            mid = on_side(a, j)
+            along = (on_side(a, j + 0.2) - on_side(a, j - 0.2)).normalized()
+            half = thin + (wide - thin) * i / (samples - 1)
+            lift = outward(mid) * 0.03
+            now = [p.bm.verts.new(q + lift) for q in (mid - along * half, mid + along * half)]
+            if last:
+                lay(p, (last[0], now[0], now[1], last[1]), outward(mid), "lava")
+            last = now
+
+    if run_to is None:
+        streak(rng.randrange(n), 0.03, 0.05)
+    else:
+        toward = run_to - at
+        j = max(range(n), key=lambda j: foot[j].normalized().dot(toward.normalized()))
+        edge = run_to + (rings[-1][j].co - run_to).to_2d().to_3d().normalized() * 0.46  # into the first cell's edge, not across it
+        channel_down(flow, rng, on_side, outward, len(stack) - 1, j, Vector((edge.x, edge.y, ground(run_to) + 0.03)), run_to + Vector((0, 0, ground(run_to) + 0.01)), line)
+
+
+def lay(p, verts, out, mat):
+    """A face of an open surface, wound to face out, so culling can't lose it."""
+    f = p.bm.faces.new(verts)
+    f.normal_update()
+    if f.normal.dot(out) < 0:
+        f.normal_flip()
+    f.material_index = p._slot(mat)
+    p.surface.add(f)
+
+
+def channel_down(p, rng, on_side, outward, top, j, end, pool, line):
+    """Lava in a channel down the cone's side, between raised banks of dark crust that wander and widen as it falls."""
+    samples = 13
+    phase, rate = rng.uniform(0, 6.3), rng.uniform(0.9, 1.3)
+    row = None
+    for i in range(samples):
+        share = i / (samples - 1)
+        a = top * share
+        t = j + 1.7 * math.sin(a * rate * 1.3 + phase) * min(1.0, share * 3) * (1 - share * 0.7)
+        mid = on_side(a, t) + Vector((0, 0, 0.13 if i == samples - 1 else 0))  # the cone's foot is buried; the channel crosses its cell above the ground
+        along = (on_side(a, t + 0.2) - on_side(a, t - 0.2)).normalized()
+        out = outward(mid)
+        half = 0.06 + 0.16 * share
+        bank = 0.05 + 0.05 * share + rng.uniform(-0.015, 0.03)
+        lift = out * 0.02
+        line.append(mid + lift)
+        spread = 1.0 + rng.uniform(-0.1, 0.15)
+        row_now = [p.bm.verts.new(mid + along * half * x * spread + out * h) for x, h in ((-1.7, 0.02), (-1.3, bank + 0.02), (-0.95, 0.045), (0.0, 0.05), (0.95, 0.045), (1.3, bank + 0.02), (1.7, 0.02))]
+        if row:
+            for k in range(6):
+                lay(p, (row[k], row_now[k], row_now[k + 1], row[k + 1]), out, "lava_flow" if k in (2, 3) else "basalt_dark")
+        row = row_now
+    line.append(end)
+    # The banks run down onto the first cell's dark rim at one clean line; the lava carries on over the rim into its pool.
+    across = (row[6].co - row[0].co).to_2d().to_3d().normalized()
+    foot = [p.bm.verts.new(end + across * 0.2 * x + Vector((0, 0, h))) for x, h in ((-1.7, -0.05), (-1.3, 0.0), (-0.95, -0.018), (0.0, -0.018), (0.95, -0.018), (1.3, 0.0), (1.7, -0.05))]
+    up = Vector((0, 0, 1))
+    for k in range(6):
+        lay(p, (row[k], foot[k], foot[k + 1], row[k + 1]), up, "lava_flow" if k in (2, 3) else "basalt_dark")
+    tip = end.lerp(pool, 0.35)
+    tongue = [p.bm.verts.new(Vector((tip.x, tip.y, pool.z)) + across * 0.17 * x) for x in (-1, 0, 1)]
+    lay(p, (foot[2], tongue[0], tongue[1], foot[3]), up, "lava_flow")
+    lay(p, (foot[3], tongue[1], tongue[2], foot[4]), up, "lava_flow")
+
+
+FLOW_LINES = {}  # a map's lava centre line, crater to board's edge: what the flow's UVs measure along
+hk.PALETTE["lava_flow"] = hk.PALETTE["lava"]
+hk.OWN_MATERIAL.add("lava_flow")  # its own material, so the engine can scroll a glow through it by its UVs
+
+
+def flow_cells(m):
+    """A lava flow's cells in order, from under the crater to the map's edge. Written by plan column and row."""
+    return [(col, (row - col) // 2) for col, row in m.get("flow", ())]
+
+
+def chunky_fall(p, rng, at, d, top, line):
+    """Lava over the board's own side: a heavy uneven mass clinging to it, thick at the middle, swelling and narrowing as it falls, hanging past the bottom in one fat lobe."""
+    out = d.normalized()
+    side = Vector((-out.y, out.x, 0))
+    face = at + d * 0.5
+    bottom = hk.SOIL_BOTTOM
+    # (where along the way down, how wide, how thick, how far it wanders to the side)
+    shape = [(None, 0.2, 0.03, 0.0), (0.0, 0.24, 0.1, 0.0)]
+    for h in (0.22, 0.45, 0.68, 0.86, 1.0):
+        shape.append((h, rng.uniform(0.2, 0.34), rng.uniform(0.1, 0.19), rng.uniform(-0.05, 0.05)))
+    shape.append((1.14, 0.12, 0.08, shape[-1][3]))
+    rows = []
+    for h, half, thick, shift in shape:
+        centre = at + d * 0.34 + Vector((0, 0, top + 0.012)) if h is None else face + Vector((0, 0, top + 0.02 + (bottom - top) * h))
+        normal = Vector((0, 0, 1)) if h is None else (out + Vector((0, 0, 0.5))).normalized() if h == 0.0 else out
+        line.append(centre + normal * thick * 0.7)
+        rows.append([p.bm.verts.new(centre + side * (shift + half * x * rng.uniform(0.92, 1.08)) + normal * thick * (0.02 + bulge)) for x, bulge in ((-1, 0.0), (-0.55, 0.8), (0, 1.0), (0.55, 0.8), (1, 0.0))])
+    for r0, r1 in zip(rows, rows[1:]):
+        for k in range(4):
+            lay(p, (r0[k], r1[k], r1[k + 1], r0[k + 1]), out + Vector((0, 0, 0.4)), "lava_flow")
+    tip = p.bm.verts.new(rows[-1][2].co + Vector((0, 0, -0.08)) - out * 0.04)
+    for k in range(4):
+        lay(p, (rows[-1][k], tip, rows[-1][k + 1]), out - Vector((0, 0, 0.4)), "lava_flow")
+
+
+def flow_uvs(p, line):
+    """The flow's own UVs, on its lava faces only: V is metres along the flow from the crater, always growing downstream; U is metres across it from its centre line."""
+    lengths = [0.0]
+    for a, b in zip(line, line[1:]):
+        lengths.append(lengths[-1] + (b - a).length)
+    uv = p.bm.loops.layers.uv.new("UVMap")
+    slot = p._slot("lava_flow")
+
+    def measure(q):
+        best = None
+        for k, (a, b) in enumerate(zip(line, line[1:])):
+            ab = b - a
+            t = max(0.0, min(1.0, (q - a).dot(ab) / (ab.length_squared or 1)))
+            near = a + ab * t
+            gap = (q - near).length
+            if best is None or gap < best[0]:
+                across = Vector((-ab.y, ab.x, 0))
+                best = (gap, lengths[k] + ab.length * t, (q - near).dot(across.normalized()) if across.length > 0.01 else 0.0)
+        return best[1], best[2]
+
+    for f in p.bm.faces:
+        if f.material_index == slot:
+            for loop in f.loops:
+                v, u = measure(loop.vert.co)
+                loop[uv].uv = (u, v)
+
+
+def lava_flow(p, cells, z, path, line, rng):
+    """Lava from cell to cell, off the edge of the map: each cell a dark rim round a wide bright pool, so it reads as danger and its hex still shows, with nothing on top of the surface. Falls over each drop."""
+    hex_out = hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]
+    up = Vector((0, 0, 1))
+    for i, c in enumerate(path):
+        at = hk.cell_position(*c)
+        top = z[c] + 0.007
+        line.append(at + Vector((0, 0, top)))
+        p.prism([at + q for q in hex_out], z[c] - 0.07, z[c] + 0.005, "basalt_dark", side_mat="basalt_dark")
+        middle = p.bm.verts.new(at + up * top)
+        ring = [p.bm.verts.new(at + q * 0.76 + up * top) for q in hex_out]
+        for k in range(6):
+            lay(p, (middle, ring[k], ring[(k + 1) % 6]), up, "lava_flow")
+        if i + 1 < len(path):
+            ways = [hk.cell_position(*path[i + 1]) - at]
+        else:  # off the map in a line with how it comes in, or as near as the board's edge allows
+            came = at - hk.cell_position(*path[i - 1])
+            ways = [max((hk.cell_position(c[0] + a, c[1] + b) - at for a, b in fm.NEIGHBOURS if (c[0] + a, c[1] + b) not in cells), key=lambda d: d.normalized().dot(came.normalized()))]
+        for d in ways + ([hk.cell_position(*path[i - 1]) - at] if i else []):  # necks to the next and the last
+            side = Vector((-d.y, d.x, 0)).normalized() * 0.18
+            edge = d * 0.5 * fc.GAP
+            lay(p, tuple(p.bm.verts.new(at + q + up * top) for q in (d * 0.3 - side, edge - side, edge + side, d * 0.3 + side)), up, "lava_flow")
+        if i + 1 < len(path):
+            d, below = ways[0], z[path[i + 1]]
+            if z[c] - below > 0.001:  # over a drop, on the side of the cell it leaves
+                q = at + d * 0.5 * fc.GAP + d.normalized() * 0.006
+                side = Vector((-d.y, d.x, 0)).normalized() * 0.18
+                lay(p, tuple(p.bm.verts.new(q + w + up * h) for w, h in ((-side, top), (-side, below), (side, below), (side, top))), d, "lava_flow")
+        else:
+            chunky_fall(p, rng, at, ways[0], z[c], line)
+
+
+def line_wall(col, v, group, ground):
+    """A lava fissure, or a low stone wall with prayer flags, joining touching cells of a line, stepping with the ground."""
+    p = hk.Piece(f"{'fissure' if v == 'volcanic_peaks' else 'wall'}_{min(group)}")
+    rng = hk.seeded(p.name)
+    pairs = []
+    for c in sorted(group):
+        a = hk.cell_position(*c)
+        pairs += [(a, hk.cell_position(c[0] + dq, c[1] + dr)) for dq, dr in fm.NEIGHBOURS[:3] if (c[0] + dq, c[1] + dr) in group]
+    for k, (a, b) in enumerate(pairs):
+        d = b - a
+        spin = math.atan2(d.y, d.x)
+        across = Vector((-d.y, d.x, 0)).normalized()
+        if v == "volcanic_peaks":
+            mid = a.lerp(b, 0.5) + across * rng.uniform(-0.09, 0.09)
+            vr.lava_cracks(p, rng, [a - d * 0.16, mid, b + d * 0.16], 0.17, lambda q: ground(q) + 0.02)
+            for t in (0.0, 0.25, 0.5, 0.75):  # dark jagged lips on both sides, so the crack reads as a gash you can't step over
+                for side in (-1, 1):
+                    q = a.lerp(b, t + rng.uniform(-0.04, 0.04)) + across * side * rng.uniform(0.22, 0.3)
+                    p.cone(q, rng.uniform(0.11, 0.17), rng.uniform(0.2, 0.42), rng.choice(("basalt", "basalt_dark")), segments=4, z=ground(q) - 0.02, spin=rng.uniform(0, 1))
+        else:
+            for t0, t1 in ((-0.1, 0.5), (0.5, 1.1)):
+                u0, u1 = a.lerp(b, t0), a.lerp(b, t1)
+                mid = (u0 + u1) / 2
+                g = ground(mid)
+                p.box(mid, ((u1 - u0).length, 0.24, 0.54), "rock_light", z=g - 0.12, spin=spin)
+                p.box(mid, ((u1 - u0).length + 0.02, 0.3, 0.05), "rock", z=g + 0.42, spin=spin)
+            if k % 2 == 0:
+                vr.flag_poles(p, rng, a, b, lambda q: ground(q) + 0.42, h=1.25)
+    p.finish(col)
+
+
+def path_steps(col, v, cells, z):
+    """A path's joins: flat where two of its cells are level, stone steps on the lower cell's edge where they aren't, so it reads as one stone way up the hill."""
+    p = hk.Piece("path_steps")
+    mat = f"cell_{v}_track"
+    for c, mark in cells.items():
+        if mark != "n":
+            continue
+        a = hk.cell_position(*c)
+        for dq, dr in fm.NEIGHBOURS:
+            n = (c[0] + dq, c[1] + dr)
+            if cells.get(n) != "n" or z[n] < z[c]:
+                continue
+            b = hk.cell_position(*n)
+            d = b - a
+            spin = math.atan2(d.y, d.x)
+            if z[n] == z[c]:
+                if dq > 0 or (dq == 0 and dr > 0):
+                    p.box((a + b) / 2, (d.length, 0.62, 0.004), mat, z=z[c], spin=spin)
+            else:
+                rise = z[n] - z[c]
+                for k, (off, h) in enumerate(((0.36, 0.34), (0.45, 0.67))):
+                    p.box(a + d * off, (0.09 + 0.02 * k, 0.64, rise * h + 0.02), mat, z=z[c] - 0.02, spin=spin)
+                p.box(a + d * 0.52, (0.08, 0.64, rise + 0.02), mat, z=z[c] - 0.02, spin=spin)
+    p.finish(col)
+
+
+def build_map(t, col, name):
+    m, v = MAPS[name], variant_of(name)
+    cells = fm.parse(m["plan"])
+    z = heights_of(name, cells)
+    check_hill(name, cells, z)
+    ground = surface(name, cells)
+    kit = hc.KIT[v]
+    p = hk.Piece("plate")
+    loop = fc.cell_loop(cells)
+    p.prism(loop, -0.3, BOARD_TOP, "soil_dark", side_mat="soil_light")
+    p.prism(loop, hk.SOIL_BOTTOM, -0.3, "soil_dark")
+    p.finish(col)
+    fm.way_tones(v)
+    hillside(col, name, v, cells, z, name)
+    k = 0
+    for c, mark in cells.items():
+        at = hk.cell_position(*c) + Vector((0, 0, z[c]))
+        n = rb.hash_cell(c)
+        turn = math.radians(60 * (n % 6))
+        if mark == "F":
+            continue
+        if mark == "c":
+            piece = f"cell_{v}_brush"
+        elif mark == ",":
+            piece = f"cell_{v}_litter"
+        elif mark == "n" or (mark == "1" and "levels" in m):
+            piece = f"cell_{v}_bare"
+        elif mark == "R":
+            piece = f"cell_{v}_block_{'ab'[n % 2]}"
+        elif mark in "BKLOMJINUG":
+            piece = f"cell_{v}_floor"
+        elif mark == "T":
+            piece = f"cell_{v}_floor" if v == "volcanic_peaks" else f"cell_{v}_cover"
+        else:
+            piece = f"cell_{v}_ground_{'abc'[(c[0] - c[1]) % 3]}"
+        rp.place(t, piece, col, at, turn if mark in "R," or (mark == "c" and v != "monastery_heights") else 0.0)
+        if mark == "T":
+            rp.place(t, f"ob_{v}_tree_{'abc'[k % 3]}", col, at, turn)
+            k += 1
+        elif mark == "O":
+            rp.place(t, f"ob_{v}_stump", col, at, turn)
+        elif mark in kit and len(kit[mark][1]) == 1:
+            rp.place(t, f"ob_{v}_{kit[mark][0]}", col, at, BANNER_TURN if kit[mark][0] == "banner" else 0.0)
+    for col_at, row in m.get("banners", ()):  # plan column and row; on cells that are already blocked, so they take none from the fight
+        c = (col_at, (row - col_at) // 2)
+        assert cells[c] in "KMIT", f"{name}: a banner at {c} would block a cell"
+        rp.place(t, f"ob_{v}_banner", col, hk.cell_position(*c) + Vector((0, 0, z[c])), BANNER_TURN)
+    for mark, group in fm.groups(cells, "BG"):
+        piece, foot = (f"ob_{v}_boulder_3", fc.TRIANGLE) if mark == "B" else (f"ob_{v}_grove_{len(group)}", {2: fc.LINE2, 3: fc.TRIANGLE}[len(group)])
+        anchor, turn = fm.fit(group, foot)
+        rp.place(t, piece, col, hk.cell_position(*anchor) + Vector((0, 0, z[anchor])), math.radians(60 * turn))
+    path = flow_cells(m)
+    flow, line = (hk.Piece("lava_flow"), FLOW_LINES.setdefault(name, [])) if path else (None, None)
+    if path:
+        line.clear()
+    for _, group in fm.groups(cells, "M"):
+        r = hk.Piece(f"peaks_{min(group)}")
+        if hc.PEAK_LOOK[v].get("crater"):
+            for shared in cone_groups(group):
+                feeds = path and any((path[0][0] + a, path[0][1] + b) in shared for a, b in fm.NEIGHBOURS)
+                volcano(r, hk.seeded(f"{name}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None, line, flow)
+        else:
+            peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
+        r.finish(col)
+    if path:
+        lava_flow(flow, cells, z, path, line, hk.seeded(f"{name}_lava_flow"))
+        flow_uvs(flow, line)
+        flow.finish(col)
+    for _, group in fm.groups(cells, "L"):
+        line_wall(col, v, group, ground)
+    if "lift" in m:
+        lift_steps(col, v, name, cells, z)
+    if "levels" in m:
+        terrace_flights(col, v, cells, z)
+        terrace_curbs(col, cells, z)
+        plot_edges(col, cells, z)
+    if m.get("kind") == "path":
+        hk.PALETTE.setdefault(f"cell_{v}_track", hk.PALETTE[hc.BARE[v]])
+        path_steps(col, v, cells, z)
+    return cells
+
+
+def cell_fields(name, c, mark):
+    """What the JSON says of a cell beyond its kind: its height, and for lava where it flows."""
+    z = HEIGHTS[name][c]
+    row = {"z": round(z, 4)} if z else {}
+    if mark == "F":  # lava: walked through, burns. flow_to is the next cell downhill, left out where it runs off the map
+        path = flow_cells(MAPS[name])
+        row["kind"] = "lava"
+        if c != path[-1]:
+            row["flow_to"] = list(path[path.index(c) + 1])
+    return row
+
+
+def place_minis(t, col, name, cells):
+    fm.place_minis(t, col, MAPS[name], cells)
+    ground = surface(name, cells)
+    for o in col.objects:
+        if o.get("piece", "").startswith(("enemy_", "standin_")):
+            o.location.z = ground(o.location)
+
+
+def checks_on_heights(name):
+    """The forest maps' camera check, sampling each cell at its own height."""
+    z = HEIGHTS[name]
+
+    def height(c, mark):
+        if "lift" in MAPS[name] and any(abs(z.get((c[0] + dq, c[1] + dr), z[c]) - z[c] - MAX_STEP) < 0.001 for dq, dr in fm.NEIGHBOURS):
+            return z[c] + 0.36  # above the long steps on its edge
+        if "levels" in MAPS[name] and c in FLIGHTS:
+            return z[c] + 0.36
+        return z[c] + (fm.BRUSH_Z if mark == "c" else 0.08 if mark == "," else 0.02)
+
+    fm.sample_z = lambda cells, c, mark: height(c, mark)
+
+    def seen_default(scene, depsgraph, c, target, el, mark):
+        cam = target + Vector((0, -math.cos(el), math.sin(el))) * fm.ENGINE_DISTANCE
+        at = hk.cell_position(*c) + Vector((0, 0, height(c, mark)))
+        to = cam - at
+        return not scene.ray_cast(depsgraph, at, to.normalized(), distance=to.length)[0]
+
+    fm.seen_default = seen_default
+
+
+def templates():
+    t = {}
+    for folder, stem in (("combat", "combat_hills"), (os.path.join("minis", "enemies"), "enemy_minis"), (os.path.join("minis", "enemies"), "humanoid_minis"),
+                         (os.path.join("minis", "standins"), "standin_minis")):
+        t.update(rp.load_templates(rp.latest(folder, stem)))
+    return t
+
+
+def make_sheets():
+    for v in hc.VARIANTS:
+        fm.sheet([f"hills_map_{n}" for n in MAPS if n.startswith(v + "_")], f"hills_maps_{v}", 2)
+        fm.sheet([f"hills_map_{n}_turned" for n in MAPS if n.startswith(v + "_")], f"hills_maps_{v}_turned", 2)
+    fm.sheet([f"hills_map_{n}" for n in MAPS], "hills_maps_all", 4)
+    # The tiles beside the maps, tile, front, turned on each row
+    for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),
+                           ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp")),
+                           ("snowy_peaks", "hills_snowy_7_raised", ("snowy_peaks_pass", "snowy_peaks_lake", "snowy_peaks_shelf")),
+                           ("volcanic_peaks", "hills_volcanic_7_raised", ("volcanic_peaks_fissures", "volcanic_peaks_crater", "volcanic_peaks_ledge")),
+                           ("monastery_heights", "hills_monastery_7_raised", ("monastery_heights_gardens", "monastery_heights_walled", "monastery_heights_ridge", "monastery_heights_climb"))):
+        fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
+
+
+def kit_sheet(t, col):
+    """Every prop by variant, on its cells, beside a hero for size."""
+    for row, v in enumerate(hc.VARIANTS):
+        x, y = -16.0, 6.0 * (2 - row) + 0.5
+        for kind, foot, _ in hc.KIT[v].values():
+            at = Vector((x, y, 0))
+            for q, r in foot:
+                rp.place(t, f"cell_{v}_floor", col, at + hk.cell_position(q, r))
+            rp.place(t, f"ob_{v}_{kind}", col, at)
+            x += 4.2
+        for piece in (f"cell_{v}_brush", f"cell_{v}_litter", f"cell_{v}_bare"):
+            rp.place(t, piece, col, Vector((x, y, 0)))
+            x += 1.3
+        rp.place(t, f"ob_{v}_tree_a", col, Vector((x, y, 0)))
+        rp.place(t, f"ob_{v}_tree_b", col, Vector((x + 1.5, y, 0)))
+        rp.place(t, "standin_hero", col, Vector((x + 3, y, 0)), rb.FACE_NORTH + 0.5)
+
+
+if __name__ == "__main__":
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    only_check = "--check" in args
+    if "--sheets" in args:
+        make_sheets()
+        sys.exit()
+    if "--export" in args:
+        fm.export(MAPS, build_map, templates, variant_of, "combat_maps_hills", cell_fields)
+        sys.exit()
+    if "--kit" in args:
+        hk.empty_scene()
+        kit_sheet(templates(), hk.new_collection("kit"))
+        rp.stage(Vector((0.0, -0.3, 0.6)), 118, fm.PITCH, lens=100)
+        rp.render("hills_obstacles")
+        sys.exit()
+    wanted = [a for a in args if not a.startswith("--")] or list(MAPS)
+    failed = []
+    for name in wanted:
+        hk.empty_scene()
+        col = hk.new_collection("map")
+        t = templates()
+        cells = build_map(t, col, name)
+        checks_on_heights(name)
+        if not fm.visibility(name, cells):
+            failed.append(name)
+        without = fm.triangles(col)
+        place_minis(t, col, name, cells)
+        print(f"TRIS {name}: map {without}, with minis {fm.triangles(col)}")
+        if not only_check:
+            target, distance = fm.framing(cells)
+            z = HEIGHTS[name]
+            target = target + Vector((0, 0, (min(z.values()) + max(z.values())) / 2))
+            rp.stage(target, distance + 1.0, fm.PITCH)
+            rp.render(f"hills_map_{name}")
+            mc.keep_image("hills_map_", name)
+            if name in TURNED:
+                rb.turn_camera(180, target)
+                rp.render(f"hills_map_{name}_turned")
+    if not only_check and wanted == list(MAPS):
+        make_sheets()
+    if not only_check:
+        mc.write()
+    print("TOO HIDDEN" if failed else "ALL CELLS SEEN", failed)
