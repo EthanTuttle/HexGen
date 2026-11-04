@@ -1359,7 +1359,7 @@ if __name__ == "__main__":
             view(hk.tile_position(0, 0), 20, 50, -math.pi / 2)
             shot("swamp_t0_close")
         for variant, lm in (("bog", "witchhut"), ("wisp_marsh", "wisphollow"), ("rot_swamp", "plaguepit"), ("smugglers_bayou", "thievesguild")):
-            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail")]
+            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail", "shack", "shack_low")]
             if not wanted(*stems):
                 continue
             lm_at = (1, 0)
@@ -1407,6 +1407,17 @@ if __name__ == "__main__":
             shot(f"swamp_{variant}_low")
             view(trail_at, 15, 50, -math.pi / 2)
             shot(f"swamp_{variant}_trail")
+            if variant == "smugglers_bayou":  # a shack, its rope walkway and the spur to the boardwalk
+                for t2 in sorted(region12):
+                    tile2 = sl.marsh_tile(scene_map, t2[0], t2[1], lf.trail_edges(t2, t_), lf.toward_edge(t2, t_) if t2 in t_ else None, 0, d_.get(t2, 9))
+                    if tile2["spurs"]:
+                        s2 = tile2["spurs"][0]
+                        m2 = hk.tile_position(*t2) + Vector((*s2[len(s2) // 2], 0))
+                        view(m2, 10, 50, -math.pi / 2)
+                        shot("swamp_smugglers_bayou_shack")
+                        view(m2 + Vector((0, 0, 0.3)), 8, 18, math.atan2(s2[0][1] - s2[-1][1], s2[0][0] - s2[-1][0]) + 1.2)
+                        shot("swamp_smugglers_bayou_shack_low")
+                        break
         sys.exit(0)
     if "stronghold-alone" in flags:
         # The Raider Stronghold on its own, on a bare tile, from several angles.

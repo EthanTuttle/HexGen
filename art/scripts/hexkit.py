@@ -394,7 +394,6 @@ OWN_MATERIAL = {"mist_low", "wisp_water", "wisp_pool", "wisp", "wisp_green", "ro
                 "window_faint", "hill_grass", "highland_grass"}
 
 WEB_ALPHA = 0.3
-MIST_ALPHA = 0.09
 
 TERRAINS = ["plains", "forest", "farmland", "river", "village", "hills", "swamp", "desert", "ruins"]
 
@@ -435,11 +434,13 @@ def material(name):
         mat.surface_render_method = "BLENDED"
         mat.use_backface_culling = False
         mat.diffuse_color = (*rgb, WEB_ALPHA)
-    if name == "mist_low":
-        bsdf.inputs["Alpha"].default_value = MIST_ALPHA
+    if name == "mist_low":  # its alpha is in the vertex colours, so it fades to nothing at its edge
+        attr = mat.node_tree.nodes.new("ShaderNodeVertexColor")
+        attr.layer_name = "Col"
+        mat.node_tree.links.new(attr.outputs["Alpha"], bsdf.inputs["Alpha"])
         mat.surface_render_method = "BLENDED"
         mat.use_backface_culling = False
-        mat.diffuse_color = (*rgb, MIST_ALPHA)
+        mat.diffuse_color = (*rgb, 0.2)
     return mat
 
 
@@ -538,6 +539,7 @@ class Piece:
         self.hub = None
         self.no_cover = []  # (centre, radius): circles the engine's ground cover keeps off (burns, yards, feathers)
         self.spokes = {}  # edge -> polyline: centre paths the engine uses only where that edge's wedge has a path
+        self.alpha = {}  # (x, y) -> alpha in the vertex colours, for a material that fades (mist_low)
         self.effects = []  # (kind, point): where the engine adds an effect such as "fire", "smoke" or "crows"
 
     def _slot(self, mat_name):
@@ -635,6 +637,9 @@ class Piece:
                 name = self.mats[poly.material_index]
                 for li in poly.loop_indices:
                     colours.data[li].color = rgba[name]
+                    if self.alpha:
+                        co = mesh.vertices[mesh.loops[li].vertex_index].co
+                        colours.data[li].color = (*rgba[name][:3], self.alpha.get((round(co.x, 4), round(co.y, 4)), 1.0))
                 poly.material_index = keep.index(name if name in OWN_MATERIAL else "kit")
             self.mats = keep
         for m in self.mats:

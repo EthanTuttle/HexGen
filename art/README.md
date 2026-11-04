@@ -171,6 +171,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v67:** swamp/marsh, third round: soft, rare mist with most left to the engine's effect, rot swamp's ooze in patches, plank spurs from bayou shacks to the walkways. Not reviewed yet. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v66:** swamp/marsh, second round: water, mud, trails and props are now a per-tile layer worked out from world position (`swamp_lands.marsh_tile`), so pools run across edges and differ per tile; trails curve and join on the way; much denser. Not reviewed yet. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v65:** swamp/marsh, first round: tier 0, bog/fen, will-o'-wisp marsh, rot swamp, smugglers' bayou, with the Witch's Hut, Wisp Hollow, Plague Pit and Thieves Guild (`scripts/swamp_lands.py`). Not reviewed yet. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v64:** rapids rebuilt as a gorge cut below ground (`scripts/gorge.py`), with cut lanes to the water, bridges from ground to ground and a long, low Troll Bridge. Ethan approved it. Hand-off: `handoff/river_kit.md`.

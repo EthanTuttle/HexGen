@@ -97,6 +97,30 @@ def check_tile(tile, region_tiles, terrains):
         for b in tile["props"][:j]:
             if sl["PROP"][a[0]][1] and sl["PROP"][b[0]][1] and math.dist(a[1:3], b[1:3]) < (sl["PROP"][a[0]][1] + sl["PROP"][b[0]][1]) * 0.99:
                 fail("props crowd each other", a[0], b[0], a[1:3])
+    # every shack joins a walkway: its rope walkway lands on a spur or the boardwalk, and a spur's far end lies under a walkway
+    drawn = [d for _, d in tile["trails"] if len(d) > 1]
+    for name, x, y, spin in tile["props"]:
+        if name == "bayou_shack":
+            note("shacks", 1, True)
+            foot = (x + sl["SHACK_FOOT"] * math.cos(spin), y + sl["SHACK_FOOT"] * math.sin(spin))
+            if not drawn:
+                fail("a shack with no walkway", q, r)
+            elif sl["line_dist"](foot, drawn) > sl["WALK_HALF"] and (not tile["spurs"] or sl["line_dist"](foot, tile["spurs"]) > sl["WALK_HALF"]):
+                fail("a shack's rope walkway lands on nothing", (q, r), foot)
+    for spur in tile["spurs"]:
+        note("longest spur", sl["line_length"](spur), True)
+        if sl["line_dist"](spur[-1], drawn) > sl["WALK_HALF"] - 0.1:
+            fail("a spur ends on nothing", (q, r), spur[-1])
+        if not all(wt.inside_tile(p, sl["WALK_HALF"] * 0.2) for p in spur):
+            fail("a spur leaves its tile", (q, r))
+        for name, x, y, _ in tile["props"]:
+            if sl["PROP"][name][0] and name != "bayou_shack" and sl["line_dist"]((x, y), [spur]) < sl["WALK_HALF"]:
+                fail("a prop stands on a spur", name, (x, y))
+    # ooze never lines up: patches stay apart, and don't make a line
+    if tile["look"] == "rot_swamp" and tile["trails"]:
+        for mat, pts in tile["ooze"]:
+            if not all(wt.inside_tile(p) for p in pts):
+                fail("ooze out of its tile", pts)
     tris = sl["tile_tris"](tile) + sl["LANDMARK_TRIS"].get(tile["name"], 0)
     note(f"triangles, {tile['name']}", tris, True)
     if tris > BUDGET:
