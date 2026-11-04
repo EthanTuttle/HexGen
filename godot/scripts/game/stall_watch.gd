@@ -55,7 +55,7 @@ static func beat(what: String) -> void:
 
 
 func _process(delta: float) -> void:
-	var now := [_beats, game.map.tiles_built, game.party_node.members[0].node.position, game.rig.target, game.rig.distance, game.fight.active, game.busy]
+	var now := [_beats, game.map.tiles_built, game.party_node.members[0].node.position, game.rig.target, game.rig.distance, game.fight.active, game.busy, game.fight.units.map(func(u): return [u.cell, u.hp])]
 	if now != _seen:
 		_seen = now
 		_quiet = 0.0

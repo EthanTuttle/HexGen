@@ -95,7 +95,7 @@ func _run() -> void:
 
 func _check_data() -> void:
 	var maps := CombatMap.all()
-	_check(maps.size() == 80, "%d maps: 16 forest, 16 farmland, 12 plains, 20 village, 16 hills" % maps.size())
+	_check(maps.size() == 86, "%d maps: 19 forest, 16 farmland, 15 plains, 20 village, 16 hills" % maps.size())
 	var missing := 0
 	var empty := 0
 	var bad_starts := []
@@ -126,7 +126,9 @@ func _check_data() -> void:
 
 
 func _check_choices() -> void:
-	for name in ["forest", "plains", "farmland", "river", "desert", "swamp"]:
+	for name in ["forest", "plains"]:
+		_check(CombatMap.choices(name, true).size() == 3, "tier 0 %s: its 3 maps" % name)
+	for name in ["farmland", "river", "desert", "swamp"]:
 		_check(CombatMap.choices(name, true).is_empty(), "%s: no maps yet, so the old board" % name)
 	_check(CombatMap.choices("deep_forest", false).size() == 3 and CombatMap.choices("deep_forest", true).size() == 4, "deep forest: 3 terrain maps, and its path map on a tile with paths")
 	_check(CombatMap.choices("village", true).size() == 4, "a tier 0 village has its own maps")
@@ -134,8 +136,6 @@ func _check_choices() -> void:
 	for name in ["hills", "highlands", "snowy_peaks", "volcanic_peaks"]:
 		_check(CombatMap.choices(name, true).size() == 3, "%s: 3 maps" % name)
 	_check(CombatMap.choices("monastery_heights", false).size() == 3 and CombatMap.choices("monastery_heights", true).size() == 4, "monastery heights: 3 terrain maps, and its path map on a tile with paths")
-	for name in ["forest", "plains"]:
-		_check(not CombatMap.all().values().any(func(m): return m.variant == name), "the art's unapproved %s maps aren't wired" % name)
 	_check(CombatMap.choices("college", true) == CombatMap.choices("scholars_town", true), "a landmark's tile takes its variant's maps (PLACEHOLDER)")
 
 
@@ -450,39 +450,49 @@ func _check_lava(walker: Dictionary) -> void:
 	_check(refused, "a giant won't step onto lava (PLACEHOLDER)")
 
 
-## The moving surface on first import: UV as the hand-off says, and growing metres along run downhill.
+## The moving surface: the art's UVs as handed off, and the field the bands run on, which grows going downhill and has no jumps where pieces meet.
 func _check_flow() -> void:
 	for row: Array in [["volcanic_peaks_fissures", -17.59], ["volcanic_peaks_crater", -9.82]]:
 		var id: String = row[0]
+		var key := "map_%s_lava_flow" % id
+		var kit := Kit.meshes("res://art/combat_maps_hills.glb")
+		var art: Mesh = kit[key]
+		for k in art.get_surface_count():
+			if art.surface_get_material(k).resource_name == "lava_flow":
+				var v: PackedVector2Array = art.surface_get_arrays(k)[Mesh.ARRAY_TEX_UV]
+				var lowest := INF
+				for q: Vector2 in v:
+					lowest = minf(lowest, q.y)
+				if not CombatMap._flowed.has(key):
+					_check(absf(lowest - row[1]) < 0.05, "%s: lava_flow's UVs are as handed off" % id)
 		_load(id)
 		await get_tree().process_frame
-		var mesh: Mesh = Kit.meshes("res://art/combat_maps_hills.glb")["map_%s_lava_flow" % id]
+		var mesh: Mesh = kit[key]
 		var surfaces := {}
-		var low := INF
-		var high := -INF
-		var y_at_start := 0.0
-		var y_at_end := 0.0
-		var wide := 0.0
 		for k in mesh.get_surface_count():
 			var m := mesh.surface_get_material(k)
 			surfaces[m.resource_name] = m is ShaderMaterial
 			if m.resource_name != "lava_flow":
 				continue
 			var data := mesh.surface_get_arrays(k)
-			var uv: PackedVector2Array = data[Mesh.ARRAY_TEX_UV]
 			var verts: PackedVector3Array = data[Mesh.ARRAY_VERTEX]
-			for i in uv.size():
-				wide = maxf(wide, absf(uv[i].x))
-				if uv[i].y > high:
-					high = uv[i].y
-					y_at_start = verts[i].y
-				if uv[i].y < low:
-					low = uv[i].y
-					y_at_end = verts[i].y
-		print("COMBAT FLOW %s: UV.y %.2f to %.2f, across up to %.2f; height %.2f at the crater end, %.2f at the far end; surfaces %s" % [id, high, low, wide, y_at_start, y_at_end, surfaces])
-		_check(surfaces.get("lava_flow", false) and absf(high - 1.0) < 0.05 and absf(low - row[1]) < 0.05, "%s: lava_flow has the moving material and its UVs as handed off" % id)
-		_check(y_at_end < y_at_start, "%s: metres along grow going downhill, so the scroll runs downstream" % id)
-		_check(surfaces.keys().size() >= 2 and surfaces.keys().any(func(n): return n != "lava_flow" and not surfaces[n]), "%s: its banks don't scroll" % id)
+			var field := PackedFloat32Array()
+			for i in verts.size():
+				field.append(CombatMap.flow_field(data, i))
+			var start := 0
+			var end := 0
+			var jump := 0.0
+			for i in verts.size():
+				start = i if field[i] < field[start] else start
+				end = i if field[i] > field[end] else end
+				for j in i:
+					if verts[i].distance_squared_to(verts[j]) < 0.04 * 0.04:
+						jump = maxf(jump, absf(field[i] - field[j]))
+			print("COMBAT FLOW %s: %.2f to %.2f m along; height %.2f at the crater, %.2f at the far end; the biggest jump where pieces meet %.3f m" % [id, field[start], field[end], verts[start].y, verts[end].y, jump])
+			_check(verts[end].y < verts[start].y, "%s: metres along grow going downhill, so the bands run downstream" % id)
+			_check(jump < 0.5, "%s: where pieces meet, the bands' field jumps at most a chevron's width, not the art's 3 to 5 m (biggest %.3f m)" % [id, jump])
+		_check(surfaces.get("lava_flow", false), "%s: lava_flow has the moving material" % id)
+		_check(surfaces.keys().any(func(n): return n != "lava_flow" and not surfaces[n]), "%s: its banks don't move" % id)
 
 
 func _hills_shots() -> void:
@@ -493,6 +503,25 @@ func _hills_shots() -> void:
 		var view := fight.opening()
 		game.rig.frame(view.target, view.distance, 52.0)
 		await _shot("hills_%s" % id)
+	# The necks between lava cells, close, and each flow's cells together.
+	if fight.hud:
+		fight.hud.visible = false
+	for row: Array in [["volcanic_peaks_crater", 11.0], ["volcanic_peaks_fissures", 15.0]]:
+		_load(row[0])
+		for u in fight.units:
+			u.mini.visible = false
+		var lava: Array = fight.grid.keys().filter(func(c): return fight.grid[c].kind == "lava")
+		var middle := Vector3.ZERO
+		for c: Vector2i in lava:
+			middle += fight.cell_point(c) / lava.size()
+		game.rig.focus = Vector2(422, 195)
+		game.rig.frame(fight.global_position + middle, row[1], 58.0)
+		await _shot("necks_%s" % row[0])
+		game.rig.frame(fight.global_position + fight.cell_point(lava[lava.size() / 2]), 5.5, 58.0)
+		await _shot("necks_%s_close" % row[0])
+	game.rig.focus = Rules.FIGHT_FOCUS
+	if fight.hud:
+		fight.hud.visible = true
 	# Move's highlights over a lift's treads, from both sides of the camera.
 	_load("snowy_peaks_shelf")
 	var u: Dictionary = fight.units[0]
@@ -513,11 +542,8 @@ func _hills_shots() -> void:
 	fight._clear_overlays()
 
 
-## Fissures' cone, river and fall, without the panels, in the look `--lavastyle=<1..4>` asks for.
+## Fissures' cone, river and fall, without the panels.
 func _lava_clip() -> void:
-	for arg: String in OS.get_cmdline_user_args():
-		if arg.begins_with("--lavastyle="):
-			CombatMap.lava_style = int(arg.trim_prefix("--lavastyle="))
 	await _wait(0.5)
 	game.debug_fight("volcanic_peaks_fissures")
 	await _wait(Rules.ZOOM_SECONDS * 2.0 + 0.5)
@@ -533,7 +559,7 @@ func _lava_clip() -> void:
 				var data := mesh.surface_get_arrays(k)
 				var uv: PackedVector2Array = data[Mesh.ARRAY_TEX_UV]
 				for i in uv.size():
-					var off := absf(1.0 - uv[i].y - view[0])
+					var off := absf(CombatMap.flow_field(data, i) - view[0])
 					if off < best:
 						best = off
 						at = data[Mesh.ARRAY_VERTEX][i]
