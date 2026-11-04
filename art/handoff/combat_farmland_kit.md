@@ -23,7 +23,7 @@ Fences, broken fences, barricades and path maps' road strips are `map_` pieces. 
 
 All maps are at least 5.5 cells deep. Triangles without minis run 1,586 to 6,392; the worst cell shows from 2 of 12 angles (`cider_orchards_terrace`), the minimum allowed. The plans assume crop can be walked through, with no cover rule for now (open in `design/03`). Enemy mixes are samples. Fire and smoke are engine effects and aren't in the pieces.
 
-## Plain farmland (tier 0, in review)
+## Plain farmland (tier 0)
 
 `farmland_fields`, `farmland_yard`, `farmland_paddocks` and the path map `farmland_track`, `variant` `farmland`, with the same piece names as the other variants, plus `ob_farmland_farmhouse_3` (3 cells), `_hay`, `_cart`, `_sacks` and trees `_tree_a/b/c`. Starts sit inside the fight camera's 28 m opening. To judge on the phone, walkable cells seen from the default camera: Fields 141 of 141, Yard 97 of 101, Paddocks 163 of 163, Track 180 of 181. `cell_farmland_brush` is a bright field cell with a few broad tufts (40 triangles), so fields can fill these maps.
 
