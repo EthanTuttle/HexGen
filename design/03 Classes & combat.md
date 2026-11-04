@@ -667,7 +667,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 ## Open questions
 
-- [ ] **New (Nov 3, 2026):** on sloped combat maps, moving uphill costs more movement (Ethan's call). How much, and does downhill cost less? Stairs through cliffs stay the ascend or descend action. High ground's range bonus needs a full step up, one raised level (0.9 in the art); a half-height rise doesn't count
+- [ ] **New (Nov 3, 2026):** on sloped combat maps, moving uphill costs more movement (Ethan's call): for now +1 for a rise of 0.3 or more, smaller rises free, downhill normal, in whole numbers (placeholder, Nov 3, 2026). Rises up to 0.45 are ordinary moves; 0.9 or more can't be crossed without stairs. Stairs through cliffs stay the ascend or descend action. High ground's range bonus needs a full step up, one raised level (0.9 in the art); a half-height rise doesn't count
 - [ ] **New:** sight on combat maps: whether a low hedge or fence (0.35 high) stops sight or gives cover, against a town wall (1.5 high)
 - [ ] **New:** cover on combat maps: whether crops and forest brush hide anyone or give any other bonus (for now they're walkable with no rule, Nov 2, 2026)
 - [ ] **New (Nov 2, 2026):** giant enemies take up 3 cells (a triangle) or 7 cells (a flower) (chosen Nov 2, 2026): how they move, get targeted and block on the grid

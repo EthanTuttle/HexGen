@@ -80,3 +80,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/hillside_c_front_v1.png` | approved | Slope look for Hills maps |
 | 2026-11-03 | `art/preview/hillside_m_front_v1.png` | rejected | Stairs through cliffs fine; build height from hexes, not a curved cliff face |
 | 2026-11-03 | `art/preview/village_scholars_map_v4.png` | rejected | Replaces earlier line: back to v3's hex paths, fuller courtyards, features in path middles |
+| 2026-11-03 | `art/preview/hills_map_hills_shoulder_v9.png` | rejected | Hills set: use tiles' big peak clusters and darker pines, more trees |
+| 2026-11-03 | `art/preview/village_scholars_open_map_v1.png` | approved | No fence, hex paths, middle features; lanterns at walk ends; try courts without row houses |
