@@ -134,7 +134,7 @@ Spoke paths on the hex grid. `village_streets.py` and `fence_gates.py` are uncha
 
 ### 1. Hub rings: the party goes round the middle
 
-Each centre has a feature at its middle, so the walk can't cross it. **These centres have no hub** (no `path_hub`). They carry a ring, radius 1.15, in `paths`, and a spoke per edge in `path_spokes`, from the wedge's street to the ring. That's the same data as a centre-only landmark (`town_ring`), so use that code.
+Each centre has a feature at its middle, so the walk can't cross it. **These centres have no hub.** In `art/export/tiles_paths.json`, `hub` is null, `paths` holds the ring, radius 1.15, and `spokes` holds one line per edge, from the wedge's street to the ring. That's the same data as a centre-only landmark (`town_ring`), so use that code.
 
 - A party comes in along its street, goes round the ring the shorter way, and leaves along the next street.
 - It stops on the ring where its way in meets it, not at the tile's middle.
