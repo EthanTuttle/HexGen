@@ -131,6 +131,9 @@ CLOSE = 0.34         # water stops this far short of an edge it can't cross
 K = 0.2              # how fast distance counts against the field's value
 TRAIL_HALF = 0.3
 WALK_HALF = 0.52     # the bayou's boardwalk
+END_R = 3.0          # where a trail's finish stands, out toward a tile's corner
+POND_R, POND_SIZE = 3.25, 0.85   # the bayou's landing stage: its pool
+END_START = 2.45     # and where the trail itself starts
 TRAIL_WANDER = 0.3   # how far a trail strays from the usual curve between its two edges
 LOOKS = {"swamp": "swamp", "bog": "bog", "witchhut": "bog", "wisp_marsh": "wisp_marsh", "wisphollow": "wisp_marsh", "rot_swamp": "rot_swamp", "plaguepit": "plaguepit", "smugglers_bayou": "smugglers_bayou", "thievesguild": "smugglers_bayou"}
 LANDMARK_KEEP = {"witchhut": 1.95, "wisphollow": 2.05, "thievesguild": 2.05, "plaguepit": 3.35}  # a landmark's own piece holds what's inside this
@@ -184,10 +187,18 @@ def trail_line(q, r, i, j):
     return line if i == a else line[::-1]
 
 
+def end_corner(q, r, i):
+    """Which corner of the tile a trail starting here comes from: two or three corners round from edge i, so it has some length. Corners are the only room off every route."""
+    return (i + (1, -2, 2, -3)[int(gc.hash01(q * 6 + i, r, 82) * 4)]) % 6
+
+
 def trail_end(q, r, i):
-    """A trail starting on this tile: from near its middle out to edge i, curving."""
+    """A trail that starts on this tile, the far end of a region's trail: from its finish, out in a corner of the tile (END_R), curving to edge i. Never just stopping in the open."""
     pa = wt.mul(wt.normal(i), X1)
-    base = [wt.mul(pa, k / 16) for k in range(17)]
+    c = wt.corner(end_corner(q, r, i))
+    start = wt.mul(c, END_START / wt.R)
+    ctrl = wt.mul(pa, 0.32)
+    base = [wt.add(wt.add(wt.mul(start, (1 - k / 24) ** 2), wt.mul(ctrl, 2 * (k / 24) * (1 - k / 24))), wt.mul(pa, (k / 24) ** 2)) for k in range(25)]
     return bent_line(base, *wander(q, r, i, i))
 
 
@@ -237,6 +248,15 @@ def tile_trails(terrains, q, r, edges, out, turn=0):
     return done
 
 
+def trail_finish(tile):
+    """A region's far tile: (corner k, x, y, spin) of what its trail ends at, or None. Spin looks out toward the corner."""
+    if len(tile["edges"]) != 1 or tile["name"] in LANDMARK_KEEP or tile["out"] is None:
+        return None
+    k = end_corner(tile["q"], tile["r"], tile["out"])
+    p = wt.mul(wt.corner(k), END_R / wt.R)
+    return k, p[0], p[1], math.atan2(p[1], p[0])
+
+
 def closed_edges(terrains, q, r):
     """World-space segments water can't cross near this tile: wherever marsh of one look meets anything else. Tiles either side of an edge see the same ones."""
     def seam(t):
@@ -275,6 +295,9 @@ def marsh_field(tile):
     w_ = VIEW[look]
     near = WATER_TRAIL + (0.12 if look == "smugglers_bayou" else 0.0)
     bank = w_["bank"]
+    pond = None
+    if look == "smugglers_bayou" and tile.get("finish"):  # the landing stage's own pool, for its boat, wholly on this tile
+        pond = wt.mul(wt.corner(tile["finish"][0]), POND_R / wt.R)
 
     def field(p):
         x, y = cx + p[0], cy + p[1]
@@ -296,6 +319,8 @@ def marsh_field(tile):
         e = min((wt.seg_dist((x, y), a, b) for a, b in closed), default=9.0)
         inner = (wt.length(p) - keep) * K
         water = min(n, w, (e - CLOSE) * K, inner)
+        if pond:
+            water = max(water, min((POND_SIZE - math.dist(p, pond)) * K, (d - WATER_DRY) * K))
         mud = max(min(n + bank, (e - 0.12) * K, inner), water + 0.035)
         return water, mud
     return field
@@ -354,14 +379,16 @@ def water_mesh(tile):
     return out
 
 
-def ribbon(line, half, taper=(False, False)):
-    """Quads along a line: (left, right) at each point."""
+def ribbon(line, half, taper=(False, False), fade=0.0):
+    """Quads along a line: (left, right) at each point. fade: the share of its length, from its start, over which it narrows to almost nothing."""
     out = []
     n = len(line) - 1
     for k, q_ in enumerate(line):
         t = wt.sub(line[min(n, k + 1)], line[max(0, k - 1)])
         o = wt.mul((-t[1], t[0]), 1 / wt.length(t))
         w = half * (0.2 if (k == 0 and taper[0]) or (k == n and taper[1]) else 1.0)
+        if fade:
+            w *= max(0.1, min(1.0, (k / n) / fade))
         out.append((wt.add(q_, wt.mul(o, w)), wt.sub(q_, wt.mul(o, w))))
     return out
 
@@ -410,6 +437,7 @@ PROP = {
     "bog_toadstools": (0.3, 0.18, 144), "bog_flowers": (0.34, 0.2, 118), "bog_charm": (0.26, 0.2, 92), "bog_toadstools_small": (0.14, 0.1, 110), "bog_flowers_small": (0.14, 0.1, 110),
     "wisp_light_a": (0.3, 0.05, 40), "wisp_light_b": (0.3, 0.05, 40), "wisp_stake": (0.16, 0.08, 40),
     "rot_log": (0.78, 0.5, 204), "rot_rock": (0.34, 0.24, 70), "rot_puddle": (0.34, 0.24, 28), "rot_scum": (0.3, 0.2, 60), "rot_fungus": (0.14, 0.1, 90),
+    "bog_trail_end": (0.6, 0.6, 464), "wisp_trail_end": (0.6, 0.6, 300), "rot_trail_end": (0.72, 0.6, 300), "bayou_landing": (1.2, 1.0, 300),
     "bayou_shack": (1.04, 0.8, 250), "bayou_boat": (0.72, 0.5, 56), "bayou_goods": (0.5, 0.4, 60), "bayou_lantern": (0.2, 0.16, 48), "bayou_crate": (0.14, 0.12, 12),
 }
 for look_ in ("swamp", "bog", "wisp_marsh", "rot_swamp", "smugglers_bayou", "plaguepit"):
@@ -424,6 +452,8 @@ SCATTER = {
     "smugglers_bayou": dict(wet=("bayou_boat", "bayou_boat", "marsh_tree_c", "marsh_reeds_a"), rim=("marsh_reeds_a", "marsh_reeds_b", "marsh_tree_b", "marsh_cattails_b", "marsh_log_b"), dry=("marsh_tree_a", "marsh_tree_b", "bayou_goods", "marsh_log_a", "marsh_reeds_b", "marsh_tree_c", "marsh_reeds_a"), gap=("bayou_crate", "marsh_reeds_small", "marsh_reeds_small"), trail=("bayou_lantern",), keep=0.85, mist=0.15),
 }
 PROP_CLEAR = 0.42
+COVER_CLEAR = 0.2      # ground cover keeps this far off planks and tracks: a tuft is up to 0.2 wide
+FINISH = {"bog": "bog_trail_end", "wisp_marsh": "wisp_trail_end", "rot_swamp": "rot_trail_end", "smugglers_bayou": "bayou_landing"}  # what each look's trail ends at
 SPUR_MAX = 2.6         # how far a shack may stand from the walkway its spur joins
 SHACK_FOOT = 0.62      # where its rope walkway meets the ground, ahead of its point
 MIST_POINTS = {"swamp": 2, "bog": 4, "wisp_marsh": 2}  # the engine's mist effect, per tile
@@ -440,8 +470,11 @@ def marsh_props(tile, field, spent):
     budget = PROP_BUDGET - spent - LANDMARK_TRIS.get(name, 0)
     lines, trail_lines = tile["lines"], tile["trail_lines"]
     placed = list(tile["shack"])
+    if tile["finish"]:
+        placed.append((FINISH[look], tile["finish"][1], tile["finish"][2], tile["finish"][3]))
     spent_props = sum(PROP[o[0]][2] for o in placed)
     spurs = tile["spurs"]
+    tile_half = WALK_HALF if look == "smugglers_bayou" else TRAIL_HALF
 
     def off_spurs(p, r_):
         return not spurs or line_dist(p, spurs) >= WALK_HALF + r_
@@ -449,7 +482,8 @@ def marsh_props(tile, field, spent):
     def fits(prop, p, spin=0.0, trail_extra=0.0):
         reach, room, _ = PROP[prop]
         reach = max(reach, PROP_CLEAR)  # a mini's base is about 0.52 either side of its line; only marks and the middle's small things stand closer
-        if line_dist(p, lines) < reach or (trail_lines and line_dist(p, trail_lines) < reach + trail_extra) or not off_spurs(p, min(reach, 0.3)):
+        need = max(reach + trail_extra, tile_half + min(PROP[prop][0], 0.3) + 0.04)  # clear of the planks or track, not just the line
+        if line_dist(p, lines) < reach or (trail_lines and line_dist(p, trail_lines) < need) or not off_spurs(p, min(reach, 0.3)):
             return False
         if not wt.inside_tile(p, max(PROP[prop][0], 0.08)) or wt.length(p) < tile["keep"] + reach:
             return False
@@ -485,7 +519,7 @@ def marsh_props(tile, field, spent):
                 prop = table["gap"][int(gc.hash01(q * 6 + k, r, 53) * len(table["gap"]))]
                 jig = (0.05 * (gc.hash01(q * 6 + k, r, 54) - 0.5), 0.05 * (gc.hash01(q * 6 + k, r, 55) - 0.5))
                 p2 = wt.add(p, jig)
-                if (not trail_lines or line_dist(p2, trail_lines) >= TRAIL_HALF + 0.1) and off_spurs(p2, 0.1) and not any(math.dist(p2, o[1:3]) < PROP[prop][1] + PROP[o[0]][1] for o in placed):
+                if (not trail_lines or line_dist(p2, trail_lines) >= tile_half + 0.12) and off_spurs(p2, 0.1) and not any(math.dist(p2, o[1:3]) < PROP[prop][1] + PROP[o[0]][1] for o in placed):
                     placed.append((prop, p2[0], p2[1], gc.hash01(q * 6 + k, r, 56) * 6.283))
                     spent_props += PROP[prop][2]
     # a little mist that stays when the engine's effect is off, and only some tiles have it. It drifts over anything, routes too: a party walks through it
@@ -539,7 +573,7 @@ def shack_spot(tile, field):
     for k in sorted(range(6), key=order):
         p = wt.mul(wt.corner(k), 3.0 / wt.R)
         reach = PROP["bayou_shack"][0]
-        if line_dist(p, tile["lines"]) < reach or line_dist(p, drawn) < reach or line_dist(p, drawn) > SPUR_MAX:
+        if line_dist(p, tile["lines"]) < reach or line_dist(p, drawn) < reach or line_dist(p, drawn) > SPUR_MAX or (tile["finish"] and tile["finish"][0] == k):
             continue
         near_ = min((wt.add(a, wt.mul(wt.sub(b, a), f / 6)) for d in drawn for a, b in zip(d, d[1:]) for f in range(7)), key=lambda c: math.dist(c, p))
         d = wt.mul(wt.sub(near_, p), 1 / math.dist(near_, p))
@@ -547,11 +581,36 @@ def shack_spot(tile, field):
         foot = wt.add(p, wt.mul(d, SHACK_FOOT))
         if line_dist(foot, drawn) <= WALK_HALF - 0.04:
             return [("bayou_shack", p[0], p[1], spin)], []  # its rope walkway lands on the boardwalk itself
-        ahead = math.dist(foot, near_) - 0.26
-        base = [wt.add(p, wt.mul(d, SHACK_FOOT - 0.16 + (ahead + 0.16) * f / 8)) for f in range(9)]
-        h = 0.1 * (gc.hash01(q, r, 70) - 0.5)
-        return [("bayou_shack", p[0], p[1], spin)], [bent_line(base, h, 0.0)]
+        ahead = math.dist(foot, near_) - 0.04  # well under the walkway, so its last plank can't leave a sliver whichever way the walkway bends
+        return [("bayou_shack", p[0], p[1], spin)], [[wt.add(p, wt.mul(d, SHACK_FOOT - 0.16 + (ahead + 0.16) * f / 8)) for f in range(9)]]
     return [], []
+
+
+def blob_outline(c, long_, wide, spin, key, r):
+    pts = []
+    for j in range(7):
+        a = 2 * math.pi * j / 7
+        m = 0.8 + 0.4 * gc.hash01(key, j + r * 7, 77)
+        x_, y_ = long_ * m * math.cos(a), wide * m * math.sin(a)
+        pts.append(wt.add(c, (x_ * math.cos(spin) - y_ * math.sin(spin), x_ * math.sin(spin) + y_ * math.cos(spin))))
+    return pts
+
+
+def track_flecks(tile):
+    """Where a track fades out at its finish: a few worn patches, thinning, so it doesn't stop on a line."""
+    if not tile.get("finish") or tile["look"] == "smugglers_bayou":
+        return []
+    line = tile["trails"][0][0]
+    q, r = tile["q"], tile["r"]
+    out = []
+    for k in range(6):
+        at, d = along(line, 0.15 + 0.32 * k)
+        side = TRAIL_HALF * 0.75 * (2 * gc.hash01(q * 6 + k, r, 83) - 1) * (k / 5)
+        c = wt.add(at, wt.mul((-d[1], d[0]), side + (0.32 if k % 2 else -0.32)))
+        pts = blob_outline(c, 0.07 + 0.05 * gc.hash01(q * 6 + k, r, 84), 0.04 + 0.03 * gc.hash01(q * 6 + k, r, 85), math.atan2(d[1], d[0]), q * 6 + k, r)
+        if all(wt.inside_tile(p) for p in pts):
+            out.append(pts)
+    return out
 
 
 def ooze_patches(tile):
@@ -572,12 +631,7 @@ def ooze_patches(tile):
             c = wt.add(at, wt.mul((-d[1], d[0]), side * off))
             spin = math.atan2(d[1], d[0]) + 1.4 * (gc.hash01(key, r, 74) - 0.5)
             long_, wide = 0.1 + 0.2 * gc.hash01(key, r, 75), 0.05 + 0.08 * gc.hash01(key, r, 76)
-            pts = []
-            for j in range(7):
-                a = 2 * math.pi * j / 7
-                m = 0.8 + 0.4 * gc.hash01(key, j, 77)
-                x_, y_ = long_ * m * math.cos(a), wide * m * math.sin(a)
-                pts.append(wt.add(c, (x_ * math.cos(spin) - y_ * math.sin(spin), x_ * math.sin(spin) + y_ * math.cos(spin))))
+            pts = blob_outline(c, long_, wide, spin, key, r)
             if all(wt.inside_tile(q_, 0.04) for q_ in pts):
                 out.append(("ooze" if gc.hash01(key, r, 78) < 0.45 else "scum", pts))
             s += 0.55 + 1.7 * gc.hash01(key, r, 79) ** 2
@@ -600,11 +654,12 @@ def marsh_effects(tile):
 
 def marsh_tile(terrains, q, r, edges=(), out=None, turn=0, near=9):
     """Everything the wetland puts on tile (q, r), tile-local. edges and out: its trail edges and the edge it heads out by (landmark_flow.trail_edges, toward_edge); turn: a landmark's; near: steps from it. Depends on the tile, which neighbours are marsh of its look, and the region's flow, so it's rebuilt when a neighbour lands or the region finishes.
-    Returns dict: look, water, bank (flat triangles), trails ([(walked line, drawn part)]), spurs (plank lines), ooze ([(material, outline)]), props [(name, x, y, spin)], effects [(kind, x, y, z)]."""
+    Returns dict: look, water, bank (flat triangles), trails ([(walked line, drawn part)]), flecks (worn patches where a track fades, outlines), spurs (plank lines), ooze ([(material, outline)]), props [(name, x, y, spin)], effects [(kind, x, y, z)]."""
     name = terrains[(q, r)]
     look = LOOKS[name]
     keep = LANDMARK_KEEP.get(name, 0.0)
-    tile = dict(q=q, r=r, name=name, look=look, keep=keep, near=near)
+    tile = dict(q=q, r=r, name=name, look=look, keep=keep, near=near, edges=tuple(edges), out=out)
+    tile["finish"] = trail_finish(tile)
     tile["usual"] = name not in LANDMARK_KEEP
     tile["lines"] = sand.ROUTES if tile["usual"] else [[q_[:2] for q_ in line] for line in landmark_routes(name, turn).values()]
     tile["trails"] = tile_trails(terrains, q, r, edges, out, turn)
@@ -616,8 +671,9 @@ def marsh_tile(terrains, q, r, edges=(), out=None, turn=0, near=9):
     field = marsh_field(tile)
     tile["shack"], tile["spurs"] = shack_spot(tile, field)
     tile["ooze"] = ooze_patches(tile)
+    tile["flecks"] = track_flecks(tile)
     tile["effects"] = marsh_effects(tile)
-    spent = sum(int(line_length(d) / 0.21) * 10 for d in tile["spurs"]) + 5 * len(tile["ooze"]) + len(mesh["water"]) + len(mesh["bank"]) + sum((int(line_length(d) / 0.21) * 10 if look == "smugglers_bayou" else (len(d) - 1) * 2) for _, d in tile["trails"])
+    spent = sum(int(line_length(d) / 0.21) * 10 for d in tile["spurs"]) + 5 * (len(tile["ooze"]) + len(tile["flecks"])) + len(mesh["water"]) + len(mesh["bank"]) + sum((int(line_length(d) / 0.21) * 10 if look == "smugglers_bayou" else (len(d) - 1) * 2) for _, d in tile["trails"])
     tile["props"] = marsh_props(tile, field, spent)
     tile["half"] = half
     return tile
@@ -636,19 +692,30 @@ def is_gap(name):
 def tile_tris(tile):
     """Triangles on a tile: water, banks, trails and props, before its slab and a landmark's piece."""
     per = 10 if tile["look"] == "smugglers_bayou" else 2
-    total = len(tile["water"]) + len(tile["bank"]) + sum(PROP[o[0]][2] for o in tile["props"]) + sum(int(line_length(d) / 0.21) * 10 for d in tile["spurs"]) + 5 * len(tile["ooze"])
+    total = len(tile["water"]) + len(tile["bank"]) + sum(PROP[o[0]][2] for o in tile["props"]) + sum(int(line_length(d) / 0.21) * 10 for d in tile["spurs"]) + 5 * (len(tile["ooze"]) + len(tile["flecks"]))
     for _, drawn in tile["trails"]:
         total += (int(line_length(drawn) / 0.21) if per == 10 else len(drawn) - 1) * per
     return total
 
 
-def cover_wet(terrains):
-    """For the ground cover: true where the wetland's mud or water lies, so tufts stay off it."""
+def cover_wet(terrains, tiles=None):
+    """For the ground cover: true where the wetland's mud or water lies, or on a tile's planks, tracks or trail finish, so tufts stay off them. tiles: {(q, r): marsh_tile's dict}."""
+    tiles = tiles or {}
+
     def wet(x, y, t):
         look = LOOKS.get(terrains.get(t))
-        if look is None or look == "plaguepit":
+        if look is None:
             return False
-        return wetness(look, x, y) + VIEW[look]["bank"] > 0
+        tile = tiles.get(t)
+        if tile:
+            c = gc.tile_centre(*t)
+            p = (x - c[0], y - c[1])
+            drawn = [d for _, d in tile["trails"] if len(d) > 1] + tile["spurs"]
+            if drawn and line_dist(p, drawn) < tile["half"] + COVER_CLEAR:
+                return True
+            if tile["finish"] and math.dist(p, tile["finish"][1:3]) < PROP[FINISH[look]][0] + COVER_CLEAR:
+                return True
+        return look != "plaguepit" and wetness(look, x, y) + VIEW[look]["bank"] > 0
     return wet
 
 
@@ -888,11 +955,14 @@ def add_marsh(p, tile):
             boards(drawn, 0.03, seed + 40 + k)  # under the walkway it joins
         return
     for k, (_, drawn) in enumerate(tile["trails"]):
-        pairs = ribbon(drawn, tile["half"])
+        pairs = ribbon(drawn, tile["half"], fade=0.3 if tile["finish"] else 0.0)
         tris = []
         for (l0, r0), (l1, r1) in zip(pairs, pairs[1:]):
             tris += [(r0, r1, l1), (r0, l1, l0)]
         flats(tris, 0.03 - 0.002 * k, look["track"])
+    for pts in tile["flecks"]:
+        for m in range(1, len(pts) - 1):
+            flats([(pts[0], pts[m], pts[m + 1])], 0.029, look["track"])
     for mat, pts in tile["ooze"]:
         for m in range(1, len(pts) - 1):
             flats([(pts[0], pts[m], pts[m + 1])], 0.032, mat)
@@ -964,6 +1034,42 @@ def fungus_piece(p, rng):
     vr.lump(p, Vector((0.05, 0.04, 0)), 0.06, "shelf", squash=0.6, z=0.03)
 
 
+def bayou_landing(p, rng):
+    """Where a boardwalk ends: a small landing stage over its own pool, with mooring posts, a lantern and a boat tied up. +x looks out over the water; the boardwalk comes in from -x."""
+    for k in range(6):
+        p.box(Vector((-0.5 + k * 0.2, 0, 0)), (0.18, 1.2 + rng.uniform(-0.04, 0.04), 0.07), rng.choice(("plank", "plank", "plank_dark")))
+    for x, y, h in ((0.55, 0.62, 0.62), (0.55, -0.62, 0.42), (-0.5, 0.62, 0.36)):
+        p.cylinder(Vector((x, y, 0)), 0.045, h, "plank_dark", segments=5)
+    lantern_post(p, Vector((-0.5, -0.64, 0)))
+    flat_boat(p, Vector((0.9, 0.06, 0.02)), math.pi / 2)
+    vr.frustum(p, Vector((0.55, 0.62, 0.5)), Vector((0.9, 0.5, 0.16)), 0.012, 0.012, "rope", segments=3)
+    p.box(Vector((0.1, 0.38, 0)), (0.22, 0.22, 0.2), "crate", z=0.07, spin=0.3)
+
+
+def bog_trail_end(p, rng):
+    """Where a bog's track gives out: a witch's marker in a ring of toadstools."""
+    charm_post(p, rng, Vector((0, 0, 0)))
+    for k, (x, y) in enumerate(((0.32, 0.22), (-0.26, 0.3), (-0.3, -0.24), (0.28, -0.28))):
+        (small_toadstools if k % 2 else small_flowers)(p, rng, Vector((x, y, 0)))
+
+
+def wisp_trail_end(p, rng):
+    """Where the pale way gives out: a stake in the reeds, with the lights gathered over it, as if waiting."""
+    marsh_stake(p, rng, Vector((0, 0, 0)))
+    for x, y, z, mat in ((0.2, 0.08, 0.72, "wisp"), (-0.14, 0.2, 0.92, "wisp_green"), (-0.08, -0.22, 0.62, "wisp")):
+        wisp_light(p, Vector((x, y, 0)), z, mat)
+    for x, y in ((0.36, 0.2), (-0.34, 0.22), (0.02, -0.4)):
+        reeds(p, rng, Vector((x, y, 0)), n=4, h=(0.6, 0.95), tails=True, spread=0.08)
+
+
+def rot_trail_end(p, rng):
+    """Where a sour track gives out: the seep feeding it, a wide puddle of ooze between slimy rocks."""
+    ooze_puddle(p, rng, Vector((0, 0, 0)), 0.42)
+    for x, y in ((0.46, 0.2), (-0.42, 0.28), (0.05, -0.46)):
+        slimy_rock(p, rng, Vector((x, y, 0)))
+    fungus_piece(p, rng)
+
+
 def shack_piece(p, rng):
     """A shack on stilts over the water, its rope-and-plank walkway running down toward +x to the bank."""
     stilt_shack(p, rng, Vector((-0.45, 0, 0)), 0.0)
@@ -995,6 +1101,7 @@ PROP_PIECES = {
     "wisp_stake": lambda p, rng: marsh_stake(p, rng, Vector((0, 0, 0))),
     "rot_log": lambda p, rng: swollen_log(p, rng, Vector((0, 0, 0)), 0.0, 1.15), "rot_rock": lambda p, rng: slimy_rock(p, rng, Vector((0, 0, 0))),
     "rot_puddle": lambda p, rng: ooze_puddle(p, rng, Vector((0, 0, 0))), "rot_scum": scum_piece, "rot_fungus": fungus_piece,
+    "bog_trail_end": bog_trail_end, "wisp_trail_end": wisp_trail_end, "rot_trail_end": rot_trail_end, "bayou_landing": bayou_landing,
     "bayou_shack": shack_piece, "bayou_boat": lambda p, rng: flat_boat(p, Vector((0, 0, 0.02)), 0.0), "bayou_goods": lambda p, rng: covered_goods(p, rng, Vector((0, 0, 0)), 0.0),
     "bayou_lantern": lambda p, rng: lantern_post(p, Vector((0, 0, 0))), "bayou_crate": lambda p, rng: p.box(Vector((0, 0, 0)), (0.17, 0.17, 0.17), "crate"),
     **{f"mudbank_{k}": mud_piece(VIEW[k]["rim"]) for k in VIEW},
@@ -1037,6 +1144,7 @@ def gangway(p, rng, half=0.58, z=STILT_Z):
     """A plank gangway from the ground up to the deck: it starts flush on the ground and ends flush with the deck."""
     n = 7
     run = RAMP_START - RAMP_END
+    p.no_cover.append((v(((RAMP_START + RAMP_END) / 2, 0.0)), 0.95))
     for k in range(n):
         x0, x1 = RAMP_START - run * k / n, RAMP_START - run * (k + 1) / n
         z0, z1 = z * k / n, z * (k + 1) / n

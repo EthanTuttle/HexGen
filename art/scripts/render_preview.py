@@ -275,6 +275,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     (dist, toward, turn) to keep from when its region finished, rather than working them out from the map. hollow: tiles left to the caller, with no empty slot drawn."""
     MAP = tiles or globals()["MAP"]
     water_tiles = []
+    marsh_tiles = {}
     col = hk.new_collection("map")
     # Landmark flow (landmark_flow.py): each landmark's region is its variant's tiles joined to it. In the game
     # the region is known; here it's the connected group of the variant's tiles round the landmark.
@@ -384,7 +385,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         trails = lf.trail_edges((q, r), toward)
         if name in vr.sl.LOOKS:
             # The wetland, worked out in world space, the way the engines will.
-            tile_ = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
+            tile_ = marsh_tiles[(q, r)] = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
             p = hk.Piece(f"marsh_{q}_{r}")
             vr.sl.add_marsh(p, tile_)
             p.finish(col, at)
@@ -478,7 +479,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 w = obj.matrix_world @ Vector((x, -z, y))
                 clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP, clear, vr.sl.cover_wet(MAP))
+    gc.add_ground_cover(p, MAP, clear, vr.sl.cover_wet(MAP, marsh_tiles))
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP) - set(hollow)
@@ -1359,7 +1360,7 @@ if __name__ == "__main__":
             view(hk.tile_position(0, 0), 20, 50, -math.pi / 2)
             shot("swamp_t0_close")
         for variant, lm in (("bog", "witchhut"), ("wisp_marsh", "wisphollow"), ("rot_swamp", "plaguepit"), ("smugglers_bayou", "thievesguild")):
-            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail", "shack", "shack_low")]
+            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail", "shack", "shack_low", "end", "end_low")]
             if not wanted(*stems):
                 continue
             lm_at = (1, 0)
@@ -1407,6 +1408,12 @@ if __name__ == "__main__":
             shot(f"swamp_{variant}_low")
             view(trail_at, 15, 50, -math.pi / 2)
             shot(f"swamp_{variant}_trail")
+            tile2 = sl.marsh_tile(scene_map, far_[0], far_[1], lf.trail_edges(far_, t_), lf.toward_edge(far_, t_), 0, d_.get(far_, 9))  # what the trail ends at
+            e2 = c_ + Vector((tile2["finish"][1], tile2["finish"][2], 0))
+            view(e2, 11, 50, -math.pi / 2)
+            shot(f"swamp_{variant}_end")
+            view(e2 + Vector((0, 0, 0.3)), 8, 18, tile2["finish"][3] + 2.2)
+            shot(f"swamp_{variant}_end_low")
             if variant == "smugglers_bayou":  # a shack, its rope walkway and the spur to the boardwalk
                 for t2 in sorted(region12):
                     tile2 = sl.marsh_tile(scene_map, t2[0], t2[1], lf.trail_edges(t2, t_), lf.toward_edge(t2, t_) if t2 in t_ else None, 0, d_.get(t2, 9))

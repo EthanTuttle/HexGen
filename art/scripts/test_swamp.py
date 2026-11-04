@@ -61,7 +61,7 @@ def check_tile(tile, region_tiles, terrains):
             note("water to a route", d)
             if d < sl["WATER_DRY"] - 0.09:
                 fail("water near a route", tile["name"], (q, r), p, d)
-            if tile["trail_lines"] and sl["line_dist"](p, tile["trail_lines"]) < sl["WATER_TRAIL"] - 0.12:
+            if tile["trail_lines"] and sl["line_dist"](p, tile["trail_lines"]) < sl["WATER_TRAIL"] - 0.12 and not (tile["finish"] and tile["look"] == "smugglers_bayou" and math.dist(p, tile["finish"][1:3]) < 1.6):
                 fail("water near a trail", tile["name"], (q, r), p)
             if not wt.inside_tile(p, -1e-6):
                 fail("water out of its tile", p)
@@ -82,7 +82,14 @@ def check_tile(tile, region_tiles, terrains):
     for name, x, y, spin in tile["props"]:
         reach, room, _ = sl["PROP"][name]
         p = (x, y)
-        if reach:
+        finish = tile["finish"] and name == sl["FINISH"].get(tile["look"]) and (x, y) == tuple(tile["finish"][1:3])
+        planked = [d_ for _, d_ in tile["trails"] if len(d_) > 1] + tile["spurs"]
+        if reach and planked and not finish and name != "bayou_shack" and sl["line_dist"](p, planked) < tile["half"] + 0.05:
+            fail("prop on planks or a track", tile["name"], name, p)
+        if reach and finish:
+            if sl["line_dist"](p, tile["lines"]) < reach:
+                fail("a trail's finish on a route", tile["name"], p)
+        elif reach:
             d = sl["line_dist"](p, lines)
             note("prop to a walked line", d)
             if d < reach - 1e-6 and name not in (tile.get("marks") or ()) and not sl["is_mark"](tile, name) and not sl["is_gap"](name):
@@ -121,6 +128,22 @@ def check_tile(tile, region_tiles, terrains):
         for mat, pts in tile["ooze"]:
             if not all(wt.inside_tile(p) for p in pts):
                 fail("ooze out of its tile", pts)
+    # a trail never stops in the open: it's either on from a trail edge, or starts from its finish
+    if tile["name"] not in sl["LANDMARK_KEEP"] and tile["trails"]:
+        if len(tile["edges"]) == 1:
+            note("far tiles", 1, True)
+            if not tile["finish"] and tile["out"] is not None:
+                fail("a trail with no finish", (q, r))
+            elif tile["look"] in sl["FINISH"]:
+                start = tile["trails"][0][1][0]
+                if math.dist(start, tile["finish"][1:3]) > 0.7:
+                    fail("a trail starts away from its finish", (q, r), start)
+                if not any(o[0] == sl["FINISH"][tile["look"]] and tuple(o[1:3]) == tuple(tile["finish"][1:3]) for o in tile["props"]):
+                    fail("a finish wasn't placed", (q, r))
+        else:
+            for line, drawn in tile["trails"]:
+                if abs(wt.length(drawn[0]) - wt.A) > 1e-6:
+                    fail("a trail starts in the open", (q, r), drawn[0])
     tris = sl["tile_tris"](tile) + sl["LANDMARK_TRIS"].get(tile["name"], 0)
     note(f"triangles, {tile['name']}", tris, True)
     if tris > BUDGET:
@@ -165,6 +188,14 @@ def main():
                 # the same tile comes out the same
                 if run == 0 and sl["marsh_tile"](terrains, t[0], t[1], lf.trail_edges(t, toward), lf.toward_edge(t, toward) if t in toward else None, turn if t == at else 0, dist.get(t, 9))["props"] != tile["props"]:
                     fail("not repeatable", t)
+            # ground cover stays off planks, tracks and finishes
+            for kind, x, y, cell in gc.scatter(terrains, {}, (), sl["cover_wet"](terrains, tiles)):
+                tile = tiles.get(gc.tile_at(x, y))
+                if tile:
+                    c = gc.tile_centre(tile["q"], tile["r"])
+                    drawn = [d_ for _, d_ in tile["trails"] if len(d_) > 1] + tile["spurs"]
+                    if drawn and sl["line_dist"]((x - c[0], y - c[1]), drawn) < tile["half"] + 0.1:
+                        fail("ground cover on planks or a track", tile["name"], (x, y))
             # shared edges meet
             for t, tile in tiles.items():
                 for i, (dq, dr) in enumerate(gc.NEIGHBOURS):

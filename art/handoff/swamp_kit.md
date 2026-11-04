@@ -1,10 +1,10 @@
-# Swamp/marsh kit hand-off, round 3 (tiles_v67)
+# Swamp/marsh kit hand-off, round 4 (tiles_v68)
 
 Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Hollow, rot swamp with the Plague Pit (tier 2), and smugglers' bayou with the Thieves Guild (class). **Not yet approved, and not tried in Godot.** Ethan agreed the routes through tile middles stay as they are.
 
 **Since round 1,** the kit works differently. Water, banks, trails and scattered props used to live in the wedge pieces. They now come from a per-tile layer worked out from world position, the way desert sand does (`sand.add_sand`).
 
-- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v67.blend`.
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v68.blend`.
 - **Code:** `art/scripts/swamp_lands.py`. Its first section is plain Python to copy, with `marsh_tile` as the entry point.
 - **Looks:** `design/07` → Region variant looks, Landmark tiles. **Facts:** `design/02`. **Rule:** swamp water is scenery; parties walk dry.
 
@@ -28,11 +28,11 @@ It depends on the tile's position, which neighbours are marsh of its look, and t
 - **Where water stops:** at any edge whose neighbour isn't marsh of the same look, 0.34 short of it. So **water doesn't run between two different variants**, or into a Plague Pit's tile.
 - **Mud banks ignore routes.** They run across them, which is what ties the pools together. Only flat mud lies on a route.
 - **Dry:** water stays 0.54 or more from every route's line (a mini's base is about 1.04 wide) and from any trail.
-- **Ground cover:** pass `sl.cover_wet(MAP)` as `add_ground_cover`'s `wet`, so tufts stay off water and mud.
+- **Ground cover:** pass `sl.cover_wet(MAP, tiles)` as `add_ground_cover`'s `wet`, with `tiles` as `{(q, r): marsh_tile's result}`. Tufts then stay off water, mud, planks, tracks, spurs and finishes. Build the tiles first.
 
 ## Trails
 
-A trail no longer runs up to the tile's middle. `tile_trails` draws from each edge it comes in by to the edge it leaves by, so trails join on the way. A tile where a trail starts runs out from its middle (`trail_end`).
+A trail no longer runs up to the tile's middle. `tile_trails` draws from each edge it comes in by to the edge it leaves by, so trails join on the way. A region's far tile, where a trail starts, gets a finish instead of a stub (next section).
 
 **This moves routes a little, and Godot needs it:**
 
@@ -43,6 +43,21 @@ A trail no longer runs up to the tile's middle. `tile_trails` draws from each ed
 | On a landmark's tile | Round a hexagon, with corners | `landmark_routes`: curved, round a circle of radius 2.25 (`RING`, was a 1.98 hexagon), the Pit's at 3.25 |
 
 If Godot keeps walking the usual curve on a trail, a mini stays within 0.3 of the track's middle, so it looks off but isn't broken.
+
+## Where a trail ends
+
+No trail stops in open ground. Every trail runs on from a trail edge, and both tiles on that edge draw up to it, so the only ends are on a region's far tiles: tiles with one trail edge. There, `trail_end` curves from a corner of the tile, the only room off every route, to that edge, and `tile["finish"]` gives `(corner, x, y, spin)` for what it ends at. The finish is already in `props`.
+
+| Look | Finish | How the path gets there |
+| --- | --- | --- |
+| Bog/fen | `bog_trail_end`: a witch's marker in a ring of toadstools and flowers | Track narrows, with worn patches (`flecks`, in the track's colour at z 0.029) |
+| Wisp marsh | `wisp_trail_end`: a stake in the reeds, with lights gathered over it | Same |
+| Rot swamp | `rot_trail_end`: a wide ooze seep between slimy rocks | Same |
+| Bayou | `bayou_landing`: a landing stage with mooring posts, a lantern and a boat, over its own small pool | Boardwalk runs onto the stage |
+
+Tier 0 has no trails. For comparison, farmland's fix was no stubs: a track reaches a gate or yard, and a spoke is used only where its edge's wedge has a path. This applies the same rule, with a finish where there's no yard.
+
+A party stopping on a far tile still goes to the tile's middle as usual, so it may stand off the trail there. The trail's walked line isn't used for routes between edges, as it doesn't lead to a second edge.
 
 ## What Godot has to do
 
@@ -71,7 +86,7 @@ The layer caps each tile at `PROP_BUDGET`, 3,900: water, banks, trails, props an
 
 | Check | Covers | Result |
 | --- | --- | --- |
-| `test_swamp.py 8` | Random regions, every look. Water off routes and trails, in its tile, stopping at other looks; every shared edge meets; no two tiles' water nearly alike; trails meet edges straight and stray 0.3 or less; every shack lands on a spur or walkway and every spur ends under a walkway, on its own tile; props off routes, in the tile, uncrowded; repeatable; budget; landmark walks and tilt | 0 failures; closest water to a route 0.53; steepest walk 25.5° |
+| `test_swamp.py 8` | Random regions, every look. Water off routes and trails, in its tile, stopping at other looks; every shared edge meets; no two tiles' water nearly alike; trails meet edges straight and stray 0.3 or less; every shack lands on a spur or walkway and every spur ends under a walkway, on its own tile; no trail starts in the open, and every far tile has its finish; no prop or ground cover on planks or tracks; props off routes, in the tile, uncrowded; repeatable; budget; landmark walks and tilt | 0 failures; closest water to a route 0.53; steepest walk 25.5° |
 | `check_town.py -- swamp-lands` | Each prop's real reach and triangles against the table; old pieces empty; landmark routes against their pieces; gangways, lane and head room; floating parts | 0 failures |
 | `test_water.py 3` | Unchanged water | 0 failures |
 
@@ -89,7 +104,8 @@ The layer caps each tile at `PROP_BUDGET`, 3,900: water, banks, trails, props an
 
 All in `art/preview/`, with minis except tier 0.
 
-- **Round 3:** `swamp_bog_map_v3`, `_low_v3`; `swamp_rot_swamp_map_v3`, `_low_v3`; `swamp_smugglers_bayou_map_v3`, `_low_v3`, `_shack_v1`, `_shack_low_v1`.
+- **Round 4:** `swamp_t0_map_v2` is unchanged. Maps: `swamp_bog_map_v4`, `swamp_wisp_marsh_map_v3`, `swamp_rot_swamp_map_v4`, `swamp_smugglers_bayou_map_v4`. Path ends: `swamp_<variant>_end_v1`, `_end_low_v1` for all four. Spur: `swamp_smugglers_bayou_shack_v2`.
+- **Round 3 (paths and spurs since changed):** `swamp_bog_low_v3`, `swamp_rot_swamp_low_v3`, `swamp_smugglers_bayou_low_v3`, `swamp_smugglers_bayou_shack_low_v1`.
 - **Round 2 (mist, ooze and spurs since changed):** `swamp_t0_map_v2`, `_close_v2`, and for each variant `_map_v2`, `_turned_v2`, `_landmark_v2`, `_landmark_turned_v2`, `_low_v2`, `_trail_v2`.
 
 Re-render: `render_preview.py -- --swamp`.
