@@ -529,7 +529,7 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 | Giant facing and slopes | Facing fixed; level ground only, no landings (design/03 open question) |
 | Up arrow, its colour | `Fight._up_arrow`, on cells a Move goes up to |
 | Zoom | 0.6 s in, fade colour, the map coming up from 1.35 × its distance. Back to the world map is a cut, as before |
-| Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in `Rules.FIGHT_OPEN` at `FIGHT_FOCUS`, 14 to 24 m back (`FIGHT_DISTANCE_*`). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
+| Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in `Rules.FIGHT_OPEN` at `FIGHT_FOCUS`, 14 to 28 m back (`FIGHT_DISTANCE_*`, to judge on the phone). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
 
 **Not built:** fire, smoke and other effects on maps (`combat_*_paths.json`), night on maps. 21 `map_*_gates` and `_wall_to_towers` placements have no mesh on purpose; the art export will stop writing them.
 
