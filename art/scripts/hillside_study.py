@@ -9,6 +9,7 @@ Pass option letters after -- to render only those. Writes art/preview/hillside_<
   m  a mountainside: steeper, a cliff band across it and a broken stair through the band
 
 Cell highlights show in the close views. Nothing here changes the kit, the plans or the map data.
+Written against combat_hills_v1: the kit's ridge_3 has since gone, so a later kit needs the ridges option taken out. Ethan chose c, on Nov 3, 2026; render_hills_maps.py builds it.
 """
 import math
 import os

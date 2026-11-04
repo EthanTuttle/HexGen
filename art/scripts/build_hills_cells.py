@@ -5,7 +5,7 @@ Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --pyt
 
   cell_<variant>_ground_a / _b / _c, _floor, _cover, _litter, _brush, _bare, _block_a / _b    as in the plains kit
   ob_<variant>_<kind>                 an obstacle on whole cells, with its cells in the "footprint" property (pivot on the (0, 0) cell)
-Lava fissures and monastery walls run along any line of cells, so render_hills_maps.py makes them per map, as it does rock.
+Ridges, lava fissures, monastery walls and the hillside itself follow a map's heights, so render_hills_maps.py makes them per map.
 No landmark structures: no hall, cave, den or library, no footprints or bones from the snowy trail.
 """
 import math
@@ -42,7 +42,7 @@ hk.PALETTE.update({"cell_snowy_peaks_b": fc.mix(snow, "#BCD0E0", 0.14), "cell_sn
                    "cell_snowy_peaks_cover": fc.mix(snow, "#8FA8BD", 0.4), "cell_snowy_peaks_block": fc.mix(snow, "#8795A3", 0.55),
                    "cell_volcanic_peaks_cover": fc.mix(ash, "#000000", 0.2), "cell_volcanic_peaks_block": fc.mix(ash, "#35323A", 0.6),
                    "cell_monastery_heights_track": hk.PALETTE["rock_light"]})
-PEAK_LOOK = {"hills": dict(skirt="hill_grass"), "highlands": dict(skirt="highland_grass", tall=1.12),
+PEAK_LOOK = {"hills": dict(skirt="hill_grass"), "highlands": dict(skirt="highland_grass"),
              "snowy_peaks": dict(cap="snow_light", tall=1.15), "volcanic_peaks": dict(crater=True),
              "monastery_heights": dict(skirt="hill_grass")}
 
@@ -96,29 +96,6 @@ def peak(p, rng, at, reach, h, v, skirt=None, cap=None, crater=False, tall=1.0):
             a, b = rings[0][k].co, rings[1][k].co
             out = (a - Vector((at.x, at.y, a.z))).normalized() * 0.03
             vr.frustum(p, a + out, b + out, 0.05, 0.02, "lava", segments=3)
-
-
-def ridge_line(p, rng, v, cells, h=2.1):
-    """A serrated ridge along a line of cells: its crest jumps high and low from row to row, its foot stays inside the cells."""
-    main, side, _ = fc.ROCK[v]
-    a, b = fc.centres(cells)[0], fc.centres(cells)[-1]
-    along = (b - a).normalized()
-    across = Vector((-along.y, along.x, 0))
-    a, b = a - along * 0.4, b + along * 0.4
-    rows, n = [], 10
-    for k in range(n + 1):
-        c = a.lerp(b, k / n)
-        end = k in (0, n)
-        crest = (0.35 if end else rng.uniform(0.95, 1.2) if k % 2 else rng.uniform(0.5, 0.72)) * h
-        rows.append([p.bm.verts.new(c - across * 0.42 * rng.uniform(0.82, 1.08)), p.bm.verts.new(c + across * rng.uniform(-0.1, 0.1) + Vector((0, 0, crest))),
-                     p.bm.verts.new(c + across * 0.42 * rng.uniform(0.82, 1.08))])
-    for r0, r1 in zip(rows, rows[1:]):
-        for j in (0, 1):
-            for tri in ((r0[j], r1[j], r1[j + 1]), (r0[j], r1[j + 1], r0[j + 1])):
-                p.bm.faces.new(tri).material_index = p._slot(main if rng.random() < 0.6 else side)
-    if v == "snowy_peaks":
-        for r0, r1 in zip(rows[1:-2:2], rows[2:-1:2]):
-            vr.spike(p, r0[1].co - Vector((0, 0, 0.3)), r0[1].co + Vector((0, 0, 0.03)), 0.14, "snow_light")
 
 
 def crag(p, rng, v):
@@ -197,7 +174,6 @@ def stump(p, rng, v):
     fc.stump(p, rng, v)
     if v == "volcanic_peaks":
         p.cylinder(ZERO, 0.28, 0.03, "char", segments=7, z=0.5)
-        p.cylinder(ZERO, 0.1, 0.02, "lava", segments=5, z=0.53)
     elif v == "snowy_peaks":
         vr.lump(p, ZERO, 0.3, "snow_light", z=0.5, squash=0.35)
 
@@ -254,11 +230,11 @@ def peaks(v):
 
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_hills_maps.py reads this.
 KIT = {
-    "hills": {**peaks("hills"), "Y": ("ridge_3", LINE3, lambda p, r: ridge_line(p, r, "hills", LINE3)), "N": ("crag", SINGLE, lambda p, r: crag(p, r, "hills"))},
-    "highlands": {**peaks("highlands"), "Y": ("ridge_3", LINE3, lambda p, r: ridge_line(p, r, "highlands", LINE3)), "N": ("crag", SINGLE, lambda p, r: crag(p, r, "highlands")),
+    "hills": {**peaks("hills"), "N": ("crag", SINGLE, lambda p, r: crag(p, r, "hills"))},
+    "highlands": {**peaks("highlands"), "N": ("crag", SINGLE, lambda p, r: crag(p, r, "highlands")),
                   "I": ("cairn", SINGLE, cairn_big), "J": ("banner", SINGLE, banner)},
-    "snowy_peaks": {**peaks("snowy_peaks"), "Y": ("ridge_3", LINE3, lambda p, r: ridge_line(p, r, "snowy_peaks", LINE3)), "N": ("ice_crag", SINGLE, lambda p, r: crag(p, r, "snowy_peaks"))},
-    "volcanic_peaks": {**peaks("volcanic_peaks"), "Y": ("ridge_3", LINE3, lambda p, r: ridge_line(p, r, "volcanic_peaks", LINE3)), "I": ("columns", SINGLE, basalt_columns), "J": ("vent", SINGLE, vent)},
+    "snowy_peaks": {**peaks("snowy_peaks"), "N": ("ice_crag", SINGLE, lambda p, r: crag(p, r, "snowy_peaks"))},
+    "volcanic_peaks": {**peaks("volcanic_peaks"), "I": ("columns", SINGLE, basalt_columns), "J": ("vent", SINGLE, vent)},
     "monastery_heights": {**peaks("monastery_heights"), "E": ("herb_terrace", SINGLE, herb_terrace), "I": ("flags", SINGLE, flags)},
 }
 

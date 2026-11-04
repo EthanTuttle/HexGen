@@ -54,8 +54,6 @@ NEIGHBOURS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
 GROUPED = {"G": "grove", "L": "log", "B": "boulder_3", "F": "mushrooms_3", "E": "hollow_3", "Z": "thicket_3", "Q": "great_7", "U": "roots_3"}
 SINGLE = {"T": "tree", "O": "stump", "S": "stone"}
 RAISED, RAMPS = "HWVX", "^"
-RAISED_PATHS = {}  # a raised mark -> the colour of its cell, for a stone path that goes on up a way up
-STREAKS = {}  # a variant -> the colour of bright streaks down its cliff faces
 RAISED_HEIGHT, CLIFF_HEIGHT = 0.9, 2.0
 HALF = RAISED_HEIGHT / 2  # a way up's landing
 LANDING = 0.46  # from a way up's middle to its landing's edge; a base's flat side is at 0.45
@@ -686,7 +684,7 @@ def notched_cells(t, col, v, cells):
             d = (at - way).normalized()
             outline = clipped(outline, d, way.dot(d) + FLIGHTS["up"][-1][0])
         p = hk.Piece(f"notched_{c}")
-        p.prism([q + Vector((0, 0, 0)) for q in outline], RAISED_HEIGHT - 0.08, RAISED_HEIGHT, RAISED_PATHS.get(mark, f"cell_{v}_{tint}"), side_mat=fc.ROCK[v][0])
+        p.prism([q + Vector((0, 0, 0)) for q in outline], RAISED_HEIGHT - 0.08, RAISED_HEIGHT, f"cell_{v}_{tint}", side_mat=fc.ROCK[v][0])
         p.finish(col)
 
 
@@ -701,16 +699,13 @@ def shaped_piece(col, v, group, mark):
     layers = [(0, 0.0, 0.0, 0.0), (1, 0.1, 0.26, 0.03), (2, 0.2, 0.33, 0.015), (3, 0.17, 0.6, 0.03), (4, 0.27, 0.67, 0.015), (5, 0.25, 0.95, 0.06)]
     rings = [rock_ring(p, rng, loop, smooth, inset, h * z, h * jag) for smooth, inset, z, jag in layers]
     n = len(loop)
-    streak = STREAKS.get(v)
-    hot = {k for k in range(n) if streak and rng.random() < 0.13}
     for band, (a, b) in enumerate(zip(rings, rings[1:])):
         for k in range(n):
             m = (k + 1) % n
             pair = ((a[k], a[m], b[m]), (a[k], b[m], b[k])) if rng.random() < 0.5 else ((a[k], a[m], b[k]), (a[m], b[m], b[k]))
             for tri in pair:
                 # Ledges take the darker rock and faces mostly the lighter, so the layers show.
-                mat = side if band % 2 or rng.random() < 0.3 else main
-                p.bm.faces.new(tri).material_index = p._slot(streak if k in hot else mat)
+                p.bm.faces.new(tri).material_index = p._slot(side if band % 2 or rng.random() < 0.3 else main)
     # The top: one flat surface over the whole obstacle, meeting the jagged rim in a short slope.
     rim, plateau = rings[-1], rock_ring(p, rng, loop, 6, 0.36, h * 0.98, 0.0)
     for k in range(n):
@@ -973,8 +968,8 @@ def kit_sheet(t, col):
         rp.place(t, "standin_hero", col, Vector((x, y, 0)), rb.FACE_NORTH + 0.5)
 
 
-def export(maps, build, load, variant_of, stem):
-    """One blend holding every map's own pieces, and one JSON saying what goes where."""
+def export(maps, build, load, variant_of, stem, cell_extra=None):
+    """One blend holding every map's own pieces, and one JSON saying what goes where. cell_extra(name, cell, mark): fields for a cell that its mark can't give (hills' heights), put on its start too."""
     hk.empty_scene()
     t = load()
     keep = hk.new_collection("maps")
@@ -1004,8 +999,18 @@ def export(maps, build, load, variant_of, stem):
                 row["z"] = RAISED_HEIGHT
             elif mark in RAMPS:
                 row.update(z=HALF, way_up=True)
+            if cell_extra:
+                row.pop("z", None)
+                row.pop("way_up", None)
+                row.update(cell_extra(name, (q, r), mark))
             rows.append(row)
         starts = [{"mini": mini_of(m, mark), "q": c[0], "r": c[1], **({"z": RAISED_HEIGHT} if mark in RAISED else {})} for c, mark in sorted(cells.items()) if mark in MINI_MARKS]
+        if cell_extra:
+            for start in starts:
+                start.pop("z", None)
+                z = cell_extra(name, (start["q"], start["r"]), cells[(start["q"], start["r"])]).get("z")
+                if z:
+                    start["z"] = z
         for mark, group in groups(cells, "A"):
             anchor, turn = fit(group, {3: gm.TRIANGLE, 7: gm.FLOWER}[len(group)])
             starts.append({"mini": m["giant"], "q": anchor[0], "r": anchor[1], "turn": 60 * turn})
