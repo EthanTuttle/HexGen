@@ -1,4 +1,4 @@
-# Feywild crossing kit hand-off (tiles_v80)
+# Feywild crossing kit hand-off (tiles_v81)
 
 Forest tier 3. **Not approved yet.** `tiles.glb` isn't re-exported and nothing has been tried in Godot. The Fey Gate is the tree arch (Ethan, Nov 4, 2026).
 
@@ -43,7 +43,7 @@ A trail starts at a glade (a stump and boulders) in a corner of the tile, as in 
 
 ## Fey Gate
 
-`feygate_centre`: a centre piece with its entrance on edge 0, a landmark of `feywild_crossing`, turned by `landmark_flow.turn`. Two slim trees cross into a pointed arch under one crown, 4.07 tall, cut into four quarters like a seam tree: autumn facing the entrance, spring and summer at the sides, bare limbs at the back, so no snow meets orange. Reference: `gate_arch`, `arch_crown`.
+`feygate_centre`: a centre piece with its entrance on edge 0, a landmark of `feywild_crossing`, turned by `landmark_flow.turn`. Two slim trees cross into a pointed arch, 3.9 tall, with several round crowns per season on its shoulders, as fey wood's trees have: spring and autumn facing the entrance, snow and summer behind, so no snow sits on orange. Reference: `gate_arch`, `arch_crown`.
 
 **Portal:** four nested bands on each face of the arch, in materials of their own. Show each from the side it faces only (backface culling), unshaded or nearly so, alpha blended, with no shadows cast.
 

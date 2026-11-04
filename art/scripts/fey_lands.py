@@ -816,81 +816,28 @@ def portal(p):
             p.surface.add(f)
 
 
-CROWN_QUARTERS = ((0, "#DB7A2E"), (90, "#B7D86A"), (180, None), (270, "#4E8049"))  # the middle of each quarter, in degrees from the entrance, and its colour. Winter stands opposite autumn, so no snow meets orange. None: bare limbs like a seam tree's
-CROWN_CLUMPS = (((0.0, 0.0, 3.46), 0.78, 0.82, 1.1), ((0.0, 0.6, 3.04), 0.42, 0.9, 1.0), ((0.0, -0.6, 3.04), 0.42, 0.9, 1.0))  # middle, radius, squash, stretch along the arch: draped over its shoulders, no wider than its feet
+CROWN_BALLS = (  # round crowns, as fey wood's trees have: (x side, y side), colour, then (out from the arch's plane, out along it, up, radius) for each. Each tree holds two seasons, front and back, and autumn and snow stand on different trees, diagonally apart, so no snow sits on orange. All below the point, so the arch's point shows
+    ((1, 1), "#B7D86A", ((0.34, 0.92, 2.52, 0.46), (0.2, 0.74, 3.08, 0.35), (0.58, 0.62, 2.72, 0.25))),
+    ((1, -1), "#DB7A2E", ((0.3, 0.96, 2.62, 0.44), (0.26, 0.7, 3.14, 0.33), (0.6, 0.7, 2.5, 0.27))),
+    ((-1, 1), "#F2F5FA", ((0.32, 0.94, 2.62, 0.44), (0.24, 0.72, 3.14, 0.32), (0.58, 0.66, 2.46, 0.26))),
+    ((-1, -1), "#4E8049", ((0.34, 0.9, 2.5, 0.47), (0.2, 0.74, 3.06, 0.36), (0.58, 0.6, 2.7, 0.26))),
+)
 
 
 def arch_crown(p):
-    """One crown over the arch's top, cut into four seasons by two planes through its middle, as a seam cuts a tree. The winter quarter is bare limbs."""
-    for mid, colour in CROWN_QUARTERS:
-        planes = []
-        for off in (-45, 45):
-            a = math.radians(mid + off)
-            planes.append(((0.0, 0.0), (-math.cos(a), -math.sin(a)), 0.0))
-        if colour is None:
-            for k, (out, side, up) in enumerate(((0.72, 0.0, 0.42), (0.58, 0.34, 0.66), (0.58, -0.34, 0.66), (0.7, 0.42, 0.22), (0.7, -0.42, 0.22))):
-                c, s_ = math.cos(math.radians(mid)), math.sin(math.radians(mid))
-                tip = (out * c - side * s_, out * s_ + side * c, 3.28 + up)
-                spar_box(p, (0.03 * c, 0.03 * s_, 3.12), tip, 0.055, 0.012, "fey_gate_bark", sides=4)
-                spar_box(p, tip, (tip[0] + 0.14 * c, tip[1] + 0.14 * s_ + (0.05 if k % 2 else -0.05), tip[2] + 0.13), 0.012, 0.004, "fey_gate_bark", sides=3)
-            continue
-        for centre, r, squash, stretch in CROWN_CLUMPS:
-            for tri in ico_faces((0.0, 0.0, 0.0), r, squash, 0.4):
-                poly = clip([(q[0] + centre[0], q[1] * stretch + centre[1], q[2] + centre[2]) for q in tri], planes)
-                if len(poly) >= 3:
-                    f = p.bm.faces.new([p.bm.verts.new(q) for q in poly])
-                    f.material_index = p._slot(mat_of(colour))
-                    p.surface.add(f)
-            if abs(mid - 180) == 90:  # the cut facing the bare quarter is seen: close it
-                cap_angle = math.radians((mid + 180) / 2)
-                crown_cap(p, centre, r, squash, stretch, cap_angle, mat_of(colour), 1 if mid > 180 else -1)
-
-
-def crown_cap(p, centre, r, squash, stretch, ang, mat, way):
-    """A flat face where a plane through the crown's axis, out along ang, cuts one clump."""
-    n = (-math.sin(ang), math.cos(ang))
-    out = (math.cos(ang), math.sin(ang))
-    pts = []
-    for tri in ico_faces((0.0, 0.0, 0.0), r, squash, 0.4):
-        q3 = [(q[0] + centre[0], q[1] * stretch + centre[1], q[2] + centre[2]) for q in tri]
-        for k in range(3):
-            a, b = q3[k - 1], q3[k]
-            da, db = a[0] * n[0] + a[1] * n[1], b[0] * n[0] + b[1] * n[1]
-            if (da < 0) != (db < 0):
-                f_ = da / (da - db)
-                c = tuple(a[j] + (b[j] - a[j]) * f_ for j in range(3))
-                d = c[0] * out[0] + c[1] * out[1]
-                if d > -1e-6:
-                    pts.append((round(d, 5), round(c[2], 5)))
-    if len(set(pts)) < 3:
-        return
-    zs = [q[1] for q in pts]
-    pts = sorted(set(pts) | {(0.0, min(zs)), (0.0, max(zs))})
-    hull = convex_outline(pts)
-    verts = [p.bm.verts.new((d * out[0], d * out[1], z)) for d, z in (hull if way > 0 else hull[::-1])]
-    f = p.bm.faces.new(verts)
-    f.material_index = p._slot(mat)
-    p.surface.add(f)
-
-
-def convex_outline(pts):
-    """Anticlockwise round a set of sorted (x, y) points."""
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-    low, up = [], []
-    for q in pts:
-        while len(low) >= 2 and cross(low[-2], low[-1], q) <= 0:
-            low.pop()
-        low.append(q)
-    for q in reversed(pts):
-        while len(up) >= 2 and cross(up[-2], up[-1], q) <= 0:
-            up.pop()
-        up.append(q)
-    return low[:-1] + up[:-1]
+    """Several round crowns per season on short branches off the arch's shoulders."""
+    from mathutils import Vector
+    for (sx, sy), colour, balls in CROWN_BALLS:
+        path = arch_path(sy)
+        for out, along, up, r in balls:
+            at = (sx * out, sy * along, up)
+            q = min(path, key=lambda m: abs(m[2] - (up - 0.3)))
+            spar_box(p, q[:3], at, 0.07, 0.03, "fey_gate_bark", sides=4)
+            p.blob(Vector(at), r, mat_of(colour), squash=1.08)
 
 
 def gate_arch(p, rng, kind="centre"):
-    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other, under one small crown cut into four seasons: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad."""
+    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other, with round crowns on its shoulders in the four seasons, as fey wood's trees have: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad."""
     from mathutils import Vector
     if kind != "centre":
         return
