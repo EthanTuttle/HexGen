@@ -89,8 +89,8 @@ c c c c c c c c
  c c c . c c c 
 c c c c c c c c
  J c c . c c c 
-. . . . . . . .
- . . . . . . J 
+. c c c c c c .
+ . c c . c c J 
 L . c c c c . L
  L . w . x . L 
 . L . c c . L .
@@ -98,7 +98,7 @@ L . c c c c . L
 c . L . . L . c
  c . L . L . c 
 T c . . . . c .
- . . . . . . . 
+ . c . . . c . 
 L . c c c c . L
  L . c . c . L 
 . L c c J c L .
@@ -109,7 +109,7 @@ c c c h k c c c
  c c c . c c J 
 c c c c c c c c"""},
     "farmland_track": {"kind": "path", "size": "big rectangle", "foes": BANDITS, "idea": "A farm track comes in through a gap between two short fences, up to a fork by the farmhouse, with blocks of wheat either side. The track is clear ground to run on; the wheat and fences break up the rest.", "plan": """
-T . . . . . . . . T
+T c c c c c c c c T
  . c c c c c c c . 
 . . c c c c c c . .
  n . c c c c c . n 
@@ -128,7 +128,7 @@ c c c . L L . c c c
 c c . L . . L . c c
  c . L . n . L c c 
 c c L . . . . . c c
- . . . . n s . . . 
+ c . . c n s . c c 
 . . . . h k . . . ."""},
     "windmill_country_fields": {"size": "wide oval", "idea": "Two fields of ripe wheat with a big mill between them. The wheat can be walked through; the mill and haystacks are the only hard corners.", "plan": """
   . . . . v . . .  
