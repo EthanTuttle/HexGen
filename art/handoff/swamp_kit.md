@@ -66,8 +66,8 @@ A party stopping on a far tile still goes to the tile's middle as usual, so it m
 | Wetland layer | Port the plain section and call `marsh_tile` per swamp tile | `build_map`, "The wetland" |
 | Old pieces | `swamp_*`, `bog_*`, `wisp_marsh_*`, `rot_swamp_*`, `smugglers_bayou_*` wedges, centres and steps are **now empty**, with no effect points either. Skip placing them | `check_town` fails if any regains geometry |
 | Props | New pieces, from `sl.PROP`: `marsh_*`, `bog_*`, `wisp_*`, `rot_*`, `bayou_*`, `mudbank_*` | `marsh_props` |
-| Mist | `marsh_mist_a`, `_b`, on about 15% to 45% of tiles, as a fallback. New own material `mist_low`: its alpha comes from the **vertex colours' alpha** (0.2 in the middle, 0 at the edge), both sides. Use that alpha, or drop these pieces once your mist effect is in | `place_mist` |
-| Landmark centres | `witchhut`, `wisphollow`, `thievesguild`: as before. `plaguepit_*`: still its own centre, with no slab; its wedges are empty too | `variants.LANDMARKS` |
+| Mist | `marsh_mist_a`, `_b`, on about 15% to 45% of tiles, as a fallback. New own material `mist_low`: colour and alpha are both in **`COLOR_0`** since tiles_v76 (alpha 0.2 in the middle, 0 at the edge), both sides, with no base colour on the material. They're the only mist on rot swamp and bayou tiles, which get no `mist` effect points | `place_mist` |
+| Landmark centres | `witchhut`, `wisphollow`, `thievesguild`: as before. `plaguepit_*`: still its own centre, with no slab; its wedges are empty too. Closed since tiles_v76: no plate needed under it. Its walls go down to z -1.3, below the soil's -0.6, so their backs can show from off a map edge with nothing beside the tile | `variants.LANDMARKS` |
 | Shacks | `bayou_shack` faces the nearest walkway, in a tile's corner. Its spur lies wholly on its own tile and ends under that walkway, so a neighbour can't leave it hanging. Where its rope walkway reaches the boardwalk, there's no spur. A tile with no walkway has no shack. Spurs aren't walked | `shack_spot` |
 | Bayou boardwalk | Width unchanged (half 0.52). Planks now follow the bend as trapezoids. Minis stand at z 0.045 | `planks` |
 

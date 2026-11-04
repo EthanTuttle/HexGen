@@ -443,9 +443,10 @@ def material(name):
         mat.surface_render_method = "BLENDED"
         mat.use_backface_culling = False
         mat.diffuse_color = (*rgb, WEB_ALPHA)
-    if name == "mist_low":  # its alpha is in the vertex colours, so it fades to nothing at its edge
+    if name == "mist_low":  # its alpha is in the vertex colours, so it fades to nothing at its edge. Colour too: glTF writes the two as one COLOR_0 only when both come from there
         attr = mat.node_tree.nodes.new("ShaderNodeVertexColor")
         attr.layer_name = "Col"
+        mat.node_tree.links.new(attr.outputs["Color"], bsdf.inputs["Base Color"])
         mat.node_tree.links.new(attr.outputs["Alpha"], bsdf.inputs["Alpha"])
         mat.surface_render_method = "BLENDED"
         mat.use_backface_culling = False

@@ -333,6 +333,19 @@ def main():
                     bad += 1
                     print("FLOATING", o.name, [round(x_, 2) for x_ in boxes[k_]])
             bm.free()
+        # no sky through the Plague Pit: it has no slab, so any ray coming down into its tile has to land on it
+        pit, holes = objs["plaguepit_centre"], {}
+        for deg in (2, 4, 7, 12, 20, 35, 60):
+            for k_ in range(24):
+                d_ = Vector((math.cos(k_ * math.pi / 12) * math.cos(math.radians(deg)), math.sin(k_ * math.pi / 12) * math.cos(math.radians(deg)), -math.sin(math.radians(deg))))
+                for ix in range(-32, 33):
+                    for iy in range(-32, 33):
+                        q = Vector((ix * 0.12, iy * 0.12, 0.0))
+                        if q.length < 3.3 and not pit.ray_cast(q - d_ * 15, d_)[0]:
+                            holes[deg] = holes.get(deg, 0) + 1
+        print("rays through the Plague Pit", holes or 0)
+        if holes:
+            bad += 1
         for n in ("witchhut", "wisphollow", "thievesguild", "plaguepit"):
             print(n, "centre", tri(objs[f"{n}_centre"]), "table", sl.LANDMARK_TRIS[n], "top", round(max(v_.co.z for v_ in objs[f"{n}_centre"].data.vertices), 2))
             if tri(objs[f"{n}_centre"]) > sl.LANDMARK_TRIS[n]:

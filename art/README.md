@@ -172,6 +172,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v76:** Swamp fixes from Godot: marsh mist's alpha now in `COLOR_0`; the Plague Pit's two gaps closed at the ends of the lane's cut. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v75:** Scholars' Town as approved (Ethan, Nov 3, 2026): spoke paths, no fence, no row houses, courts in the corners between streets, a feature at each tile's middle, lantern posts where a walk leaves, narrowing into the grass past them. Hand-off: `handoff/village_kit.md`.
 - **tiles_v74:** Scholars' Town: no fence, lantern posts, a try without row houses. Hand-off: `handoff/village_kit.md`.
 - **tiles_v73:** Scholars' Town back on tiles_v69's spoke paths (Ethan: the game is about hexes), with courtyards in the corners between streets, a feature at each tile's middle with the walk going round it (fountain, stage, old tree, statue), long hedges, and `_edge_open*` wedges for the no-fence choice. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
