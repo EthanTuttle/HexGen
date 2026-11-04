@@ -72,3 +72,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_map_scholars_town_court_v9.png` | approved | Quad direction, towers as shown; for all four Scholars maps |
 | 2026-11-03 | `art/preview/village_map_scholars_town_lawns_v11.png` | rejected | Add a hall or cloister along the north, three-sided quad |
 | 2026-11-03 | `art/preview/swamp_smugglers_bayou_map_v4.png` | approved | Swamp, all variants (bog_v4, wisp_v3, rot_v4), with trail finishes |
+| 2026-11-03 | `art/preview/village_map_scholars_town_walk_v9.png` | approved | Scholars' Town done (with court_v11, lawns_v13, cloister_v8); all 20 village maps merge |

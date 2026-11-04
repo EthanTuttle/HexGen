@@ -113,6 +113,9 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Will-o'-wisp marsh | Wisp Hollow | A ring of pale wisps swirling over a still, glowing pool in a hollow of reeds, with a half-sunk treasure chest just visible (chosen Nov 3, 2026) |
   | Rot swamp | Plague Pit | A wide round sinkhole dug into the ground, with glowing yellow-green ooze below, pale fungus on its walls and a broken ramp leading down (chosen Nov 3, 2026) |
   | Smugglers' bayou | Thieves Guild | A large two-storey house on stilts with a covered dock, boats underneath, a crooked sign and lanterns: a shady tavern at the hub of the walkways (chosen Nov 3, 2026) |
+  | Excavation | Dig Site | A big stepped trench dug into the ground, revealing a half-buried stone facade, with scaffolding, a wooden crane and a large tent with a table of finds (chosen Nov 3, 2026) |
+  | Haunted ruins | Crypt | A large mausoleum with a cracked dome and heavy doors ajar, pale light spilling from wide stairs going down, flanked by mourning statues (chosen Nov 3, 2026) |
+  | Golem-guarded ruins | Sentinel Hall | Two looks (chosen Nov 3, 2026): a columned hall up wide stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
 
