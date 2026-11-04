@@ -930,11 +930,15 @@ def ruins(p, rng, kind):
         p.box(at, (0.28, 0.22, 0.18), rng.choice(RUIN_STONES), spin=rng.uniform(0, 1))
 
 
+def ruins_layer(p, rng, kind):
+    """Tier 0: ruin_lands.py draws it per tile, so its pieces are empty."""
+
+
 # Terrains with a corner piece, placed where both neighbours at a corner share the terrain.
 CORNERS = {"river"}
 
 BUILDERS = {"plains": plains, "forest": forest, "farmland": farmland, "river": river, "village": village,
-            "hills": hills, "swamp": swamp, "desert": desert, "ruins": ruins}
+            "hills": hills, "swamp": swamp, "desert": desert, "ruins": ruins_layer}
 
 
 def build():

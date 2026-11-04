@@ -276,6 +276,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     MAP = tiles or globals()["MAP"]
     water_tiles = []
     marsh_tiles = {}
+    ruin_tiles = {}
     col = hk.new_collection("map")
     # Landmark flow (landmark_flow.py): each landmark's region is its variant's tiles joined to it. In the game
     # the region is known; here it's the connected group of the variant's tiles round the landmark.
@@ -316,7 +317,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
         kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
-        no_slab = kit in ("canyon", "plaguepit") or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
+        no_slab = kit in ("canyon", "plaguepit", "digsite", "crypt") or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
         base = place(templates, f"base_{terrain}", col, at) if not no_slab else None
         if kit in vr.VARIANTS and base:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
@@ -393,6 +394,14 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             p.finish(col, at)
             for prop, x_, y_, spin_ in tile_["props"]:
                 place(templates, prop, col, at + Vector((x_, y_, 0)), spin_)
+        if name in vr.rl.LOOKS:
+            # The old city, worked out in world space, the way the engines will.
+            tile_ = ruin_tiles[(q, r)] = vr.rl.ruin_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
+            p = hk.Piece(f"ruin_{q}_{r}")
+            vr.rl.add_ruins(p, tile_)
+            p.finish(col, at)
+            for prop, x_, y_, spin_, z_ in tile_["props"]:
+                place(templates, prop, col, at + Vector((x_, y_, z_)), spin_)
         if terrain == "hills":
             # One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
             # meet; otherwise half on each edge shared with one other hills tile.
@@ -481,7 +490,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 w = obj.matrix_world @ Vector((x, -z, y))
                 clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP, clear, vr.sl.cover_wet(MAP, marsh_tiles))
+    wet_marsh, wet_ruin = vr.sl.cover_wet(MAP, marsh_tiles), vr.rl.cover_wet(MAP, ruin_tiles)
+    gc.add_ground_cover(p, MAP, clear, lambda x, y, t: wet_marsh(x, y, t) or wet_ruin(x, y, t))
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP) - set(hollow)
@@ -1439,6 +1449,118 @@ if __name__ == "__main__":
                         view(m2 + Vector((0, 0, 0.3)), 8, 18, math.atan2(s2[0][1] - s2[-1][1], s2[0][0] - s2[-1][0]) + 1.2)
                         shot("swamp_smugglers_bayou_shack_low")
                         break
+        sys.exit(0)
+    if "ruins" in flags or "ruins-blend" in flags:
+        # Ruins: tier 0 and each variant at map zoom, turned, its landmark close and low, with minis. --ruins-blend: tiles one at a time, and beside every terrain.
+        rl = vr.rl
+        import canyon_takes as ct
+
+        def glows():
+            for name_, rgb_, s_ in (("spirit_glow", (0.4, 0.95, 0.8), 0.45), ("rune_amber", (1.0, 0.62, 0.18), 0.7), ("ruin_line", (1.0, 0.86, 0.6), 0.3)):
+                m_ = bpy.data.materials.get(name_)
+                if m_:
+                    b_ = m_.node_tree.nodes.get("Principled BSDF")
+                    b_.inputs["Emission Color"].default_value = (*rgb_, 1.0)
+                    b_.inputs["Emission Strength"].default_value = s_
+
+        def shot(stem):
+            if not flags.get("only") or stem in flags["only"].split(","):
+                glows()
+                render(stem)
+
+        def wanted(*stems):
+            return not flags.get("only") or any(s_ in flags["only"].split(",") for s_ in stems)
+
+        def view(focus_, dist_, el_deg, ang):
+            el = math.radians(el_deg)
+            cam = bpy.context.scene.camera
+            cam.location = focus_ + Vector((dist_ * math.cos(el) * math.cos(ang), dist_ * math.cos(el) * math.sin(ang), dist_ * math.sin(el)))
+            cam.rotation_euler = (math.pi / 2 - el, 0, ang + math.pi / 2)
+
+        region12 = [(0, 0)] + list(hk.NEIGHBOURS) + [(1, 1), (2, -1), (1, -2), (-1, 2), (-2, 1)]
+        ring_ = {t: "plains" for b_ in region12 for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in region12}
+        minis_file = max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1)))
+        if "ruins-blend" in flags:
+            order = [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1), (1, -1), (-1, 1)]
+            for n_ in (1, 2, 3, 5):
+                if not wanted(f"ruins_hex_blend_placed{n_}"):
+                    continue
+                tiles_ = {t: "ruins" for t in order[:n_]}
+                tiles_.update({t: "plains" for b_ in tiles_ for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in tiles_})
+                hk.empty_scene()
+                build_map(load_templates(tiles), tiles=tiles_)
+                stage(Vector((0.5, 0, 0)), 34, 50)
+                shot(f"ruins_hex_blend_placed{n_}")
+            terrains_ = ["plains", "forest", "hills", "swamp", "river", "desert", "farmland", "village"]
+            for look_, stem_ in (("ruins", "t0"), ("golem_ruins", "golem"), ("excavation", "excavation"), ("haunted_ruins", "haunted")):
+                if not wanted(f"ruins_hex_blend_{stem_}_a", f"ruins_hex_blend_{stem_}_b"):
+                    continue
+                reg_ = [(0, 0)] + list(hk.NEIGHBOURS)
+                outer = sorted({t for b_ in reg_ for t in ((b_[0] + dq, b_[1] + dr) for dq, dr in hk.NEIGHBOURS) if t not in reg_}, key=lambda t: math.atan2(hk.tile_position(*t).y, hk.tile_position(*t).x))
+                sorted_ = {t: terrains_[k_ * len(terrains_) // len(outer)] for k_, t in enumerate(outer)}
+                hk.empty_scene()
+                build_map(load_templates(tiles), tiles={**sorted_, **{t: look_ for t in reg_}})
+                stage(Vector((0, 0, 0)), 46, 50)
+                shot(f"ruins_hex_blend_{stem_}_a")
+                view(Vector((0, 0, 0)), 44, 50, math.radians(120))
+                shot(f"ruins_hex_blend_{stem_}_b")
+            sys.exit(0)
+        if wanted("ruins_hex_t0_map", "ruins_hex_t0_close", "ruins_hex_t0_low"):
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            minis = load_templates(minis_file)
+            build_map(templates, tiles={**ring_, **{t: "ruins" for t in region12}})
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates, thin=True)
+            ct._mini_spots(col, minis, [((0.0, 0.0, 0.0), 0.3)])
+            bpy.context.view_layer.update()
+            stage(Vector((0.5, -1.0, -0.2)), 60, 50)
+            shot("ruins_hex_t0_map")
+            view(hk.tile_position(0, 0), 20, 50, -math.pi / 2)
+            shot("ruins_hex_t0_close")
+            view(Vector((0, 0, 0.3)), 11, 18, math.radians(-50))
+            shot("ruins_hex_t0_low")
+        for stem_, variant, lm in (("excavation", "excavation", "digsite"), ("haunted", "haunted_ruins", "crypt"), ("golem_hall", "golem_ruins", "sentinelhall"), ("golem_seat", "golem_ruins", "sentinelseat")):
+            stems = [f"ruins_hex_{stem_}_{s_}" for s_ in ("map", "turned", "close", "low", "landmark", "landmark_turned", "landmark_low")]
+            if not wanted(*stems):
+                continue
+            lm_at = (1, 0)
+            scene_map = {**ring_, **{t: variant for t in region12}, lm_at: lm}
+            hk.empty_scene()
+            templates = load_templates(tiles)
+            minis = load_templates(minis_file)
+            build_map(templates, tiles=scene_map)
+            col = bpy.data.collections["map"]
+            draw_effects(col, templates, thin=True)
+            d_, t_ = lf.flow(set(region12), lm_at)
+            turn_ = lf.turn(lm_at, d_, t_)
+            at = hk.tile_position(*lm_at)
+            routes = rl.landmark_routes(lm, turn_)
+            stop_, prev_ = routes[turn_][-1], routes[turn_][-2]
+            spots = [((at.x + stop_[0], at.y + stop_[1], stop_[2]), math.atan2(stop_[1] - prev_[1], stop_[0] - prev_[0]))]
+            line_ = routes[(turn_ + 2) % 6]
+            q_ = line_[2]
+            spots.append(((at.x + q_[0], at.y + q_[1], q_[2]), math.atan2(line_[3][1] - q_[1], line_[3][0] - q_[0])))
+            far_ = max(d_, key=lambda t2: d_[t2])
+            c_ = hk.tile_position(*far_)
+            spots.append(((c_.x, c_.y, 0.0), 0.5))
+            ct._mini_spots(col, minis, spots)
+            bpy.context.view_layer.update()
+            focus = Vector((0.5, -1.0, -0.2))
+            stage(focus, 60, 50)
+            shot(f"ruins_hex_{stem_}_map")
+            view(focus, 58, 50, math.radians(140))
+            shot(f"ruins_hex_{stem_}_turned")
+            view(c_, 20, 48, -math.pi / 2)
+            shot(f"ruins_hex_{stem_}_close")
+            view(c_ + Vector((0, 0, 0.3)), 11, 18, math.radians(-50))
+            shot(f"ruins_hex_{stem_}_low")
+            view(at, 17, 50, -math.pi / 2)
+            shot(f"ruins_hex_{stem_}_landmark")
+            view(at, 17, 45, math.radians(60 * turn_))
+            shot(f"ruins_hex_{stem_}_landmark_turned")
+            view(at + Vector((0, 0, 0.3)), 15, 16, math.radians(60 * turn_ - 35))
+            shot(f"ruins_hex_{stem_}_landmark_low")
         sys.exit(0)
     if "stronghold-alone" in flags:
         # The Raider Stronghold on its own, on a bare tile, from several angles.
