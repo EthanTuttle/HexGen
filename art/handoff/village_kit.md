@@ -11,7 +11,7 @@ This kit holds tier 0 villages with the street layout, market towns with the Tra
   - **Market town:** `village_market_map_v2.png`, `village_market_paths_v1.png`, `village_tradinghouse_closeup_v2.png`.
   - **Fortified town:** `village_fortified_map_v3.png`, `village_fortified_paths_v3.png`, `village_fortified_12_map_v2.png`, `village_fortified_join_map_v3.png`, `village_keep_closeup_v3.png`, and the Keep alone: `village_keep_alone_{front,corner,side,back,map,low}_v1.png`.
   - **Slums:** `village_slums_map_v3.png`, `village_slums_paths_v3.png`, `village_blackmarket_closeup_v3.png`. The ground options Ethan chose from: `village_slums_ground_{tan,clay,dun}_{map,closeup}_v1.png`. He picked tan.
-  - **Scholars' town (tiles_v71, not yet approved):** `village_scholars_map_v4.png`, `village_scholars_close_v3.png`, `village_college_closeup_v3.png`. Before, on tiles_v69: `village_scholars_map_v3.png`, `village_scholars_close_v2.png`. See Scholars' Town below.
+  - **Scholars' town (tiles_v73, not yet approved):** with the fence `village_scholars_map_v6.png`, without it `village_scholars_open_map_v1.png`; `village_scholars_middle_v1.png`, `village_scholars_middle_low_v1.png`, `village_scholars_close_v4.png`. Before, on tiles_v69: `village_scholars_map_v3.png`. See Scholars' Town below.
 - **In the previews, smoke is a stand-in** (`render_preview.draw_effects`, `thin=True`). The engine draws its own.
 
 ## Streets: `art/scripts/village_streets.py`
@@ -128,29 +128,15 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 - **Slum roofs:** the tin is still a grey-brown. Ethan approved it as it stands; it could be warmed if the tan ever needs it.
 - **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_damp`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.
 
-## Scholars' Town: a campus layer (tiles_v72, not yet approved, not tried in Godot)
+## Scholars' Town: courts and features (tiles_v73, not yet approved, not tried in Godot)
 
-**The town no longer uses the street wedges, and has no fence.** `art/scripts/campus.py` works it out per tile from world position. Its first section is plain Python to copy. `test_campus.py` checks it. `village_streets.py`, `fence_gates.py` and `test_streets.py` are unchanged.
+Streets and routes along them are as before: `village_streets.py`, `fence_gates.py` and the street wedges stand. **Drop `campus.py`'s moved routes, if any were ported:** it's gone.
 
-`Campus(names, edges, turns, near, trails, closed)`, with `edges` as tile -> `{edge: "main", "side" or "gate"}` (streets plus `fence_gates`' gates), and `closed` the tiles a party can't walk onto (water, raised regions). Rebuild a tile when a tile within two steps changes, or its region finishes.
-
-| Call | Gives | What Godot does |
+| Item | What's new | What Godot does |
 | --- | --- | --- |
-| `tile(t)["lawn"]` | Flat triangles | Mesh at z 0.008, `lawn`, on a `plains` slab. It ends in a wandering margin, so the town's edge isn't a hexagon |
-| `tile(t)["paving"]` | Flat triangles | Mesh at z 0.02, `quad_paving` |
-| `tile(t)["hedges"]` | Polylines | Hedge strip, half 0.08, height 0.22, `add_hedge` |
-| `tile(t)["props"]` | `[(piece, x, y, spin)]` | Place the kit piece. **A building may overhang a neighbouring scholars' tile** |
-| `walk(t, i, j)` | The line a party walks from edge i to edge j | **Replaces the spoke route** |
-| `crossing(t, i)` | Where the walk crosses edge i | **Replaces the edge's middle, between two scholars' tiles.** Any other edge stays at the middle |
-| `stop(t)` | Where a party stands | **Replaces the tile's middle** |
-| `open_ways(t)` | Edges a party can leave by with no walk drawn | See below |
-| `cover_wet` | For the ground cover's `wet` hook | Tufts only in the rough grass past the lawn |
+| Tile middle | Each centre has a feature at the hub: `centre` fountain, `centre_b` stage, `centre_c` old tree, `centre_d` statue, `centre_near` fountain. **The walk can't cross the middle any more** | These centres have no hub. They carry a ring, radius 1.15, and a spoke from each edge's street to it, in the same data as a centre-only landmark (`town_ring`). A party goes round, and stops on the ring where its way in meets it |
+| Choosing a centre | Four, not two | `("centre", "centre_b", "centre_c", "centre_d")[int(hash01(q, r, 13) * 4)]`, as `build_map`. `centre_near` is unchanged |
+| Courts | In the centre pieces, in the corners between streets, so they stand whatever the wedges are | Nothing new |
+| Fence | Both builds exist, for Ethan to pick | With: as now. Without: `scholars_town_edge_open`, `_edge_open_lm`, `_edge_open_gate` in place of `_edge_other`, `_edge_other_lm`, `_edge_gate`, and no `border_join_*` on these tiles. Route rules stay as they are unless he decides otherwise |
 
-**Pieces:** `sch_hall_*`, `sch_run_*`, `sch_fountain`, `sch_statue`, `sch_bench`, `sch_lawn`, `sch_bush`. Every `scholars_town_*` wedge and centre is **empty**. Don't place `border_join_*` on these tiles. `college_centre` no longer has its paved hexagon; the campus paves round it.
-
-**No fence: what happens at the town's edge (a proposal, not yet decided):**
-- `fence_gates.py` is unchanged and still treats the town as part of a farm and village group. Its "gates" on scholars' tiles now only say where **a paved walk leads out**, thinning into the grass. No gate is drawn.
-- A party can leave over **any** edge to walkable land, by `open_ways`: an undrawn line across the lawn from the edge's middle, which buildings keep off. Water and raised regions are closed, as before. So crossing is no longer limited to gates on these tiles, and Godot's route rules must allow it.
-- Where the town meets a plain village or a farm, nothing changes: their street still joins at the edge's middle, and their own fence still runs round them.
-
-Worst tile is about 2,600 triangles before the slab, against 4,404.
+**New colour:** `terracotta`. `check_town.py -- scholars_town college` checks the ring against what stands on each centre, at 0.42. Heaviest centre about 2,500 triangles; a tile with four block wedges and two streets is about 4,360 with its slab, and five blocks and one street about 4,540, against 4,816.

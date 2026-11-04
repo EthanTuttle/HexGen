@@ -97,6 +97,7 @@ PALETTE = {
     "slate_blue": "#5E7A9A",
     "pale_paving": "#B7BF9F",
     "quad_paving": "#E4DCCB",
+    "terracotta": "#C4683F",
     "flagstone": "#8B8783",
     "flower_red": "#D6455A",
     "flower_yellow": "#F0C53C",

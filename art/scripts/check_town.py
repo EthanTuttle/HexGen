@@ -64,6 +64,8 @@ def main():
     # a centre's props, against all six streets; every wedge against its own street and the two beside it
     for o in centres:
         for q in standing(o):
+            if kit == "scholars_town" and q.length < 0.65:
+                continue  # the feature at the tile's middle: its walk goes round it, checked below
             for i in range(6):
                 a = math.radians(60 * i)
                 n = Vector((math.cos(a), math.sin(a)))
@@ -96,7 +98,7 @@ def main():
         for w in wedges:
             for i in range(6):
                 rings.append((f"{w.name} on edge {i}", standing(w, math.radians(60 * i))))
-        lm_wedges = {f"{kit}_edge_block", f"{kit}_edge_other"}
+        lm_wedges = {f"{kit}_edge_block", f"{kit}_edge_other", f"{kit}_edge_open"}
         for name, pts in rings:
             if name.split(" on edge")[0] in lm_wedges:
                 continue  # not used on a landmark tile: it has _lm versions
@@ -211,6 +213,21 @@ def main():
                 bad += 1
                 print("RAMP TOP NOT AT GROUND", name)
         print(f"{lines_} route lines")
+    if kit == "scholars_town":  # the walk round a tile's feature, against what stands on that centre
+        for o in centres:
+            pts = standing(o)
+            ring = [[Vector((x, -z)) for x, y, z in line] for line in json.loads(o.get("paths", "[]"))]
+            ring += [[Vector((x, -z)) for x, y, z in line] for line in json.loads(o.get("path_spokes", "{}")).values()]
+            if not ring:
+                bad += 1
+                print("NO WALK ROUND THE FEATURE", o.name)
+            for line in ring:
+                for a_, b_ in zip(line, line[1:]):
+                    hit = next((q for q in pts if seg_dist(q, a_, b_) < 0.42), None)
+                    if hit is not None:
+                        bad += 1
+                        print("FEATURE WALK TOUCHES", o.name, tuple(round(c, 2) for c in hit))
+                        break
     if kit == "swamp-lands":  # swamp_lands: nothing standing on a usual route or a landmark's ring; each landmark's routes against its piece; ramps join at both ends; no floating bits; triangles against the budget
         import bmesh
         import sand as sd
