@@ -3776,13 +3776,31 @@ def black_market(p, rng, kind):
 
 # --- Village: scholars' town -------------------------------------------------------
 
-SCHOLAR_LOOK = dict(street="street", stone="cobble_dark", alley="cobble_dark", garden="lawn")
+SCHOLAR_LOOK = dict(street="quad_paving", stone="quad_paving", alley="quad_paving", garden="lawn", stones=0)  # mown lawn, pale paved walks: the look of the approved combat maps
+
+
+def pane(p, at, along, out, w, h, mat):
+    """A flat door or window on a wall, one quad looking out: a tile holds dozens of them."""
+    a, b = at - along * (w / 2), at + along * (w / 2)
+    up = Vector((0, 0, h))
+    pts = [a, b, b + up, a + up] if along.cross(up).dot(out) > 0 else [b, a, a + up, b + up]
+    f = p.bm.faces.new([p.bm.verts.new(q) for q in pts])
+    f.material_index = p._slot(mat)
+    p.surface.add(f)
 
 
 def scholar_house(p, rng, at, w, d, spin):
+    """A cream hall on a grey stone apron, with a painted door on one long side and lit windows along both."""
     h = rng.uniform(0.9, 1.15)
+    door = rng.choice(("paint_blue", "paint_teal", "paint_green", "paint_red"))
+    side = rng.choice((-1, 1))
+    corners = [at + turn(Vector((sx * (w / 2 + 0.09), sy * (d / 2 + 0.09), 0)), spin) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    p.flat(corners, 0.022, "flagstone")
     p.box(at, (w, d, h), "cream_stone", spin=spin)
     p.gable_roof(at, w + 0.12, d + 0.16, 0.55, "slate_blue", z=h, spin=spin)
+    pane(p, at + turn(Vector((-w * 0.22, side * (d / 2 + 0.006), 0)), spin), turn(Vector((1, 0, 0)), spin), turn(Vector((0, side, 0)), spin), 0.17, 0.42, door)
+    for sd, x in ((side, w * 0.2), (-side, -w * 0.2), (-side, w * 0.2)):
+        pane(p, at + turn(Vector((x, sd * (d / 2 + 0.006), h * 0.48)), spin), turn(Vector((1, 0, 0)), spin), turn(Vector((0, sd, 0)), spin), 0.15, 0.2, "window_glow")
 
 
 def hemisphere(p, at, r, mat, z, rings=4, segments=10):
@@ -3792,29 +3810,38 @@ def hemisphere(p, at, r, mat, z, rings=4, segments=10):
         frustum(p, at + Vector((0, 0, z + r * math.sin(t0))), at + Vector((0, 0, z + r * math.sin(t1))), r * math.cos(t0), max(r * math.cos(t1), 0.01), mat, segments=segments)
 
 
-def slim_tower(p, rng, at, top):
-    """A slim stone tower, topped with a pointed roof, a dome, or a dome with a telescope poking out."""
-    h = rng.uniform(1.9, 2.5)
-    p.cylinder(at, 0.27, h, "cream_stone", segments=8)
-    p.box(at + Vector((0, -0.26, 0)), (0.1, 0.03, 0.18), "window_glow", z=h - 0.5)
-    p.cylinder(at, 0.31, 0.08, "slate_blue", segments=8, z=h)
+def quad_tower(p, rng, at, top):
+    """A broad stone tower for a hall's end or a cloister's head: a stepped base, a band, windows, and a pointed roof, a dome, or a dome with a telescope."""
+    h = rng.uniform(1.75, 2.05)
+    p.cylinder(at, 0.31, 0.1, "stone_block", segments=8)
+    p.cylinder(at, 0.26, h, "cream_stone", segments=8)
+    p.cylinder(at, 0.28, 0.05, "stone_block", segments=8, z=h * 0.58)
+    for sx, sy in ((0, -1), (1, 0), (-1, 0), (0, 1)):
+        out = Vector((sx, sy, 0))
+        pane(p, at + out * 0.262 + Vector((0, 0, h * 0.72)), Vector((-sy, sx, 0)), out, 0.1, 0.2, "window_glow")
+    p.cylinder(at, 0.3, 0.06, "slate_blue", segments=8, z=h)
     if top == "pointed":
-        p.cone(at, 0.32, 0.8, "slate_blue", segments=8, z=h + 0.08)
+        p.cone(at, 0.31, 0.6, "slate_blue", segments=8, z=h + 0.06)
     else:
-        hemisphere(p, at, 0.3, "slate_blue", h + 0.08, rings=3, segments=8)
+        hemisphere(p, at, 0.28, "slate_blue", h + 0.06, rings=3, segments=8)
     if top == "telescope":
-        frustum(p, at + Vector((-0.1, 0, h + 0.28)), at + Vector((0.42, 0, h + 0.62)), 0.07, 0.05, "brass", segments=6)
+        frustum(p, at + Vector((-0.1, 0, h + 0.26)), at + Vector((0.4, 0, h + 0.58)), 0.065, 0.045, "brass", segments=6)
 
 
-def trimmed_hedge(p, a, b, h=0.26):
-    d = b - a
-    p.box(a + d / 2, (d.length, 0.16, h), "hedge", spin=math.atan2(d.y, d.x))
+def clipped_hedge(p, a, b, h=0.2):
+    """A low clipped hedge: square sides and a flat top in a second green, so a line of it reads as one straight run."""
+    d, mid = b - a, (a + b) / 2
+    spin = math.atan2(d.y, d.x)
+    p.box(mid, (d.length, 0.16, h), "hedge", spin=spin)
+    p.box(mid, (d.length, 0.16, 0.02), "leaf_green_dark", z=h, spin=spin)
 
 
 def scholar_statue(p, at):
-    p.box(at, (0.26, 0.26, 0.3), "cream_stone")
-    p.cylinder(at, 0.07, 0.42, "stone_block", segments=6, z=0.3)
-    p.blob(at, 0.08, "stone_block", z=0.78)
+    """A robed scholar on a stepped plinth."""
+    p.box(at, (0.36, 0.36, 0.08), "cream_stone")
+    p.box(at, (0.26, 0.26, 0.14), "cream_stone", z=0.08)
+    frustum(p, at + Vector((0, 0, 0.22)), at + Vector((0, 0, 0.62)), 0.1, 0.06, "stone_block", segments=5)
+    p.box(at, (0.11, 0.11, 0.12), "stone_block", z=0.62)
 
 
 def fountain(p, at):
@@ -3823,55 +3850,254 @@ def fountain(p, at):
     p.cylinder(at, 0.05, 0.42, "cream_stone", segments=6, z=0.14)
 
 
-def court(p, rng, at, spin, size=0.72, centre=fountain):
-    """A small cloistered court: a lawn with trimmed hedges round it, a fountain or statue in the middle."""
-    corners = [at + turn(Vector((sx * size / 2, sy * size / 2, 0)), spin) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
-    p.flat(corners, 0.03, "lawn")
-    for k in range(4):
-        if k != 1:  # one side open toward the street
-            trimmed_hedge(p, corners[k], corners[(k + 1) % 4])
+def lawn_panel(p, at, size=0.3):
+    """A square of mown grass in the paving, a clipped bush at its middle, flowers round it. Light: a tile can hold many."""
+    p.flat([at + Vector((sx * size / 2, sy * size / 2, 0)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))], 0.034, "lawn")
+    p.cone(at, 0.07, 0.15, "hedge", segments=5, z=0.03)
+    for k, c in enumerate(("flower_blue", "flower_yellow", "flower_red")):
+        a = k * 2.1 + 0.5
+        q = at + Vector((math.cos(a), math.sin(a), 0)) * size * 0.34
+        p.flat([q + Vector((x, y, 0)) for x, y in ((-0.02, -0.02), (0.02, -0.02), (0.02, 0.02), (-0.02, 0.02))], 0.04, c)
+
+
+def quad_bench(p, at, spin):
+    p.box(at, (0.34, 0.1, 0.04), "paint_teal", z=0.1, spin=spin)
+    for sd in (-1, 1):
+        p.box(at + turn(Vector((sd * 0.13, 0, 0)), spin), (0.04, 0.08, 0.1), "paint_teal", spin=spin)
+
+
+def court(p, rng, at, spin, size=1.0, centre=fountain, walk=None):
+    """A little quad: paving with a fountain or statue at its middle, lawn panels at two corners, a bench, and clipped hedge along the sides
+    away from the walk. walk: where a short paved way joins it to the street (spin's -x side faces it)."""
+    half = size / 2
+    q = [at + turn(Vector((sx * half, sy * half, 0)), spin) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    p.flat(q, 0.026, "quad_paving")
+    if walk is not None:
+        n = (at - walk).normalized()
+        s = Vector((-n.y, n.x, 0)) * 0.16
+        p.flat([walk - s, at - n * (half - 0.02) - s, at - n * (half - 0.02) + s, walk + s], 0.026, "quad_paving")
+    clipped_hedge(p, q[1], q[2])
+    clipped_hedge(p, q[2], q[2] + (q[3] - q[2]) * 0.68)  # short of the corner by the walk
+    for sx, sy in ((0.6, 0.6), (0.6, -0.6)):
+        lawn_panel(p, at + turn(Vector((sx * half, sy * half, 0)), spin), size=0.28 * size)
+    quad_bench(p, at + turn(Vector((-0.1, 0.72 * half, 0)), spin), spin)
     centre(p, at)
 
 
-def scholars_town(p, rng, kind):
-    """Slim stone towers with pointed roofs, some topped with domes or telescopes; small cloistered courts with lawns,
-    trimmed hedges and a fountain or statue; cream stone walls and slate-blue roofs. Statues and hedges line the way to
-    the College, and courts thicken round it, leaving the towers farther off so its dome stands out."""
-    def slot(k, what):
-        at, a = bt.corner_spot(k, 2.5)
-        if what in ("pointed", "domed", "telescope"):
-            slim_tower(p, rng, at, what)
-        elif what == "court":
-            court(p, rng, bt.corner_spot(k, 2.65)[0], a, centre=rng.choice((fountain, scholar_statue)))
+def long_quad(p, x0=2.75, half=0.55):
+    """A joined edge with no street: paving up to the edge, so this wedge and its neighbour's make one long quad with a statue at each end and lawn panels across the join."""
+    x1 = bt.X1
+    p.flat([Vector((x0, -half, 0)), Vector((x1, -half, 0)), Vector((x1, half, 0)), Vector((x0, half, 0))], 0.026, "quad_paving")
+    for sd in (1, -1):
+        clipped_hedge(p, Vector((x0 + 0.12, sd * half, 0)), Vector((x1, sd * half, 0)))
+        lawn_panel(p, Vector((x1 - 0.26, sd * 0.28, 0)), size=0.3)
+    scholar_statue(p, Vector((x0 + 0.34, 0, 0)))
+    quad_bench(p, Vector((x1 - 0.72, 0.3, 0)), 0.0)
 
-    if kind == "centre":
-        bt.town_square(p, rng, scholar_house, ("house", "pointed", "house", "court", "house", "domed"), slot, SCHOLAR_LOOK)
-    elif kind == "centre_b":
-        bt.town_square(p, rng, scholar_house, ("court", "house", "telescope", "house", "pointed", "house"), slot, SCHOLAR_LOOK)
-    elif kind == "centre_near":
-        bt.town_square(p, rng, scholar_house, ("court", "house", "court", "house", "court", "pointed"), slot, SCHOLAR_LOOK)
+
+def cloister_run(p, a, b, posts=5):
+    """A covered walk from a to b: stone columns, a wall behind, a slate-blue roof, on paving. It's a look: nothing walks it."""
+    d = b - a
+    n = d.normalized()
+    s = Vector((-n.y, n.x, 0)) * 0.2
+    spin = math.atan2(d.y, d.x)
+    p.flat([a - s, b - s, b + s, a + s], 0.026, "quad_paving")
+    for k in range(posts):
+        p.cylinder(a + d * ((k + 0.5) / posts) - s * 0.65, 0.03, 0.58, "cream_stone", segments=4)
+    p.box((a + b) / 2 + s * 0.65, (d.length, 0.05, 0.58), "cream_stone", spin=spin)
+    p.gable_roof((a + b) / 2, d.length + 0.06, 0.48, 0.14, "slate_blue", z=0.58, spin=spin)
+
+
+TOPS = ("pointed", "domed", "telescope")
+
+
+def spoke_at(k, side, x, y):
+    """A point beside a street, for corner k (between spokes k and k + 1): x along the spoke from the tile's middle, y out from it into the corner. side +1 is spoke k, -1 spoke k + 1."""
+    return turn(Vector((x, y * side, 0)), math.radians(60 * (k + (0 if side > 0 else 1))))
+
+
+def wall_hall(p, rng, k, side):
+    """A hall along the street, its back to the court."""
+    scholar_house(p, rng, spoke_at(k, side, 2.42, 0.985), 0.95, 0.55, math.radians(60 * (k + (0 if side > 0 else 1))))
+
+
+def wall_run(p, k, side):
+    """A cloister along the street, its columns to the court."""
+    a, b = spoke_at(k, side, 1.97, 0.86), spoke_at(k, side, 2.88, 0.86)
+    cloister_run(p, *((b, a) if side > 0 else (a, b)), posts=4)
+
+
+def street_court(p, rng, k, walls, head, mid):
+    """A courtyard in a corner between streets: paved, opening onto the square at its point, with a hall or cloister along each street (walls: "h" or "c", side +1 first) and a tower or a short cloister closing its far end. mid: fountain or statue."""
+    a = math.radians(30 + 60 * k)
+    out, across = Vector((math.cos(a), math.sin(a), 0)), Vector((-math.sin(a), math.cos(a), 0))
+    p.flat([out * 1.85, spoke_at(k, 1, 2.92, 0.68), out * 3.38, spoke_at(k, -1, 2.92, 0.68)], 0.026, "quad_paving")
+    for side, kind in zip((1, -1), walls):
+        (wall_hall(p, rng, k, side) if kind == "h" else wall_run(p, k, side))
+    if head == "run":
+        cloister_run(p, out * 3.46 + across * 0.45, out * 3.46 - across * 0.45, posts=4)
+    else:
+        quad_tower(p, rng, out * 3.52, head)
+    shift = {("h", "c"): 0.13, ("c", "h"): -0.13}.get(tuple(walls), 0.0)  # toward the cloister: a hall takes more room. Side +1 is clockwise of the corner
+    mid(p, out * 2.95 + across * shift)
+    for sd in (-1, 1):
+        if tuple(walls) == ("c", "c") or (sd > 0) == (walls[1] == "c"):
+            lawn_panel(p, out * 3.2 + across * sd * 0.42, size=0.26)
+
+
+def hedged_garden(p, rng, k, top=None):
+    """A corner that isn't a court: a hall in a lawn, with one clipped hedge running along both streets and across its point."""
+    a = math.radians(30 + 60 * k)
+    out = Vector((math.cos(a), math.sin(a), 0))
+    first, second = spoke_at(k, 1, 2.02, 0.76), spoke_at(k, -1, 2.02, 0.76)
+    clipped_hedge(p, spoke_at(k, 1, 2.88, 0.76), first)
+    clipped_hedge(p, first, second)
+    clipped_hedge(p, second, spoke_at(k, -1, 2.88, 0.76))
+    scholar_house(p, rng, out * 3.02, 0.95, 0.6, a + math.pi / 2)
+    if top:
+        quad_tower(p, rng, out * 3.02 + Vector((-out.y, out.x, 0)) * 0.6, top)
+
+
+def great_fountain(p, at):
+    p.cylinder(at, 0.56, 0.16, "cream_stone", segments=12)
+    p.cylinder(at, 0.47, 0.02, "water", segments=12, z=0.16)
+    p.cylinder(at, 0.1, 0.42, "cream_stone", segments=6, z=0.16)
+    p.cylinder(at, 0.27, 0.05, "cream_stone", segments=10, z=0.58)
+    p.cylinder(at, 0.22, 0.015, "water", segments=10, z=0.63)
+    p.cylinder(at, 0.04, 0.3, "cream_stone", segments=6, z=0.63)
+
+
+def bandstand(p, at):
+    """A little stage for players, round, roofed, open on every side."""
+    p.cylinder(at, 0.58, 0.1, "cream_stone", segments=8)
+    p.cylinder(at, 0.5, 0.1, "crate", segments=8, z=0.1)
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        p.cylinder(at + Vector((math.cos(a), math.sin(a), 0)) * 0.42, 0.03, 0.72, "cream_stone", segments=6, z=0.2)
+    p.cylinder(at, 0.54, 0.05, "slate_blue", segments=8, z=0.92)
+    p.cone(at, 0.56, 0.42, "slate_blue", segments=8, z=0.97)
+    p.cylinder(at, 0.025, 0.14, "brass", segments=6, z=1.39)
+
+
+def old_tree(p, rng, at):
+    """A great old tree in a round stone planter, with a seat round it."""
+    p.cylinder(at, 0.56, 0.16, "cream_stone", segments=10)
+    p.cylinder(at, 0.47, 0.01, "lawn", segments=10, z=0.16)
+    bt.tree(p, rng, at)
+
+
+def great_statue(p, at):
+    """A founder on a stepped plinth in a ring of lawn."""
+    p.cylinder(at, 0.56, 0.03, "lawn", segments=10)
+    p.box(at, (0.7, 0.7, 0.12), "cream_stone", z=0.03)
+    p.box(at, (0.52, 0.52, 0.16), "cream_stone", z=0.15)
+    p.box(at, (0.36, 0.36, 0.14), "cream_stone", z=0.31)
+    frustum(p, at + Vector((0, 0, 0.45)), at + Vector((0, 0, 1.15)), 0.17, 0.1, "stone_block", segments=6)
+    p.box(at, (0.17, 0.17, 0.17), "stone_block", z=1.15)
+
+
+def square_things(p, rng, kinds):
+    """Small things round the square, on its corners, clear of the walk round the middle."""
+    for k, what in enumerate(kinds):
+        a = math.radians(30 + 60 * k)
+        at = Vector((math.cos(a), math.sin(a), 0)) * SQUARE_THINGS_R
+        if what == "bench":
+            quad_bench(p, at, a + math.pi / 2)
+        elif what == "lamp":
+            lantern(p, at)
+        elif what == "pot":
+            p.cylinder(at, 0.1, 0.14, "terracotta", segments=6)
+            p.cone(at, 0.12, 0.22, "hedge", segments=5, z=0.14)
+
+
+SQUARE_THINGS_R = 1.82
+FEATURE_RING = 1.15  # the walk round a tile's feature: a mini's base is about 1.04 wide, and the feature reaches 0.58
+
+
+def feature_ring(p):
+    """The feature fills the middle, so the hub becomes a ring, as on a centre-only landmark: spokes from the streets to it, the party going round."""
+    ring = [Vector((math.cos(math.radians(30 * k)), math.sin(math.radians(30 * k)), 0)) * FEATURE_RING for k in range(12)]
+    p.paths.append(ring + ring[:1])
+    for i in range(6):
+        p.spokes[i] = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * X0, ring[2 * i]]
+    p.hub = None
+
+
+SCHOLAR_CENTRES = {
+    "centre": (great_fountain, ("cc", "garden_pointed", "hc", "garden", "ch", "garden_domed"), ("telescope", "domed", "run"), ("bench", "lamp", "pot", "lamp", "bench", "pot")),
+    "centre_b": (bandstand, ("garden", "cc", "garden_telescope", "ch", "cc", "garden"), ("pointed", "run", "domed"), ("lamp", "bench", "lamp", "pot", "bench", "lamp")),
+    "centre_c": (old_tree, ("hc", "cc", "garden_domed", "cc", "garden", "ch"), ("run", "pointed", "run", "telescope"), ("pot", "bench", "pot", "bench", "lamp", "bench")),
+    "centre_d": (great_statue, ("cc", "garden", "cc", "hc", "garden_pointed", "garden"), ("domed", "run", "pointed"), ("bench", "pot", "lamp", "bench", "pot", "lamp")),
+    "centre_near": (great_fountain, ("cc", "hc", "cc", "garden", "ch", "cc"), ("run", "run", "run", "run", "run"), ("bench", "lamp", "bench", "lamp", "bench", "lamp")),
+}
+
+
+def scholar_centre(p, rng, kind):
+    feature, corners, heads, things = SCHOLAR_CENTRES[kind]
+    bt.town_square(p, rng, scholar_house, ("", "", "", "", "", ""), None, SCHOLAR_LOOK)
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "quad_paving")
+    if feature is old_tree:
+        feature(p, rng, Vector((0, 0, 0)))
+    else:
+        feature(p, Vector((0, 0, 0)))
+    square_things(p, rng, things)
+    left = list(heads)
+    for k, what in enumerate(corners):
+        if what.startswith("garden"):
+            hedged_garden(p, rng, k, what[7:] or None)
+        else:
+            street_court(p, rng, k, what, left.pop(0), rng.choice((fountain, scholar_statue)) if what == "cc" else scholar_statue)
+    feature_ring(p)
+
+
+def scholars_town(p, rng, kind):
+    """Lawn with pale spoke walks on the hex grid: halls and cloisters wrap courtyards in the corners between streets, and a feature stands at each tile's middle (fountain, stage, old tree, statue), the walk going round it. Hedges run long along the streets.
+    No fence round the region: lantern posts mark where a walk leaves. No row houses on the street wedges."""
+    if kind in SCHOLAR_CENTRES:
+        scholar_centre(p, rng, kind)
     elif kind == "edge_block":
         scholar_house(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
-        court(p, rng, Vector((3.3, 0, 0)), 0.0, size=1.0, centre=fountain if rng.random() < 0.5 else scholar_statue)
+        long_quad(p)
     elif kind == "edge_block_lm":
-        court(p, rng, Vector((3.3, 0, 0)), 0.0, size=1.0, centre=fountain)
-    elif kind == "same":
-        bt.town_street(p, rng, scholar_house, bt.STREET_MAIN, look=SCHOLAR_LOOK)
-    elif kind == "edge_trail":  # the way to the College: trimmed hedges and statues along the main street
-        bt.town_street(p, rng, scholar_house, bt.STREET_MAIN, ("house", "open"), look=SCHOLAR_LOOK)
-        y = bt.STREET_MAIN + 0.13
-        trimmed_hedge(p, Vector((2.9, -y, 0)), Vector((3.8, -y, 0)))
-        scholar_house(p, rng, Vector((3.35, -(y + 0.55), 0)), 0.85, 0.72, 0.0)
+        long_quad(p)
+    elif kind in ("same", "edge_side", "edge_trail"):  # no row houses (chosen Nov 3, 2026): a long hedge carries each side of the street on to the edge
+        half = bt.STREET_SIDE if kind == "edge_side" else bt.STREET_MAIN
+        bt.town_street(p, rng, scholar_house, half, ("open", "open"), look=SCHOLAR_LOOK)
         for sd in (1, -1):
-            scholar_statue(p, Vector((bt.ALLEY_X - 0.1, sd * (y + 0.1), 0)))
+            clipped_hedge(p, Vector((2.92, sd * (half + 0.14), 0)), Vector((3.84, sd * (half + 0.14), 0)))
+    elif kind in ("other", "edge_other_lm"):  # no fence round the region (chosen Nov 3, 2026): garden running out to the edge
+        if kind == "other":
+            scholar_house(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
+        bt.town_garden(p, rng, False, SCHOLAR_LOOK)
+    elif kind == "edge_gate":  # where a walk leaves the town, in place of a gate: a pair of lantern posts. A party leaves only along these
+        bt.town_garden(p, rng, True, SCHOLAR_LOOK)
+        bt.strip(p, bt.STREET_SIDE, x1=WALK_END_X, mat=SCHOLAR_LOOK["street"])
+        h = bt.STREET_SIDE
+        p.flat([Vector((WALK_END_X, -h, 0)), Vector((X1, -0.17, 0)), Vector((X1, 0.17, 0)), Vector((WALK_END_X, h, 0))], 0.02, SCHOLAR_LOOK["street"])  # past the lanterns it narrows into the grass
+        for x, y, r_ in ((WALK_END_X + 0.1, 0.52, 0.09), (WALK_END_X + 0.28, -0.42, 0.08), (WALK_END_X + 0.42, 0.3, 0.06)):  # with a few stray flags
+            p.flat([Vector((x + r_ * math.cos(a_), y + r_ * math.sin(a_), 0)) for a_ in (0.4, 1.9, 3.5, 5.0)], 0.018, SCHOLAR_LOOK["street"])
+        for sd in (1, -1):
+            lantern_pillar(p, Vector((WALK_END_X, sd * WALK_END_Y, 0)))
+        p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
     else:
         bt.town_edge(p, rng, kind, scholar_house, SCHOLAR_LOOK)
+
+
+WALK_END_X, WALK_END_Y = 3.32, 0.66
+
+
+def lantern_pillar(p, at):
+    """A stone foot, a slim post and a little slate-capped lantern, in a pair at a walk's end."""
+    p.box(at, (0.24, 0.24, 0.12), "cream_stone")
+    p.cylinder(at, 0.045, 0.98, "stone_block_dark", segments=6, z=0.12)
+    p.box(at, (0.16, 0.16, 0.2), "lantern", z=1.1)
+    p.cone(at, 0.15, 0.14, "slate_blue", segments=4, z=1.3)
 
 
 def college(p, rng, kind):
     """Scholars' town's College: a big domed hall with a colonnaded front, a cloister courtyard beside it, and a performers'
     stage out front, on a paved square whose way in is on edge 0."""
-    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "street")
+    p.flat([Vector((c.x, c.y, 0)) for c in hk.hex_corners(2.0, pointy=True)][::-1], 0.026, "quad_paving")
     # the hall
     hall, hy = -0.42, 0.6
     p.box(Vector((hall, hy, 0)), (1.35, 1.32, 1.5), "cream_stone")
@@ -4956,7 +5182,7 @@ VARIANTS = {
     "canyon": ("desert", canyon, "canyon_top", ("centre_mid", "centre_near", "edge_same_b", "edge_other_lm")),
     "fortified_town": ("village", fortified_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail", "centre_mid", "border_join_l", "border_join_r")),
     "slums": ("village", slums, "mud_ground", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
-    "scholars_town": ("village", scholars_town, "pale_paving", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
+    "scholars_town": ("village", scholars_town, "lawn", ("centre_b", "centre_c", "centre_d", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
     "haunted_homesteads": ("farmland", haunted_homesteads, "haunted",
                            ("centre_b", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in", "centre_near",
                             "edge_other_lm")),

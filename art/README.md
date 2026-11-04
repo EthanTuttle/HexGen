@@ -172,6 +172,11 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v75:** Scholars' Town as approved (Ethan, Nov 3, 2026): spoke paths, no fence, no row houses, courts in the corners between streets, a feature at each tile's middle, lantern posts where a walk leaves, narrowing into the grass past them. Hand-off: `handoff/village_kit.md`.
+- **tiles_v74:** Scholars' Town: no fence, lantern posts, a try without row houses. Hand-off: `handoff/village_kit.md`.
+- **tiles_v73:** Scholars' Town back on tiles_v69's spoke paths (Ethan: the game is about hexes), with courtyards in the corners between streets, a feature at each tile's middle with the walk going round it (fountain, stage, old tree, statue), long hedges, and `_edge_open*` wedges for the no-fence choice. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
+- **tiles_v71, tiles_v72:** a Scholars' Town path pass with curving walks. Dropped: Ethan reversed the direction. Its script, `campus.py`, is only in git history. tiles_v70 is ruins, paused on its own branch and not on main.
+- **tiles_v69:** Scholars' Town tiles moved toward the approved combat maps: mown lawn, pale paved walks, broad towers joined to halls or at cloisters' heads, little paved quads with lawn panels, clipped hedges. Streets and routes unchanged. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
 - **tiles_v68:** swamp/marsh, fourth round: no trail stops in the open (a far tile's trail ends at a witch's marker, wisp stake, ooze seep or landing stage), nothing on planks or tracks, spurs run under the walkway. Approved Nov 3, 2026. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v67:** swamp/marsh, third round: soft, rare mist with most left to the engine's effect, rot swamp's ooze in patches, plank spurs from bayou shacks to the walkways. Not reviewed yet. Hand-off: `handoff/swamp_kit.md`.
 - **tiles_v66:** swamp/marsh, second round: water, mud, trails and props are now a per-tile layer worked out from world position (`swamp_lands.marsh_tile`), so pools run across edges and differ per tile; trails curve and join on the way; much denser. Not reviewed yet. Hand-off: `handoff/swamp_kit.md`.

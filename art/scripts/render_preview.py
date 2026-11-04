@@ -363,6 +363,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             centre = "centre_mid"  # two steps from the landmark: on the way to it
         if centre == "centre" and f"{name}_centre_b" in templates and gc.hash01(q, r, 13) < 0.5:
             centre = "centre_b"  # a second version of the centre, so a big group doesn't repeat
+        if centre in ("centre", "centre_b") and f"{name}_centre_d" in templates:  # scholars: four features at the tile's middle
+            centre = ("centre", "centre_b", "centre_c", "centre_d")[int(gc.hash01(q, r, 13) * 4)]
         if f"{name}_centre_mill" in templates and gc.hash01(q, r, 7) < 0.5:
             centre = "centre_mill"  # windmills stand on about half the tiles (placeholder rule)
         spin = math.radians(60 * turns.get((q, r), 0))
@@ -457,7 +459,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
                     place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-            if terrain in BORDERED and kin[i] and "border_join_l" in templates:
+            if terrain in BORDERED and kin[i] and "border_join_l" in templates and kit != "scholars_town":  # no fence round a scholars' town
                 join = f"{kit}_border_join" if walled else "border_join"
                 if not kin[(i + 1) % 6]:
                     place(templates, f"{join}_l", col, at, math.radians(60 * i))
@@ -1789,6 +1791,22 @@ if __name__ == "__main__":
                     d, tw = lf.flow(set(t for t, n in tiles_map.items() if n in (vr.LANDMARKS[lm], lm)), LANDMARK_AT)
                     look(hk.tile_position(*LANDMARK_AT), math.radians(60 * lf.turn(LANDMARK_AT, d, tw)), 15, lift=1.2)
                     shot(f"village_{lm}_closeup")
+                if stem == "village_scholars":
+                    look(hk.tile_position(*max(t for t, n in tiles_map.items() if n == "scholars_town")), -math.pi / 2, 17, math.radians(40))
+                    shot("village_scholars_close")
+                    c_ = hk.tile_position(0, 0)
+                    look(c_, -math.pi / 2, 12, math.radians(45))
+                    shot("village_scholars_middle")
+                    look(c_, -1.1, 9, math.radians(17), 0.3)
+                    shot("village_scholars_middle_low")
+                    g_ = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})  # a walk's end: its lantern posts
+                    t2_, end_i = next((t, i) for t, e in sorted(g_.items()) for i in e if tiles_map[t] == "scholars_town" and tiles_map.get((t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])) == "plains")
+                    a_ = math.radians(60 * end_i)
+                    end_ = hk.tile_position(*t2_) + Vector((math.cos(a_), math.sin(a_), 0)) * 3.5
+                    look(end_, a_ + 0.5, 8, math.radians(30), 0.3)
+                    shot("village_scholars_end")
+                    look(end_, a_ + 0.9, 6, math.radians(12), 0.3)
+                    shot("village_scholars_end_low")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no
