@@ -41,7 +41,7 @@ snow, ash = hk.PALETTE["snow_ground"], hk.PALETTE["ash_ground"]
 hk.PALETTE.update({"cell_snowy_peaks_b": fc.mix(snow, "#BCD0E0", 0.14), "cell_snowy_peaks_c": fc.mix(snow, "#BCD0E0", 0.26),
                    "cell_snowy_peaks_cover": fc.mix(snow, "#8FA8BD", 0.4), "cell_snowy_peaks_block": fc.mix(snow, "#8795A3", 0.55),
                    "cell_volcanic_peaks_cover": fc.mix(ash, "#000000", 0.2), "cell_volcanic_peaks_block": fc.mix(ash, "#35323A", 0.6),
-                   "cell_monastery_heights_track": hk.PALETTE["rock_light"], "pine_dark": "#2C5230"})
+                   "cell_monastery_heights_track": hk.PALETTE["rock_light"], "pine_dark": "#2C5230", "herb_leaf": "#6E9A5A", "herb_leaf_b": "#88AD74", "herb_flower": "#A98CD8"})
 PEAK_LOOK = {"hills": dict(skirt="hill_grass"), "highlands": dict(skirt="highland_grass"),
              "snowy_peaks": dict(cap="snow_light", tall=1.15), "volcanic_peaks": dict(crater=True),
              "monastery_heights": dict(skirt="hill_grass")}
@@ -136,12 +136,31 @@ def shaped_pine(p, rng, at):
         vr.lump(p, q, r, "pine_dark", squash=0.42)
 
 
-def herb_terrace(p, rng):
-    """A neat herb garden on three stepped terraces, walled in stone, the rows green and lilac, the highest to the north."""
-    for k, (y, h) in enumerate(((-0.28, 0.1), (0.0, 0.2), (0.28, 0.3))):
-        q = Vector((0, y, 0))
-        p.box(q, (0.8, 0.3, h), "rock_light")
-        p.box(q, (0.68, 0.21, 0.05), ("herb_a", "herb_b", "herb_a")[k], z=h)
+def blade(p, at, tip, r, mat):
+    """A leaf or a flower spike: an open three-sided spike leaning to its tip. The ground hides its underside."""
+    ring = [p.bm.verts.new(at + Vector((math.cos(k * 2 * math.pi / 3), math.sin(k * 2 * math.pi / 3), 0)) * r) for k in range(3)]
+    end = p.bm.verts.new(tip)
+    for k in range(3):
+        f = p.bm.faces.new((ring[k], ring[(k + 1) % 3], end))
+        f.material_index = p._slot(mat)
+        p.surface.add(f)
+
+
+def herb_rows(p, rng):
+    """Herbs in rows along the band, as on a tea terrace: clumps of narrow sage leaves splaying from dark soil, about half with a tall lilac flower spike. Rows sit on quarters of a cell, so neighbouring cells' rows line up, as long as the piece isn't turned."""
+    for y in (-0.25, 0.0, 0.25):
+        half = (0.5 - abs(y)) * 2 / math.sqrt(3) * 0.9
+        p.flat([Vector((-half, y - 0.07, 0)), Vector((half, y - 0.07, 0)), Vector((half, y + 0.07, 0)), Vector((-half, y + 0.07, 0))], 0.006, "soil_dark")
+        count = max(2, round(2 * half / 0.17))
+        for k in range(count):
+            at = Vector((-half + (k + 0.5) * 2 * half / count, y, 0))
+            turn = rng.uniform(0, 6.3)
+            for n in range(4):
+                a = turn + n * math.pi / 2 + rng.uniform(-0.3, 0.3)
+                out = Vector((math.cos(a), math.sin(a), 0))
+                blade(p, at + out * 0.015, at + out * rng.uniform(0.065, 0.09) + Vector((0, 0, rng.uniform(0.13, 0.18))), 0.03, ("herb_leaf", "herb_leaf_b")[n % 2])
+            if rng.random() < 0.5:
+                blade(p, at, at + Vector((rng.uniform(-0.02, 0.02), rng.uniform(-0.02, 0.02), rng.uniform(0.24, 0.27))), 0.028, "herb_flower")
 
 
 def flags(p, rng):
@@ -192,11 +211,13 @@ def litter(p, rng, v):
 
 def brush(p, rng, v):
     """Walkable cover, under a base's height."""
-    if v in ("hills", "monastery_heights"):
+    if v == "monastery_heights":
+        herb_rows(p, rng)
+    elif v == "hills":
         for k in range(7):
             a, d = k * 0.9 + rng.uniform(-0.3, 0.3), rng.uniform(0.16, 0.38)
             at = Vector((math.cos(a), math.sin(a), 0)) * d
-            p.cone(at, rng.uniform(0.08, 0.12), rng.uniform(0.16, 0.24), "grass_ink" if v == "hills" else ("herb_a", "herb_b")[k % 2], segments=4, spin=rng.uniform(0, 1))
+            p.cone(at, rng.uniform(0.08, 0.12), rng.uniform(0.16, 0.24), "grass_ink", segments=4, spin=rng.uniform(0, 1))
     elif v == "highlands":  # heather
         for k in range(8):
             a, d = k * 0.8 + rng.uniform(-0.3, 0.3), rng.uniform(0.1, 0.38)
@@ -220,7 +241,7 @@ KIT = {
                   "I": ("cairn", SINGLE, cairn_big), "J": ("banner", SINGLE, banner)},
     "snowy_peaks": {"N": ("ice_crag", SINGLE, lambda p, r: crag(p, r, "snowy_peaks"))},
     "volcanic_peaks": {"I": ("columns", SINGLE, basalt_columns), "J": ("vent", SINGLE, vent)},
-    "monastery_heights": {"E": ("herb_terrace", SINGLE, herb_terrace), "I": ("flags", SINGLE, flags)},
+    "monastery_heights": {"I": ("flags", SINGLE, flags)},
 }
 
 

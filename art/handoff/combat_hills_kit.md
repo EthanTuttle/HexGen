@@ -1,12 +1,12 @@
-# Combat hills kit hand-off (combat_hills_v5, combat_maps_hills_v10)
+# Combat hills kit hand-off (combat_hills_v6, combat_maps_hills_v11)
 
 Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and lifts replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v5.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v10.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v6.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v11.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
-- **Previews:** `art/preview/hills_maps_all_v16.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Monastery v11, Volcanic v14, Highlands v12, Snowy v12, Hills v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v2.png`, `hills_maps_volcanic_peaks_beside_tile_v4.png`, `hills_maps_monastery_heights_beside_tile_v1.png`; props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
+- **Previews:** `art/preview/hills_maps_all_v17.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Monastery v12, Volcanic v14, Highlands v12, Snowy v12, Hills v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v2.png`, `hills_maps_volcanic_peaks_beside_tile_v4.png`, `hills_maps_monastery_heights_beside_tile_v2.png` (Gardens and Ridge only, for now); props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
 
 ## Heights in the data
 
@@ -48,13 +48,19 @@ As in the plains kit: `cell_<v>_ground_a/b/c`, `_floor`, `_cover`, `_litter`, `_
 | `highlands` | `crag`, `cairn`, `banner` (1) | bare rock | heather |
 | `snowy_peaks` | `ice_crag` (1) | ice | snowy bushes |
 | `volcanic_peaks` | `columns`, `vent` (1); its `peaks_*` are separate smooth cones, each with a lit crater | basalt | red shrubs |
-| `monastery_heights` | `herb_terrace`, `flags` (1) | stone path | herbs |
+| `monastery_heights` | `flags` (1) | stone path | herb rows: walkable, never turned, so rows line up across cells |
 
 `ob_highlands_banner` stands on one blocked cell of its own, or on stacked rock on `highlands_scarp`, so it takes no walkable cell there. Turned 45° in the map so both cloths show from the default camera.
 
-Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `lava_flow` (the whole flow as one piece, drawn in place of kit cells: the carved channel down the cone with dark basalt banks, each lava cell's rim and pool, and the heavy fall that hangs over the board's side; on `volcanic_peaks_fissures` and `volcanic_peaks_crater`; see Moving lava), `lift_steps` (three long steps on every 0.45 rise that touches a lift cell, on the lower cell's edge, as on the forest's ways up: they cover up to 0.26 of that cell's edge at up to 0.34 high, so a mini's base clips them and a cell highlight needs to draw over them), `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
+Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `lava_flow` (the whole flow as one piece, drawn in place of kit cells: the carved channel down the cone with dark basalt banks, each lava cell's rim and pool, and the heavy fall that hangs over the board's side; on `volcanic_peaks_fissures` and `volcanic_peaks_crater`; see Moving lava), `terrace_curbs` (on `monastery_heights_gardens` and `monastery_heights_ridge`: a stone lip along the top of each retaining wall), `lift_steps` (three long steps on every 0.45 rise that touches a lift cell, on the lower cell's edge, as on the forest's ways up: they cover up to 0.26 of that cell's edge at up to 0.34 high, so a mini's base clips them and a cell highlight needs to draw over them), `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
 
 **Effects:** two lava materials. `lava` is the tiles' own, meant to glow and pulse: craters, thin streaks, vents, fissures and cliff streaks. `lava_flow` is the flow only: see Moving lava. Smoke from craters, as on the tiles, isn't in the pieces and would be an engine effect.
+
+## Terraced maps
+
+`monastery_heights_gardens` and `monastery_heights_ridge` are level bands with stone retaining walls (on trial with Ethan). Nothing new in the data: cells carry `z` as usual, rises of 0.45 are ordinary moves, and rises of 0.9 or more can't be crossed except by a stair cell between them, a plain walkable cell 0.45 above the lower band with long steps on one side up and one side down. Those steps follow the `lift_steps` note above. A stair cell can also be entered from its other sides, as the height rule allows it: only the straight flight is drawn. `ob_monastery_heights_herb_terrace` is gone from the kit and from every map.
+
+`monastery_heights_climb`'s slope stands in 0.3 steps, each costing 2 uphill, and its path rises 0.15 a move, costing 1, so the path is the quick way: 12 moves foot to head, against 13 off it except where it passes the wall.
 
 ## Moving lava
 
@@ -81,10 +87,10 @@ Peaks hide more cells from the default camera. Ethan accepts this for now and wi
 | `hills_shoulder` | 58 of 71 | `volcanic_peaks_fissures` | 79 of 84 |
 | `hills_saddle` | 39 of 43 | `volcanic_peaks_crater` | 47 of 54 |
 | `hills_crags` | 38 of 57 | `volcanic_peaks_ledge` | 36 of 36 |
-| `highlands_moor` | 72 of 80 | `monastery_heights_gardens` | 56 of 57 |
-| `highlands_knoll` | 29 of 30 | `monastery_heights_walled` | 22 of 23 |
-| `highlands_scarp` | 59 of 62 | `monastery_heights_ridge` | 71 of 80 |
-| `snowy_peaks_pass` | 44 of 51 | `monastery_heights_climb` | 59 of 62 |
+| `highlands_moor` | 72 of 80 | `monastery_heights_gardens` | 64 of 64 |
+| `highlands_knoll` | 29 of 30 | `monastery_heights_walled` | 23 of 24 |
+| `highlands_scarp` | 59 of 62 | `monastery_heights_ridge` | 75 of 83 |
+| `snowy_peaks_pass` | 44 of 51 | `monastery_heights_climb` | 61 of 64 |
 | `snowy_peaks_lake` | 69 of 75 | | |
 | `snowy_peaks_shelf` | 64 of 75 | | |
 
