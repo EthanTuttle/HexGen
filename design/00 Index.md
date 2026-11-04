@@ -175,7 +175,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: high ground on combat maps: range bonus, and the AP cost of the ascend/descend action (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
 - [x] ~~Giant enemies: grid rules~~ (decided Nov 4, 2026: see Classes & combat)
-- [ ] New: lava on combat maps: damage, foes' behaviour, immunity, pushes (see Classes & combat); flowing lava on trial on Fissures
+- [ ] New: lava on combat maps: damage, foes' behaviour, immunity, pushes (see Classes & combat); flowing lava on trial on Fissures and Crater
 - [ ] New: giants: turning a 3-cell giant, and standing on slopes and ways up (see Classes & combat)
 - [ ] New: what players do at each landmark, which then decides its battle maps (dungeon-like landmarks may have several, peaceful ones such as shops none)
 - [ ] New: custom combat maps: size range (forest set is 37–114 cells; check how long maps feel in play). Count settled Nov 2, 2026: 3 per variant, plus 1 path map if it has roads
