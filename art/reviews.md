@@ -65,3 +65,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/swamp_bog_map_v1.png` | rejected | Swamp round 1, all variants: break the pool pattern, softer winding trails, denser swamp |
 | 2026-11-03 | `art/preview/village_map_slums_shacks_v11.png` | rejected | Slums round 2 (with plots_v11, fences_v11, street_v11): shacks look like tilted houses, like a bug; break up washing. Plots and tarp not objected to |
 | 2026-11-03 | `art/preview/shack_b_compare_close_v3.png` | approved | Added-onto style with patched roofs (F), for all seven shacks |
+| 2026-11-03 | `art/preview/village_map_slums_shacks_v14.png` | approved | After swapping lone laundry with trees near houses; Slums set done, merges with the rest of village |
