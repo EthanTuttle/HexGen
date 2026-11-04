@@ -87,3 +87,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/village_scholars_map_v8.png` | approved | Final Scholars Town (tiles_v75); walk ends softened; on main |
 | 2026-11-04 | `art/preview/hills_maps_highlands_beside_tile_v1.png` | approved | Highlands set: Moor v15, Knoll v15, Scarp v17 as they are; add a few banners, limited; heather stays |
 | 2026-11-04 | `art/preview/hills_map_snowy_peaks_shelf_v13.png` | rejected | Stairs don't flow into the cliff and aren't the stairs from earlier maps; try a gradual lift of about 0.45 a step. Tall cliffs liked |
+| 2026-11-04 | `art/preview/hills_map_snowy_peaks_shelf_long_steps_v1.png` | approved | Option B, long steps on 0.45 lift cells; apply to volcanic Crater and Ledge |
+| 2026-11-04 | `art/preview/hills_map_snowy_peaks_shelf_v14.png` | rejected | Option A, plain lift: reads as a broken stack |
