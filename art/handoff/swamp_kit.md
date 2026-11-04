@@ -1,6 +1,6 @@
-# Swamp/marsh kit hand-off, round 4 (tiles_v68)
+# Swamp/marsh kit hand-off (tiles_v68)
 
-Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Hollow, rot swamp with the Plague Pit (tier 2), and smugglers' bayou with the Thieves Guild (class). **Not yet approved, and not tried in Godot.** Ethan agreed the routes through tile middles stay as they are.
+Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Hollow, rot swamp with the Plague Pit (tier 2), and smugglers' bayou with the Thieves Guild (class). **Approved by Ethan on Nov 3, 2026 (round 4), all variants; not yet tried in Godot.** Ethan agreed the routes through tile middles stay as they are.
 
 **Since round 1,** the kit works differently. Water, banks, trails and scattered props used to live in the wedge pieces. They now come from a per-tile layer worked out from world position, the way desert sand does (`sand.add_sand`).
 
@@ -23,7 +23,7 @@ Tier 0, bog/fen with the Witch's Hut (tier 1), will-o'-wisp marsh with Wisp Holl
 
 It depends on the tile's position, which neighbours are marsh of its look, and the region's flow. **So rebuild a tile when a neighbour lands next to it, and when its region finishes.** The output for a given input never changes (only `gc.hash01` and arithmetic).
 
-- **Pools:** a world-space field (`wetness`). Two tiles' water never matches: the most alike pair in the test shares 82% (bog); usually far less. Water per tile runs from none to 14 m² of a 52 m² tile.
+- **Pools:** a world-space field (`wetness`). Two tiles' water never matches: the most alike pair in the test shares 80% (rot swamp); usually far less. Water per tile runs from none to 14 m² of a 52 m² tile.
 - **Across edges:** each sixth of a tile is a triangle grid with samples on the edge, so a shared edge matches exactly. The test compares every shared edge.
 - **Where water stops:** at any edge whose neighbour isn't marsh of the same look, 0.34 short of it. So **water doesn't run between two different variants**, or into a Plague Pit's tile.
 - **Mud banks ignore routes.** They run across them, which is what ties the pools together. Only flat mud lies on a route.
@@ -104,7 +104,7 @@ The layer caps each tile at `PROP_BUDGET`, 3,900: water, banks, trails, props an
 
 All in `art/preview/`, with minis except tier 0.
 
-- **Round 4:** `swamp_t0_map_v2` is unchanged. Maps: `swamp_bog_map_v4`, `swamp_wisp_marsh_map_v3`, `swamp_rot_swamp_map_v4`, `swamp_smugglers_bayou_map_v4`. Path ends: `swamp_<variant>_end_v1`, `_end_low_v1` for all four. Spur: `swamp_smugglers_bayou_shack_v2`.
+- **Round 4, approved:** `swamp_t0_map_v2` is unchanged. Maps: `swamp_bog_map_v4`, `swamp_wisp_marsh_map_v3`, `swamp_rot_swamp_map_v4`, `swamp_smugglers_bayou_map_v4`. Path ends: `swamp_<variant>_end_v1`, `_end_low_v1` for all four. Spur: `swamp_smugglers_bayou_shack_v2`.
 - **Round 3 (paths and spurs since changed):** `swamp_bog_low_v3`, `swamp_rot_swamp_low_v3`, `swamp_smugglers_bayou_low_v3`, `swamp_smugglers_bayou_shack_low_v1`.
 - **Round 2 (mist, ooze and spurs since changed):** `swamp_t0_map_v2`, `_close_v2`, and for each variant `_map_v2`, `_turned_v2`, `_landmark_v2`, `_landmark_turned_v2`, `_low_v2`, `_trail_v2`.
 
