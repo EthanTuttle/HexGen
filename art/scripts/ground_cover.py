@@ -29,6 +29,7 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            # tier 2 and class variants
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
            "wisp_marsh": 0.1, "rot_swamp": 0.14, "smugglers_bayou": 0.14, "witchhut": 0.16, "wisphollow": 0.1, "plaguepit": 0.08, "thievesguild": 0.14,
+           "feywild_crossing": 0.0, "feygate": 0.0,  # its layer holds its own, in each tile's season
            # landmark tiles
            "treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05,
            "greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0, "nomadcamp": 0.0, "oldbattlefield": 0.03, "thunderbirdnest": 0.1, "traininggrounds": 0.0, "clanhall": 0.0, "yeticave": 0.0, "salamanderden": 0.0, "library": 0.0,

@@ -228,6 +228,27 @@ def main():
                         bad += 1
                         print("FEATURE WALK TOUCHES", o.name, tuple(round(c, 2) for c in hit))
                         break
+    if kit == "fey-lands":  # the Fey Gate options: each gate's routes against its piece, and inside its keep
+        import fey_lands as fl
+        for name in fl.GATES:
+            o = objs[f"{name}_centre"]
+            solid = [q for q in standing(o)]
+            far = max(math.hypot(q.x, q.y) for q in solid)
+            tris_ = sum(len(f.vertices) - 2 for f in o.data.polygons)
+            print(name, "centre", tris_, "reach", round(far, 2), "top", round(max(v_.co.z for v_ in o.data.vertices), 2))
+            if far > fl.RING_R - 0.45:
+                bad += 1
+                print("GATE REACHES ITS RING", name, round(far, 2))
+            for i, line in fl.gate_routes(0).items():
+                for a, b in zip(line[:-1], line[1:]):
+                    a2, b2 = Vector(a), Vector(b)
+                    if a2.x > fl.GATE_STOP[0] - 0.05 and b2.x > fl.GATE_STOP[0] - 0.05 and abs(a2.y) < 0.1:
+                        continue
+                    hit = next((q for q in solid if seg_dist(q, a2, b2) < 0.2), None)
+                    if hit is not None:
+                        bad += 1
+                        print("ROUTE TOUCHES GATE", name, i, a, hit)
+                        break
     if kit == "swamp-lands":  # swamp_lands: nothing standing on a usual route or a landmark's ring; each landmark's routes against its piece; ramps join at both ends; no floating bits; triangles against the budget
         import bmesh
         import sand as sd
