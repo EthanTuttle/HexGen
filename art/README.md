@@ -172,6 +172,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v83:** the Fey Gate's crowns closer in on fatter, forked branches. Feywild crossing, not approved.
 - **tiles_v82:** the Fey Gate's trunks wind round each other at the top, with four round crowns off them, one per season. Feywild crossing, not approved.
 - **tiles_v81:** the Fey Gate's crown back to several round balls per season, placed so no snow sits on orange. Feywild crossing, not approved.
 - **tiles_v80:** the Fey Gate's shoulder crowns replaced by one crown over the arch, cut into four seasons. Feywild crossing, not approved.

@@ -749,7 +749,7 @@ def spar_box(p, a, b, r0, r1, mat, sides=6):
 
 
 ARCH_MEET = 2.45  # how high the two trunks meet
-ARCH_TWIST = 1.0  # how far up they then wind round each other
+ARCH_TWIST = 0.9  # how far up they then wind round each other
 
 
 def arch_path(side):
@@ -822,27 +822,34 @@ def portal(p):
             p.surface.add(f)
 
 
-CROWN_BALLS = (  # one round crown per season, off the wound trunks at the top: (out from the arch's plane, along it, up, radius), colour. Autumn and snow stand diagonally apart, so no snow sits on orange
-    ((0.4, 0.6, 3.62, 0.48), "#B7D86A"),
-    ((0.4, -0.6, 3.66, 0.47), "#DB7A2E"),
-    ((-0.4, 0.58, 3.78, 0.46), "#F2F5FA"),
-    ((-0.42, -0.58, 3.74, 0.48), "#4E8049"),
+CROWN_BALLS = (  # one round crown per season, close in over the wound trunks: (out from the arch's plane, along it, up, radius), colour. Autumn and snow stand diagonally apart, so no snow sits on orange
+    ((0.36, 0.58, 3.44, 0.44), "#B7D86A"),
+    ((0.36, -0.58, 3.48, 0.43), "#DB7A2E"),
+    ((-0.36, 0.56, 3.58, 0.42), "#F2F5FA"),
+    ((-0.38, -0.56, 3.54, 0.44), "#4E8049"),
 )
 
 
 def arch_crown(p):
-    """Four round crowns on branches off the top of the winding trunks, clear of the portal's sides."""
+    """Four round crowns on fat branches off the wound trunks, each forking before it reaches its crown, clear of the portal's sides."""
     from mathutils import Vector
     for k, ((x, y, z, r), colour) in enumerate(CROWN_BALLS):
         best = None
         for side in (1, -1):
             for q in arch_path(side):
-                if ARCH_MEET + 0.45 <= q[2] <= ARCH_MEET + 0.85:
+                if ARCH_MEET + 0.2 <= q[2] <= ARCH_MEET + 0.55:
                     d = math.dist(q[:2], (x, y))
                     if best is None or d < best[0]:
                         best = (d, q)
-        spar_box(p, best[1][:3], (x, y, z), 0.075, 0.03, "fey_gate_bark", sides=5)
-        p.blob(Vector((x, y, z)), r, mat_of(colour), squash=1.08)
+        start = Vector(best[1][:3])
+        end = Vector((x, y, z))
+        fork = start + (end - start) * 0.42
+        spar_box(p, start, fork, 0.14, 0.1, "fey_gate_bark", sides=5)
+        spar_box(p, fork, end, 0.1, 0.05, "fey_gate_bark", sides=5)
+        out = Vector((x, y, 0)).normalized()
+        across = Vector((-out.y, out.x, 0)) * (1 if k % 2 else -1)
+        spar_box(p, fork, end + across * r * 1.2 + Vector((0, 0, r * 0.2)), 0.08, 0.025, "fey_gate_bark_b", sides=5)  # the fork shows: this one runs on past the crown
+        p.blob(end, r, mat_of(colour), squash=1.08)
 
 
 def gate_arch(p, rng, kind="centre"):
