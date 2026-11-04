@@ -84,3 +84,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-03 | `art/preview/village_scholars_open_map_v1.png` | approved | No fence, hex paths, middle features; lanterns at walk ends; try courts without row houses |
 | 2026-11-03 | `art/preview/village_scholars_bare_map_v1.png` | approved | Without row houses; walk ends softened; merges |
 | 2026-11-04 | `art/preview/hills_maps_hills_beside_tile_v1.png` | approved | Hills set: peak clusters, dark pines; Shoulder v14, Saddle v14, Crags v17. Camera to judge in Godot |
+| 2026-11-04 | `art/preview/village_scholars_map_v8.png` | approved | Final Scholars Town (tiles_v75); walk ends softened; on main |
