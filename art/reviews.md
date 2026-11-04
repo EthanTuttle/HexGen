@@ -103,3 +103,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/hills_maps_monastery_heights_beside_tile_v1.png` | rejected | Plain; green and purple mats make no sense; terrace idea underbaked, iterate and show more of it |
 | 2026-11-04 | `art/preview/fey_study_baked_map_v1.png` | approved | Direction, not final art: develop, push the same-forest read; sharp outer edges |
 | 2026-11-04 | `art/preview/hills_map_monastery_heights_ridge_v8.png` | note | Terrace direction liked (also Gardens v10); trim herbs into purposeful plots; terrace Walled and Climb |
+| 2026-11-04 | `art/preview/fey_big_map_v1.png` | note | Direction holds. Seasons only, no locked time of day (day and night cycle lights it); keep all four seasons; winter is snowy pines and bare limbs; overhang allowed; build the kit |
