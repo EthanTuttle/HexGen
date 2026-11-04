@@ -1,7 +1,7 @@
 """Stills and a short movie of a hills map's lava with the engine's scroll faked: a glow moves through the flow's own surface by its UVs (V is metres along the flow), with nothing floating on top.
 A look target for the engine: the shipped material is flat colour.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_lava_movie.py -- volcanic_peaks_fissures_channel
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_lava_movie.py -- volcanic_peaks_fissures
 Add --stills for one frame from each shot. Writes art/preview/lava_movie_<map>_vN.mp4 and lava_shot_<map>_<shot>_vN.png (never overwrites).
 """
 import math
@@ -18,6 +18,14 @@ import render_preview as rp  # noqa: E402
 
 FPS, SHOT_SECONDS = 24, 3
 SPEED = 0.45  # metres a second along the flow
+
+
+def next_movie(name):
+    """rp.next_n counts stills only, so a movie's next number is counted here, or it would overwrite the last."""
+    n = 1
+    while os.path.exists(os.path.join(hk.ART, "preview", f"lava_movie_{name}_v{n}.mp4")):
+        n += 1
+    return n
 
 
 def look(cam, frm, to):
@@ -88,7 +96,6 @@ def shots(name, cells):
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1:]
-    rh.add_flow_trials()
     name = next(a for a in args if not a.startswith("--"))
     hk.empty_scene()
     col = hk.new_collection("map")
@@ -132,7 +139,7 @@ def main():
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
     scene.render.ffmpeg.constant_rate_factor = "HIGH"
-    scene.render.filepath = os.path.join(hk.ART, "preview", f"lava_movie_{name}_v{rp.next_n(f'lava_movie_{name}')}.mp4")
+    scene.render.filepath = os.path.join(hk.ART, "preview", f"lava_movie_{name}_v{next_movie(name)}.mp4")
     bpy.ops.render.render(animation=True)
     print("MOVIE", scene.render.filepath)
 

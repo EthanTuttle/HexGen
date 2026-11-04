@@ -431,11 +431,11 @@
   "idea": "A massif of peaks beside a rising shoulder of open ground. Prayer flags and gardens mark the south; the way round the massif's west is long and low, the way up the shoulder short and steep.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 79
+  "walkable": 80
  },
  "monastery_heights_walled": {
   "cells": 37,
-  "idea": "A small walled garden on a slope below a few peaks, with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.",
+  "idea": "A small walled garden on a slope below a few peaks, with a shaped pine by its middle, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.",
   "kind": "terrain",
   "shape": "small hex",
   "walkable": 23

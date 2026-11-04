@@ -275,14 +275,14 @@ L . E . E . L
 . . . . . . .
  . h . k s . """},
     "monastery_heights_walled": {"size": "small hex", "foes": BANDITS, "hill": (("north", 5), ("east", 3)),
-                                 "idea": "A small walled garden on a slope below a few peaks, with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.", "plan": """
+                                 "idea": "A small walled garden on a slope below a few peaks, with a shaped pine by its middle, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.", "plan": """
    M   
   M M  
  v w . 
 . x . I
  L . L 
-L . E L
- . T . 
+L . T L
+ . E . 
 L . . L
  L . L 
 . . c .
@@ -293,16 +293,16 @@ L . . L
                                 "idea": "A massif of peaks beside a rising shoulder of open ground. Prayer flags and gardens mark the south; the way round the massif's west is long and low, the way up the shoulder short and steep.", "plan": """
     T . v . w    
    . . . . x .   
-  . I . . . T .  
- E . . . . . . . 
+  . I . . . . .  
+ T . . . . . . . 
 . . . M . . . . .
  . . M M . . . . 
 . . M M . . . . .
- T . M M . . . . 
-. c . M . . . E .
+ E . M M . . . . 
+. c . M . . . T .
  . . . . , . . . 
   E . . . . c .  
-   . h . k . T   
+   . h . k . E   
     . . s . .    """},
     "monastery_heights_climb": {"kind": "path", "size": "tall rectangle", "foes": BANDITS, "hill": (("north", 15),),
                                 "idea": "A stone path zigzags up the whole hillside between low walls, in stone steps where it climbs, under peaks at the top. The path is the quick way; the slope either side is open but slower going, and the top is held.", "plan": """
@@ -319,8 +319,8 @@ E n . . L
 . L n L .
  L . n . 
 L . . n .
- . T . n 
-E . . n .
+ . . . n 
+E . . n T
  h . n k 
 . . n s ."""},
 }
@@ -648,7 +648,7 @@ def cone_groups(group):
     return out
 
 
-def volcano(p, rng, v, cells, z, ground, run_to=None, line=None, flow=None, style="channel"):
+def volcano(p, rng, v, cells, z, ground, run_to=None, line=None, flow=None):
     """A smooth cone over its cells, as on the tiles: an open crater wide enough to see the lava in from the map's camera, gentle concave sides, an ash skirt.
     Its foot goes as far as its own cells let it. run_to: where lava leaves the crater, down the side facing it."""
     main, side, skirt = fc.ROCK[v]
@@ -742,7 +742,7 @@ def volcano(p, rng, v, cells, z, ground, run_to=None, line=None, flow=None, styl
         toward = run_to - at
         j = max(range(n), key=lambda j: foot[j].normalized().dot(toward.normalized()))
         edge = run_to + (rings[-1][j].co - run_to).to_2d().to_3d().normalized() * 0.46  # into the first cell's edge, not across it
-        (lobes_down if style == "lobes" else channel_down)(flow, rng, on_side, outward, len(stack) - 1, j, Vector((edge.x, edge.y, ground(run_to) + 0.03)), line)
+        channel_down(flow, rng, on_side, outward, len(stack) - 1, j, Vector((edge.x, edge.y, ground(run_to) + 0.03)), run_to + Vector((0, 0, ground(run_to) + 0.01)), line)
 
 
 def lay(p, verts, out, mat):
@@ -755,8 +755,8 @@ def lay(p, verts, out, mat):
     p.surface.add(f)
 
 
-def channel_down(p, rng, on_side, outward, top, j, end, line):
-    """Trial: lava in a channel down the cone's side, between raised banks of dark crust that wander and widen as it falls."""
+def channel_down(p, rng, on_side, outward, top, j, end, pool, line):
+    """Lava in a channel down the cone's side, between raised banks of dark crust that wander and widen as it falls."""
     samples = 13
     phase, rate = rng.uniform(0, 6.3), rng.uniform(0.9, 1.3)
     row = None
@@ -764,7 +764,7 @@ def channel_down(p, rng, on_side, outward, top, j, end, line):
         share = i / (samples - 1)
         a = top * share
         t = j + 1.7 * math.sin(a * rate * 1.3 + phase) * min(1.0, share * 3) * (1 - share * 0.7)
-        mid = on_side(a, t)
+        mid = on_side(a, t) + Vector((0, 0, 0.13 if i == samples - 1 else 0))  # the cone's foot is buried; the channel crosses its cell above the ground
         along = (on_side(a, t + 0.2) - on_side(a, t - 0.2)).normalized()
         out = outward(mid)
         half = 0.06 + 0.16 * share
@@ -778,63 +778,21 @@ def channel_down(p, rng, on_side, outward, top, j, end, line):
                 lay(p, (row[k], row_now[k], row_now[k + 1], row[k + 1]), out, "lava_flow" if k in (2, 3) else "basalt_dark")
         row = row_now
     line.append(end)
-    across = (row[6].co - row[0].co).to_2d().to_3d().normalized() * 0.2
-    ends = [p.bm.verts.new(end + across * x) for x in (-1, 0, 1)]
+    # The banks run down onto the first cell's dark rim at one clean line; the lava carries on over the rim into its pool.
+    across = (row[6].co - row[0].co).to_2d().to_3d().normalized()
+    foot = [p.bm.verts.new(end + across * 0.2 * x + Vector((0, 0, h))) for x, h in ((-1.7, -0.05), (-1.3, 0.0), (-0.95, -0.018), (0.0, -0.018), (0.95, -0.018), (1.3, 0.0), (1.7, -0.05))]
     up = Vector((0, 0, 1))
-    lay(p, (row[2], ends[0], ends[1], row[3]), up, "lava_flow")
-    lay(p, (row[3], ends[1], ends[2], row[4]), up, "lava_flow")
-    lay(p, (row[0], ends[0], row[2]), up, "basalt_dark")
-    lay(p, (row[1], row[0], row[2]), up, "basalt_dark")
-    lay(p, (row[4], ends[2], row[6]), up, "basalt_dark")
-    lay(p, (row[5], row[4], row[6]), up, "basalt_dark")
-
-
-def lobes_down(p, rng, on_side, outward, top, j, end, line):
-    """Trial: fat overlapping lobes of lava cascading down the cone's side, each spilling over the one below."""
-    count = 6
-    for i in range(count + 1):
-        line.append(on_side(top * i / count, j) + outward(on_side(top * i / count, j)) * 0.14)
-    line.append(end)
-    last_row = None
-    for i in reversed(range(count)):  # from the bottom up, each lobe's lip over the top of the one below
-        share = i / (count - 1)
-        a0, a1 = top * max(0, i - 0.05) / count, top * (i + 1.35) / count
-        a1 = min(a1, top)
-        half = (0.12 + 0.17 * share) * rng.uniform(0.9, 1.15)
-        fat = (0.11 + 0.1 * share) * rng.uniform(0.9, 1.15)
-        shift = (0.22 if i % 2 else -0.22) * (i > 0)
-        rows = []
-        for f, rise, wide in ((0.0, 0.1, 0.6), (0.35, 0.8, 0.9), (0.7, 1.0, 1.0), (0.92, 0.75, 0.9), (1.0, 0.0, 0.62)):
-            row = []
-            for x in (-1, -0.6, 0, 0.6, 1):
-                # A round tongue: its lip reaches furthest down at the middle.
-                a = a0 + (a1 - a0) * f * (0.82 + 0.18 * (1 - x * x))
-                mid = on_side(a, j + shift)
-                along = (on_side(a, j + shift + 0.2) - on_side(a, j + shift - 0.2)).normalized()
-                row.append(p.bm.verts.new(mid + along * half * x * wide + outward(mid) * (0.02 + fat * rise * math.sqrt(1 - x * x * 0.92))))
-            rows.append(row)
-        for r0, r1 in zip(rows, rows[1:]):
-            for k in range(4):
-                lay(p, (r0[k], r1[k], r1[k + 1], r0[k + 1]), outward(r0[k].co), "lava_flow")
-        if i == count - 1:
-            last_row = rows[-1]
-    across = (last_row[4].co - last_row[0].co).to_2d().to_3d().normalized() * 0.2
-    ends = [p.bm.verts.new(end + across * x) for x in (-1, -0.5, 0, 0.5, 1)]
-    for k in range(4):
-        lay(p, (last_row[k], ends[k], ends[k + 1], last_row[k + 1]), Vector((0, 0, 1)), "lava_flow")
+    for k in range(6):
+        lay(p, (row[k], foot[k], foot[k + 1], row[k + 1]), up, "lava_flow" if k in (2, 3) else "basalt_dark")
+    tip = end.lerp(pool, 0.35)
+    tongue = [p.bm.verts.new(Vector((tip.x, tip.y, pool.z)) + across * 0.17 * x) for x in (-1, 0, 1)]
+    lay(p, (foot[2], tongue[0], tongue[1], foot[3]), up, "lava_flow")
+    lay(p, (foot[3], tongue[1], tongue[2], foot[4]), up, "lava_flow")
 
 
 FLOW_LINES = {}  # a map's lava centre line, crater to board's edge: what the flow's UVs measure along
 hk.PALETTE["lava_flow"] = hk.PALETTE["lava"]
 hk.OWN_MATERIAL.add("lava_flow")  # its own material, so the engine can scroll a glow through it by its UVs
-
-
-def add_flow_trials():
-    """The cone flows being compared on Fissures: extra maps for the movie script, not part of the set."""
-    for style in ("channel", "lobes"):
-        name = f"volcanic_peaks_fissures_{style}"
-        MAPS[name] = dict(MAPS["volcanic_peaks_fissures"], flow_style=style, seed="volcanic_peaks_fissures")
-        TURNED.add(name)
 
 
 def flow_cells(m):
@@ -996,7 +954,7 @@ def build_map(t, col, name):
     p.prism(loop, hk.SOIL_BOTTOM, -0.3, "soil_dark")
     p.finish(col)
     fm.way_tones(v)
-    hillside(col, m.get("seed", name), v, cells, z, name)
+    hillside(col, name, v, cells, z, name)
     k = 0
     for c, mark in cells.items():
         at = hk.cell_position(*c) + Vector((0, 0, z[c]))
@@ -1046,12 +1004,12 @@ def build_map(t, col, name):
         if hc.PEAK_LOOK[v].get("crater"):
             for shared in cone_groups(group):
                 feeds = path and any((path[0][0] + a, path[0][1] + b) in shared for a, b in fm.NEIGHBOURS)
-                volcano(r, hk.seeded(f"{m.get('seed', name)}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None, line, flow, m.get("flow_style", "channel"))
+                volcano(r, hk.seeded(f"{name}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None, line, flow)
         else:
             peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
         r.finish(col)
     if path:
-        lava_flow(flow, cells, z, path, line, hk.seeded(f"{m.get('seed', name)}_lava_flow"))
+        lava_flow(flow, cells, z, path, line, hk.seeded(f"{name}_lava_flow"))
         flow_uvs(flow, line)
         flow.finish(col)
     for _, group in fm.groups(cells, "L"):
@@ -1125,7 +1083,8 @@ def make_sheets():
     for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),
                            ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp")),
                            ("snowy_peaks", "hills_snowy_7_raised", ("snowy_peaks_pass", "snowy_peaks_lake", "snowy_peaks_shelf")),
-                           ("volcanic_peaks", "hills_volcanic_7_raised", ("volcanic_peaks_fissures", "volcanic_peaks_crater", "volcanic_peaks_ledge"))):
+                           ("volcanic_peaks", "hills_volcanic_7_raised", ("volcanic_peaks_fissures", "volcanic_peaks_crater", "volcanic_peaks_ledge")),
+                           ("monastery_heights", "hills_monastery_7_raised", ("monastery_heights_gardens", "monastery_heights_walled", "monastery_heights_ridge", "monastery_heights_climb"))):
         fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
 
 
