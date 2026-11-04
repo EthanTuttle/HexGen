@@ -11,7 +11,7 @@ This kit holds tier 0 villages with the street layout, market towns with the Tra
   - **Market town:** `village_market_map_v2.png`, `village_market_paths_v1.png`, `village_tradinghouse_closeup_v2.png`.
   - **Fortified town:** `village_fortified_map_v3.png`, `village_fortified_paths_v3.png`, `village_fortified_12_map_v2.png`, `village_fortified_join_map_v3.png`, `village_keep_closeup_v3.png`, and the Keep alone: `village_keep_alone_{front,corner,side,back,map,low}_v1.png`.
   - **Slums:** `village_slums_map_v3.png`, `village_slums_paths_v3.png`, `village_blackmarket_closeup_v3.png`. The ground options Ethan chose from: `village_slums_ground_{tan,clay,dun}_{map,closeup}_v1.png`. He picked tan.
-  - **Scholars' town (tiles_v69, not yet approved):** `village_scholars_map_v3.png`, `village_scholars_close_v2.png`, `village_college_closeup_v2.png`. Before, on tiles_v68: `village_scholars_map_v2.png`, `village_scholars_close_v1.png`. Routes unchanged: `village_scholars_paths_v2.png`.
+  - **Scholars' town (tiles_v71, not yet approved):** `village_scholars_map_v4.png`, `village_scholars_close_v3.png`, `village_college_closeup_v3.png`. Before, on tiles_v69: `village_scholars_map_v3.png`, `village_scholars_close_v2.png`. See Scholars' Town below.
 - **In the previews, smoke is a stand-in** (`render_preview.draw_effects`, `thin=True`). The engine draws its own.
 
 ## Streets: `art/scripts/village_streets.py`
@@ -127,3 +127,21 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 - **Keep's courtyard:** with walls this tall, the map camera sees the inner wall faces and a strip of the floor, including the well, not the whole yard.
 - **Slum roofs:** the tin is still a grey-brown. Ethan approved it as it stands; it could be warmed if the tan ever needs it.
 - **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_damp`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.
+
+## Scholars' Town: a campus layer (tiles_v71, not yet approved, not tried in Godot)
+
+**The town no longer uses the street wedges.** `art/scripts/campus.py` works it out per tile from world position. Its first section is plain Python to copy. `test_campus.py` checks it; `village_streets.py`, `fence_gates.py` and `test_streets.py` are unchanged and still decide which edges have a street.
+
+`Campus(names, edges, turns, near, trails)`, with `edges` as tile -> `{edge: "main", "side" or "gate"}` (streets plus gates). Rebuild a tile when a tile within two steps changes, or its region finishes.
+
+| Call | Gives | What Godot does |
+| --- | --- | --- |
+| `tile(t)["paving"]` | Flat triangles | Mesh at z 0.02, `quad_paving` |
+| `tile(t)["props"]` | `[(piece, x, y, spin)]` | Place the kit piece. **A building may overhang a neighbouring scholars' tile** |
+| `walk(t, i, j)` | The line a party walks from edge i to edge j | **Replaces the spoke route** |
+| `crossing(t, i)` | Where the walk crosses edge i | **Replaces the edge's middle, between two scholars' tiles.** A gate, or an edge to any other tile, stays at the middle |
+| `stop(t)` | Where a party stands | **Replaces the tile's middle** |
+
+**Pieces:** `sch_hall_*`, `sch_run_*`, `sch_fountain`, `sch_statue`, `sch_bench`, `sch_panel`, `sch_hedge`, `sch_bush`. `scholars_town_centre*`, `_edge_same`, `_edge_side`, `_edge_trail`, `_edge_block*` are **now empty**: place them or not. `_edge_other`, `_edge_other_lm` and `_edge_gate` hold only the fence and gates, and must still be placed. `college_centre` no longer has its paved hexagon; the campus paves round it.
+
+**Routes moved.** Movement that assumes a route meets the edge's middle has to ask `crossing`. Worst tile is about 1,600 triangles before the slab.

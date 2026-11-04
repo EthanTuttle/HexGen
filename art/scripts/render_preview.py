@@ -310,6 +310,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     gates = fg.fence_gates(terrains, raised, all_ledges)
     ledge_tops = cliffs.ledge_tops(all_ledges)
     streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
+    campus = vr.cp.Campus(MAP, {t: {**dict(streets.get(t, {})), **{i: "gate" for i in gates.get(t, ())}} for t, n in MAP.items() if n in vr.cp.KIN}, turns, dist, [(t, i) for t in MAP if MAP[t] in vr.cp.KIN for i in lf.trail_edges(t, toward)])
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -388,6 +389,14 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             tile_ = marsh_tiles[(q, r)] = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
             p = hk.Piece(f"marsh_{q}_{r}")
             vr.sl.add_marsh(p, tile_)
+            p.finish(col, at)
+            for prop, x_, y_, spin_ in tile_["props"]:
+                place(templates, prop, col, at + Vector((x_, y_, 0)), spin_)
+        if name in vr.cp.KIN:
+            # The campus, worked out in world space, the way the engines will.
+            tile_ = campus.tile((q, r))
+            p = hk.Piece(f"campus_{q}_{r}")
+            vr.cp.add_paving(p, tile_)
             p.finish(col, at)
             for prop, x_, y_, spin_ in tile_["props"]:
                 place(templates, prop, col, at + Vector((x_, y_, 0)), spin_)
