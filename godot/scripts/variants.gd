@@ -29,7 +29,8 @@ const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark
 	"scholars_town": ["Scholars' town", "College"], "great_lake": ["Great lake", "Lake Serpent's Lair"],
 	"rapids": ["Rapids", "Troll Bridge"], "still_waters": ["Still waters", "Meditation Rock"], "badlands": ["Badlands", "Raider Stronghold"],
 	"oasis": ["Oasis", "Oasis Bazaar"], "canyon": ["Canyon", "Echo Cave"], "wisp_marsh": ["Will-o'-wisp marsh", "Wisp Hollow"],
-	"rot_swamp": ["Rot swamp", "Plague Pit"], "smugglers_bayou": ["Smugglers' bayou", "Thieves Guild"]}
+	"rot_swamp": ["Rot swamp", "Plague Pit"], "smugglers_bayou": ["Smugglers' bayou", "Thieves Guild"],
+	"feywild_crossing": ["Feywild crossing", "Fey Gate"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
@@ -40,7 +41,7 @@ const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "da
 	"monastery_heights": "library", "market_town": "tradinghouse", "fortified_town": "keep", "slums": "blackmarket",
 	"scholars_town": "college", "delta": "riverport", "great_lake": "serpentlair", "rapids": "trollbridge",
 	"still_waters": "meditationrock", "wasteland": "sandstonesphinx", "badlands": "raiderstronghold", "oasis": "oasisbazaar",
-	"canyon": "echocave", "bog": "witchhut", "wisp_marsh": "wisphollow", "rot_swamp": "plaguepit", "smugglers_bayou": "thievesguild"}
+	"canyon": "echocave", "bog": "witchhut", "wisp_marsh": "wisphollow", "rot_swamp": "plaguepit", "smugglers_bayou": "thievesguild", "feywild_crossing": "feygate"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
@@ -52,13 +53,13 @@ const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "f
 	"college": "scholars_town", "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids",
 	"meditationrock": "still_waters", "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis",
 	"oasispool": "oasis", "echocave": "canyon", "witchhut": "bog", "wisphollow": "wisp_marsh", "plaguepit": "rot_swamp",
-	"thievesguild": "smugglers_bayou"}
+	"thievesguild": "smugglers_bayou", "feygate": "feywild_crossing"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
 	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
 	"library", "tradinghouse", "keep", "blackmarket", "college", "riverport", "serpentlair", "trollbridge", "meditationrock",
-	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild"]
+	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild", "feygate"]
 
 ## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
 const RAISE := 5.0
@@ -89,7 +90,10 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"sandstonesphinx": "wasteland", "badlands": "badlands_ground", "raiderstronghold": "badlands_ground", "oasis": "oasis_ground",
 	"oasisbazaar": "oasis_ground", "oasispool": "oasis_ground", "canyon": "canyon_top", "echocave": "canyon_top",
 	"witchhut": "bog", "wisp_marsh": "wisp_ground", "wisphollow": "wisp_ground", "rot_swamp": "rot_ground", "plaguepit": "rot_ground",
-	"smugglers_bayou": "bayou_ground", "thievesguild": "bayou_ground"}
+	"smugglers_bayou": "bayou_ground", "thievesguild": "bayou_ground", "feywild_crossing": "feywild_crossing", "feygate": "feywild_crossing"}
+
+## Forest's tier 3 (design/07 -> Feywild crossing). PLACEHOLDER: tier 3 isn't rolled yet, so it's only in the debug spawn.
+const TIER3 := {"feywild_crossing": "forest"}
 
 static var _base := {}
 
@@ -104,6 +108,7 @@ static func terrain_of(name) -> String:
 		for t in TIER2:
 			for v in TIER2[t]:
 				_base[v] = t
+		_base.merge(TIER3)
 		for lm in LANDMARKS:
 			_base[lm] = _base[LANDMARKS[lm]]
 	return _base.get(name, name)

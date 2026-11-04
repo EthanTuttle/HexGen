@@ -500,10 +500,28 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Swamp:** a swamp card placed beside others and a region turning (`SWAMP PERF` lines; `marsh_tile` 26 ms a tile on the Mac, off the main thread when a region turns, on it when a card lands); the wisps, bubbles and mist on a real screen.
+- **Feywild crossing:** `FEY PERF` lines; 3,500 to 3,900 triangles a tile and their shadow pass (the region alone is heavy), the wisps and falls moving, and whether the crowns over the walk bother anyone (accepted by Ethan from previews).
 - **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone); the zoom into a fight; tapping raised cells and giants on a real screen; the opening's distance and panning across a map on a real screen, judged by hand; moving lava's cost and look on a real screen (Fissures, Crater; `COMBAT PERF` lines); peaks hiding cells on hills maps (the kit's table); the hidden-cell counts (`COMBAT MAP` lines, measured with the whole map in view, so they stay comparable), judged against what tall pieces hide once panned close.
 - **Covered window, with Ethan at the Mac (not the phone):** cover a `--forestcheck` window and look for `UNDRAWN`, to confirm the stall's cause. Pixel failures after `UNDRAWN` mean rerun, not pass.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
+
+## Feywild crossing (tiles v84)
+
+Forest's tier 3 and the Fey Gate, from `art/handoff/feywild_kit.md`. `-- --feycheck` (add `--shots` for `screens/fey_*.png`) checks it and ends `FEY DONE`; `--feyclip` with `--write-movie` films the gate and a walk over a seam. `tools/fey_cases.py` and `tools/fey_check.gd` compare `FeyLands` with `fey_lands.py`: same trees, trails and faces, with a face or two's colour off, as `Vector3` is 32-bit.
+
+- **The forest:** `FeyLands.Region`, once per region and off the main thread (`MapBoard.start_fey`), then `fey_tile`. Two meshes a tile, double-sided: ground and trails, and what stands there, which casts shadows.
+- **Sharp edges:** its tiles are alpha 0.75 in the ground lookup, and `ground_blend` skips the fade on both sides of their edges.
+- **Fey Gate:** the piece's portal bands move into one mesh with no shadow (`FeyFx.split_gate`), as a blended material still casts a solid one.
+- **Walking:** `MapBoard._fey_graph`: round a gate's ring, along a trail, else in along one spoke and out along another.
+
+| Placeholder | What |
+| --- | --- |
+| Where it comes from | Tier 3 isn't rolled yet: only the debug spawn makes one |
+| Portal | Flat colours and alphas from the kit, unlit; 5 s pulse of ±10%, 0.82 brightness at night |
+| Wisps | Flat hard-edged discs, not the kit's soft sprites (Ethan: no smooth noise, stay stylized); count and paths from the kit, 4 to 6 s |
+| Snow, leaves, petals | `FeyFx.FALLS`, sizes, speeds, colours; hard-edged discs and diamonds |
+| Fights | No maps yet, so the old board |
 
 ## Combat kit (forest, plains, farmland, village, hills)
 

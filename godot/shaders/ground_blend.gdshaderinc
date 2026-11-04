@@ -27,12 +27,13 @@ vec3 ground_colour(vec3 wp) {
 	}
 	ivec2 t = ivec2(rd.xy);
 	vec2 local = p - vec2(2.0 * A * (rd.x + rd.y / 2.0), -1.5 * R * rd.y);
-	vec3 sum = tile(t).rgb;
+	vec4 own = tile(t);
+	vec3 sum = own.rgb;
 	float total = 1.0;
 	for (int i = 0; i < 6; i++) {
 		vec4 o = tile(t + NB[i]);
-		if (o.a < 0.5) {
-			continue;  // the map's outer edge keeps its own colour
+		if (o.a < 0.9 || own.a < 0.9) {
+			continue;  // the map's outer edge keeps its own colour, and so do both sides of a sharp terrain's edge (alpha 0.75: the Feywild crossing)
 		}
 		float a = radians(60.0 * float(i));
 		vec2 rel = local - 2.0 * A * vec2(cos(a), sin(a));  // relative to the neighbour's centre

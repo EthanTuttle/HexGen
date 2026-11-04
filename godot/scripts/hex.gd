@@ -44,7 +44,7 @@ const PALETTE := {
 	"steppe": "#B4B97C", "stormy": "#8FC4A6", "mown": "#B9DE8E", "tuft_steppe": "#8E9A5C", "tuft_storm": "#62A488",
 	"haunted": "#8C937C", "raided": "#94A06A", "orchard_grass": "#7FAE57", "window_faint": "#E6D79A",
 	# hills variants (hexkit.COLOURS, tiles v45)
-	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A",
+	"snow_ground": "#EEF3F7", "ash_ground": "#7C7876", "lava": "#F4792A", "feywild_crossing": "#6E9158",
 	"rock_wet": "#4B4D52", "rock_wet_dark": "#35373C", "rock_wet_moss": "#56704A", "gorge_lane_a": "#4F5155", "gorge_lane_b": "#575A5C",
 	"gorge_lane_c": "#62655F", "gorge_lane_d": "#7B8A66",
 	# scholars' town (hexkit.COLOURS, tiles v75)

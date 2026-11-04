@@ -12,7 +12,7 @@ const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, 
 	"deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
 	"delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "riverport": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.16, "wisp_marsh": 0.1, "rot_swamp": 0.14, "smugglers_bayou": 0.14, "witchhut": 0.16, "wisphollow": 0.1, "plaguepit": 0.08, "thievesguild": 0.14, "wasteland": 0.0, "excavation": 0.3,
 	# tier 2 and class variants
-	"fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
+	"fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12, "feywild_crossing": 0.0, "feygate": 0.0,
 	# landmark tiles
 	"treeoflife": 0.1, "hiddenshrine": 0.08, "feycourt": 0.18, "spidernest": 0.05,
 	"greatwindmill": 0.0, "abandonedbarn": 0.0, "militiabarn": 0.0, "harvestfestival": 0.0,

@@ -104,6 +104,11 @@ var marsh_data_us := 0                 # test aid: time in marsh_of, and in all 
 var marsh_build_us := 0
 var marsh_cover_us := 0
 var gorge_job_ms := 0                  # the last region's gorges, off the main thread
+var _feywild := {}                     # Feywild tile -> {key, region, tile}: FeyLands' result and what it depended on
+var fey_job_ms := 0                    # the last region's forest, off the main thread
+var fey_build_us := 0                  # test aid: time in _add_fey
+var _fey_material: StandardMaterial3D
+var _fey_portal: Mesh
 var _marsh := {}                       # swamp tile -> {key, tile}: SwampLands.marsh_tile's result and what it depended on
 var _marsh_water: StandardMaterial3D
 var _prop_arrays := {}                 # [piece, surface] -> its arrays
@@ -711,6 +716,8 @@ func path_graph(t: Vector2i) -> TilePaths:
 		_graphs[t] = _desert_graph(t)
 	if not _graphs.has(t) and SwampLands.LOOKS.has(terrains.get(t)):
 		_graphs[t] = _marsh_graph(t)
+	if not _graphs.has(t) and FeyLands.LOOKS.has(terrains.get(t)):
+		_graphs[t] = _fey_graph(t)
 	if not _graphs.has(t):
 		var pieces := []
 		var node := tile_node(t)
@@ -921,7 +928,7 @@ func _set_ground(t: Vector2i) -> void:
 		c = Hex.colour("hill_grass")   # the mound's grass covers the whole tile, so that's the ground to fade
 	else:
 		c = ((_kit["base_" + name] as Mesh).surface_get_material(0) as BaseMaterial3D).albedo_color
-	_ground_img.set_pixel(t.x + 32, t.y + 32, Color(c.r, c.g, c.b, 1))
+	_ground_img.set_pixel(t.x + 32, t.y + 32, Color(c.r, c.g, c.b, 0.75 if FeyLands.LOOKS.has(name) else 1.0))   # its outer edges stay sharp (design/07)
 	_ground_tex.update(_ground_img)
 
 
@@ -961,6 +968,9 @@ func _build_tile(t: Vector2i) -> void:
 		return
 	if SwampLands.LOOKS.has(name):
 		_add_marsh(node, t, at)
+		return
+	if FeyLands.LOOKS.has(name):
+		_add_fey(node, t, at)
 		return
 	var centre := "_centre"
 	if flow_dist.get(t) == 1 and _kit.has(name + "_centre_near"):
@@ -1106,6 +1116,154 @@ func marsh_done(job: Dictionary) -> bool:
 	_marsh.merge(job.out, true)
 	marsh_job_ms = job.ms
 	return true
+
+
+## The Feywild tiles joined to t.
+func _fey_tiles(t: Vector2i, map: Dictionary) -> Dictionary:
+	var tiles := {t: map[t]}
+	var todo := [t]
+	while not todo.is_empty():
+		var c: Vector2i = todo.pop_back()
+		for n: Vector2i in Hex.NEIGHBOURS:
+			if not tiles.has(c + n) and FeyLands.LOOKS.has(map.get(c + n)):
+				tiles[c + n] = map[c + n]
+				todo.append(c + n)
+	return tiles
+
+
+func _fey_key(tiles: Dictionary) -> String:
+	var parts := []
+	for t: Vector2i in tiles:
+		parts.append("%s %s %s %s" % [t, tiles[t], flow_toward.get(t), landmark_turns.get(t, 0)])
+	parts.sort()
+	return " ".join(parts)
+
+
+## Works out a region and all its tiles. Keeps what they need for walking, not every tree's faces.
+func _new_fey(tiles: Dictionary, key: String) -> Dictionary:
+	var region := FeyLands.Region.new(tiles, flow_toward, landmark_turns)
+	var out := {}
+	for t: Vector2i in tiles:
+		out[t] = {key = key, region = region, tile = FeyLands.fey_tile(region, t)}
+	region.free_shapes()
+	return out
+
+
+## Tile t's Feywild layer, from its region. Kept while the region's tiles and flow hold.
+func fey_of(t: Vector2i) -> Dictionary:
+	var tiles := _fey_tiles(t, terrains)
+	var key := _fey_key(tiles)
+	if not _feywild.has(t) or _feywild[t].key != key:
+		_feywild.merge(_new_fey(tiles, key), true)
+	return _feywild[t]
+
+
+## Works out the Feywild regions these changes make, off the main thread, before their tiles are rebuilt. Returns a job for fey_done.
+func start_fey(changes: Dictionary) -> Dictionary:
+	var map := terrains.duplicate()
+	map.merge(changes, true)
+	var regions := []
+	var seen := {}
+	for t: Vector2i in changes:
+		if FeyLands.LOOKS.has(map.get(t)) and not seen.has(t):
+			var tiles := _fey_tiles(t, map)
+			seen.merge(tiles)
+			regions.append([tiles, _fey_key(tiles)])
+	if regions.is_empty():
+		return {}
+	var job := {ms = 0, out = {}}
+	job.id = WorkerThreadPool.add_task(func():
+		var t0 := Time.get_ticks_usec()
+		for r: Array in regions:
+			job.out.merge(_new_fey(r[0], r[1]), true)
+		job.ms = (Time.get_ticks_usec() - t0) / 1000)
+	return job
+
+
+func fey_done(job: Dictionary) -> bool:
+	if job.is_empty():
+		return true
+	if not WorkerThreadPool.is_task_completed(job.id):
+		return false
+	WorkerThreadPool.wait_for_task_completion(job.id)
+	_feywild.merge(job.out, true)
+	fey_job_ms = job.ms
+	return true
+
+
+## A Feywild tile (fey_lands.add_fey): its ground and trails in one mesh, what stands on it in another that casts shadows, both double-sided: a crown cut at a seam with
+## winter is open on its winter side (DOCS: art/handoff/feywild_kit.md). The gate's portal has its own mesh; wisps and what falls are FeyFx.
+func _add_fey(node: Node3D, t: Vector2i, at: Vector2) -> void:
+	var t0 := Time.get_ticks_usec()
+	var tile: Dictionary = fey_of(t).tile
+	if _fey_material == null:
+		_fey_material = Piece.material().duplicate() as StandardMaterial3D
+		_fey_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var colours := {}
+	for row: Array in [["fey_ground", tile.ground + tile.trail, false], ["fey_stand", tile.stand, true]]:
+		var p := Piece.new()
+		for f: Array in row[1]:
+			if not colours.has(f[0]):
+				colours[f[0]] = Color(f[0])
+			p.poly(f[1], colours[f[0]])
+		if not p.is_empty():
+			var mi := p.instance(row[0])
+			mi.mesh.surface_set_material(0, _fey_material)
+			mi.position = Hex.to3(at)
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if row[2] else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			node.add_child(mi)
+	if terrains[t] in FeyLands.GATES:
+		var turn := deg_to_rad(60.0 * landmark_turns.get(t, 0))
+		if _fey_portal == null:
+			var two := FeyFx.split_gate(_kit["feygate_centre"])
+			_kit["feygate_centre"] = two[0]
+			_fey_portal = two[1]
+		Kit.place(node, _kit, "feygate_centre", at, turn)
+		var portal := MeshInstance3D.new()
+		portal.name = "fey_portal"
+		portal.mesh = _fey_portal
+		portal.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		portal.position = Hex.to3(at)
+		portal.rotation.y = turn
+		node.add_child(portal)
+		var wisps := FeyFx.wisps()
+		wisps.position = Hex.to3(at)
+		wisps.rotation.y = turn
+		node.add_child(wisps)
+	var falls := FeyFx.falls(t, tile.effects)
+	if falls:
+		falls.position = Hex.to3(at)
+		node.add_child(falls)
+	fey_build_us += Time.get_ticks_usec() - t0
+
+
+## Where a party walks on a Feywild tile: round a gate's ring, or along a trail, or in along one spoke and out along another (DOCS: art/handoff/feywild_kit.md -> Walking).
+func _fey_graph(t: Vector2i) -> TilePaths:
+	var g := TilePaths.new()
+	var at := Hex.tile_position(t.x, t.y)
+	var region: FeyLands.Region = fey_of(t).region
+	if terrains[t] in FeyLands.GATES:
+		var routes: Dictionary = region.routes[t]
+		for e: int in routes:
+			g.add_line(routes[e], at)
+			g.edge_node[e] = g._node(at + routes[e][0])
+			g.stand = g._node(at + routes[e][-1])
+		return g
+	for i in 6:
+		var line := FeyLands.spoke(i)
+		g.add_line(line, at)
+		g.edge_node[i] = g._node(at + line[0])
+	g.stand = g._node(at)
+	var edges: Array = region.edges[t]
+	if edges.size() >= 2:
+		var worn := []
+		for a in edges.size():
+			for b in range(a + 1, edges.size()):
+				var line := SwampLands.trail_line(t.x, t.y, edges[a], edges[b])
+				g.add_line(line, at)
+				worn.append(line)
+		g.weigh_wet(func(p: Vector2): return SwampLands.line_dist(p - at, worn) > 0.05, 3.0)   # a way along a trail wins over the spokes
+	return g
 
 
 ## A swamp tile's wetland (swamp_lands.add_marsh): flat water, banks, tracks and planks, then its props, merged into one mesh a tile so a
@@ -2313,6 +2471,7 @@ func _process(delta: float) -> void:
 		for g: StandardMaterial3D in _marsh_glow.values():
 			g.emission_energy_multiplier = 0.3 + 2.5 * night   # PLACEHOLDER: lit a little by day
 		SwampFx.set_night(night)
+		FeyFx.set_night(night)
 		_lava.emission_energy_multiplier = (0.75 + 0.25 * sin(TAU * _time / 4.0)) * (0.8 + 2.0 * night)   # PLACEHOLDER: pulses slowly, glows at night
 		ForestFx.set_night(night)
 		DesertFx.set_night(night)

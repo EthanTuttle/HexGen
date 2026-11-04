@@ -147,6 +147,10 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--combatmap=")):
 		var wanted: String = Array(OS.get_cmdline_user_args()).filter(func(x): return x.begins_with("--combatmap="))[0].get_slice("=", 1)
 		debug_fight.call_deferred(wanted)
+	elif "--feycheck" in OS.get_cmdline_user_args():
+		var fy := FeyCheck.new()
+		fy.game = self
+		add_child(fy)
 	elif "--swampcheck" in OS.get_cmdline_user_args():
 		var sc := SwampCheck.new()
 		sc.game = self
@@ -686,6 +690,7 @@ func spawn_forest_regions() -> void:
 			_debug_fill[x] = true
 	_spawn_deserts(changes)
 	_spawn_swamps(changes)
+	_spawn_feywild(changes)
 	# Plains between them, so the party can walk there (they show no cluster goal).
 	var land_now := changes.keys()
 	land_now.append(Rules.START_TILE)
@@ -724,6 +729,20 @@ func _spawn_deserts(changes: Dictionary) -> void:
 		order[at + s] = order.size()
 		_debug_fill[at + s] = true
 	_debug_road(at + Vector2i(-2, 2), changes)
+
+
+## Debug: a 12-tile Feywild crossing, on free land out past the rest, with plains laid to it. PLACEHOLDER: tier 3 isn't rolled yet, so this is the only way to one.
+func _spawn_feywild(changes: Dictionary) -> void:
+	var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+	var tiles: Array[Vector2i] = []
+	for s: Vector2i in DEBUG_PLAINS_SHAPE:
+		tiles.append(anchor + s)
+	var region := new_region("forest", tiles, "feywild_crossing", tiles[0])
+	_set_flow(region)
+	for x in tiles:
+		changes[x] = region_look(region, x)
+		order[x] = order.size()
+	_debug_road(anchor + Vector2i(-3, 3), changes)
 
 
 ## Debug: a 12-tile region of each swamp variant and a tier 0 group, on free land out past the rest, with plains laid to them.
@@ -840,6 +859,7 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		changes[c] = region_look(region, c)
 	var gorges := map.start_gorges(changes)
 	var marsh := map.start_marsh(changes)
+	var fey := map.start_fey(changes)
 	const SINK := 0.22
 	const STEP := 0.09
 	for k in todo.size():
@@ -853,6 +873,8 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 			await get_tree().process_frame
 		map.finish_canyon(job)
 	while not map.marsh_done(marsh):
+		await get_tree().process_frame
+	while not map.fey_done(fey):
 		await get_tree().process_frame
 	while not map.gorges_done(gorges):
 		await get_tree().process_frame

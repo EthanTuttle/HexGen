@@ -6,7 +6,7 @@
 // three terrains meet (ground_cover.py's edge-by-edge fade jumps there, which shows in colour).
 shader_type spatial;
 
-uniform sampler2D terrain_map : filter_nearest;  // texel (q + 32, r + 32): sRGB ground colour, alpha 1 = placed
+uniform sampler2D terrain_map : filter_nearest;  // texel (q + 32, r + 32): sRGB ground colour, alpha 1 = placed, 0.75 = placed with sharp edges
 uniform float blend_width = 1.6;
 
 #include "res://shaders/ground_blend.gdshaderinc"
