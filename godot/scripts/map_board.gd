@@ -99,7 +99,15 @@ var _gorge_foam_mat: ShaderMaterial   # a gorge's white water: unlit, so walls d
 var _dressing_cache := {}              # water tile -> its banks, dressing and boats' spots
 var _surface_cache := {}               # water tile -> [what its surface depends on, its surface]
 var gorge_build_us := 0                # the slowest Gorge.build so far on the main thread, for the check's report
+var marsh_job_ms := 0                  # the last region's wetland, off the main thread
+var marsh_data_us := 0                 # test aid: time in marsh_of, and in all of _add_marsh
+var marsh_build_us := 0
+var marsh_cover_us := 0
 var gorge_job_ms := 0                  # the last region's gorges, off the main thread
+var _marsh := {}                       # swamp tile -> {key, tile}: SwampLands.marsh_tile's result and what it depended on
+var _marsh_water: StandardMaterial3D
+var _prop_arrays := {}                 # [piece, surface] -> its arrays
+var _marsh_glow := {}                  # the swamp's glowing materials, by name
 var _features := {}                    # badlands tile -> what stands at its corners (DesertLands.badlands_features)
 var _clip_mats := {}                   # surface material -> its cut-off version while a region rises
 ## Set by the owner so toadstools glow at night (the bog's night glow is the engine's, not the art's).
@@ -298,6 +306,8 @@ func walk_z(p: Vector2) -> float:
 		var local := Water.turned(p - Hex.tile_position(t.x, t.y), -landmark_turns.get(t, 0))
 		var hit := _along_line(local, DesertLands.ramp_walk())
 		return hit.y if hit.x < 0.8 else 0.0
+	if SwampLands.LOOKS.has(terrains.get(t)):
+		return _marsh_z(t, terrains[t], p)
 	if water_shapes.has(t) and water_shapes[t].has("lane_lines"):
 		var local := p - Hex.tile_position(t.x, t.y)
 		for line: PackedVector3Array in water_shapes[t].lane_lines:
@@ -699,6 +709,8 @@ func path_graph(t: Vector2i) -> TilePaths:
 		_graphs[t] = _canyon_graph(t)
 	if not _graphs.has(t) and terrains.get(t) in ["sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool"]:
 		_graphs[t] = _desert_graph(t)
+	if not _graphs.has(t) and SwampLands.LOOKS.has(terrains.get(t)):
+		_graphs[t] = _marsh_graph(t)
 	if not _graphs.has(t):
 		var pieces := []
 		var node := tile_node(t)
@@ -740,7 +752,13 @@ func _add_cover(t: Vector2i) -> void:
 				for circle in Kit.path_data(mi.get_meta("piece")).get("no_cover", []):
 					var p := Hex.tile_position(c.x, c.y) + Vector2(circle.at[0], -circle.at[2]).rotated(mi.rotation.y)
 					clear.append([p.x, p.y, circle.r])
-	tile_node(t).add_child(GroundCover.build_tile(terrains, water_shapes, t, clear))
+	var marsh := {}
+	if SwampLands.LOOKS.has(terrains.get(t)):
+		marsh[t] = marsh_of(t)
+	var t0 := Time.get_ticks_usec()
+	tile_node(t).add_child(GroundCover.build_tile(terrains, water_shapes, t, clear, marsh))
+	if not marsh.is_empty():
+		marsh_cover_us += Time.get_ticks_usec() - t0
 
 
 func _update_lightning() -> void:
@@ -850,6 +868,23 @@ func _setup_materials() -> void:
 				"window_faint": mesh.surface_set_material(k, _faint)
 				"lava": mesh.surface_set_material(k, _lava)
 				"lantern_red": mesh.surface_set_material(k, _lantern_red)
+	# The swamp kit: what glows at night.
+	_marsh_water = StandardMaterial3D.new()   # PLACEHOLDER: glossy still water, like the old pools
+	_marsh_water.vertex_color_use_as_albedo = true
+	_marsh_water.vertex_color_is_srgb = true
+	_marsh_water.roughness = 0.12
+	_marsh_water.metallic_specular = 0.9
+	for mesh: Mesh in _kit.values():
+		for k in mesh.get_surface_count():
+			var mat_name := Kit.material_name(mesh, k)
+			if mat_name in ["wisp", "wisp_green", "wisp_pool", "window_green"]:
+				if not _marsh_glow.has(mat_name):
+					var g := _glow.duplicate() as StandardMaterial3D
+					var c := (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
+					g.albedo_color = c
+					g.emission = c
+					_marsh_glow[mat_name] = g
+				mesh.surface_set_material(k, _marsh_glow[mat_name])
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
@@ -914,13 +949,16 @@ func _build_tile(t: Vector2i) -> void:
 			node.add_child(rock)
 		return
 	var dug := terrain == "river" and _is_gorge(t)   # rapids: no slab, what's left of the land is its ground
-	if not high and not dug:   # raised ground covers the tile, and a base's soil would stick out of the cliff
+	if not high and not dug and name != "plaguepit":   # raised ground covers the tile, and a base's soil would stick out of the cliff; the Pit's piece is its ground
 		var base := Kit.place(node, _kit, "base_" + terrain, at)   # variants recolour their terrain's base
 		base.set_surface_override_material(0, _ground)
 	if terrain == "river":
 		if dug:
 			_add_gorge(node, t, at)
 		_place_water_pieces(node, t, at)
+		return
+	if SwampLands.LOOKS.has(name):
+		_add_marsh(node, t, at)
 		return
 	var centre := "_centre"
 	if flow_dist.get(t) == 1 and _kit.has(name + "_centre_near"):
@@ -953,8 +991,6 @@ func _build_tile(t: Vector2i) -> void:
 		_add_ripples(node, t, at)
 	for f in _features.get(t, []):
 		Kit.place(node, _kit, f[1], Vector2(f[2], f[3]), deg_to_rad(f[4]))
-	if name == "bog":
-		node.add_child(_mist(at))
 	var fx := ForestFx.for_tile(name, at, t, landmark_turns.get(t, 0))
 	if fx:
 		node.add_child(fx)
@@ -1012,6 +1048,250 @@ func _build_tile(t: Vector2i) -> void:
 		_add_ground_collision(node, terrain == "hills", high)
 	if high:
 		_add_cliffs(t, node, kit, at)
+
+
+## Tile t's wetland, from what it depends on: its look, which neighbours are marsh of which look, the region's flow. Kept while those hold.
+func marsh_of(t: Vector2i, map := terrains) -> Dictionary:
+	var key := _marsh_key(t, map)
+	if not _marsh.has(t) or _marsh[t].key != key:
+		_marsh[t] = {key = key, tile = _new_marsh(t, map)}
+	return _marsh[t].tile
+
+
+func _marsh_key(t: Vector2i, map: Dictionary) -> String:
+	var near := []
+	for n in Hex.NEIGHBOURS:
+		near.append(SwampLands.LOOKS.get(map.get(t + n), ""))
+	return "%s %s %s %s %s %s" % [map[t], near, LandmarkFlow.trail_edges(t, flow_toward), flow_toward.get(t), landmark_turns.get(t, 0), flow_dist.get(t, 9)]
+
+
+func _new_marsh(t: Vector2i, map: Dictionary) -> Dictionary:
+	var out = LandmarkFlow.toward_edge(t, flow_toward) if flow_toward.has(t) else null
+	return SwampLands.marsh_tile(map, t.x, t.y, LandmarkFlow.trail_edges(t, flow_toward), out, landmark_turns.get(t, 0), flow_dist.get(t, 9))
+
+
+## Works out a region's wetland off the main thread, before its tiles are rebuilt (a tile takes about 25 ms on the Mac). Returns a job for marsh_done.
+func start_marsh(changes: Dictionary) -> Dictionary:
+	var map := terrains.duplicate()
+	map.merge(changes, true)
+	var todo := []
+	for t: Vector2i in changes:
+		for c: Vector2i in [t, t + Hex.NEIGHBOURS[0], t + Hex.NEIGHBOURS[1], t + Hex.NEIGHBOURS[2], t + Hex.NEIGHBOURS[3], t + Hex.NEIGHBOURS[4], t + Hex.NEIGHBOURS[5]]:
+			if SwampLands.LOOKS.has(map.get(c)) and not c in todo and (not _marsh.has(c) or _marsh[c].key != _marsh_key(c, map)):
+				todo.append(c)
+	if todo.is_empty():
+		return {}
+	SwampLands._grid_points()
+	SwampLands._gaps()
+	Sand._routes()
+	var job := {ms = 0, out = {}, count = todo.size()}
+	job.id = WorkerThreadPool.add_task(func():
+		var t0 := Time.get_ticks_usec()
+		for c: Vector2i in todo:
+			job.out[c] = {key = _marsh_key(c, map), tile = _new_marsh(c, map)}
+		job.ms = (Time.get_ticks_usec() - t0) / 1000)
+	return job
+
+
+func marsh_done(job: Dictionary) -> bool:
+	if job.is_empty():
+		return true
+	if not WorkerThreadPool.is_task_completed(job.id):
+		return false
+	WorkerThreadPool.wait_for_task_completion(job.id)
+	_marsh.merge(job.out, true)
+	marsh_job_ms = job.ms
+	return true
+
+
+## A swamp tile's wetland (swamp_lands.add_marsh): flat water, banks, tracks and planks, then its props, merged into one mesh a tile so a
+## tile stays a few draw calls however many reeds it holds. Old swamp wedges and centres are empty, so a landmark's centre is all that's placed.
+func _add_marsh(node: Node3D, t: Vector2i, at: Vector2) -> void:
+	var t0 := Time.get_ticks_usec()
+	var tile := marsh_of(t)
+	marsh_data_us += Time.get_ticks_usec() - t0
+	var look: Dictionary = SwampLands.VIEW[tile.look]
+	var name: String = tile.name
+	var turn: int = landmark_turns.get(t, 0)
+	var pieces: Array = tile.props
+	if Variants.LANDMARKS.has(name):
+		Kit.place(node, _kit, name + "_centre", at, deg_to_rad(60.0 * turn))
+		if name == "plaguepit":   # no slab: a plate under the pit, or the sky shows through a gap beside its lane
+			var under := Piece.new()
+			var ring := Hex.hex_corners(Hex.R * 0.9, true)
+			ring.reverse()
+			under.flat(ring, -1.7, Color("#2A2618"))
+			var plate := under.instance("pit_under")
+			plate.position = Hex.to3(at)
+			plate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			node.add_child(plate)
+		pieces = pieces + [[name + "_centre", 0.0, 0.0, deg_to_rad(60.0 * turn)]]
+	var flat := Piece.new()
+	_marsh_flats(flat, tile.bank, 0.012, Hex.colour(look.rim))
+	if tile.look == "smugglers_bayou":
+		var seed_: int = t.x * 6 + t.y * 36
+		for k in tile.trails.size():
+			_boards(flat, tile.trails[k][1], 0.045 - 0.004 * k, seed_ + k)
+		for k in tile.spurs.size():
+			_boards(flat, tile.spurs[k], 0.03, seed_ + 40 + k)
+	else:
+		var track: Color = Hex.colour(look.get("track", look.rim))
+		for k in tile.trails.size():
+			var pairs := SwampLands.ribbon(tile.trails[k][1], tile.half, 0.3 if tile.finish != null else 0.0)
+			var z: float = 0.03 - 0.002 * k
+			for m in range(1, pairs.size()):
+				var l0: Vector2 = pairs[m - 1][0]
+				var r0: Vector2 = pairs[m - 1][1]
+				var l1: Vector2 = pairs[m][0]
+				var r1: Vector2 = pairs[m][1]
+				flat.tri(Vector3(r0.x, r0.y, z), Vector3(r1.x, r1.y, z), Vector3(l1.x, l1.y, z), track)
+				flat.tri(Vector3(r0.x, r0.y, z), Vector3(l1.x, l1.y, z), Vector3(l0.x, l0.y, z), track)
+		for pts: PackedVector2Array in tile.flecks:
+			_marsh_fan(flat, pts, 0.029, track)
+		for o: Array in tile.ooze:
+			_marsh_fan(flat, o[1], 0.032, Hex.colour(o[0]))
+	if not flat.is_empty():
+		var mi := flat.instance("marsh")
+		mi.position = Hex.to3(at)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(mi)
+	var water := Piece.new()
+	_marsh_flats(water, tile.water, 0.022, Hex.colour(look.water))
+	if not water.is_empty():
+		var mi := water.instance("marsh_water")
+		mi.mesh.surface_set_material(0, _marsh_water)
+		mi.position = Hex.to3(at)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(mi)
+	_merge_props(node, tile.props, at)
+	var fx := SwampFx.for_tile(tile.duplicate(), at, pieces)
+	if fx:
+		node.add_child(fx)
+	marsh_build_us += Time.get_ticks_usec() - t0
+
+
+func _marsh_flats(p: Piece, tris: Array, z: float, col: Color) -> void:
+	for t: Array in tris:
+		p.tri(Vector3(t[0].x, t[0].y, z), Vector3(t[1].x, t[1].y, z), Vector3(t[2].x, t[2].y, z), col)
+
+
+func _marsh_fan(p: Piece, pts: PackedVector2Array, z: float, col: Color) -> void:
+	for m in range(1, pts.size() - 1):
+		p.tri(Vector3(pts[0].x, pts[0].y, z), Vector3(pts[m].x, pts[m].y, z), Vector3(pts[m + 1].x, pts[m + 1].y, z), col)
+
+
+## The bayou's boardwalk: planks standing from the ground up to top.
+func _boards(p: Piece, line: PackedVector2Array, top: float, seed_: int) -> void:
+	for b: Array in SwampLands.planks(line, SwampLands.WALK_HALF, seed_):
+		var col := Hex.colour(b[0])
+		var v := [b[1], b[2], b[3], b[4]]
+		var outline := PackedVector2Array(v)
+		p.tri(Vector3(v[0].x, v[0].y, top), Vector3(v[1].x, v[1].y, top), Vector3(v[2].x, v[2].y, top), col)
+		p.tri(Vector3(v[0].x, v[0].y, top), Vector3(v[2].x, v[2].y, top), Vector3(v[3].x, v[3].y, top), col)
+		for j in 4:
+			var a: Vector2 = outline[j]
+			var c: Vector2 = outline[(j + 1) % 4]
+			p.tri(Vector3(a.x, a.y, 0.0), Vector3(c.x, c.y, 0.0), Vector3(c.x, c.y, top), col)
+			p.tri(Vector3(a.x, a.y, 0.0), Vector3(c.x, c.y, top), Vector3(a.x, a.y, top), col)
+
+
+## Kit pieces joined into one mesh per material. The marsh_mist fallback pieces are left out, as the hand-off allows with the effect in:
+## the glb's COLOR_0 has no alpha, so they'd be solid white.
+func _merge_props(node: Node3D, props: Array, at: Vector2) -> void:
+	var buckets := {}
+	for item: Array in props:
+		var mesh: Mesh = _kit.get(item[0])
+		if mesh == null or String(item[0]).begins_with("marsh_mist"):
+			continue
+		var xf := Transform3D(Basis(Vector3.UP, item[3]), Vector3(item[1], 0.0, -item[2]))
+		var turn := Transform3D(xf.basis, Vector3.ZERO)
+		for k in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(k)
+			if not buckets.has(mat):
+				buckets[mat] = {v = PackedVector3Array(), n = PackedVector3Array(), c = PackedColorArray(), i = PackedInt32Array()}
+			var b: Dictionary = buckets[mat]
+			var cached = _prop_arrays.get([item[0], k])
+			if cached == null:   # reading a mesh's arrays back is slow
+				cached = mesh.surface_get_arrays(k)
+				_prop_arrays[[item[0], k]] = cached
+			var arrays: Array = cached
+			var base: int = b.v.size()
+			b.v.append_array(xf * (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array))
+			b.n.append_array(turn * (arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array))
+			if arrays[Mesh.ARRAY_COLOR] != null:
+				b.c.append_array(arrays[Mesh.ARRAY_COLOR])
+			var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			for q in idx:
+				b.i.append(q + base)
+	var solid := ArrayMesh.new()
+	for mat: Material in buckets:
+		var b: Dictionary = buckets[mat]
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = b.v
+		arrays[Mesh.ARRAY_NORMAL] = b.n
+		if b.c.size() == b.v.size():
+			arrays[Mesh.ARRAY_COLOR] = b.c
+		arrays[Mesh.ARRAY_INDEX] = b.i
+		solid.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		solid.surface_set_material(solid.get_surface_count() - 1, mat)
+	if solid.get_surface_count() > 0:
+		var mi := MeshInstance3D.new()
+		mi.name = "marsh_props"
+		mi.mesh = solid
+		mi.position = Hex.to3(at)
+		node.add_child(mi)
+
+
+## The way along tile t's trail between two of its trail edges (world plan points), or empty: off a trail the party keeps its usual curve.
+func marsh_way(t: Vector2i, in_edge: int, out_edge: int) -> PackedVector2Array:
+	var way := PackedVector2Array()
+	if not SwampLands.LOOKS.has(terrains.get(t)) or Variants.LANDMARKS.has(terrains[t]):
+		return way
+	var edges := LandmarkFlow.trail_edges(t, flow_toward)
+	if in_edge == out_edge or not in_edge in edges or not out_edge in edges:
+		return way
+	var at := Hex.tile_position(t.x, t.y)
+	for p in SwampLands.trail_line(t.x, t.y, in_edge, out_edge):
+		way.append(at + p)
+	return way
+
+
+## The routes round a swamp landmark to its stop (swamp_lands.landmark_routes); other swamp tiles have no graph of their own.
+func _marsh_graph(t: Vector2i) -> TilePaths:
+	var g := TilePaths.new()
+	var name: String = terrains[t]
+	if not Variants.LANDMARKS.has(name):
+		return g
+	var at := Hex.tile_position(t.x, t.y)
+	var routes := SwampLands.landmark_routes(name, landmark_turns.get(t, 0))
+	for e: int in routes:
+		var line := PackedVector2Array()
+		for q: Vector3 in routes[e]:
+			line.append(Vector2(q.x, q.y))
+		g.add_line(line, at)
+		g.edge_node[e] = g._node(at + line[0])
+		g.stand = g._node(at + line[-1])
+	return g
+
+
+## The height a mini walks at on a swamp tile: up a stilt house's gangway, down the Plague Pit's lane, on the bayou's boardwalk; NAN elsewhere.
+func _marsh_z(t: Vector2i, name: String, p: Vector2) -> float:
+	var local := p - Hex.tile_position(t.x, t.y)
+	if name == "witchhut" or name == "thievesguild":
+		var hit := _along_line(Water.turned(local, -landmark_turns.get(t, 0)), PackedVector3Array([Vector3(SwampLands.RAMP_START, 0, 0), Vector3(SwampLands.RAMP_END, 0, SwampLands.STILT_Z), Vector3(0, 0, SwampLands.STILT_Z)]))
+		return hit.y if hit.x < 0.8 else 0.0
+	if name == "plaguepit":
+		var line := PackedVector3Array(SwampLands.pit_lane())
+		line.append(SwampLands.pit_turn())
+		line.append(SwampLands.pit_stop())
+		var hit := _along_line(Water.turned(local, -landmark_turns.get(t, 0)), line)
+		return hit.y if hit.x < 0.8 else 0.0
+	if SwampLands.LOOKS[name] == "smugglers_bayou" and _marsh.has(t):
+		var tile: Dictionary = _marsh[t].tile
+		if not tile.trail_lines.is_empty() and SwampLands.line_dist(local, tile.trail_lines) < SwampLands.WALK_HALF:
+			return 0.045
+	return NAN
 
 
 ## The oasis's wind ripples on this tile, all one way across the region (desert_lands.oasis_ripples), in one mesh rather than
@@ -2027,6 +2307,9 @@ func _process(delta: float) -> void:
 		_window.emission_energy_multiplier = 0.4 + 3.0 * night  # PLACEHOLDER: warm light inside
 		_faint.emission_energy_multiplier = 0.1 + 0.9 * night   # PLACEHOLDER: dimmer than the windows
 		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
+		for g: StandardMaterial3D in _marsh_glow.values():
+			g.emission_energy_multiplier = 0.3 + 2.5 * night   # PLACEHOLDER: lit a little by day
+		SwampFx.set_night(night)
 		_lava.emission_energy_multiplier = (0.75 + 0.25 * sin(TAU * _time / 4.0)) * (0.8 + 2.0 * night)   # PLACEHOLDER: pulses slowly, glows at night
 		ForestFx.set_night(night)
 		DesertFx.set_night(night)

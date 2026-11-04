@@ -7,10 +7,10 @@ const CELL := 0.55
 const BLEND := 1.6
 ## Share of cells that get a prop, per terrain (placeholders from ground_cover.py).
 const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "village": 0.0,
-	"hills": 0.0, "swamp": 0.0, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
+	"hills": 0.0, "swamp": 0.22, "desert": 0.0, "ruins": 0.4,  # hills and swamp pieces hold their own
 	# tier 1 region variants
 	"deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0,
-	"delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "riverport": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.0, "wasteland": 0.0, "excavation": 0.3,
+	"delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "riverport": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.16, "wisp_marsh": 0.1, "rot_swamp": 0.14, "smugglers_bayou": 0.14, "witchhut": 0.16, "wisphollow": 0.1, "plaguepit": 0.08, "thievesguild": 0.14, "wasteland": 0.0, "excavation": 0.3,
 	# tier 2 and class variants
 	"fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
 	# landmark tiles
@@ -31,9 +31,10 @@ const DENSITY := {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, 
 	"sandstonesphinx": 0.0, "badlands": 0.0, "raiderstronghold": 0.0, "oasis": 0.0, "oasisbazaar": 0.0, "oasispool": 0.0,
 	"canyon": 0.0, "echocave": 0.0}
 ## Tuft colour where it isn't the usual grass_ink; terrains in NO_FLOWERS get tufts instead of flowers.
-const TUFT := {"dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
+const TUFT := {"swamp": "tuft_swamp", "bog": "tuft_bog", "witchhut": "tuft_bog", "wisp_marsh": "tuft_wisp", "wisphollow": "tuft_wisp", "rot_swamp": "tuft_rot", "plaguepit": "tuft_rot",
+	"smugglers_bayou": "tuft_swamp", "thievesguild": "tuft_swamp", "dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",
 	"oldbattlefield": "tuft_steppe", "stormy_plains": "tuft_storm", "thunderbirdnest": "tuft_storm"}
-const NO_FLOWERS := ["dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
+const NO_FLOWERS := ["swamp", "bog", "witchhut", "wisp_marsh", "wisphollow", "rot_swamp", "plaguepit", "smugglers_bayou", "thievesguild", "dark_wood", "spidernest", "battlefield", "oldbattlefield", "stormy_plains", "thunderbirdnest",
 	"tourney_fields", "traininggrounds"]
 ## Tufts lean hard one way, +X in world space, the wind's direction. Their vertex alpha of 0 lets the gust ripple
 ## (shaders/grass.gdshader) find them, with no extra material.
@@ -113,7 +114,7 @@ static func scatter(terrains: Dictionary, water_shapes: Dictionary) -> Array:
 
 
 ## [kind, point, cell] if cell (ix, iy) gets a prop, else [].
-static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: int, p: Vector2, clear := []) -> Array:
+static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: int, p: Vector2, clear := [], marsh := {}) -> Array:
 	var dens := density(terrains, p)
 	if hash01(ix, iy, 3) >= dens:
 		return []
@@ -121,6 +122,8 @@ static func _keep(terrains: Dictionary, water_shapes: Dictionary, ix: int, iy: i
 		if p.distance_squared_to(Vector2(c[0], c[1])) < c[2] * c[2]:
 			return []
 	var t := tile_at(p)
+	if SwampLands.cover_wet(terrains, marsh, p.x, p.y, t):   # the swamp's own water, mud, planks, tracks and finishes
+		return []
 	if water_shapes.has(t):
 		var local := p - Hex.tile_position(t.x, t.y)
 		var w: Dictionary = water_shapes[t]
@@ -164,7 +167,7 @@ static func _near_shore(p: Vector2, shores: Array, d: float) -> bool:
 
 ## The ground cover of one tile: the cells of the world-space pattern whose point lands in it.
 ## Gives the same props as the whole-map scatter, so tiles can be rebuilt one at a time.
-static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i, clear := []) -> MeshInstance3D:
+static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i, clear := [], marsh := {}) -> MeshInstance3D:
 	var c := Hex.tile_position(t.x, t.y)
 	var items := []
 	for ix in range(int(floor((c.x - A) / CELL)), int(ceil((c.x + A) / CELL))):
@@ -172,7 +175,7 @@ static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector
 			var p := Vector2((ix + hash01(ix, iy, 0)) * CELL, (iy + hash01(ix, iy, 1)) * CELL)
 			if tile_at(p) != t:
 				continue
-			var item := _keep(terrains, water_shapes, ix, iy, p, clear)
+			var item := _keep(terrains, water_shapes, ix, iy, p, clear, marsh)
 			if not item.is_empty():
 				items.append(item)
 	return _build(items, terrains)

@@ -15,7 +15,8 @@ const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
 	"plains": ["battlefield", "stormy_plains", "tourney_fields"],
 	"hills": ["snowy_peaks", "volcanic_peaks", "monastery_heights"],
 	"village": ["fortified_town", "slums", "scholars_town"],
-	"river": ["great_lake", "rapids", "still_waters"], "desert": ["badlands", "oasis", "canyon"]}
+	"river": ["great_lake", "rapids", "still_waters"], "desert": ["badlands", "oasis", "canyon"],
+	"swamp": ["wisp_marsh", "rot_swamp", "smugglers_bayou"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
@@ -27,7 +28,8 @@ const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark
 	"fortified_town": ["Fortified town", "Keep"], "slums": ["Slums", "Black Market"],
 	"scholars_town": ["Scholars' town", "College"], "great_lake": ["Great lake", "Lake Serpent's Lair"],
 	"rapids": ["Rapids", "Troll Bridge"], "still_waters": ["Still waters", "Meditation Rock"], "badlands": ["Badlands", "Raider Stronghold"],
-	"oasis": ["Oasis", "Oasis Bazaar"], "canyon": ["Canyon", "Echo Cave"]}
+	"oasis": ["Oasis", "Oasis Bazaar"], "canyon": ["Canyon", "Echo Cave"], "wisp_marsh": ["Will-o'-wisp marsh", "Wisp Hollow"],
+	"rot_swamp": ["Rot swamp", "Plague Pit"], "smugglers_bayou": ["Smugglers' bayou", "Thieves Guild"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
@@ -38,7 +40,7 @@ const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "da
 	"monastery_heights": "library", "market_town": "tradinghouse", "fortified_town": "keep", "slums": "blackmarket",
 	"scholars_town": "college", "delta": "riverport", "great_lake": "serpentlair", "rapids": "trollbridge",
 	"still_waters": "meditationrock", "wasteland": "sandstonesphinx", "badlands": "raiderstronghold", "oasis": "oasisbazaar",
-	"canyon": "echocave"}
+	"canyon": "echocave", "bog": "witchhut", "wisp_marsh": "wisphollow", "rot_swamp": "plaguepit", "smugglers_bayou": "thievesguild"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
@@ -49,13 +51,14 @@ const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "f
 	"library": "monastery_heights", "tradinghouse": "market_town", "keep": "fortified_town", "blackmarket": "slums",
 	"college": "scholars_town", "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids",
 	"meditationrock": "still_waters", "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis",
-	"oasispool": "oasis", "echocave": "canyon"}
+	"oasispool": "oasis", "echocave": "canyon", "witchhut": "bog", "wisphollow": "wisp_marsh", "plaguepit": "rot_swamp",
+	"thievesguild": "smugglers_bayou"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
 	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
 	"library", "tradinghouse", "keep", "blackmarket", "college", "riverport", "serpentlair", "trollbridge", "meditationrock",
-	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave"]
+	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild"]
 
 ## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
 const RAISE := 5.0
@@ -84,7 +87,9 @@ const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands":
 	"keep": "cobble", "blackmarket": "mud_ground", "college": "pale_paving", "great_lake": "plains", "rapids": "plains",
 	"still_waters": "plains", "riverport": "plains", "serpentlair": "plains", "trollbridge": "plains", "meditationrock": "plains",
 	"sandstonesphinx": "wasteland", "badlands": "badlands_ground", "raiderstronghold": "badlands_ground", "oasis": "oasis_ground",
-	"oasisbazaar": "oasis_ground", "oasispool": "oasis_ground", "canyon": "canyon_top", "echocave": "canyon_top"}
+	"oasisbazaar": "oasis_ground", "oasispool": "oasis_ground", "canyon": "canyon_top", "echocave": "canyon_top",
+	"witchhut": "bog", "wisp_marsh": "wisp_ground", "wisphollow": "wisp_ground", "rot_swamp": "rot_ground", "plaguepit": "rot_ground",
+	"smugglers_bayou": "bayou_ground", "thievesguild": "bayou_ground"}
 
 static var _base := {}
 

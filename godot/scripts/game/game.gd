@@ -140,6 +140,10 @@ func _ready() -> void:
 		var dc := DesertCheck.new()
 		dc.game = self
 		add_child(dc)
+	elif "--swampcheck" in OS.get_cmdline_user_args():
+		var sc := SwampCheck.new()
+		sc.game = self
+		add_child(sc)
 	elif "--forestcheck" in OS.get_cmdline_user_args():
 		var fc := ForestCheck.new()
 		fc.game = self
@@ -571,6 +575,7 @@ const DEBUG_RIVER_SHAPES := {   # channels for the delta and rapids, so islands 
 	"rapids": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, -1), Vector2i(3, -1), Vector2i(4, -2), Vector2i(-1, 0), Vector2i(-2, 1)],
 	"still_waters": DEBUG_PLAINS_SHAPE}
 const DEBUG_RIVER_T0 := [Vector2i(13, 3), Vector2i(14, 3), Vector2i(15, 2), Vector2i(16, 2), Vector2i(17, 1), Vector2i(17, 2), Vector2i(18, 1)]   # tier 0: a river into a small lake
+const DEBUG_SWAMPS := ["bog", "wisp_marsh", "rot_swamp", "smugglers_bayou"]   # 12 tiles each, like the deserts
 const DEBUG_DESERTS := ["wasteland", "badlands", "oasis", "canyon"]   # 12 tiles each, like plains; where's found at the spawn
 const DEBUG_HILLS_T0 := Vector2i(9, 2)    # tier 0: a hills group, and one lone tile beside it
 const DEBUG_TOWN := Vector2i(6, 0)       # a market town region
@@ -673,6 +678,7 @@ func spawn_forest_regions() -> void:
 			order[x] = order.size()
 			_debug_fill[x] = true
 	_spawn_deserts(changes)
+	_spawn_swamps(changes)
 	# Plains between them, so the party can walk there (they show no cluster goal).
 	var land_now := changes.keys()
 	land_now.append(Rules.START_TILE)
@@ -708,6 +714,29 @@ func _spawn_deserts(changes: Dictionary) -> void:
 	var at := _free_spot(t0, changes)
 	for s: Vector2i in t0:
 		changes[at + s] = "desert"
+		order[at + s] = order.size()
+		_debug_fill[at + s] = true
+	_debug_road(at + Vector2i(-2, 2), changes)
+
+
+## Debug: a 12-tile region of each swamp variant and a tier 0 group, on free land out past the rest, with plains laid to them.
+func _spawn_swamps(changes: Dictionary) -> void:
+	for v: String in DEBUG_SWAMPS:
+		var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_PLAINS_SHAPE:
+			tiles.append(anchor + s)
+		var region := new_region("swamp", tiles, v, tiles[0])
+		_set_flow(region)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
+		_debug_road(anchor + Vector2i(-3, 3), changes)
+	var t0: Array = [Vector2i.ZERO]
+	t0.append_array(Hex.NEIGHBOURS)
+	var at := _free_spot(t0, changes)
+	for s: Vector2i in t0:
+		changes[at + s] = "swamp"
 		order[at + s] = order.size()
 		_debug_fill[at + s] = true
 	_debug_road(at + Vector2i(-2, 2), changes)
@@ -803,6 +832,7 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 	for c in todo:
 		changes[c] = region_look(region, c)
 	var gorges := map.start_gorges(changes)
+	var marsh := map.start_marsh(changes)
 	const SINK := 0.22
 	const STEP := 0.09
 	for k in todo.size():
@@ -815,6 +845,8 @@ func _transform(tiles: Array[Vector2i], region: Dictionary, from: Vector2i) -> v
 		while not map.canyon_done(job):
 			await get_tree().process_frame
 		map.finish_canyon(job)
+	while not map.marsh_done(marsh):
+		await get_tree().process_frame
 	while not map.gorges_done(gorges):
 		await get_tree().process_frame
 	map.retile(changes)

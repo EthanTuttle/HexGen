@@ -305,6 +305,8 @@ func _build_path(tiles: Array[Vector2i]) -> void:
 		var entrance := map.entrance_angle(t)
 		# DOCS (Exploration screen -> Walking): on tiles with drawn paths the route follows them.
 		var way := _way_on_paths(graph, pts[-1], k, in_edge, out_edge, last_tile)
+		if way.is_empty() and k > 0 and not last_tile:
+			way = map.marsh_way(t, in_edge, out_edge)   # on a swamp's trail, its bent line (art/handoff/swamp_kit.md -> Trails)
 		if not way.is_empty():
 			_along(pts, way)
 			if last_tile:

@@ -31,6 +31,7 @@ const PALETTE := {
 	"flower_pink": "#E9A3B8", "flower_white": "#F4F1E8", "flower_blue": "#9DB4E0", "highland_grass": "#9FB07E",
 	"heather": "#9C6FA0", "hay": "#D1B668", "stubble": "#D9C27A", "sail": "#EFE6D2", "timber": "#5E4532",
 	"awning_a": "#C8553D", "awning_b": "#F2E8D5", "crate": "#A7825A", "fruit": "#D9822B", "sandbar": "#E3D3A8",
+	"mist_low": "#E4EADF", "swamp_bank": "#6B6549", "bog_bank": "#585A42", "bayou_bank": "#5D5943", "track_bog": "#74795A", "wisp_ground": "#6F9C86", "wisp_water": "#A2DCCD", "wisp_bank": "#A9B98F", "track_wisp": "#94AE8C", "rot_ground": "#6E7440", "rot_water": "#A8A83E", "rot_mud": "#59522F", "track_rot": "#5F5F34", "ooze": "#C9E04A", "scum": "#8E9A3A", "bayou_ground": "#6C8258", "bayou_water": "#4F6E5E", "plank": "#9A7B52", "plank_dark": "#6F5638", "tuft_swamp": "#64804F", "tuft_bog": "#4F6A4E", "tuft_wisp": "#5C8A73", "tuft_rot": "#5A6134",
 	"bog": "#6B8462", "bog_dark": "#4A6457", "toadstool": "#F0C24E", "poison_purple": "#8E4FA6",
 	"poison_yellow": "#E6D23F", "spiky": "#4F6B3A", "wasteland": "#E2CFA2", "sandstone": "#D6B484",
 	"bone": "#F1EBDD", "pit": "#6B5038", "pit_dark": "#3A2B20", "canvas": "#E2B98A", "lantern": "#F6D36B",

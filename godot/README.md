@@ -498,8 +498,20 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - The river regions' views (`RIVER PERF` lines), a ripple per wader and the raft.
 - **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
+- **Swamp:** a swamp card placed beside others and a region turning (`SWAMP PERF` lines; `marsh_tile` 26 ms a tile on the Mac, off the main thread when a region turns, on it when a card lands); the wisps, bubbles and mist on a real screen.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
+
+## Swamp kit (tiles v68)
+
+Built from `art/handoff/swamp_kit.md`. `-- --swampcheck` (add `--shots` for `screens/swamp_*.png`) checks it and ends `SWAMP DONE`. `tools/swamp_cases.py` and `tools/swamp_check.gd` compare the port with `swamp_lands.py`.
+
+- **The wetland:** `SwampLands.marsh_tile`, per tile from world position. `MapBoard.marsh_of` keeps a tile's result while its look, its neighbours' looks and the region's flow hold; `start_marsh` works a turning region out off the main thread. Water, banks, tracks and planks are flat meshes; old swamp wedges and centres aren't placed.
+- **Props** are kit pieces merged into one mesh per tile (`_merge_props`), so a tile stays a few draw calls. The check reads what's placed from `marsh_of(t).props`, not from nodes.
+- **Walking:** between two trail edges a party walks the trail's bent line (`marsh_way`); otherwise the usual curve. Landmarks: `_marsh_graph` from `landmark_routes`. Heights: `_marsh_z`, gangways, the Pit's lane, the boardwalk at 0.045.
+- **Marsh mist pieces are left out**, as the hand-off allows once the effect is in: their alpha is in the glb's `COLOR_1`, and `COLOR_0`, the one Godot reads, has none, so they drew solid white.
+- **PLACEHOLDER:** `SwampFx` and `shaders/swamp_spark.gdshader` (wisps, glows, bubbles, mist, haze, green smoke), the glossy water, night glow strengths, and the dark plate under the Plague Pit, which has no slab, where the sky showed through a gap beside its lane.
+- **Not decided, left as it was:** only `swamp` and `bog` slow a walk (`Rules.TERRAIN_SPEED`); the tier 2 swamps walk at full speed, like other terrains' tier 2 variants.
 
 ## Rapids gorge, falls and new ledges (tiles v64)
 
