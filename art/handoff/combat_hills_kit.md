@@ -23,9 +23,9 @@ The reach check (`check_hill`) stops any plan that breaks these, on all 16 maps:
 | Between two walkable neighbours | What it is | Rule (design/03) |
 |---|---|---|
 | A height gap of up to 0.45 | A step on the slope | An ordinary move, costing 1, or 2 going up by 0.3 or more. Smaller rises and going down cost 1. Whole numbers; a placeholder |
-| A gap of at least 0.9 | A sheer rise | Can't be crossed, except by stairs |
+| A gap of at least 0.9 | A sheer rise | Can't be crossed, except by way of stairs |
 | Anything between | Doesn't occur | The check refuses it |
-| Stairs | `low` to the stairs to `high`, and back | The ascend or descend action; side neighbours don't connect |
+| Stairs | `low` to the stairs to `high`, and back | Two ordinary moves, with no separate action: each costs 2 going up and 1 going down, so a whole flight costs 4 up and 2 down. Side neighbours don't connect |
 
 **High ground:** a bonus needs a full step up, 0.9 or more between the two cells' `z` (design/03). Across a sheer rise it always holds, and on a long slope it can build up over several cells. Only `snowy_peaks_shelf`, `volcanic_peaks_crater` and `volcanic_peaks_ledge` have stairs (7 in all).
 
