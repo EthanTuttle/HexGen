@@ -1362,7 +1362,7 @@ if __name__ == "__main__":
             view(hk.tile_position(0, 0), 20, 50, -math.pi / 2)
             shot("swamp_t0_close")
         for variant, lm in (("bog", "witchhut"), ("wisp_marsh", "wisphollow"), ("rot_swamp", "plaguepit"), ("smugglers_bayou", "thievesguild")):
-            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail", "shack", "shack_low", "end", "end_low")]
+            stems = [f"swamp_{variant}_{s_}" for s_ in ("map", "turned", "landmark", "landmark_turned", "low", "trail", "shack", "shack_low", "end", "end_low", "pit_top_low", "pit_foot_low")]
             if not wanted(*stems):
                 continue
             lm_at = (1, 0)
@@ -1395,7 +1395,9 @@ if __name__ == "__main__":
             a_ = math.atan2(d2_[1], d2_[0])
             spots.append(((c_.x + q_[0], c_.y + q_[1], 0.045 if variant == "smugglers_bayou" else 0.0), a_))
             trail_at = c_ + Vector((q_[0], q_[1], 0))
+            before_ = set(col.objects)
             ct._mini_spots(col, minis, spots)
+            party_ = set(col.objects) - before_
             bpy.context.view_layer.update()
             focus = Vector((0.5, -1.0, -0.2))
             stage(focus, 60, 50)
@@ -1408,6 +1410,16 @@ if __name__ == "__main__":
             shot(f"swamp_{variant}_landmark_turned")
             view(at + Vector((0, 0, 0.3)), 15, 16, math.radians(60 * turn_ - 35))
             shot(f"swamp_{variant}_low")
+            if lm == "plaguepit":  # low, at the two ends of the lane's cut, from across the hole
+                spin_ = next(o_ for o_ in col.objects if o_.name.startswith("plaguepit_centre")).rotation_euler.z
+                for o_ in party_:  # the party stands in front of the foot's end
+                    o_.hide_render = True
+                for stem_, end_, side_ in (("top", sl.PIT_TOP, -2.5), ("foot", sl.PIT_END, 2.5)):
+                    a_ = end_ + spin_
+                    view(at + Vector((1.8 * math.cos(a_), 1.8 * math.sin(a_), -0.6)), 3.4, 16, a_ + side_)
+                    shot(f"swamp_{variant}_pit_{stem_}_low")
+                for o_ in party_:
+                    o_.hide_render = False
             view(trail_at, 15, 50, -math.pi / 2)
             shot(f"swamp_{variant}_trail")
             tile2 = sl.marsh_tile(scene_map, far_[0], far_[1], lf.trail_edges(far_, t_), lf.toward_edge(far_, t_), 0, d_.get(far_, 9))  # what the trail ends at
