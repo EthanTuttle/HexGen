@@ -28,6 +28,8 @@ import build_standin_minis as sm  # noqa: E402
 import hexkit as hk  # noqa: E402
 import variants as vr  # noqa: E402
 
+hk.STANDS_ALONE = True  # a mini is seen whole from every side
+
 hk.PALETTE.update({
     "bandit_leather": "#6B4B33",
     "bandit_leather_dark": "#4A3324",
