@@ -38,7 +38,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: ruins looks paused (Ethan, Nov 3: not good yet; he's thinking of something more interesting)
 - [x] ~~Path pass so hexes don't show~~ (cancelled Nov 3: the game is about hexes, so hexes showing in paths is fine; fix single things as they bother Ethan)
-- [ ] New: once Scholars' Town's combat maps are approved, recheck its terrain tiles so the courtyards and walkways line up with them (Ethan, Nov 3)
+- [x] ~~Recheck Scholars' Town tiles against its combat maps~~ (done Nov 3: see Presentation → Region variant looks)
 - [ ] New: walkable wall on combat maps: last trial after all sets, a real wall about 1.5 high reached by two stacked flights or a ladder (Ethan, Nov 3)
 - [ ] New: a pass on combat map buildings over the 0.15 overhang limit (haunted house, two barns; see Presentation)
 - [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
