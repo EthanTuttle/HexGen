@@ -36,7 +36,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 ## Master open questions
 
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
-- [ ] New: ruins looks paused (Ethan, Nov 3: not good yet; he's thinking of something more interesting)
+- [ ] New: ruins are hex-column land (Ethan, Nov 4): who built them (left open), how Dunfaire Tower sits on it (decide with the starting tiles); art round to come
 - [x] ~~Path pass so hexes don't show~~ (cancelled Nov 3: the game is about hexes, so hexes showing in paths is fine; fix single things as they bother Ethan)
 - [x] ~~Recheck Scholars' Town tiles against its combat maps~~ (done Nov 3: see Presentation → Region variant looks)
 - [ ] New: walkable wall on combat maps: last trial after all sets, a real wall about 1.5 high reached by two stacked flights or a ladder (Ethan, Nov 3)
@@ -175,6 +175,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: high ground on combat maps: range bonus, and the AP cost of the ascend/descend action (see Classes & combat)
 - [ ] New: raised hills regions: effect on reaching landmarks (see Multiplayer & tech)
 - [x] ~~Giant enemies: grid rules~~ (decided Nov 4, 2026: see Classes & combat)
+- [ ] New: lava on combat maps: damage, foes' behaviour, immunity, pushes (see Classes & combat); flowing lava on trial on Fissures and Crater
 - [ ] New: giants: turning a 3-cell giant, and standing on slopes and ways up (see Classes & combat)
 - [ ] New: what players do at each landmark, which then decides its battle maps (dungeon-like landmarks may have several, peaceful ones such as shops none)
 - [ ] New: custom combat maps: size range (forest set is 37–114 cells; check how long maps feel in play). Count settled Nov 2, 2026: 3 per variant, plus 1 path map if it has roads
