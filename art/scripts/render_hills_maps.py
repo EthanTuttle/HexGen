@@ -14,7 +14,6 @@ several cells stand level, so nothing sinks into the slope.
 Letters as in render_forest_maps.py (. , c T O R G L B and the minis), plus n bare ground (walkable: stony ground, bare rock, ice, basalt or a stone path), and:
   H W V X  raised ground, RAISED steps (at least 0.9) above the hill, with sheer hex sides. Snowy and volcanic only
   K        a stack of blocked hex cells, as a cliff, CLIFF steps above the hill
-  ^        stairs through a sheer rise, one way across the cell: in from the low cell, out to the high cell opposite. Snowy and volcanic only
   M        a cluster of sharp peaks on any group of touching cells, made per map, one peak to a cell, the tile mountains' look, each foot on its own cell's ground
   hills              N crag   U big broadleaf tree
   highlands          N crag   I cairn   J clan banner
@@ -22,7 +21,7 @@ Letters as in render_forest_maps.py (. , c T O R G L B and the minis), plus n ba
   volcanic_peaks     I basalt columns   J lava vent   L lava fissure (any line)
   monastery_heights  E herb terrace   I prayer flags   L low stone wall with flags (any line)
 
-The reach check walks only what a map allows: a step of up to MAX_STEP between neighbours, and stairs from low to high. Anything else is a sheer rise, at least
+The reach check walks only what a map allows: a step of up to MAX_STEP between neighbours. Anything else is a sheer rise, at least
 0.9, so a high-ground bonus (a full step up, design/03) always applies across one. Only monastery_heights has drawn roads, so only it has a path map. A map's
 "foes" say which mini w, v and x stand for: samples, as enemy mixes aren't decided. Obstacles stop movement in the plans, which nobody has decided.
 """
@@ -51,7 +50,7 @@ BANDITS = pm.BANDITS
 UNDEAD = pm.UNDEAD | {"V": "enemy_skeleton_elite"}
 WOLVES = {"w": "enemy_wolf", "x": "enemy_wolf", "v": "enemy_wolf_elite", "W": "enemy_wolf", "X": "enemy_wolf", "V": "enemy_wolf_elite"}
 STEP = 0.15
-MAX_STEP = 0.45  # the most a walker crosses between neighbours without stairs
+MAX_STEP = 0.45  # the most a walker crosses between neighbours
 MAX_STEPS = round(MAX_STEP / STEP)
 FULL_STEP = 0.9  # one raised level, what high ground needs (design/03)
 fm.WALKABLE += "123F"  # a lift's cells, by height; lava
@@ -381,7 +380,6 @@ c . . n T
 }
 TURNED = set(MAPS)
 HEIGHTS = {}  # map -> {cell: height}, filled by heights_of
-STAIRS = {}  # map -> {cell: (low cell, high cell)}
 
 
 def variant_of(name):
@@ -415,7 +413,7 @@ def level_marks(m):
 
 
 def heights_of(name, cells):
-    """Each cell's height, in steps of STEP. What lies level or stands sheer is settled after the hill; stairs take the middle of what they join."""
+    """Each cell's height, in steps of STEP. What lies level or stands sheer is settled after the hill."""
     m = MAPS[name]
     v = variant_of(name)
     if "levels" in m:  # a terraced map draws its heights, a letter to a cell, each letter 0.45 above the last unless it says otherwise
@@ -456,29 +454,17 @@ def heights_of(name, cells):
     for c, mark in cells.items():
         add = RAISED if mark in "HWVX" else m.get("cliff", CLIFF) if mark == "K" else 0
         z[c] = m["lift"][mark] * STEP if mark in m.get("lift", ()) else (steps[c] + add) * STEP
-    STAIRS[name] = {}
-    for c, mark in cells.items():
-        if mark == "^":
-            pairs = [((c[0] + a, c[1] + b), (c[0] - a, c[1] - b)) for a, b in fm.NEIGHBOURS]
-            pairs = [(l, h) for l, h in pairs if l in cells and h in cells and cells[l] in fm.WALKABLE and cells[h] in fm.WALKABLE and z[h] - z[l] >= FULL_STEP]
-            assert pairs, f"{name}: stairs at {c} have no low and high cell facing each other"
-            low_cell, high_cell = max(pairs, key=lambda pair: z[pair[1]] - z[pair[0]])
-            assert cells[low_cell] != "^" and cells[high_cell] != "^", f"{name}: stairs at {c} run into stairs"
-            STAIRS[name][c] = (low_cell, high_cell)
-            z[c] = (z[low_cell] + z[high_cell]) / 2
     HEIGHTS[name] = z
     return z
 
 
 def check_hill(name, cells, z):
     """Everything walkable can be reached by what a map allows, each sheer rise is a full step, and prints what the plan offers."""
-    m, stairs = MAPS[name], STAIRS[name]
+    m = MAPS[name]
     fm.check_base(name, cells)
     walk = {c for c, mark in cells.items() if mark in fm.WALKABLE}
 
     def linked(a, b):
-        if a in stairs or b in stairs:
-            return (a in stairs and b in stairs[a]) or (b in stairs and a in stairs[b])
         return abs(z[a] - z[b]) <= MAX_STEP + 0.001
 
     start = next(c for c, mark in cells.items() if mark == "h")
@@ -492,10 +478,10 @@ def check_hill(name, cells, z):
                 todo.append(n)
     assert not walk - set(dist), f"{name}: cut off {sorted(walk - set(dist))}"
     steepest, sheer = 0.0, 0
-    for c in walk - set(stairs):
+    for c in walk:
         for a, b in fm.NEIGHBOURS:
             n = (c[0] + a, c[1] + b)
-            if n in walk and n not in stairs:
+            if n in walk:
                 gap = abs(z[c] - z[n])
                 if gap <= MAX_STEP + 0.001:
                     steepest = max(steepest, gap)
@@ -555,7 +541,7 @@ def check_hill(name, cells, z):
         off, used = climb(foot, head, False)
         print(f"CLIMB {name}: foot {foot} to head {head}, rise {z[head] - z[foot]:.2f}: along the path {climb(foot, head, True)[0]} moves; keeping off it wherever possible {off} moves, on {used} of {len(ends)} path cells")
     free = {c for c, mark in cells.items() if mark in ".,"}
-    print(f"PLAN {name} ({m['size']}): {len(cells)} cells, walkable {len(walk)}, brush {sum(v == 'c' for v in cells.values())}, blocked {len(cells) - len(walk)}, stairs {len(stairs)}, "
+    print(f"PLAN {name} ({m['size']}): {len(cells)} cells, walkable {len(walk)}, brush {sum(v == 'c' for v in cells.values())}, blocked {len(cells) - len(walk)}, "
           f"rise {max(z.values()) - min(z.values()):.2f} (walkable {max(z[c] for c in walk) - min(z[c] for c in walk):.2f}), steepest step {steepest:.2f}, sheer edges {sheer // 2}, "
           f"nearest foe {min(dist[c] for c in foes)} steps, farthest cell {max(dist.values())}, 7-cell spots {sum(all((q + a, r + b) in free for a, b in gm.FLOWER) for q, r in cells)}")
 
@@ -645,12 +631,9 @@ def hillside(col, seed, v, cells, z, name):
     """What a kit cell can't give on a slope: under each cell a hex of line colour, a side on every edge above a lower neighbour, the board's outer sides."""
     p = hk.Piece("hillside")
     rng = hk.seeded(f"{seed}_hillside")
-    stairs = STAIRS[name]
     terraced = "levels" in MAPS[name]
     for c in cells:
         at, top = hk.cell_position(*c), z[c] - 0.07
-        if c in stairs:
-            top = z[stairs[c][0]] - 0.07  # stairs make their own sides, from their low cell's level
         corners = [at + fc.CORNERS[k] for k in range(6)]
         p.bm.faces.new([p.bm.verts.new((q.x, q.y, top)) for q in corners]).material_index = p._slot("soil_dark")
         for k in range(6):
@@ -658,8 +641,8 @@ def hillside(col, seed, v, cells, z, name):
             out = ((a + b) / 2 - at).normalized()
             n = next((c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if (hk.cell_position(c[0] + dq, c[1] + dr) - at).normalized().dot(out) > 0.99)
             if n in cells:
-                below = z[stairs[n][0]] if n in stairs else z[n]
-                if below < z[c] - 0.001 and c not in stairs:
+                below = z[n]
+                if below < z[c] - 0.001:
                     if terraced:
                         retaining_wall(p, a, b, below - 0.07, top)
                     else:
@@ -672,23 +655,6 @@ def hillside(col, seed, v, cells, z, name):
                     retaining_wall(p, a, b, wall_from, top)
                 else:
                     band_wall(p, rng, a, b, wall_from, top, v)
-    p.finish(col)
-
-
-def stairs_piece(col, v, c, low, high, z):
-    """Stairs across one cell, from the low cell to the high cell opposite: three even treads, each a full slice of the hex, with rock under them. Sheer on either side, so a way through a rise is one cell wide."""
-    p = hk.Piece(f"stairs_{c}")
-    at = hk.cell_position(*c)
-    d = (hk.cell_position(*high) - hk.cell_position(*low)).normalized()
-    hex_out = [at + q for q in hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]]
-    top, tread, _ = fm.way_tones(v)
-    rock = WALLS[v][2]
-    z0, z1 = z[low], z[high]
-    base = min(z0, *(z.get((c[0] + a, c[1] + b), z0) for a, b in fm.NEIGHBOURS)) - 0.07
-    for k in range(3):
-        along = at.dot(d)
-        outline = fm.clipped(fm.clipped(hex_out, d, along - 0.5 + k / 3), -d, -(along - 0.5 + (k + 1) / 3))
-        p.prism(outline, base, z0 + (z1 - z0) * (k + 1) / 4, (top, tread)[k % 2], side_mat=rock)
     p.finish(col)
 
 
@@ -1126,9 +1092,6 @@ def build_map(t, col, name):
         at = hk.cell_position(*c) + Vector((0, 0, z[c]))
         n = rb.hash_cell(c)
         turn = math.radians(60 * (n % 6))
-        if mark == "^":
-            stairs_piece(col, v, c, *STAIRS[name][c], z)
-            continue
         if mark == "F":
             continue
         if mark == "c":
@@ -1193,7 +1156,7 @@ def build_map(t, col, name):
 
 
 def cell_fields(name, c, mark):
-    """What the JSON says of a cell beyond its kind: its height, and for stairs the two cells they join."""
+    """What the JSON says of a cell beyond its kind: its height, and for lava where it flows."""
     z = HEIGHTS[name][c]
     row = {"z": round(z, 4)} if z else {}
     if mark == "F":  # lava: walked through, burns. flow_to is the next cell downhill, left out where it runs off the map
@@ -1201,9 +1164,6 @@ def cell_fields(name, c, mark):
         row["kind"] = "lava"
         if c != path[-1]:
             row["flow_to"] = list(path[path.index(c) + 1])
-    if c in STAIRS[name]:
-        low, high = STAIRS[name][c]
-        row.update(way_up=True, low=list(low), high=list(high))
     return row
 
 
@@ -1218,14 +1178,13 @@ def place_minis(t, col, name, cells):
 def checks_on_heights(name):
     """The forest maps' camera check, sampling each cell at its own height."""
     z = HEIGHTS[name]
-    stairs = STAIRS[name]
 
     def height(c, mark):
         if "lift" in MAPS[name] and any(abs(z.get((c[0] + dq, c[1] + dr), z[c]) - z[c] - MAX_STEP) < 0.001 for dq, dr in fm.NEIGHBOURS):
             return z[c] + 0.36  # above the long steps on its edge
         if "levels" in MAPS[name] and c in FLIGHTS:
             return z[c] + 0.36
-        return z[c] + (fm.BRUSH_Z if mark == "c" else 0.08 if mark == "," else (z[stairs[c][1]] - z[c]) * 0.5 + 0.02 if c in stairs else 0.02)
+        return z[c] + (fm.BRUSH_Z if mark == "c" else 0.08 if mark == "," else 0.02)
 
     fm.sample_z = lambda cells, c, mark: height(c, mark)
 

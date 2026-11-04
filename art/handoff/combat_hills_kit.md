@@ -58,7 +58,7 @@ Per map, as `map_` pieces, because they follow its heights: `hillside` (each cel
 
 ## Terraced maps
 
-All four `monastery_heights` maps are level bands with stone retaining walls (on trial with Ethan). Nothing new in the data: cells carry `z` as usual, rises of 0.45 or less are ordinary moves, and rises of 0.9 or more can only be crossed by a stair cell between them, 0.45 from each side. A stair cell has long steps on one side up and one side down, which follow the `lift_steps` note above. It can also be entered from its other sides, as the height rule allows it: only the straight flight is drawn. `ob_monastery_heights_herb_terrace` is gone from the kit and from every map. Herb plots are ordinary `brush` cells, walkable, in groups inside a low timber edge.
+All four `monastery_heights` maps are level bands with stone retaining walls. Nothing new in the data: cells carry `z` as usual, rises of 0.45 or less are ordinary moves, and rises of 0.9 or more can only be crossed by a stair cell between them, 0.45 from each side. A stair cell has long steps on one side up and one side down, which follow the `lift_steps` note above. It can also be entered from its other sides, as the height rule allows it: only the straight flight is drawn. `ob_monastery_heights_herb_terrace` is gone from the kit and from every map. Herb plots are ordinary `brush` cells, walkable, in groups inside a low timber edge.
 
 On `monastery_heights_climb`, the bands rise in low steps of 0.3 or 0.45, each costing 2 uphill, while the path mostly rises 0.15 a move, costing 1. Its foot to its head is 18 moves along the path, and 24 keeping off it, using the plain stairs out west.
 
@@ -92,7 +92,7 @@ Peaks hide more cells from the default camera. Ethan accepts this for now and wi
 | `highlands_scarp` | 59 of 62 | `monastery_heights_ridge` | 75 of 83 |
 | `snowy_peaks_pass` | 44 of 51 | `monastery_heights_climb` | 61 of 63 |
 | `snowy_peaks_lake` | 69 of 75 | | |
-| `snowy_peaks_shelf` | 64 of 75 | | |
+| `snowy_peaks_shelf` | 66 of 75 | | |
 
 ## Not done
 
