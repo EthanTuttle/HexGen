@@ -38,47 +38,77 @@ fm.WALKABLE += "n"
 LINE_WALLS = {"battlefield", "tourney_fields"}  # L runs along any line of cells in these, and is a fallen trunk elsewhere
 BANDITS = {"w": "enemy_bandit_melee", "x": "enemy_bandit_ranged", "v": "enemy_bandit_elite", "W": "enemy_bandit_melee", "X": "enemy_bandit_ranged", "V": "enemy_bandit_elite"}
 UNDEAD = {"w": "enemy_skeleton", "x": "enemy_ghost", "v": "enemy_skeleton_elite", "X": "enemy_ghost", "W": "enemy_skeleton"}
-TURNED = {"plains_trees", "plains_stones", "plains_shelf", "meadows_tents", "battlefield_palisade", "stormy_plains_outcrop", "tourney_fields_lists"}
+TURNED = {"plains_trees", "plains_stones", "plains_long_grass", "meadows_tents", "battlefield_palisade", "stormy_plains_outcrop", "tourney_fields_lists"}
 
 MAPS = {
-    "plains_trees": {"size": "small hex", "foes": BANDITS, "idea": "A small patch of open grass round a pair of trees, a lone tree and a couple of rocks. Close and quick, with only a little to step behind.", "plan": """
-   .   
-  x .  
- . v . 
-. . w .
- . R . 
-. . . T
- G . . 
-G . . ,
- . c . 
-. . . R
- . . . 
-  h k  
-   s   """},
-    "plains_stones": {"size": "wide rectangle", "foes": BANDITS, "idea": "Wide grass with two big boulders and scattered rocks standing in it. Long clear lines between them: the boulders are the only real cover, so a fight moves from one to the next.", "plan": """
-. . T . . . v . .
- . . . B . . w . 
-. R . B . . . . x
- . . . B . . R . 
-. c . . . T . B .
- . . R . . . B . 
-T . . . , . . B .
- . . . c . . . . 
-. h . k . s . . ."""},
-    "plains_shelf": {"size": "big oval", "foes": BANDITS, "idea": "A low grassy shelf across the north, walkable on top, with a way up at each end. The foes hold it and look down on open grass with a few trees and rocks to cross.", "plan": """
-    H H H    
-   H H V H   
-  H X H W .  
- ^ H . . ^ . 
-T . . R . . .
- . c . . . c 
-. . T . . . .
- . . . . . G 
-. R . . . . G
- . . c . . . 
-  . , . . .  
-   . h k .   
-    . s .    """},
+    "plains_trees": {"size": "big oval", "foes": BANDITS, "idea": "A great sweep of open grass with lone trees and a pair or two far apart, and the odd rock. Room to spread out and flank in every direction, with little to stand behind.", "plan": """
+        . . T . .        
+       . . . . . .       
+    . . . . . . . . .    
+   . . R . . . . . . .   
+  . . . . , . . R . . .  
+ . . T . . . . . . . . . 
+  . . . . . . . . . T .  
+ . . . . . v . . . . . . 
+. . . . . . . w x . . . .
+ . . . . . . . . . . . . 
+. T . . . . . . . R . O .
+ . . c . . . . . . . . . 
+. . . . T . . . . . . . .
+ . . . . . . . . . . G . 
+  . G . . . . . . . . G  
+ . G . . . . . . . . . . 
+  . . . . h . . c . . .  
+   . . . . . k s . T .   
+    . R . . . , . . .    
+       . . . . . .       
+        . . . . .        """},
+    "plains_stones": {"size": "very wide rectangle", "foes": BANDITS, "idea": "A very wide stretch of grass with two big boulders and rocks scattered far apart. Long clear lines between them: the boulders are the only real cover, so a fight moves from one to the next.", "plan": """
+. . . . . . . T . . . . . . .
+ . . . . . . . . . R . . . . 
+. . T . . . . . . . . . . T .
+ . . . . . . R . . . . . . . 
+. . . . . B . . . . . . . . .
+ O . . . B . . . v w . c . . 
+. . . . . B . . . . . . . . .
+ . . R . . . . . . . . . R . 
+. . . . . . . . x . B . . . .
+ . . . h . . . . . . B . . O 
+. . . . . . . . . . B . . . .
+ . . . c . s . . . . . . . . 
+. T . . . . , . R . . . T . .
+ . . . . k . . . . . . . . . 
+. . . . . . . . . . . . . . ."""},
+    "plains_long_grass": {"size": "big hex", "foes": BANDITS, "idea": "Open plain with long sweeps of tall grass running across it, walkable cover, and only a tree or two. A wide field where you can cross in the open or go by the grass.", "plan": """
+       .       
+      . .      
+     . T .     
+    . . . .    
+   . . . . .   
+  . . . . . .  
+ . . . R . . . 
+. . . . . . . .
+ . . . . . . . 
+. . x v w c R .
+ T . . . c c . 
+. . c c . c . .
+ . c c . . . T 
+. c c . . . . .
+ . . . . . . . 
+. . . . . . . ,
+ . . . . , . . 
+. R . . . . c .
+ . . h k s c c 
+. . G . . c c .
+ . G . R . c . 
+. . . . . . . .
+ . . . . . . . 
+  . . . . . .  
+   . . . . .   
+    . O . .    
+     . . .     
+      . .      
+       .       """},
     "meadows_herds": {"size": "wide oval", "idea": "Wide open grass with nothing to hide behind but herds, lone trees and drifts of tall flowers. Ranged shine here; the herds are the only walls.", "plan": """
   . . T . . v . .  
  . D . . . . w . . 
@@ -281,6 +311,28 @@ def variant_of(name):
     return next(v for v in pc.VARIANTS if name.startswith(v))
 
 
+def opening(cells):
+    """How the game's fight camera opens on a flat map (godot/scripts/game/fight.gd, opening): from the hero, the party and then foes from the nearest, kept while the box round them fits at 28 m. Returns the nearest foe in moves, foes framed, foes in all and the distance."""
+    per_unit = 2 * 0.36 / 844
+    pitch = math.sin(math.radians(52))
+
+    def fit(xs, ys):
+        return max((max(xs) - min(xs) + 1.2) / (per_unit * 510), (max(ys) - min(ys) + 1.7) * pitch / (per_unit * 280))
+
+    allies = [c for mark in "hks" for c, m in cells.items() if m == mark]
+    hero = hk.cell_position(*allies[0])
+    foes = sorted((c for c, m in cells.items() if m in "wvx"), key=lambda c: (hk.cell_position(*c) - hero).length)
+    xs, ys, framed = [hero.x], [hero.y], 0
+    for c in allies[1:] + foes:
+        q = hk.cell_position(*c)
+        if fit(xs + [q.x], ys + [q.y]) <= 28.0:
+            xs.append(q.x)
+            ys.append(q.y)
+            framed += c in foes
+    moves = min(max(abs(f[0] - a[0]), abs(f[1] - a[1]), abs(f[0] + f[1] - a[0] - a[1])) for f in foes for a in allies)
+    return moves, framed, len(foes), max(14.0, fit(xs, ys))
+
+
 def hk_other_end(anchor, along):
     """The cell at the far end of a line of cells, given the line's vector from this one."""
     q = round(along.x / (1.5 * hk.CELL_RADIUS))
@@ -415,7 +467,7 @@ def make_sheets():
         fm.sheet([f"plains_map_{n}" for n in MAPS if n.startswith(v)], f"plains_maps_{v}")
     fm.sheet([f"plains_map_{n}_turned" for n in MAPS if n in TURNED], "plains_maps_turned", 2)
     fm.sheet([f"plains_map_{n}" for n in MAPS], "plains_maps_all", 3)
-    fm.sheet([stem for n in ("plains_trees", "plains_stones", "plains_shelf") for stem in ("plains_t0", f"plains_map_{n}", f"plains_map_{n}_turned")], "plains_maps_plains_beside_tile", 3)
+    fm.sheet([stem for n in ("plains_trees", "plains_stones", "plains_long_grass") for stem in ("plains_t0", f"plains_map_{n}", f"plains_map_{n}_turned")], "plains_maps_plains_beside_tile", 3)
 
 
 def kit_sheet(t, col):
@@ -472,6 +524,8 @@ if __name__ == "__main__":
         without = fm.triangles(col)
         fm.place_minis(t, col, MAPS[name], cells)
         print(f"TRIS {name}: map {without}, with minis {fm.triangles(col)}")
+        if name.startswith("plains_"):
+            print("OPENING %s: nearest foe %d moves, %d of %d foes framed, at %.1f m" % ((name,) + opening(cells)))
         if not only_check:
             target, distance = fm.framing(cells)
             rp.stage(target, distance, fm.PITCH)
