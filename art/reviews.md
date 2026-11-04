@@ -97,3 +97,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/ruin_study_sunken_map_v1.png` | rejected | Study not taken forward |
 | 2026-11-04 | `art/preview/ruin_study_unmoored_map_v1.png` | rejected | Study not taken forward |
 | 2026-11-04 | `art/preview/ruin_study_ghostcity_night_map_v1.png` | note | Glass boxes; idea stays, to be reworked later |
+| 2026-11-04 | `art/preview/lava_shot_volcanic_peaks_fissures_channel_front_v1.png` | approved | Carved channel and new edge fall; volcanic set approved, Crater takes the same |
+| 2026-11-04 | `art/preview/lava_shot_volcanic_peaks_fissures_lobes_front_v1.png` | rejected | Stepped lobes read as a chain |
