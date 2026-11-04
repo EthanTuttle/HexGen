@@ -494,7 +494,7 @@ func _act(f: Fight, u: Dictionary) -> void:
 		var foes := f.foes_of(u)
 		if foes.is_empty():
 			return
-		foes.sort_custom(func(a, b): return Rules.hex_distance(a.cell, u.cell) < Rules.hex_distance(b.cell, u.cell))
+		foes.sort_custom(func(a, b): return f.dist(a, u) < f.dist(b, u))
 		var foe: Dictionary = foes[0]
 		# Chelmsford blesses the hero once (shows ally targeting), then casts Sacred Flame.
 		if u.name == "Chelmsford" and f.cant_use(u, Cards.get_card("bless")) == "":
@@ -516,14 +516,14 @@ func _act(f: Fight, u: Dictionary) -> void:
 		if spell != "":
 			await _hit(f, foe, spell)
 			continue
-		if u.name == "[Hero name]" and f.cant_use(u, Cards.get_card("action_surge")) == "" and Rules.hex_distance(foe.cell, u.cell) == 1:
+		if u.name == "[Hero name]" and f.cant_use(u, Cards.get_card("action_surge")) == "" and f.dist(foe, u) == 1:
 			f.pick_card("action_surge")
 			await _wait(0.5)
 			await f.press_button()
 			await _wait(0.8)
 			await _shot("combat_bonus_ap")
 			continue
-		if Rules.hex_distance(foe.cell, u.cell) == 1:
+		if f.dist(foe, u) == 1:
 			var id := "sneak_attack" if u.name == "Mel" and f.cant_use(u, Cards.get_card("sneak_attack")) == "" else "attack"
 			await _hit(f, foe, id)
 			continue

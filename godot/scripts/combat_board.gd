@@ -39,6 +39,7 @@ var _busy := false
 
 
 var _cells: Node3D
+var heights := {}     # a map's raised cells: cell -> how high
 
 
 ## The look-test board: render_preview.py's trees and rocks and render_standin_minis.py's line-up.
@@ -61,6 +62,17 @@ func setup(trees: Array, rocks: Array) -> void:
 	for c in cells():
 		var name := "cell_tree" if c in trees else "cell_rock" if c in rocks else "cell_grass_" + "abc"[posmod(c.x - c.y, 3)]
 		Kit.place(_cells, kit, name, Hex.cell_position(c.x, c.y))
+
+
+## An approved map in place of the look-test board. Returns its triangles.
+func setup_map(id: String) -> int:
+	for child in get_children():
+		child.free()
+	minis.clear()
+	_cells = Node3D.new()
+	_cells.name = "cells"
+	add_child(_cells)
+	return CombatMap.build(id, _cells)
 
 
 static func cells() -> Array[Vector2i]:
@@ -108,9 +120,12 @@ func attack(attacker: Node3D, target: Node3D, hit := true) -> void:
 	to_target.y = 0
 	to_target = to_target.normalized()
 	# The attacker turns to face the target first.
-	var face := atan2(to_target.x, to_target.z)
+	var face := snappedf(atan2(to_target.x, to_target.z), PI / 3.0)   # a base stays lined up with its cell (art/handoff/combat_forest_kit.md)
 	var tw := create_tween()
-	tw.tween_property(attacker, "rotation:y", attacker.rotation.y + wrapf(face - attacker.rotation.y, -PI, PI), 0.12)
+	if attacker.has_meta("pivot"):
+		tw.tween_interval(0.12)   # PLACEHOLDER: a giant's facing stays fixed (design/03: turning is open)
+	else:
+		tw.tween_property(attacker, "rotation:y", attacker.rotation.y + wrapf(face - attacker.rotation.y, -PI, PI), 0.12)
 	# Hop: up and forward, then down and back. The lean is in the body's local space (forward = +Z).
 	var lean := Vector3(0, HOP_HEIGHT, HOP_LEAN)
 	tw.tween_property(body, "position", lean, HOP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -127,12 +142,13 @@ func attack(attacker: Node3D, target: Node3D, hit := true) -> void:
 ## Slides a mini hex by hex along a path of cells, turning to face each step.
 func step_along(mini: Node3D, path: Array) -> void:
 	for c: Vector2i in path:
-		var to := Hex.to3(Hex.cell_position(c.x, c.y))
+		var pivot: Vector2 = mini.get_meta("pivot", Vector2.ZERO)
+		var to := Hex.to3(Hex.cell_position(c.x, c.y) + pivot, heights.get(c, 0.0))
 		var d := to - mini.position
 		var tw := create_tween()
-		if d.length() > 0.01:
+		if d.length() > 0.01 and not mini.has_meta("pivot"):
 			tw.tween_property(mini, "rotation:y", mini.rotation.y + wrapf(atan2(d.x, d.z) - mini.rotation.y, -PI, PI), 0.08)
-		tw.tween_property(mini, "position", to, 0.18).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(mini, "position", to, 0.18 if is_zero_approx(d.y) else 0.26).set_trans(Tween.TRANS_SINE)
 		await tw.finished
 
 

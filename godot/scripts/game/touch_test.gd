@@ -499,9 +499,9 @@ func _fight() -> void:
 				var foes := f.foes_of(u)
 				if foes.is_empty():
 					break
-				foes.sort_custom(func(a, b): return Rules.hex_distance(a.cell, u.cell) < Rules.hex_distance(b.cell, u.cell))
+				foes.sort_custom(func(a, b): return f.dist(a, u) < f.dist(b, u))
 				var foe: Dictionary = foes[0]
-				if Rules.hex_distance(foe.cell, u.cell) == 1:
+				if f.dist(foe, u) == 1:
 					say("Attack: card, target, Flip coins")
 					await tap(control("Attack"))
 					await tap(screen_of(f.global_position + foe.mini.position))
@@ -517,7 +517,7 @@ func _fight() -> void:
 					break
 				say("Move: card, then a lit hex")
 				await tap(control("Move"))
-				await tap(screen_of(f.global_position + Hex.to3(Hex.cell_position(best.x, best.y))))
+				await tap(screen_of(f.global_position + f.cell_point(best)))
 				await _wait(0.8)
 		if f.active and f.phase == "allies":
 			say("End the allies' phase")

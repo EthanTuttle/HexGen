@@ -140,6 +140,13 @@ func _ready() -> void:
 		var dc := DesertCheck.new()
 		dc.game = self
 		add_child(dc)
+	elif "--combatcheck" in OS.get_cmdline_user_args():
+		var cc := CombatCheck.new()
+		cc.game = self
+		add_child(cc)
+	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--combatmap=")):
+		var wanted: String = Array(OS.get_cmdline_user_args()).filter(func(x): return x.begins_with("--combatmap="))[0].get_slice("=", 1)
+		debug_fight.call_deferred(wanted)
 	elif "--swampcheck" in OS.get_cmdline_user_args():
 		var sc := SwampCheck.new()
 		sc.game = self
@@ -1204,11 +1211,19 @@ func choose_fight() -> void:
 
 # --- Fights ------------------------------------------------------------------
 
+var force_map := ""
+var _fade: ColorRect
+var _debug_map := -1
+
+
 func start_fight(t: Vector2i) -> void:
 	busy = true
 	pick(null)
 	popup.visible = false
 	_encounter_tile = t
+	var id := _fight_map(t)
+	_fade_to(1.0, Rules.ZOOM_SECONDS, Rules.ZOOM_SECONDS - Rules.ZOOM_FADE)
+	await rig.fly_to(Hex.to3(Hex.tile_position(t.x, t.y)), Rules.ZOOM_TO, Rules.ZOOM_SECONDS)   # DOCS: a zoom into the hex, then a separate map
 	map.visible = false
 	party_node.visible = false
 	for m in _slot_marks:
@@ -1217,7 +1232,8 @@ func start_fight(t: Vector2i) -> void:
 	fight.visible = true
 	var distance := Rules.hex_distance(t, Rules.START_TILE)
 	var foes := mini(Rules.ENEMIES_BASE + distance / Rules.ENEMIES_PER_DISTANCE, Rules.ENEMIES_MAX)
-	var won: bool = await fight.run(self, land(t), t, foes)
+	_fade_to(0.0, Rules.ZOOM_FADE)
+	var won: bool = await fight.run(self, land(t), t, foes, id)
 	var downed := {}
 	for m in party:
 		downed[m.name] = m.hp <= 0
@@ -1256,6 +1272,47 @@ func start_fight(t: Vector2i) -> void:
 	rig.frame(party_node.centre(), 58.0, 50.0)
 	busy = false   # no defeat toast: the results screen already showed the dropped cards (DOCS: UI -> Screen text)
 	_refresh()
+
+
+## Which map a fight on tile t takes: rolled evenly (PLACEHOLDER: how a fight picks is open, design/07) from the tile's variant's maps, its path
+## maps too if the tile has paths; "" if it has none yet, so the old board. force_map: the debug jump.
+func _fight_map(t: Vector2i) -> String:
+	if force_map != "":
+		var id := force_map
+		force_map = ""
+		return id
+	var choices := CombatMap.choices(map.terrains[t], not map.path_graph(t).nodes.is_empty())
+	if choices.is_empty():
+		return ""
+	var roll := RandomNumberGenerator.new()
+	roll.seed = hash([t, fights_won])
+	return choices[roll.randi_range(0, choices.size() - 1)]
+
+
+## Debug (`-- --combatmap=<id>`, or F10 on PC for the next map): a fight on any map by id, here and now.
+func debug_fight(id: String) -> void:
+	if busy or not CombatMap.all().has(id):
+		push_error("no combat map %s, or busy" % id)
+		return
+	force_map = id
+	add_encounter(party_tile, false)
+	start_fight(party_tile)
+
+
+## The screen fading to the zoom's colour (alpha 1) or back up, after `delay` seconds. PLACEHOLDER colour.
+func _fade_to(alpha: float, seconds: float, delay := 0.0) -> void:
+	if _fade == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 50
+		add_child(layer)
+		_fade = ColorRect.new()
+		_fade.color = Color("#F3EBDD", 0.0)
+		_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		layer.add_child(_fade)
+	var tw := create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(_fade, "color:a", alpha, minf(seconds - delay, Rules.ZOOM_FADE))
 
 
 # --- Rest --------------------------------------------------------------------
@@ -1302,6 +1359,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		hold(-1)
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9 and not busy:
 		spawn_forest_regions()   # debug, PC only
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F10 and not busy:
+		var ids := CombatMap.all().keys()
+		ids.sort()
+		_debug_map = (_debug_map + 1) % ids.size()
+		debug_fight(ids[_debug_map])   # debug, PC only
 
 
 ## Board gestures (Gestures, on the camera rig): a tap picks, a long-press or a resting mouse shows details,

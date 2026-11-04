@@ -83,6 +83,16 @@ func ease_to(at: Vector3, dist: float, yaw: float) -> void:
 	_tween.tween_property(self, "yaw_deg", yaw, 0.45)
 
 
+## A timed move, to wait on (a fight's zoom into its hex).
+func fly_to(at: Vector3, dist: float, seconds: float) -> void:
+	if _tween:
+		_tween.kill()
+	_tween = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_tween.tween_property(self, "target", at, seconds)
+	_tween.tween_property(self, "distance", dist, seconds)
+	await _tween.finished
+
+
 func _process(delta: float) -> void:
 	_lift_over_floor(delta)
 	_apply()

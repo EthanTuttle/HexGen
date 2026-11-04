@@ -30,7 +30,18 @@ static func _path_extras(extras: Dictionary) -> Dictionary:
 	var read := func(key: String, empty):
 		return JSON.parse_string(extras[key]) if extras.has(key) else empty
 	return {paths = read.call("paths", []), hub = read.call("path_hub", null), spokes = read.call("path_spokes", {}),
-		effects = read.call("effects", []), no_cover = read.call("no_cover", [])}
+		effects = read.call("effects", []), no_cover = read.call("no_cover", []), footprint = read.call("footprint", [])}
+
+
+## Combat kits' materials: colours in the vertex colours, and drawn from both sides. PLACEHOLDER until the art turns its door and window
+## plates round: some face into their walls (godot/README.md -> Combat kit).
+static func combat_materials(kit: Dictionary) -> void:
+	for mesh: Mesh in kit.values():
+		for k in mesh.get_surface_count():
+			var m := mesh.surface_get_material(k) as BaseMaterial3D
+			if m:
+				m.vertex_color_use_as_albedo = true
+				m.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
 static func place(parent: Node3D, kit: Dictionary, name: String, at: Vector2, angle := 0.0) -> MeshInstance3D:
