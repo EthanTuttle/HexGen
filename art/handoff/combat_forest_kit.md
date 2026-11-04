@@ -2,7 +2,7 @@
 
 Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and nineteen custom forest combat maps: fifteen terrain maps and four path maps, three terrain maps for plain forest and three plus one path map for each of the other four variants. Map layouts and the maps' rock are still with Ethan. Everything below can be followed from the repo alone.
 
-- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v9.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v14.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v5.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v3.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v1.blend`).
+- **Models:** `art/export/combat_cells.glb` (from `art/combat/combat_cells_v9.blend`), `art/export/combat_maps.glb` (`art/combat/combat_maps_v14.blend`), `art/export/enemy_minis.glb` (`art/minis/enemies/enemy_minis_v6.blend`), `art/export/humanoid_minis.glb` (`art/minis/enemies/humanoid_minis_v4.blend`), `art/export/giant_minis.glb` (`art/minis/enemies/giant_minis_v2.blend`).
 - **Map data:** `art/export/combat_maps.json`.
 - **Scripts:** `art/scripts/build_forest_cells.py`, `art/scripts/render_forest_maps.py` (the plans, in readable text, and the checks), `build_enemy_minis.py`, `build_humanoid_minis.py`, `build_giant_minis.py`.
 - **Rules:** `design/07 Presentation.md` → Combat maps; `design/briefs/Combat art brief.md`.

@@ -2,7 +2,7 @@
 
 Run on a blend, each mesh alone: /Applications/Blender.app/Contents/MacOS/Blender -b <blend> --python art/scripts/check_winding.py
 Or every map whole, with its kit pieces in place: Blender -b --factory-startup --python art/scripts/check_winding.py -- --maps forest (or plains, farmland, village, hills).
-fm.export stops on any map or kit piece over LIMIT.
+fm.export stops on any map, kit piece or mini over LIMIT.
 """
 import math
 import os

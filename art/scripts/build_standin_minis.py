@@ -27,6 +27,8 @@ from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 
+hk.STANDS_ALONE = True  # a mini is seen whole from every side
+
 hk.PALETTE.update({
     "base_wood": "#9A6E48",
     "base_wood_dark": "#6E4C32",
