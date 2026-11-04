@@ -91,6 +91,17 @@ def fine_hash(x, y, k):
     return gc.hash01(int(math.floor(x * 97)), int(math.floor(y * 97)), k)
 
 
+def ico_faces(centre, r, squash, spin):
+    """A squashed icosahedron's triangles, wound outward."""
+    t = (1 + math.sqrt(5)) / 2
+    v = [(-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0), (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t), (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1)]
+    f = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8), (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1)]
+    c, s = math.cos(spin), math.sin(spin)
+    scale = r / math.sqrt(1 + t * t)
+    pts = [(centre[0] + (x * c - y * s) * scale, centre[1] + (x * s + y * c) * scale, centre[2] + z * scale * squash) for x, y, z in v]
+    return [(pts[i], pts[j], pts[k]) for i, j, k in f]
+
+
 def seg_d(p, a, b):
     ab = (b[0] - a[0], b[1] - a[1])
     f = max(0.0, min(1.0, ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1]) / max(1e-9, ab[0] ** 2 + ab[1] ** 2)))
@@ -392,14 +403,8 @@ class Region:
             self.add(mid[k], mid[(k + 1) % 6], tip, part, 1)
 
     def ico(self, centre, r, squash, part, spin):
-        t = (1 + math.sqrt(5)) / 2
-        v = [(-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0), (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t), (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1)]
-        f = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8), (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1)]
-        c, s = math.cos(spin), math.sin(spin)
-        scale = r / math.sqrt(1 + t * t)
-        pts = [(centre[0] + (x * c - y * s) * scale, centre[1] + (x * s + y * c) * scale, centre[2] + z * scale * squash) for x, y, z in v]
-        for i, j, k in f:
-            self.add(pts[i], pts[j], pts[k], part)
+        for a, b, c in ico_faces(centre, r, squash, spin):
+            self.add(a, b, c, part)
 
     def spar(self, a, b, r0, r1, part):
         """A three-sided limb, no end cap."""
@@ -811,8 +816,81 @@ def portal(p):
             p.surface.add(f)
 
 
+CROWN_QUARTERS = ((0, "#DB7A2E"), (90, "#B7D86A"), (180, None), (270, "#4E8049"))  # the middle of each quarter, in degrees from the entrance, and its colour. Winter stands opposite autumn, so no snow meets orange. None: bare limbs like a seam tree's
+CROWN_CLUMPS = (((0.0, 0.0, 3.46), 0.78, 0.82, 1.1), ((0.0, 0.6, 3.04), 0.42, 0.9, 1.0), ((0.0, -0.6, 3.04), 0.42, 0.9, 1.0))  # middle, radius, squash, stretch along the arch: draped over its shoulders, no wider than its feet
+
+
+def arch_crown(p):
+    """One crown over the arch's top, cut into four seasons by two planes through its middle, as a seam cuts a tree. The winter quarter is bare limbs."""
+    for mid, colour in CROWN_QUARTERS:
+        planes = []
+        for off in (-45, 45):
+            a = math.radians(mid + off)
+            planes.append(((0.0, 0.0), (-math.cos(a), -math.sin(a)), 0.0))
+        if colour is None:
+            for k, (out, side, up) in enumerate(((0.72, 0.0, 0.42), (0.58, 0.34, 0.66), (0.58, -0.34, 0.66), (0.7, 0.42, 0.22), (0.7, -0.42, 0.22))):
+                c, s_ = math.cos(math.radians(mid)), math.sin(math.radians(mid))
+                tip = (out * c - side * s_, out * s_ + side * c, 3.28 + up)
+                spar_box(p, (0.03 * c, 0.03 * s_, 3.12), tip, 0.055, 0.012, "fey_gate_bark", sides=4)
+                spar_box(p, tip, (tip[0] + 0.14 * c, tip[1] + 0.14 * s_ + (0.05 if k % 2 else -0.05), tip[2] + 0.13), 0.012, 0.004, "fey_gate_bark", sides=3)
+            continue
+        for centre, r, squash, stretch in CROWN_CLUMPS:
+            for tri in ico_faces((0.0, 0.0, 0.0), r, squash, 0.4):
+                poly = clip([(q[0] + centre[0], q[1] * stretch + centre[1], q[2] + centre[2]) for q in tri], planes)
+                if len(poly) >= 3:
+                    f = p.bm.faces.new([p.bm.verts.new(q) for q in poly])
+                    f.material_index = p._slot(mat_of(colour))
+                    p.surface.add(f)
+            if abs(mid - 180) == 90:  # the cut facing the bare quarter is seen: close it
+                cap_angle = math.radians((mid + 180) / 2)
+                crown_cap(p, centre, r, squash, stretch, cap_angle, mat_of(colour), 1 if mid > 180 else -1)
+
+
+def crown_cap(p, centre, r, squash, stretch, ang, mat, way):
+    """A flat face where a plane through the crown's axis, out along ang, cuts one clump."""
+    n = (-math.sin(ang), math.cos(ang))
+    out = (math.cos(ang), math.sin(ang))
+    pts = []
+    for tri in ico_faces((0.0, 0.0, 0.0), r, squash, 0.4):
+        q3 = [(q[0] + centre[0], q[1] * stretch + centre[1], q[2] + centre[2]) for q in tri]
+        for k in range(3):
+            a, b = q3[k - 1], q3[k]
+            da, db = a[0] * n[0] + a[1] * n[1], b[0] * n[0] + b[1] * n[1]
+            if (da < 0) != (db < 0):
+                f_ = da / (da - db)
+                c = tuple(a[j] + (b[j] - a[j]) * f_ for j in range(3))
+                d = c[0] * out[0] + c[1] * out[1]
+                if d > -1e-6:
+                    pts.append((round(d, 5), round(c[2], 5)))
+    if len(set(pts)) < 3:
+        return
+    zs = [q[1] for q in pts]
+    pts = sorted(set(pts) | {(0.0, min(zs)), (0.0, max(zs))})
+    hull = convex_outline(pts)
+    verts = [p.bm.verts.new((d * out[0], d * out[1], z)) for d, z in (hull if way > 0 else hull[::-1])]
+    f = p.bm.faces.new(verts)
+    f.material_index = p._slot(mat)
+    p.surface.add(f)
+
+
+def convex_outline(pts):
+    """Anticlockwise round a set of sorted (x, y) points."""
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    low, up = [], []
+    for q in pts:
+        while len(low) >= 2 and cross(low[-2], low[-1], q) <= 0:
+            low.pop()
+        low.append(q)
+    for q in reversed(pts):
+        while len(up) >= 2 and cross(up[-2], up[-1], q) <= 0:
+            up.pop()
+        up.append(q)
+    return low[:-1] + up[:-1]
+
+
 def gate_arch(p, rng, kind="centre"):
-    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad. Small crowns on the outer shoulders, one tree spring and summer, the other autumn and bare."""
+    """Two tall, slim trees grown into a pointed arch, crossing at the top and twisting round each other, under one small crown cut into four seasons: narrow and open where the Fey Court's tree is one swollen trunk under a great crown and the Heartwood's are broad."""
     from mathutils import Vector
     if kind != "centre":
         return
@@ -824,15 +902,7 @@ def gate_arch(p, rng, kind="centre"):
                 continue
             spar_box(p, (0.0, side * 1.08, 0.16), (far * math.cos(ang), side * (1.08 + 0.42), 0.0), 0.2, 0.05, "fey_gate_bark_b", sides=5)
         spar_box(p, (0.0, side * 1.08, 0.14), (0.0, side * 1.58, 0.0), 0.2, 0.05, "fey_gate_bark", sides=5)
-    # small crowns hugging the arch's outer shoulders, a season to each: spring and summer on one tree, autumn and snow on the other
-    for side, z, colour, reach, r in ((1, 1.95, "#B7D86A", 0.44, 0.42), (1, 2.75, "#4E8049", 0.42, 0.46), (-1, 1.95, "#DB7A2E", 0.44, 0.42), (-1, 2.75, "#F2F5FA", 0.42, 0.46)):
-        path = arch_path(side)
-        q = min(path, key=lambda m: abs(m[2] - z))
-        tip = (q[0] * 0.5, q[1] + side * reach, q[2] + 0.2)
-        spar_box(p, q[:3], tip, 0.08, 0.03, "fey_gate_bark", sides=5)
-        p.blob(Vector(tip), r, mat_of(colour), squash=0.9)
-        p.blob(Vector(tip) + Vector((0.2, side * 0.08, -r * 0.62)), r * 0.68, mat_of(colour), squash=0.9)
-        p.blob(Vector(tip) + Vector((-0.2, -side * 0.06, r * 0.66)), r * 0.62, mat_of(colour), squash=0.9)
+    arch_crown(p)
     portal(p)
 
 

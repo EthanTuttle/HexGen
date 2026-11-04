@@ -1,6 +1,6 @@
 """Previews of the Feywild crossing kit, built by the same build_map as every other terrain.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b art/tiles/tiles_vN.blend --factory-startup --python art/scripts/render_fey.py -- [map] [seam] [fold] [low] [fold] [gate]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b art/tiles/tiles_vN.blend --factory-startup --python art/scripts/render_fey.py -- [map] [seam] [fold] [low] [fold] [gate] [back]
 Writes art/preview/fey_kit_*_vN.png. Night uses the values in godot/scripts/time_of_day.gd.
 """
 import math
@@ -198,6 +198,17 @@ def do_gate():
     rp.render("fey_gate_arch_night")
 
 
+def do_gate_back():
+    world, minis, region, turn = scene(LAND, LM, GATE)
+    at = Vector((*gc.tile_centre(*LM), 0))
+    a = math.radians(60 * turn)
+    add_wisps(turn, at)
+    rp.stage(Vector((1.0, -2.0, 0)), 72, 50)
+    set_material_glow()
+    view(at + Vector((0, 0, 1.8)), 13, 30, a + math.pi - 0.3)
+    rp.render("fey_gate_arch_back")
+
+
 def add_wisps_night():
     bpy.data.materials["fey_wisp"].node_tree.nodes.get("Principled BSDF").inputs["Emission Strength"].default_value = 1.5
 
@@ -212,3 +223,5 @@ if __name__ == "__main__":
         do_fold()
     if "gate" in wants:
         do_gate()
+    if "back" in wants:
+        do_gate_back()

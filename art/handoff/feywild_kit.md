@@ -1,4 +1,4 @@
-# Feywild crossing kit hand-off (tiles_v79)
+# Feywild crossing kit hand-off (tiles_v80)
 
 Forest tier 3. **Not approved yet.** `tiles.glb` isn't re-exported and nothing has been tried in Godot. The Fey Gate is the tree arch (Ethan, Nov 4, 2026).
 
@@ -14,7 +14,7 @@ Like the desert's sand and the swamp's wetland, the tile pieces are empty (`feyw
 
 | Key | What it is | What to do with it |
 | --- | --- | --- |
-| `ground`, `trail`, `stand` | `(colour, points anticlockwise, ...)`: flat convex polygons | One mesh per tile in the kit's ordinary lit material, colours in the vertices. Keep the winding: crowns are cut open and their halves close each other |
+| `ground`, `trail`, `stand` | `(colour, points anticlockwise, ...)`: flat convex polygons | One mesh per tile in the kit's ordinary lit material, colours in the vertices. Keep the winding. Draw it double-sided: crowns are cut open, their halves close each other, and a crown cut at a seam with winter is left open on its winter side (winter has limbs there, no other half) |
 | `trails` | `[(walked line, drawn part)]` | As in the swamp kit |
 | `effects` | `snow`, `leaves` or `petals` | The engine's falling particles. Not in these previews |
 | `season` | The tile's season | |
@@ -43,7 +43,7 @@ A trail starts at a glade (a stump and boulders) in a corner of the tile, as in 
 
 ## Fey Gate
 
-`feygate_centre`: a centre piece with its entrance on edge 0, a landmark of `feywild_crossing`, turned by `landmark_flow.turn`. Two slim trees cross into a pointed arch, about 3.9 tall, with small crowns on the outer shoulders in the four seasons. Reference: `gate_arch`.
+`feygate_centre`: a centre piece with its entrance on edge 0, a landmark of `feywild_crossing`, turned by `landmark_flow.turn`. Two slim trees cross into a pointed arch under one crown, 4.07 tall, cut into four quarters like a seam tree: autumn facing the entrance, spring and summer at the sides, bare limbs at the back, so no snow meets orange. Reference: `gate_arch`, `arch_crown`.
 
 **Portal:** four nested bands on each face of the arch, in materials of their own. Show each from the side it faces only (backface culling), unshaded or nearly so, alpha blended, with no shadows cast.
 
