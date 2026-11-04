@@ -26,7 +26,7 @@ The maps, their shapes, sizes and ideas are in `art/combat/maps/README.md`, gene
 
 Three maps per variant, as `design/07` sets it, differing in shape and size; plains have no drawn paths, so no path maps. Only the landmark structures themselves are saved for landmark fights (07); generic props near landmarks are fine. On no map yet: `fire`, `collapsed_7`, `spire_7`. All are at least 5.5 cells deep. Herds are plain obstacles (Ethan, Nov 2, 2026). Wreckage, graves, dummies and the rest count as obstacles in the plans, which nobody has decided. Enemy mixes are samples.
 
-## Plain plains (tier 0, in review)
+## Plain plains (tier 0)
 
 `plains_trees`, `plains_stones` and `plains_long_grass`, `variant` `plains`, with the same piece names as the other variants: big, flat, open maps of 169 to 218 cells, the largest yet. The kit's `plains` has no props of its own: trees are the tile's mix of pines and broadleaves, plus rocks, boulders and stumps. The tile has no drawn roads, so there's no path map. Starts sit inside the fight camera's 28 m opening, with the rest of the map to pan to. To judge on the phone, walkable cells seen from the default camera: Trees 179 of 200, Stones 191 of 200, Long Grass 151 of 159.
 
