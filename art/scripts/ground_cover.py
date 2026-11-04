@@ -36,7 +36,7 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "haunted_homesteads": 0.0, "raided_farms": 0.0, "cider_orchards": 0.0,
            "snowy_peaks": 0.0, "volcanic_peaks": 0.0, "monastery_heights": 0.0,
            # plains tier 2 and class variant
-           "battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05}
+           "battlefield": 0.22, "stormy_plains": 0.5, "tourney_fields": 0.05, "scholars_town": 0.5, "college": 0.5}
 # Tuft colour per terrain where it isn't the usual grass_ink, taken from the variant's ground colour so the
 # tufts sit in it (the dark wood's are darker and greyer). Terrains in NO_FLOWERS get tufts instead of flowers.
 TUFT = {"swamp": "tuft_swamp", "bog": "tuft_bog", "witchhut": "tuft_bog", "wisp_marsh": "tuft_wisp", "wisphollow": "tuft_wisp", "rot_swamp": "tuft_rot", "plaguepit": "tuft_rot", "smugglers_bayou": "tuft_swamp", "thievesguild": "tuft_swamp", "dark_wood": "tuft_dark_wood", "spidernest": "tuft_dark_wood", "battlefield": "tuft_steppe",

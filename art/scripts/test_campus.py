@@ -1,6 +1,6 @@
 """Checks Scholars' Town's campus (campus.py) on random towns. Plain Python: python3 art/scripts/test_campus.py [towns]. Exits 1 on a failure.
 - Every street and gate edge has a walk; both tiles agree where it crosses; a gate crosses at its edge's middle; every walk leads to the tile's stop, in the tile, smooth.
-- Paving meets exactly across every edge between scholars' tiles. No building or prop within its clearance of a walked line, on any tile it may reach; none past a fence.
+- Paving meets exactly across every edge between scholars' tiles. No building or prop within its clearance of a walked line, on any tile it may reach; none past the town's edge. No building inside another.
 - Repeatable; budget. village_streets and fence_gates are used as they are: test_streets.py still covers them.
 """
 import math
@@ -117,21 +117,29 @@ def check(names, region, c):
                     opens = c.open_edges(t)
                     if opens:
                         gap = min(wt.seg_dist(q, s, e_) for s, e_ in opens)
-                        note("building to a fence's edge", gap, False)
-                        if gap < 0.7:
-                            fail("building at a fence", t, o, gap)
+                        note("building to the town's edge", gap, False)
+                        if gap < cp.TOWN_MARGIN - 1e-6:
+                            fail("building at the town's edge", t, o, gap)
             else:
                 if lines:
                     gap = min(min(wt.seg_dist(w, s, e_) for s, e_ in zip(ln, ln[1:])) for ln in lines)
                     note("low prop to a walked line", gap, False)
                     if gap < cp.PROP_CLEAR - 1e-6:
                         fail("prop on a walk", t, o, gap)
+        for h in tile["hedges"]:
+            for q in h:
+                if lines:
+                    gap = min(min(wt.seg_dist(wt.add(q, cen), s, e_) for s, e_ in zip(ln, ln[1:])) for ln in lines)
+                    note("hedge to a walked line", gap, False)
+                    if gap < cp.PROP_CLEAR - 1e-6:
+                        fail("hedge on a walk", t, q, gap)
+        for i in c.open_ways(t):
+            if abs(wt.dot(c.crossing(t, i)[0], cp.tan_of(i))) > 1e-6:
+                fail("way out off its edge's middle", t, i)
         built = [o for o in tile["props"] if o[0] in cp.FOOT]
         for k, a in enumerate(built):
             for b in built[k + 1:]:
-                d = math.dist(a[1:3], b[1:3])
-                note("closest two buildings", d, False)
-                if d < 0.6:
+                if c.rects_overlap(c.rect(a[0], a[1:3], a[3], -0.02), c.rect(b[0], b[1:3], b[3], -0.02)):
                     fail("buildings inside each other", t, a, b)
     for t, tile in tiles.items():  # paving meets across edges: same sample points give the same answer
         f = c.field(t)

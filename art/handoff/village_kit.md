@@ -128,20 +128,29 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 - **Slum roofs:** the tin is still a grey-brown. Ethan approved it as it stands; it could be warmed if the tan ever needs it.
 - **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_damp`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.
 
-## Scholars' Town: a campus layer (tiles_v71, not yet approved, not tried in Godot)
+## Scholars' Town: a campus layer (tiles_v72, not yet approved, not tried in Godot)
 
-**The town no longer uses the street wedges.** `art/scripts/campus.py` works it out per tile from world position. Its first section is plain Python to copy. `test_campus.py` checks it; `village_streets.py`, `fence_gates.py` and `test_streets.py` are unchanged and still decide which edges have a street.
+**The town no longer uses the street wedges, and has no fence.** `art/scripts/campus.py` works it out per tile from world position. Its first section is plain Python to copy. `test_campus.py` checks it. `village_streets.py`, `fence_gates.py` and `test_streets.py` are unchanged.
 
-`Campus(names, edges, turns, near, trails)`, with `edges` as tile -> `{edge: "main", "side" or "gate"}` (streets plus gates). Rebuild a tile when a tile within two steps changes, or its region finishes.
+`Campus(names, edges, turns, near, trails, closed)`, with `edges` as tile -> `{edge: "main", "side" or "gate"}` (streets plus `fence_gates`' gates), and `closed` the tiles a party can't walk onto (water, raised regions). Rebuild a tile when a tile within two steps changes, or its region finishes.
 
 | Call | Gives | What Godot does |
 | --- | --- | --- |
+| `tile(t)["lawn"]` | Flat triangles | Mesh at z 0.008, `lawn`, on a `plains` slab. It ends in a wandering margin, so the town's edge isn't a hexagon |
 | `tile(t)["paving"]` | Flat triangles | Mesh at z 0.02, `quad_paving` |
+| `tile(t)["hedges"]` | Polylines | Hedge strip, half 0.08, height 0.22, `add_hedge` |
 | `tile(t)["props"]` | `[(piece, x, y, spin)]` | Place the kit piece. **A building may overhang a neighbouring scholars' tile** |
 | `walk(t, i, j)` | The line a party walks from edge i to edge j | **Replaces the spoke route** |
-| `crossing(t, i)` | Where the walk crosses edge i | **Replaces the edge's middle, between two scholars' tiles.** A gate, or an edge to any other tile, stays at the middle |
+| `crossing(t, i)` | Where the walk crosses edge i | **Replaces the edge's middle, between two scholars' tiles.** Any other edge stays at the middle |
 | `stop(t)` | Where a party stands | **Replaces the tile's middle** |
+| `open_ways(t)` | Edges a party can leave by with no walk drawn | See below |
+| `cover_wet` | For the ground cover's `wet` hook | Tufts only in the rough grass past the lawn |
 
-**Pieces:** `sch_hall_*`, `sch_run_*`, `sch_fountain`, `sch_statue`, `sch_bench`, `sch_panel`, `sch_hedge`, `sch_bush`. `scholars_town_centre*`, `_edge_same`, `_edge_side`, `_edge_trail`, `_edge_block*` are **now empty**: place them or not. `_edge_other`, `_edge_other_lm` and `_edge_gate` hold only the fence and gates, and must still be placed. `college_centre` no longer has its paved hexagon; the campus paves round it.
+**Pieces:** `sch_hall_*`, `sch_run_*`, `sch_fountain`, `sch_statue`, `sch_bench`, `sch_lawn`, `sch_bush`. Every `scholars_town_*` wedge and centre is **empty**. Don't place `border_join_*` on these tiles. `college_centre` no longer has its paved hexagon; the campus paves round it.
 
-**Routes moved.** Movement that assumes a route meets the edge's middle has to ask `crossing`. Worst tile is about 1,600 triangles before the slab.
+**No fence: what happens at the town's edge (a proposal, not yet decided):**
+- `fence_gates.py` is unchanged and still treats the town as part of a farm and village group. Its "gates" on scholars' tiles now only say where **a paved walk leads out**, thinning into the grass. No gate is drawn.
+- A party can leave over **any** edge to walkable land, by `open_ways`: an undrawn line across the lawn from the edge's middle, which buildings keep off. Water and raised regions are closed, as before. So crossing is no longer limited to gates on these tiles, and Godot's route rules must allow it.
+- Where the town meets a plain village or a farm, nothing changes: their street still joins at the edge's middle, and their own fence still runs round them.
+
+Worst tile is about 2,600 triangles before the slab, against 4,404.

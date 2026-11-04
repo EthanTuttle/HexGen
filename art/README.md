@@ -172,6 +172,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v72:** Scholars' Town denser: halls and cloisters wrap courts, hedges follow the walks' curves, no fence or gates round the region, the lawn ends in a wandering margin. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
 - **tiles_v71:** Scholars' Town rebuilt so hexes don't show in its paths: a per-tile campus from world position (`scripts/campus.py`), with curving walks, junctions off-centre, crossings that move along edges, quads across edges, buildings overhanging edges. Routes move. Not reviewed yet. Hand-off: `handoff/village_kit.md`. tiles_v70 is ruins, on its own branch.
 - **tiles_v69:** Scholars' Town tiles moved toward the approved combat maps: mown lawn, pale paved walks, broad towers joined to halls or at cloisters' heads, little paved quads with lawn panels, clipped hedges. Streets and routes unchanged. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
 - **tiles_v68:** swamp/marsh, fourth round: no trail stops in the open (a far tile's trail ends at a witch's marker, wisp stake, ooze seep or landing stage), nothing on planks or tracks, spurs run under the walkway. Approved Nov 3, 2026. Hand-off: `handoff/swamp_kit.md`.

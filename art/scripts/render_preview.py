@@ -310,7 +310,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     gates = fg.fence_gates(terrains, raised, all_ledges)
     ledge_tops = cliffs.ledge_tops(all_ledges)
     streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
-    campus = vr.cp.Campus(MAP, {t: {**dict(streets.get(t, {})), **{i: "gate" for i in gates.get(t, ())}} for t, n in MAP.items() if n in vr.cp.KIN}, turns, dist, [(t, i) for t in MAP if MAP[t] in vr.cp.KIN for i in lf.trail_edges(t, toward)])
+    campus = vr.cp.Campus(MAP, {t: {**dict(streets.get(t, {})), **{i: "gate" for i in gates.get(t, ())}} for t, n in MAP.items() if n in vr.cp.KIN}, turns, dist, [(t, i) for t in MAP if MAP[t] in vr.cp.KIN for i in lf.trail_edges(t, toward)], {t for t, n in terrains.items() if n == "river"} | raised)
+    globals()["LAST_CAMPUS"] = campus
     for (q, r), name in MAP.items():
         # name is a terrain or a region variant (variants.py); the variant's pieces carry its name, and
         # edge pieces are picked by its terrain.
@@ -466,7 +467,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
                     place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-            if terrain in BORDERED and kin[i] and "border_join_l" in templates:
+            if terrain in BORDERED and kin[i] and "border_join_l" in templates and name not in vr.cp.KIN:
                 join = f"{kit}_border_join" if walled else "border_join"
                 if not kin[(i + 1) % 6]:
                     place(templates, f"{join}_l", col, at, math.radians(60 * i))
@@ -488,7 +489,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 w = obj.matrix_world @ Vector((x, -z, y))
                 clear.append((w.x, w.y, c["r"]))
     p = hk.Piece("ground_cover")
-    gc.add_ground_cover(p, MAP, clear, vr.sl.cover_wet(MAP, marsh_tiles))
+    wet_marsh, wet_campus = vr.sl.cover_wet(MAP, marsh_tiles), campus.cover_wet(None)
+    gc.add_ground_cover(p, MAP, clear, lambda x, y, t: wet_marsh(x, y, t) or wet_campus(x, y, t))
     p.finish(col)
     # Pale empty slots around the land.
     slots = {(q + dq, r + dr) for (q, r) in MAP for dq, dr in hk.NEIGHBOURS} - set(MAP) - set(hollow)
@@ -1801,6 +1803,30 @@ if __name__ == "__main__":
                 if stem == "village_scholars":
                     look(hk.tile_position(*max(t for t, n in tiles_map.items() if n == "scholars_town")), -math.pi / 2, 17, math.radians(40))
                     shot("village_scholars_close")
+                    # with minis: at a junction and on a walk, from low
+                    import canyon_takes as ct
+                    minis_file = max(glob.glob(os.path.join(hk.ART, "minis", "standins", "standin_minis_v*.blend")), key=lambda f: int(re.search(r"_v(\d+)", f).group(1)))
+                    cam_ = LAST_CAMPUS
+                    t_ = (0, 0)
+                    c_ = hk.tile_position(*t_)
+                    stop_ = cam_.stop(t_)
+                    spots_ = [((c_.x + stop_[0], c_.y + stop_[1], 0.02), 0.0)]
+                    i_ = sorted(cam_.edges[t_])[0]
+                    q_ = cam_.arm(t_, i_)[6]
+                    spots_.append(((c_.x + q_[0], c_.y + q_[1], 0.02), 1.0))
+                    ct._mini_spots(bpy.data.collections["map"], load_templates(minis_file), spots_)
+                    bpy.context.view_layer.update()
+                    look(c_ + Vector((stop_[0], stop_[1], 0)), -2.2, 9, math.radians(17), 0.3)
+                    shot("village_scholars_low")
+                    look(c_ + Vector((q_[0], q_[1], 0)), 0.9, 8, math.radians(15), 0.3)
+                    shot("village_scholars_walk_low")
+                    biggest = max((q2 for t2, n in tiles_map.items() if n == "scholars_town" for q2 in cam_.quads(t2)), key=lambda q2: q2[2] * q2[3])
+                    way_ = cam_.link(biggest)  # from the way in, looking into the court
+                    a_ = math.atan2(way_[2][1] - biggest[1], way_[2][0] - biggest[0])
+                    look(Vector((biggest[0], biggest[1], 0)), a_, 9, math.radians(32), 0.3)
+                    shot("village_scholars_court")
+                    look(Vector((biggest[0], biggest[1], 0)), a_, 5.5, math.radians(13), 0.3)
+                    shot("village_scholars_court_low")
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no
