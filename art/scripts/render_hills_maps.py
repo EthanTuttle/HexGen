@@ -214,7 +214,7 @@ H 1 3 H H 1 3 H
  . h . k . s . 
 . . . . . . . T"""},
     "volcanic_peaks_fissures": {"size": "wide rectangle", "foes": UNDEAD, "hill": (("east", 10),),
-                                "flow": ((12, 6), (11, 7), (10, 6), (9, 5), (8, 4), (7, 5), (6, 6), (5, 5), (4, 4), (3, 5), (2, 6), (1, 7), (0, 6)),
+                                "flow": ((12, 8), (11, 7), (10, 6), (9, 5), (8, 4), (7, 5), (6, 6), (5, 5), (4, 4), (3, 5), (2, 6), (1, 7), (0, 8), (0, 10)),
                                 "idea": "A cone on the high ground to the east pours a river of lava down the middle of the map and off its west edge, between two short fissures to the north. Walk through it and burn, or go the long way round behind the cone.", "plan": """
 . . v . w . x . .
  . c . . . . . . 
@@ -222,13 +222,14 @@ H 1 3 H H 1 3 H
  . L . . . . L . 
 . . F . F . . . .
  . F F F F . . . 
-F F . F . F F . .
+. F . F . F . . .
  F . . . . F M M 
-. O . . c . . M .
+F O . . c . F M .
  . . . . . . . . 
-. . h . k s . . O"""},
+F . h . k s . . O"""},
     "volcanic_peaks_crater": {"size": "big hex", "foes": UNDEAD, "hill": (),
                               "rows": {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 2, 9: 2, 10: 1, 11: 1, 12: 1, 13: 0, 14: 0}, "lift": {"1": 4, "2": 7, "H": 10},
+                              "flow": ((6, 10), (5, 11), (6, 12), (5, 13), (6, 14)),
                               "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with a gradual lift at either end and a lava fissure on its east. The fight goes round it.", "plan": """
     . .    
    w . .   
@@ -240,11 +241,11 @@ F F . F . F F . .
  H . M . . 
 H H M M . .
  2 M M . O 
-H 1 . . . h
- . , . c s 
-  . . . k  
-   . . .   
-    . .    """},
+H 1 . F . h
+ . , F c s 
+  . . F k  
+   . F .   
+    . F    """},
     "volcanic_peaks_ledge": {"size": "small rectangle", "foes": UNDEAD, "hill": (), "cliff": 14,
                              "rows": {0: 3, 1: 3, 2: 3, 3: 3, 4: 3, 5: 2, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0}, "lift": {"1": 5, "2": 8},
                              "idea": "A wall of stacked basalt streaked with lava across the north, a sheer ledge under it with two gradual lifts down, one lava fissure on the slant below. Small, close and hot.", "plan": """
@@ -363,7 +364,7 @@ def heights_of(name, cells):
     else:
         steps = {c: round(steps_of(m, cells, c)) for c in cells}
     path = flow_cells(m)
-    if path:  # banks rise from a flow, so it lies in a valley of its own
+    if path and "rows" not in m:  # banks rise from a flow, so it lies in a valley of its own
         far = {c: 0 for c in path}
         todo = deque(path)
         while todo:
@@ -647,7 +648,7 @@ def cone_groups(group):
     return out
 
 
-def volcano(p, rng, v, cells, z, ground, run_to=None):
+def volcano(p, rng, v, cells, z, ground, run_to=None, line=None):
     """A smooth cone over its cells, as on the tiles: an open crater wide enough to see the lava in from the map's camera, gentle concave sides, an ash skirt.
     Its foot goes as far as its own cells let it. run_to: where lava leaves the crater, down the side facing it."""
     main, side, skirt = fc.ROCK[v]
@@ -679,19 +680,21 @@ def volcano(p, rng, v, cells, z, ground, run_to=None):
             m = (j + 1) % n
             if not all(inside(at + foot[j].lerp(foot[m], t)) for t in (0.2, 0.4, 0.6, 0.8)):
                 foot[j], foot[m] = foot[j] * 0.85, foot[m] * 0.85
+    round_r = sum(q.length for q in foot) / n
     rings = []
     for k, share in enumerate(shares):
         ring = []
         for j in range(n):
             th = 2 * math.pi * j / n
-            q = at + foot[j] * share
+            # Round at the crater, easing out to the shape of its cells at the foot.
+            q = at + foot[j].normalized() * (foot[j].length + (round_r - foot[j].length) * (1 - k / 2 if k < 2 else 0)) * share
             if share < 1:
-                drop = ((1 - share) / (1 - shares[0])) ** 1.1 * (1 + wobble(th + k, 1))
+                drop = ((1 - share) / (1 - shares[0])) ** 1.1 * (1 + (0.2 if k == 0 else 1) * wobble(th + k, 1))
                 ring.append(p.bm.verts.new(q + Vector((0, 0, base + h * drop))))
             else:
                 ring.append(p.bm.verts.new(q + Vector((0, 0, ground(q) - 0.1))))
         rings.append(ring)
-    inner = [p.bm.verts.new(q.co.lerp(Vector((at.x, at.y, q.co.z)), 0.22) - Vector((0, 0, 0.18))) for q in rings[0]]
+    inner = [p.bm.verts.new(q.co.lerp(Vector((at.x, at.y, q.co.z)), 0.22) - Vector((0, 0, 0.1))) for q in rings[0]]
     p.bm.faces.new(inner).material_index = p._slot("lava")
     for j in range(n):
         m = (j + 1) % n
@@ -704,29 +707,55 @@ def volcano(p, rng, v, cells, z, ground, run_to=None):
                 mat = skirt if band == 2 else main if rng.random() < 0.6 else side
                 p.bm.faces.new(tri).material_index = p._slot(mat)
 
-    def run(j, width, end=None):  # lava lying on the side, ring by ring from the crater, so it follows the hollow and spreads as it falls
-        last = None
-        for ring in [inner] + rings:  # across each ring: left, middle, right, each strip on the faces it lies over
-            mid = ring[j].co
-            lift = (mid - Vector((at.x, at.y, mid.z))).normalized() * 0.03 + Vector((0, 0, 0.015))
-            now = [p.bm.verts.new(q + lift) for q in (mid.lerp(ring[(j - 1) % n].co, width), mid, mid.lerp(ring[(j + 1) % n].co, width))]
+    def run(j, thin, wide, end=None):
+        """Lava lying on the side from the crater's pool down: it wanders across the facets, thin at the rim and spreading as it falls, to the width of a cell's neck if it feeds one."""
+        stack = [inner] + rings
+        wander = [rng.uniform(0, 6.3), rng.uniform(0.8, 1.2)]
+
+        def on_side(a, t):
+            k = min(int(a), len(stack) - 2)
+            ring0, ring1 = stack[k], stack[k + 1]
+
+            def round_ring(ring):
+                m = math.floor(t)
+                return ring[m % n].co.lerp(ring[(m + 1) % n].co, t - m)
+
+            return round_ring(ring0).lerp(round_ring(ring1), a - k)
+
+        last, samples = None, 13
+        for i in range(samples):
+            a = (len(stack) - 1) * i / (samples - 1)
+            share = i / (samples - 1)
+            t = j + 0.75 * math.sin(a * wander[1] + wander[0]) * min(1.0, share * 3) * (1 - share)
+            mid = on_side(a, t)
+            along = (on_side(a, t + 0.2) - on_side(a, t - 0.2)).normalized()
+            half = thin + (wide - thin) * share
+            lift = (mid - Vector((at.x, at.y, mid.z))).normalized() * 0.035 + Vector((0, 0, 0.02))
+            if line is not None and end is not None:
+                line.append(mid + lift)
+            now = [p.bm.verts.new(q + lift) for q in (mid - along * half, mid, mid + along * half)]
             if last:
-                for a, b in ((0, 1), (1, 2)):
-                    p.bm.faces.new((last[a], now[a], now[b], last[b])).material_index = p._slot("lava")
+                for a0, b0 in ((0, 1), (1, 2)):
+                    p.bm.faces.new((last[a0], now[a0], now[b0], last[b0])).material_index = p._slot("lava")
             last = now
         if end is not None:
-            across = (last[2].co - last[0].co).to_2d().to_3d().normalized() * 0.18
+            if line is not None:
+                line.append(end)
+            across = (last[2].co - last[0].co).to_2d().to_3d().normalized() * 0.2
             ends = [p.bm.verts.new(end - across), p.bm.verts.new(end), p.bm.verts.new(end + across)]
-            for a, b in ((0, 1), (1, 2)):
-                p.bm.faces.new((last[a], ends[a], ends[b], last[b])).material_index = p._slot("lava")
+            for a0, b0 in ((0, 1), (1, 2)):
+                p.bm.faces.new((last[a0], ends[a0], ends[b0], last[b0])).material_index = p._slot("lava")
 
     if run_to is None:
-        run(rng.randrange(n), 0.14)
+        run(rng.randrange(n), 0.03, 0.05)
     else:
         toward = run_to - at
         j = max(range(n), key=lambda j: foot[j].normalized().dot(toward.normalized()))
         edge = run_to + (rings[-1][j].co - run_to).to_2d().to_3d().normalized() * 0.46  # into the first cell's edge, not across it
-        run(j, 0.5, Vector((edge.x, edge.y, ground(run_to) + 0.03)))
+        run(j, 0.05, 0.2, Vector((edge.x, edge.y, ground(run_to) + 0.03)))
+
+
+FLOW_LINES = {}  # the lava's centre line by piece, for what animates along it
 
 
 def flow_cells(m):
@@ -734,7 +763,7 @@ def flow_cells(m):
     return [(col, (row - col) // 2) for col, row in m.get("flow", ())]
 
 
-def lava_flow(col, cells, z, path):
+def lava_flow(col, cells, z, path, line):
     """Lava from cell to cell, off the edge of the map: each cell a dark crust with a wide bright pool, so it reads as danger and its hex still shows. Falls over each drop, streaks along the way it runs."""
     p = hk.Piece("lava_flow")
     rng = hk.seeded(p.name)
@@ -743,17 +772,33 @@ def lava_flow(col, cells, z, path):
         at = hk.cell_position(*c)
         p.prism([at + q for q in hex_out], z[c] - 0.07, z[c] + 0.005, "basalt_dark", side_mat="basalt_dark")
         p.prism([at + q * 0.76 for q in hex_out], z[c] + 0.005, z[c] + 0.015, "lava")
-        ways = [hk.cell_position(*path[i + 1]) - at] if i + 1 < len(path) else [hk.cell_position(c[0] + a, c[1] + b) - at for a, b in fm.NEIGHBOURS if (c[0] + a, c[1] + b) not in cells]
+        if i + 1 < len(path):
+            ways = [hk.cell_position(*path[i + 1]) - at]
+        else:  # off the map in a line with how it comes in, or as near as the board's edge allows
+            came = at - hk.cell_position(*path[i - 1])
+            ways = [max((hk.cell_position(c[0] + a, c[1] + b) - at for a, b in fm.NEIGHBOURS if (c[0] + a, c[1] + b) not in cells), key=lambda d: d.normalized().dot(came.normalized()))]
         for d in ways + ([hk.cell_position(*path[i - 1]) - at] if i else []):
             p.box(at + d * 0.25, (d.length * 0.49, 0.36, 0.01), "lava", z=z[c] + 0.005, spin=math.atan2(d.y, d.x))
         for _ in range(3):  # crust floating on it
             th = rng.uniform(0, 6.3)
             q = at + Vector((math.cos(th), math.sin(th), 0)) * rng.uniform(0.1, 0.27)
             p.flat([q + Vector((math.cos(k * math.pi / 3), math.sin(k * math.pi / 3), 0)) * rng.uniform(0.04, 0.1) for k in range(6)], z[c] + 0.017, "basalt_dark")
-        below = z[path[i + 1]] if i + 1 < len(path) else hk.SOIL_BOTTOM
-        for d in ways:  # falling over each drop, and off the board's sides at the end
-            if z[c] - below > 0.001:
+        line.append(at + Vector((0, 0, z[c] + 0.015)))
+        if i + 1 < len(path):
+            d, below = ways[0], z[path[i + 1]]
+            if z[c] - below > 0.001:  # over a drop, on the side of the cell it leaves
                 p.box(at + d * 0.5 * fc.GAP + d.normalized() * 0.006, (0.02, 0.36, z[c] + 0.015 - below), "lava", z=below, spin=math.atan2(d.y, d.x))
+        else:  # over the board's own side, standing clear of it, and dripping off underneath
+            d = ways[0]
+            out = d.normalized()
+            face = at + d * 0.5 + out * 0.02
+            p.box(face, (0.04, 0.4, z[c] + 0.015 - hk.SOIL_BOTTOM + 0.04), "lava", z=hk.SOIL_BOTTOM - 0.04, spin=math.atan2(d.y, d.x))
+            p.box(at + d * 0.25 + d * 0.25, (0.06, 0.36, 0.01), "lava", z=z[c] + 0.005, spin=math.atan2(d.y, d.x))
+            side = Vector((-out.y, out.x, 0))
+            for off, length in ((-0.13, 0.12), (0.03, 0.2), (0.14, 0.09)):
+                top = face + side * off + Vector((0, 0, hk.SOIL_BOTTOM - 0.02))
+                vr.frustum(p, top, top - Vector((0, 0, length)), 0.05, 0.006, "lava", segments=4)
+            line += [at + d * 0.5 + out * 0.05 + Vector((0, 0, z[c] + 0.015)), at + d * 0.5 + out * 0.05 + Vector((0, 0, hk.SOIL_BOTTOM - 0.2))]
     p.finish(col)
 
 
@@ -874,12 +919,12 @@ def build_map(t, col, name):
         if hc.PEAK_LOOK[v].get("crater"):
             for shared in cone_groups(group):
                 feeds = path and any((path[0][0] + a, path[0][1] + b) in shared for a, b in fm.NEIGHBOURS)
-                volcano(r, hk.seeded(f"{name}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None)
+                volcano(r, hk.seeded(f"{name}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None, FLOW_LINES.setdefault(name, []))
         else:
             peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
         r.finish(col)
     if path:
-        lava_flow(col, cells, z, path)
+        lava_flow(col, cells, z, path, FLOW_LINES.setdefault(name, []))
     for _, group in fm.groups(cells, "L"):
         line_wall(col, v, group, ground)
     if "lift" in m:

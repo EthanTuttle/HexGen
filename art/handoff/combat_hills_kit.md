@@ -1,19 +1,19 @@
-# Combat hills kit hand-off (combat_hills_v5, combat_maps_hills_v8)
+# Combat hills kit hand-off (combat_hills_v5, combat_maps_hills_v9)
 
 Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and lifts replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v5.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v8.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v5.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v9.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
-- **Previews:** `art/preview/hills_maps_all_v14.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Highlands v12, Snowy v12, Volcanic v12, the rest v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v2.png`, `hills_maps_volcanic_peaks_beside_tile_v2.png`; props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
+- **Previews:** `art/preview/hills_maps_all_v15.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Highlands v12, Snowy v12, Volcanic v13, the rest v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v2.png`, `hills_maps_volcanic_peaks_beside_tile_v3.png`; props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
 
 ## Heights in the data
 
 - **Cells:** `z` is the cell's level height, in steps of 0.15, left out when 0. A cell is always level.
 - **Placements:** `z` is on every placed piece that isn't at 0: glb position = (x, z, -y). `map_` pieces are already in place, at (0, 0, 0).
 - **Starts:** `z` is the cell's height.
-- **Lava cells** (`volcanic_peaks_fissures` only, on trial): `kind` is `lava`, walkable like `open`. Entering one or ending a turn in one burns (design/03 → Lava, amount open). `flow_to` is `[q, r]`, the next cell downhill; the last cell has none, as it runs off the map. `z` never rises along the flow.
+- **Lava cells** (`volcanic_peaks_fissures` and `volcanic_peaks_crater`, on trial): `kind` is `lava`, walkable like `open`. Entering one or ending a turn in one burns (design/03 → Lava, amount open). `flow_to` is `[q, r]`, the next cell downhill; the last cell has none, as it runs off the map. `z` never rises along the flow.
 - **Blocked cells** have a `z` too, the top of what stands there: on a stack of hex cells (`K` in a plan), up to 3.60 above the map's lowest cell.
 
 ## How a map's heights can be walked
@@ -52,9 +52,13 @@ As in the plains kit: `cell_<v>_ground_a/b/c`, `_floor`, `_cover`, `_litter`, `_
 
 `ob_highlands_banner` stands on one blocked cell of its own, or on stacked rock on `highlands_scarp`, so it takes no walkable cell there. Turned 45° in the map so both cloths show from the default camera.
 
-Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `lava_flow` (the lava's cells, falls and run-off, drawn in place of kit cells; on `volcanic_peaks_fissures`), `lift_steps` (three long steps on every 0.45 rise that touches a lift cell, on the lower cell's edge, as on the forest's ways up: they cover up to 0.26 of that cell's edge at up to 0.34 high, so a mini's base clips them and a cell highlight needs to draw over them), `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
+Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `lava_flow` (the lava's cells, falls and run-off, drawn in place of kit cells; the fall stands just outside the board's side, with drips under it; on `volcanic_peaks_fissures` and `volcanic_peaks_crater`), `lift_steps` (three long steps on every 0.45 rise that touches a lift cell, on the lower cell's edge, as on the forest's ways up: they cover up to 0.26 of that cell's edge at up to 0.34 high, so a mini's base clips them and a cell highlight needs to draw over them), `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
 
 **Effects:** `lava` is the tiles' own material, meant to glow and pulse. Smoke from craters, as on the tiles, isn't in the pieces and would be an engine effect.
+
+## Moving lava
+
+`art/preview/lava_movie_volcanic_peaks_fissures_v1.mp4` is the look target, made by `art/scripts/render_lava_movie.py`: bright flecks and dark crust drift down the flow's line at about 0.45 a second, from the crater down the cone's side, along `flow_to` and over the edge. The shipped pieces' lava is flat colour with crust that stands still, so the movement is the engine's to add, as with the tiles' glowing cracks.
 
 ## Assumed, nobody has decided
 
@@ -67,7 +71,7 @@ Peaks hide more cells from the default camera. Ethan accepts this for now and wi
 | Map | Seen | Map | Seen |
 |---|---|---|---|
 | `hills_shoulder` | 58 of 71 | `volcanic_peaks_fissures` | 79 of 84 |
-| `hills_saddle` | 39 of 43 | `volcanic_peaks_crater` | 46 of 54 |
+| `hills_saddle` | 39 of 43 | `volcanic_peaks_crater` | 47 of 54 |
 | `hills_crags` | 38 of 57 | `volcanic_peaks_ledge` | 36 of 36 |
 | `highlands_moor` | 72 of 80 | `monastery_heights_gardens` | 56 of 57 |
 | `highlands_knoll` | 29 of 30 | `monastery_heights_walled` | 20 of 23 |
