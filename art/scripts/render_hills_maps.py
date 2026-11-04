@@ -507,10 +507,10 @@ def band_wall(p, rng, a, b, z0, z1, v):
             p.bm.faces.new(verts).material_index = p._slot("lava")
 
 
-def hillside(col, name, v, cells, z):
+def hillside(col, seed, v, cells, z, name):
     """What a kit cell can't give on a slope: under each cell a hex of line colour, a side on every edge above a lower neighbour, the board's outer sides."""
     p = hk.Piece("hillside")
-    rng = hk.seeded(f"{name}_hillside")
+    rng = hk.seeded(f"{seed}_hillside")
     stairs = STAIRS[name]
     for c in cells:
         at, top = hk.cell_position(*c), z[c] - 0.07
@@ -648,7 +648,7 @@ def cone_groups(group):
     return out
 
 
-def volcano(p, rng, v, cells, z, ground, run_to=None, line=None):
+def volcano(p, rng, v, cells, z, ground, run_to=None, line=None, flow=None, style="channel"):
     """A smooth cone over its cells, as on the tiles: an open crater wide enough to see the lava in from the map's camera, gentle concave sides, an ash skirt.
     Its foot goes as far as its own cells let it. run_to: where lava leaves the crater, down the side facing it."""
     main, side, skirt = fc.ROCK[v]
@@ -707,55 +707,134 @@ def volcano(p, rng, v, cells, z, ground, run_to=None, line=None):
                 mat = skirt if band == 2 else main if rng.random() < 0.6 else side
                 p.bm.faces.new(tri).material_index = p._slot(mat)
 
-    def run(j, thin, wide, end=None):
-        """Lava lying on the side from the crater's pool down: it wanders across the facets, thin at the rim and spreading as it falls, to the width of a cell's neck if it feeds one."""
-        stack = [inner] + rings
-        wander = [rng.uniform(0, 6.3), rng.uniform(0.8, 1.2)]
+    stack = [inner] + rings
 
-        def on_side(a, t):
-            k = min(int(a), len(stack) - 2)
-            ring0, ring1 = stack[k], stack[k + 1]
+    def on_side(a, t):
+        """A point on the cone's side: a from the crater's pool (0) to the foot (len(stack) - 1), t round it in facets."""
+        k = min(int(a), len(stack) - 2)
 
-            def round_ring(ring):
-                m = math.floor(t)
-                return ring[m % n].co.lerp(ring[(m + 1) % n].co, t - m)
+        def round_ring(ring):
+            m = math.floor(t)
+            return ring[m % n].co.lerp(ring[(m + 1) % n].co, t - m)
 
-            return round_ring(ring0).lerp(round_ring(ring1), a - k)
+        return round_ring(stack[k]).lerp(round_ring(stack[k + 1]), a - k)
 
-        last, samples = None, 13
+    def outward(q):
+        return (q - Vector((at.x, at.y, q.z))).normalized() + Vector((0, 0, 0.6))
+
+    def streak(j, thin, wide):
+        """A thin line of lava lying on the side, from the pool down."""
+        last, samples = None, 9
         for i in range(samples):
             a = (len(stack) - 1) * i / (samples - 1)
-            share = i / (samples - 1)
-            t = j + 0.75 * math.sin(a * wander[1] + wander[0]) * min(1.0, share * 3) * (1 - share)
-            mid = on_side(a, t)
-            along = (on_side(a, t + 0.2) - on_side(a, t - 0.2)).normalized()
-            half = thin + (wide - thin) * share
-            lift = (mid - Vector((at.x, at.y, mid.z))).normalized() * 0.035 + Vector((0, 0, 0.02))
-            if line is not None and end is not None:
-                line.append(mid + lift)
-            now = [p.bm.verts.new(q + lift) for q in (mid - along * half, mid, mid + along * half)]
+            mid = on_side(a, j)
+            along = (on_side(a, j + 0.2) - on_side(a, j - 0.2)).normalized()
+            half = thin + (wide - thin) * i / (samples - 1)
+            lift = outward(mid) * 0.03
+            now = [p.bm.verts.new(q + lift) for q in (mid - along * half, mid + along * half)]
             if last:
-                for a0, b0 in ((0, 1), (1, 2)):
-                    p.bm.faces.new((last[a0], now[a0], now[b0], last[b0])).material_index = p._slot("lava")
+                lay(p, (last[0], now[0], now[1], last[1]), outward(mid), "lava")
             last = now
-        if end is not None:
-            if line is not None:
-                line.append(end)
-            across = (last[2].co - last[0].co).to_2d().to_3d().normalized() * 0.2
-            ends = [p.bm.verts.new(end - across), p.bm.verts.new(end), p.bm.verts.new(end + across)]
-            for a0, b0 in ((0, 1), (1, 2)):
-                p.bm.faces.new((last[a0], ends[a0], ends[b0], last[b0])).material_index = p._slot("lava")
 
     if run_to is None:
-        run(rng.randrange(n), 0.03, 0.05)
+        streak(rng.randrange(n), 0.03, 0.05)
     else:
         toward = run_to - at
         j = max(range(n), key=lambda j: foot[j].normalized().dot(toward.normalized()))
         edge = run_to + (rings[-1][j].co - run_to).to_2d().to_3d().normalized() * 0.46  # into the first cell's edge, not across it
-        run(j, 0.05, 0.2, Vector((edge.x, edge.y, ground(run_to) + 0.03)))
+        (lobes_down if style == "lobes" else channel_down)(flow, rng, on_side, outward, len(stack) - 1, j, Vector((edge.x, edge.y, ground(run_to) + 0.03)), line)
 
 
-FLOW_LINES = {}  # the lava's centre line by piece, for what animates along it
+def lay(p, verts, out, mat):
+    """A face of an open surface, wound to face out, so culling can't lose it."""
+    f = p.bm.faces.new(verts)
+    f.normal_update()
+    if f.normal.dot(out) < 0:
+        f.normal_flip()
+    f.material_index = p._slot(mat)
+    p.surface.add(f)
+
+
+def channel_down(p, rng, on_side, outward, top, j, end, line):
+    """Trial: lava in a channel down the cone's side, between raised banks of dark crust that wander and widen as it falls."""
+    samples = 13
+    phase, rate = rng.uniform(0, 6.3), rng.uniform(0.9, 1.3)
+    row = None
+    for i in range(samples):
+        share = i / (samples - 1)
+        a = top * share
+        t = j + 1.7 * math.sin(a * rate * 1.3 + phase) * min(1.0, share * 3) * (1 - share * 0.7)
+        mid = on_side(a, t)
+        along = (on_side(a, t + 0.2) - on_side(a, t - 0.2)).normalized()
+        out = outward(mid)
+        half = 0.06 + 0.16 * share
+        bank = 0.05 + 0.05 * share + rng.uniform(-0.015, 0.03)
+        lift = out * 0.02
+        line.append(mid + lift)
+        spread = 1.0 + rng.uniform(-0.1, 0.15)
+        row_now = [p.bm.verts.new(mid + along * half * x * spread + out * h) for x, h in ((-1.7, 0.02), (-1.3, bank + 0.02), (-0.95, 0.045), (0.0, 0.05), (0.95, 0.045), (1.3, bank + 0.02), (1.7, 0.02))]
+        if row:
+            for k in range(6):
+                lay(p, (row[k], row_now[k], row_now[k + 1], row[k + 1]), out, "lava_flow" if k in (2, 3) else "basalt_dark")
+        row = row_now
+    line.append(end)
+    across = (row[6].co - row[0].co).to_2d().to_3d().normalized() * 0.2
+    ends = [p.bm.verts.new(end + across * x) for x in (-1, 0, 1)]
+    up = Vector((0, 0, 1))
+    lay(p, (row[2], ends[0], ends[1], row[3]), up, "lava_flow")
+    lay(p, (row[3], ends[1], ends[2], row[4]), up, "lava_flow")
+    lay(p, (row[0], ends[0], row[2]), up, "basalt_dark")
+    lay(p, (row[1], row[0], row[2]), up, "basalt_dark")
+    lay(p, (row[4], ends[2], row[6]), up, "basalt_dark")
+    lay(p, (row[5], row[4], row[6]), up, "basalt_dark")
+
+
+def lobes_down(p, rng, on_side, outward, top, j, end, line):
+    """Trial: fat overlapping lobes of lava cascading down the cone's side, each spilling over the one below."""
+    count = 6
+    for i in range(count + 1):
+        line.append(on_side(top * i / count, j) + outward(on_side(top * i / count, j)) * 0.14)
+    line.append(end)
+    last_row = None
+    for i in reversed(range(count)):  # from the bottom up, each lobe's lip over the top of the one below
+        share = i / (count - 1)
+        a0, a1 = top * max(0, i - 0.05) / count, top * (i + 1.35) / count
+        a1 = min(a1, top)
+        half = (0.12 + 0.17 * share) * rng.uniform(0.9, 1.15)
+        fat = (0.11 + 0.1 * share) * rng.uniform(0.9, 1.15)
+        shift = (0.22 if i % 2 else -0.22) * (i > 0)
+        rows = []
+        for f, rise, wide in ((0.0, 0.1, 0.6), (0.35, 0.8, 0.9), (0.7, 1.0, 1.0), (0.92, 0.75, 0.9), (1.0, 0.0, 0.62)):
+            row = []
+            for x in (-1, -0.6, 0, 0.6, 1):
+                # A round tongue: its lip reaches furthest down at the middle.
+                a = a0 + (a1 - a0) * f * (0.82 + 0.18 * (1 - x * x))
+                mid = on_side(a, j + shift)
+                along = (on_side(a, j + shift + 0.2) - on_side(a, j + shift - 0.2)).normalized()
+                row.append(p.bm.verts.new(mid + along * half * x * wide + outward(mid) * (0.02 + fat * rise * math.sqrt(1 - x * x * 0.92))))
+            rows.append(row)
+        for r0, r1 in zip(rows, rows[1:]):
+            for k in range(4):
+                lay(p, (r0[k], r1[k], r1[k + 1], r0[k + 1]), outward(r0[k].co), "lava_flow")
+        if i == count - 1:
+            last_row = rows[-1]
+    across = (last_row[4].co - last_row[0].co).to_2d().to_3d().normalized() * 0.2
+    ends = [p.bm.verts.new(end + across * x) for x in (-1, -0.5, 0, 0.5, 1)]
+    for k in range(4):
+        lay(p, (last_row[k], ends[k], ends[k + 1], last_row[k + 1]), Vector((0, 0, 1)), "lava_flow")
+
+
+FLOW_LINES = {}  # a map's lava centre line, crater to board's edge: what the flow's UVs measure along
+hk.PALETTE["lava_flow"] = hk.PALETTE["lava"]
+hk.OWN_MATERIAL.add("lava_flow")  # its own material, so the engine can scroll a glow through it by its UVs
+
+
+def add_flow_trials():
+    """The cone flows being compared on Fissures: extra maps for the movie script, not part of the set."""
+    for style in ("channel", "lobes"):
+        name = f"volcanic_peaks_fissures_{style}"
+        MAPS[name] = dict(MAPS["volcanic_peaks_fissures"], flow_style=style, seed="volcanic_peaks_fissures")
+        TURNED.add(name)
 
 
 def flow_cells(m):
@@ -763,43 +842,88 @@ def flow_cells(m):
     return [(col, (row - col) // 2) for col, row in m.get("flow", ())]
 
 
-def lava_flow(col, cells, z, path, line):
-    """Lava from cell to cell, off the edge of the map: each cell a dark crust with a wide bright pool, so it reads as danger and its hex still shows. Falls over each drop, streaks along the way it runs."""
-    p = hk.Piece("lava_flow")
-    rng = hk.seeded(p.name)
+def chunky_fall(p, rng, at, d, top, line):
+    """Lava over the board's own side: a heavy uneven mass clinging to it, thick at the middle, swelling and narrowing as it falls, hanging past the bottom in one fat lobe."""
+    out = d.normalized()
+    side = Vector((-out.y, out.x, 0))
+    face = at + d * 0.5
+    bottom = hk.SOIL_BOTTOM
+    # (where along the way down, how wide, how thick, how far it wanders to the side)
+    shape = [(None, 0.2, 0.03, 0.0), (0.0, 0.24, 0.1, 0.0)]
+    for h in (0.22, 0.45, 0.68, 0.86, 1.0):
+        shape.append((h, rng.uniform(0.2, 0.34), rng.uniform(0.1, 0.19), rng.uniform(-0.05, 0.05)))
+    shape.append((1.14, 0.12, 0.08, shape[-1][3]))
+    rows = []
+    for h, half, thick, shift in shape:
+        centre = at + d * 0.34 + Vector((0, 0, top + 0.012)) if h is None else face + Vector((0, 0, top + 0.02 + (bottom - top) * h))
+        normal = Vector((0, 0, 1)) if h is None else (out + Vector((0, 0, 0.5))).normalized() if h == 0.0 else out
+        line.append(centre + normal * thick * 0.7)
+        rows.append([p.bm.verts.new(centre + side * (shift + half * x * rng.uniform(0.92, 1.08)) + normal * thick * (0.02 + bulge)) for x, bulge in ((-1, 0.0), (-0.55, 0.8), (0, 1.0), (0.55, 0.8), (1, 0.0))])
+    for r0, r1 in zip(rows, rows[1:]):
+        for k in range(4):
+            lay(p, (r0[k], r1[k], r1[k + 1], r0[k + 1]), out + Vector((0, 0, 0.4)), "lava_flow")
+    tip = p.bm.verts.new(rows[-1][2].co + Vector((0, 0, -0.08)) - out * 0.04)
+    for k in range(4):
+        lay(p, (rows[-1][k], tip, rows[-1][k + 1]), out - Vector((0, 0, 0.4)), "lava_flow")
+
+
+def flow_uvs(p, line):
+    """The flow's own UVs, on its lava faces only: V is metres along the flow from the crater, always growing downstream; U is metres across it from its centre line."""
+    lengths = [0.0]
+    for a, b in zip(line, line[1:]):
+        lengths.append(lengths[-1] + (b - a).length)
+    uv = p.bm.loops.layers.uv.new("UVMap")
+    slot = p._slot("lava_flow")
+
+    def measure(q):
+        best = None
+        for k, (a, b) in enumerate(zip(line, line[1:])):
+            ab = b - a
+            t = max(0.0, min(1.0, (q - a).dot(ab) / (ab.length_squared or 1)))
+            near = a + ab * t
+            gap = (q - near).length
+            if best is None or gap < best[0]:
+                across = Vector((-ab.y, ab.x, 0))
+                best = (gap, lengths[k] + ab.length * t, (q - near).dot(across.normalized()) if across.length > 0.01 else 0.0)
+        return best[1], best[2]
+
+    for f in p.bm.faces:
+        if f.material_index == slot:
+            for loop in f.loops:
+                v, u = measure(loop.vert.co)
+                loop[uv].uv = (u, v)
+
+
+def lava_flow(p, cells, z, path, line, rng):
+    """Lava from cell to cell, off the edge of the map: each cell a dark rim round a wide bright pool, so it reads as danger and its hex still shows, with nothing on top of the surface. Falls over each drop."""
     hex_out = hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]
+    up = Vector((0, 0, 1))
     for i, c in enumerate(path):
         at = hk.cell_position(*c)
+        top = z[c] + 0.007
+        line.append(at + Vector((0, 0, top)))
         p.prism([at + q for q in hex_out], z[c] - 0.07, z[c] + 0.005, "basalt_dark", side_mat="basalt_dark")
-        p.prism([at + q * 0.76 for q in hex_out], z[c] + 0.005, z[c] + 0.015, "lava")
+        middle = p.bm.verts.new(at + up * top)
+        ring = [p.bm.verts.new(at + q * 0.76 + up * top) for q in hex_out]
+        for k in range(6):
+            lay(p, (middle, ring[k], ring[(k + 1) % 6]), up, "lava_flow")
         if i + 1 < len(path):
             ways = [hk.cell_position(*path[i + 1]) - at]
         else:  # off the map in a line with how it comes in, or as near as the board's edge allows
             came = at - hk.cell_position(*path[i - 1])
             ways = [max((hk.cell_position(c[0] + a, c[1] + b) - at for a, b in fm.NEIGHBOURS if (c[0] + a, c[1] + b) not in cells), key=lambda d: d.normalized().dot(came.normalized()))]
-        for d in ways + ([hk.cell_position(*path[i - 1]) - at] if i else []):
-            p.box(at + d * 0.25, (d.length * 0.49, 0.36, 0.01), "lava", z=z[c] + 0.005, spin=math.atan2(d.y, d.x))
-        for _ in range(3):  # crust floating on it
-            th = rng.uniform(0, 6.3)
-            q = at + Vector((math.cos(th), math.sin(th), 0)) * rng.uniform(0.1, 0.27)
-            p.flat([q + Vector((math.cos(k * math.pi / 3), math.sin(k * math.pi / 3), 0)) * rng.uniform(0.04, 0.1) for k in range(6)], z[c] + 0.017, "basalt_dark")
-        line.append(at + Vector((0, 0, z[c] + 0.015)))
+        for d in ways + ([hk.cell_position(*path[i - 1]) - at] if i else []):  # necks to the next and the last
+            side = Vector((-d.y, d.x, 0)).normalized() * 0.18
+            edge = d * 0.5 * fc.GAP
+            lay(p, tuple(p.bm.verts.new(at + q + up * top) for q in (d * 0.3 - side, edge - side, edge + side, d * 0.3 + side)), up, "lava_flow")
         if i + 1 < len(path):
             d, below = ways[0], z[path[i + 1]]
             if z[c] - below > 0.001:  # over a drop, on the side of the cell it leaves
-                p.box(at + d * 0.5 * fc.GAP + d.normalized() * 0.006, (0.02, 0.36, z[c] + 0.015 - below), "lava", z=below, spin=math.atan2(d.y, d.x))
-        else:  # over the board's own side, standing clear of it, and dripping off underneath
-            d = ways[0]
-            out = d.normalized()
-            face = at + d * 0.5 + out * 0.02
-            p.box(face, (0.04, 0.4, z[c] + 0.015 - hk.SOIL_BOTTOM + 0.04), "lava", z=hk.SOIL_BOTTOM - 0.04, spin=math.atan2(d.y, d.x))
-            p.box(at + d * 0.25 + d * 0.25, (0.06, 0.36, 0.01), "lava", z=z[c] + 0.005, spin=math.atan2(d.y, d.x))
-            side = Vector((-out.y, out.x, 0))
-            for off, length in ((-0.13, 0.12), (0.03, 0.2), (0.14, 0.09)):
-                top = face + side * off + Vector((0, 0, hk.SOIL_BOTTOM - 0.02))
-                vr.frustum(p, top, top - Vector((0, 0, length)), 0.05, 0.006, "lava", segments=4)
-            line += [at + d * 0.5 + out * 0.05 + Vector((0, 0, z[c] + 0.015)), at + d * 0.5 + out * 0.05 + Vector((0, 0, hk.SOIL_BOTTOM - 0.2))]
-    p.finish(col)
+                q = at + d * 0.5 * fc.GAP + d.normalized() * 0.006
+                side = Vector((-d.y, d.x, 0)).normalized() * 0.18
+                lay(p, tuple(p.bm.verts.new(q + w + up * h) for w, h in ((-side, top), (-side, below), (side, below), (side, top))), d, "lava_flow")
+        else:
+            chunky_fall(p, rng, at, ways[0], z[c], line)
 
 
 def line_wall(col, v, group, ground):
@@ -872,7 +996,7 @@ def build_map(t, col, name):
     p.prism(loop, hk.SOIL_BOTTOM, -0.3, "soil_dark")
     p.finish(col)
     fm.way_tones(v)
-    hillside(col, name, v, cells, z)
+    hillside(col, m.get("seed", name), v, cells, z, name)
     k = 0
     for c, mark in cells.items():
         at = hk.cell_position(*c) + Vector((0, 0, z[c]))
@@ -914,17 +1038,22 @@ def build_map(t, col, name):
         anchor, turn = fm.fit(group, foot)
         rp.place(t, piece, col, hk.cell_position(*anchor) + Vector((0, 0, z[anchor])), math.radians(60 * turn))
     path = flow_cells(m)
+    flow, line = (hk.Piece("lava_flow"), FLOW_LINES.setdefault(name, [])) if path else (None, None)
+    if path:
+        line.clear()
     for _, group in fm.groups(cells, "M"):
         r = hk.Piece(f"peaks_{min(group)}")
         if hc.PEAK_LOOK[v].get("crater"):
             for shared in cone_groups(group):
                 feeds = path and any((path[0][0] + a, path[0][1] + b) in shared for a, b in fm.NEIGHBOURS)
-                volcano(r, hk.seeded(f"{name}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None, FLOW_LINES.setdefault(name, []))
+                volcano(r, hk.seeded(f"{m.get('seed', name)}_{r.name}_{min(shared)}"), v, shared, z, ground, hk.cell_position(*path[0]) if feeds else None, line, flow, m.get("flow_style", "channel"))
         else:
             peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
         r.finish(col)
     if path:
-        lava_flow(col, cells, z, path, FLOW_LINES.setdefault(name, []))
+        lava_flow(flow, cells, z, path, line, hk.seeded(f"{m.get('seed', name)}_lava_flow"))
+        flow_uvs(flow, line)
+        flow.finish(col)
     for _, group in fm.groups(cells, "L"):
         line_wall(col, v, group, ground)
     if "lift" in m:
