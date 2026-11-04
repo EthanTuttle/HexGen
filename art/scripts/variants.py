@@ -5151,6 +5151,7 @@ PROP_PIECES.update({k: badlands_prop(k) for k in ("badlands_mesa_big", "badlands
 
 # variant: (terrain, builder, ground colour, extra pieces)
 import swamp_lands as sl  # noqa: E402
+import fey_lands as fl  # noqa: E402
 
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -5199,9 +5200,13 @@ VARIANTS = {
     "hiddenshrine": ("forest", hidden_shrine, "deep_forest", ("edge_trail",)),
 }
 VARIANTS.update(sl.VARIANTS)
+VARIANTS.update(fl.VARIANTS)
+hk.PALETTE.update(fl.PALETTE)
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | {"fey_gate"}
 PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG
 LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)
+LANDMARK_CENTRES.update(fl.LANDMARK_CENTRES)
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
 # (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
@@ -5215,6 +5220,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
              "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis", "oasispool": "oasis", "echocave": "canyon", "keep": "fortified_town", "blackmarket": "slums", "college": "scholars_town",
              "oldbattlefield": "battlefield", "thunderbirdnest": "stormy_plains", "traininggrounds": "tourney_fields"}
 LANDMARKS.update(sl.LANDMARKS)
+LANDMARKS.update(fl.LANDMARKS)
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

@@ -385,6 +385,11 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             p.finish(col, at)
         joined = [linked(name, MAP.get((q + dq, r + dr))) for dq, dr in hk.NEIGHBOURS]
         trails = lf.trail_edges((q, r), toward)
+        if name in vr.fl.LOOKS:
+            # The Feywild crossing's forest, worked out in world space, the way the engines will.
+            p = hk.Piece(f"fey_{q}_{r}")
+            vr.fl.add_fey(p, vr.fl.fey_tile(vr.fl.region_of(MAP, toward, turns), (q, r)))
+            p.finish(col, at)
         if name in vr.sl.LOOKS:
             # The wetland, worked out in world space, the way the engines will.
             tile_ = marsh_tiles[(q, r)] = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
