@@ -254,7 +254,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 
 **Combat screen** (in progress, latest v14; rules for the fight itself: [Classes & combat](03 Classes & combat.md) → Combat)
 
-- The battlefield is the zoomed map hex, drawn as one big hex made of small grid hexes. It fills the whole screen, and the UI sits on top of it.
+- The battlefield is a separate custom map reached by a zoom into the map hex, not the hex itself (see Art direction → Combat maps; changed Nov 2, 2026), made of small grid hexes. It fills the whole screen, and the UI sits on top of it.
 - **Party tray (left):** a wood-brown tray, like the gear screen's trays, holds the phase and End control on top, then a portrait for each character in the fight (up to 4). Each portrait has an HP bar and the character's own AP as a row of small hex pips, so no separate AP display is needed. Tapping a portrait makes that character act.
 - **Bonus AP display** (chosen: combat v4d): the AP row always stays 3 pips wide. A blue lightning pip counts as 2 AP, so 4 AP shows as lightning, gold, gold and up to 6 AP fits. Lightning pips come first, on the left. Spending bonus AP turns a lightning pip back into a gold one; spent AP empties from the right. Close second: bonus pips added after the 3 gold ones (v4a). Rules for bonus AP: [Classes & combat](03 Classes & combat.md) → Turns, AP and health.
 - **Phase and End (chosen: combat v7a):** the top of the party tray shows the current phase in a short label ("Allies"), with the End phase button under it as an orange hex the same size as the portraits. The phase and End live together, and nothing floats over the map.
