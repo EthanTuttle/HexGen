@@ -19,6 +19,7 @@ var target := Vector3.ZERO
 var focus := Vector2(422, 195)
 var yaw_deg := 0.0                        # 0 = looking north, from the south
 var home := {}
+var limits := Rect2()                     # world x, z the target pans within; none if empty (a fight's map)
 var floor_at := Callable()                # plan point -> how high the camera must stay there (raised regions)
 var shake := 0.0                          # metres: a region rising (PLACEHOLDER look)
 var _floor_lift := 0.0
@@ -62,6 +63,9 @@ func _pan(relative: Vector2) -> void:
 	var right := Vector3(cos(yaw), 0, sin(yaw))
 	var forward := Vector3(sin(yaw), 0, -cos(yaw))
 	target -= right * relative.x * k - forward * relative.y * k / sin(deg_to_rad(pitch_deg))
+	if limits.has_area():
+		target.x = clampf(target.x, limits.position.x, limits.end.x)
+		target.z = clampf(target.z, limits.position.y, limits.end.y)
 	_player()
 
 

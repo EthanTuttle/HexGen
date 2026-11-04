@@ -503,6 +503,7 @@ func _fight() -> void:
 				var foe: Dictionary = foes[0]
 				if f.dist(foe, u) == 1:
 					say("Attack: card, target, Flip coins")
+					await _pan_to(f.global_position + foe.mini.position)
 					await tap(control("Attack"))
 					await tap(screen_of(f.global_position + foe.mini.position))
 					await tap(control("Flip"))
@@ -516,6 +517,7 @@ func _fight() -> void:
 				if best == u.cell:
 					break
 				say("Move: card, then a lit hex")
+				await _pan_to(f.global_position + f.cell_point(best))
 				await tap(control("Move"))
 				await tap(screen_of(f.global_position + f.cell_point(best)))
 				await _wait(0.8)
@@ -526,6 +528,19 @@ func _fight() -> void:
 			if f.hud.confirm_open():
 				await tap(control("End phase"))
 			await _wait(0.5)
+
+
+## Fights open close, so a target can start off screen or under a panel: pans to it with one finger, as a player does.
+func _pan_to(world: Vector3) -> void:
+	var open := Rect2(Rules.FIGHT_FOCUS - Rules.FIGHT_OPEN * 0.5, Rules.FIGHT_OPEN).grow(-20)
+	for _k in 8:
+		var at := screen_of(world)
+		if open.has_point(at):
+			return
+		var step := (Rules.FIGHT_FOCUS - at).limit_length(160.0)
+		await drag(Rules.FIGHT_FOCUS - step * 0.5, Rules.FIGHT_FOCUS + step * 0.5, 0.3)
+		await _wait(0.1)
+	check(false, "panned a fight's target into view")
 
 
 class _Overlay extends Control:

@@ -500,7 +500,7 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Swamp:** a swamp card placed beside others and a region turning (`SWAMP PERF` lines; `marsh_tile` 26 ms a tile on the Mac, off the main thread when a region turns, on it when a card lands); the wisps, bubbles and mist on a real screen.
-- **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone), drawn double-sided; the zoom into a fight; tapping raised cells and giants on a real screen.
+- **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone), drawn double-sided; the zoom into a fight; tapping raised cells and giants on a real screen; the opening's distance and panning across a map on a real screen, judged by hand; the hidden-cell counts (`COMBAT MAP` lines, measured with the whole map in view, so they stay comparable), judged against what tall pieces hide once panned close.
 - **Covered window, with Ethan at the Mac (not the phone):** cover a `--forestcheck` window and look for `UNDRAWN`, to confirm the stall's cause. Pixel failures after `UNDRAWN` mean rerun, not pass.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
@@ -529,7 +529,7 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 | Giant facing and slopes | Facing fixed; level ground only, no landings (design/03 open question) |
 | Up arrow, its colour | `Fight._up_arrow`, on cells a Move goes up to |
 | Zoom | 0.6 s in, fade colour, the map coming up from 1.35 × its distance. Back to the world map is a cut, as before |
-| Camera | Maps fitted to `Rules.FIGHT_OPEN` up to `FIGHT_DISTANCE_MAX` 34 m |
+| Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in `Rules.FIGHT_OPEN` at `FIGHT_FOCUS`, 14 to 24 m back (`FIGHT_DISTANCE_*`). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
 
 **Not built:** fire, smoke and other effects on maps (`combat_*_paths.json`), night on maps. **Art question open:** 21 `map_*_gates` and `_wall_to_towers` placements are in the glb with no mesh.
 

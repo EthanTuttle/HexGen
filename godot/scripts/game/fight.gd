@@ -29,7 +29,7 @@ var grid := {}                   # cell -> {kind, z, way_up}
 var map_id := ""                 # the map this fight is on; "" on the old board
 var map_tris := 0
 var map_build_ms := 0.0
-var fit_distance := 22.0
+var open_distance := 22.0
 var rocks: Array = []
 var trees: Array = []
 var busy := false
@@ -83,13 +83,14 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 		game.safe.add_child(hud)
 		game.popup.move_to_front()
 	hud.visible = true
-	game.rig.focus = Vector2(368, 150)
-	var middle := _middle()
-	fit_distance = _fit()
-	game.rig.frame(middle, fit_distance * Rules.ZOOM_IN_FROM, 52.0)
-	game.rig.player_moved = true   # the zoom's own: the first pan to whoever acts waits for it
+	game.rig.focus = Rules.FIGHT_FOCUS
+	var view := opening()
+	open_distance = view.distance
+	game.rig.limits = _pan_limits()
+	game.rig.frame(view.target, open_distance * Rules.ZOOM_IN_FROM, 52.0)
 	_start_allies()
-	_arrive_camera(middle)
+	game.rig.player_moved = true   # the opening's own: whoever acts first is already in it
+	_arrive_camera(view.target)
 	var won: bool = await finished
 	for u in units:
 		if u.ally:
@@ -97,38 +98,84 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 	hud.visible = false
 	_clear_overlays()
 	game.rig.focus = Vector2(378, 200)
+	game.rig.limits = Rect2()
 	active = false
 	return won
 
 
-## The camera comes in over the map as the fight fades up, then pans to whoever acts.
-func _arrive_camera(middle: Vector3) -> void:
-	await game.rig.fly_to(middle, fit_distance, Rules.ZOOM_SECONDS)
-	if game.rig.distance == fit_distance:
-		game.rig.home = {target = middle, distance = fit_distance, pitch = 52.0, yaw = 0.0}
+## The camera comes in over the map as the fight fades up, and stays on the opening until a new turn or a pick moves it.
+func _arrive_camera(at: Vector3) -> void:
+	await game.rig.fly_to(at, open_distance, Rules.ZOOM_SECONDS)
+	if game.rig.distance == open_distance:
+		game.rig.home = {target = at, distance = open_distance, pitch = 52.0, yaw = 0.0}
 		game.rig.player_moved = false
-		if not current.is_empty():
-			game.rig.ease_to(global_position + current.mini.position, fit_distance, game.rig.yaw_deg)
 
 
-func _middle() -> Vector3:
-	if map_id == "":
-		return position
-	var c: Array = CombatMap.all()[map_id].centre
-	return position + Hex.to3(Vector2(c[0], c[1]))
+## Where a fight's camera opens (DOCS: starts close on the party and first foes, and players pan to see the rest). Fits whoever acts first,
+## then the rest of the party, then foes from the nearest, as far as they fit in the open area between the panels within the distance
+## limit. A foe left out means the limit, and draws the view its way as far as what's framed stays in. framed: how many foes made it.
+func opening() -> Dictionary:
+	var allies := units.filter(func(u): return u.ally and not u.down)
+	var from: Vector3 = allies[0].mini.position if not allies.is_empty() else Vector3.ZERO
+	var foes := units.filter(func(u): return not u.ally and not u.down)
+	foes.sort_custom(func(a, b): return a.mini.position.distance_squared_to(from) < b.mini.position.distance_squared_to(from))
+	var box := Rect2(_plan(from), Vector2.ZERO)
+	var framed := 0
+	var missed = null
+	for u: Dictionary in allies + foes:
+		var more := box.expand(_plan(u.mini.position))
+		if _distance_to_fit(more) <= Rules.FIGHT_DISTANCE_MAX:
+			box = more
+			framed += 0 if u.ally else 1
+		elif missed == null and not u.ally:
+			missed = _plan(u.mini.position)
+	var d: float = Rules.FIGHT_DISTANCE_MAX if missed != null else clampf(_distance_to_fit(box), Rules.FIGHT_DISTANCE_MIN, Rules.FIGHT_DISTANCE_MAX)
+	var half := Vector2(Rules.FIGHT_OPEN.x, Rules.FIGHT_OPEN.y / sin(deg_to_rad(52.0))) * 0.5 * _per_unit() * d
+	var cells := _cells_box()
+	var want: Vector2 = missed if missed != null else box.get_center()
+	if missed == null:   # with room to spare, more of the map and less of what's past it
+		want = Vector2(_inside(want.x, cells.position.x + half.x, cells.end.x - half.x), _inside(want.y, cells.position.y + half.y, cells.end.y - half.y))
+	var at := Vector2(_inside(want.x, box.end.x + PAD_SIDE - half.x, box.position.x - PAD_SIDE + half.x),
+			_inside(want.y, box.end.y + PAD_FAR - half.y, box.position.y - PAD_NEAR + half.y))
+	var target: Vector3 = position + Hex.to3(at)
+	return {target = target + Vector3(0, from.y, 0), distance = d, framed = framed}
 
 
-## How far back the camera starts: the whole map in the open area between the panels, up to a limit (long maps run past it and pan).
-func _fit() -> float:
-	if map_id == "":
-		return 22.0
+const PAD_SIDE := 0.6    # PLACEHOLDER: room round the framed minis, in metres; the far side for what stands on the far row
+const PAD_NEAR := 0.5
+const PAD_FAR := 1.2
+
+
+func _plan(p: Vector3) -> Vector2:
+	return Vector2(p.x, -p.z)
+
+
+func _per_unit() -> float:
+	return 2.0 * 0.36 / 844.0   # metres of width per layout unit, per metre of distance
+
+
+func _distance_to_fit(box: Rect2) -> float:
+	var wide := (box.size.x + 2.0 * PAD_SIDE) / (_per_unit() * Rules.FIGHT_OPEN.x)
+	var deep := (box.size.y + PAD_NEAR + PAD_FAR) * sin(deg_to_rad(52.0)) / (_per_unit() * Rules.FIGHT_OPEN.y)
+	return maxf(wide, deep)
+
+
+## a held between lo and hi, or their middle if they cross.
+func _inside(a: float, lo: float, hi: float) -> float:
+	return (lo + hi) * 0.5 if lo > hi else clampf(a, lo, hi)
+
+
+func _cells_box() -> Rect2:
 	var box := Rect2(Hex.cell_position(grid.keys()[0].x, grid.keys()[0].y), Vector2.ZERO)
 	for c: Vector2i in grid:
 		box = box.expand(Hex.cell_position(c.x, c.y))
-	var per_unit := 2.0 * 0.36 / 844.0   # metres of width per layout unit, per metre of distance
-	var wide := (box.size.x + 1.2) / (per_unit * Rules.FIGHT_OPEN.x)
-	var deep := (box.size.y + 2.4) * sin(deg_to_rad(52.0)) / (per_unit * Rules.FIGHT_OPEN.y)   # room for what stands on its far row
-	return clampf(maxf(wide, deep), Rules.FIGHT_DISTANCE_MIN, Rules.FIGHT_DISTANCE_MAX)
+	return box
+
+
+## The world x, z the camera's target can pan within: the map's cells and a little past them.
+func _pan_limits() -> Rect2:
+	var box := _cells_box().grow(Rules.FIGHT_PAN_MARGIN)
+	return Rect2(position.x + box.position.x, position.z - box.end.y, box.size.x, box.size.y)
 
 
 ## The old board, for tiles with no maps yet (tier 0 forest, plains and farmland, and terrains not built). Grows out of the map tile:

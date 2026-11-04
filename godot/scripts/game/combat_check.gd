@@ -2,7 +2,7 @@ class_name CombatCheck
 extends Node
 ## Checks the combat maps (art/handoff/combat_*_kit.md) in the game (`-- --combatcheck`, add `--shots` for screens/combat/): every map's data
 ## and starts, which maps a tile rolls, heights and ways up, giants, a whole fight from the zoom in and back, and for every map its
-## build time, triangles and how much of it the default camera shows. `--zoomclip` plays only the zoom. Prints COMBAT OK / COMBAT FAIL lines,
+## build time, triangles and how much of it the default camera shows. `--zoomclip` plays only the zoom; `--opening=<id>` shoots only how that map's fight opens. Prints COMBAT OK / COMBAT FAIL lines,
 ## then COMBAT DONE. A test aid only.
 
 const HEAVIEST := ["scholars_town_lawns", "village_gardens", "village_lanes", "fortified_town_breach", "market_town_street"]
@@ -46,6 +46,14 @@ func _run() -> void:
 		await _wait(4.0)
 		get_tree().quit()
 		return
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--opening="):
+			await _wait(1.0)
+			game.debug_fight(arg.trim_prefix("--opening="))
+			await _wait(Rules.ZOOM_SECONDS * 2.0 + 1.5)
+			await _shot("opening_%s" % arg.trim_prefix("--opening="))
+			get_tree().quit()
+			return
 	await _wait(0.5)
 	var t0 := Time.get_ticks_msec()
 	Kit.meshes("res://art/combat_village.glb")
@@ -121,8 +129,17 @@ func _whole_fight() -> void:
 	await _wait(Rules.ZOOM_SECONDS + 0.8)
 	_check(fight.active and fight.map_id == "deep_forest_groves", "the debug jump opens the map by id")
 	_check(not game.map.visible, "a fight is a separate map: the world map is hidden")
-	_check(not fight.current.is_empty() and absf(game.rig.target.distance_to(fight.global_position + fight.current.mini.position)) < 0.5, "the camera has panned to whoever acts")
+	var opens := fight.opening()
+	_check(game.rig.distance == opens.distance and game.rig.target.distance_to(opens.target) < 0.5, "the fight opens close, %.1f m back, on the party and %d foes" % [opens.distance, opens.framed])
+	_check(_on_screen(fight.current), "whoever acts first is in the opening")
 	await _shot("groves_default")
+	var held := game.rig.target
+	game.rig._pan(Vector2(-200000, 90000))
+	var lim := game.rig.limits
+	_check(lim.has_area() and lim.grow(0.01).has_point(Vector2(game.rig.target.x, game.rig.target.z)), "a pan stops a little past the map's cells")
+	game.rig._pan(Vector2(200000, -90000))
+	_check(lim.grow(0.01).has_point(Vector2(game.rig.target.x, game.rig.target.z)), "and on its other side")
+	game.rig.target = held
 	var yaw := game.rig.yaw_deg
 	game.rig.yaw_deg = yaw + 120.0
 	var d := game.rig.distance
@@ -159,6 +176,7 @@ func _whole_fight() -> void:
 	game.after.done.emit()
 	await _wait(0.4)
 	_check(game.map.visible and not game.busy, "back on the world map")
+	_check(not game.rig.limits.has_area(), "the world map's camera has no fight limits")
 
 
 func _load(id: String) -> void:
@@ -166,9 +184,24 @@ func _load(id: String) -> void:
 	fight.map_id = id
 	fight._clear_overlays()
 	fight._setup_map(id)
-	fight.fit_distance = fight._fit()
-	game.rig.focus = Vector2(368, 150)
-	game.rig.frame(fight._middle(), fight.fit_distance, 52.0)
+	fight.open_distance = _whole_map_distance()
+	game.rig.focus = Rules.FIGHT_FOCUS
+	var c: Array = CombatMap.all()[id].centre
+	game.rig.frame(fight.position + Hex.to3(Vector2(c[0], c[1])), fight.open_distance, 52.0)
+
+
+## How far back the whole map fits, for counting what tall pieces hide (no longer how a fight opens: DOCS, starts close, then pans).
+func _whole_map_distance() -> float:
+	var box := fight._cells_box()
+	var wide := (box.size.x + 1.2) / (fight._per_unit() * Rules.FIGHT_OPEN.x)
+	var deep := (box.size.y + 2.4) * sin(deg_to_rad(52.0)) / (fight._per_unit() * Rules.FIGHT_OPEN.y)
+	return clampf(maxf(wide, deep), 14.0, 34.0)
+
+
+## Is this unit's foot between the panels?
+func _on_screen(u: Dictionary) -> bool:
+	var at := game.rig.camera.unproject_position(fight.global_position + u.mini.position) * Vector2(844, 390) / game.get_viewport().get_visible_rect().size
+	return Rect2(Rules.FIGHT_FOCUS - Rules.FIGHT_OPEN * 0.5, Rules.FIGHT_OPEN).has_point(at)
 
 
 func _check_heights() -> void:
@@ -315,6 +348,9 @@ func _every_map() -> void:
 	markers.albedo_color = Color(1, 0, 1)
 	markers.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var worst_tris := 0
+	var lost_party := 0
+	var lost_foes := 0
+	var maps_with_foe := 0
 	for id: String in ids:
 		_load(id)
 		await get_tree().process_frame
@@ -358,10 +394,22 @@ func _every_map() -> void:
 			for s in mesh.get_surface_count():
 				with_minis += mesh.surface_get_array_index_len(s) / 3
 		worst_tris = maxi(worst_tris, with_minis)
-		print("COMBAT MAP %s: %d cells, %d walkable; %d tris, %d with minis; build %.0f ms; camera %.1f m%s; hidden from the default view %d, off screen %d" % [id,
-			fight.grid.size(), cells.size(), fight.map_tris, with_minis, fight.map_build_ms, fight.fit_distance,
-			" (at the limit)" if fight.fit_distance >= Rules.FIGHT_DISTANCE_MAX else "", hidden, off])
+		print("COMBAT MAP %s: %d cells, %d walkable; %d tris, %d with minis; build %.0f ms; camera %.1f m%s; hidden with the whole map in view %d, off screen %d" % [id,
+			fight.grid.size(), cells.size(), fight.map_tris, with_minis, fight.map_build_ms, fight.open_distance,
+			" (at the limit)" if fight.open_distance >= 34.0 else "", hidden, off])
+		var view := fight.opening()
+		game.rig.frame(view.target, view.distance, 52.0)
+		var allies_in := fight.units.filter(func(u): return u.ally and _on_screen(u)).size()
+		var foes_in := fight.units.filter(func(u): return not u.ally and _on_screen(u)).size()
+		var foes := fight.units.size() - fight.units.filter(func(u): return u.ally).size()
+		print("COMBAT OPENING %s: %.1f m; framed foes %d of %d; on screen %d allies, %d foes" % [id, view.distance, view.framed, foes, allies_in, foes_in])
+		lost_party += 0 if allies_in == fight.units.size() - foes else 1
+		lost_foes += 0 if foes_in >= view.framed else 1
+		maps_with_foe += 1 if view.framed > 0 else 0
 	print("COMBAT worst map with minis: %d triangles" % worst_tris)
+	_check(lost_party == 0, "every map opens with the whole party between the panels (%d don't)" % lost_party)
+	_check(lost_foes == 0, "every foe an opening frames is between the panels (%d maps lose one)" % lost_foes)
+	print("COMBAT openings with a foe framed: %d of %d" % [maps_with_foe, ids.size()])
 
 
 func _perf_heaviest() -> void:
