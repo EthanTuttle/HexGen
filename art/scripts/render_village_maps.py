@@ -424,6 +424,13 @@ def variant_of(name):
     return next(v for v in bv.VARIANTS if name.startswith(v))
 
 
+def clipped_hedge(p, a, b):
+    """A low clipped hedge from a to b: square sides, a flat top a shade lighter, so a line of it reads as one straight run at the height of a mini's knee."""
+    d, spin, mid = b - a, math.atan2((b - a).y, (b - a).x), (a + b) / 2
+    p.box(mid, (d.length, 0.28, 0.32), "hedge", spin=spin)
+    p.box(mid, (d.length, 0.28, 0.03), "leaf_green_dark", z=0.32, spin=spin)
+
+
 def line_wall(col, v, group):
     """Along touching cells: a fence in villages and markets, a town wall when fortified, a patched fence in the slums, a clipped hedge among scholars. A piece in every cell, so a line of one cell still blocks it."""
     p = hk.Piece(f"line_{min(group)}")
@@ -436,8 +443,10 @@ def line_wall(col, v, group):
             p.box(a, (0.5, 0.5, 1.5), "stone_block", spin=rng.choice((0.0, 0.52)))
         elif v == "slums":
             p.box(a, (0.22, 0.22, 1.0), "timber", spin=rng.uniform(-0.3, 0.3))
-        elif v == "scholars_town":
-            p.box(a, (0.44, 0.44, 0.72), "hedge", spin=0.52)
+        elif v == "scholars_town":  # lengthwise, so the join can't bulge; a hedge of one cell is a short run of its own
+            run = next((hk.cell_position(c[0] + dq, c[1] + dr) - a for dq, dr in fm.NEIGHBOURS if (c[0] + dq, c[1] + dr) in group), Vector((1, 0, 0)))
+            half = run.normalized() * (0.14 if len(group) > 1 else 0.34)
+            clipped_hedge(p, a - half, a + half)
         else:
             p.box(a, (0.18, 0.18, 0.95), "timber")
     for a, b in pairs:
@@ -453,7 +462,7 @@ def line_wall(col, v, group):
                 q = a.lerp(b, (k + 0.5) / n)
                 p.box(q, (d.length / n * 0.92, 0.12, rng.uniform(0.62, 0.92)), rng.choice(("shack_a", "shack_b", "patch_brown")), spin=spin + rng.uniform(-0.05, 0.05))
         elif v == "scholars_town":
-            p.box((a + b) / 2, (d.length, 0.36, 0.68), "hedge", spin=spin)
+            clipped_hedge(p, a, b)
         else:
             for z in (0.26, 0.62):  # two rails, with pickets close together on them, so a fence reads from any side
                 p.box((a + b) / 2, (d.length, 0.06, 0.08), "trunk", z=z, spin=spin)
@@ -476,11 +485,18 @@ def doors_clear(t, col, name):
 
 
 def quad_joins(col, cells):
-    """A scholars' town's lines meet: cloister runs (D) go on to whatever they touch, hedges run into towers, cloisters and buildings, and towers are tied to buildings beside them by a stretch of wall."""
+    """A scholars' town's lines meet: cloister runs (D) go on to whatever they touch, a hedge's end runs on into a tower, cloister or building ahead of it, and towers are tied to buildings beside them by a stretch of wall."""
     p = hk.Piece("quad_joins")
     houses, towers = HOUSE_MARKS["scholars_town"], "NQY"
     for c, mark in cells.items():
         a = hk.cell_position(*c)
+        if mark == "L":  # only onward from the end of a line: a stub off its side or back would break the straight run
+            hedge_on = [hk.cell_position(c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if cells.get((c[0] + dq, c[1] + dr)) == "L"]
+            ahead = [hk.cell_position(c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if cells.get((c[0] + dq, c[1] + dr), ".") in "D" + towers + houses]
+            if len(hedge_on) == 1:
+                ahead = [b for b in ahead if (b - a).dot(a - hedge_on[0]) > 0]
+            if len(hedge_on) < 2 and ahead:
+                clipped_hedge(p, a, a.lerp(ahead[0], 0.55))
         for dq, dr in fm.NEIGHBOURS:
             other = cells.get((c[0] + dq, c[1] + dr), ".")
             b = hk.cell_position(c[0] + dq, c[1] + dr)
@@ -496,9 +512,6 @@ def quad_joins(col, cells):
                         p.box(a.lerp(end, t) + across * side, (0.065, 0.065, 0.62), "cream_stone", spin=spin)
                 p.box(mid + across, (run, 0.06, 0.2), "stone_block", spin=spin)
                 p.gable_roof(mid, run + 0.02, 0.6, 0.16, "slate_blue", z=0.68, spin=spin)
-            elif mark == "L" and (other == "D" or other in towers or other in houses):
-                end = a.lerp(b, 0.55)
-                p.box((a + end) / 2, ((end - a).length, 0.36, 0.68), "hedge", spin=spin)
             elif mark in towers and other in houses:
                 end = a.lerp(b, 0.62)
                 p.box((a + end) / 2, ((end - a).length, 0.26, 1.02), "cream_stone", spin=spin)
