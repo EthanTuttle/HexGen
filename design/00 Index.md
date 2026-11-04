@@ -35,6 +35,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: ruins looks paused (Ethan, Nov 3: not good yet; he's thinking of something more interesting)
 - [ ] New: path pass so hexes don't show: Scholars' Town first, then other towns and farmland, one at a time (Ethan, Nov 3)
 - [ ] New: once Scholars' Town's combat maps are approved, recheck its terrain tiles so the courtyards and walkways line up with them (Ethan, Nov 3)
