@@ -540,7 +540,7 @@
  },
  "snowy_peaks_shelf": {
   "cells": 83,
-  "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.",
+  "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Gradual lifts of hex cells climb through it, each cell an ordinary move: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.",
   "kind": "terrain",
   "shape": "wide rectangle",
   "walkable": 75
