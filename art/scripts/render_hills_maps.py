@@ -276,29 +276,42 @@ A A A A A A A
  A A A A A A """, "plan": """
 T . v . x M M
  . . w . M M 
-c c . . . M I
- c c . . c c 
+. . c c . M I
+ . c c . . . 
 1 . . 1 . . T
- . c c c c . 
-I . c . c . I
- c c . . c c 
-L c c . c c L
+ . . . c c . 
+I . . . c c I
+ . . c c . . 
+L . c c . . L
  L 1 . . 1 L 
-. . . c . . .
+. . . . . . .
  . h . k s . """},
-    "monastery_heights_walled": {"size": "small hex", "foes": BANDITS, "hill": (("north", 5), ("east", 3)),
-                                 "idea": "A small walled garden on a slope below a few peaks, with a shaped pine by its middle, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.", "plan": """
+    "monastery_heights_walled": {"size": "small hex", "foes": BANDITS, "hill": (),
+                                 "idea": "A small walled hilltop on stone bands, below a few peaks. A high retaining wall runs under the whole garden, crossed only by the stairs to its south door, then a low step up through the north door to the top, where the foes hold the high ground.", "levels": """
+   F   
+  F F  
+ F F F 
+F F F F
+ E E E 
+E E E E
+ D D D 
+D D D D
+ D C D 
+B B B B
+ B B B 
+  A A  
+   A   """, "plan": """
    M   
   M M  
  v w . 
 . x . I
  L . L 
-L . T L
- . c . 
-L . . L
- L . L 
-. . c .
- . . , 
+L c T L
+ c . . 
+L c . L
+ L 1 L 
+. . c c
+ . . c 
   h k  
    s   """},
     "monastery_heights_ridge": {"size": "wide oval", "foes": BANDITS, "hill": (),
@@ -317,34 +330,51 @@ A A B B D D D B B
    A A B B B B   
     A A B B B    """, "plan": """
     T . v . w    
-   . . c . x .   
-  . I c 1 . . c  
- T . 1 c . . c c 
-. c c M c 1 c . .
- c c M M . . c c 
-. c M M c . c c .
- . c M M c c . c 
-. . c M . . . T .
- . c . c c . . c 
-  c . . . 1 c c  
-   . h . k . c   
+   . . . . x .   
+  . I . 1 . . .  
+ T . 1 . . . . . 
+. c . M . 1 . . .
+ c . M M . . . . 
+. c M M . . c . .
+ c . M M . c c . 
+. . . M . . . T c
+ . . . . . . . c 
+  . . . . 1 c c  
+   . h . k . .   
     . . s . .    """},
-    "monastery_heights_climb": {"kind": "path", "size": "tall rectangle", "foes": BANDITS, "hill": (("north", 15),),
-                                "idea": "A stone path zigzags up the whole hillside between low walls, in stone steps where it climbs, under peaks at the top. The path is the quick way; the slope either side is open but slower going, and the top is held.", "plan": """
+    "monastery_heights_climb": {"kind": "path", "size": "tall rectangle", "foes": BANDITS, "hill": (), "level_step": 1,
+                                "idea": "A stone path winds up through high terraces, crossing their walls at its own stairs and easing up between them, with low walls beside it. The only other way up is a few plain stairs far out on the west, up bands that rise in low steps that slow a walker, so the path is clearly the quick way. Herb plots sit on the bands; the top is held.", "levels": """
+Z Z Z Z Z
+ Z Z Z Z 
+Z Z Z W Z
+ W T T T 
+T T S T T
+ R R R R 
+R R R R R
+ O O R R 
+L L L L L
+ L L L L 
+L J K L L
+ J J J J 
+J G J G J
+ D D D D 
+D D D D D
+ A A C A 
+A A B A A""", "plan": """
 M M . . .
  M v . n 
 M w . n .
- . x n . 
-. . n . .
- . n . T 
-. . . . I
- . n . . 
-c . . . L
- . n . L 
-. L n L .
+ 1 x n . 
+. . n L .
+ I n L T 
+. . . c .
+ 1 n c c 
+. . c c L
+ . n c L 
+. . n L .
  L . n . 
-L . . n .
- . . . n 
+L 1 . n .
+ c . . n 
 c . . n T
  h . n k 
 . . n s ."""},
@@ -388,8 +418,8 @@ def heights_of(name, cells):
     """Each cell's height, in steps of STEP. What lies level or stands sheer is settled after the hill; stairs take the middle of what they join."""
     m = MAPS[name]
     v = variant_of(name)
-    if "levels" in m:  # a terraced map draws its heights, a letter to a cell, each letter 0.45 above the last
-        steps = {c: (ch - 65) * MAX_STEPS for c, ch in level_marks(m).items()}
+    if "levels" in m:  # a terraced map draws its heights, a letter to a cell, each letter 0.45 above the last unless it says otherwise
+        steps = {c: (ch - 65) * m.get("level_step", MAX_STEPS) for c, ch in level_marks(m).items()}
     elif "rows" in m:  # a map that sets its heights by plan row, so its cliffs and lifts come out even
         top_row = min(row_of(c) for c in cells)
         steps = {c: m["rows"][row_of(c) - top_row] for c in cells}
@@ -422,26 +452,6 @@ def heights_of(name, cells):
             if c not in level:
                 near = [steps[n] for n in ((c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS) if n in level or n in steps]
                 steps[c] = max(max(near) - MAX_STEPS, min(min(near) + MAX_STEPS, steps[c]))
-    if m.get("kind") == "path":  # the slope stands in low steps, each a slow move; the path eases up between them a little at a time, so it's the quick way
-        ways = {c for c, mark in cells.items() if mark == "n"}
-        steps = {c: s if c in ways else 2 * round(s / 2) for c, s in steps.items()}  # 0.3 a step, the least that costs 2
-        foot = min(ways, key=lambda c: steps[c])
-        along, todo = {foot: 0}, deque([foot])
-        while todo:
-            c = todo.popleft()
-            for a, b in fm.NEIGHBOURS:
-                n = (c[0] + a, c[1] + b)
-                if n in ways and n not in along:
-                    along[n] = along[c] + 1
-                    todo.append(n)
-        top = max(steps[c] for c in ways)
-        rate = min(1, (top - steps[foot]) / max(along.values()))  # never more than one 0.15 a move, which is what keeps a move's cost at 1
-        steps.update({c: steps[foot] + round(along[c] * rate) for c in ways})
-        for _ in range(12):  # the slope meets the path by steps a walker can take
-            for c in cells:
-                if c not in ways:
-                    near = [steps[n] for n in ((c[0] + a, c[1] + b) for a, b in fm.NEIGHBOURS) if n in steps]
-                    steps[c] = max(max(near) - MAX_STEPS, min(min(near) + MAX_STEPS, steps[c]))
     z = {}
     for c, mark in cells.items():
         add = RAISED if mark in "HWVX" else m.get("cliff", CLIFF) if mark == "K" else 0
@@ -523,27 +533,27 @@ def check_hill(name, cells, z):
         print(f"FLOW {name}: {len(path)} lava cells, hero to each foe through lava {[cheapest(hero, f, True) for f in foes]}, round it {[cheapest(hero, f, False) for f in foes]}; "
               f"nearest lava from each start { {mark: min(fm.distance(c, q) if hasattr(fm, 'distance') else (abs(c[0] - q[0]) + abs(c[1] - q[1]) + abs(c[0] + c[1] - q[0] - q[1])) // 2 for q in path) for c, mark in lava.items()} }")
     if m.get("kind") == "path":
-        def climb(frm, to, on_path, gaps):
-            """Cheapest moves, by the rule's cost: only on the path, or off it but for the cells where it passes between walls."""
-            best, heap = {frm: 0}, [(0, frm)]
+        def climb(frm, to, on_path):
+            """Cheapest moves by the rule's cost: only on the path, or touching it as little as there's any way to. Returns the moves and the path cells used."""
+            best, heap = {frm: (0, 0)}, [((0, 0), frm)]
             while heap:
                 d, c = heapq.heappop(heap)
                 if c == to:
-                    return d
+                    return (d[1], d[0]) if not on_path else (d[1], None)
                 for dq, dr in fm.NEIGHBOURS:
                     n = (c[0] + dq, c[1] + dr)
-                    if n not in walk or not linked(c, n) or (on_path and cells[n] != "n" and n != to) or (not on_path and cells[n] == "n" and n not in gaps and n != to):
+                    if n not in walk or not linked(c, n) or (on_path and cells[n] != "n"):
                         continue
-                    step = best[c] + (2 if z[n] - z[c] >= 0.3 - 0.001 else 1)
-                    if step < best.get(n, 1e9):
+                    step = (d[0] + (not on_path and cells[n] == "n"), d[1] + (2 if z[n] - z[c] >= 0.3 - 0.001 else 1))
+                    if step < best.get(n, (1e9, 1e9)):
                         best[n] = step
                         heapq.heappush(heap, (step, n))
             return None
 
         ends = [c for c, mark in cells.items() if mark == "n"]
         foot, head = min(ends, key=lambda c: z[c]), max(ends, key=lambda c: z[c])
-        gaps = {c for c in ends if any(cells.get((c[0] + a, c[1] + b)) == "L" for a, b in fm.NEIGHBOURS)}
-        print(f"CLIMB {name}: path foot {foot} z {z[foot]:.2f} to head {head} z {z[head]:.2f}: along the path {climb(foot, head, True, gaps)} moves, off it except through the wall's gap {climb(foot, head, False, gaps)}")
+        off, used = climb(foot, head, False)
+        print(f"CLIMB {name}: foot {foot} to head {head}, rise {z[head] - z[foot]:.2f}: along the path {climb(foot, head, True)[0]} moves; keeping off it wherever possible {off} moves, on {used} of {len(ends)} path cells")
     free = {c for c, mark in cells.items() if mark in ".,"}
     print(f"PLAN {name} ({m['size']}): {len(cells)} cells, walkable {len(walk)}, brush {sum(v == 'c' for v in cells.values())}, blocked {len(cells) - len(walk)}, stairs {len(stairs)}, "
           f"rise {max(z.values()) - min(z.values()):.2f} (walkable {max(z[c] for c in walk) - min(z[c] for c in walk):.2f}), steepest step {steepest:.2f}, sheer edges {sheer // 2}, "
@@ -590,18 +600,44 @@ def retaining_wall(p, a, b, z0, z1):
         p.bm.faces.new(verts).material_index = p._slot(("rock", "rock_light")[(n - k) % 2])
 
 
+def rail(p, a, b, inward, wide, high, z, mat):
+    """A low strip along a cell's edge, from a to b, set inward from it: its top and two long sides. Its underside and ends never show."""
+    up = Vector((0, 0, 1))
+    a0, b0 = a + inward, b + inward
+    a1, b1 = a0 + inward.normalized() * wide, b0 + inward.normalized() * wide
+    ring = [[p.bm.verts.new(q + up * h) for q in (a0, b0, b1, a1)] for h in (z - high, z)]
+    lay(p, (ring[1][0], ring[1][1], ring[1][2], ring[1][3]), up, mat)
+    lay(p, (ring[0][0], ring[0][1], ring[1][1], ring[1][0]), -inward, mat)
+    lay(p, (ring[0][3], ring[0][2], ring[1][2], ring[1][3]), inward, mat)
+
+
+def cell_edges(c, cells):
+    """A cell's six edges, each with the cell beyond it."""
+    at = hk.cell_position(*c)
+    for k in range(6):
+        a, b = at + fc.CORNERS[k], at + fc.CORNERS[(k + 1) % 6]
+        out = ((a + b) / 2 - at).normalized()
+        yield a, b, out, next((c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if (hk.cell_position(c[0] + dq, c[1] + dr) - at).normalized().dot(out) > 0.99)
+
+
 def terrace_curbs(col, cells, z):
     """A stone lip along the top of every retaining wall, so a band's edge still reads from above, where its wall can't be seen."""
     p = hk.Piece("terrace_curbs")
     for c in cells:
-        at = hk.cell_position(*c)
-        for k in range(6):
-            a, b = at + fc.CORNERS[k], at + fc.CORNERS[(k + 1) % 6]
-            out = ((a + b) / 2 - at).normalized()
-            n = next((c[0] + dq, c[1] + dr) for dq, dr in fm.NEIGHBOURS if (hk.cell_position(c[0] + dq, c[1] + dr) - at).normalized().dot(out) > 0.99)
+        for a, b, out, n in cell_edges(c, cells):
             if n in cells and z[c] - z[n] > 0.4:
-                d = b - a
-                p.box((a + b) / 2 - out * 0.015, (d.length + 0.06, 0.08, 0.1), "rock_light", z=z[c] - 0.065, spin=math.atan2(d.y, d.x))
+                rail(p, a, b, -out * 0.0 + out * 0.03, -0.08, 0.1, z[c] + 0.035, "rock_light")
+    p.finish(col)
+
+
+def plot_edges(col, cells, z):
+    """A low timber edge round each herb plot, on its outside edges only, so touching herb cells read as one tended bed."""
+    p = hk.Piece("plot_edges")
+    for c, mark in cells.items():
+        if mark == "c":
+            for a, b, out, n in cell_edges(c, cells):
+                if cells.get(n) != "c":
+                    rail(p, a, b, -out * 0.05, 0.05, 0.06, z[c] + 0.05, "trunk_old")
     p.finish(col)
 
 
@@ -1149,6 +1185,7 @@ def build_map(t, col, name):
     if "levels" in m:
         terrace_flights(col, v, cells, z)
         terrace_curbs(col, cells, z)
+        plot_edges(col, cells, z)
     if m.get("kind") == "path":
         hk.PALETTE.setdefault(f"cell_{v}_track", hk.PALETTE[hc.BARE[v]])
         path_steps(col, v, cells, z)
@@ -1219,7 +1256,7 @@ def make_sheets():
                            ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp")),
                            ("snowy_peaks", "hills_snowy_7_raised", ("snowy_peaks_pass", "snowy_peaks_lake", "snowy_peaks_shelf")),
                            ("volcanic_peaks", "hills_volcanic_7_raised", ("volcanic_peaks_fissures", "volcanic_peaks_crater", "volcanic_peaks_ledge")),
-                           ("monastery_heights", "hills_monastery_7_raised", ("monastery_heights_gardens", "monastery_heights_ridge"))):
+                           ("monastery_heights", "hills_monastery_7_raised", ("monastery_heights_gardens", "monastery_heights_walled", "monastery_heights_ridge", "monastery_heights_climb"))):
         fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
 
 

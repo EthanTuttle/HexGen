@@ -155,8 +155,8 @@ def herb_rows(p, rng):
         for k in range(count):
             at = Vector((-half + (k + 0.5) * 2 * half / count, y, 0))
             turn = rng.uniform(0, 6.3)
-            for n in range(4):
-                a = turn + n * math.pi / 2 + rng.uniform(-0.3, 0.3)
+            for n in range(3):
+                a = turn + n * 2 * math.pi / 3 + rng.uniform(-0.3, 0.3)
                 out = Vector((math.cos(a), math.sin(a), 0))
                 blade(p, at + out * 0.015, at + out * rng.uniform(0.065, 0.09) + Vector((0, 0, rng.uniform(0.13, 0.18))), 0.03, ("herb_leaf", "herb_leaf_b")[n % 2])
             if rng.random() < 0.5:
