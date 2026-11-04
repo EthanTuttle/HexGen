@@ -22,7 +22,7 @@ The reach check (`check_hill`) stops any plan that breaks these, on all 16 maps:
 
 | Between two walkable neighbours | What it is | Rule (design/03) |
 |---|---|---|
-| A height gap of up to 0.45 | A step on the slope | An ordinary move. Uphill costs more; how much is open |
+| A height gap of up to 0.45 | A step on the slope | An ordinary move, costing 1. Going up by 0.3 or more costs 1 more; smaller rises and going down are free of that (whole numbers) |
 | A gap of at least 0.9 | A sheer rise | Can't be crossed, except by stairs |
 | Anything between | Doesn't occur | The check refuses it |
 | Stairs | `low` to the stairs to `high`, and back | The ascend or descend action; side neighbours don't connect |
@@ -47,7 +47,7 @@ Per map, as `map_` pieces, because they follow its heights: `hillside` (each cel
 
 ## Assumed, nobody has decided
 
-Obstacles stop movement, brush can be walked through, ice and bare rock are ordinary ground. Fissures block rather than hurt. Whether low walls stop sight is open. Enemy mixes and starting spots are samples. The 0.45 limit on a step is the art's: design/03 says uphill costs more, and doesn't set a limit.
+Obstacles stop movement, brush can be walked through, ice and bare rock are ordinary ground. Fissures block rather than hurt. Whether low walls stop sight is open. Enemy mixes and starting spots are samples. The 0.45 limit on a step is the art's; design/03 doesn't set one.
 
 ## Not done
 
