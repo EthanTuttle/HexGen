@@ -172,6 +172,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
+- **tiles_v74:** Scholars' Town: no fence (Ethan's pick), lantern posts in a pair where a walk leaves the town, `_edge_*_bare` street wedges as a try without row houses. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
 - **tiles_v73:** Scholars' Town back on tiles_v69's spoke paths (Ethan: the game is about hexes), with courtyards in the corners between streets, a feature at each tile's middle with the walk going round it (fountain, stage, old tree, statue), long hedges, and `_edge_open*` wedges for the no-fence choice. Not reviewed yet. Hand-off: `handoff/village_kit.md`.
 - **tiles_v71, tiles_v72:** a Scholars' Town path pass with curving walks (`campus.py`). Dropped: Ethan reversed the direction; on `claude/art-scholars-tiles`'s history only. tiles_v70 is ruins, paused on its own branch.
 - **tiles_v69:** Scholars' Town tiles moved toward the approved combat maps: mown lawn, pale paved walks, broad towers joined to halls or at cloisters' heads, little paved quads with lawn panels, clipped hedges. Streets and routes unchanged. Not reviewed yet. Hand-off: `handoff/village_kit.md`.

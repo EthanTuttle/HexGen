@@ -236,7 +236,7 @@ FARM_T2_MAPS = {v: {**FLOW_RING, **{t: (lm if t == LANDMARK_AT else v) for t in 
 # Farms and villages count as joined: the farm track meets the village street, with no border between them.
 LINKED = {frozenset(("farmland", "village"))}
 BORDERED = {"farmland", "village"}
-OPEN_SCHOLARS = False  # build scholars' towns with no fence round the region
+BARE_SCHOLARS = False  # try: scholars' street wedges without row houses
 
 
 def linked(a, b):
@@ -453,8 +453,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 edge = f"{kit}_{dict(main='edge_same', side='edge_side').get(streets[(q, r)].get(i), 'edge_block')}"
                 if edge == f"{kit}_edge_block" and name in vr.LANDMARKS and f"{kit}_edge_block_lm" in templates:
                     edge = f"{kit}_edge_block_lm"  # without the house toward the middle: the landmark's yard lies there
-            if OPEN_SCHOLARS and kit == "scholars_town":  # the no-fence choice
-                edge = {"scholars_town_edge_other": "scholars_town_edge_open", "scholars_town_edge_other_lm": "scholars_town_edge_open_lm", "scholars_town_edge_gate": "scholars_town_edge_open_gate"}.get(edge, edge)
+            if BARE_SCHOLARS and kit == "scholars_town":
+                edge = {"scholars_town_edge_same": "scholars_town_edge_same_bare", "scholars_town_edge_side": "scholars_town_edge_side_bare", "scholars_town_edge_trail": "scholars_town_edge_trail_bare"}.get(edge, edge)
             place(templates, edge, col, at, math.radians(60 * i))
             if i in trails and f"{kit}_steps_centre" in templates:  # the stair's flight on the centre, one per trail edge
                 if name not in vr.LANDMARKS:
@@ -462,7 +462,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 elif i != turns.get((q, r)):  # the entrance edge's steps are in the landmark's own piece
                     place(templates, f"{kit}_steps_rise", col, at, math.radians(60 * i))
             # Carry a neighbouring edge's border out to this joined edge, so borders run on between tiles.
-            if terrain in BORDERED and kin[i] and "border_join_l" in templates and not (OPEN_SCHOLARS and kit == "scholars_town"):
+            if terrain in BORDERED and kin[i] and "border_join_l" in templates and kit != "scholars_town":  # no fence round a scholars' town
                 join = f"{kit}_border_join" if walled else "border_join"
                 if not kin[(i + 1) % 6]:
                     place(templates, f"{join}_l", col, at, math.radians(60 * i))
@@ -1802,14 +1802,26 @@ if __name__ == "__main__":
                     shot("village_scholars_middle")
                     look(c_, -1.1, 9, math.radians(17), 0.3)
                     shot("village_scholars_middle_low")
-                    globals()["OPEN_SCHOLARS"] = True
+                    g_ = fg.fence_gates({k: vr.terrain_of(n) for k, n in tiles_map.items()})  # a walk's end: its lantern posts
+                    t2_, end_i = next((t, i) for t, e in sorted(g_.items()) for i in e if tiles_map[t] == "scholars_town" and tiles_map.get((t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])) == "plains")
+                    a_ = math.radians(60 * end_i)
+                    end_ = hk.tile_position(*t2_) + Vector((math.cos(a_), math.sin(a_), 0)) * 3.5
+                    look(end_, a_ + 0.5, 8, math.radians(30), 0.3)
+                    shot("village_scholars_end")
+                    look(end_, a_ + 0.9, 6, math.radians(12), 0.3)
+                    shot("village_scholars_end_low")
+                    placed_ = [o.get("piece", "") for o in bpy.data.collections["map"].objects]
+                    print("TOWN COUNT", {k: placed_.count(f"scholars_town_{k}") for k in ("centre", "centre_b", "centre_c", "centre_d", "centre_near", "edge_same", "edge_side", "edge_trail", "edge_block", "edge_block_lm", "edge_other", "edge_other_lm", "edge_gate")})
+                    globals()["BARE_SCHOLARS"] = True
                     hk.empty_scene()
                     templates = load_templates(tiles)
                     build_map(templates, tiles=tiles_map)
                     draw_effects(bpy.data.collections["map"], templates, thin=True)
                     stage(focus, dist, 50)
-                    shot("village_scholars_open_map")
-                    globals()["OPEN_SCHOLARS"] = False
+                    shot("village_scholars_bare_map")
+                    look(c_, -math.pi / 2, 12, math.radians(45))
+                    shot("village_scholars_bare_middle")
+                    globals()["BARE_SCHOLARS"] = False
         sys.exit(0)
     if "raised-scenes" in flags:
         # Raised regions meeting other things: tiles added to a finished region, two regions touching, a region with no

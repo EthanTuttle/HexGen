@@ -4052,7 +4052,7 @@ def scholar_centre(p, rng, kind):
 
 def scholars_town(p, rng, kind):
     """Lawn with pale spoke walks on the hex grid: halls and cloisters wrap courtyards in the corners between streets, and a feature stands at each tile's middle (fountain, stage, old tree, statue), the walk going round it. Hedges run long along the streets.
-    edge_open*: the same wedges with no fence, for the choice of no fence round the region."""
+    No fence round the region: lantern posts mark where a walk leaves. edge_*_bare: the street wedges without row houses, a try."""
     if kind in SCHOLAR_CENTRES:
         scholar_centre(p, rng, kind)
     elif kind == "edge_block":
@@ -4069,16 +4069,34 @@ def scholars_town(p, rng, kind):
         y = bt.STREET_MAIN + 0.14
         clipped_hedge(p, Vector((2.92, -y, 0)), Vector((3.84, -y, 0)))
         scholar_house(p, rng, Vector((3.35, -(y + 0.55), 0)), 0.85, 0.72, 0.0)
-    elif kind in ("edge_open", "edge_open_lm"):
-        if kind == "edge_open":
+    elif kind in ("edge_same_bare", "edge_side_bare", "edge_trail_bare"):  # the try without row houses: a long hedge carries each side of the street on to the edge
+        half = bt.STREET_SIDE if kind == "edge_side_bare" else bt.STREET_MAIN
+        bt.town_street(p, rng, scholar_house, half, ("open", "open"), look=SCHOLAR_LOOK)
+        for sd in (1, -1):
+            clipped_hedge(p, Vector((2.92, sd * (half + 0.14), 0)), Vector((3.84, sd * (half + 0.14), 0)))
+    elif kind in ("other", "edge_other_lm"):  # no fence round the region (chosen Nov 3, 2026): garden running out to the edge
+        if kind == "other":
             scholar_house(p, rng, Vector((2.15, 0, 0)), 0.96, 0.76, math.pi / 2)
         bt.town_garden(p, rng, False, SCHOLAR_LOOK)
-    elif kind == "edge_open_gate":
+    elif kind == "edge_gate":  # where a walk leaves the town, in place of a gate: a pair of lantern posts. A party leaves only along these
         bt.town_garden(p, rng, True, SCHOLAR_LOOK)
-        bt.strip(p, bt.GATE_HALF - 0.02, mat=SCHOLAR_LOOK["street"])
+        bt.strip(p, bt.STREET_SIDE, mat=SCHOLAR_LOOK["street"])
+        for sd in (1, -1):
+            lantern_pillar(p, Vector((WALK_END_X, sd * WALK_END_Y, 0)))
         p.paths.append([Vector((X0, 0, 0)), Vector((X1, 0, 0))])
     else:
         bt.town_edge(p, rng, kind, scholar_house, SCHOLAR_LOOK)
+
+
+WALK_END_X, WALK_END_Y = 3.6, 0.66
+
+
+def lantern_pillar(p, at):
+    """A stone foot, a slim post and a little slate-capped lantern, in a pair at a walk's end."""
+    p.box(at, (0.24, 0.24, 0.12), "cream_stone")
+    p.cylinder(at, 0.045, 0.98, "stone_block_dark", segments=6, z=0.12)
+    p.box(at, (0.16, 0.16, 0.2), "lantern", z=1.1)
+    p.cone(at, 0.15, 0.14, "slate_blue", segments=4, z=1.3)
 
 
 def college(p, rng, kind):
@@ -5169,7 +5187,7 @@ VARIANTS = {
     "canyon": ("desert", canyon, "canyon_top", ("centre_mid", "centre_near", "edge_same_b", "edge_other_lm")),
     "fortified_town": ("village", fortified_town, "cobble", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail", "centre_mid", "border_join_l", "border_join_r")),
     "slums": ("village", slums, "mud_ground", ("centre_b", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
-    "scholars_town": ("village", scholars_town, "lawn", ("centre_b", "centre_c", "centre_d", "edge_open", "edge_open_lm", "edge_open_gate", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
+    "scholars_town": ("village", scholars_town, "lawn", ("centre_b", "centre_c", "centre_d", "edge_same_bare", "edge_side_bare", "edge_trail_bare", "centre_near", "edge_side", "edge_block", "edge_block_lm", "edge_other_lm", "edge_gate", "edge_trail")),
     "haunted_homesteads": ("farmland", haunted_homesteads, "haunted",
                            ("centre_b", "edge_same_b", "edge_gate", "edge_trail", "edge_trail_in", "centre_near",
                             "edge_other_lm")),

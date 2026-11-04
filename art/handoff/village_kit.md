@@ -11,7 +11,7 @@ This kit holds tier 0 villages with the street layout, market towns with the Tra
   - **Market town:** `village_market_map_v2.png`, `village_market_paths_v1.png`, `village_tradinghouse_closeup_v2.png`.
   - **Fortified town:** `village_fortified_map_v3.png`, `village_fortified_paths_v3.png`, `village_fortified_12_map_v2.png`, `village_fortified_join_map_v3.png`, `village_keep_closeup_v3.png`, and the Keep alone: `village_keep_alone_{front,corner,side,back,map,low}_v1.png`.
   - **Slums:** `village_slums_map_v3.png`, `village_slums_paths_v3.png`, `village_blackmarket_closeup_v3.png`. The ground options Ethan chose from: `village_slums_ground_{tan,clay,dun}_{map,closeup}_v1.png`. He picked tan.
-  - **Scholars' town (tiles_v73, not yet approved):** with the fence `village_scholars_map_v6.png`, without it `village_scholars_open_map_v1.png`; `village_scholars_middle_v1.png`, `village_scholars_middle_low_v1.png`, `village_scholars_close_v4.png`. Before, on tiles_v69: `village_scholars_map_v3.png`. See Scholars' Town below.
+  - **Scholars' town (tiles_v74, not yet approved):** with row houses `village_scholars_map_v7.png`, without them `village_scholars_bare_map_v1.png`; a walk's end `village_scholars_end_v1.png`, `village_scholars_end_low_v1.png`; `village_scholars_middle_v1.png`, `village_scholars_middle_low_v1.png`. See Scholars' Town below.
 - **In the previews, smoke is a stand-in** (`render_preview.draw_effects`, `thin=True`). The engine draws its own.
 
 ## Streets: `art/scripts/village_streets.py`
@@ -128,15 +128,17 @@ The centre pieces have a `hub` at the tile's middle: join it straight to the inn
 - **Slum roofs:** the tin is still a grey-brown. Ethan approved it as it stands; it could be warmed if the tan ever needs it.
 - **Placeholder colours:** every new colour in `hexkit.PALETTE` for these kits, including `street`, `keep_stone`, `banner_fort`, `mud_damp`, `pale_paving` and the patches, is a placeholder where design/07 doesn't name it.
 
-## Scholars' Town: courts and features (tiles_v73, not yet approved, not tried in Godot)
+## Scholars' Town: courts and features (tiles_v74, not yet approved, not tried in Godot)
 
-Streets and routes along them are as before: `village_streets.py`, `fence_gates.py` and the street wedges stand. **Drop `campus.py`'s moved routes, if any were ported:** it's gone.
+Streets and routes along them are as before: `village_streets.py`, `fence_gates.py` and the street wedges stand.
 
 | Item | What's new | What Godot does |
 | --- | --- | --- |
 | Tile middle | Each centre has a feature at the hub: `centre` fountain, `centre_b` stage, `centre_c` old tree, `centre_d` statue, `centre_near` fountain. **The walk can't cross the middle any more** | These centres have no hub. They carry a ring, radius 1.15, and a spoke from each edge's street to it, in the same data as a centre-only landmark (`town_ring`). A party goes round, and stops on the ring where its way in meets it |
 | Choosing a centre | Four, not two | `("centre", "centre_b", "centre_c", "centre_d")[int(hash01(q, r, 13) * 4)]`, as `build_map`. `centre_near` is unchanged |
 | Courts | In the centre pieces, in the corners between streets, so they stand whatever the wedges are | Nothing new |
-| Fence | Both builds exist, for Ethan to pick | With: as now. Without: `scholars_town_edge_open`, `_edge_open_lm`, `_edge_open_gate` in place of `_edge_other`, `_edge_other_lm`, `_edge_gate`, and no `border_join_*` on these tiles. Route rules stay as they are unless he decides otherwise |
+| No fence | Ethan's pick. `scholars_town_edge_other` and `_edge_other_lm` now hold a garden and no fence | Place them as before. **No `border_join_*` on these tiles** |
+| A walk's end | `scholars_town_edge_gate` holds the walk and a pair of lantern posts, no gate | Place it as before, from `fence_gates`. **A party leaves only along paved walks, so routes at the edge are unchanged** |
+| Row houses | `_edge_same_bare`, `_edge_side_bare`, `_edge_trail_bare`: a try without them, for Ethan to pick | If picked, these replace `_edge_same`, `_edge_side`, `_edge_trail` |
 
-**New colour:** `terracotta`. `check_town.py -- scholars_town college` checks the ring against what stands on each centre, at 0.42. Heaviest centre about 2,500 triangles; a tile with four block wedges and two streets is about 4,360 with its slab, and five blocks and one street about 4,540, against 4,816.
+**New own material use:** `lantern`. **New colour:** `terracotta`. `check_town.py -- scholars_town college` checks the ring against what stands on each centre, at 0.42. Heaviest centre about 2,500 triangles; a tile with four block wedges and two streets is about 4,360 with its slab, and five blocks and one street about 4,540, against 4,816.
