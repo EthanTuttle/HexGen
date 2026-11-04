@@ -435,7 +435,7 @@
  },
  "slums_plots": {
   "cells": 41,
-  "idea": "Vegetable plots and scraggly trees behind the shacks. Nothing to hide behind but junk and washing, so everyone is in reach fast.",
+  "idea": "Vegetable plots and scraggly trees behind the shacks. Nothing to hide behind but junk and trees, so everyone is in reach fast.",
   "kind": "terrain",
   "shape": "small square",
   "walkable": 33
@@ -449,10 +449,10 @@
  },
  "slums_street": {
   "cells": 85,
-  "idea": "A muddy street across the map, with junk and washing lines along it and shacks at both ends. As wide as any town's, so the party fits, and open to both sides.",
+  "idea": "A muddy street across the map, with junk and trees along it and shacks at both ends, their washing beside them. As wide as any town's, so the party fits, and open to both sides.",
   "kind": "path",
   "shape": "wide rectangle",
-  "walkable": 64
+  "walkable": 63
  },
  "stormy_plains_outcrop": {
   "cells": 61,

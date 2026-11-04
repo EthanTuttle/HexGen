@@ -235,19 +235,19 @@ U . n s I
   P . . w . . 7 .  
  P . J . . x . 7 . 
 J P . . T . . 7 . .
- T . I . U . . . v 
+ I . T . U . . . v 
 6 . . . 5 . c c . .
  6 . N 5 . . c 2 . 
 6 . . . 5 . , 2 2 .
  . . c . . . J 2 . 
-T . c c . I . . . .
+I . c c . T . . . .
  . , . h . k s . E 
   . . . . . . . .  
 """},
-    "slums_plots": {"size": "small square", "idea": "Vegetable plots and scraggly trees behind the shacks. Nothing to hide behind but junk and washing, so everyone is in reach fast.", "foes": BANDITS, "plan": """
+    "slums_plots": {"size": "small square", "idea": "Vegetable plots and scraggly trees behind the shacks. Nothing to hide behind but junk and trees, so everyone is in reach fast.", "foes": BANDITS, "plan": """
 . w . T v
  c c . x 
-c c I . U
+c c T . U
  c . . J 
 T . E c c
  . N c c 
@@ -258,7 +258,7 @@ T . E c c
     "slums_fences": {"size": "tall rectangle", "idea": "Two long patched fences cross the map from opposite sides, leaving one gap each. The way through winds from side to side.", "foes": BANDITS, "plan": """
 . . v . .
  . w x . 
-L . . T P
+L . . I P
  L . . P 
 . L . . P
  . L . . 
@@ -269,20 +269,20 @@ N . L . J
 5 . . L .
  . . L . 
 J . L . E
- . I . . 
+ . T . . 
 T . . . U
  h . k . 
 . . s . .
 """},
-    "slums_street": {"kind": "path", "size": "wide rectangle", "idea": "A muddy street across the map, with junk and washing lines along it and shacks at both ends. As wide as any town's, so the party fits, and open to both sides.", "foes": BANDITS, "plan": """
-P . T . v . . J 5
+    "slums_street": {"kind": "path", "size": "wide rectangle", "idea": "A muddy street across the map, with junk and trees along it and shacks at both ends, their washing beside them. As wide as any town's, so the party fits, and open to both sides.", "foes": BANDITS, "plan": """
+P . . . v . . J 5
  P . . x . w . 5 
-P . c . I . E . 5
+P I c . T . E . 5
  . . . . . . . . 
 n n n n n n n n n
  n n n n n n n n 
-. . . . U . . . .
- 2 . I . . N . 4 
+I . . . U . . . .
+ 2 . T . . N . 4 
 2 2 h . k . s 4 4
  2 . . . . c . 4 
 """},
@@ -554,6 +554,9 @@ def build_map(t, col, name):
         join_towers(col, cells)
     if v in HOUSE_MARKS:
         doors_clear(t, col, name)
+        for c, mark in cells.items():  # washing belongs with houses
+            if bv.KIT[v].get(mark, ("",))[0] == "washing":
+                assert any(cells.get((c[0] + dq, c[1] + dr), ".") in HOUSE_MARKS[v] for dq, dr in fm.NEIGHBOURS), f"{name}: washing at {c} is not next to a house"
         houses = {c for c, mark in cells.items() if mark in HOUSE_MARKS[v]}
         for c, mark in cells.items():
             if mark in fm.MINI_MARKS:
