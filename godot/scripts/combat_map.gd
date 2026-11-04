@@ -7,6 +7,8 @@ extends RefCounted
 const SETS := {"combat_maps": "combat_cells", "combat_maps_farmland": "combat_farmland", "combat_maps_plains": "combat_plains",
 	"combat_maps_village": "combat_village", "combat_maps_hills": "combat_hills"}
 
+const NOT_WIRED := ["forest", "plains"]   # tier 0 sets the art has in progress, not approved: these tiles keep the old board
+
 static var _maps := {}
 static var _flow: ShaderMaterial
 static var _pulse: ShaderMaterial
@@ -18,6 +20,8 @@ static func all() -> Dictionary:
 		for s: String in SETS:
 			var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/%s.json" % s))
 			for id: String in data:
+				if data[id].variant in NOT_WIRED:
+					continue
 				data[id].set = s
 				_maps[id] = data[id]
 	return _maps

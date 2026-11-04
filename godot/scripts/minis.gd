@@ -25,7 +25,7 @@ static func _mesh(name: String) -> Mesh:
 			continue
 		var kit := Kit.meshes("res://art/%s.glb" % glb)
 		if kit.has(name):
-			Kit.combat_materials(kit)
+			Kit.combat_materials(kit, true)   # PLACEHOLDER: the winding fix covers the map kits; some minis still lose faces when culled
 			return kit[name]
 	push_error("no mini %s" % name)
 	return null

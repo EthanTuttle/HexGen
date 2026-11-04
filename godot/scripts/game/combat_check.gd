@@ -85,6 +85,7 @@ func _run() -> void:
 	await _check_heights()
 	await _check_giants()
 	await _check_hills()
+	await _check_facing()
 	await _every_map()
 	await _perf_heaviest()
 	print("COMBAT DONE: %d failed" % failed)
@@ -133,6 +134,8 @@ func _check_choices() -> void:
 	for name in ["hills", "highlands", "snowy_peaks", "volcanic_peaks"]:
 		_check(CombatMap.choices(name, true).size() == 3, "%s: 3 maps" % name)
 	_check(CombatMap.choices("monastery_heights", false).size() == 3 and CombatMap.choices("monastery_heights", true).size() == 4, "monastery heights: 3 terrain maps, and its path map on a tile with paths")
+	for name in ["forest", "plains"]:
+		_check(not CombatMap.all().values().any(func(m): return m.variant == name), "the art's unapproved %s maps aren't wired" % name)
 	_check(CombatMap.choices("college", true) == CombatMap.choices("scholars_town", true), "a landmark's tile takes its variant's maps (PLACEHOLDER)")
 
 
@@ -748,6 +751,24 @@ func _every_map() -> void:
 	_check(lost_party == 0, "every map opens with the whole party between the panels (%d don't)" % lost_party)
 	_check(lost_foes == 0, "every foe an opening frames is between the panels (%d maps lose one)" % lost_foes)
 	print("COMBAT openings with a foe framed: %d of %d" % [maps_with_foe, ids.size()])
+
+
+## Back faces are culled on the map kits, with webs shown from both sides.
+func _check_facing() -> void:
+	_load("dark_wood_thorns")
+	var cells := Kit.meshes("res://art/combat_cells.glb")
+	var webs := 0
+	var culled := 0
+	for mesh: Mesh in cells.values():
+		for k in mesh.get_surface_count():
+			var m := mesh.surface_get_material(k) as BaseMaterial3D
+			if m and m.resource_name == "web":
+				webs += 1 if m.cull_mode == BaseMaterial3D.CULL_DISABLED else 0
+				culled += 1 if m.cull_mode != BaseMaterial3D.CULL_DISABLED else 0
+			elif m:
+				culled += 0 if m.cull_mode == BaseMaterial3D.CULL_BACK else 1
+	_check(webs > 0 and culled == 0, "webs show from both sides (%d surfaces), and everything else in the kit culls back faces" % webs)
+	await get_tree().process_frame
 
 
 func _perf_heaviest() -> void:
