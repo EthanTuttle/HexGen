@@ -1,12 +1,12 @@
-# Combat hills kit hand-off (combat_hills_v4, combat_maps_hills_v4)
+# Combat hills kit hand-off (combat_hills_v5, combat_maps_hills_v5)
 
 Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and stairs replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v4.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v4.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v5.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v5.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
-- **Previews:** `art/preview/hills_maps_<variant>_v10.png`, `hills_maps_<variant>_turned_v10.png` (Highlands v11; the maps in v10 and `hills_maps_all_v10.png` show Highlands before its last changes), the Hills and Highlands sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v1.png`, props `hills_obstacles_v4.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
+- **Previews:** `art/preview/hills_maps_all_v11.png`; per variant `hills_maps_<variant>_vN.png` and `_turned_vN.png` (Highlands v12, Snowy v11, the rest v10, which are older but unchanged); sets beside their tiles `hills_maps_hills_beside_tile_v1.png`, `hills_maps_highlands_beside_tile_v2.png`, `hills_maps_snowy_peaks_beside_tile_v1.png`; props `hills_obstacles_v5.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
 
 ## Heights in the data
 
@@ -40,6 +40,8 @@ As in the plains kit: `cell_<v>_ground_a/b/c`, `_floor`, `_cover`, `_litter`, `_
 | `snowy_peaks` | `ice_crag` (1) | ice | snowy bushes |
 | `volcanic_peaks` | `columns`, `vent` (1); its `peaks_*` have a crater on the tallest | basalt | red shrubs |
 | `monastery_heights` | `herb_terrace`, `flags` (1) | stone path | herbs |
+
+`ob_highlands_banner` stands on one blocked cell of its own, or on stacked rock on `highlands_scarp`, so it takes no walkable cell there. Turned 45° in the map so both cloths show from the default camera.
 
 Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `stairs_*`, `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
 

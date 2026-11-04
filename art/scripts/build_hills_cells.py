@@ -181,8 +181,9 @@ def litter(p, rng, v):
         fc.patch(p, rng, Vector((0.12, -0.08, 0)), 0.26, "rock_light")
         for q in (Vector((-0.2, 0.1, 0)), Vector((-0.06, 0.22, 0)), Vector((-0.28, -0.1, 0))):
             vr.lump(p, q, rng.uniform(0.09, 0.13), "heather", squash=0.45)
-    elif v == "snowy_peaks":  # grass showing through in a patch
-        fc.patch(p, rng, ZERO, 0.3, "hill_grass")
+    elif v == "snowy_peaks":  # grass showing through in patches
+        fc.patch(p, rng, Vector((-0.1, 0.08, 0)), 0.22, "hill_grass")
+        fc.patch(p, rng, Vector((0.22, -0.14, 0)), 0.12, "hill_grass")
     elif v == "volcanic_peaks":
         vr.lava_cracks(p, rng, [Vector((-0.34, -0.14, 0)), Vector((-0.05, 0.02, 0)), Vector((0.1, -0.08, 0)), Vector((0.36, 0.16, 0))], 0.05, lambda q: 0.012)
     else:

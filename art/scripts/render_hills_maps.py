@@ -53,6 +53,7 @@ STEP = 0.15
 MAX_STEP = 0.45  # the most a walker crosses between neighbours without stairs
 MAX_STEPS = round(MAX_STEP / STEP)
 FULL_STEP = 0.9  # one raised level, what high ground needs (design/03)
+BANNER_TURN = math.radians(45)  # both cloths show from the default camera and its opposite, as on the tiles
 RAISED, CLIFF = 8, 13  # in steps; RAISED leaves a sheer rise of at least FULL_STEP even where the hill falls away under it
 BOARD_TOP = -0.12  # the soil block's top, under the lowest cells' line colour
 FLAT_MARKS = "BG"  # one piece on several cells: they stand level at the lowest
@@ -134,7 +135,7 @@ M M . . c
    M   
   M M  
  . M . 
-c . . I
+c . . J
  . . . 
 . x v .
  I . w 
@@ -144,7 +145,7 @@ c . . T
  . , . 
   h k  
    s   """},
-    "highlands_scarp": {"size": "rectangle", "foes": WOLVES, "hill": (("north", 9), ("west", 4)), "cliff": 11,
+    "highlands_scarp": {"size": "rectangle", "foes": WOLVES, "hill": (("north", 9), ("west", 4)), "cliff": 11, "banners": ((5, 1), (2, 4)),
                         "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A cluster of peaks to get behind on the way up.", "plan": """
 K K K K K . T
  K K K K . v 
@@ -177,13 +178,13 @@ K K . K K
 . R . M M
  . . c . 
 . . . . T
- h . k . 
+ . h k . 
 . s . . ."""},
     "snowy_peaks_lake": {"size": "round", "foes": UNDEAD, "hill": (("north", 3), ("bump", 7, 7, 4.6, -6)),
                          "idea": "A frozen lake lying level in a hollow under a cluster of snowy peaks, snow slopes all round, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.", "plan": """
      . v .     
     T w . T    
-   . . x . .   
+   . . . x .   
   R . . . . .  
  . . n n n . . 
 T . n n n n M .
@@ -198,8 +199,8 @@ T . n n n n M .
      . . .     """},
     "snowy_peaks_shelf": {"size": "wide rectangle", "foes": WOLVES, "hill": (("north", 5),),
                           "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.", "plan": """
-. . v . w . M M
- . . . x . M M 
+. . v x w . M M
+ . . . . . M M 
 . . . . . . M M
  H H ^ H H H H 
 H H H W H H H H
@@ -678,7 +679,11 @@ def build_map(t, col, name):
         elif mark == "O":
             rp.place(t, f"ob_{v}_stump", col, at, turn)
         elif mark in kit and len(kit[mark][1]) == 1:
-            rp.place(t, f"ob_{v}_{kit[mark][0]}", col, at, 0.0)
+            rp.place(t, f"ob_{v}_{kit[mark][0]}", col, at, BANNER_TURN if kit[mark][0] == "banner" else 0.0)
+    for col_at, row in m.get("banners", ()):  # plan column and row; on cells that are already blocked, so they take none from the fight
+        c = (col_at, (row - col_at) // 2)
+        assert cells[c] in "KMIT", f"{name}: a banner at {c} would block a cell"
+        rp.place(t, f"ob_{v}_banner", col, hk.cell_position(*c) + Vector((0, 0, z[c])), BANNER_TURN)
     for mark, group in fm.groups(cells, "BG"):
         piece, foot = (f"ob_{v}_boulder_3", fc.TRIANGLE) if mark == "B" else (f"ob_{v}_grove_{len(group)}", {2: fc.LINE2, 3: fc.TRIANGLE}[len(group)])
         anchor, turn = fm.fit(group, foot)
@@ -747,7 +752,8 @@ def make_sheets():
     fm.sheet([f"hills_map_{n}" for n in MAPS], "hills_maps_all", 4)
     # The tiles beside the maps, tile, front, turned on each row
     for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),
-                           ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp"))):
+                           ("highlands", "hills_highlands_landmark", ("highlands_moor", "highlands_knoll", "highlands_scarp")),
+                           ("snowy_peaks", "hills_snowy_7_raised", ("snowy_peaks_pass", "snowy_peaks_lake", "snowy_peaks_shelf"))):
         fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
 
 
