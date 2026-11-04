@@ -536,11 +536,38 @@ def yup(v):
 CAMERA_WAYS = [Vector((math.cos(yaw) * math.cos(el), math.sin(yaw) * math.cos(el), math.sin(el))) for el in (math.radians(35), math.radians(52), math.radians(75)) for yaw in (k * math.pi / 3 for k in range(6))]
 
 
+STANDS_ALONE = False  # True in a script whose pieces are seen whole from every side, with nothing round them: minis
+
+
+def faces_seen_from_behind(bm):
+    """Faces whose back is the first thing a ray from the game's camera hits, from any of the six Q / E sides: the leftovers of a tangled shape that no rule about sheets will find."""
+    bm.faces.ensure_lookup_table()
+    bm.normal_update()
+    tree = BVHTree.FromBMesh(bm)
+    points = [v.co for v in bm.verts]
+    low, high = Vector(min(p[k] for p in points) for k in range(3)), Vector(max(p[k] for p in points) for k in range(3))
+    middle, reach = (low + high) / 2, (high - low).length / 2 + 0.2
+    steps = int(reach / 0.02)
+    el = math.radians(52)
+    found = set()
+    for side in range(6):
+        yaw = math.radians(60 * side)
+        to_cam = Vector((-math.sin(yaw) * math.cos(el), -math.cos(yaw) * math.cos(el), math.sin(el)))
+        across = Vector((math.cos(yaw), -math.sin(yaw), 0))
+        up = to_cam.cross(across)
+        for i in range(-steps, steps + 1):
+            for j in range(-steps, steps + 1):
+                at, normal, index, _ = tree.ray_cast(middle + across * (i * 0.02) + up * (j * 0.02) + to_cam * (reach + 1), -to_cam)
+                if at is not None and normal.dot(to_cam) <= 0 and not any(near[1].dot(to_cam) > 0 for near in tree.find_nearest_range(at, 0.001)):
+                    found.add(bm.faces[index])
+    return found
+
+
 def open_sheets(bm, skip=()):
-    """Each connected sheet of faces with open edges, with how much of it a camera above could see from the front and from behind: rays up towards the camera on both sides, from each face's centre and towards its corners. Closed shapes have a known inside, so they're left out, as are faces in skip."""
+    """Each connected sheet of faces with open edges, with how much of it a camera above could see from the front and from behind: rays up towards the camera on both sides, from each face's centre and towards its corners. Closed shapes have a known inside, so they're left out but for faces a twist in the shape turns inside out, returned separately. Faces in skip aren't looked at."""
     bm.faces.ensure_lookup_table()
     tree = BVHTree.FromBMesh(bm)
-    out, seen = [], set(skip)
+    out, twisted, seen = [], [], set(skip)
     for start in bm.faces:
         if start in seen:
             continue
@@ -554,14 +581,14 @@ def open_sheets(bm, skip=()):
                     if g not in seen:
                         seen.add(g)
                         todo.append(g)
-        if all(len(e.link_faces) == 2 for f in sheet for e in f.edges):
-            continue
+        closed = all(len(e.link_faces) == 2 for f in sheet for e in f.edges)
         front = back = 0.0
         for f in sheet:
             f.normal_update()
             area, c, n = f.calc_area(), f.calc_center_median(), f.normal
             if area < 1e-7:
                 continue
+            face_front = face_back = 0.0
             for p in [c] + [c.lerp(v.co, 0.8) for v in f.verts]:
                 for way in CAMERA_WAYS:
                     towards = way.dot(n)
@@ -570,11 +597,16 @@ def open_sheets(bm, skip=()):
                     side = 1 if towards > 0 else -1
                     if tree.ray_cast(p + n * side * 0.0005, way)[0] is None:
                         if side > 0:
-                            front += area * abs(towards)
+                            face_front += area * abs(towards)
                         else:
-                            back += area * abs(towards)
-        out.append((sheet, front, back))
-    return out
+                            face_back += area * abs(towards)
+            front += face_front
+            back += face_back
+            if closed and face_back > face_front:  # a closed shape twisted through itself shows this face from inside
+                twisted.append(f)
+        if not closed:
+            out.append((sheet, front, back))
+    return out, twisted
 
 
 class Piece:
@@ -676,24 +708,33 @@ class Piece:
                   (v[0], v[4], v[3]), (v[1], v[2], v[5])):
             self.bm.faces.new(f).material_index = idx
 
+    def second_faces(self, faces):
+        """A face looking the other way behind each of these. As triangles, so both sides lie exactly together even where a face isn't flat."""
+        faces = [f for f in faces if f.is_valid]
+        if not faces:
+            return
+        made = bmesh.ops.triangulate(self.bm, faces=faces)["faces"]
+        for f in made:
+            twin = self.bm.faces.new([self.bm.verts.new(v.co) for v in reversed(f.verts)])
+            twin.material_index = f.material_index
+            self.surface.add(twin)
+
     def face_open_sheets_out(self):
         """recalc_face_normals can't tell which way an open sheet should face, as it has no inside, and a face wound by hand can simply be wrong. Turn over each sheet that a camera above would see from behind.
-        A lone face hanging in the air, a pennant or a cloth, is seen from both sides, so it gets a second face looking the other way. Web is see-through and shows both sides by its material."""
+        A sheet hanging in the air, a pennant, a cloth or a cape, is seen from both sides, so it gets a second face looking the other way. Web is see-through and shows both sides by its material."""
         web = self.mats.index("web") if "web" in self.mats else None
-        for sheet, front, back in open_sheets(self.bm, self.backs):
+        sheets, twisted = open_sheets(self.bm, self.backs)
+        second = list(twisted) + list(self.both_sides)
+        for sheet, front, back in sheets:
             if back > front * 1.05:
                 for f in sheet:
                     f.normal_flip()
                 front, back = back, front
-            if len(sheet) == 1 and back > front * 0.5 and sheet[0].material_index != web:
-                f = sheet[0]
-                twin = self.bm.faces.new([self.bm.verts.new(v.co) for v in reversed(f.verts)])
-                twin.material_index = f.material_index
-                self.surface.add(twin)
-        for f in self.both_sides:
-            twin = self.bm.faces.new([self.bm.verts.new(v.co) for v in reversed(f.verts)])
-            twin.material_index = f.material_index
-            self.surface.add(twin)
+            if back > front * 0.5 and sheet[0].material_index != web:
+                second.extend(sheet)
+        self.second_faces(second)
+        if STANDS_ALONE and self.bm.faces:
+            self.second_faces(list(faces_seen_from_behind(self.bm)))
 
     def finish(self, collection, location=(0, 0, 0), merge=True):
         """merge: one shared "kit" material with the colours in vertex colours (see OWN_MATERIAL).

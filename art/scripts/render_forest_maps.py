@@ -1019,7 +1019,7 @@ def export(maps, build, load, variant_of, stem, cell_extra=None):
     hk.empty_scene()
     t = load()
     keep = hk.new_collection("maps")
-    wound = {}
+    wound = dict(cw.report([o for name, o in t.items() if name.startswith(("cell_", "ob_", "enemy_", "giant_", "standin_"))]))
     data = {}
     for name in maps:
         col = hk.new_collection(f"building_{name}")
