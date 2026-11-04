@@ -39,9 +39,97 @@ fm.BRUSH_Z = 0.5  # crop stands taller than the forest's brush
 FREE_TURN = {v: "JY" for v in bf.VARIANTS}
 for v in bf.VARIANTS:
     hk.PALETTE[f"cell_{v}_track"] = hk.PALETTE[bf.BARE[v]]
-TURNED = {"windmill_country_mill", "haunted_homesteads_yards", "raided_farms_stand", "cider_orchards_clearing"}
+TURNED = {"farmland_fields", "farmland_yard", "farmland_paddocks", "farmland_track", "windmill_country_mill", "haunted_homesteads_yards", "raided_farms_stand", "cider_orchards_clearing"}
 
 MAPS = {
+    "farmland_fields": {"size": "wide rectangle", "foes": BANDITS, "idea": "Wide fields of ripe wheat in big blocks with grass between, a short fence, haystacks and a tree or two. The wheat can be walked through; the haystacks and fence are the only hard corners.", "plan": """
+T . . . . . c c c . . T
+ . c c c . . c c c . . 
+. c c c . x c c c . . .
+ . c c c . . . . . . . 
+. c c c . . v . . . . .
+ . . . L . . . w . J . 
+. . . . L . . . . . . T
+ J . . , L . . . c c c 
+. . . . . . . . . c c .
+ c c c . . . . . c c c 
+. c c . . . . . . c c .
+ c c c . . . . . . , . 
+. . . . h s k . J . . ."""},
+    "farmland_yard": {"size": "big hex", "foes": BANDITS, "idea": "A fenced farmyard in the middle of the fields, with a door in the fence north and south, a farmhouse, haystacks and a cart. The foes are inside: go in by a door, or round to the other.", "plan": """
+      .      
+     . .     
+    . . .    
+   . . . .   
+  . . . . c  
+ . . . . c c 
+. . . . . c c
+ T . L L c c 
+. . L . L c c
+ . L J I L c 
+. . . P x . .
+ . L P . L . 
+. T w P . . .
+ . L . v L . 
+. . . . J , .
+ . L Y . L . 
+c c L . L . .
+ c c L L . T 
+c c . . . . .
+ c c . . . . 
+  c . . , .  
+   . h k .   
+    . s .    
+     . .     
+      .      """},
+    "farmland_paddocks": {"size": "tall rectangle", "foes": BANDITS, "idea": "Long paddocks one above the other, each fence running in from both sides and leaving a wide gap in the middle. A walk north through two funnels, with wheat at either end.", "plan": """
+T . . . . . . T
+ . c c c c c . 
+. . c c c c . .
+ . c c c c c . 
+. . c c c c . .
+ J c c c c c . 
+. . . . . . . .
+ . . . . . . J 
+L . . . . . . L
+ L . w . x . L 
+. L . . . . L .
+ . L . v . L . 
+. . L . . L . .
+ . . L . L . . 
+T . . . . . . .
+ . . . . . . . 
+L . . . . . . L
+ L , . . . c L 
+. L . . J c L .
+ c c . . . c c 
+. c c . . c c .
+ c c . s . . . 
+. c c h k . . .
+ c c . . . . J 
+. . . . . . . ."""},
+    "farmland_track": {"kind": "path", "size": "big rectangle", "foes": BANDITS, "idea": "A farm track comes in through a gap between two short fences, up to a fork by the farmhouse, with blocks of wheat either side. The track is clear ground to run on; the wheat and fences break up the rest.", "plan": """
+T . . . . . . . . T
+ . . . c c c . . . 
+. . . . c c . . . .
+ n . . c c c . . n 
+. n . . c c . . n .
+ . n . c c c . n . 
+. . n . . . . n . .
+ . . n . . . x . . 
+. . . n . . n . . .
+ . . . n v n . I . 
+T . . . n n P . . .
+ . J w . n P . J . 
+. . . . . . P . . .
+ . c c Y n . . c c 
+. c c c L L . c c .
+ . c c L n L . c c 
+. c c L . . L c c .
+ . c L . n . L c c 
+. . L . . . . c c .
+ . . . . n s . . . 
+. . . . h k . . . ."""},
     "windmill_country_fields": {"size": "wide oval", "idea": "Two fields of ripe wheat with a big mill between them. The wheat can be walked through; the mill and haystacks are the only hard corners.", "plan": """
   . . . . v . . .  
  . . J . . . w . . 
@@ -357,6 +445,7 @@ def make_sheets():
         fm.sheet([f"farmland_map_{n}" for n in MAPS if n.startswith(v)], f"farmland_maps_{v}", 4)
     fm.sheet([f"farmland_map_{n}_turned" for n in MAPS if n in TURNED], "farmland_maps_turned", 2)
     fm.sheet([f"farmland_map_{n}" for n in MAPS], "farmland_maps_all", 4)
+    fm.sheet([stem for n in ("farmland_fields", "farmland_yard", "farmland_paddocks", "farmland_track") for stem in ("farmland_layout_a_farm", f"farmland_map_{n}", f"farmland_map_{n}_turned")], "farmland_maps_farmland_beside_tile", 3)
 
 
 def kit_sheet(t, col):
@@ -411,6 +500,8 @@ if __name__ == "__main__":
         without = fm.triangles(col)
         fm.place_minis(t, col, MAPS[name], cells)
         print(f"TRIS {name}: map {without}, with minis {fm.triangles(col)}")
+        if name.startswith("farmland_"):
+            print("OPENING %s: nearest foe %d moves, %d of %d foes framed, at %.1f m" % ((name,) + pm.opening(cells)))
         if not only_check:
             target, distance = fm.framing(cells)
             rp.stage(target, distance, fm.PITCH)
