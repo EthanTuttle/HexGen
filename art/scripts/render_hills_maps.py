@@ -8,16 +8,15 @@ art/export/combat_maps_hills.json. Uses the latest combat_hills, enemy_minis, hu
 Writes art/preview/hills_map_<map>_vN.png, hills_map_<map>_turned_vN.png and the sheets hills_maps_<variant>_vN.png, hills_maps_all_vN.png.
 
 Every cell is level, at a height in steps of 0.15, set by the map's "hill": ("north", k) rises k steps across the map (likewise "west" and "east"),
-("bump", col, row, radius, k) adds or takes away k steps round a point of the plan. So a hill's shape needn't be a plane. Ice and everything on
+("bump", col, row, radius, k) adds or takes away k steps round a point of the plan. So a hill's shape needn't be a plane. Ice and kit pieces on
 several cells stand level, so nothing sinks into the slope.
 
 Letters as in render_forest_maps.py (. , c T O R G L B and the minis), plus n bare ground (walkable: stony ground, bare rock, ice, basalt or a stone path), and:
   H W V X  raised ground, RAISED steps (at least 0.9) above the hill, with sheer hex sides. Snowy and volcanic only
   K        a stack of blocked hex cells, as a cliff, CLIFF steps above the hill
   ^        stairs through a sheer rise, one way across the cell: in from the low cell, out to the high cell opposite. Snowy and volcanic only
-  Y        a solid ridge (3 in a line), made per map, its foot on the ground
-  P        mountain (3)   Q big mountain (7)
-  hills              N crag
+  M        a cluster of sharp peaks on any group of touching cells, made per map, one peak to a cell, the tile mountains' look, each foot on its own cell's ground
+  hills              N crag   U big broadleaf tree
   highlands          N crag   I cairn   J clan banner
   snowy_peaks        N ice crag
   volcanic_peaks     I basalt columns   J lava vent   L lava fissure (any line)
@@ -56,7 +55,7 @@ MAX_STEPS = round(MAX_STEP / STEP)
 FULL_STEP = 0.9  # one raised level, what high ground needs (design/03)
 RAISED, CLIFF = 8, 13  # in steps; RAISED leaves a sheer rise of at least FULL_STEP even where the hill falls away under it
 BOARD_TOP = -0.12  # the soil block's top, under the lowest cells' line colour
-FLAT_MARKS = "PQBG"  # one piece on several cells: they stand level at the lowest
+FLAT_MARKS = "BG"  # one piece on several cells: they stand level at the lowest
 hk.PALETTE.update({"hillside_turf": fc.mix(hk.PALETTE["hill_grass"], "#2C4020", 0.42), "highland_turf": fc.mix(hk.PALETTE["highland_grass"], "#2C4020", 0.4),
                    "ash_shade": fc.mix(hk.PALETTE["ash_ground"], "#000000", 0.25), "snow_shade": fc.mix(hk.PALETTE["snow_ground"], "#8FA8BD", 0.5)})
 # A low step's turf, then the two rocks of a sheer side's bands.
@@ -65,88 +64,88 @@ WALLS = {"hills": ("hillside_turf", "rock", "rock_dark"), "highlands": ("highlan
 
 MAPS = {
     "hills_shoulder": {"size": "wide rectangle", "foes": WOLVES, "hill": (("north", 10), ("bump", 3.5, 2, 3.6, 3), ("bump", 12, 2, 3, -2.5)),
-                       "idea": "A long grassy shoulder rising to the north-west, a gully falling away on the north-east. A ridge and a mountain break up the slope, so the climb means picking a side first.", "plan": """
-. . . . . . . T .
- . . w . . . . x 
-. . . . v . . . .
- . . . . . . c . 
-. . . . . . . T .
- . Y . , . . R . 
-. . Y . . P . . .
- c . Y . . P . . 
-. . . . . P . . ,
- T . h . k . . T 
-. . . s . . . . ."""},
+                       "idea": "A long grassy shoulder rising to the north-west, a gully falling away on the north-east, between two great clusters of peaks. Dark pines stand on the slope; the massif in the west splits the climb, so it means picking a side first.", "plan": """
+T . . . . . . M M
+ . . w . . . M M 
+. . . . v . . M .
+ . . . . . c . x 
+. M M . . . T . .
+ M M M . . R . . 
+. M M . , . . T .
+ c M . . . G . . 
+. . . . . G . . ,
+ T . h . k G . U 
+. . . s . . . T ."""},
     "hills_saddle": {"size": "medium hex", "foes": BANDITS, "hill": (("north", 6), ("bump", 1, 6, 2.6, 6), ("bump", 7, 7, 2.6, 6)),
-                     "idea": "Two grassy knolls with a saddle between them. The straight way runs up the saddle under both; each knoll is a longer climb, for a shot down the middle.", "plan": """
+                     "idea": "Two massifs of sharp peaks close in on a saddle. The only straight way runs up between them, past dark pines; the long ways go round each massif's outer side.", "plan": """
     .    
    v .   
   T w .  
- . . x O 
-. . . . .
+ T . x O 
+M M . M M
+ M . . M 
+M M . M .
  . . . . 
-. . . . .
- . . . . 
-. . c . .
+T . c . T
  R . . T 
 . . . . .
  T . , . 
-. h . k .
+. h . k U
  . s . . 
-  . . T  
+  . . .  
    . .   
     .    """},
     "hills_crags": {"size": "tall rectangle", "foes": WOLVES, "hill": (("north", 13), ("east", 2)),
-                    "idea": "Up a long slope between two ridges set on the slant, an S to walk, to a brow across the top.", "plan": """
+                    "idea": "Up a long slope between two massifs of peaks set on the slant, an S to walk through dark pines, to a brow across the top.", "plan": """
 . . . v .
  . x . w 
-. . . . .
- . . . . 
-. . . . .
+T . . . T
  . . . T 
-. . . . c
- Y . . . 
-. Y . . .
- . Y . Y 
-c . . Y .
- . . Y . 
-. . . . ,
+. M . . .
+ M M . . 
+M M . . c
+ M . . . 
+. . . . .
+ . . M M 
+. . M M M
+ T . M M 
+. . . M .
  R . T . 
 . . . . .
  h . k . 
 . s . . ."""},
     "highlands_moor": {"size": "wide oval", "foes": BANDITS, "hill": (("north", 6), ("east", 4), ("bump", 3, 8, 3, 2)),
-                       "idea": "An open moor of heather on a long slope, round one big bare mountain, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.", "plan": """
+                       "idea": "An open moor of heather on a long slope, round one massif of bare peaks, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.", "plan": """
     v w . . T    
    . . x . . .   
   T . . . , c .  
  c c . . . . . . 
-. c . I Q . J . .
- . . c Q Q . . . 
-. . . n Q n c . .
- . , n Q Q n . . 
-. . . n Q . . c .
+. c . I M . J . .
+ . . c M M . . . 
+. . . M M M c . .
+ . , n M M n . . 
+. . . n M . . c .
  I . . n . . I . 
   c . . . . . .  
    . h . k c .   
     . . s . .    """},
     "highlands_knoll": {"size": "small hex", "foes": BANDITS, "hill": (("bump", 3, 5, 2.1, 7),),
-                        "idea": "A small round knoll inside a ring of cairns, its top held from the start. A short walk, every way uphill, and nowhere far from the top.", "plan": """
-   .   
-  T .  
- . I . 
+                        "idea": "A small round knoll inside a ring of cairns under a cluster of peaks, its top held from the start. A short walk, every way uphill, and nowhere far from the top.", "plan": """
+   M   
+  M M  
+ . M . 
 c . . I
  . v . 
 . . . .
  I x w 
 . . . .
  , . . 
-c . . .
+c . . T
  . , . 
   h k  
    s   """},
     "highlands_scarp": {"size": "rectangle", "foes": WOLVES, "hill": (("north", 9), ("west", 4)), "cliff": 11,
-                        "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A low ridge to get behind on the way up.", "plan": """
+                        "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A cluster of peaks to get behind on the way up.", "plan": """
 K K K K K . T
  K K K K . v 
 K K K . . . .
@@ -157,12 +156,12 @@ K . . . n . c
  K . . n . . 
 K . . n . I .
  . . c . . . 
-. Y . , . T .
- . Y . . c . 
-. . Y . . . .
+. M . , . T .
+ M M . . c . 
+. . M . . . .
  h . k . s . """},
     "snowy_peaks_pass": {"size": "tall rectangle", "foes": WOLVES, "hill": (("north", 6),), "cliff": 12,
-                         "idea": "Stacked ice cliffs close in from both sides to a pass one cell wide at the middle, with a frozen pond beyond it. One gap: whoever holds it holds the map.", "plan": """
+                         "idea": "Stacked ice cliffs close in from both sides to a pass one cell wide at the middle, a frozen pond beyond it and snowy peaks below it. One gap: whoever holds it holds the map.", "plan": """
 K K . K K
  K v w K 
 K . x . K
@@ -173,24 +172,24 @@ T . n . .
  K . . K 
 K K . K K
  K . . K 
-. . . T .
- T . . . 
-. R . . ,
+. . . . M
+ T . . M 
+. R . M M
  . . c . 
 . . . . T
  h . k . 
 . s . . ."""},
     "snowy_peaks_lake": {"size": "round", "foes": UNDEAD, "hill": (("north", 3), ("bump", 7, 7, 4.6, -6)),
-                         "idea": "A frozen lake lying level in a hollow, snow slopes all round, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.", "plan": """
+                         "idea": "A frozen lake lying level in a hollow under a cluster of snowy peaks, snow slopes all round, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.", "plan": """
      . v .     
     T w . T    
    . . x . .   
-  R . . . . T  
+  R . . . . .  
  . . n n n . . 
-T . n n n n . .
- . n n n n n . 
-. . n n n n . T
- . R n n n . . 
+T . n n n n M .
+ . n n n n M M 
+. . n n n n M .
+ . R n n n M . 
 . . . n n . . R
  T . . . . . c 
   . . , . . .  
@@ -198,10 +197,10 @@ T . n n n n . .
     . s . .    
      . . .     """},
     "snowy_peaks_shelf": {"size": "wide rectangle", "foes": WOLVES, "hill": (("north", 5),),
-                          "idea": "A sheer shelf of stacked ice across the whole map, a mountain behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.", "plan": """
-. . v . w . P T
- . . . x . . P 
-. . . . . . P R
+                          "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.", "plan": """
+. . v . w . M M
+ . . . x . M M 
+. . . . . . M M
  H H ^ H H H H 
 H H H W H H H H
  H ^ H H H ^ H 
@@ -211,7 +210,7 @@ H H H W H H H H
  . h . k . s . 
 . . . . . . . T"""},
     "volcanic_peaks_fissures": {"size": "wide rectangle", "foes": UNDEAD, "hill": (("north", 8), ("bump", 13, 2, 3, 2)),
-                                "idea": "Two lava fissures run in from the north corners and nearly meet at the middle of a dark slope. Three ways through: one narrow gap at the centre, the long ways round at each side. A smoking cone stands to the south-east.", "plan": """
+                                "idea": "Two lava fissures run in from the north corners and nearly meet at the middle of a dark slope. Three ways through: one narrow gap at the centre, the long ways round at each side. A cluster of cones with a crater stands to the south-east.", "plan": """
 . . v . w . x . .
  . c . . . . . . 
 . L . . O . . L .
@@ -219,22 +218,22 @@ H H H W H H H H
 . . L . , . L . .
  . . L . . L . . 
 c . . L . L . . .
- . . . . . . P . 
-. O . . c . P . .
- . . . . . . P . 
-. . h . k s . . ."""},
+ . . . . . . M M 
+. O . . c . . M M
+ . . . . . . . M 
+. . h . k s . . O"""},
     "volcanic_peaks_crater": {"size": "big hex", "foes": UNDEAD, "hill": (("north", 5),),
-                              "idea": "A great crater cone in the middle of the map, a sheer basalt block on its west with stairs at either end and a lava fissure on its east. The fight goes round the cone.", "plan": """
+                              "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with stairs at either end and a lava fissure on its east. The fight goes round it.", "plan": """
     v .    
    w . .   
   x . . .  
  O . . . c 
 . . . . L .
- . . Q . L 
-^ . Q Q . L
- H . Q . . 
-H H Q Q . .
- H ^ Q . O 
+ . . M . L 
+^ . M M . L
+ H . M . . 
+H H M M . .
+ H ^ M . O 
 . . . . . .
  . , . . c 
   . h . k  
@@ -254,13 +253,13 @@ H ^ H ^ .
  h L k . 
 . . s . O"""},
     "monastery_heights_gardens": {"size": "rectangle", "foes": BANDITS, "hill": (("north", 11), ("bump", 6, 1, 3, 2)),
-                                  "idea": "A slope climbing to an open terrace at the north, herb gardens in staggered rows on the way, and two low walls closing in toward the middle. The gardens block: walk the rows or go through the gap.", "plan": """
-T . v . x . T
- . . w . . . 
-. . . . . I .
+                                  "idea": "A slope climbing to an open terrace at the north under a cluster of peaks, herb gardens in staggered rows on the way, and two low walls closing in toward the middle. The gardens block: walk the rows or go through the gap.", "plan": """
+T . v . x M M
+ . . w . M M 
+. . . . . M I
  . . . . . . 
 . . . . . E .
- E . E . E . 
+ E . E . T . 
 I . . c . . I
  . E . . E . 
 L . E . E . L
@@ -268,10 +267,10 @@ L . E . E . L
 . . . . . . .
  . h . k s . """},
     "monastery_heights_walled": {"size": "small hex", "foes": BANDITS, "hill": (("north", 5), ("east", 3)),
-                                 "idea": "A small walled garden on a slope with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.", "plan": """
-   T   
-  v .  
- . w . 
+                                 "idea": "A small walled garden on a slope below a few peaks, with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.", "plan": """
+   M   
+  M M  
+ v w . 
 . x . I
  L . L 
 L . E L
@@ -283,25 +282,25 @@ L . . L
   h k  
    s   """},
     "monastery_heights_ridge": {"size": "wide oval", "foes": BANDITS, "hill": (("north", 4), ("bump", 12, 4, 3.2, 6)),
-                                "idea": "A big mountain beside a rising shoulder of open ground. Prayer flags and gardens mark the south; the way round the mountain's west is long and low, the way up the shoulder short and steep.", "plan": """
+                                "idea": "A massif of peaks beside a rising shoulder of open ground. Prayer flags and gardens mark the south; the way round the massif's west is long and low, the way up the shoulder short and steep.", "plan": """
     T . v . w    
    . . . . x .   
   . I . . . T .  
  E . . . . . . . 
-. . . Q . . . . .
- . . Q Q . . . . 
-. . . Q . . . . .
- T . Q Q . . . . 
-. c . Q . . . E .
+. . . M . . . . .
+ . . M M . . . . 
+. . M M . . . . .
+ T . M M . . . . 
+. c . M . . . E .
  . . . . , . . . 
   E . . . . c .  
    . h . k . T   
     . . s . .    """},
     "monastery_heights_climb": {"kind": "path", "size": "tall rectangle", "foes": BANDITS, "hill": (("north", 15),),
-                                "idea": "A stone path zigzags up the whole hillside between low walls, in stone steps where it climbs. The path is the quick way; the slope either side is open but slower going, and the top is held.", "plan": """
-. . . . .
- . v . n 
-. w . n .
+                                "idea": "A stone path zigzags up the whole hillside between low walls, in stone steps where it climbs, under peaks at the top. The path is the quick way; the slope either side is open but slower going, and the top is held.", "plan": """
+M M . . .
+ M v . n 
+M w . n .
  . x n . 
 . . n . .
  . n . T 
@@ -499,35 +498,84 @@ def stairs_piece(col, v, c, low, high, z):
     p.finish(col)
 
 
-def ridge_mass(p, rng, v, centres, ground):
-    """One solid back of rock along its cells, its foot on the ground and its outline broken: blocks of rock with notches between them, shoulders that come and go, loose rocks at its flanks."""
+def peak_cluster(p, rng, v, group, z, ground):
+    """Sharp massive peaks over a group of cells, as on the tiles: concave faceted sides and ragged rings in two shades of rock, each with a skirt on its lowest ring, a cap, or a crater.
+    One to a cell, the tallest at the group's middle. Each foot reaches out as a tile mountain's does, as far as the group's own cells let it, and rests on the ground under it."""
+    look = hc.PEAK_LOOK[v]
     main, side, _ = fc.ROCK[v]
-    lit = {"hills": "rock_light", "highlands": "rock_light", "snowy_peaks": "snow_light", "volcanic_peaks": "basalt", "monastery_heights": "rock_light"}[v]
-    a, b = centres[0], centres[-1]
-    along = (b - a).normalized()
-    across = Vector((-along.y, along.x, 0))
-    a, b = a - along * 0.44, b + along * 0.44
-    rows = []
-    for t, crest in ((0.0, 0.3), (0.07, 0.95), (0.2, 1.08), (0.26, 0.62), (0.38, 0.56), (0.44, 1.3), (0.58, 1.42), (0.64, 0.72), (0.74, 0.66), (0.8, 1.12), (0.93, 1.0), (1.0, 0.26)):
-        c = a.lerp(b, t)
-        g = ground(c) - 0.1
-        wob = across * rng.uniform(-0.07, 0.07)
-        end = t in (0.0, 1.0)
-        wide, top = (0.28 if end else 0.46) * rng.uniform(0.9, 1.04), crest * rng.uniform(0.93, 1.07)
-        flat = 0.06 if end else rng.uniform(0.08, 0.2)
-        rows.append([p.bm.verts.new(c + s + Vector((0, 0, g + h))) for s, h in ((-across * wide, 0), (-across * 0.3 * rng.uniform(0.8, 1.1) + wob, top * 0.58), (-across * flat + wob, top), (across * flat + wob, top),
-                                                                                  (across * 0.3 * rng.uniform(0.8, 1.1) + wob, top * 0.58), (across * wide, 0))])
-    for r0, r1 in zip(rows, rows[1:]):
-        for j in range(5):
-            high = j == 2
-            mat = lit if high and r0[2].co.z > ground(r0[2].co) + 0.75 else rng.choice((main, main, side)) if j in (1, 3) else rng.choice((side, side, main))
-            for tri in ((r0[j], r1[j], r1[j + 1]), (r0[j], r1[j + 1], r0[j + 1])):
-                p.bm.faces.new(tri).material_index = p._slot(mat)
-    p.bm.faces.new(rows[0]).material_index = p._slot(side)
-    p.bm.faces.new(rows[-1][::-1]).material_index = p._slot(side)
-    for t, s, r in ((0.16, 0.34, 0.2), (0.5, -0.36, 0.24), (0.86, 0.32, 0.18)):
-        q = a.lerp(b, t) + across * s
-        fc.rock(p, rng, Vector((q.x, q.y, 0)), r, side, ground(q) + r * 0.3, 0.75)
+    middle = sum((hk.cell_position(*c) for c in group), Vector((0, 0, 0))) / len(group)
+    order = sorted(group, key=lambda c: ((hk.cell_position(*c) - middle).length, c))
+    centres = [hk.cell_position(*c) for c in group]
+    normals = [Vector((math.cos(a), math.sin(a), 0)) for a in (math.pi / 2, math.pi / 6, -math.pi / 6)]
+
+    def inside(q):
+        return any(max(abs((q - c).dot(n)) for n in normals) <= hk.CELL_FLATS / 2 + 0.08 for c in centres)
+
+    top = min(5.2, 2.6 + 0.42 * len(group)) * look.get("tall", 1.0)
+    far = max((hk.cell_position(*c) - middle).length for c in group) or 1.0
+    n, shares = 10, (0.22, 0.45, 0.86, 1.0)
+    for rank, c in enumerate(order):
+        at = hk.cell_position(*c)
+        h = top * (1 - 0.42 * (at - middle).length / far) * (1.0 if rank == 0 else rng.uniform(0.76, 0.98))
+        reach = 0.62 * h
+        base = z[c]
+        phases = [rng.uniform(0, 6.3) for _ in range(4)]
+        crater = look.get("crater") and rank == 0
+
+        def wobble(th, k):
+            return 0.16 * math.sin((2 + k) * th + phases[k]) + 0.1 * math.sin((5 + k) * th + phases[k + 2])
+
+        foot = []
+        for j in range(n):  # out along each direction until the group's cells end, not past a notch between them
+            th = 2 * math.pi * j / n
+            out = Vector((math.cos(th), math.sin(th), 0))
+            r, limit = 0.2, reach * (1 + wobble(th, 0))
+            while r + 0.04 <= limit and inside(at + out * (r + 0.04)):
+                r += 0.04
+            foot.append(out * r)
+        for _ in range(10):  # nor may the line from one direction to the next cut across a notch
+            for j in range(n):
+                m = (j + 1) % n
+                if not all(inside(at + foot[j].lerp(foot[m], t)) for t in (0.2, 0.4, 0.6, 0.8)):
+                    foot[j], foot[m] = foot[j] * 0.85, foot[m] * 0.85
+        rings = []
+        for k, share in enumerate(shares):
+            ring = []
+            for j in range(n):
+                th = 2 * math.pi * j / n
+                q = at + foot[j] * share
+                if share < 1:
+                    drop = (1 - share) ** 1.25 * (1 + 1.2 * wobble(th + k, 1))
+                    ring.append(p.bm.verts.new(q + Vector((0, 0, base + h * drop))))
+                else:
+                    ring.append(p.bm.verts.new(q + Vector((0, 0, ground(q) - 0.1))))
+            rings.append(ring)
+        if crater:
+            inner = [p.bm.verts.new(q.co.lerp(Vector((at.x, at.y, q.co.z)), 0.5) - Vector((0, 0, 0.16))) for q in rings[0]]
+            p.bm.faces.new(inner).material_index = p._slot("lava")
+            for j in range(n):
+                m = (j + 1) % n
+                for tri in ((rings[0][j], inner[j], inner[m]), (rings[0][j], inner[m], rings[0][m])):
+                    p.bm.faces.new(tri).material_index = p._slot(side)
+        else:
+            apex = p.bm.verts.new(at + Vector((rng.uniform(-0.06, 0.06), rng.uniform(-0.06, 0.06), base + h)))
+            for j in range(n):
+                p.bm.faces.new((apex, rings[0][j], rings[0][(j + 1) % n])).material_index = p._slot(look.get("cap") or (main if rng.random() < 0.6 else side))
+        for band, (a, b) in enumerate(zip(rings, rings[1:])):
+            for j in range(n):
+                m = (j + 1) % n
+                for tri in ((a[j], b[j], b[m]), (a[j], b[m], a[m])):
+                    mat = main if rng.random() < 0.6 else side
+                    if band == 0 and look.get("cap") and rng.random() < 0.7:
+                        mat = look["cap"]
+                    if band == 2 and look.get("skirt"):
+                        mat = look["skirt"]
+                    p.bm.faces.new(tri).material_index = p._slot(mat)
+        if look.get("crater"):  # lava down its sides, from the top ring
+            for j in rng.sample(range(n), 2 if crater else 1):
+                u, w = rings[0][j].co, rings[2][j].co
+                off = (u - Vector((at.x, at.y, u.z))).normalized() * 0.04
+                vr.frustum(p, u + off, w + off, 0.06, 0.02, "lava", segments=3)
 
 
 def line_wall(col, v, group, ground):
@@ -617,7 +665,7 @@ def build_map(t, col, name):
             piece = f"cell_{v}_bare"
         elif mark == "R":
             piece = f"cell_{v}_block_{'ab'[n % 2]}"
-        elif mark in "BKLOQPJINYG":
+        elif mark in "BKLOMJINUG":
             piece = f"cell_{v}_floor"
         elif mark == "T":
             piece = f"cell_{v}_floor" if v == "volcanic_peaks" else f"cell_{v}_cover"
@@ -631,18 +679,13 @@ def build_map(t, col, name):
             rp.place(t, f"ob_{v}_stump", col, at, turn)
         elif mark in kit and len(kit[mark][1]) == 1:
             rp.place(t, f"ob_{v}_{kit[mark][0]}", col, at, 0.0)
-    for mark, group in fm.groups(cells, "BG" + "".join(m_ for m_, s in kit.items() if len(s[1]) > 1)):
-        if mark == "B":
-            piece, foot = f"ob_{v}_boulder_3", fc.TRIANGLE
-        elif mark == "G":
-            piece, foot = f"ob_{v}_grove_{len(group)}", {2: fc.LINE2, 3: fc.TRIANGLE}[len(group)]
-        else:
-            piece, foot = f"ob_{v}_{kit[mark][0]}", kit[mark][1]
+    for mark, group in fm.groups(cells, "BG"):
+        piece, foot = (f"ob_{v}_boulder_3", fc.TRIANGLE) if mark == "B" else (f"ob_{v}_grove_{len(group)}", {2: fc.LINE2, 3: fc.TRIANGLE}[len(group)])
         anchor, turn = fm.fit(group, foot)
         rp.place(t, piece, col, hk.cell_position(*anchor) + Vector((0, 0, z[anchor])), math.radians(60 * turn))
-    for _, group in fm.groups(cells, "Y"):
-        r = hk.Piece(f"ridge_{min(group)}")
-        ridge_mass(r, hk.seeded(f"{name}_{r.name}"), v, sorted((hk.cell_position(*c) for c in group), key=lambda q: q.x), ground)
+    for _, group in fm.groups(cells, "M"):
+        r = hk.Piece(f"peaks_{min(group)}")
+        peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
         r.finish(col)
     for _, group in fm.groups(cells, "L"):
         line_wall(col, v, group, ground)
@@ -702,6 +745,9 @@ def make_sheets():
         fm.sheet([f"hills_map_{n}" for n in MAPS if n.startswith(v + "_")], f"hills_maps_{v}", 2)
         fm.sheet([f"hills_map_{n}_turned" for n in MAPS if n.startswith(v + "_")], f"hills_maps_{v}_turned", 2)
     fm.sheet([f"hills_map_{n}" for n in MAPS], "hills_maps_all", 4)
+    # The tiles beside the maps, tile, front, turned on each row
+    for v, tile, names in (("hills", "hills_t0", ("hills_shoulder", "hills_saddle", "hills_crags")),):
+        fm.sheet([stem for n in names for stem in (tile, f"hills_map_{n}", f"hills_map_{n}_turned")], f"hills_maps_{v}_beside_tile", 3)
 
 
 def kit_sheet(t, col):

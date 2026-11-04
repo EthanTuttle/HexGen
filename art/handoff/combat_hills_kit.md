@@ -1,12 +1,12 @@
-# Combat hills kit hand-off (combat_hills_v3, combat_maps_hills_v2)
+# Combat hills kit hand-off (combat_hills_v4, combat_maps_hills_v3)
 
 Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and stairs replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v3.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v2.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v4.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v3.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
-- **Previews:** `art/preview/hills_maps_<variant>_v4.png`, `hills_maps_<variant>_turned_v4.png`, `hills_maps_all_v4.png`, props `hills_obstacles_v3.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
+- **Previews:** `art/preview/hills_maps_<variant>_v10.png`, `hills_maps_<variant>_turned_v10.png`, `hills_maps_all_v10.png`, the Hills set beside its tile `hills_maps_hills_beside_tile_v1.png`, props `hills_obstacles_v4.png`. Each map has `hills_map_<map>_vN.png` and `_turned_vN.png`. The study that led here: `hillside_c_front_v1.png`.
 
 ## Heights in the data
 
@@ -31,17 +31,17 @@ The reach check (`check_hill`) stops any plan that breaks these, on all 16 maps:
 
 ## Pieces
 
-As in the plains kit: `cell_<v>_ground_a/b/c`, `_floor`, `_cover`, `_litter`, `_brush`, `_bare`, `_block_a/b`, `ob_<v>_boulder_3`, `_stump`, `_log_2/3`, `_tree_a/b/c`, `_grove_2/3`. Trees follow the variant: round trees and pines, pines, snowy pines, burnt split trunks, shaped pines.
+As in the plains kit: `cell_<v>_ground_a/b/c`, `_floor`, `_cover`, `_litter`, `_brush`, `_bare`, `_block_a/b`, `ob_<v>_boulder_3`, `_stump`, `_log_2/3`, `_tree_a/b/c`, `_grove_2/3`. Trees follow the variant: dark pines on `hills` and `highlands` (plus one big `tree_broad` on some `hills` maps), snowy pines, burnt split trunks, shaped pines.
 
 | Variant | Props (cells) | `_bare` is | `_brush` is |
 | --- | --- | --- | --- |
-| `hills` | `peak_3` (3), `peak_7` (7), `crag` (1) | stony earth | tufts |
-| `highlands` | `peak_3`, `peak_7`, `crag`, `cairn`, `banner` (1) | bare rock | heather |
-| `snowy_peaks` | `peak_3`, `peak_7`, `ice_crag` (1) | ice | snowy bushes |
-| `volcanic_peaks` | `peak_3`, `peak_7` (crater cones), `columns`, `vent` (1) | basalt | red shrubs |
-| `monastery_heights` | `peak_3`, `peak_7`, `herb_terrace`, `flags` (1) | stone path | herbs |
+| `hills` | `crag`, `tree_broad` (1) | stony earth | tufts |
+| `highlands` | `crag`, `cairn`, `banner` (1) | bare rock | heather |
+| `snowy_peaks` | `ice_crag` (1) | ice | snowy bushes |
+| `volcanic_peaks` | `columns`, `vent` (1); its `peaks_*` have a crater on the tallest | basalt | red shrubs |
+| `monastery_heights` | `herb_terrace`, `flags` (1) | stone path | herbs |
 
-Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `stairs_*`, `ridge_*` (a solid ridge on 3 cells in a line), `fissure_*`, `wall_*` and `path_steps`. A piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `grove_*`, `boulder_3`.
+Per map, as `map_` pieces, because they follow its heights: `hillside` (each cell's line colour, sides and the board's outer sides), `stairs_*`, `peaks_*` (a cluster of sharp peaks on any group of cells, one to a cell, on the tile mountains' look, its foot on the ground under it), `fissure_*`, `wall_*` and `path_steps`. A kit piece on several cells stands on level cells, so nothing sinks into the slope. On no map yet: `crag`, `ice_crag`, `log_*`, `boulder_3`.
 
 **Effects:** `lava` is the tiles' own material, meant to glow and pulse. Smoke from craters, as on the tiles, isn't in the pieces and would be an engine effect.
 

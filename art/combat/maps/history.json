@@ -316,45 +316,45 @@
  },
  "highlands_knoll": {
   "cells": 37,
-  "idea": "A small round knoll inside a ring of cairns, its top held from the start. A short walk, every way uphill, and nowhere far from the top.",
+  "idea": "A small round knoll inside a ring of cairns under a cluster of peaks, its top held from the start. A short walk, every way uphill, and nowhere far from the top.",
   "kind": "terrain",
   "shape": "small hex",
-  "walkable": 33
+  "walkable": 30
  },
  "highlands_moor": {
   "cells": 95,
-  "idea": "An open moor of heather on a long slope, round one big bare mountain, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.",
+  "idea": "An open moor of heather on a long slope, round one massif of bare peaks, with a clan's banners and cairns on the way. The fight goes round it either side, through heather for cover.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 82
+  "walkable": 80
  },
  "highlands_scarp": {
   "cells": 91,
-  "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A low ridge to get behind on the way up.",
+  "idea": "Stacked rock fills the north-west corner, and the slope climbs to a shelf of grass and bare rock under it. A cluster of peaks to get behind on the way up.",
   "kind": "terrain",
   "shape": "rectangle",
-  "walkable": 65
+  "walkable": 64
  },
  "hills_crags": {
   "cells": 77,
-  "idea": "Up a long slope between two ridges set on the slant, an S to walk, to a brow across the top.",
+  "idea": "Up a long slope between two massifs of peaks set on the slant, an S to walk through dark pines, to a brow across the top.",
   "kind": "terrain",
   "shape": "tall rectangle",
-  "walkable": 68
+  "walkable": 57
  },
  "hills_saddle": {
   "cells": 61,
-  "idea": "Two grassy knolls with a saddle between them. The straight way runs up the saddle under both; each knoll is a longer climb, for a shot down the middle.",
+  "idea": "Two massifs of sharp peaks close in on a saddle. The only straight way runs up between them, past dark pines; the long ways go round each massif's outer side.",
   "kind": "terrain",
   "shape": "medium hex",
-  "walkable": 55
+  "walkable": 43
  },
  "hills_shoulder": {
   "cells": 94,
-  "idea": "A long grassy shoulder rising to the north-west, a gully falling away on the north-east. A ridge and a mountain break up the slope, so the climb means picking a side first.",
+  "idea": "A long grassy shoulder rising to the north-west, a gully falling away on the north-east, between two great clusters of peaks. Dark pines stand on the slope; the massif in the west splits the climb, so it means picking a side first.",
   "kind": "terrain",
   "shape": "wide rectangle",
-  "walkable": 83
+  "walkable": 71
  },
  "market_town_aisles": {
   "cells": 85,
@@ -414,31 +414,31 @@
  },
  "monastery_heights_climb": {
   "cells": 77,
-  "idea": "A stone path zigzags up the whole hillside between low walls, in stone steps where it climbs. The path is the quick way; the slope either side is open but slower going, and the top is held.",
+  "idea": "A stone path zigzags up the whole hillside between low walls, in stone steps where it climbs, under peaks at the top. The path is the quick way; the slope either side is open but slower going, and the top is held.",
   "kind": "path",
   "shape": "tall rectangle",
-  "walkable": 66
+  "walkable": 62
  },
  "monastery_heights_gardens": {
   "cells": 78,
-  "idea": "A slope climbing to an open terrace at the north, herb gardens in staggered rows on the way, and two low walls closing in toward the middle. The gardens block: walk the rows or go through the gap.",
+  "idea": "A slope climbing to an open terrace at the north under a cluster of peaks, herb gardens in staggered rows on the way, and two low walls closing in toward the middle. The gardens block: walk the rows or go through the gap.",
   "kind": "terrain",
   "shape": "rectangle",
-  "walkable": 61
+  "walkable": 57
  },
  "monastery_heights_ridge": {
   "cells": 95,
-  "idea": "A big mountain beside a rising shoulder of open ground. Prayer flags and gardens mark the south; the way round the mountain's west is long and low, the way up the shoulder short and steep.",
+  "idea": "A massif of peaks beside a rising shoulder of open ground. Prayer flags and gardens mark the south; the way round the massif's west is long and low, the way up the shoulder short and steep.",
   "kind": "terrain",
   "shape": "wide oval",
-  "walkable": 80
+  "walkable": 79
  },
  "monastery_heights_walled": {
   "cells": 37,
-  "idea": "A small walled garden on a slope with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.",
+  "idea": "A small walled garden on a slope below a few peaks, with a shaped pine at its heart, gaps north, south, east and west. The walls are low but they stop you: every way in is a door.",
   "kind": "terrain",
   "shape": "small hex",
-  "walkable": 25
+  "walkable": 23
  },
  "raided_farms_barns": {
   "cells": 121,
@@ -526,24 +526,24 @@
  },
  "snowy_peaks_lake": {
   "cells": 88,
-  "idea": "A frozen lake lying level in a hollow, snow slopes all round, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.",
+  "idea": "A frozen lake lying level in a hollow under a cluster of snowy peaks, snow slopes all round, ringed with snowy pines and ice rocks. The ice is wide open: quickest across, nothing to stand behind.",
   "kind": "terrain",
   "shape": "round",
-  "walkable": 78
+  "walkable": 75
  },
  "snowy_peaks_pass": {
   "cells": 77,
-  "idea": "Stacked ice cliffs close in from both sides to a pass one cell wide at the middle, with a frozen pond beyond it. One gap: whoever holds it holds the map.",
+  "idea": "Stacked ice cliffs close in from both sides to a pass one cell wide at the middle, a frozen pond beyond it and snowy peaks below it. One gap: whoever holds it holds the map.",
   "kind": "terrain",
   "shape": "tall rectangle",
-  "walkable": 54
+  "walkable": 51
  },
  "snowy_peaks_shelf": {
   "cells": 83,
-  "idea": "A sheer shelf of stacked ice across the whole map, a mountain behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.",
+  "idea": "A sheer shelf of stacked ice across the whole map, a cluster of peaks behind it. Three stairs: two from the south, one from the north, so the shelf can be held or crossed at a few narrow places.",
   "kind": "terrain",
   "shape": "wide rectangle",
-  "walkable": 76
+  "walkable": 75
  },
  "stormy_plains_outcrop": {
   "cells": 61,
@@ -624,17 +624,17 @@
  },
  "volcanic_peaks_crater": {
   "cells": 67,
-  "idea": "A great crater cone in the middle of the map, a sheer basalt block on its west with stairs at either end and a lava fissure on its east. The fight goes round the cone.",
+  "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with stairs at either end and a lava fissure on its east. The fight goes round it.",
   "kind": "terrain",
   "shape": "big hex",
   "walkable": 55
  },
  "volcanic_peaks_fissures": {
   "cells": 94,
-  "idea": "Two lava fissures run in from the north corners and nearly meet at the middle of a dark slope. Three ways through: one narrow gap at the centre, the long ways round at each side. A smoking cone stands to the south-east.",
+  "idea": "Two lava fissures run in from the north corners and nearly meet at the middle of a dark slope. Three ways through: one narrow gap at the centre, the long ways round at each side. A cluster of cones with a crater stands to the south-east.",
   "kind": "terrain",
   "shape": "wide rectangle",
-  "walkable": 79
+  "walkable": 76
  },
  "volcanic_peaks_ledge": {
   "cells": 50,

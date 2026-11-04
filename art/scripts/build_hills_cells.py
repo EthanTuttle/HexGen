@@ -41,7 +41,7 @@ snow, ash = hk.PALETTE["snow_ground"], hk.PALETTE["ash_ground"]
 hk.PALETTE.update({"cell_snowy_peaks_b": fc.mix(snow, "#BCD0E0", 0.14), "cell_snowy_peaks_c": fc.mix(snow, "#BCD0E0", 0.26),
                    "cell_snowy_peaks_cover": fc.mix(snow, "#8FA8BD", 0.4), "cell_snowy_peaks_block": fc.mix(snow, "#8795A3", 0.55),
                    "cell_volcanic_peaks_cover": fc.mix(ash, "#000000", 0.2), "cell_volcanic_peaks_block": fc.mix(ash, "#35323A", 0.6),
-                   "cell_monastery_heights_track": hk.PALETTE["rock_light"]})
+                   "cell_monastery_heights_track": hk.PALETTE["rock_light"], "pine_dark": "#2C5230"})
 PEAK_LOOK = {"hills": dict(skirt="hill_grass"), "highlands": dict(skirt="highland_grass"),
              "snowy_peaks": dict(cap="snow_light", tall=1.15), "volcanic_peaks": dict(crater=True),
              "monastery_heights": dict(skirt="hill_grass")}
@@ -118,13 +118,8 @@ def banner(p, rng):
 
 
 def tree(p, rng, v, at, k):
-    if v == "hills":
-        if k % 3 == 1:
-            vr.pine(p, rng, at, rng.uniform(2.4, 3.0), "pine_deep")
-        else:
-            pc.broad_tree(p, rng, at)
-    elif v == "highlands":
-        vr.pine(p, rng, at, rng.uniform(2.2, 2.8), "leaf_dark")
+    if v in ("hills", "highlands"):
+        vr.pine(p, rng, at, rng.uniform(1.9, 2.5), "pine_dark")
     elif v == "snowy_peaks":
         vr.snow_pine(p, rng, at, rng.uniform(2.2, 2.7))
     elif v == "volcanic_peaks":
@@ -138,7 +133,7 @@ def shaped_pine(p, rng, at):
     top = at + Vector((0.22, 0.1, 2.2))
     vr.frustum(p, at, top, 0.2, 0.09, "trunk_old")
     for q, r in ((top, 0.72), (at + Vector((-0.45, 0, 1.55)), 0.55), (at + Vector((0.62, -0.18, 1.3)), 0.48)):
-        vr.lump(p, q, r, "pine_deep", squash=0.42)
+        vr.lump(p, q, r, "pine_dark", squash=0.42)
 
 
 def herb_terrace(p, rng):
@@ -217,25 +212,14 @@ def brush(p, rng, v):
                 vr.lump(p, q + Vector((x, y, 0)), r, "shrub_red", z=r * 0.4, squash=0.7)
 
 
-FLOWER_FOOT = (1.27, 0.25, 6, math.pi / 6)
-_to_first = fc.centres(TRIANGLE)[0] - mean(TRIANGLE)
-TRIANGLE_FOOT = (0.86, 0.24, 3, math.atan2(_to_first.y, _to_first.x))
-
-
-def peaks(v):
-    look = PEAK_LOOK[v]
-    return {"P": ("peak_3", TRIANGLE, lambda p, r: peak(p, r, mean(TRIANGLE), TRIANGLE_FOOT, 2.5, v, **look)),
-            "Q": ("peak_7", FLOWER7, lambda p, r: peak(p, r, ZERO, FLOWER_FOOT, 3.7, v, **look))}
-
-
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_hills_maps.py reads this.
 KIT = {
-    "hills": {**peaks("hills"), "N": ("crag", SINGLE, lambda p, r: crag(p, r, "hills"))},
-    "highlands": {**peaks("highlands"), "N": ("crag", SINGLE, lambda p, r: crag(p, r, "highlands")),
+    "hills": {"N": ("crag", SINGLE, lambda p, r: crag(p, r, "hills")), "U": ("tree_broad", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO))},
+    "highlands": {"N": ("crag", SINGLE, lambda p, r: crag(p, r, "highlands")),
                   "I": ("cairn", SINGLE, cairn_big), "J": ("banner", SINGLE, banner)},
-    "snowy_peaks": {**peaks("snowy_peaks"), "N": ("ice_crag", SINGLE, lambda p, r: crag(p, r, "snowy_peaks"))},
-    "volcanic_peaks": {**peaks("volcanic_peaks"), "I": ("columns", SINGLE, basalt_columns), "J": ("vent", SINGLE, vent)},
-    "monastery_heights": {**peaks("monastery_heights"), "E": ("herb_terrace", SINGLE, herb_terrace), "I": ("flags", SINGLE, flags)},
+    "snowy_peaks": {"N": ("ice_crag", SINGLE, lambda p, r: crag(p, r, "snowy_peaks"))},
+    "volcanic_peaks": {"I": ("columns", SINGLE, basalt_columns), "J": ("vent", SINGLE, vent)},
+    "monastery_heights": {"E": ("herb_terrace", SINGLE, herb_terrace), "I": ("flags", SINGLE, flags)},
 }
 
 
