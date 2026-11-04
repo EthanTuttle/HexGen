@@ -61,7 +61,7 @@ The layer caps each tile at `PROP_BUDGET`, 3,900: water, banks, trails, props an
 | Tile | Worst in the test, before the slab |
 | --- | --- |
 | Every tile but the Pit | 3,900 at most, the cap |
-| Plague Pit | About 2,500 (no slab) |
+| Plague Pit | Under 2,500 (no slab) |
 
 Mist overlaps, so its overdraw on phones is worth watching.
 
