@@ -26,6 +26,7 @@ var self_done := ""              # a self card just used
 var moved := 0                   # hexes moved by the last Move
 var phase := "allies"
 var grid := {}                   # cell -> {kind, z, way_up}
+var treads := {}                 # cell -> [mask of neighbours, height]: a hills map's long steps (CombatMap.treads_of)
 var map_id := ""                 # the map this fight is on; "" on the old board
 var map_tris := 0
 var map_build_ms := 0.0
@@ -57,7 +58,7 @@ func _ready() -> void:
 	# Combat v14 colours: active ally rim, foes in reach (gold), the target (orange), allies in reach
 	# (light green circle), the ally target (dark green), hexes a Move can reach.
 	for k in [["active", "#FCF7EE"], ["reach", "#F2C14E"], ["target", "#B5532F"], ["ally", "#A8DC8C"],
-			["ally_target", "#2E8A47"], ["move", "#D3EBC1"], ["move_tree", "#86B97E"], ["up", "#2E8A47"]]:   # up: PLACEHOLDER
+			["ally_target", "#2E8A47"], ["move", "#D3EBC1"], ["move_lava", "#F2B27A"], ["move_tree", "#86B97E"], ["up", "#2E8A47"]]:   # up: PLACEHOLDER
 		var m := StandardMaterial3D.new()
 		m.albedo_color = Color(k[1])
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -119,16 +120,16 @@ func opening() -> Dictionary:
 	var from: Vector3 = allies[0].mini.position if not allies.is_empty() else Vector3.ZERO
 	var foes := units.filter(func(u): return not u.ally and not u.down)
 	foes.sort_custom(func(a, b): return a.mini.position.distance_squared_to(from) < b.mini.position.distance_squared_to(from))
-	var box := Rect2(_plan(from), Vector2.ZERO)
+	var box := Rect2(_plan(from, from.y), Vector2.ZERO)
 	var framed := 0
 	var missed = null
 	for u: Dictionary in allies + foes:
-		var more := box.expand(_plan(u.mini.position))
+		var more := box.expand(_plan(u.mini.position, from.y))
 		if _distance_to_fit(more) <= Rules.FIGHT_DISTANCE_MAX:
 			box = more
 			framed += 0 if u.ally else 1
 		elif missed == null and not u.ally:
-			missed = _plan(u.mini.position)
+			missed = _plan(u.mini.position, from.y)
 	var d: float = Rules.FIGHT_DISTANCE_MAX if missed != null else clampf(_distance_to_fit(box), Rules.FIGHT_DISTANCE_MIN, Rules.FIGHT_DISTANCE_MAX)
 	var half := Vector2(Rules.FIGHT_OPEN.x, Rules.FIGHT_OPEN.y / sin(deg_to_rad(52.0))) * 0.5 * _per_unit() * d
 	var cells := _cells_box()
@@ -146,8 +147,9 @@ const PAD_NEAR := 0.5
 const PAD_FAR := 1.2
 
 
-func _plan(p: Vector3) -> Vector2:
-	return Vector2(p.x, -p.z)
+## Where p shows on the opening's ground plane at height y: higher things look further up the screen at this tilt.
+func _plan(p: Vector3, y: float) -> Vector2:
+	return Vector2(p.x, -p.z + (p.y - y) / tan(deg_to_rad(52.0)))
 
 
 func _per_unit() -> float:
@@ -191,6 +193,7 @@ func _setup_board(terrain: String, tile: Vector2i, foes: int) -> void:
 		(trees if k < Rules.BOARD_TREES.get(terrain, 0) else rocks).append(c)
 	board.setup(trees, rocks)
 	board.heights = {}
+	treads = {}
 	grid = {}
 	for c in CombatBoard.cells():
 		grid[c] = {kind = "blocked" if c in rocks else "open", z = 0.0, way_up = false}
@@ -215,6 +218,7 @@ func _setup_map(id: String) -> void:
 	for c: Vector2i in grid:
 		if grid[c].z != 0.0:
 			board.heights[c] = grid[c].z
+	treads = CombatMap.treads_of(id, grid)
 	var starts: Array = CombatMap.all()[id].starts
 	var foes_at := Vector2.ZERO
 	var party_at := Vector2.ZERO
@@ -236,7 +240,7 @@ func _setup_map(id: String) -> void:
 		else:
 			_add_unit(m, Vector2i(int(at[0].q), int(at[0].r)), true, "", foes_at)
 	for m: Dictionary in waiting:
-		_add_unit(m, _free_near(party_at), true, "", foes_at)
+		_add_unit(m, _free_near(party_at, units[0] if not units.is_empty() else {}), true, "", foes_at)
 	var n := 0
 	for st: Dictionary in starts:
 		if not String(st.mini).begins_with("standin_"):
@@ -249,13 +253,14 @@ func _setup_map(id: String) -> void:
 	map_build_ms = (Time.get_ticks_usec() - t0) / 1000.0
 
 
-## The free level cell nearest a point.
-func _free_near(p: Vector2) -> Vector2i:
+## The free cell nearest a point that the first of the party can walk to, so a hillside's cliff doesn't cut anyone off. Never lava.
+func _free_near(p: Vector2, first: Dictionary) -> Vector2i:
 	var best := Vector2i.ZERO
 	var d := INF
-	for c: Vector2i in grid:
+	var reach: Dictionary = _spread(first, 1 << 19, Callable()) if not first.is_empty() else grid
+	for c: Vector2i in reach:
 		var far := Hex.cell_position(c.x, c.y).distance_to(p)
-		if far < d and _open(c) and grid[c].z == 0.0:
+		if far < d and _open(c) and grid[c].kind != "lava":
 			d = far
 			best = c
 	return best
@@ -395,15 +400,15 @@ func step_cost(u: Dictionary, a: Vector2i, b: Vector2i) -> int:
 	if u.foot.size() > 1:
 		for off: Vector2i in u.foot:
 			var c: Vector2i = b + off
-			if not grid.has(c) or grid[c].kind == "blocked" or grid[c].z != grid[a].z or grid[c].way_up:
+			if not grid.has(c) or grid[c].kind in ["blocked", "lava"] or grid[c].z != grid[a].z or grid[c].way_up:
 				return -1
 			var there := unit_at(c)
 			if not there.is_empty() and there != u:
 				return -1
 		return 1
-	if not _open(b) or absf(rise) >= Rules.SHEER_RISE:
+	if not _open(b) or absf(rise) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
 		return -1
-	return 1 + (Rules.UPHILL_COST if rise >= Rules.UPHILL_RISE else 0)
+	return 1 + (Rules.UPHILL_COST if rise >= Rules.UPHILL_RISE - Rules.HEIGHT_SLACK else 0)
 
 
 ## Cells within one Move of u, with the path to each (DOCS: rocks and minis block, trees don't).
@@ -417,12 +422,13 @@ func reachable(u: Dictionary) -> Dictionary:
 
 
 ## The cheapest ways out from u's cell, up to `budget` of movement or until `stop` says a cell will do (`_stop_at` then holds it). Cell -> where from.
+## Of ways that cost the same, the one through the least lava (a hundredth of a move a cell, which never changes what a budget reaches).
 var _stop_at = null
 
 
 func _spread(u: Dictionary, budget: int, stop: Callable) -> Dictionary:
 	var came := {u.cell: u.cell}
-	var cost := {u.cell: 0}
+	var cost := {u.cell: 0.0}
 	var todo: Array = [u.cell]
 	_stop_at = null
 	while not todo.is_empty():
@@ -437,9 +443,12 @@ func _spread(u: Dictionary, budget: int, stop: Callable) -> Dictionary:
 		for n in Hex.NEIGHBOURS:
 			var m: Vector2i = c + n
 			var step := step_cost(u, c, m)
-			if step < 0 or cost[c] + step > budget or cost[c] + step >= cost.get(m, 1 << 20):
+			if step < 0:
 				continue
-			cost[m] = cost[c] + step
+			var total: float = cost[c] + step + (0.01 if grid[m].kind == "lava" else 0.0)
+			if floorf(total) > budget or total >= cost.get(m, 1 << 20):
+				continue
+			cost[m] = total
 			came[m] = c
 			if not m in todo:
 				todo.append(m)
@@ -508,20 +517,27 @@ func _overlay(c: Vector2i, mat: String, disc := false) -> void:
 ## A cell's highlight, climbing over the treads of any way up beside it (art/handoff/combat_forest_kit.md -> Ways up in the engine).
 func _lifted_mesh(c: Vector2i) -> Mesh:
 	var mask := 0
+	var high := Rules.STEPS_HIGH
+	var reach := Rules.STEPS_REACH
 	for i in 6:
 		var n: Vector2i = c + Hex.NEIGHBOURS[i]
 		if grid.has(n) and grid.has(c) and grid[n].way_up and grid[n].z > grid[c].z:
 			mask |= 1 << i
+	if treads.has(c):
+		mask = treads[c][0]
+		high = treads[c][1] + 0.03
+		reach = Rules.LIFT_REACH
 	if mask == 0:
 		return _hex_mesh
-	if not _lifted.has(mask):
+	var key := mask + (roundi(high * 100.0) << 8)
+	if not _lifted.has(key):
 		var corners := Hex.hex_corners(Hex.CELL_RADIUS * 0.94, false)
 		var height := func(p: Vector2) -> float:
 			var h := 0.02
 			for i in 6:
 				if mask & (1 << i):
 					var out := Hex.cell_position(Hex.NEIGHBOURS[i].x, Hex.NEIGHBOURS[i].y).normalized()
-					h = maxf(h, Rules.STEPS_HIGH * (1.0 - (0.5 - p.dot(out)) / Rules.STEPS_REACH))
+					h = maxf(h, high * (1.0 - (0.5 - p.dot(out)) / reach))
 			return h
 		var verts := PackedVector3Array()
 		var rings := 5
@@ -539,8 +555,8 @@ func _lifted_mesh(c: Vector2i) -> Mesh:
 		arrays[Mesh.ARRAY_VERTEX] = verts
 		var mesh := ArrayMesh.new()
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		_lifted[mask] = mesh
-	return _lifted[mask]
+		_lifted[key] = mesh
+	return _lifted[key]
 
 
 ## A small arrow over a cell a Move goes up to, as the steps run every way and don't show it. PLACEHOLDER look.
@@ -573,8 +589,8 @@ func _show_overlays() -> void:
 	var c := card()
 	if c.kind == "move" and not busy and ap_left(current) >= 1:
 		for cell in reachable(current).keys():
-			_overlay(cell, "move_tree" if cell in trees else "move")
-			if grid[cell].z - grid[current.cell].z >= Rules.UPHILL_RISE:
+			_overlay(cell, "move_lava" if grid[cell].kind == "lava" else "move_tree" if cell in trees else "move")
+			if grid[cell].z - grid[current.cell].z >= Rules.UPHILL_RISE - Rules.HEIGHT_SLACK:
 				_up_arrow(cell)
 	_overlay(current.cell, "active")
 	for u in units:
@@ -661,14 +677,19 @@ func click_cell(c: Vector2i) -> void:
 func _move(u: Dictionary, path: Array) -> void:
 	busy = true
 	_pay(u, card("move"))
-	u.cell = path[-1]
 	moved = path.size()
-	refresh()
-	await board.step_along(u.mini, path)
-	if not game.rig.player_moved:
+	await _walk(u, path)
+	if not game.rig.player_moved and not u.down:
 		game.rig.ease_to(global_position + u.mini.position, game.rig.distance, game.rig.yaw_deg)
 	busy = false
 	refresh()
+	if u.down:
+		_check_end()
+		if active and phase == "allies":
+			for a: Dictionary in units:
+				if a.ally and not a.down:
+					select(a)
+					break
 
 
 ## The panel's main button: Flip coins (attacks), Cast (saves and ally spells) or Use (self cards).
@@ -786,6 +807,33 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.defending = true
 
 
+## u walks a path, burning on each lava cell it enters (design/03 -> Lava) and stopping there if that downs it.
+func _walk(u: Dictionary, path: Array) -> void:
+	u.cell = path[-1]
+	refresh()
+	if not path.any(func(c): return grid[c].kind == "lava"):
+		await board.step_along(u.mini, path)
+		return
+	for c: Vector2i in path:
+		await board.step_along(u.mini, [c])
+		if grid[c].kind == "lava":
+			await _burn(u)
+			if u.down:
+				u.cell = c
+				return
+
+
+## Fire from lava. PLACEHOLDER: nobody is immune, and Defend doesn't reduce it (design/03: open).
+func _burn(u: Dictionary) -> void:
+	hud.float_text(u, "-%d" % Rules.LAVA_DAMAGE, true)
+	await _hurt(u, Rules.LAVA_DAMAGE)
+	refresh()
+
+
+func _in_lava(u: Dictionary) -> bool:
+	return not u.down and grid.has(u.cell) and grid[u.cell].kind == "lava"
+
+
 func _hurt(t: Dictionary, dmg: int) -> void:
 	t.hp -= dmg
 	if t.hp <= 0 and not t.down:
@@ -835,12 +883,16 @@ func _enemy_phase() -> void:
 	result = {}
 	refresh()
 	await get_tree().create_timer(0.5).timeout
+	for a in units.duplicate():   # the party's turn ends here
+		if a.ally and _in_lava(a):
+			await _burn(a)
+	_check_end()
 	for e in units.duplicate():
 		if e.ally or e.down or not active or phase != "enemies":
 			continue
 		e.defending = false
 		e.ap = Rules.AP
-		while e.ap > 0 and active and phase == "enemies":
+		while e.ap > 0 and not e.down and active and phase == "enemies":
 			var targets := foes_of(e)
 			if targets.is_empty():
 				break
@@ -855,8 +907,10 @@ func _enemy_phase() -> void:
 				if path.is_empty():
 					break
 				e.ap -= 1
-				e.cell = path[-1]
-				await board.step_along(e.mini, path)
+				await _walk(e, path)
+		if _in_lava(e):
+			await _burn(e)
+		_check_end()
 		await get_tree().create_timer(0.25).timeout
 	busy = false
 	if active and phase == "enemies":

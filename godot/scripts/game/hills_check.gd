@@ -544,7 +544,7 @@ func _check_fight(map: MapBoard) -> void:
 	game.start_fight(below)
 	await _wait(1.0)
 	await _shot("70_fight_on_raised_tile")
-	_check(game.fight.active and game.fight.visible, "a fight starts on a raised tile, on its usual flat board")
+	_check(game.fight.active and game.fight.visible, "a fight starts on a raised tile")
 	game.fight.finished.emit(true)
 	await _wait(0.5)
 	game.after.done.emit()

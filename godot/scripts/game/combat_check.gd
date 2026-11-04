@@ -2,7 +2,7 @@ class_name CombatCheck
 extends Node
 ## Checks the combat maps (art/handoff/combat_*_kit.md) in the game (`-- --combatcheck`, add `--shots` for screens/combat/): every map's data
 ## and starts, which maps a tile rolls, heights and ways up, giants, a whole fight from the zoom in and back, and for every map its
-## build time, triangles and how much of it the default camera shows. `--zoomclip` plays only the zoom; `--opening=<id>` shoots only how that map's fight opens. Prints COMBAT OK / COMBAT FAIL lines,
+## build time, triangles and how much of it the default camera shows. `--zoomclip` plays only the zoom; `--opening=<id>` shoots only how that map's fight opens; `--lavaclip` films Fissures' cone and fall (with --write-movie); `--hillsonly` skips to the hillside checks. Prints COMBAT OK / COMBAT FAIL lines,
 ## then COMBAT DONE. A test aid only.
 
 const HEAVIEST := ["scholars_town_lawns", "village_gardens", "village_lanes", "fortified_town_breach", "market_town_street"]
@@ -11,6 +11,7 @@ var game: Game
 var shots := false
 var failed := 0
 var fight: Fight
+var map_tris_of := {}
 
 
 func _ready() -> void:
@@ -46,6 +47,10 @@ func _run() -> void:
 		await _wait(4.0)
 		get_tree().quit()
 		return
+	if "--lavaclip" in OS.get_cmdline_user_args():
+		await _lava_clip()
+		get_tree().quit()
+		return
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--opening="):
 			await _wait(1.0)
@@ -61,7 +66,8 @@ func _run() -> void:
 	print("COMBAT first load of the village kit's two glbs: %d ms" % (Time.get_ticks_msec() - t0))
 	_check_data()
 	_check_choices()
-	await _whole_fight()
+	if not "--hillsonly" in OS.get_cmdline_user_args():
+		await _whole_fight()
 	game.hud.visible = false
 	game.map.visible = false
 	game.party_node.visible = false
@@ -69,8 +75,16 @@ func _run() -> void:
 	fight.game = game
 	fight.rng = game.rng
 	fight.active = false
+	if "--hillsonly" in OS.get_cmdline_user_args():
+		fight.hud = CombatHud.new(fight)
+		game.safe.add_child(fight.hud)
+		await _check_hills()
+		print("COMBAT DONE: %d failed" % failed)
+		get_tree().quit()
+		return
 	await _check_heights()
 	await _check_giants()
+	await _check_hills()
 	await _every_map()
 	await _perf_heaviest()
 	print("COMBAT DONE: %d failed" % failed)
@@ -80,7 +94,7 @@ func _run() -> void:
 
 func _check_data() -> void:
 	var maps := CombatMap.all()
-	_check(maps.size() == 64, "%d maps: 16 forest, 16 farmland, 12 plains, 20 village" % maps.size())
+	_check(maps.size() == 80, "%d maps: 16 forest, 16 farmland, 12 plains, 20 village, 16 hills" % maps.size())
 	var missing := 0
 	var empty := 0
 	var bad_starts := []
@@ -111,11 +125,14 @@ func _check_data() -> void:
 
 
 func _check_choices() -> void:
-	for name in ["forest", "plains", "farmland", "hills", "river", "desert", "swamp"]:
+	for name in ["forest", "plains", "farmland", "river", "desert", "swamp"]:
 		_check(CombatMap.choices(name, true).is_empty(), "%s: no maps yet, so the old board" % name)
 	_check(CombatMap.choices("deep_forest", false).size() == 3 and CombatMap.choices("deep_forest", true).size() == 4, "deep forest: 3 terrain maps, and its path map on a tile with paths")
 	_check(CombatMap.choices("village", true).size() == 4, "a tier 0 village has its own maps")
 	_check(CombatMap.choices("meadows", true).size() == 3, "plains variants have no path maps")
+	for name in ["hills", "highlands", "snowy_peaks", "volcanic_peaks"]:
+		_check(CombatMap.choices(name, true).size() == 3, "%s: 3 maps" % name)
+	_check(CombatMap.choices("monastery_heights", false).size() == 3 and CombatMap.choices("monastery_heights", true).size() == 4, "monastery heights: 3 terrain maps, and its path map on a tile with paths")
 	_check(CombatMap.choices("college", true) == CombatMap.choices("scholars_town", true), "a landmark's tile takes its variant's maps (PLACEHOLDER)")
 
 
@@ -196,6 +213,326 @@ func _whole_map_distance() -> float:
 	var wide := (box.size.x + 1.2) / (fight._per_unit() * Rules.FIGHT_OPEN.x)
 	var deep := (box.size.y + 2.4) * sin(deg_to_rad(52.0)) / (fight._per_unit() * Rules.FIGHT_OPEN.y)
 	return clampf(maxf(wide, deep), 14.0, 34.0)
+
+
+## The hillsides (art/handoff/combat_hills_kit.md): the height rule on all 16, the lifts' costs, Climb and its walls, lava's burns and flow.
+func _check_hills() -> void:
+	var ids := CombatMap.all().keys().filter(func(id): return CombatMap.all()[id].set == "combat_maps_hills")
+	var bad_gaps := []
+	var bad_steps := []
+	var cut_off := []
+	var walker := {foot = [Vector2i.ZERO]}
+	for id: String in ids:
+		_load(id)
+		var g := fight.grid
+		var people := fight.units
+		fight.units = []
+		for c: Vector2i in g:
+			if g[c].kind == "blocked":
+				continue
+			for n: Vector2i in Hex.NEIGHBOURS:
+				var m: Vector2i = c + n
+				if not g.has(m) or g[m].kind == "blocked":
+					continue
+				var rise: float = g[m].z - g[c].z
+				var gap := absf(rise)
+				if gap > 0.46 and gap < 0.89:
+					bad_gaps.append("%s %s" % [id, c])
+				var want := -1 if gap >= 0.89 else (2 if rise >= 0.29 else 1)
+				if fight.step_cost(walker, c, m) != want:
+					bad_steps.append("%s %s to %s" % [id, c, m])
+		var first: Dictionary = people[0]
+		var at: Vector2i = first.cell
+		walker.cell = at
+		var reach := fight._spread(walker, 1 << 19, Callable())
+		for c: Vector2i in g:
+			if g[c].kind != "blocked" and not reach.has(c):
+				cut_off.append("%s %s" % [id, c])
+		fight.units = people
+	_check(bad_gaps.is_empty(), "on all 16 hills maps walkable neighbours are up to 0.45 apart or 0.9 and more %s" % [bad_gaps])
+	_check(bad_steps.is_empty(), "every step costs 1, 2 going up 0.3 or more, and a gap of 0.9 or more can't be crossed either way %s" % [bad_steps.slice(0, 6)])
+	_check(cut_off.is_empty(), "every walkable cell can be walked to from the party %s" % [cut_off.slice(0, 6)])
+	for row: Array in [["snowy_peaks_shelf", [3, 4, 4]], ["volcanic_peaks_crater", [2, 3]], ["volcanic_peaks_ledge", [3, 3]]]:
+		var found := _lifts(row[0], walker)
+		_check(found == row[1], "%s: its lifts are %s moves, 2 each up and 1 each down, from lift_steps (found %s)" % [row[0], row[1], found])
+	await _check_terraces(walker)
+	await _check_lava(walker)
+	await _check_flow()
+	await _hills_shots()
+
+
+## How many moves each of a map's lifts takes, from the art's long steps, checking the climb and the way down.
+func _lifts(id: String, walker: Dictionary) -> Array:
+	_load(id)
+	var g := fight.grid
+	var people := fight.units
+	fight.units = []
+	var ups := {}
+	for c: Vector2i in fight.treads:
+		for i in 6:
+			var m: Vector2i = c + Hex.NEIGHBOURS[i]
+			if fight.treads[c][0] & (1 << i) and g.has(m) and absf(g[m].z - g[c].z - 0.45) < 0.01:
+				ups[[c, m]] = true
+	# Each cell may be entered from several sides, so a lift's length is the longest climb from where its long steps start.
+	var longest := func(self_call: Callable, c: Vector2i) -> int:
+		var best := 0
+		for up: Array in ups:
+			if up[0] == c:
+				if fight.step_cost(walker, up[0], up[1]) != 2 or fight.step_cost(walker, up[1], up[0]) != 1:
+					return -100
+				best = maxi(best, 1 + self_call.call(self_call, up[1]))
+		return best
+	var feet := []
+	for up: Array in ups:
+		if not ups.keys().any(func(o): return o[1] == up[0]):
+			feet.append(up[0])
+	var out := []
+	var seen := {}
+	for c: Vector2i in feet:
+		var path := [c]
+		var k := c
+		while true:
+			var next = null
+			for up: Array in ups:
+				if up[0] == k:
+					next = up[1]
+					break
+			if next == null:
+				break
+			path.append(next)
+			k = next
+		if not seen.has(path[-2]):
+			seen[path[-2]] = longest.call(longest, c)
+	fight.units = people
+	out = seen.values()
+	out.sort()
+	return out
+
+
+## Monastery: herb cells walk, terrace walls of 0.9 only by a stair cell, and Climb from foot to head.
+func _check_terraces(walker: Dictionary) -> void:
+	for id: String in ["monastery_heights_climb", "monastery_heights_gardens", "monastery_heights_ridge", "monastery_heights_walled"]:
+		_load(id)
+		var g := fight.grid
+		var people := fight.units
+		fight.units = []
+		var walls := 0
+		var stairs := 0
+		var herbs := 0
+		for c: Vector2i in g:
+			if g[c].kind == "brush":
+				for n: Vector2i in Hex.NEIGHBOURS:
+					if g.has(c + n) and g[c + n].kind != "blocked" and fight.step_cost(walker, c + n, c) > 0:
+						herbs += 1
+						break
+			if g[c].kind == "blocked":
+				continue
+			var up := false
+			var down := false
+			for n: Vector2i in Hex.NEIGHBOURS:
+				if not g.has(c + n) or g[c + n].kind == "blocked":
+					continue
+				var rise: float = g[c + n].z - g[c].z
+				walls += 1 if rise >= 0.89 else 0
+				up = up or absf(rise - 0.45) < 0.01
+				down = down or absf(rise + 0.45) < 0.01
+			stairs += 1 if up and down else 0
+		var lows: Array = g.keys().filter(func(c): return g[c].kind != "blocked")
+		lows.sort_custom(func(a, b): return g[a].z < g[b].z)
+		walker.cell = lows[0]
+		var came := fight._spread(walker, 1 << 19, Callable())
+		var top: Vector2i = lows[-1]
+		var moves := fight._path_to(walker, came, top).size()
+		print("COMBAT TERRACES %s: %d herb cells walked onto, %d sides of 0.9 or more, %d cells 0.45 both ways; lowest cell to highest %d moves" % [id, herbs, walls, stairs, moves])
+		_check(herbs == g.keys().filter(func(c): return g[c].kind == "brush").size(), "%s: herb rows can be walked onto" % id)
+		fight.units = people
+	await get_tree().process_frame
+
+
+func _check_lava(walker: Dictionary) -> void:
+	var id := "volcanic_peaks_fissures"
+	_load(id)
+	var g := fight.grid
+	var lava: Array = g.keys().filter(func(c): return g[c].kind == "lava")
+	_check(lava.size() == 14, "Fissures has 14 lava cells")
+	var u: Dictionary = fight.units[0]
+	var people := fight.units
+	fight.units = []
+	walker.cell = lava[0]
+	var walks := 0
+	for n: Vector2i in Hex.NEIGHBOURS:
+		if g.has(lava[0] + n) and fight.step_cost(walker, lava[0] + n, lava[0]) > 0:
+			walks += 1
+	_check(walks > 0, "lava can be walked onto")
+	# Of two ways that cost the same, the one without lava.
+	var tried := 0
+	var wrong := 0
+	for l: Vector2i in lava:
+		for a: Vector2i in Hex.NEIGHBOURS:
+			var s: Vector2i = l + a
+			if not g.has(s) or g[s].kind in ["blocked", "lava"]:
+				continue
+			for b: Vector2i in Hex.NEIGHBOURS:
+				var t: Vector2i = l + b
+				if t == s or Rules.hex_distance(s, t) != 2 or not g.has(t) or g[t].kind in ["blocked", "lava"]:
+					continue
+				for c: Vector2i in Hex.NEIGHBOURS:
+					var m: Vector2i = s + c
+					if m == l or Rules.hex_distance(m, t) != 1 or not g.has(m) or g[m].kind in ["blocked", "lava"]:
+						continue
+					if fight.step_cost(walker, s, m) + fight.step_cost(walker, m, t) == fight.step_cost(walker, s, l) + fight.step_cost(walker, l, t) and fight.step_cost(walker, s, m) > 0 and fight.step_cost(walker, m, t) > 0 and fight.step_cost(walker, s, l) > 0 and fight.step_cost(walker, l, t) > 0:
+						walker.cell = s
+						var path := fight._path_to(walker, fight._spread(walker, 4, Callable()), t)
+						tried += 1
+						wrong += 1 if path.any(func(k): return g[k].kind == "lava") else 0
+	_check(tried > 0 and wrong == 0, "a path goes round lava when that costs no more (%d cases, %d through it)" % [tried, wrong])
+	fight.units = people
+	# Burns: each cell entered, stopping if it downs you, and the end of a turn.
+	var beside := Vector2i.ZERO
+	var strip: Array = []
+	for l: Vector2i in lava:
+		for k: Vector2i in lava:
+			if Rules.hex_distance(l, k) == 1:
+				strip = [l, k]
+				break
+		if not strip.is_empty():
+			break
+	for n: Vector2i in Hex.NEIGHBOURS:
+		var s: Vector2i = strip[0] + n
+		if g.has(s) and g[s].kind != "blocked" and g[s].kind != "lava":
+			beside = s
+			break
+	for o in fight.units:
+		o.cell = Vector2i(99, 99) if o != u else o.cell
+	u.cell = beside
+	u.hp = 20
+	u.max_hp = 20
+	fight.current = u
+	await fight._walk(u, strip)
+	_check(u.hp == 20 - 2 * Rules.LAVA_DAMAGE and u.cell == strip[1], "walking through two lava cells burns twice")
+	u.hp = Rules.LAVA_DAMAGE
+	u.cell = beside
+	await fight._walk(u, strip)
+	_check(u.down and u.cell == strip[0], "a burn that downs a walker stops them on that cell")
+	u.down = false
+	u.mini.get_node("body").quaternion = Quaternion.IDENTITY
+	u.hp = 20
+	u.cell = strip[1]
+	var was_active := fight.active
+	fight.active = false   # stops the phase after the party's turn ends
+	await fight._enemy_phase()
+	_check(u.hp == 20 - Rules.LAVA_DAMAGE, "ending the party's turn in lava burns")
+	var e: Dictionary = fight.units.filter(func(o): return not o.ally)[0]
+	for o in fight.units:
+		if o != e and o != u:
+			o.down = true
+	u.cell = strip[1]
+	u.hp = 99
+	e.cell = strip[0]
+	e.hp = 20
+	fight.active = true
+	await fight._enemy_phase()
+	_check(e.hp == 20 - Rules.LAVA_DAMAGE, "a foe ending its turn in lava burns")
+	fight.active = was_active
+	fight.phase = "allies"
+	fight.busy = false
+	var giant := {foot = [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1)], cell = strip[0]}
+	var refused := true
+	fight.units = []
+	for l: Vector2i in lava:
+		for n: Vector2i in Hex.NEIGHBOURS:
+			if g.has(l + n):
+				refused = refused and fight.step_cost(giant, l + n, l) == -1
+	fight.units = people
+	_check(refused, "a giant won't step onto lava (PLACEHOLDER)")
+
+
+## The moving surface on first import: UV as the hand-off says, and growing metres along run downhill.
+func _check_flow() -> void:
+	for row: Array in [["volcanic_peaks_fissures", -17.59], ["volcanic_peaks_crater", -9.82]]:
+		var id: String = row[0]
+		_load(id)
+		await get_tree().process_frame
+		var mesh: Mesh = Kit.meshes("res://art/combat_maps_hills.glb")["map_%s_lava_flow" % id]
+		var surfaces := {}
+		var low := INF
+		var high := -INF
+		var y_at_start := 0.0
+		var y_at_end := 0.0
+		var wide := 0.0
+		for k in mesh.get_surface_count():
+			var m := mesh.surface_get_material(k)
+			surfaces[m.resource_name] = m is ShaderMaterial
+			if m.resource_name != "lava_flow":
+				continue
+			var data := mesh.surface_get_arrays(k)
+			var uv: PackedVector2Array = data[Mesh.ARRAY_TEX_UV]
+			var verts: PackedVector3Array = data[Mesh.ARRAY_VERTEX]
+			for i in uv.size():
+				wide = maxf(wide, absf(uv[i].x))
+				if uv[i].y > high:
+					high = uv[i].y
+					y_at_start = verts[i].y
+				if uv[i].y < low:
+					low = uv[i].y
+					y_at_end = verts[i].y
+		print("COMBAT FLOW %s: UV.y %.2f to %.2f, across up to %.2f; height %.2f at the crater end, %.2f at the far end; surfaces %s" % [id, high, low, wide, y_at_start, y_at_end, surfaces])
+		_check(surfaces.get("lava_flow", false) and absf(high - 1.0) < 0.05 and absf(low - row[1]) < 0.05, "%s: lava_flow has the moving material and its UVs as handed off" % id)
+		_check(y_at_end < y_at_start, "%s: metres along grow going downhill, so the scroll runs downstream" % id)
+		_check(surfaces.keys().size() >= 2 and surfaces.keys().any(func(n): return n != "lava_flow" and not surfaces[n]), "%s: its banks don't scroll" % id)
+
+
+func _hills_shots() -> void:
+	game.rig.focus = Rules.FIGHT_FOCUS
+	await _wait(1.5)   # the burns' floating numbers
+	for id: String in ["snowy_peaks_shelf", "monastery_heights_ridge", "monastery_heights_climb", "volcanic_peaks_fissures", "volcanic_peaks_crater"]:
+		_load(id)
+		var view := fight.opening()
+		game.rig.frame(view.target, view.distance, 52.0)
+		await _shot("hills_%s" % id)
+	# Move's highlights over a lift's treads, from both sides of the camera.
+	_load("snowy_peaks_shelf")
+	var u: Dictionary = fight.units[0]
+	var low: Vector2i = fight.treads.keys()[0]
+	u.cell = low
+	u.mini.position = fight.cell_point(low)
+	u.ap = Rules.AP
+	fight.current = u
+	fight.sel = "move"
+	fight.phase = "allies"
+	fight.visible = true
+	fight._show_overlays()
+	game.rig.frame(fight.global_position + fight.cell_point(low), 12.0, 52.0)
+	await _shot("hills_lift_move")
+	game.rig.yaw_deg = 180.0
+	await _shot("hills_lift_move_turned")
+	game.rig.yaw_deg = 0.0
+	fight._clear_overlays()
+
+
+## Fissures' cone, then its fall, without the panels.
+func _lava_clip() -> void:
+	await _wait(0.5)
+	game.debug_fight("volcanic_peaks_fissures")
+	await _wait(Rules.ZOOM_SECONDS * 2.0 + 0.5)
+	game.fight.hud.visible = false
+	game.rig.focus = Vector2(422, 195)
+	var data: Dictionary = CombatMap.all()["volcanic_peaks_fissures"]
+	var into := {}
+	var ends := []
+	var flow := []
+	for c: Dictionary in data.cells:
+		if c.kind == "lava":
+			flow.append(c)
+			if c.has("flow_to"):
+				into[Vector2i(int(c.flow_to[0]), int(c.flow_to[1]))] = true
+			else:
+				ends.append(c)
+	var first: Dictionary = flow.filter(func(c): return not into.has(Vector2i(int(c.q), int(c.r))))[0]
+	var f := game.fight
+	for view: Array in [[first, 11.0, 42.0, 0.0], [ends[0], 11.0, 32.0, 0.0], [ends[0], 9.0, 25.0, 60.0]]:
+		game.rig.frame(f.global_position + f.cell_point(Vector2i(int(view[0].q), int(view[0].r))), view[1], view[2], view[3])
+		await _wait(4.0)
 
 
 ## Is this unit's foot between the panels?
@@ -394,6 +731,7 @@ func _every_map() -> void:
 			for s in mesh.get_surface_count():
 				with_minis += mesh.surface_get_array_index_len(s) / 3
 		worst_tris = maxi(worst_tris, with_minis)
+		map_tris_of[id] = with_minis
 		print("COMBAT MAP %s: %d cells, %d walkable; %d tris, %d with minis; build %.0f ms; camera %.1f m%s; hidden with the whole map in view %d, off screen %d" % [id,
 			fight.grid.size(), cells.size(), fight.map_tris, with_minis, fight.map_build_ms, fight.open_distance,
 			" (at the limit)" if fight.open_distance >= 34.0 else "", hidden, off])
@@ -414,7 +752,13 @@ func _every_map() -> void:
 
 func _perf_heaviest() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-	for id: String in HEAVIEST:
+	var hills := CombatMap.all().keys().filter(func(id): return CombatMap.all()[id].set == "combat_maps_hills")
+	hills.sort_custom(func(a, b): return map_tris_of.get(a, 0) > map_tris_of.get(b, 0))
+	var list := HEAVIEST + hills.slice(0, 3)
+	for id: String in ["volcanic_peaks_fissures", "volcanic_peaks_crater"]:
+		if not id in list:
+			list.append(id)
+	for id: String in list:
 		_load(id)
 		for _f in 60:
 			await get_tree().process_frame

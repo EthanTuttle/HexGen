@@ -500,12 +500,12 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - **Rapids gorge:** the walls' and ground's stencil, the unlit falls and foam, and flow on sloped water, judged moving; a region turning into rapids (worst frame 243 ms on the Mac).
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Swamp:** a swamp card placed beside others and a region turning (`SWAMP PERF` lines; `marsh_tile` 26 ms a tile on the Mac, off the main thread when a region turns, on it when a card lands); the wisps, bubbles and mist on a real screen.
-- **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone), drawn double-sided; the zoom into a fight; tapping raised cells and giants on a real screen; the opening's distance and panning across a map on a real screen, judged by hand; the hidden-cell counts (`COMBAT MAP` lines, measured with the whole map in view, so they stay comparable), judged against what tall pieces hide once panned close.
+- **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone), drawn double-sided; the zoom into a fight; tapping raised cells and giants on a real screen; the opening's distance and panning across a map on a real screen, judged by hand; moving lava's cost and look on a real screen (Fissures, Crater; `COMBAT PERF` lines); peaks hiding cells on hills maps (the kit's table); the hidden-cell counts (`COMBAT MAP` lines, measured with the whole map in view, so they stay comparable), judged against what tall pieces hide once panned close.
 - **Covered window, with Ethan at the Mac (not the phone):** cover a `--forestcheck` window and look for `UNDRAWN`, to confirm the stall's cause. Pixel failures after `UNDRAWN` mean rerun, not pass.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
-## Combat kit (forest, plains, farmland, village)
+## Combat kit (forest, plains, farmland, village, hills)
 
 Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatcheck` (add `--shots` for `screens/combat/`) checks it and ends `COMBAT DONE`. Debug: `-- --combatmap=<id>` or F10 (next map) jumps to any map by id. New: `combat_map.gd`, `game/combat_check.gd`; `Fight`, `CombatBoard`, `CameraRig.fly_to`, `Game.start_fight` changed.
 
@@ -513,6 +513,8 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 - **Drawing:** each piece is one MultiMesh, so a map costs about 20 to 30 draw calls.
 - **Moving:** `Fight.step_cost` reads `cells`, `z` and `way_up`. A step onto or off a landing is an ordinary Move, +1 going up. A rise of 0.9 or more can't be crossed.
 - **Highlights** climb the treads beside a way up (`_lifted_mesh`); bases stay lined up with their cells.
+- **Hillsides (kit v7, maps v12):** lifts and terrace stairs are ordinary cells, so `step_cost`'s height rule covers them; `--combatcheck` holds the hand-off's lift table to it. `CombatMap.treads_of` reads where long steps are from the `lift_steps` and `path_steps` meshes, as the data doesn't say, and highlights climb them. A party member with no start goes on the nearest cell the first of the party can walk to.
+- **Lava:** `Fight._walk` burns per cell entered, `_enemy_phase` at the end of a turn. `lava_flow`'s glow scrolls down its UV in place; banks don't scroll.
 - **Giants** (design/03): the whole body must fit at every step, any cell can be attacked, they melee from any cell, and nothing moves them.
 - **Door and window plates:** some face into their walls, so culled they vanish from outside. Stopgap: the combat kits draw double-sided (`Kit.combat_materials`). Take it out when the art turns them round. Whether the tiles' town pieces have this too hasn't been tested.
 
@@ -529,6 +531,10 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 | Giant facing and slopes | Facing fixed; level ground only, no landings (design/03 open question) |
 | Up arrow, its colour | `Fight._up_arrow`, on cells a Move goes up to |
 | Zoom | 0.6 s in, fade colour, the map coming up from 1.35 × its distance. Back to the world map is a cut, as before |
+| Lava damage | `Rules.LAVA_DAMAGE` 2, a foe's plain hit: each lava cell entered, and ending a turn in one (design/03, amount open) |
+| Lava: who it affects | Foes aren't told to avoid it; like everyone, of two paths that cost the same they take the one with less lava. Nobody is immune. Defend doesn't reduce it. Giants won't step on it. Nothing pushes anyone yet, so pushes in don't exist |
+| Lava on the Move highlight | `move_lava` colour |
+| Moving lava | `shaders/combat_lava.gdshader`: speed 0.45 m/s and colours from `render_lava_movie.py`, noise scale and softness by eye. The shared `lava` pulses on a 4 s beat. Smoke from craters and night aren't built |
 | Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in `Rules.FIGHT_OPEN` at `FIGHT_FOCUS`, 14 to 28 m back (`FIGHT_DISTANCE_*`, to judge on the phone). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
 
 **Not built:** fire, smoke and other effects on maps (`combat_*_paths.json`), night on maps. 21 `map_*_gates` and `_wall_to_towers` placements have no mesh on purpose; the art export will stop writing them.

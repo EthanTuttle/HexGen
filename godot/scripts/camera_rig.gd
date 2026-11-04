@@ -70,6 +70,8 @@ func _pan(relative: Vector2) -> void:
 
 
 func frame(at: Vector3, dist: float, pitch: float, yaw := 0.0) -> void:
+	if _tween:
+		_tween.kill()
 	home = {target = at, distance = dist, pitch = pitch, yaw = yaw}
 	target = at
 	distance = dist
