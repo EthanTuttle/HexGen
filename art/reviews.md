@@ -105,3 +105,8 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/hills_map_monastery_heights_ridge_v8.png` | note | Terrace direction liked (also Gardens v10); trim herbs into purposeful plots; terrace Walled and Climb |
 | 2026-11-04 | `art/preview/fey_big_map_v1.png` | note | Direction holds. Seasons only, no locked time of day (day and night cycle lights it); keep all four seasons; winter is snowy pines and bare limbs; overhang allowed; build the kit |
 | 2026-11-04 | `art/preview/hills_maps_monastery_heights_beside_tile_v3.png` | approved | Monastery set: Gardens v11, Walled v9, Ridge v9, Climb v9; all hills merge |
+| 2026-11-04 | `art/preview/fey_gate_arch_v1.png` | approved | Fey Gate is the arch; portal light purple, with wisps of light going into it |
+| 2026-11-04 | `art/preview/fey_gate_seams_v1.png` | rejected | Not chosen |
+| 2026-11-04 | `art/preview/fey_gate_stones_v1.png` | rejected | Not chosen |
+| 2026-11-04 | `art/preview/fey_kit_map_v1.png` | note | Fewer trails, more trees; off-trail spoke walk accepted |
+| 2026-11-04 | `art/preview/forest_maps_forest_beside_tile_v1.png` | approved | Plain forest tier 0: Glade, Windfall, Knoll; Glade giant moves back |
