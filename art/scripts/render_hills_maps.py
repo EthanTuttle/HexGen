@@ -612,7 +612,7 @@ def terrace_curbs(col, cells, z):
     for c in cells:
         for a, b, out, n in cell_edges(c, cells):
             if n in cells and z[c] - z[n] > 0.4:
-                rail(p, a, b, -out * 0.0 + out * 0.03, -0.08, 0.1, z[c] + 0.035, "rock_light")
+                rail(p, a + out * 0.03, b + out * 0.03, -out * 0.001, 0.08, 0.1, z[c] + 0.035, "rock_light")
     p.finish(col)
 
 

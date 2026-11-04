@@ -10,6 +10,9 @@ Wolves, spiders, giants, bandits, undead, the forest cell and obstacle kit, and 
 
 All pieces use the kit material with flat vertex colours, except the fey mushrooms' own material, as on the tiles, and on ghosts `ghost_glow` and `lantern`. `ghost_glow` is a faint glow in its own material (emission 0.35 in the blend; it's in the glb).
 
+
+**Facing:** every combat kit's faces are wound outward, so back-face culling is safe on them all: `Piece.finish` turns open sheets the right way, and the map export stops if `art/scripts/check_winding.py` finds a sheet facing in. `web` is the exception: see-through and meant to show from both sides, so its material needs culling off. Prayer-flag cloth has a face each way. A map's own piece with nothing in it is left out of the export.
+
 ## Minis
 
 | Piece | Triangles | Cells |
