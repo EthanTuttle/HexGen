@@ -1019,11 +1019,13 @@ def export(maps, build, load, variant_of, stem, cell_extra=None):
     hk.empty_scene()
     t = load()
     keep = hk.new_collection("maps")
-    wound = cw.report([o for name, o in t.items() if name.startswith(("cell_", "ob_"))])
+    wound = {}
     data = {}
     for name in maps:
         col = hk.new_collection(f"building_{name}")
         cells = build(t, col, name)
+        bpy.context.view_layer.update()
+        wound[name] = max(cw.holes(col.objects).values(), default=0)
         placements = []
         for o in list(col.objects):
             if "piece" not in o and not o.data.polygons:  # a map's own piece with nothing in it this time
@@ -1071,9 +1073,9 @@ def export(maps, build, load, variant_of, stem, cell_extra=None):
     for o in list(bpy.data.objects):
         if o.name not in keep.objects:
             bpy.data.objects.remove(o)
-    wound.update(cw.report(keep.objects))
+    wound = {name: rays for name, rays in wound.items() if rays > cw.LIMIT}
     if wound:
-        sys.exit(f"Not exported: faces wound into their pieces in {sorted(wound)}")
+        sys.exit(f"Not exported: back faces showing from the game's camera on {wound}")
     path = hk.next_version(os.path.join(hk.ART, "combat"), stem)
     bpy.ops.wm.save_as_mainfile(filepath=path)
     print("SAVED", path)

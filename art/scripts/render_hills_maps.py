@@ -587,7 +587,7 @@ def retaining_wall(p, a, b, z0, z1):
 
 
 def rail(p, a, b, inward, wide, high, z, mat):
-    """A low strip along a cell's edge, from a to b, set inward from it: its top and two long sides. Its underside and ends never show."""
+    """A low strip along a cell's edge, from a to b, set inward from it: its top and sides. Its underside never shows."""
     up = Vector((0, 0, 1))
     a0, b0 = a + inward, b + inward
     a1, b1 = a0 + inward.normalized() * wide, b0 + inward.normalized() * wide
@@ -595,6 +595,9 @@ def rail(p, a, b, inward, wide, high, z, mat):
     lay(p, (ring[1][0], ring[1][1], ring[1][2], ring[1][3]), up, mat)
     lay(p, (ring[0][0], ring[0][1], ring[1][1], ring[1][0]), -inward, mat)
     lay(p, (ring[0][3], ring[0][2], ring[1][2], ring[1][3]), inward, mat)
+    along = (b - a).normalized()
+    lay(p, (ring[0][0], ring[0][3], ring[1][3], ring[1][0]), -along, mat)
+    lay(p, (ring[0][1], ring[0][2], ring[1][2], ring[1][1]), along, mat)
 
 
 def cell_edges(c, cells):
@@ -764,7 +767,10 @@ def peak_cluster(p, rng, v, group, z, ground):
                         mat = look["cap"]
                     if band == 2 and look.get("skirt"):
                         mat = look["skirt"]
-                    p.bm.faces.new(tri).material_index = p._slot(mat)
+                    f = p.bm.faces.new(tri)
+                    f.material_index = p._slot(mat)
+                    if band > 0:  # where its foot crosses onto lower ground, a camera can see up inside it
+                        p.both_sides.append(f)
 
 
 def cone_groups(group):
@@ -837,7 +843,10 @@ def volcano(p, rng, v, cells, z, ground, run_to=None, line=None, flow=None):
             m = (j + 1) % n
             for tri in ((a[j], b[j], b[m]), (a[j], b[m], a[m])):
                 mat = skirt if band == 2 else main if rng.random() < 0.6 else side
-                p.bm.faces.new(tri).material_index = p._slot(mat)
+                f = p.bm.faces.new(tri)
+                f.material_index = p._slot(mat)
+                if band > 0:  # where its foot crosses onto lower ground, a camera can see up inside it
+                    p.both_sides.append(f)
 
     stack = [inner] + rings
 
@@ -885,6 +894,7 @@ def lay(p, verts, out, mat):
         f.normal_flip()
     f.material_index = p._slot(mat)
     p.surface.add(f)
+    return f
 
 
 def channel_down(p, rng, on_side, outward, top, j, end, pool, line):
@@ -907,7 +917,11 @@ def channel_down(p, rng, on_side, outward, top, j, end, pool, line):
         row_now = [p.bm.verts.new(mid + along * half * x * spread + out * h) for x, h in ((-1.7, 0.02), (-1.3, bank + 0.02), (-0.95, 0.045), (0.0, 0.05), (0.95, 0.045), (1.3, bank + 0.02), (1.7, 0.02))]
         if row:
             for k in range(6):
-                lay(p, (row[k], row_now[k], row_now[k + 1], row[k + 1]), out, "lava_flow" if k in (2, 3) else "basalt_dark")
+                mat = "lava_flow" if k in (2, 3) else "basalt_dark"
+                # The channel stands clear of the cone at the crater's lip and in its hollows, so it shows from behind too.
+                faces = [lay(p, tri, out, mat) for tri in ((row[k], row_now[k], row_now[k + 1]), (row[k], row_now[k + 1], row[k + 1]))]
+                p.backs.update(faces)
+                p.both_sides.extend(faces)
         row = row_now
     line.append(end)
     # The banks run down onto the first cell's dark rim at one clean line; the lava carries on over the rim into its pool.
@@ -915,7 +929,9 @@ def channel_down(p, rng, on_side, outward, top, j, end, pool, line):
     foot = [p.bm.verts.new(end + across * 0.2 * x + Vector((0, 0, h))) for x, h in ((-1.7, -0.05), (-1.3, 0.0), (-0.95, -0.018), (0.0, -0.018), (0.95, -0.018), (1.3, 0.0), (1.7, -0.05))]
     up = Vector((0, 0, 1))
     for k in range(6):
-        lay(p, (row[k], foot[k], foot[k + 1], row[k + 1]), up, "lava_flow" if k in (2, 3) else "basalt_dark")
+        faces = [lay(p, tri, up, "lava_flow" if k in (2, 3) else "basalt_dark") for tri in ((row[k], foot[k], foot[k + 1]), (row[k], foot[k + 1], row[k + 1]))]
+        p.backs.update(faces)
+        p.both_sides.extend(faces)
     tip = end.lerp(pool, 0.35)
     tongue = [p.bm.verts.new(Vector((tip.x, tip.y, pool.z)) + across * 0.17 * x) for x in (-1, 0, 1)]
     lay(p, (foot[2], tongue[0], tongue[1], foot[3]), up, "lava_flow")

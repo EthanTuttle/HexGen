@@ -533,15 +533,14 @@ def yup(v):
 
 # --- Geometry builder ------------------------------------------------------
 
-def inward_sheets(bm, skip=()):
-    """Connected sheets of faces that mostly have their fronts running into the same mesh and their backs to open air: wound the wrong way, so an engine culls them from outside.
-    Only most of a sheet counts, as a good concave shape has a few faces like that. Faces in skip aren't looked at."""
+CAMERA_WAYS = [Vector((math.cos(yaw) * math.cos(el), math.sin(yaw) * math.cos(el), math.sin(el))) for el in (math.radians(35), math.radians(52), math.radians(75)) for yaw in (k * math.pi / 3 for k in range(6))]
+
+
+def open_sheets(bm, skip=()):
+    """Each connected sheet of faces with open edges, with how much of it a camera above could see from the front and from behind: rays up towards the camera on both sides, from each face's centre and towards its corners. Closed shapes have a known inside, so they're left out, as are faces in skip."""
     bm.faces.ensure_lookup_table()
     tree = BVHTree.FromBMesh(bm)
     out, seen = [], set(skip)
-    for f in bm.faces:
-        f.normal_update()
-    backs = {(tuple(round(x, 4) for x in f.calc_center_median()), tuple(round(x, 3) + 0.0 for x in f.normal)) for f in bm.faces}
     for start in bm.faces:
         if start in seen:
             continue
@@ -555,18 +554,26 @@ def inward_sheets(bm, skip=()):
                     if g not in seen:
                         seen.add(g)
                         todo.append(g)
-        inward = total = 0.0
+        if all(len(e.link_faces) == 2 for f in sheet for e in f.edges):
+            continue
+        front = back = 0.0
         for f in sheet:
             f.normal_update()
             area, c, n = f.calc_area(), f.calc_center_median(), f.normal
-            total += area
-            if (tuple(round(x, 4) for x in c), tuple(round(-x, 3) + 0.0 for x in n)) in backs:  # it has a twin facing the other way, so it shows from both sides
-                total -= area
+            if area < 1e-7:
                 continue
-            if area > 1e-6 and tree.ray_cast(c + n * 0.0005, n)[0] is not None and tree.ray_cast(c - n * 0.0005, -n)[0] is None:
-                inward += area
-        if inward and 2 * inward > total:
-            out.append(sheet)
+            for p in [c] + [c.lerp(v.co, 0.8) for v in f.verts]:
+                for way in CAMERA_WAYS:
+                    towards = way.dot(n)
+                    if abs(towards) < 0.02:
+                        continue
+                    side = 1 if towards > 0 else -1
+                    if tree.ray_cast(p + n * side * 0.0005, way)[0] is None:
+                        if side > 0:
+                            front += area * abs(towards)
+                        else:
+                            back += area * abs(towards)
+        out.append((sheet, front, back))
     return out
 
 
@@ -577,6 +584,8 @@ class Piece:
         self.name = name
         self.bm = bmesh.new()
         self.mats = []
+        self.backs = set()  # faces built on purpose to show the back of another; finish() never turns them
+        self.both_sides = []  # triangles of a shell that can be seen into from below its edge; finish() gives each a second face looking the other way
         self.surface = set()  # open surfaces built facing up; finish() leaves their normals alone
         self.smooth = set()   # faces to shade smooth (the sand); everything else stays faceted
         # Walkable path centrelines for the engine's routing (design/07 -> Walking): polylines in the piece's own
@@ -668,11 +677,23 @@ class Piece:
             self.bm.faces.new(f).material_index = idx
 
     def face_open_sheets_out(self):
-        """recalc_face_normals can't tell which way an open sheet should face: a window pane, a plate on a wall, one side of a hillside. Turn over each one that looks into the piece with its back to the air."""
-        for sheet in inward_sheets(self.bm, self.surface):
-            if not all(len(e.link_faces) == 2 for f in sheet for e in f.edges):
+        """recalc_face_normals can't tell which way an open sheet should face, as it has no inside, and a face wound by hand can simply be wrong. Turn over each sheet that a camera above would see from behind.
+        A lone face hanging in the air, a pennant or a cloth, is seen from both sides, so it gets a second face looking the other way. Web is see-through and shows both sides by its material."""
+        web = self.mats.index("web") if "web" in self.mats else None
+        for sheet, front, back in open_sheets(self.bm, self.backs):
+            if back > front * 1.05:
                 for f in sheet:
                     f.normal_flip()
+                front, back = back, front
+            if len(sheet) == 1 and back > front * 0.5 and sheet[0].material_index != web:
+                f = sheet[0]
+                twin = self.bm.faces.new([self.bm.verts.new(v.co) for v in reversed(f.verts)])
+                twin.material_index = f.material_index
+                self.surface.add(twin)
+        for f in self.both_sides:
+            twin = self.bm.faces.new([self.bm.verts.new(v.co) for v in reversed(f.verts)])
+            twin.material_index = f.material_index
+            self.surface.add(twin)
 
     def finish(self, collection, location=(0, 0, 0), merge=True):
         """merge: one shared "kit" material with the colours in vertex colours (see OWN_MATERIAL).
