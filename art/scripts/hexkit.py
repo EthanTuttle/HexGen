@@ -11,6 +11,7 @@ import re
 
 import bmesh
 import bpy
+from mathutils.bvhtree import BVHTree
 from mathutils import Matrix, Vector
 
 # --- Sizes -----------------------------------------------------------------
@@ -532,6 +533,43 @@ def yup(v):
 
 # --- Geometry builder ------------------------------------------------------
 
+def inward_sheets(bm, skip=()):
+    """Connected sheets of faces that mostly have their fronts running into the same mesh and their backs to open air: wound the wrong way, so an engine culls them from outside.
+    Only most of a sheet counts, as a good concave shape has a few faces like that. Faces in skip aren't looked at."""
+    bm.faces.ensure_lookup_table()
+    tree = BVHTree.FromBMesh(bm)
+    out, seen = [], set(skip)
+    for f in bm.faces:
+        f.normal_update()
+    backs = {(tuple(round(x, 4) for x in f.calc_center_median()), tuple(round(x, 3) + 0.0 for x in f.normal)) for f in bm.faces}
+    for start in bm.faces:
+        if start in seen:
+            continue
+        sheet, todo = [], [start]
+        seen.add(start)
+        while todo:
+            f = todo.pop()
+            sheet.append(f)
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g not in seen:
+                        seen.add(g)
+                        todo.append(g)
+        inward = total = 0.0
+        for f in sheet:
+            f.normal_update()
+            area, c, n = f.calc_area(), f.calc_center_median(), f.normal
+            total += area
+            if (tuple(round(x, 4) for x in c), tuple(round(-x, 3) + 0.0 for x in n)) in backs:  # it has a twin facing the other way, so it shows from both sides
+                total -= area
+                continue
+            if area > 1e-6 and tree.ray_cast(c + n * 0.0005, n)[0] is not None and tree.ray_cast(c - n * 0.0005, -n)[0] is None:
+                inward += area
+        if inward and 2 * inward > total:
+            out.append(sheet)
+    return out
+
+
 class Piece:
     """Builds one low-poly object out of flat-coloured parts."""
 
@@ -629,10 +667,18 @@ class Piece:
                   (v[0], v[4], v[3]), (v[1], v[2], v[5])):
             self.bm.faces.new(f).material_index = idx
 
+    def face_open_sheets_out(self):
+        """recalc_face_normals can't tell which way an open sheet should face: a window pane, a plate on a wall, one side of a hillside. Turn over each one that looks into the piece with its back to the air."""
+        for sheet in inward_sheets(self.bm, self.surface):
+            if not all(len(e.link_faces) == 2 for f in sheet for e in f.edges):
+                for f in sheet:
+                    f.normal_flip()
+
     def finish(self, collection, location=(0, 0, 0), merge=True):
         """merge: one shared "kit" material with the colours in vertex colours (see OWN_MATERIAL).
         merge=False keeps one material per colour (the base slabs, whose top the engine recolours)."""
         bmesh.ops.recalc_face_normals(self.bm, faces=[f for f in self.bm.faces if f not in self.surface])
+        self.face_open_sheets_out()
         self.bm.faces.index_update()
         smooth = {f.index for f in self.smooth if f.is_valid}
         mesh = bpy.data.meshes.new(self.name)
