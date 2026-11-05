@@ -28,8 +28,6 @@ import build_enemy_minis as em  # noqa: E402
 import build_standin_minis as sm  # noqa: E402
 import hexkit as hk  # noqa: E402
 
-hk.STANDS_ALONE = True  # a mini is seen whole from every side
-
 FLOWER = [(0, 0), (0, -1), (1, -1), (1, 0), (0, 1), (-1, 1), (-1, 0)]
 TRIANGLE = [(0, 0), (0, -1), (1, -1)]  # its corner at (0, 0) points south-west
 LINE = [(0, 0), (0, 1)]
@@ -164,4 +162,5 @@ def build():
 
 
 if __name__ == "__main__":
+    hk.STANDS_ALONE = True  # a mini is seen whole from every side
     build()
