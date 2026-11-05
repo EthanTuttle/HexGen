@@ -733,7 +733,11 @@ func _spawn_deserts(changes: Dictionary) -> void:
 
 ## Debug: a 12-tile Feywild crossing, on free land out past the rest, with plains laid to it. PLACEHOLDER: tier 3 isn't rolled yet, so this is the only way to one.
 func _spawn_feywild(changes: Dictionary) -> void:
-	var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+	var skip := changes.duplicate()   # past the next free spot, which the checks use to grow things in
+	var next := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+	for s: Vector2i in DEBUG_PLAINS_SHAPE:
+		skip[next + s] = "plains"
+	var anchor := _free_spot(DEBUG_PLAINS_SHAPE, skip)
 	var tiles: Array[Vector2i] = []
 	for s: Vector2i in DEBUG_PLAINS_SHAPE:
 		tiles.append(anchor + s)
