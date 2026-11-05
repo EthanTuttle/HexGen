@@ -93,7 +93,9 @@ static func town_smoke(points: Array) -> GPUParticles3D:
 	for k in points.size():
 		var v: Vector3 = points[k]
 		img.set_pixel(k, 0, Color(v.x, v.y, v.z))
-	var pm: ParticleProcessMaterial = _particles("town|smoke", [Vector3.ZERO], 1, 2.0, _smoke(), Vector3(0.04, 0.25, 0), 0.08).process_material.duplicate()
+	var base := _particles("town|smoke", [Vector3.ZERO], 1, 2.0, _smoke(), Vector3(0.04, 0.25, 0), 0.08)
+	var pm: ParticleProcessMaterial = base.process_material.duplicate()
+	base.free()   # only wanted for its material; never in the tree, so nothing else would free it
 	pm.emission_point_texture = ImageTexture.create_from_image(img)
 	pm.emission_point_count = points.size()
 	pm.scale_min = 0.25
