@@ -24,8 +24,6 @@ from mathutils import Vector  # noqa: E402
 import build_standin_minis as sm  # noqa: E402  (base() and the base colours)
 import hexkit as hk  # noqa: E402
 
-hk.STANDS_ALONE = True  # a mini is seen whole from every side
-
 hk.PALETTE.update({
     "wolf_back": "#7D7871",
     "wolf": "#A8A299",
@@ -350,4 +348,5 @@ def build():
 
 
 if __name__ == "__main__":
+    hk.STANDS_ALONE = True  # a mini is seen whole from every side
     build()

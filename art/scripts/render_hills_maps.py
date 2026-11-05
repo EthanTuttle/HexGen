@@ -228,7 +228,7 @@ F O . . c . F M .
 F . h . k s . . O"""},
     "volcanic_peaks_crater": {"size": "big hex", "foes": UNDEAD, "hill": (),
                               "rows": {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 2, 9: 2, 10: 1, 11: 1, 12: 1, 13: 0, 14: 0}, "lift": {"1": 4, "2": 7, "H": 10},
-                              "flow": ((6, 10), (5, 11), (6, 12), (5, 13), (6, 14)),
+                              "flow": ((6, 10), (6, 12), (6, 14)), "calm_fall": True,
                               "idea": "A great cluster of cones with a crater in the middle of the map, a sheer basalt block on its west with a gradual lift at either end and a lava fissure on its east. The fight goes round it.", "plan": """
     . .    
    w . .   
@@ -241,9 +241,9 @@ F . h . k s . . O"""},
 H H M M . .
  2 M M . O 
 H 1 . F . h
- . , F c s 
+ . , . c s 
   . . F k  
-   . F .   
+   . . .   
     . F    """},
     "volcanic_peaks_ledge": {"size": "small rectangle", "foes": UNDEAD, "hill": (), "cliff": 14,
                              "rows": {0: 3, 1: 3, 2: 3, 3: 3, 4: 3, 5: 2, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0}, "lift": {"1": 5, "2": 8},
@@ -948,7 +948,7 @@ def flow_cells(m):
     return [(col, (row - col) // 2) for col, row in m.get("flow", ())]
 
 
-def chunky_fall(p, rng, at, d, top, line):
+def chunky_fall(p, rng, at, d, top, line, calm=False):
     """Lava over the board's own side: a heavy uneven mass clinging to it, thick at the middle, swelling and narrowing as it falls, hanging past the bottom in one fat lobe."""
     out = d.normalized()
     side = Vector((-out.y, out.x, 0))
@@ -957,14 +957,14 @@ def chunky_fall(p, rng, at, d, top, line):
     # (where along the way down, how wide, how thick, how far it wanders to the side)
     shape = [(None, 0.2, 0.03, 0.0), (0.0, 0.24, 0.1, 0.0)]
     for h in (0.22, 0.45, 0.68, 0.86, 1.0):
-        shape.append((h, rng.uniform(0.2, 0.34), rng.uniform(0.1, 0.19), rng.uniform(-0.05, 0.05)))
+        shape.append((h, rng.uniform(0.25, 0.29), rng.uniform(0.13, 0.16), rng.uniform(-0.015, 0.015)) if calm else (h, rng.uniform(0.2, 0.34), rng.uniform(0.1, 0.19), rng.uniform(-0.05, 0.05)))
     shape.append((1.14, 0.12, 0.08, shape[-1][3]))
     rows = []
     for h, half, thick, shift in shape:
         centre = at + d * 0.34 + Vector((0, 0, top + 0.012)) if h is None else face + Vector((0, 0, top + 0.02 + (bottom - top) * h))
         normal = Vector((0, 0, 1)) if h is None else (out + Vector((0, 0, 0.5))).normalized() if h == 0.0 else out
         line.append(centre + normal * thick * 0.7)
-        rows.append([p.bm.verts.new(centre + side * (shift + half * x * rng.uniform(0.92, 1.08)) + normal * thick * (0.02 + bulge)) for x, bulge in ((-1, 0.0), (-0.55, 0.8), (0, 1.0), (0.55, 0.8), (1, 0.0))])
+        rows.append([p.bm.verts.new(centre + side * (shift + half * x * (1.0 if calm else rng.uniform(0.92, 1.08))) + normal * thick * (0.02 + bulge)) for x, bulge in ((-1, 0.0), (-0.55, 0.8), (0, 1.0), (0.55, 0.8), (1, 0.0))])
     for r0, r1 in zip(rows, rows[1:]):
         for k in range(4):
             lay(p, (r0[k], r1[k], r1[k + 1], r0[k + 1]), out + Vector((0, 0, 0.4)), "lava_flow")
@@ -1000,7 +1000,7 @@ def flow_uvs(p, line):
                 loop[uv].uv = (u, v)
 
 
-def lava_flow(p, cells, z, path, line, rng):
+def lava_flow(p, cells, z, path, line, rng, calm=False):
     """Lava from cell to cell, off the edge of the map: each cell a dark rim round a wide bright pool, so it reads as danger and its hex still shows, with nothing on top of the surface. Falls over each drop."""
     hex_out = hk.hex_corners(hk.CELL_RADIUS * fc.GAP, pointy=False)[::-1]
     up = Vector((0, 0, 1))
@@ -1029,7 +1029,7 @@ def lava_flow(p, cells, z, path, line, rng):
                 side = Vector((-d.y, d.x, 0)).normalized() * 0.18
                 lay(p, tuple(p.bm.verts.new(q + w + up * h) for w, h in ((-side, top), (-side, below), (side, below), (side, top))), d, "lava_flow")
         else:
-            chunky_fall(p, rng, at, ways[0], z[c], line)
+            chunky_fall(p, rng, at, ways[0], z[c], line, calm)
 
 
 def line_wall(col, v, group, ground):
@@ -1154,7 +1154,7 @@ def build_map(t, col, name):
             peak_cluster(r, hk.seeded(f"{name}_{r.name}"), v, group, z, ground)
         r.finish(col)
     if path:
-        lava_flow(flow, cells, z, path, line, hk.seeded(f"{name}_lava_flow"))
+        lava_flow(flow, cells, z, path, line, hk.seeded(f"{name}_lava_flow"), m.get("calm_fall", False))
         flow_uvs(flow, line)
         flow.finish(col)
     for _, group in fm.groups(cells, "L"):

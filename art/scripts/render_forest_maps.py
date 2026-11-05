@@ -516,7 +516,7 @@ def ground_z(mark):
 
 def seen_default(scene, depsgraph, c, target, el, mark):
     cam = target + Vector((0, -math.cos(el), math.sin(el))) * ENGINE_DISTANCE
-    at = hk.cell_position(*c) + Vector((0, 0, 0.08 if mark == "," else HALF + 0.02 if mark in RAMPS else ground_z(mark) + 0.02))
+    at = hk.cell_position(*c) + Vector((0, 0, BRUSH_Z if mark == "c" else 0.08 if mark == "," else HALF + 0.02 if mark in RAMPS else ground_z(mark) + 0.02))  # above brush's own plants, or they'd count as hiding their own cell
     to = cam - at
     return not scene.ray_cast(depsgraph, at, to.normalized(), distance=to.length)[0]
 
