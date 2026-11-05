@@ -216,6 +216,15 @@ const COMPANION_CHIMES := {"Fluffy": {"Persuade": "\"Agree, and I shall permit y
 const BAR_LINES := {"Fluffy": "\"Innkeeper, another saucer, for I am celebrating being magnificent.\""}
 
 
+## Test aid for the balance comparison: `-- --old=scores,move,...` turns each named change back to how it was before the
+## race pass, one at a time (not a game option). Names: scores, move, cover, poison, backstab, slows, bash, ranged, racial.
+static func old(what: String) -> bool:
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--old=") and what in a.trim_prefix("--old=").split(","):
+			return true
+	return false
+
+
 static func chime_line(who: String, proficiency: String) -> String:
 	return COMPANION_CHIMES.get(who, {}).get(proficiency, "[%s's line]" % who)
 

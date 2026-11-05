@@ -121,6 +121,14 @@ static func starting_bar(m: Dictionary) -> Array:
 
 ## Racial cards join the card list, the starting hotbar is set, and the hero's HP and Lucky charges are set once on joining.
 static func join(m: Dictionary, level: int) -> void:
+	if Rules.old("scores"):   # test aid: the companions' old one-score lines (Fluffy INT 3, Chelmsford STR 2, Mel DEX 3)
+		m.scores = {"Fluffy": {"INT": 3}, "Chelmsford": {"STR": 2}, "Mel": {"DEX": 3}}.get(m.name, m.scores)
+	if Rules.old("throw"):   # test aid: Throw and Bonebreaker before they had an AP cost (unusable)
+		m.cards = m.cards.filter(func(id): return not id in ["throw", "bonebreaker"])
+	if Rules.old("racial") and m.name in ["Fluffy", "Chelmsford", "Mel"]:   # test aid: companions without racial cards
+		m.hot = starting_bar(m)
+		m.max_hp = m.hp
+		return
 	for id in cards(m):
 		if not id in m.cards:
 			m.cards.append(id)

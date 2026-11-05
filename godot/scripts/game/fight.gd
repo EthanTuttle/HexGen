@@ -555,7 +555,7 @@ func path_next_to(u: Dictionary, goal: Dictionary) -> Array:
 func move_hexes(u: Dictionary) -> int:
 	if u.lockdown:
 		return 0
-	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally else 0
+	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally and not Rules.old("move") else 0
 	if on(u, "snared"):
 		return 0   # rooted: Snare, Pinning Bolt
 	var heavy: int = 1 if u.armour >= 3 else 0   # heavy armour: 1 hex less per Move (04)
@@ -1039,7 +1039,9 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 			dmg -= Rules.GUARD_UP_LESS
 		if k.get("effect", "") == "sneak" and _flanked(a, t):
 			dmg += Rules.SNEAK_BONUS
-		if a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):
+		if a.poison_blade and Rules.old("poison"):
+			dmg += 1   # test aid: Poison Blade's old +1 a hit
+		if not Rules.old("backstab") and a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):
 			dmg += Rules.BACKSTAB   # Backstab: the first dagger hit from behind each turn (04)
 			a.backstabbed = true
 		if t.defending:
@@ -1053,14 +1055,17 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		dmg = maxi(dmg - warded, 0)
 		match k.get("rider", ""):
 			"slow":
-				_slow(t, k.slow)
+				if not Rules.old("slows"):
+					_slow(t, k.slow)
+				elif k.id == "frost_ray":
+					t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)   # test aid: Frost Ray's old prone
 			"prone":
 				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 			"bleed":
 				t.bleed_turns = Rules.DOT_TURNS
 			"snare":
 				t.snared = _until_next_turn_of(t)   # Pinning Bolt roots (04)
-		if a.poison_blade:   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
+		if a.poison_blade and not Rules.old("poison"):   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
 			t.poison.append(Rules.DOT_TURNS)
 	if a.ally:
 		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit, lucky = lucked,
@@ -1075,7 +1080,9 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
-		if k.get("rider", "") == "push":
+		if k.get("rider", "") == "push" and Rules.old("bash"):
+			t.lost_ap = Rules.AP   # test aid: Shield Bash's old stun
+		elif k.get("rider", "") == "push":
 			await _push(a, t)
 		if k.get("rider", "") == "haymaker" and not t.down:   # a failed CON save: it loses 1 AP next turn (04)
 			var save := flip_check(save_coins(t, a, "CON"), Rules.SAVE_HEADS)
@@ -1102,7 +1109,7 @@ func reduction(t: Dictionary) -> int:
 ## (04 -> Ranged), except a crossbow's (Point Blank).
 func heads_needed(t: Dictionary, a := {}, k := {}) -> int:
 	var need: int = t.get("heads", Rules.HEADS_TO_HIT)
-	if not a.is_empty() and k.get("ranged", false) and not (Weapons.of(a.weapon).get("point_blank", false) and (k.id == "attack" or k.src == "weapon")):
+	if not a.is_empty() and not Rules.old("ranged") and k.get("ranged", false) and not (Weapons.of(a.weapon).get("point_blank", false) and (k.id == "attack" or k.src == "weapon")):
 		if foes_of(a).any(func(o): return dist(o, a) == 1):
 			need += Rules.RANGED_ADJACENT
 	return need
@@ -1393,6 +1400,8 @@ func _blink(u: Dictionary, c: Vector2i) -> void:
 ## line along a cell edge is nudged one way. A sheer rise: a cell that stands a sheer rise (0.9 m) above the line between
 ## the two ends. PLACEHOLDER reading of "sheer rises block fully".
 func cover_between(a: Dictionary, t: Dictionary) -> String:
+	if Rules.old("cover"):
+		return "none"   # test aid
 	var to: Vector2i = t.cell
 	for c in cells_of(t):
 		if Rules.hex_distance(a.cell, c) < Rules.hex_distance(a.cell, to):
