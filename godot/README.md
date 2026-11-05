@@ -109,6 +109,21 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 
 `scripts/creator/creator_data.gd` is generated from the mockup by `tools/creator_data.py`, so names, blurbs, card text and icons copy across. Don't edit it by hand.
 
+## Action cards screen
+
+`scripts/action_cards/`, from Action cards v3b, opened by combat's Edit hotbar (All actions). `-- --cardscheck` plays it by touch in a fight and prints `CARDS OK` / `CARDS FAIL` (add `--shots` for `screens/action_cards/`, `--safe=both` for the phone). Each member keeps its 7 slots as `hot_slots`, gaps included. `hot`, which combat draws, is the same cards without the gaps, changed in place so the fight sees it.
+
+| Placeholder | Value here | Why |
+| --- | --- | --- |
+| Racial cards and spells | Their own "Race" section after Class | 07 has Basic, Weapon and Class only (question to Ethan) |
+| Weapon sets | One, so no set tabs. The weapon shows on the Weapon section | Party members have one weapon |
+| Layout at 7 slots | v3's layout, with the tray's "Hotbar" and set label dropped so seven 66 pt slots fit. On a phone the details panel is combat's 170, not 186. The list has 3 columns on a phone, 4 at full width | v3 has 6 slots |
+| Scrolling the list by touch | A quick swipe up or down in the list scrolls it until the finger leaves the list, which lifts the card. A sideways move, or a move after a long-press, lifts it at once. With the mouse, every drag lifts and the wheel scrolls | v3 drags on every move, which leaves no way to scroll by finger |
+| Subtitles | The hero's from the creator. Companions: "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue" · Lv. No subclass before level 5 | Fluffy's race name is open |
+| Gear screen way in | Not hooked up | No gear screen yet; the menu backdrop is built |
+
+**Cut under Screen text:** "Tap for details · drag onto the hotbar", the details panel's drag footer, a tile's source word when it isn't on the bar (its section says it), and the Class section's race and class (the subtitle says it). Kept: "· always available" on Basic, "Slot N" on tiles, "Empty" in empty slots.
+
 ## Test notes
 
 A small flag sits in the top right corner on every screen in test builds (`scripts/test_notes.gd`, debug builds only): on the phone in the strip beyond the safe area, clear of the island and the HUD. Tapping it takes a screenshot, holds the game and opens a box; Save writes the note, Cancel drops it.
