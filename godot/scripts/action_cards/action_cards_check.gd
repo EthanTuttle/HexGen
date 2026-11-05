@@ -157,9 +157,9 @@ func _run() -> void:
 	var rig := game.rig
 	var cam_at: Vector3 = rig.target
 
-	# Shield users: Block in Basic, no Defend (04 -> Shields; from the member's cards, Rules.PARTY)
+	# Shield users: Block with the Weapon cards and no Defend in Basic (04 -> Shields; from the member's cards, Rules.PARTY)
 	var guard := "block" if "block" in m.cards else "defend"
-	_check(screen.section_of("block") == "basic" and (guard == "defend" or not "defend" in m.cards), "%s: %s in Basic%s" % [m.name, guard.capitalize(), ", no Defend" if guard == "block" else ""])
+	_check(screen.section_of("block") == "weapon" and (guard == "defend" or not "defend" in m.cards), "%s: %s%s" % [m.name, "Block in Weapon, no Defend" if guard == "block" else "Defend in Basic", ""])
 
 	# Tap: details
 	await _touch(_centre(_tile(guard)))

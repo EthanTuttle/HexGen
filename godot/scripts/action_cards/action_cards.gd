@@ -9,7 +9,8 @@ extends Control
 ## cards without the gaps, changed in place so a fight's unit, which holds the same array, sees it.
 ## Phone layout (design/07, Ethan, Nov 5, 2026): v3's arrangement with combat's 170 pt details panel and no label column on
 ## the tray, so 7 slots fit; Set 1 / Set 2 tabs always show, and Set 2, which no member has yet, is dimmed with "No weapon" and
-## can't be picked (Ethan, Nov 5, 2026). Race comes first in the list, and Block stands in Basic for Defend (04 -> Shields).
+## can't be picked (Ethan, Nov 5, 2026). Race comes first in the list. Shield users have Block, a Weapon card, and no Defend
+## (04 -> Shields; which members have which is theirs, Rules.PARTY).
 ## Cut from v3's text (design/07): the hints, tiles' source words, the slots' numbers, "always available", the set's name in
 ## the list's header (the tab says it), and the Class section's race and class.
 
@@ -21,8 +22,7 @@ const MENU_BG := Color("#BFD9D2")
 const TILE_EDGE := Color("#E2D5BC")
 const WELL := Color("#9E8264")
 const BACK_ICON := "M15 5l-7 7 7 7"
-## How the sections group the cards' sources (design/07: Race first, with the racial card and racial spells). Block is
-## listed with Basic, as with a shield it is the basic defend action (04 -> Shields); which members have it is theirs (Rules.PARTY).
+## How the sections group the cards' sources (design/07: Race first, with the racial card and racial spells).
 const SECTIONS := [["race", "Race", ["race", "elven", "bloodline"]], ["basic", "Basic", ["basic"]], ["weapon", "Weapon", ["weapon"]],
 	["klass", "Class", ["klass"]]]
 const DETAILS_W := 170.0           # combat's (design/07 -> Action cards screen -> Phone layout)
@@ -376,8 +376,6 @@ func _fill_list() -> void:
 
 
 func section_of(id: String) -> String:
-	if id == "block":
-		return "basic"
 	for sec: Array in SECTIONS:
 		if Cards.ALL[id].src in sec[2]:
 			return sec[0]

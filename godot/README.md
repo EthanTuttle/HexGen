@@ -116,7 +116,6 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 | Placeholder | Value here | Why |
 | --- | --- | --- |
 | Weapon sets | One. The Set 1 / Set 2 tabs always show; Set 2 is dimmed with "No weapon" and can't be picked (Ethan, Nov 5) | Party members have one weapon |
-| Block in Basic | Shield users see Block in Basic and no Defend (04 -> Shields), from the member's cards. Its card keeps Builder's Weapon band | `Cards.ALL.block` is a Weapon card |
 | List columns | 3 on a phone, 4 at full width | v3 has 4 at 844 pt |
 | Scrolling the list by touch | A quick swipe up or down in the list scrolls it until the finger leaves the list, which lifts the card. A sideways move, or a move after a long-press, lifts it at once. With the mouse, every drag lifts and the wheel scrolls | v3 drags on every move, which leaves no way to scroll by finger |
 | Subtitles | The hero's from the creator. Companions: "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue" · Lv. No subclass before level 5 | Fluffy's race name is open |
