@@ -639,18 +639,6 @@ func _land(at: Vector2i, radius: int, terrain := "plains") -> void:
 	game.map.retile(changes)
 
 
-func _finish_region(variant: String, tiles: Array[Vector2i], landmark: Vector2i, empty_ok := false) -> Dictionary:
-	var changes := {}
-	for t in tiles:
-		changes[t] = "hills"
-		game.order[t] = game.order.size()
-	game.map.retile(changes)
-	game.party_node.get_parent()
-	var region := game.new_region("hills", tiles, variant, landmark)
-	game._transform(tiles, region, tiles[0])
-	return region
-
-
 func _await_free() -> void:
 	await get_tree().process_frame
 	while game.busy:
