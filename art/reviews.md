@@ -130,3 +130,8 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/encounter_badge_curve_v1.png` | approved | Eased curve, 32 pt; test in Godot |
 | 2026-11-04 | `art/preview/buried_r4_storm_b_over_v1.png` | rejected | Back to clouds: rolling, bubbling spheres in varying colours and opacity, made in Godot if cheaper |
 | 2026-11-04 | `art/preview/hero_minis_combos_v1.png` | note | Scripted hero minis for the first playable, with better faces; replaced later |
+| 2026-11-04 | `art/preview/start_tiles_sheet_v1.png` | approved | Dunfaire b, East Rime a, Monto a with a real bridge, Sternbrunn a, Oak & Lantern c, Weizenhof a; on branch claude/art-start-tiles |
+| 2026-11-04 | `art/preview/hero_kit_look_v1.png` | note | Build all 10 missing weapon meshes, show the set; dragonborn heads too conical |
+| 2026-11-04 | `art/preview/buried_kit_map_mixed_v1.png` | approved | Buried city kit merges |
+| 2026-11-04 | `art/preview/town_scenes_sheet_v1.png` | approved | Direction: b, one floor with hexes set in, for square and inn; innkeeper behind the bar, dark backdrop |
+| 2026-11-04 | `art/preview/hero_kit_dragon_look_v1.png` | approved | Hero kit for the first playable: all weapons, new dragonborn heads; export |
