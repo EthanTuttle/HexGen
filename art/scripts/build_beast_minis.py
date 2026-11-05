@@ -12,7 +12,8 @@ Proposed swatches are in BEAST_SWATCHES.
 
   beast_wolf        alert, head up, tail out straight: the enemy wolf stalks low with its jaws open
   beast_wolf_band   the same with a cloth across its back, which reads from the combat camera: the approved wolf (Nov 5, 2026)
-  beast_bear        broad and heavy on all fours, head up, the same back cloth
+  beast_bear        broad and heavy on all fours, head up, the same back cloth (approved Nov 5, 2026)
+  beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth
 """
 import math
 import os
@@ -21,6 +22,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
+from mathutils.bvhtree import BVHTree  # noqa: E402
 
 import build_enemy_minis as em  # noqa: E402
 import build_hero_kit as hb  # noqa: E402
@@ -40,6 +42,9 @@ BEAST_SWATCHES = {
     # brown, black, cinnamon, grizzly, pale, ash
     "bear": {"coat": ("#6B4A32", "#2F2B29", "#9A5E34", "#7E6650", "#DCD4C2", "#6A625C"),
              "markings": ("#B08A62", "#A88A66", "#D2A878", "#CDB896", "#F2EEE4", "#A69C90")},
+    # black, leopard gold, tawny, snow, jaguar brown, slate; rosettes are a dark shade of the coat, so they hide on black
+    "panther": {"coat": ("#2A282E", "#C9984A", "#A97E52", "#C8C6C0", "#8A5A2E", "#5A5E66"),
+                "markings": ("#45414A", "#EFDDB4", "#E4D2B0", "#EEEDE8", "#D9BC8E", "#8E929A")},
 }
 
 
@@ -182,6 +187,91 @@ def bear(col):
     return p.finish(col)
 
 
+def panther(col):
+    """Long and low, weight back on its haunches as if about to slip away, head level and turned to watch you, mouth shut,
+    the long tail down and curling up at the tip. Rosettes in a dark shade of the coat; the back cloth as on the wolf."""
+    p = hk.Piece("beast_panther")
+    coat, back, side, pale, dark, spot = zone("skin"), zone("skin", 0.84), zone("skin", 0.92), zone("hair"), zone("skin", 0.55), zone("skin", 0.62)
+
+    def at(x, y, z):
+        return V((x, y, Z0 + z))
+
+    def fur(c, n):
+        return back if n.z > 0.6 else pale if n.z < -0.35 else coat
+
+    # Body: deep chest, slim waist, strong haunches.
+    body = [(0.33, 0.32, 0.05, 0.05), (0.27, 0.33, 0.11, 0.11), (0.08, 0.32, 0.098, 0.1),
+            (-0.1, 0.35, 0.12, 0.13), (-0.2, 0.37, 0.11, 0.12)]
+    em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.05) for y, z, w, h in body], fur)
+    # Rosettes on the flanks and haunches, cast onto the body so they sit on it; the cloth covers the middle of the back.
+    rng = hk.seeded("beast_panther_rosettes")
+    for y in (-0.17, -0.12, 0.17, 0.22, 0.28):
+        for side_ in SIDE:
+            for a in (rng.uniform(50, 70), rng.uniform(90, 110)):
+                t = math.radians(a)
+                out = V((side_ * math.sin(t), 0, math.cos(t)))
+                hit = on_surface(p, at(0, y + rng.uniform(-0.02, 0.02), 0.34) + out * 0.4, -out)
+                if hit:
+                    hb_plate(p, hit[0] + hit[1] * 0.003, hit[1], 0.032, 0.026, spot)
+    em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.05) for y, z, w, h in ((-0.12, 0.352, 0.132, 0.143), (0.0, 0.341, 0.121, 0.126), (0.12, 0.334, 0.11, 0.112))],
+            lambda c, n: zone("cloth") if n.z > -0.3 else zone("cloth", 0.8))
+    # Neck forward to a head held level, turned to its right, watching.
+    turn = 0.06
+    fwd = V((0.3, -1, -0.04)).normalized()
+    hc = at(turn, -0.31, 0.43)
+    em.loft(p, [em.section(at(0, -0.17, 0.37), 0.1, 0.11, along=V((0, -1, 0.5))), em.section(at(0.03, -0.27, 0.42), 0.075, 0.08, along=V((0.3, -1, 0.5)))], fur)
+    em.loft(p, [em.section(at(0.01, y, 0.395 + dz), w, w, along=V((0.1, -1, 0.5)), sides=8) for y, dz, w in ((-0.2, 0.0, 0.104), (-0.235, 0.015, 0.092))], lambda c, n: zone("cloth"))
+    em.loft(p, [[at(-0.07, -0.25, 0.39), at(0.09, -0.25, 0.39), at(0.01, -0.27, 0.4)], [at(0.01, -0.28, 0.28)]], lambda c, n: zone("cloth", 0.88))
+
+    def h(y, z, x=0.0):
+        return hc + fwd * y + V((x, 0, z))
+
+    def head_fur(c, n):
+        return pale if n.z < -0.3 or (c - hc).dot(fwd) > 0.09 and n.z < 0.2 else back if n.z > 0.6 else coat
+    em.loft(p, [em.section(h(-0.06, 0.0), 0.06, 0.055, along=fwd, sides=8), em.section(h(0.0, 0.005), 0.085, 0.072, along=fwd, sides=8),
+                em.section(h(0.055, 0.0), 0.08, 0.064, along=fwd, sides=8), em.section(h(0.095, -0.02), 0.055, 0.042, along=fwd, sides=8),
+                em.section(h(0.13, -0.025), 0.04, 0.03, along=fwd, sides=8)], head_fur)
+    p.blob(h(0.13, -0.005), 0.016, "hero_pupil", squash=0.7)  # nose
+    for x in SIDE:
+        em.limb(p, [h(0.13, -0.04, x * 0.004), h(0.115, -0.046, x * 0.022), h(0.09, -0.04, x * 0.04)], [0.004] * 3, ["hero_mouth"], sides=3)
+        # cat's eyes: almond, set to the front, a slit pupil
+        look = (fwd + V((x * 0.35, 0, 0.12))).normalized()
+        hit = on_surface(p, h(0.062, 0.022, x * 0.036) + look * 0.2, -look)
+        e, n = (hit[0] + hit[1] * 0.004, hit[1]) if hit else (h(0.062, 0.022, x * 0.036), look)
+        hb_plate(p, e, n, 0.034, 0.021, zone("eyes"))
+        hb_plate(p, e + n * 0.002, n, 0.007, 0.019, "hero_pupil")
+        em.limb(p, [h(0.07, 0.042, x * 0.014), h(0.055, 0.04, x * 0.058)], [0.007, 0.005], [dark], sides=4)
+        # short round ears set wide
+        root = h(-0.02, 0.05, x * 0.055)
+        vr.spike(p, root, root + V((x * 0.03, 0.01, 0.055)), 0.032, back, segments=3)
+
+    # Legs: fore legs straight under the chest, hind legs folded, weight back.
+    for s_, y_paw in ((-1, -0.22), (1, -0.18)):
+        x = 0.075 * s_
+        paw = V((x * 1.1, y_paw, Z0 + 0.025))
+        em.limb(p, [V((x, -0.14, Z0 + 0.31)), V((x * 1.06, -0.17, Z0 + 0.17)), paw + V((0, 0.01, 0.045)), paw], [0.055, 0.04, 0.032, 0.04], [coat, coat, coat])
+    for s_, y_paw in ((-1, 0.2), (1, 0.24)):
+        x = 0.085 * s_
+        paw = V((x * 1.1, y_paw, Z0 + 0.025))
+        em.limb(p, [V((x, 0.26, Z0 + 0.3)), V((x * 1.1, 0.17, Z0 + 0.2)), V((x * 1.12, 0.31, Z0 + 0.09)), paw + V((0, 0.02, 0.03)), paw],
+                [0.08, 0.06, 0.04, 0.034, 0.04], [coat, coat, coat, coat])
+
+    # Tail: long, down behind and curling up at the tip, inside the cell.
+    em.limb(p, [at(0, 0.33, 0.32), at(0.04, 0.4, 0.24), at(0.1, 0.42, 0.12), at(0.18, 0.39, 0.07), at(0.25, 0.33, 0.11), at(0.27, 0.28, 0.18)],
+            [0.032, 0.03, 0.028, 0.027, 0.025, 0.0], [coat, coat, coat, coat, dark])
+    # A touch bigger, to stand about the wolf's size, before the base goes under it.
+    for v in p.bm.verts:
+        v.co = V((v.co.x * 1.08, v.co.y * 1.08, Z0 + (v.co.z - Z0) * 1.08))
+    sm.base(p, "ring_ally")
+    return p.finish(col)
+
+
+def on_surface(p, origin, direction):
+    """Where a ray from origin first meets what's built so far: (point, normal), or None."""
+    hit = BVHTree.FromBMesh(p.bm).ray_cast(origin, direction.normalized(), 1.0)
+    return (hit[0], hit[1]) if hit[0] is not None else None
+
+
 def hb_plate(p, at, facing, w, h, paint):
     """A single face square to `facing`, for eyes on a turned head."""
     right = facing.cross(V((0, 0, 1))).normalized()
@@ -194,7 +284,7 @@ def hb_plate(p, at, facing, w, h, paint):
 def build():
     hk.empty_scene()
     col = hk.new_collection("beasts")
-    for ob in (wolf(col), wolf(col, band=True), bear(col)):
+    for ob in (wolf(col), wolf(col, band=True), bear(col), panther(col)):
         ob.data.calc_loop_triangles()
         print(f"TRIS {ob.name}: {len(ob.data.loop_triangles)} top {max((ob.matrix_world @ v.co).z for v in ob.data.vertices):.2f}")
     out = os.path.join(hk.ART, "minis", "heroes")
