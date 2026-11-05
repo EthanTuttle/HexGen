@@ -312,7 +312,7 @@ func _refresh_details() -> void:
 		b.disabled = note != "" or fight.busy
 		b.pressed.connect(fight.press_button)
 		_button_box.add_child(b)
-		if note != "":
+		if note != "" and not fight.spent(u, k):   # no use-limit note: the header gives the limit and the card dims (07)
 			var nl := _wrap(UI.label(note, "n800", 11, UI.INK_MUTED))
 			nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_button_box.add_child(nl)
@@ -356,18 +356,18 @@ func _breath_rows(u: Dictionary, k: Dictionary) -> void:
 	for r: Dictionary in rows:
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 1)
-		box.add_child(_wrap(UI.label(r.name, "n900", 11)))
+		box.add_child(_wrap(UI.label(r.name, "lilita", 14)))   # as the target row's name
 		if r.has("coins"):
 			var line := HBoxContainer.new()
-			line.add_theme_constant_override("separation", 2)
+			line.add_theme_constant_override("separation", 3)
 			for h in r.coins:
-				line.add_child(CoinView.make(h, 16))
+				line.add_child(CoinView.make(h, 20))
 			line.add_child(UI.label("  -%d" % r.dmg, "lilita", 14, UI.RED if r.dmg > 0 else UI.INK_SOFT))
 			if r.get("lucky", false):
 				line.add_child(_icon(status_path("clover"), Color("#2E7A3E"), 14))
 			box.add_child(line)
 		else:
-			box.add_child(_wrap(UI.label(r.line, "n800", 11)))
+			box.add_child(_wrap(UI.label(r.line, "n800", 13)))   # as the coin line
 		_details.add_child(box)
 
 
