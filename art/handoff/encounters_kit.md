@@ -1,8 +1,8 @@
-# Map encounter kit hand-off (encounters_v2)
+# Map encounter kit hand-off (encounters_v3)
 
 Ethan chose true-scale figures with badges (Nov 4, 2026; design/07): place every scene at scale 1. The oversized look and the measurements for it stay below as the trial's record. The badge look is still being reviewed. The trader, the drinkers, the treasure, the badges and their colours are stand-ins of ours, open to Ethan.
 
-- **Models:** `art/export/encounters.glb` (from `art/encounters/encounters_v2.blend`), the shared `kit` material with vertex colours.
+- **Models:** `art/export/encounters.glb` (from `art/encounters/encounters_v3.blend`), the shared `kit` material with vertex colours.
 - **Scripts:** `art/scripts/build_encounter_figures.py`, `art/scripts/render_encounter_figures.py`.
 - **Previews:** `art/preview/encounters_x<scale>_<light>_<distance>m_v1.png`, `encounters_x1_day_58m_swapped_v1.png` and `encounters_x2.5_day_58m_swapped_v1.png` (wolves in the open, bandits in the forest), `encounters_badges_<light>_58m_v1.png`, `encounters_close_all_v1.png`.
 
@@ -59,40 +59,56 @@ Use a `HexShape` in `explore_hud.gd`'s map markers, not a sprite in the world or
 
 `art/scripts/render_encounter_badges.py` paints the stills by these numbers, in layout points on the 844 wide layout, following `HexShape._draw` by hand. Godot hasn't drawn them yet.
 
-| Kind | Face | Edge underneath | Icon | Icon drawn as |
+| Kind | Face | Edge underneath | Icon colour | Icon, all with `fill = true` |
 |---|---|---|---|---|
-| Fight | `UI.RED` #8E3B2E | `UI.RED_EDGE` #5A2A22 | `UI.WHITE_WARM` #FFF8EE | `swords` (already in `Icons.PATHS`), stroke 2.6 |
-| Social | #225C91 | #163E63 (new, ours) | `UI.WHITE_WARM` #FFF8EE | `bubble` (new), `fill = true` |
-| Discovery | `UI.GOLD` #E4B54C | `UI.GOLD_EDGE` #A67A1F | `UI.INK` #24302C | `sparkle` (new), `fill = true` |
+| Fight | `UI.RED` #8E3B2E | `UI.RED_EDGE` #5A2A22 | `UI.WHITE_WARM` #FFF8EE | `swords_solid` (new) |
+| Social | #225C91 | #163E63 (new, ours) | `UI.WHITE_WARM` #FFF8EE | `bubble` (new) |
+| Discovery | `UI.GOLD` #E4B54C | `UI.GOLD_EDGE` #A67A1F | `UI.INK` #24302C | `sparkle` (new) |
 
-The rim is `UI.CREAM_LIGHT` #FCF7EE on all three. #225C91 is the app's Rare colour, so it's a proposal, like #163E63.
+The rim is `UI.CREAM_LIGHT` #FCF7EE on all three. #225C91 is the icon colour of Rare items, so it's a proposal, like #163E63.
 
-New icons for `Icons.PATHS`:
+New icons for `Icons.PATHS`. The line `swords` turned to specks at badge sizes, so `swords_solid` is two filled swords. All its shapes wind the same way, so they should join where they cross under SVG's default fill rule, but Godot's SVG loader hasn't been tried on it:
 
 ```
+"swords_solid": "M22.0 2.0L21.0 6.3L11.2 16.0L8.0 12.8L17.7 3.0z M13.8 18.4L11.7 20.5L3.5 12.3L5.6 10.2z M9.0 17.4L6.1 20.3L3.7 17.9L6.6 15.0z M6.9 20.8L4.9 22.7L1.3 19.1L3.2 17.1z M2.0 2.0L6.3 3.0L16.0 12.8L12.8 16.0L3.0 6.3z M18.4 10.2L20.5 12.3L12.3 20.5L10.2 18.4z M17.4 15.0L20.3 17.9L17.9 20.3L15.0 17.4z M20.8 17.1L22.7 19.1L19.1 22.7L17.1 20.8z",
 "bubble": "M7 4h10c2.2 0 4 1.8 4 4v4c0 2.2-1.8 4-4 4h-5l-5 4.5V16c-2.2 0-4-1.8-4-4V8c0-2.2 1.8-4 4-4z",
 "sparkle": "M12 2c.8 5.6 3.4 8.2 10 10-6.6 1.8-9.2 4.4-10 10-.8-5.6-3.4-8.2-10-10 6.6-1.8 9.2-4.4 10-10z",
 ```
 
-Size and fade by camera distance `d`:
+Size and fade by camera distance `d`. `far` is 32 or 40, as Ethan picks:
 
 ```
-var w := lerpf(14.0, 22.0, clampf((d - 24.0) / 34.0, 0.0, 1.0))   # steady from 58 m out, 14 at 24 m and closer
-var alpha := clampf((d - 18.0) / 12.0, 0.0, 1.0)                  # solid from 30 m out, gone at 18 m
-var h := w * 51.0 / 44.0                                          # the app's hex proportions
-var inset := maxf(0.75, 0.09 * w)                                 # the rim
-var icon_size := 0.62 * w
+var w := far * lerpf(0.55, 1.0, clampf((d - 24.0) / 34.0, 0.0, 1.0))   # steady from 58 m out, 55% at 24 m and closer
+var alpha := clampf((d - 18.0) / 12.0, 0.0, 1.0)                       # solid from 30 m out, gone at 18 m
+var h := w * 51.0 / 44.0                                               # the app's hex proportions
+var inset := maxf(0.75, 0.09 * w)                                      # the rim
+var icon_size := 0.66 * w
 ```
 
 | Camera distance | 110 m | 58 m | 40 m | 30 m | 24 m | 18 m |
-|---|---:|---:|---:|---:|---:|---:|
-| Badge width (pt) | 22 | 22 | 18 | 15 | 14 | 14 |
+|---:|---:|---:|---:|---:|---:|---:|
+| Width at far 32 (pt) | 32 | 32 | 24 | 20 | 18 | gone |
+| Width at far 40 (pt) | 40 | 40 | 30 | 25 | 22 | gone |
 | Opacity | 1 | 1 | 1 | 1 | 0.5 | 0 |
 | One figure's height (pt) | 9 | 17 | 25 | 33 | 41 | 55 |
 
-- **Build:** `HexShape.make(w, h, rim, face, inset).with_icon(name, ink, icon_size, stroke, fill).with_shadow(edge, 2.0)`, faded with `modulate.a`. Hide it at opacity 0.
+- **Build:** `HexShape.make(w, h, rim, face, inset).with_icon(name, ink, icon_size, 2.2, true).with_shadow(edge, 2.0)`, faded with `modulate.a`. Hide it at opacity 0.
 - **Anchor:** the tile's scene, 0.35 m above its highest point, unprojected. The badge's lowest point, its edge included, sits 4 points above that, centred.
 - **Icon textures:** `UI.icon` makes and keeps a texture for each size, so a size that changes every frame would pile them up. Draw one texture scaled, or step the width to whole points.
 - **Input:** leave `mouse_filter` on ignore, so a tap still reaches the tile.
-- **Rendered at night:** the same colours, since badges are unlit. Night zoom stops at 60 m, so 110 m is a day view only.
-- **Previews:** `art/preview/encounter_badges_map_<light>_<distance>m_v1.png`, the zoom sheets `encounter_badges_zoom_forest_v1.png`, `encounter_badges_zoom_open_v1.png` and `encounter_badges_zoom_forest_held_v1.png`. Each zoom sheet runs 40, 30, 24, 18 and 12 m by day, then 30 m at night. The held sheet is 18 and 12 m.
+- **At night:** the same colours, since badges are unlit. Night zoom stops at 60 m, so 110 m is a day view only.
+- **Previews:** `art/preview/encounter_badges_sizes_v1.png` (32 left, 40 right), `encounter_badges32_*` and `encounter_badges40_*` at full size, `encounter_badges_swords_v1.png` (line against solid, at 18, 22, 26, 32 and 40 pt, drawn at twice real size).
+
+## Forest glade (on trial)
+
+`forest_centre_glade` is the plain forest tile's centre with its trees gone and a lighter floor, for comparing with the tile as it is. Scene and badge are the same in both.
+
+- **Previews:** `art/preview/encounter_glade_day_v1.png` and `encounter_glade_night_v1.png` (current left, glade right, at 58, 40, 30, 24, 18 and 12 m), `encounter_glade_fit_v1.png` (each scene in the glade at 24 m).
+- **How much the tile changes:** only the centre piece, the inner 45% of the tile. It loses its 7 trees, from 296 triangles to 36. The base and six wedges stay. A wedge holds 9 trees towards forest and 3 towards other land, so that's 7 of 61 trees on a tile surrounded by forest, and 7 of 25 on one standing alone. The trees left are the same ones, as the piece uses `forest_centre`'s seed.
+
+**What Godot would need:**
+
+- **It can't hide single trees.** A centre piece's trees are one merged mesh, so "hiding" means placing a different piece. In `_build_tile`, choose `name + "_centre_glade"` when the tile holds an encounter and the kit has that piece, then rebuild the tile when the encounter arrives or leaves. The cost of that rebuild hasn't been measured.
+- **A rule for when the trees change** (a design call). Changing them at spawn lets a glade give away an encounter past sight range. Changing them on coming into sight makes trees vanish in view. A roaming encounter would clear and regrow trees at each step.
+- **More pieces.** Only plain forest has one so far. `deep_forest`, `fey_wood`, `dark_wood` and `heartwood` each need their own, and those with `_centre_near` or `_centre_mid` need one for each. Their floor colour must suit each variant, because the engine's ground recolouring doesn't reach this plate. If chosen, these belong in the tiles kit, not here.
+- **Ground cover, optional.** Tufts can poke through a scene's bases or the glade. `ground_cover.py` keeps tufts off given circles with `clear`, but `GroundCover.scatter` in Godot has no such option yet.
