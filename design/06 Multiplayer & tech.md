@@ -106,17 +106,17 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | --- | --- |
 | Start | Title screen and New campaign, then the character creator, all steps as mocked up. Fighter is playable and other classes show locked. Race, background and appearance apply, with a small customization pass for minis |
 | Starting place | The party starts on its background's tile. All six get a new world tile ([World & story](01 World & story.md) → Backgrounds) |
-| Deck | As [Cards & progression](05 Cards & progression.md) → Starting decks. Terrains with no combat maps use the old board for now |
+| Deck | As [Cards & progression](05 Cards & progression.md) → Starting decks, plus one card of every terrain so all can be built (Nov 4, 2026). Terrains with no combat maps use the old board for now |
 | Goal | Finish 3 regions, then an end panel. For the prototype only: the real campaign doesn't end this way |
 | Encounters | Rolls as in [Map & exploration](02 Map & exploration.md), plus a safety net: if the hand is empty and no fight is on the map, one fight spawns nearby |
-| Rest | At the background's tile, and in towns and shops as mocked up, entered with an Enter card |
+| Rest | Free at the background's tile; at inns in towns for gold, a placeholder price, as in [Map & exploration](02 Map & exploration.md) |
 | After a fight | Downed allies stand at 1 HP, HP carries until rest, no injuries for now |
 | Fight rewards | Cards, plus gold and XP: per foe by role (minion 2, soldier 4, elite 8), times distance band (near 1, mid 2, far 3). Wins only; Sneak past gives none |
 | Levels | Simple: XP fills a bar, and a level gives a terrain card pick. The full Level-up screen and gear come later |
 | Social and Discovery | The Social encounter screen, with 3 or 4 events written with Ethan |
 | Party | The hero and Fluffy, balanced for about 2 in early fights. Recruiting comes later. Races are looks and names for now |
 | Hero minis | Scripted low-poly parts with better faces, replaced later by the pipeline in [Presentation](07 Presentation.md) → Art direction |
-| Towns | Standing on a town shows an Enter card, like the Rest card on a camp; tapping it opens the scene |
+| Towns | Standing on a town shows an Enter card, like the Rest card on a camp; tapping it opens the scene. The town square and inn get an art pass first, not stand-ins |
 | Foes | Minion 4, soldier 6, elite 10 HP; damage 1, 2, 3, times the band. Near is up to 4 tiles from the start, mid 5 to 9, far 10 and over. The figure's kind sets the mix: 2 or 3 foes, one elite from mid on |
 | XP per level | 20, then 10 more each level |
 | Sneak past | Harder for tougher foes: heads needed by the toughest foe's role (minion 1, soldier 2, elite 3; proposed, a placeholder) |
