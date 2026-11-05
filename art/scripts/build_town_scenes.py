@@ -31,16 +31,31 @@ KEEPERS = {"square": {"shopkeeper": [-1, 0, 0.42, 0.0]}, "inn": {"innkeeper": [1
 LIGHTS = {"inn": [{"at": "hearth", "colour": "#FF8C40", "energy": "placeholder"}]}
 
 
-def floor(p, way_mat, joint, side, seed_mat=None, stones=True):
+# The floor goes on past v9's 19 hexes, so everything in a scene stands on a hex. The party's spots stay on the 19.
+SQUARE_FLOOR = sorted(set(HEXES) | {(q, r) for q in range(-6, 7) for r in range(-6, 3) if max(abs(q), abs(r), abs(q + r)) <= 5 and abs(hx(q, r).x) < 6.9 and (r <= 0 or max(abs(q), abs(r), abs(q + r)) == 3)})
+INN_FLOOR = sorted(set(HEXES) | {(4, -2)} | {(q, r) for q in range(-5, 6) for r in range(-3, 3) if (max(abs(q), abs(r), abs(q + r)) == 3 or r == -3) and -5.8 < hx(q, r).x < 6.4 and hx(q, r).y > -2.5})
+
+
+def floor(p, way_mat, joint, side, seed_mat=None, hexes=None):
     """A dark bed under the hexes, showing as joints."""
-    for q, r in HEXES:
+    hexes = hexes or HEXES
+    for q, r in hexes:
         ts.plate(p, q, r, -0.015, joint, side, "b", z=0.0)
-    for i, (q, r) in enumerate(HEXES):
+    for i, (q, r) in enumerate(hexes):
         c = hx(q, r)
         ring = [c + Vector((R * 0.965 * math.cos(math.radians(60 * j + 30)), R * 0.965 * math.sin(math.radians(60 * j + 30)), 0)) for j in range(6)]
         p.prism(ring, -0.34, FLOOR_Z, way_mat(q, r), side_mat=joint)
         if seed_mat:
             seed_mat(p, c, i, q, r)
+
+
+def planks(p, c, z, mat):
+    """Seams across a floor hex, each kept inside it."""
+    for k in range(-3, 4):
+        y = k * 0.26
+        half = ts.A if abs(y) <= R / 2 else ts.A * (R - abs(y)) / (R / 2)
+        if half > 0.12:
+            p.box(c + Vector((0, y, 0)), (2 * half * 0.9, 0.018, 0.008), mat, z=z)
 
 
 def townhouse(p, x, y, w, d, h, wall, roof, z=0.0, windows=True):
@@ -102,17 +117,9 @@ def square():
 
     def dress(pc, c, i, q, r):
         if place.get((q, r)) != "grass":
-            ts.stones(pc, c, i, "ts_cobble_d" if i % 2 else "ts_cobble_l", z=FLOOR_Z)
+            ts.stones(pc, c, i, "ts_cobble_d" if i % 2 else "ts_cobble_l", n=9 if (q, r) in HEXES else 3, z=FLOOR_Z)
 
-    floor(p, mat, "ts_base_d", "ts_base", dress)
-    # the town goes on past the hexes: paving, lower and plainer, under the houses round the square. Open at the front.
-    for q in range(-4, 5):
-        for r in range(-5, 3):
-            d = max(abs(q), abs(r), abs(q + r))
-            if d in (3, 4) and r <= 0:
-                c = hx(q, r)
-                ring = [c + Vector((R * 1.0 * math.cos(math.radians(60 * j + 30)), R * 1.0 * math.sin(math.radians(60 * j + 30)), 0)) for j in range(6)]
-                p.prism(ring, -0.34, -0.015, "ts_far", side_mat="ts_base")
+    floor(p, mat, "ts_base_d", "ts_base", dress, SQUARE_FLOOR)
     # the services
     ts.well(p, hx(0, 0), FLOOR_Z)
     ts.stall(p, hx(-1, 0), FLOOR_Z)
@@ -122,14 +129,14 @@ def square():
     for k, (x, y, w, d, h, wall, roof) in enumerate((
             (hx(0, -2).x - 0.3, hx(0, -2).y + 0.75, 1.5, 1.2, 1.3, "ts_plaster", "ts_roof_b"), (hx(2, -2).x + 0.35, hx(2, -2).y + 0.72, 1.5, 1.2, 1.15, "ts_plaster_w", "ts_roof"),
             (hx(-1, -2).x - 0.5, hx(0, -2).y + 0.55, 1.3, 1.2, 1.5, "ts_plaster_w", "ts_roof"), (hx(3, -2).x + 0.75, hx(2, -2).y + 0.3, 1.4, 1.2, 1.4, "ts_plaster", "ts_roof_b"),
-            (-4.1, 1.1, 1.3, 1.5, 1.2, "ts_plaster", "ts_roof"), (-5.2, -0.9, 1.25, 1.35, 1.0, "ts_plaster_w", "ts_roof_b"), (5.15, 0.75, 1.3, 1.5, 1.05, "ts_plaster_w", "ts_roof"),
+            (-4.1, 1.1, 1.3, 1.5, 1.2, "ts_plaster", "ts_roof"), (-5.0, -0.8, 1.25, 1.35, 1.0, "ts_plaster_w", "ts_roof_b"), (5.15, 0.75, 1.3, 1.5, 1.05, "ts_plaster_w", "ts_roof"),
             (-1.5, 6.6, 1.5, 1.2, 1.6, "ts_far_wall", "ts_far_roof"), (0.9, 7.2, 1.7, 1.2, 1.5, "ts_far_wall", "ts_far_roof"), (3.3, 6.9, 1.5, 1.2, 1.7, "ts_far_wall", "ts_far_roof"), (5.3, 5.7, 1.5, 1.2, 1.4, "ts_far_wall", "ts_far_roof"), (-3.6, 5.8, 1.5, 1.2, 1.5, "ts_far_wall", "ts_far_roof"))):
         townhouse(p, x, y, w, d, h, wall, roof, z=-0.015, windows=k < 7)
         if k < 7:
             ts.door(p, x + 0.2, y - d / 2, FLOOR_Z, 0.22, 0.42)
     # a far tower over the roofs, for depth
-    p.box(Vector((-0.9, 9.0, 0)), (1.0, 1.0, 3.8), "ts_far_wall", z=-0.3)
-    p.cone(Vector((-0.9, 9.0, 0)), 0.86, 1.3, "ts_far_roof", segments=4, z=3.5, spin=math.pi / 4)
+    p.box(Vector((-0.9, 8.2, 0)), (1.0, 1.0, 3.8), "ts_far_wall", z=-0.3)
+    p.cone(Vector((-0.9, 8.2, 0)), 0.86, 1.3, "ts_far_roof", segments=4, z=3.5, spin=math.pi / 4)
     # trees and greenery at the sides, off every spot
     ts.tree(p, Vector((hx(2, -1).x + 1.15, hx(2, -1).y + 0.25, 0)), -0.015)
     ts.tree(p, Vector((-4.6, 3.4, 0)), -0.015)
@@ -159,9 +166,9 @@ def inn():
         return "ts_wood_warm" if (q, r) in ((-2, 1), (-1, 0), (-1, 1), (-2, 2)) else "ts_wood_l"
 
     def dress(pc, c, i, q, r):
-        ts.planks(pc, c, FLOOR_Z, "ts_plank_seam")
+        planks(pc, c, FLOOR_Z, "ts_plank_seam")
 
-    floor(p, mat, "ts_wall_d", "ts_wood_d", dress)
+    floor(p, mat, "ts_wall_d", "ts_wood_d", dress, INN_FLOOR)
     back_y = hx(0, -2).y + 1.3
     mid = hx(1, -2).x
     left_x = hx(-2, 1).x - 1.25
@@ -264,7 +271,7 @@ def inn():
 
 def data():
     return {
-        "hex_radius": R, "floor_z": FLOOR_Z,
+        "hex_radius": R, "floor_z": FLOOR_Z, "board": "the party's spots stay on these 19 hexes; the floor runs on past them",
         "hexes": {f"{q},{r}": [round(hx(q, r).x, 4), round(hx(q, r).y, 4)] for q, r in HEXES},
         "spots": SPOTS, "keepers": KEEPERS,
         "places": {"well": [0, 0], "shop": [-1, 0], "board": [1, 0], "inn": [1, -2]},

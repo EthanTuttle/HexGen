@@ -1,12 +1,12 @@
-# Town scenes kit hand-off (town_scenes_v1)
+# Town scenes kit hand-off (town_scenes_v2)
 
 The first playable's town square and inn interior, for `TownScene._frame`. **Not yet approved; not yet tried in Godot.** Looks: `design/07` → Town scenes, Town screen. Plan: `mockups/town/Town-v9-SwapDetails`.
 
-- **Models:** `art/export/town_scenes.glb`, from `art/town/town_scenes_v1.blend`. Load with `Kit.meshes("res://art/town_scenes.glb")`, as `EncounterView` loads its kit: meshes `town_square` and `town_inn`, at scale 1, in Blender's frame turned Y-up by the export.
+- **Models:** `art/export/town_scenes.glb`, from `art/town/town_scenes_v2.blend`. Load with `Kit.meshes("res://art/town_scenes.glb")`, as `EncounterView` loads its kit: meshes `town_square` and `town_inn`, at scale 1, in Blender's frame turned Y-up by the export.
 - **Data:** `art/export/town_scenes.json`: every hex's middle, the party's spots, the keepers and where the services stand.
-- **Scripts:** `art/scripts/build_town_scenes.py`, `art/scripts/render_town_scenes.py` (`-- check` runs the checks). **Previews:** `art/preview/town_kit_{square,inn}_{day,night}_v1.png`, `town_kit_sheet_v1.png`.
+- **Scripts:** `art/scripts/build_town_scenes.py`, `art/scripts/render_town_scenes.py` (`-- check` runs the checks). **Previews:** `art/preview/town_kit_{square,inn}_{day,night}_v2.png`, `town_kit_sheet_v2.png`.
 
-**Triangles:** square 6,116, inn 4,664, both before minis. There's no agreed budget for a scene: I used 20,000 as a placeholder, about four map tiles. Godot should measure on a phone with the party on.
+**Triangles:** square 8,316, inn 6,524, both before minis. There's no agreed budget for a scene: I used 20,000 as a placeholder, about four map tiles. Godot should measure on a phone with the party on.
 
 ## Godot must do these
 
@@ -31,7 +31,9 @@ Blender's energy isn't Godot's: match by eye against the previews.
 
 Axial hexes as in Town v9: `hex(q, r) = (2 * 0.9526 * (q + r / 2), -1.65 * r)`, with r growing toward the camera. The JSON holds them worked out. The floor's top is at 0.03: stand minis there.
 
-**Square:** well (0, 0), stall (-1, 0), quest board post (1, 0), inn at the back (1, -2). Round them, houses, a far tower, a cart, a tree, bunting, barrels and lamps, all outside the 19 hexes or at their back edge. Each service card matches its place, as v3a.
+**The floor runs on past the 19 hexes** (Ethan): everything in a scene stands on a hex, nothing on the backdrop. The party's spots stay on the 19. The check fails if anything stands off the floor.
+
+**Square:** well (0, 0), stall (-1, 0), quest board post (1, 0), inn at the back (1, -2). Round them, houses, a far tower, a cart, a tree, bunting, barrels and lamps, all on the floor past the 19 hexes or at their back edge. Each service card matches its place, as v3a.
 
 **Inn:** bar along (0, -2) to (2, -2) with the innkeeper behind it (Ethan), tables (0, 0) and (2, 0), hearth (-2, 1), rug by the fire, stair to the rooms on the right.
 

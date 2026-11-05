@@ -1,6 +1,7 @@
 {
  "hex_radius": 1.1,
  "floor_z": 0.03,
+ "board": "the party's spots stay on these 19 hexes; the floor runs on past them",
  "hexes": {
   "-2,0": [
    -3.8105,

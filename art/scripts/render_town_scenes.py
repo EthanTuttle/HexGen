@@ -120,6 +120,27 @@ def check():
         for poly in ob.data.polygons:
             vs = [ob.data.vertices[i].co for i in poly.vertices]
             pts += [(v.x, v.y, v.z) for v in vs] + [((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2) for a, b in zip(vs, vs[1:] + vs[:1])]
+        hexes = bs.SQUARE_FLOOR if name == "square" else bs.INN_FLOOR
+        centres = [ts.hx(q, r) for q, r in hexes]
+
+        def on_floor(x, y):  # inside a hexagon of the floor, pointy-topped
+            for c in centres:
+                dx, dy = abs(x - c.x), abs(y - c.y)
+                if dx <= ts.A + 1e-3 and dy <= ts.R + 1e-3 and dx * 0.5 + dy * ts.A / ts.R * 1.0 <= ts.A + 1e-3:
+                    return True
+            return False
+
+        off = []
+        for poly in ob.data.polygons:
+            vs = [ob.data.vertices[i].co for i in poly.vertices]
+            for v in vs:
+                if v.z <= bs.FLOOR_Z + 0.1 and v.z > -0.2 + 0.0 and not on_floor(v.x, v.y):
+                    off.append((round(v.x, 2), round(v.y, 2), round(v.z, 2)))
+                elif v.z <= -0.2 and not on_floor(v.x, v.y) and poly.normal.z < 0.5:
+                    off.append((round(v.x, 2), round(v.y, 2), round(v.z, 2)))
+        off = sorted(set(off))
+        print(f"  standing off the floor in town_{name}: {len(off)}", off[:14])
+        bad += bool(off)
         spots = {tuple(s) for group in bs.SPOTS[name].values() for s in group}
         for q, r in sorted(spots):
             c = ts.hx(q, r)
