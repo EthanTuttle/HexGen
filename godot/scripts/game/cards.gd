@@ -28,19 +28,18 @@ const ALL := {
 	"use_item": {"n": "Use item", "src": "basic", "ap": 1, "kind": "self", "limit": "turn", "icon": "potion", "effect": "item", "desc": "Use an equipped consumable."},
 	"parry": {"n": "Parry", "src": "weapon", "ap": 1, "kind": "self", "limit": "turn", "icon": "parry", "effect": "parry", "desc": "Longsword: block the next melee hit."},
 	"block": {"n": "Block", "src": "weapon", "ap": 1, "kind": "self", "limit": "turn", "icon": "shield", "effect": "defend", "desc": "Shield: reduce damage this turn."},
-	"shield_bash": {"n": "Shield Bash", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "bash", "rider": "stun", "desc": "Shield: push or stun."},
+	"shield_bash": {"n": "Shield Bash", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "bash", "rider": "push", "desc": "Shield: push the foe 1 hex away."},
 	"second_wind": {"n": "Second Wind", "src": "klass", "ap": 1, "kind": "self", "limit": "fight", "icon": "heart", "effect": "heal", "desc": "Fighter: heal yourself."},
 	"action_surge": {"n": "Action Surge", "src": "klass", "ap": 1, "kind": "self", "limit": "fight", "icon": "bolt", "effect": "surge", "desc": "Fighter: gain 3 bonus AP this turn (net +2)."},
 	"trip": {"n": "Trip", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "trip", "rider": "prone", "desc": "Staff: knock an enemy prone."},
 	"ward": {"n": "Ward", "src": "weapon", "ap": 1, "kind": "self", "limit": "turn", "icon": "ward", "effect": "ward", "desc": "Staff: a small magic shield."},
 	"firebolt": {"n": "Firebolt", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 5, "icon": "fire", "bonus": 1, "desc": "Blaster spell: one heavy-hitting shot. Flip to hit."},
-	"frost_ray": {"n": "Frost Ray", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 5, "icon": "snow", "rider": "prone", "desc": "Blaster spell: damage, and the foe is slowed on a hit."},
-	"bonebreaker": {"n": "Bonebreaker", "src": "weapon", "ap": -1, "kind": "attack", "limit": "turn", "range": 1, "icon": "mace", "desc": "Mace: lower enemy movement."},
+	"frost_ray": {"n": "Frost Ray", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 5, "icon": "snow", "rider": "slow", "slow": Rules.FROST_SLOW, "desc": "Blaster spell: damage, and the foe is slowed on a hit."},
+	"bonebreaker": {"n": "Bonebreaker", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "mace", "rider": "slow", "slow": Rules.BONEBREAKER_SLOW, "desc": "Mace: lower enemy movement."},
 	"sacred_flame": {"n": "Sacred Flame", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": 5, "save": "DEX", "icon": "flame", "desc": "Order of Light: radiant damage. The target makes a DEX save."},
 	"bless": {"n": "Bless", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": 5, "icon": "star", "effect": "bless", "desc": "Order of Good: an ally flips an extra coin on its next check."},
 	"healing_word": {"n": "Healing Word", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": 5, "icon": "heart", "effect": "heal", "desc": "Order of Good: heal an ally at range."},
-	"backstab": {"n": "Backstab", "src": "weapon", "ap": -1, "kind": "attack", "limit": "turn", "range": 1, "icon": "dagger", "desc": "Dagger: bonus damage from behind."},
-	"throw": {"n": "Throw", "src": "weapon", "ap": -1, "kind": "attack", "limit": "turn", "range": 4, "icon": "throw", "desc": "Dagger: a ranged attack with the dagger. It returns to your hand."},
+	"throw": {"n": "Throw", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 4, "icon": "throw", "desc": "Dagger: a ranged attack with the dagger. It returns to your hand."},
 	"sneak_attack": {"n": "Sneak Attack", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "eye", "effect": "sneak", "desc": "Rogue: a weapon attack with bonus damage if the foe is flanked or unaware."},
 	"duck_behind": {"n": "Duck Behind", "src": "race", "ap": 1, "kind": "ally", "limit": "turn", "range": 1, "icon": "M7 7h11l-3-3 M17 17H6l3 3", "effect": "swap", "desc": "Swap places with an adjacent ally."},
 	"breath": {"n": "Breath Weapon", "src": "race", "ap": 2, "kind": "breath", "limit": "turn", "save": "DEX", "icon": "M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2-7 1 2 2 3 3 3 0-3-1-5 0-7z", "desc": "A line of 3 hexes in one of the 6 directions. Everyone in it, allies included, makes a DEX save (half damage on a pass). Damage grows with level."},
@@ -73,6 +72,23 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 		c.icon = CreatorData.PI[CreatorData.DRI[sub]]
 		c.desc = "%s %s" % [c.desc, CreatorData.ELEM[sub]]
 	return c
+
+
+## Card names whose one word is too wide for a card, and where they break instead (Ethan, Nov 5, 2026: "Glimmer / step").
+const NAME_BREAKS := {"Glimmerstep": "Glimmer step", "Bonebreaker": "Bone breaker"}
+
+
+## A card name as the lines it's drawn in, on a card `width` wide: words, with the over-wide ones broken where NAME_BREAKS says.
+static func name_lines(n: String, font: Font, size: int, width: float) -> PackedStringArray:
+	if font.get_string_size(n, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x <= width:
+		return PackedStringArray([n])
+	var out := PackedStringArray()
+	for w in n.split(" "):
+		if font.get_string_size(w, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > width and NAME_BREAKS.has(w):
+			out.append_array(NAME_BREAKS[w].split(" "))
+		else:
+			out.append(w)
+	return out
 
 
 static func ap_text(c: Dictionary) -> String:

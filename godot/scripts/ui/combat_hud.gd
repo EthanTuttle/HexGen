@@ -228,8 +228,6 @@ func _refresh_details() -> void:
 	var name := _wrap(UI.label(k.n, "lilita", 17))
 	_details.add_child(name)
 	_details.add_child(_wrap(UI.label(k.desc, "n700", 11, UI.INK_SOFT)))
-	if k.limit == "fight":
-		_details.add_child(_wrap(UI.label("Once per fight: stays used until the next fight.", "n800", 12, Color("#9A4A12"))))
 	var div := ColorRect.new()
 	div.color = Color(UI.HEX_SHADOW, 0.5)
 	div.custom_minimum_size = Vector2(146, 2)
@@ -416,9 +414,8 @@ class _HotCard extends Control:
 			draw_string(f, r.position + Vector2(48, 21), "1", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.WHITE_WARM)
 			draw_texture_rect(UI.icon("fight_once", UI.WHITE_WARM, 10, 2.6), Rect2(r.position + Vector2(57, 12), Vector2(10, 10)), false)
 		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
-		var lines := String(k.n).split(" ")
-		var text_y := 60.0 if lines.size() == 1 or f.get_string_size(k.n, 0, -1, 11).x < 64 else 56.0
-		var parts: Array = [k.n] if f.get_string_size(k.n, 0, -1, 11).x < 64 else lines
+		var parts := Cards.name_lines(k.n, f, 11, 64)
+		var text_y := 60.0 if parts.size() == 1 else 56.0
 		for i in parts.size():
 			var w := f.get_string_size(parts[i], 0, -1, 11).x
 			draw_string(f, r.position + Vector2(37 - w * 0.5, text_y + i * 12), parts[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.INK)

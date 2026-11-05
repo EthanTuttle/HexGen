@@ -104,9 +104,9 @@ static func starting_bar(m: Dictionary) -> Array:
 	order.append_array(cards(m))
 	for src in ["klass", "weapon"]:
 		for id: String in m.cards:
-			if Cards.ALL[id].src == src and not id in order:
+			if Cards.ALL[id].src == src and not id in order and id != "block":
 				order.append(id)
-	order.append_array(["defend", "use_item"])
+	order.append_array(["defend", "block", "use_item"])   # Block is Defend with a shield (04 -> Shields)
 	return order.filter(func(id): return id in m.cards).slice(0, Rules.HOTBAR_SLOTS)
 
 

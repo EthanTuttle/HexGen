@@ -40,6 +40,7 @@ var phase_no := 0                # counts phases (allies, enemies, allies ...): 
 var breath_dir := -1             # Breath Weapon's aim: which of Hex.NEIGHBOURS, or -1
 var cell_target = null           # Glimmerstep's empty hex, or null
 var cover := {}                  # cell -> "partial" or "full" (design/03 -> Combat -> Cover); missing: none
+var edge_cover := {}             # [cell, cell] sorted -> "partial": a low edge between two cells (plot edges, terrace curbs)
 
 var _overlays: Array[Node3D] = []
 var _hex_mesh: Mesh
@@ -323,10 +324,11 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 	var u := {foot = foot, name = m.name, initial = m.get("initial", label), color = m.get("color", "#8E3B2E"), mini = mini,
 			cell = c, hp = m.hp, max_hp = m.max_hp, score = m.score if m.has("score") else Races.score(m, m.ability), ability = m.ability, ally = ally,
 			down = m.hp <= 0, ap = 0, bonus = 0, defending = false, used = {}, used_fight = {},
-			blessed = false, poison = false, weapon = m.get("weapon", "spear"),
+			blessed = false, poison_blade = false, weapon = m.get("weapon", "spear"),
 			hot = m.get("hot", []), cards = m.get("cards", []), member = m, damage = m.get("damage", -1), heads = m.get("heads", Rules.HEADS_TO_HIT), role = m.get("role", ""),
 			parry = false, ward = 0, lost_ap = 0, sub = m.get("sub", ""),
-			glow = -1, slowed = -1, acid = -1, poison_turns = 0, bleed_turns = 0, lull = false, lockdown = false}
+			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
+			facing = _dir_of(facing), backstabbed = false}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -502,11 +504,55 @@ func path_next_to(u: Dictionary, goal: Dictionary) -> Array:
 	return [] if _stop_at == null else _path_to(u, came, _stop_at)
 
 
-## Hexes one Move goes: a wood elf one more, a slowed one (white breath) one fewer (design/03 -> Races; 06 -> First playable -> Races).
+## Hexes one Move goes: 2, +1 for every DEX point above 1 (allies; foes have no DEX yet), a wood elf one more, less while
+## slowed (Frost Ray, Bonebreaker, white breath), never below 0 (design/03 -> Combat, Races; 04; 06 -> First playable -> Races).
 func move_hexes(u: Dictionary) -> int:
 	if u.lockdown:
 		return 0
-	return maxi(Rules.MOVE_HEXES + Races.move_bonus(u.member) - (1 if on(u, "slowed") else 0), 1)
+	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally else 0
+	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) - (u.slow_hexes if on(u, "slowed") else 0), 0)
+
+
+## Which of Hex.NEIGHBOURS points most nearly along a plan direction.
+static func _dir_of(v: Vector2) -> int:
+	var best := 0
+	for i in Hex.NEIGHBOURS.size():
+		var n: Vector2i = Hex.NEIGHBOURS[i]
+		var b: Vector2i = Hex.NEIGHBOURS[best]
+		if Hex.cell_position(n.x, n.y).normalized().dot(v.normalized()) > Hex.cell_position(b.x, b.y).normalized().dot(v.normalized()):
+			best = i
+	return best
+
+
+## The direction from cell a toward cell b.
+static func _dir_toward(a: Vector2i, b: Vector2i) -> int:
+	return _dir_of(Hex.cell_position(b.x, b.y) - Hex.cell_position(a.x, a.y))
+
+
+## Whether a stands in the hex behind t: opposite the way t faces, which is whoever it last moved toward or attacked
+## (04 -> Backstab). The minis already turn the same way as they step and strike.
+func behind(a: Dictionary, t: Dictionary) -> bool:
+	return a.cell == t.cell - Hex.NEIGHBOURS[t.facing]
+
+
+## A slow until t's next turn ends; the bigger of two at once.
+func _slow(t: Dictionary, hexes: int) -> void:
+	t.slow_hexes = maxi(hexes, t.slow_hexes if on(t, "slowed") else 0)
+	t.slowed = _until_next_turn_of(t)
+
+
+## Shield Bash: the foe goes 1 hex straight away from the attacker. PLACEHOLDER (told to the planner): if that hex is off the
+## board, blocked, taken, a sheer rise away, or the foe is a giant, it stays put; the hit still lands. Lava burns as walking in does.
+func _push(a: Dictionary, t: Dictionary) -> void:
+	if t.foot.size() > 1 or t.down:
+		return
+	var dest: Vector2i = t.cell + (t.cell - a.cell)
+	if Rules.hex_distance(a.cell, t.cell) != 1 or step_cost(t, t.cell, dest) < 0:
+		return
+	t.cell = dest
+	await board.step_along(t.mini, [dest])
+	if grid[dest].kind == "lava":
+		await _burn(t)
 
 
 ## Whether a rider that lasts until the end of a phase is on now.
@@ -676,7 +722,7 @@ func _start_allies() -> void:
 			u.defending = false      # Defend lasts until your next turn
 			u.parry = false
 			u.ward = 0
-			u.poison = false
+			u.poison_blade = false
 	for u in units.duplicate():
 		if u.ally and not u.down:
 			await _turn_starts(u)
@@ -892,8 +938,9 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		dmg = k.dmg if k.has("dmg") else (a.damage if a.damage >= 0 else attack_score(a, k) + k.get("bonus", 0))
 		if k.get("effect", "") == "sneak" and _flanked(a, t):
 			dmg += Rules.SNEAK_BONUS
-		if a.poison:
-			dmg += Rules.POISON_BONUS
+		if a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):
+			dmg += Rules.BACKSTAB   # Backstab: the first dagger hit from behind each turn (04)
+			a.backstabbed = true
 		if t.defending:
 			dmg -= Rules.DEFEND_REDUCTION
 		dmg -= reduction(t)
@@ -904,20 +951,25 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		t.ward -= warded
 		dmg = maxi(dmg - warded, 0)
 		match k.get("rider", ""):
-			"stun":
-				t.lost_ap = Rules.AP
+			"slow":
+				_slow(t, k.slow)
 			"prone":
 				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 			"bleed":
 				t.bleed_turns = Rules.DOT_TURNS
+		if a.poison_blade:   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
+			t.poison.append(Rules.DOT_TURNS)
 	if a.ally:
 		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit,
 				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
 		hud.refresh()
+	a.facing = _dir_toward(a.cell, t.cell)   # it faces whoever it last attacked
 	await board.attack(a.mini, t.mini, hit)
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
+		if k.get("rider", "") == "push":
+			await _push(a, t)
 	busy = false
 	_check_end()
 
@@ -1021,7 +1073,7 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.hp = mini(a.max_hp, a.hp + Rules.HEAL)
 			hud.float_text(a, "+%d" % (a.hp - before), false, true)
 		"poison":
-			a.poison = true
+			a.poison_blade = true
 		"defend":
 			a.defending = true
 		"item":
@@ -1081,11 +1133,11 @@ func _breath(a: Dictionary, d: int) -> void:
 			if not saved:
 				match a.sub:
 					"White":
-						t.slowed = _until_next_turn_of(t)
+						_slow(t, Rules.WHITE_SLOW)
 					"Black":
 						t.acid = _until_next_turn_of(t)
 					"Green":
-						t.poison_turns = Rules.DOT_TURNS
+						t.poison.append(Rules.DOT_TURNS)
 			await board.attack(a.mini, t.mini, true)
 			hud.float_text(t, "-%d" % dmg, true)
 			await _hurt(t, dmg)
@@ -1133,9 +1185,17 @@ func cover_between(a: Dictionary, t: Dictionary) -> String:
 	var out := "none"
 	var za: float = grid[a.cell].z if grid.has(a.cell) else 0.0
 	var zt: float = grid[to].z if grid.has(to) else 0.0
-	for i in range(1, n):
+	var prev: Vector2i = a.cell
+	for i in range(1, n + 1):
 		var f := float(i) / n
 		var c := _cube_round(Vector3(a.cell.x, a.cell.y, -a.cell.x - a.cell.y).lerp(Vector3(to.x, to.y, -to.x - to.y), f) + Vector3(1e-4, 2e-4, -3e-4))
+		# A low edge crossed between two cells (03: partial; a terrace curb is ignored by a shot from its top).
+		var key := [prev, c] if prev < c else [c, prev]
+		if edge_cover.has(key) and not (grid.has(prev) and grid.has(c) and grid[prev].z != grid[c].z and za >= maxf(grid[prev].z, grid[c].z) - Rules.HEIGHT_SLACK):
+			out = "partial"
+		prev = c
+		if i == n:
+			break
 		var kind: String = cover.get(c, "")
 		if kind == "full" or (grid.has(c) and grid[c].z - lerpf(za, zt, f) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK):
 			return "full"
@@ -1155,9 +1215,9 @@ static func _cube_round(v: Vector3) -> Vector2i:
 
 
 ## Which cells give cover, from the map's cells and what stands on them. Crops and brush cells, and trees, fences, hedges and
-## low props on a cell, give partial cover; anything else that blocks a cell blocks fully (rocks, walls, buildings). DOCS (03,
-## Ethan picked option A): which props count as low. Fences and walls drawn as map pieces carry no cells yet, so their
-## cells block fully.
+## low props on a cell, give partial cover; anything else that blocks a cell blocks fully (rocks, walls, buildings). Map pieces with
+## `cover` data (fences, barriers, low edges, walls) set their own cells or edges. DOCS (03,
+## Ethan picked option A): which props count as low. A map piece without cover data leaves its cells blocking fully.
 const PARTIAL_COVER := ["tree", "grove", "thicket", "roots", "hedge", "fence", "stump", "log", "hay", "crates", "sacks", "baskets",
 	"butt", "benches", "graves", "scarecrow", "washing", "well", "fire", "mushrooms", "junk", "goods", "wares", "rugs", "racks",
 	"arms", "flags", "banner", "dummy", "quintain", "spirit_pole", "lantern_heap", "herd", "brush"]
@@ -1165,6 +1225,7 @@ const PARTIAL_COVER := ["tree", "grove", "thicket", "roots", "hedge", "fence", "
 
 func _cover_of_map(id: String) -> void:
 	cover = {}
+	edge_cover = {}
 	var data: Dictionary = CombatMap.all()[id]
 	for c: Vector2i in grid:
 		if grid[c].kind == "brush":
@@ -1173,6 +1234,17 @@ func _cover_of_map(id: String) -> void:
 			cover[c] = "full"
 	for p: Dictionary in data.placements:
 		var name := String(p.piece)
+		if p.has("cover"):   # a map piece's line (art/handoff/combat_cover_data.md): walls block, fences, barriers and edges don't
+			var kind := "full" if p.cover == "wall" else "partial"
+			for c in p.get("cells", []):
+				var cell := Vector2i(int(c[0]), int(c[1]))
+				if grid.has(cell):
+					cover[cell] = kind
+			for e in p.get("edges", []):
+				var c1 := Vector2i(int(e[0][0]), int(e[0][1]))
+				var c2 := Vector2i(int(e[1][0]), int(e[1][1]))
+				edge_cover[[c1, c2] if c1 < c2 else [c2, c1]] = kind
+			continue
 		if not name.begins_with("ob_"):
 			continue
 		var low := PARTIAL_COVER.any(func(w): return name.contains(w))
@@ -1190,6 +1262,7 @@ func _cover_of_map(id: String) -> void:
 
 ## u walks a path, burning on each lava cell it enters (design/03 -> Lava) and stopping there if that downs it.
 func _walk(u: Dictionary, path: Array) -> void:
+	u.facing = _dir_toward(path[-2] if path.size() > 1 else u.cell, path[-1])   # it faces the way it last moved
 	u.cell = path[-1]
 	refresh()
 	if not path.any(func(c): return grid[c].kind == "lava"):
@@ -1257,11 +1330,16 @@ func _check_end() -> void:
 
 ## At the start of a unit's turn: poison and bleed tick (1 damage, for 2 turns), and a wood golem's Regrowth heals.
 func _turn_starts(u: Dictionary) -> void:
-	for key in ["poison_turns", "bleed_turns"]:
-		if u[key] > 0 and not u.down:
-			u[key] -= 1
-			hud.float_text(u, "-%d" % Rules.DOT_DAMAGE, true)
-			await _hurt(u, Rules.DOT_DAMAGE)
+	u.backstabbed = false
+	if not u.poison.is_empty() and not u.down:   # each poison ticks: they stack
+		var dmg: int = Rules.DOT_DAMAGE * u.poison.size()
+		u.poison = u.poison.map(func(n): return n - 1).filter(func(n): return n > 0)
+		hud.float_text(u, "-%d" % dmg, true)
+		await _hurt(u, dmg)
+	if u.bleed_turns > 0 and not u.down:
+		u.bleed_turns -= 1
+		hud.float_text(u, "-%d" % Rules.DOT_DAMAGE, true)
+		await _hurt(u, Rules.DOT_DAMAGE)
 	var heal := Races.regrowth(u.member, game.level) if u.ally else 0
 	if heal > 0 and not u.down and u.hp < u.max_hp:
 		var before: int = u.hp
@@ -1380,8 +1458,8 @@ func effects(u: Dictionary) -> Array:
 		fx.append(["Defending", "takes %d less damage until their next turn" % Rules.DEFEND_REDUCTION])
 	if u.blessed:
 		fx.append(["Blessed", "+1 coin on their next attack"])
-	if u.poison:
-		fx.append(["Poison Blade", "hits this turn deal +%d damage" % Rules.POISON_BONUS])
+	if u.poison_blade:
+		fx.append(["Poison Blade", "hits this turn poison"])
 	for s in status_icons(u):
 		fx.append([s[1], s[2]])
 	return fx
@@ -1397,7 +1475,7 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["moon", "Dozing", "loses its next attack; any damage wakes it"])
 	if u.bleed_turns > 0:
 		out.append(["drop", "Bleeding", "%d damage at the start of its turn" % Rules.DOT_DAMAGE])
-	if u.poison_turns > 0:
+	if not u.poison.is_empty():
 		out.append(["skull", "Poisoned", "%d damage at the start of its turn" % Rules.DOT_DAMAGE])
 	if on(u, "slowed"):
 		out.append(["snow", "Slowed", "1 hex less per Move"])
@@ -1422,7 +1500,7 @@ func _details(pos: Vector2) -> void:
 			status.append("Defending")
 		if u.blessed:
 			status.append("Blessed (+1 coin)")
-		if u.poison:
+		if u.poison_blade:
 			status.append("Poison Blade")
 		lines.append("Status: " + (", ".join(status) if not status.is_empty() else "ready"))
 	else:

@@ -153,7 +153,7 @@ const ENCOUNTER_TABLE := [
 
 const AP := 3                            # DOCS
 const HEADS_TO_HIT := 1                  # DOCS: at low levels the target is mostly 1
-const MOVE_HEXES := 2                    # PLACEHOLDER: the combat mockups' 2-hex Move; the docs don't set it
+const MOVE_HEXES := 2                    # DOCS (03 -> Combat): 2 hexes, then DEX and race
 const UPHILL_RISE := 0.3                 # PLACEHOLDER (design/03, open question): a rise this high costs one more movement
 const UPHILL_COST := 1
 const HEIGHT_SLACK := 0.01                # heights are in steps of 0.15, and their differences aren't exact in floats
@@ -180,7 +180,8 @@ const WARD_POINTS := 2                   # PLACEHOLDER: Ward's small shield, unt
 const XP_FIRST_LEVEL := 20               # design/06: XP per level, 20 then 10 more each level
 const XP_MORE_EACH := 10
 
-## The party and their cards as in the combat mockup (Combat v14): [Hero name] the Fighter (longsword and
+## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
+## place (04 -> Shields), and Backstab is a dagger modifier, not a card (04 -> Weapon rules): [Hero name] the Fighter (longsword and
 ## shield), Fluffy (wizard, staff), Chelmsford (cleric, mace and shield) and Mel (rogue, dagger). `ability` is the
 ## weapon's (or a caster's) score for attacks. Scores drive attacks, spells, saves and checks (DOCS: design/06 -> First
 ## playable -> Races); unlisted scores are 1. Companions' scores: DOCS (design/03 -> Ability scores -> Starting scores);
@@ -189,16 +190,16 @@ const XP_MORE_EACH := 10
 const PARTY := [
 	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
 		"weapon": "longsword",
-		"cards": ["move", "attack", "defend", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
+		"cards": ["move", "attack", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
 	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "scores": {"INT": 3, "DEX": 2},
 		"weapon": "staff",
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
 	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "scores": {"WIS": 2, "STR": 2, "CON": 2},
 		"weapon": "mace",
-		"cards": ["move", "attack", "defend", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
+		"cards": ["move", "attack", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
 	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
 		"weapon": "dagger",
-		"cards": ["move", "attack", "defend", "use_item", "backstab", "throw", "sneak_attack", "poison_blade"]},
+		"cards": ["move", "attack", "defend", "use_item", "throw", "sneak_attack", "poison_blade"]},
 ]
 ## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
 ## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.
@@ -222,7 +223,13 @@ const SAVE_HEADS := 1                    # PLACEHOLDER (Combat v14): any save, a
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
 const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
 const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
-const POISON_BONUS := 1                  # PLACEHOLDER: Poison Blade's extra damage per hit this turn
+## Weapon and class card amounts (Ethan, Nov 5, 2026; placeholders in design/03 and 04 until the balance pass).
+const BACKSTAB := 2                      # PLACEHOLDER (04): the first dagger hit from behind each turn
+const BONEBREAKER_SLOW := 2              # PLACEHOLDER (04): hexes off each Move until the foe's next turn ends
+const FROST_SLOW := 1                    # PLACEHOLDER (03): Frost Ray, the same
+const WHITE_SLOW := 1                    # PLACEHOLDER (06): white breath, the same
+const PUSH_HEXES := 1                    # DOCS (04): Shield Bash pushes the foe 1 hex
+const MOVE_PER_DEX := 1                  # DOCS (03): a Move is MOVE_HEXES, +1 for every DEX point above 1, plus race
 const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn
 ## Races in play (rules: design/03 -> Races and Racial spells). Amounts are PLACEHOLDER, all from design/06 -> First playable ->
 ## Races (Ethan, Nov 5, 2026), until the balance pass.

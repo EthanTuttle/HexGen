@@ -107,7 +107,7 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			picked = "use_item"
 			drunk += 1
 		else:
-			for id: String in ["faerie_fire", "lull", "firebolt", "frost_ray", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "backstab", "sneak_attack", "throw", "shield_bash", "attack"]:
+			for id: String in ["faerie_fire", "lull", "firebolt", "frost_ray", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack", "throw", "shield_bash", "attack"]:
 				if _ready_card(f, u, id):
 					var c := Cards.get_card(id, u.weapon)
 					if f.in_reach(u, foe, c) and not (id == "lull" and foe.lull) and not (id == "faerie_fire" and f.on(foe, "glow")):
