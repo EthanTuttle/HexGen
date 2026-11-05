@@ -32,14 +32,14 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 - Day is for building: cards can be placed anywhere touching existing land.
 - Night is for survival: the player can only build within the sight range of the party they control (in multiplayer, each player is limited to their own party's sight; decided Oct 23, 2026), the camera tightens on the hero and the music turns dangerous, pushing the player to find somewhere to rest.
 - Nightfall brings harder and more frequent encounters, and night-only content appears.
-- Sight range starts at 2 and is widened by level milestones, the Perception proficiency (see [Classes & combat](03 Classes & combat.md) → Skills), gear (e.g. a spyglass trinket) and high ground; it never drops below 1. It only limits building at night; sight bonuses are night survival tools by design. (The old range modifiers now set sight range.)
+- Sight range starts at 2 and is widened by level milestones, the Perception proficiency (see [Classes & combat](03 Classes & combat.md) → Skills), gear (e.g. a spyglass trinket) and high ground; it never drops below 1. It limits building at night; bonuses are night survival tools by design. It also limits which encounters show (see Hex contents and encounters) and how far one tap walks: **one tap moves the party at most its sight range** (Ethan, Nov 4, 2026), by day's wider range or night's normal one. (The old range modifiers now set sight range.)
 - Players can skip the night by resting at dusk, but night fights draw extra cards and drop better loot, so staying up is tempting. Resting at nightfall wakes the party at morning (see Camps and rest).
 
 ## Hex contents and encounters
 
 - A card is placed first, then the party walks in. Random content on plain land (fights, passing merchants, village quests) rolls per region and is spread across the region's tiles, not rolled per tile (decided Oct 23, 2026). Landmark and Story contents are fixed.
 - Already-placed tiles have a chance to spawn encounters. Spawning works per region: each region can hold a set number of active encounters, and tier-2 regions hold more and tougher ones. More spawn at night, and limited vision makes it harder to see what is around the hero.
-- **Three kinds of encounter** (decided Nov 4, 2026): random map events are one system, all spawning on the same rolls, region limits and lifespan: **Fight**, **Social** (e.g. a roaming trader, a drinking contest) and **Discovery** (e.g. buried treasure). Each region's table sets the mix. Landmarks keep their own events. **A few roam** (Nov 4, 2026): some table entries, such as traders, patrols and beasts, move a tile at a time on the clock; the rest stay put until they expire. **What you know** (Nov 4, 2026): an encounter's kind can always be seen on visible tiles; its exact foes or offer show only when the party is close or has scouted it. Which range counts as close: open.
+- **Three kinds of encounter** (decided Nov 4, 2026): random map events are one system, all spawning on the same rolls, region limits and lifespan: **Fight**, **Social** (e.g. a roaming trader, a drinking contest) and **Discovery** (e.g. buried treasure). Each region's table sets the mix. Landmarks keep their own events. **A few roam** (Nov 4, 2026): some table entries, such as traders, patrols and beasts, move a tile at a time on the clock; the rest stay put until they expire. **What you see** (Nov 4, 2026): an encounter's badge and figures show only within sight range; by day, sight is wider (double, as a placeholder), and at night it's the normal range. Its details show on long-press within that range. How Scouting reveals encounters past it: open.
 - **Encounter rolls** (decided Nov 1, 2026): spawning rolls every 8 in-game hours (about 10 real minutes), so a full day has three rolls, each on random already-placed tiles. Encounters are temporary (fights, passing merchants and the like).
 - Spawned encounters disappear after about 15 minutes (12 in-game hours, half a day cycle) if not dealt with (exception: see Defeat).
 - Each terrain type has its own encounter table.
@@ -115,7 +115,7 @@ Decided Oct 24, 2026. Each is variant → its Legendary location.
 | Great city | Safe (no wild spawns); extra shops and quest givers; the quest board refreshes faster |
 | Fairgrounds | Shows and minigames across its tiles; fewer hostile spawns; festive events |
 | Enchanted lake | Water-spirit events; resting by the lake gives a blessing for the next day (lost if the party beats the Lady of the Lake in a fight: [World & story](01 World & story.md) → The Lady of the Lake) |
-| Buried city | Sandstorms hide and reveal tiles; trap and relic events; construct and undead foes |
+| Buried city | Sandstorms hide and reveal tiles: storms pass on the clock and change tiles' sand levels (Nov 4, 2026; timing open). Discovery encounters and pits, including the ancient library's, can only be reached at low sand, so storms can bury the library for a time; the party rides up with the sand and is never buried. Trap and relic events; construct and undead foes |
 | Breadbasket kingdom | Cheap supplies; resting there gives a buff; bandit raids more often |
 | Feywild crossing | Fey encounters with tricks or boons; the day clock runs oddly (faster or slower) inside |
 | Dungeon of the Mad King | Royal decrees: each day the Mad King issues a random decree that bends the rules in the region (e.g. no healing, double gold) |
@@ -181,7 +181,8 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [ ] **New:** region size for a tier 3 roll: the tier 2 target (7+), or bigger?
 - [ ] Neighbour-to-variant leanings (which neighbouring terrains tip which variants)
 - [ ] Which terrains get cluster goals (note: "connected clusters of the same terrain transform into special regions" currently reads as all of them)
-- [ ] **New (Nov 4, 2026):** encounters: how close counts for seeing details, how Scouting and night change it, each region's mix of the three kinds, which entries roam and how fast, and keeping a map drinking contest distinct from the Harvest Festival's
+- [ ] **New (Nov 4, 2026):** Buried city: how often storms pass, and how a quest handles a buried library
+- [ ] **New (Nov 4, 2026):** encounters: how Scouting reveals past sight range, each region's mix of the three kinds, which entries roam and how fast, and keeping a map drinking contest distinct from the Harvest Festival's
 - [ ] **New:** hex events list; dungeon room counts, event rooms and trap list
 - [x] ~~Rethink the Rapids variant~~ (settled Nov 2, 2026: a river gorge with a narrow channel and no wide pools, so a bridge fits every tile; see [Presentation](07 Presentation.md) → Region variant looks)
 - [ ] **New:** obstacles: which terrain (or region variant) gets which obstacles and how often, the crossing gear items, and each obstacle's failure cost

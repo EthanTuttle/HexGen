@@ -1,8 +1,8 @@
-# Combat hills kit hand-off (combat_hills_v9, combat_maps_hills_v15)
+# Combat hills kit hand-off (combat_hills_v9, combat_maps_hills_v16)
 
 Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and lifts replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v9.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v15.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v9.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v16.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
