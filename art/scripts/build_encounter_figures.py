@@ -10,6 +10,7 @@ Every scene is one mesh at true mini scale, its pivot on the ground at its middl
   enc_social_drinking    three drinkers round a table, mugs up, with a barrel
   enc_discovery_treasure a half-dug chest, a heap of earth and a spade
   enc_badge_fight, _social, _discovery   a hex plate with an icon and no text, standing upright, its pivot at its foot. Face it to the camera.
+  forest_centre_glade    only with --glade: a forest tile's centre with no trees and a lighter floor. Not in the export (no glades for now, Nov 4, 2026); encounters_v3.blend holds the one the renders used
 The trader, the drinkers and the treasure are stand-ins of ours, with their looks open to Ethan.
 """
 import math
@@ -21,6 +22,7 @@ import bpy  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 import build_standin_minis as sm  # noqa: E402
+import build_tiles as bt  # noqa: E402
 import build_village_cells as vc  # noqa: E402
 import hexkit as hk  # noqa: E402
 import render_preview as rp  # noqa: E402
@@ -28,7 +30,8 @@ import variants as vr  # noqa: E402
 
 hk.PALETTE.update({"ring_social": "#4FA3A0", "robe_trader": "#7C4F8E", "hat_trader": "#D9A93A", "drinker_a": "#B5533C", "drinker_b": "#4F7F58", "drinker_c": "#C8A24A",
                    "dug_earth": "#6E5137", "dug_dark": "#4E3926", "chest": "#7A4E2A", "chest_band": "#3F3A36", "coins": "#E9C04A", "mug": "#B98A54", "foam": "#F4EFE3",
-                   "goods_red": "#B5533C", "badge_edge": "#3B3530", "badge_fight": "#B5362A", "badge_social": "#2F8F8A", "badge_discovery": "#D99A1E", "badge_icon": "#FBF6EA"})
+                   "goods_red": "#B5533C", "glade_floor": "#84AF6B", "badge_edge": "#3B3530", "badge_fight": "#B5362A", "badge_social": "#2F8F8A", "badge_discovery": "#D99A1E", "badge_icon": "#FBF6EA"})
+GLADE_R = 2.2  # past the centre piece's corners: every tree on the centre goes
 GROUP = 1.08  # bases apart, so minis' bases don't overlap
 ZERO = Vector((0, 0, 0))
 
@@ -104,6 +107,21 @@ def treasure():
     p.box_rot(Vector((0.1, 0.24, 0.58)), (0.72, 0.42, 0.06), "chest", Matrix.Rotation(0.25, 4, "Z") @ Matrix.Rotation(math.radians(70), 4, "X"))
     p.box_rot(Vector((0.66, -0.42, 0.55)), (0.05, 0.05, 1.1), "trunk", Matrix.Rotation(math.radians(-16), 4, "Y"))
     p.box_rot(Vector((0.53, -0.42, 0.1)), (0.24, 0.05, 0.26), "steel", Matrix.Rotation(math.radians(-16), 4, "Y"))
+    return p
+
+
+def glade():
+    """The forest tile's centre with its trees cleared and a lighter floor: same seed as forest_centre, so the tile's wedges and everything else stay as they are."""
+    p = hk.Piece("forest_centre_glade")
+    rng = hk.seeded("forest_centre")
+    throwaway = hk.Piece("throwaway")
+    for at in hk.scatter(rng, lambda q: hk.in_centre(q), 7, 0.85, hk.CENTRE_BOUNDS):  # as build_tiles.forest, to spend the rng alike
+        if at.length >= GLADE_R:
+            bt.tree(p, rng, at)
+        else:
+            bt.tree(throwaway, rng, at)
+    shape = hk.seeded("glade floor")
+    p.flat([Vector((math.cos(k * math.tau / 10), math.sin(k * math.tau / 10), 0)) * (GLADE_R + shape.uniform(-0.12, 0.12)) for k in range(10)], 0.012, "glade_floor")
     return p
 
 
@@ -197,6 +215,9 @@ def build():
     scene_from_minis(col, t, "enc_fight_bandits", [("enemy_bandit_melee", -a, b, 0.3), ("enemy_bandit_ranged", a, b, -0.3), ("enemy_bandit_elite", 0, -b, 0.0)])
     for make in (trader, drinking, treasure):
         make().finish(col)
+    hk.STANDS_ALONE = False  # a tile piece, wound as tiles are
+    if "--glade" in sys.argv:
+        glade().finish(col)
     badge("fight", "badge_fight", swords).finish(col)
     badge("social", "badge_social", speech).finish(col)
     badge("discovery", "badge_discovery", sparkle).finish(col)
