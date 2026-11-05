@@ -12,7 +12,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 | --- | --- |
 | [01 World & story](01 World & story.md) | Lore, pantheon, enemy types, main story, backgrounds and their paths, mentors, companions and NPC homes, side quests and Legendary quests (character voices and lines: characters/) |
 | [02 Map & exploration](02 Map & exploration.md) | Campaign map, placement rules, day and night, encounters, terrain, clustered regions and region variants, corruption, camps and rest, defeat |
-| [03 Classes & combat](03 Classes & combat.md) | Hero and companions, subclass blurbs, races, ability scores (starting scores, class main scores), coin checks (pass chances), skills, AP and bonus AP, combat rules (hex grid, 6-slot hotbar, once-per-turn default), class action cards, half-classes, wizard/cleric/bard spells |
+| [03 Classes & combat](03 Classes & combat.md) | Hero and companions, subclass blurbs, races, ability scores (starting scores, class main scores), coin checks (pass chances), skills, AP and bonus AP, combat rules (hex grid, 7-slot hotbar, once-per-turn default), class action cards, half-classes, wizard/cleric/bard spells |
 | [04 Weapons & gear](04 Weapons & gear.md) | Equipment slots, weapon and armor categories, class gear, weapon rules, weapon category cards, weapon mastery trees, loot, shared party inventory and gold |
 | [05 Cards & progression](05 Cards & progression.md) | Card types (terrain, Story; landmarks come from regions), deck and hand, hand refill and draw amounts, deck shaping, levels and milestones, general feats (levels 4 and 12), starting decks, class locations and class/subclass quests, landmark list |
 | [06 Multiplayer & tech](06 Multiplayer & tech.md) | Platform, all multiplayer rules, saving |
@@ -85,7 +85,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Teleportation rune vs "no fast travel"~~ (settled Oct 23: "the party walks" rule dropped)
 
 **Classes & combat**
-- [ ] New (Nov 5, 2026): the combat hotbar: how many slots fit (Ethan finds 6 limited, and the bar sits off-centre over the details pane), and the rule for what starts on it, with weapon arts for martials and racial cards
+- [ ] New (Nov 5, 2026): check the combat details panel fits everything it can show at its shorter height (7 slots, shorter panel and starting hotbar chosen Nov 5, 2026: see Presentation → Combat screen and Action cards screen)
 - [ ] New (Nov 5, 2026): cover: can a coin penalty take a flip below 1 coin, and do crops and brush hide anyone?
 
 - [ ] New: each companion's ability scores and gear at each stage of the game (mockups use placeholders)
