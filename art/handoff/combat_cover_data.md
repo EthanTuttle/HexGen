@@ -39,4 +39,4 @@ A piece has either `cells` or `edges`. The `[q, r]` values are axial, as in the 
   - each map's plan still matches its JSON's cells
   - each piece's mesh in the latest blend sits on what's listed: every vertex lies near a listed cell or edge, and every listed cell or edge has mesh on it
 - The map export (`render_forest_maps.export`) calls `cover_data.annotate`, so a re-export keeps the data. It fails if a line piece is left without data.
-- `art/scripts/render_cover_data.py` draws the data over maps seen from above: `art/preview/cover_data_v1.png`.
+- `art/scripts/render_cover_data.py` draws the data over maps seen from above, with a legend: `art/preview/cover_data_v2.png` (farm, walled town, monastery) and `cover_data_v2_monastery.png` (all four monastery maps). v1 is from before the garden walls became partial cover.
