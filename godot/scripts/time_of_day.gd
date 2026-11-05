@@ -16,6 +16,8 @@ extends Node
 var environment: Environment
 var keys: Array = KEYS        # the game swaps in the mockups' backdrop colours
 var sun: DirectionalLight3D
+var sun_scale := 1.0                     # a scene's own dimmer sun (the inn at night)
+var backdrop_lock := Color(0, 0, 0, 0)   # a scene's own flat backdrop at any hour, when its alpha isn't 0 (the inn)
 ## The sun's angle moves in steps this many hours apart, blending to each over `sun_blend_seconds`, so shadows
 ## hold still between steps instead of creeping (0: it follows the clock exactly, as in the look tests).
 var sun_step_hours := 0.0
@@ -75,12 +77,14 @@ func apply() -> void:
 	var b: Array = ab[1]
 	var t: float = ab[2]
 	var backdrop := Color.html(a[1]).lerp(Color.html(b[1]), t)
+	if backdrop_lock.a > 0.0:
+		backdrop = backdrop_lock
 	environment.background_color = backdrop
 	# The backdrop also lights the scene, softer (Blender world: strength 0.5 off camera).
 	environment.ambient_light_color = backdrop
 	environment.ambient_light_energy = lerpf(a[6], b[6], t)
 	sun.light_color = Color.html(a[2]).lerp(Color.html(b[2]), t)
-	sun.light_energy = lerpf(a[3], b[3], t)
+	sun.light_energy = lerpf(a[3], b[3], t) * sun_scale
 	if sun_step_hours <= 0.0:
 		sun.basis = Basis(_sun_at(hour))
 		return

@@ -79,12 +79,13 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 | Name step with a keyboard open | The step slides up clear of it | Not mocked; not yet seen on a phone |
 | What the picks do | The description has everything (`Hero`). Scores and proficiencies set a check's coins (`Hero.coins_for`). Gear is recorded and shows on the mini; combat keeps the placeholder Fighter kit. Race and sub-type text shows as mocked but does nothing yet (docs: looks and names) | First playable |
 
-| The town's stage (temporary) | The camera holds on the town's own tile with the party on it. `TownScene._frame` is where Terrain Art's square and inn interior go | Ethan: art pass first, Nov 4. Not polished, on purpose |
+| Town scenes | Terrain Art's approved kit (`art/handoff/town_scenes_kit.md`, v4), each shown alone with the map hidden (`TownStage`): the square on the map's backdrop, the inn on #2A1C15 at any hour. Lights, glows and the hearth's flicker are matched by eye to the previews, all placeholders. The camera holds 33 m back, not the previews' 21, so the party and keeper clear the panel and cards on a wide screen; it can zoom in to 8 and out to 42 m | Kit: not tried in Godot before this. Only the market town exists |
+| Keepers in the scenes | Hero-kit minis in a keeper's colour. The shopkeeper stands behind the stall, so it barely shows, as in the previews | No keeper models yet |
 | Enter card | The Rest card's look with the village icon and a brown band, beside Rest if both show | The docs say "like the Rest card" |
 | Inn's price | 5 gold (`TownScene.INN_PRICE`) | Docs: gold, price not set |
 | Shop stock | One health potion, price 5 (`TownShop`). Ethan chose the potion (Nov 4); the price is the placeholder. Buying adds to `game.potions`, which Use item drinks in a fight | design/06 |
 | Town and keepers' words | [Town name], [Town greeting], [Shopkeeper line], [Innkeeper line] and so on, as in the mockup, plus [Shopkeeper buy line] and [Shopkeeper / Innkeeper can't afford line] for Places.md's slots. At Monto Town and The Oak & Lantern the name is real | design/characters/Places.md has the slots, not the lines |
-| At the bar | Fluffy's written fallback line, then [Hero toast line]. Mugs show on the tray; tokens don't hop | No interior yet; pair lines need the party |
+| At the bar | Fluffy's written fallback line, then [Hero toast line]. Mugs show on the tray and the speaker's mini hops | Pair lines need the party |
 | Left out of Town v9 | Quest board (no quests), Swap party (nobody waits), Sell (no inventory), the Injuries chip (no injuries) | First playable |
 | Gold pill and the speaker's panel on a phone | The panel narrows to 478 pt so the pill fits beside it; the pill shows in the square and inn too, not only the shop | Mockup's 844 pt; the inn charges |
 | Social event | Every Social and Discovery encounter plays one stand-in, the Lady of the Lake's first talk with her written lines, without her sword quest (`SocialScreen.STAND_IN`) | Ethan's 3 or 4 events are coming |

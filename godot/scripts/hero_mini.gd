@@ -47,6 +47,14 @@ static func mesh_for(h: Hero) -> ArrayMesh:
 	return _mesh_for[key]
 
 
+## The same for a description with no Hero behind it (a keeper).
+static func mesh_for_description(d: Dictionary) -> ArrayMesh:
+	var key := JSON.stringify(d)
+	if not _mesh_for.has(key):
+		_mesh_for[key] = build(d)
+	return _mesh_for[key]
+
+
 static func _matrix(m: Array) -> Transform3D:
 	return Transform3D(Basis(Vector3(m[0], m[1], m[2]), Vector3(m[3], m[4], m[5]), Vector3(m[6], m[7], m[8])), Vector3(m[9], m[10], m[11]))
 

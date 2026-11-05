@@ -282,10 +282,30 @@ func _game_run() -> void:
 	await _wait(1.3)
 	check(control("Shop") != null and control("Inn") != null and control("Leave") != null, "town: Shop, Inn and Leave")
 	check(control("Enter") == null, "town: the map's cards are gone")
+	var town := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
+	check(not g.map.visible, "town: the scene stands alone, the map hidden")
+	check(town.stage._minis.size() == g.party.size(), "town: the party stands in the square")
+	check(town.stage._keeper != null and town.stage._keeper.name == "shopkeeper", "town: the shopkeeper is at the stall")
+	check(g.clock.environment.background_color != TownStage.INN_BACKDROP, "town: the square has the map's backdrop")
+	await _wait(0.2)
+	print("FRONT square: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	await shot("town_square")
+	g.rig.yaw_deg = 60.0
+	await _wait(0.2)
+	await shot("town_square_turned")
+	g.rig.yaw_deg = 0.0
+	var day_minute := g.minute
+	g.minute = 25.0
+	town.stage.set_night(true)
+	await _wait(3.5)
+	await shot("town_square_night")
+	town.stage.set_night(false)
+	g.minute = day_minute
+	await _wait(3.5)
 	text_sizes("town", g.safe)
 	await tap_on("Shop")
 	await _wait(0.3)
+	check(town.stage._minis[0].position.is_equal_approx(town.stage.spot("square", "shop", 0)), "shop: the party gathers by the stall")
 	await shot("town_shop")
 	await tap_on("Health potion")
 	await _wait(0.2)
@@ -298,14 +318,30 @@ func _game_run() -> void:
 	await tap_on("Back")
 	await _wait(0.3)
 	await tap_on("Inn")
-	await _wait(0.3)
+	await _wait(0.6)
+	check(town.stage.scene_name == "inn" and town.stage._keeper.name == "innkeeper", "inn: the interior, with the innkeeper")
+	var behind_bar: Vector3 = town.stage._keeper.position
+	check(behind_bar.z < town.stage._hex(1, -2).z, "inn: the innkeeper stands behind the bar")
+	check(g.clock.environment.background_color == TownStage.INN_BACKDROP, "inn: the flat dark backdrop")
+	print("FRONT inn: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	await shot("town_inn")
+	g.rig.yaw_deg = -50.0
+	await _wait(0.2)
+	await shot("town_inn_turned")
+	g.rig.yaw_deg = 0.0
+	g.minute = 25.0
+	town.stage.set_night(true)
+	await _wait(3.5)
+	await shot("town_inn_night_light")
+	town.stage.set_night(false)
+	g.minute = day_minute
+	await _wait(3.5)
 	text_sizes("inn", g.safe)
 	await tap_on("Rest the night")
 	await _wait(0.3)
 	check(g.gold == 30, "inn: the rest charges gold")
 	await shot("town_inn_bar")
-	var scene := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
+	var scene := town
 	while scene._phase == "revel":
 		await tap(Vector2(420, 180))
 		await _wait(0.2)
@@ -324,7 +360,10 @@ func _game_run() -> void:
 	await _wait(0.2)
 	await tap_on("Leave")
 	await _wait(0.3)
+	await _wait(0.5)
 	check(not g.busy, "town: Leave hands the map back")
+	check(g.map.visible and g.party_node.visible, "town: the map and party are back")
+	check(g.clock.environment.background_color != TownStage.INN_BACKDROP, "town: the backdrop follows the clock again")
 	await _social(g)
 
 

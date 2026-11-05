@@ -3,23 +3,22 @@ extends Control
 ## The town, from Town v9 (mockups/town/Town-v9-SwapDetails.dc.html; design/07 -> Town screen): a scene with Shop and Inn
 ## as option cards, each opening its own panel.
 ##
-## TEMPORARY STAGE (Ethan, Nov 4, 2026: the square and inn get an art pass first; don't polish this): the camera simply
-## holds on the town's own tile, party and all. `_frame` is where Terrain Art's square and inn interior go.
+## The square and inn are Terrain Art's scenes (TownStage), each shown on its own with the map hidden.
 ##
 ## PLACEHOLDERS: every keeper's line and the town's name, as bracketed in the mockup (design/characters/Places.md has the
 ## slots, not yet written); the inn's price and the stock (TownShop). No Quest board (no quests yet), Swap party (nobody's
-## waiting) or Injuries chip (no injuries yet). Tokens don't hop at the bar: there's no interior for it.
+## waiting) or Injuries chip (no injuries yet).
 
 const INN_PRICE := 5                   # PLACEHOLDER: design/04 -> open question, gold prices
 const SHOP_C := Color("#B0672A")
 const INN_C := Color("#3F6FA8")
 const NIGHT_C := Color("#14203A")
-const STAND_OFF := 26.0                # m from the tile: how close the camera holds
 
 var game: Game
 var tile: Vector2i
 var mode := ""                         # "", "shop", "inn"
 var head := SceneUI.Head.new()
+var stage: TownStage
 var _row: HBoxContainer
 var _gold: Control
 var _shop: TownShop
@@ -45,12 +44,24 @@ func _ready() -> void:
 	game.hud.set_scene(true)
 	add_child(head)
 	head.fit(size.x - 160.0 - 96.0)
-	_frame()
+	stage = TownStage.new(game)
+	game.add_child(stage)
+	await _fade_cut(func():
+		stage.begin()
+		stage.show_scene("square", "none", _is_night()))
 	_show_square()
 
 
-func _frame() -> void:
-	game.rig.ease_to(game.party_node.centre(), STAND_OFF, 0.0)
+func _is_night() -> bool:
+	return Rules.is_night(game.minute)
+
+
+## A short fade over a change of scene, as the board swaps.
+func _fade_cut(swap: Callable) -> void:
+	game._fade_to(1.0, 0.2)
+	await get_tree().create_timer(0.2).timeout
+	swap.call()
+	game._fade_to(0.0, 0.25)
 
 
 func town_name() -> String:
@@ -76,6 +87,10 @@ func _refresh_gold() -> void:
 
 
 func _show_square() -> void:
+	if mode == "inn":
+		await _fade_cut(func(): stage.show_scene("square", "none", _is_night()))
+	elif mode == "shop":
+		stage.show_scene("square", "none", _is_night())
 	mode = ""
 	_refresh_gold()
 	head.say(town_name(), "Market town", "[Town greeting]", Color("#E2C79A"), Color("#6B4C35"), SceneUI.ICONS.house)
@@ -92,9 +107,11 @@ func _show_square() -> void:
 
 
 func _leave() -> void:
-	game.hud.set_scene(false)
-	game.busy = false
-	game._refresh()
+	await _fade_cut(func():
+		stage.finish()
+		game.hud.set_scene(false)
+		game.busy = false
+		game._refresh())
 	queue_free()
 
 
@@ -102,6 +119,7 @@ func _leave() -> void:
 
 func _open_shop() -> void:
 	mode = "shop"
+	stage.show_scene("square", "shop", _is_night())
 	head.say("[Shopkeeper]", "%s · Shop" % town_name(), "[Shopkeeper line]", Color("#F2D8B0"), SHOP_C, SceneUI.ICONS.person)
 	_row.queue_free()
 	_row = null
@@ -115,6 +133,7 @@ func _open_shop() -> void:
 # --- Inn: a night at the bar (v2e) -----------------------------------------------------
 
 func _open_inn() -> void:
+	await _fade_cut(func(): stage.show_scene("inn", "seats", _is_night()))
 	mode = "inn"
 	_phase = ""
 	_inn_head("[Innkeeper morning line]" if _rested else "[Innkeeper line]")
@@ -161,6 +180,7 @@ func _say_banter() -> void:
 	var b: Dictionary = _banter[_step]
 	var m: Dictionary = game.party[b.who]
 	head.say(m.name, "At the bar", b.line, Color(m.color), UI.INK, "", m.initial, "", true)
+	stage.hop(b.who)
 
 
 func _show_mugs() -> void:
@@ -210,8 +230,9 @@ func _night() -> void:
 	moon.position = Vector2(size.x * 0.5 - 24, 150)
 	moon.modulate.a = 0.0
 	add_child(moon)
+	stage.set_night(true)
 	var tw := create_tween()
-	tw.tween_property(dark, "modulate:a", 0.62, 1.1).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(dark, "modulate:a", 0.4, 1.1).set_ease(Tween.EASE_IN_OUT)
 	tw.parallel().tween_property(moon, "modulate:a", 1.0, 0.8).set_delay(0.4)
 	tw.tween_interval(1.2)
 	tw.tween_property(dark, "modulate:a", 0.0, 0.6)
@@ -220,6 +241,7 @@ func _night() -> void:
 	dark.queue_free()
 	moon.queue_free()
 	game.rest_here()
+	stage.set_night(_is_night())
 	_rested = true
 	_phase = "results"
 	_inn_head("[Innkeeper morning line]")
