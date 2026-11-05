@@ -11,7 +11,8 @@ assembler swaps them. For a beast the zones mean:
 Proposed swatches are in BEAST_SWATCHES.
 
   beast_wolf        alert, head up, tail out straight: the enemy wolf stalks low with its jaws open
-  beast_wolf_band   the same with a cloth band round its chest (an option, to read from the combat camera)
+  beast_wolf_band   the same with a cloth across its back, which reads from the combat camera: the approved wolf (Nov 5, 2026)
+  beast_bear        broad and heavy on all fours, head up, the same back cloth
 """
 import math
 import os
@@ -36,6 +37,9 @@ zone = hb.zone
 BEAST_SWATCHES = {
     "wolf": {"coat": ("#8E8A84", "#6B5444", "#3A3836", "#D8D4CC", "#B0703E", "#A89A82"),
              "markings": ("#E4DDD0", "#C9B48E", "#7E7A74", "#F4F1EA", "#E8CFA6", "#5A4E40")},
+    # brown, black, cinnamon, grizzly, pale, ash
+    "bear": {"coat": ("#6B4A32", "#2F2B29", "#9A5E34", "#7E6650", "#DCD4C2", "#6A625C"),
+             "markings": ("#B08A62", "#A88A66", "#D2A878", "#CDB896", "#F2EEE4", "#A69C90")},
 }
 
 
@@ -116,6 +120,68 @@ def wolf(col, band=False):
     return p.finish(col)
 
 
+def bear(col):
+    """Broad and heavy on all fours, shoulder hump high, head up and turned a touch to its right, mouth shut: a wall to hide
+    behind. Shorter than a real bear so it keeps to its cell; the back cloth and neckerchief as on the wolf."""
+    p = hk.Piece("beast_bear")
+    sm.base(p, "ring_ally")
+    coat, back, side, pale, dark = zone("skin"), zone("skin", 0.84), zone("skin", 0.92), zone("hair"), zone("skin", 0.6)
+
+    def at(x, y, z):
+        return V((x, y, Z0 + z))
+
+    def fur(c, n):
+        return back if n.z > 0.6 else side if n.z < -0.3 else coat
+
+    # Body: a high hump over the shoulders, a deep barrel, a round rump a little lower.
+    body = [(0.37, 0.34, 0.07, 0.07), (0.31, 0.37, 0.17, 0.15), (0.13, 0.4, 0.2, 0.18),
+            (-0.06, 0.43, 0.21, 0.2), (-0.18, 0.44, 0.18, 0.18), (-0.25, 0.42, 0.125, 0.125)]
+    em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.15) for y, z, w, h in body], fur)
+    em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.15) for y, z, w, h in ((-0.1, 0.43, 0.222, 0.215), (0.03, 0.418, 0.218, 0.2), (0.16, 0.402, 0.21, 0.188))],
+            lambda c, n: zone("cloth") if n.z > -0.3 else zone("cloth", 0.8))
+    # Neckerchief round the thick neck, its point down the chest.
+    em.loft(p, [em.section(at(0, y, 0.42), w, w, sides=8) for y, w in ((-0.22, 0.152), (-0.26, 0.13))], lambda c, n: zone("cloth"))
+    em.loft(p, [[at(-0.11, -0.28, 0.39), at(0.11, -0.28, 0.39), at(0, -0.31, 0.4)], [at(0, -0.31, 0.25)]], lambda c, n: zone("cloth", 0.88))
+
+    # Head: broad skull, small round ears, a short blunt muzzle with a pale tip, small eyes.
+    fwd = V((0.16, -1, 0.04)).normalized()
+    hc = at(0.03, -0.33, 0.48)
+
+    def h(y, z, x=0.0):
+        return hc + fwd * y + V((x, 0, z))
+
+    def head_fur(c, n):
+        return pale if (c - hc).dot(fwd) > 0.1 else back if n.z > 0.6 else coat
+    em.loft(p, [em.section(h(-0.07, 0.0), 0.09, 0.08, along=fwd, sides=8), em.section(h(0.0, 0.01), 0.125, 0.105, along=fwd, sides=8),
+                em.section(h(0.07, 0.0), 0.11, 0.09, along=fwd, sides=8), em.section(h(0.11, -0.03), 0.07, 0.06, along=fwd, sides=8),
+                em.section(h(0.18, -0.04), 0.058, 0.05, along=fwd, sides=8), em.section(h(0.205, -0.045), 0.04, 0.032, along=fwd, sides=8)], head_fur)
+    p.blob(h(0.21, -0.025), 0.026, "hero_pupil", squash=0.75)  # nose
+    for x in SIDE:
+        em.limb(p, [h(0.205, -0.075, x * 0.01), h(0.15, -0.08, x * 0.045)], [0.006] * 2, ["hero_mouth"], sides=3)
+        look = (fwd + V((x * 0.6, 0, 0.1))).normalized()
+        e = h(0.07, 0.035, x * 0.07) + look * 0.004
+        hb_plate(p, e, look, 0.024, 0.02, zone("eyes"))
+        hb_plate(p, e + look * 0.002, look, 0.011, 0.016, "hero_pupil")
+        em.limb(p, [h(0.08, 0.06, x * 0.04), h(0.065, 0.058, x * 0.09)], [0.012, 0.009], [dark], sides=4)
+        # round ears, pale inside
+        ear = h(-0.03, 0.09, x * 0.09)
+        p.blob(ear, 0.042, back, squash=0.7)
+        p.blob(ear + fwd * 0.02, 0.026, pale, squash=0.6)
+
+    # Legs: thick pillars set wide, big paws with pale claws.
+    for s, y in ((-1, -0.13), (1, -0.13), (-1, 0.26), (1, 0.26)):
+        x = 0.13 * s
+        top = 0.38 if y < 0 else 0.36
+        knee = V((x * 1.05, y + (0.0 if y < 0 else 0.04), Z0 + 0.2))
+        paw = V((x * 1.08, y - 0.03, Z0 + 0.03))
+        em.limb(p, [V((x, y, Z0 + top)), knee, paw + V((0, 0, 0.05)), paw], [0.105, 0.085, 0.075, 0.08], [coat, coat, dark])
+        for k in (-1, 0, 1):
+            c = paw + V((k * 0.03, -0.07, -0.005))
+            vr.spike(p, c, c + V((0, -0.035, -0.012)), 0.012, "fang", segments=3)
+    p.blob(at(0, 0.39, 0.4), 0.04, coat, squash=0.8)  # stub of a tail
+    return p.finish(col)
+
+
 def hb_plate(p, at, facing, w, h, paint):
     """A single face square to `facing`, for eyes on a turned head."""
     right = facing.cross(V((0, 0, 1))).normalized()
@@ -128,7 +194,7 @@ def hb_plate(p, at, facing, w, h, paint):
 def build():
     hk.empty_scene()
     col = hk.new_collection("beasts")
-    for ob in (wolf(col), wolf(col, band=True)):
+    for ob in (wolf(col), wolf(col, band=True), bear(col)):
         ob.data.calc_loop_triangles()
         print(f"TRIS {ob.name}: {len(ob.data.loop_triangles)} top {max((ob.matrix_world @ v.co).z for v in ob.data.vertices):.2f}")
     out = os.path.join(hk.ART, "minis", "heroes")
