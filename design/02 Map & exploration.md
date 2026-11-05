@@ -115,7 +115,7 @@ Decided Oct 24, 2026. Each is variant → its Legendary location.
 | Great city | Safe (no wild spawns); extra shops and quest givers; the quest board refreshes faster |
 | Fairgrounds | Shows and minigames across its tiles; fewer hostile spawns; festive events |
 | Enchanted lake | Water-spirit events; resting by the lake gives a blessing for the next day (lost if the party beats the Lady of the Lake in a fight: [World & story](01 World & story.md) → The Lady of the Lake) |
-| Buried city | Sandstorms hide and reveal tiles; trap and relic events; construct and undead foes |
+| Buried city | Sandstorms hide and reveal tiles: storms pass on the clock and change tiles' sand levels (Nov 4, 2026; timing open). Discovery encounters and pits, including the ancient library's, can only be reached at low sand, so storms can bury the library for a time; the party rides up with the sand and is never buried. Trap and relic events; construct and undead foes |
 | Breadbasket kingdom | Cheap supplies; resting there gives a buff; bandit raids more often |
 | Feywild crossing | Fey encounters with tricks or boons; the day clock runs oddly (faster or slower) inside |
 | Dungeon of the Mad King | Royal decrees: each day the Mad King issues a random decree that bends the rules in the region (e.g. no healing, double gold) |
@@ -181,6 +181,7 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [ ] **New:** region size for a tier 3 roll: the tier 2 target (7+), or bigger?
 - [ ] Neighbour-to-variant leanings (which neighbouring terrains tip which variants)
 - [ ] Which terrains get cluster goals (note: "connected clusters of the same terrain transform into special regions" currently reads as all of them)
+- [ ] **New (Nov 4, 2026):** Buried city: how often storms pass, and how a quest handles a buried library
 - [ ] **New (Nov 4, 2026):** encounters: how Scouting reveals past sight range, each region's mix of the three kinds, which entries roam and how fast, and keeping a map drinking contest distinct from the Harvest Festival's
 - [ ] **New:** hex events list; dungeon room counts, event rooms and trap list
 - [x] ~~Rethink the Rapids variant~~ (settled Nov 2, 2026: a river gorge with a narrow channel and no wide pools, so a bridge fits every tile; see [Presentation](07 Presentation.md) → Region variant looks)
