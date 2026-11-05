@@ -21,6 +21,7 @@ import variants as vr  # noqa: E402,F401
 TITLES = {st.DUNFAIRE: "Dunfaire Tower", st.RIME: "East Rime Chapel", st.MONTO: "Monto Town", st.SPIRE: "Sternbrunn Spire", st.OAK: "The Oak & Lantern", st.WEIZEN: "Weizenhof Estate"}
 N = hk.NEIGHBOURS
 SHEET_STEM = "start_kit_sheet"
+AFTER_MAP = None  # a preview's changes to the built map
 
 
 def near_map(name):
@@ -81,6 +82,8 @@ def shot(name, world, stem, sub, dist=30, turn=0.0):
     minis = rp.load_templates(rp.latest(os.path.join("minis", "standins"), "standin_minis"))
     rp.build_map(templates, tiles=world)
     col = bpy.data.collections["map"]
+    if AFTER_MAP:
+        AFTER_MAP(col, world)
     same = [bool(world.get(d)) and vr.terrain_of(world[d]) == st.STARTS[name] for d in N]
     x, y, z = st.stop(name, same)
     ct._mini_spots(col, minis, [((x, y, z + 0.02), math.radians(120))])
