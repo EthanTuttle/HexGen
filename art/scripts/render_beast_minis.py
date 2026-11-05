@@ -2,6 +2,7 @@
 the combat camera's height and distance.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_beast_minis.py [-- wolf]
+Options built beside a beast (beast_wolf_band) join the combat-camera row.
 Uses the latest beast_minis, hero_kit and enemy_minis. Writes art/preview/beast_<beast>_*_vN.png and the sheet beast_<beast>_vN.png.
 """
 import math
@@ -87,8 +88,25 @@ def render(beast_name):
     rh.shot(stem, Vector((0, 0, 0.4)), 9.0, 12, (1500, 760))
     stems.append(stem)
     fm.sheet(stems, f"beast_{beast_name}", cols=2)
-    # The game's combat camera: about 50 degrees down, at 18 and 30 m.
-    line_up(beast_name, first, 0)
+    # The game's combat camera: about 50 degrees down, at 18 and 30 m. Options (beast_<name>_<option>) stand between it and the foe.
+    t, col = start()
+    options = sorted(k for k in t if k.startswith(f"beast_{beast_name}_"))
+    row = ["ranger", f"beast_{beast_name}"] + options + ["enemy"]
+    for i, piece in enumerate(row):
+        x = 1.15 * (i - (len(row) - 1) / 2)
+        if piece == "ranger":
+            rh.stand(t, col, RANGER, "ranger", at=(x, 0, 0), spin=0)
+        elif piece == "enemy":
+            enemy(t, f"enemy_{beast_name}" if f"enemy_{beast_name}" in t else "enemy_wolf", col, (x, 0, 0), 0)
+        else:
+            beast(t, piece, first, piece, col, (x, 0, 0), 0)
+    print("COMBATROW", row)
+    # Close, at the same angle, for judging what reads: facing the camera, then turned 60 degrees as after a move.
+    rh.shot(f"beast_{beast_name}_combat_close", Vector((0, 0, 0.4)), 8, 50, (1500, 600))
+    for o in col.objects:
+        if o.type == "MESH" and o.name != "ground":
+            o.rotation_euler.z = math.radians(60)
+    rh.shot(f"beast_{beast_name}_combat_close_turned", Vector((0, 0, 0.4)), 8, 50, (1500, 600))
     for d in (18, 30):
         rh.shot(f"beast_{beast_name}_combat_{d}m", Vector((0, 0, 0.4)), d, 50, (1500, 700))
 

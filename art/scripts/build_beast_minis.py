@@ -10,7 +10,8 @@ assembler swaps them. For a beast the zones mean:
   eyes   the eyes           cloth  the neckerchief, which ties it to its ranger
 Proposed swatches are in BEAST_SWATCHES.
 
-  beast_wolf   alert, head up, tail raised: the enemy wolf stalks low with its jaws open
+  beast_wolf        alert, head up, tail out straight: the enemy wolf stalks low with its jaws open
+  beast_wolf_band   the same with a cloth band round its chest (an option, to read from the combat camera)
 """
 import math
 import os
@@ -38,9 +39,10 @@ BEAST_SWATCHES = {
 }
 
 
-def wolf(col):
-    """Head held high and turned a touch to its right, ears up, mouth shut, tail lifted in a curve: alert and on your side."""
-    p = hk.Piece("beast_wolf")
+def wolf(col, band=False):
+    """Head held high and turned a touch to its right, ears pricked, mouth shut, tail out straight behind: alert, wild, and on
+    your side. band: a cloth band round its chest as well, in the ranger's colour, which shows from the combat camera (option)."""
+    p = hk.Piece("beast_wolf_band" if band else "beast_wolf")
     sm.base(p, "ring_ally")
     coat, back, side, pale, dark = zone("skin"), zone("skin", 0.8), zone("skin", 0.92), zone("hair"), zone("skin", 0.62)
 
@@ -54,6 +56,8 @@ def wolf(col):
     body = [(0.33, 0.36, 0.05, 0.05), (0.27, 0.37, 0.125, 0.13), (0.08, 0.38, 0.12, 0.12),
             (-0.09, 0.39, 0.15, 0.17), (-0.2, 0.42, 0.14, 0.15)]
     em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.1) for y, z, w, h in body], fur)
+    if band:
+        em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.1, sides=6) for y, z, w, h in ((-0.1, 0.392, 0.162, 0.182), (0.0, 0.386, 0.15, 0.162), (0.1, 0.38, 0.132, 0.134))], lambda c, n: zone("cloth") if n.z > -0.3 else zone("cloth", 0.8))
 
     # Neck rises to a head held up, turned a little to its right so it doesn't read as a bar from above.
     turn = 0.05
@@ -64,33 +68,38 @@ def wolf(col):
     em.loft(p, [em.section(at(0, -0.19, 0.49 + dz), 0.122, 0.128, along=up, sides=8) for dz in (-0.02, 0.03)], lambda c, n: zone("cloth"))
     em.loft(p, [[at(-0.1, -0.27, 0.48), at(0.1, -0.27, 0.48), at(0, -0.3, 0.49)], [at(0, -0.31, 0.35)]], lambda c, n: zone("cloth", 0.88))
 
-    # Head: a round skull, a brow, then a shorter, blunter muzzle than the foe's, pale underneath.
+    # Head: a flatter skull than v3's, a long muzzle, pale underneath; ruffs at the cheeks and chest.
     fwd = V((0.18, -1, -0.12)).normalized()
-    hc = at(turn, -0.28, 0.64)
+    hc = at(turn, -0.28, 0.63)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
 
     def head_fur(c, n):
-        return pale if n.z < -0.25 or (c - hc).dot(fwd) > 0.12 and n.z < 0.45 else back if n.z > 0.6 else coat
-    em.loft(p, [em.section(h(-0.07, 0.0), 0.06, 0.06, along=fwd, sides=8), em.section(h(0.0, 0.01), 0.1, 0.095, along=fwd, sides=8),
-                em.section(h(0.08, 0.0), 0.095, 0.085, along=fwd, sides=8), em.section(h(0.13, -0.025), 0.06, 0.05, along=fwd, sides=8),
-                em.section(h(0.21, -0.035), 0.047, 0.04, along=fwd, sides=8), em.section(h(0.245, -0.04), 0.032, 0.026, along=fwd, sides=8)], head_fur)
-    p.blob(h(0.25, -0.025), 0.022, "hero_pupil", squash=0.8)  # nose
+        return pale if n.z < -0.25 or (c - hc).dot(fwd) > 0.13 and n.z < 0.4 else back if n.z > 0.6 else coat
+    em.loft(p, [em.section(h(-0.08, 0.0), 0.06, 0.055, along=fwd, sides=8), em.section(h(0.0, 0.0), 0.098, 0.08, along=fwd, sides=8),
+                em.section(h(0.08, -0.005), 0.088, 0.07, along=fwd, sides=8), em.section(h(0.14, -0.03), 0.056, 0.046, along=fwd, sides=8),
+                em.section(h(0.25, -0.042), 0.042, 0.036, along=fwd, sides=8), em.section(h(0.285, -0.046), 0.03, 0.024, along=fwd, sides=8)], head_fur)
+    p.blob(h(0.29, -0.032), 0.02, "hero_pupil", squash=0.8)  # nose
     for x in SIDE:
-        # mouth shut, its line turned up at the back
-        em.limb(p, [h(0.25, -0.065, x * 0.008), h(0.18, -0.068, x * 0.04), h(0.13, -0.05, x * 0.055)], [0.006] * 3, ["hero_mouth"], sides=3)
-        # big friendly eyes on the front of the head under a soft brow
-        e = h(0.1, 0.035, x * 0.047)
-        p.blob(e, 0.03, "hero_eye_white", squash=1.05)
-        f = e + fwd * 0.029 + V((-x * 0.004, 0, 0))
-        hb_plate(p, f, fwd, 0.034, 0.04, zone("eyes"))
-        hb_plate(p, f + fwd * 0.002, fwd, 0.016, 0.026, "hero_pupil")
-        em.limb(p, [h(0.11, 0.08, x * 0.022), h(0.095, 0.064, x * 0.078)], [0.012, 0.009], [dark], sides=4)  # the outer end lower: kind
-        # ears up and forward, pale inside
-        root = h(-0.01, 0.07, x * 0.055)
-        vr.spike(p, root, root + V((x * 0.03, 0.01, 0.115)), 0.045, back, segments=3)
-        vr.spike(p, root + fwd * 0.012 + V((0, 0, 0.012)), root + fwd * 0.012 + V((x * 0.026, 0.0, 0.088)), 0.026, pale, segments=3)
+        # mouth shut
+        em.limb(p, [h(0.285, -0.066, x * 0.008), h(0.2, -0.07, x * 0.036), h(0.14, -0.058, x * 0.05)], [0.005] * 3, ["hero_mouth"], sides=3)
+        # small almond eyes set to the sides, no whites, under a dark brow ridge
+        look = (fwd + V((x * 0.75, 0, 0.1))).normalized()
+        e = h(0.085, 0.026, x * 0.064) + look * 0.004
+        hb_plate(p, e, look, 0.03, 0.017, zone("eyes"))
+        hb_plate(p, e + look * 0.002 + V((-x * 0.002, 0, 0)), look, 0.009, 0.015, "hero_pupil")
+        em.limb(p, [h(0.105, 0.05, x * 0.035), h(0.08, 0.047, x * 0.08)], [0.011, 0.007], [dark], sides=4)
+        # ears smaller and set back, pricked
+        root = h(-0.035, 0.055, x * 0.06)
+        vr.spike(p, root, root + V((x * 0.035, 0.03, 0.095)), 0.04, back, segments=3)
+        vr.spike(p, root + fwd * 0.01 + V((0, 0, 0.01)), root + fwd * 0.01 + V((x * 0.03, 0.025, 0.075)), 0.022, pale, segments=3)
+        # ruff: tufts back from the cheeks, and down the sides of the throat
+        for k, (dy, dz) in enumerate(((0.02, -0.04), (-0.04, -0.06))):
+            c = h(dy, dz, x * 0.085)
+            vr.spike(p, c, c + V((x * 0.06, 0.07, -0.02 - 0.02 * k)), 0.035, side, segments=3)
+        c = at(x * 0.1, -0.22, 0.47)
+        vr.spike(p, c, c + V((x * 0.05, 0.06, -0.06)), 0.04, side, segments=3)
 
     # Legs: standing square and ready, near fore paw a half step ahead.
     for s, y_paw in ((-1, -0.25), (1, -0.19)):
@@ -102,8 +111,8 @@ def wolf(col):
         em.limb(p, [V((x, 0.25, Z0 + 0.32)), V((x * 1.06, 0.31, Z0 + 0.2)), V((x * 1.08, y_paw + 0.02, Z0 + 0.1)), V((x * 1.08, y_paw, Z0 + 0.022))],
                 [0.088, 0.06, 0.036, 0.043], [coat, coat, pale])
 
-    # Tail: up and over in a loose curve, pale tip, inside the cell.
-    em.limb(p, [at(0, 0.32, 0.41), at(0.02, 0.4, 0.51), at(0.05, 0.4, 0.63), at(0.07, 0.34, 0.69)], [0.04, 0.062, 0.05, 0.0], [coat, coat, pale])
+    # Tail: straight out behind and a little down, a thick brush with a dark tip, inside the cell. (The enemy's hangs low.)
+    em.limb(p, [at(0, 0.32, 0.4), at(0.02, 0.38, 0.39), at(0.04, 0.45, 0.34), at(0.05, 0.49, 0.3)], [0.04, 0.06, 0.05, 0.0], [coat, coat, dark])
     return p.finish(col)
 
 
@@ -119,7 +128,7 @@ def hb_plate(p, at, facing, w, h, paint):
 def build():
     hk.empty_scene()
     col = hk.new_collection("beasts")
-    for ob in (wolf(col),):
+    for ob in (wolf(col), wolf(col, band=True)):
         ob.data.calc_loop_triangles()
         print(f"TRIS {ob.name}: {len(ob.data.loop_triangles)} top {max((ob.matrix_world @ v.co).z for v in ob.data.vertices):.2f}")
     out = os.path.join(hk.ART, "minis", "heroes")
