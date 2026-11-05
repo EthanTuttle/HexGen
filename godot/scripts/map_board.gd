@@ -387,7 +387,7 @@ func _update_gates() -> Dictionary:
 	var by_terrain := {}
 	for t: Vector2i in terrains:
 		by_terrain[t] = Variants.terrain_of(terrains[t])
-	var now := FenceGates.gates(by_terrain, raised, climbs)
+	var now := FenceGates.gates(by_terrain, raised, climbs, [Rules.START_TILE])
 	var changed := {}
 	for t: Vector2i in now:
 		if now[t] != gates.get(t, []):

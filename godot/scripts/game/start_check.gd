@@ -27,6 +27,14 @@ func _run() -> void:
 			map.free()
 		print("START %s %s: %s" % ["OK" if shut.is_empty() else "FAIL", terrain, "open on every side" if shut.is_empty() else "shut at %s" % [shut]])
 		failed += 0 if shut.is_empty() else 1
+	# A farm beside a starting tile that isn't itself fenced shows a gate toward it, whichever side.
+	for i in 6:
+		var start := Rules.START_TILE
+		var farm: Vector2i = start + Hex.NEIGHBOURS[i]
+		var out := FenceGates.gates({start: "plains", farm: "farmland"}, {}, [], [start])
+		if not (i + 3) % 6 in out[farm]:
+			print("START FAIL farm beside a start: no gate on side %d" % i)
+			failed += 1
 	print("START DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
