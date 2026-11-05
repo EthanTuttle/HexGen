@@ -66,6 +66,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Neighbour-to-variant leanings
 - [ ] Which terrains get cluster goals
 - [ ] New: hex events list; dungeon rooms and traps
+- [ ] New: map encounters: oversized or true-scale figures (trial); detail range, region mixes, what roams (see Map & exploration)
 - [ ] New: obstacles: which terrain gets which, crossing gear, failure costs
 - [ ] New (placeholder): how much a level milestone widens sight range
 - [ ] New (placeholder): day-clock time per card placed
