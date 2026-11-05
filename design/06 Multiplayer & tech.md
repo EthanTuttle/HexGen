@@ -98,8 +98,27 @@ Engine comparison as of Oct 2026 (checked against public info; re-check pricing 
 
 **Cross-device saves:** syncing saves between PC and iPhone (see Saving) needs a shared online backend whichever engine is picked (see Open questions).
 
+## First playable
+
+Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore and combat loop. Numbers here are placeholders until the combat balance pass.
+
+| Part | First playable |
+| --- | --- |
+| Start | Title screen and New campaign, then the character creator, all steps as mocked up. Fighter is playable and other classes show locked. Race, background and appearance apply, with a small customization pass for minis |
+| Starting place | The party starts on its background's tile. All six get a new world tile ([World & story](01 World & story.md) → Backgrounds) |
+| Deck | As [Cards & progression](05 Cards & progression.md) → Starting decks. Terrains with no combat maps use the old board for now |
+| Goal | Finish 3 regions, then an end panel. For the prototype only: the real campaign doesn't end this way |
+| Encounters | Rolls as in [Map & exploration](02 Map & exploration.md), plus a safety net: if the hand is empty and no fight is on the map, one fight spawns nearby |
+| Rest | At the background's tile, and in towns and shops as mocked up, entered with an Enter card |
+| After a fight | Downed allies stand at 1 HP, HP carries until rest, no injuries for now |
+| Fight rewards | Cards, plus gold and XP: per foe by role (minion 2, soldier 4, elite 8), times distance band (near 1, mid 2, far 3). Wins only; Sneak past gives none |
+| Levels | Simple: XP fills a bar, and a level gives a terrain card pick. The full Level-up screen and gear come later. XP per level: open |
+| Social and Discovery | The Social encounter screen, with 3 or 4 events written with Ethan |
+| Sneak past | Harder for tougher foes: heads needed by the toughest foe's role (minion 1, soldier 2, elite 3; proposed, a placeholder) |
+
 ## Open questions
 
+- [ ] **New (Nov 4, 2026):** first playable: XP per level, what town shops sell before gear exists, the 3 or 4 events, and the six starting tiles' looks
 - [x] ~~Hills look~~ (settled Oct 30, 2026: smooth raised slopes, with joined hills sharing one mountain; see Engine prototype)
 - [x] ~~Desert dunes~~ (settled Oct 30, 2026: rolling sand swells; see Engine prototype)
 - [ ] Placement: simultaneous placement in multiplayer
