@@ -10,7 +10,7 @@ const FADE := Vector2(0.3, 2.8)  # flat within 0.3 m of an edge facing other san
 const ND := 14                   # grid samples across one sixth of a tile: depth
 const NV := 16                   # side to side (swells are 6.5 m long)
 const PROP_CELL := 1.4
-const LOOKS := {"desert": "desert", "wasteland": "wasteland", "sandstonesphinx": "wasteland"}  # the desert terrain, its variants and landmarks -> whose sand
+const LOOKS := {"desert": "desert", "wasteland": "wasteland", "sandstonesphinx": "wasteland", "sternbrunnspire": "sternbrunn_sand"}  # the desert terrain, its variants and landmarks -> whose sand
 const DUNE_H := 2.2              # the Sphinx's dune, at its crest
 const SPHINX_STOP := Vector2(3.1, 0.0)  # where the party stops, facing the altar, on the piece's +X
 const PROP_R := {"cactus": 0.35, "rock": 0.3, "bush": 0.25, "cracked": 0.0, "column": 1.1, "wall": 1.15, "statue": 1.2, "bones": 0.7, "deadtree": 0.45}  # how far a prop reaches from its point
@@ -49,6 +49,8 @@ static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 
 ## 0 near any edge of tile t facing a tile with other sand or none, 1 deep in the sand. (x, y) is world plan space.
 static func fade(terrains: Dictionary, t: Vector2i, x: float, y: float) -> float:
+	if terrains[t] == "sternbrunnspire":   # it stands on level sand, so its door and stop are at the ground's height
+		return 0.0
 	var p := Vector2(x, y) - Hex.tile_position(t.x, t.y)
 	var near := 99.0
 	var look: String = LOOKS[terrains[t]]
@@ -199,7 +201,7 @@ static func ruins(t: Vector2i, near) -> Array:
 static func props(terrains: Dictionary, t: Vector2i, near = null) -> Array:
 	var c := Hex.tile_position(t.x, t.y)
 	var out := []
-	if terrains[t] == "sandstonesphinx":
+	if terrains[t] in ["sandstonesphinx", "sternbrunnspire"]:
 		return out
 	var waste: bool = terrains[t] == "wasteland"
 	var cell := 1.8 if waste else PROP_CELL

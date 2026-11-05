@@ -22,7 +22,7 @@ const PALETTE := {
 	"trunk": "#7A5236", "field_a": "#DCC562", "field_b": "#C9A94A", "field_c": "#9DBF5E", "hedge": "#4F7A33",
 	"water": "#86BEDB", "water_deep": "#5E9CC7", "water_fast": "#6FAFC9", "fall_light": "#A8D5E2", "water_still": "#93CFC7", "foam": "#F4FAF8",
 	"wave_light": "#8FC2DE", "smooth_stone": "#BDB9AB", "stone_block": "#A3A6A8", "stone_block_dark": "#85898C", "bank": "#C9B58A", "reed": "#6E8F3E", "lily": "#5E9E4E", "boat": "#E9DCC0",
-	"wall": "#EFE2C6", "roof": "#B5523B", "road": "#CDB58A", "cobble": "#BCB2A4", "cobble_dark": "#A69C8E",
+	"st_glow": "#FFD27A", "sternbrunn_sand": "#EDD49A", "wall": "#EFE2C6", "roof": "#B5523B", "road": "#CDB58A", "cobble": "#BCB2A4", "cobble_dark": "#A69C8E",
 	"fence": "#8A6446", "rock": "#A9A39A", "rock_dark": "#8F897F", "rock_light": "#BEB8AE",
 	"stone_tan": "#B8A88E", "stone_blue": "#8E959B", "stone_brown": "#9C8B78", "flower": "#F2D46B",
 	"hill_grass": "#A3C47A", "cliff": "#A89F8E", "sand": "#F3DFAC", "cracked": "#D8BB7E", "scrub": "#9C9A5C",

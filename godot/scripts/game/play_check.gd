@@ -143,6 +143,12 @@ func _watch_start() -> void:
 		if game.map.terrains.has(t) and not _shut.has(t) and not game.map.edge_open(Rules.START_TILE, t):
 			_shut[t] = true
 			print("PLAY START SHUT: %s, %s %s" % [seed_is, game.map.terrains[t], t])
+	if game.map.terrains[Rules.START_TILE] == StartTiles.MONTO:
+		for i in 6:
+			if not i in StartTiles.MOUTHS and Variants.is_water(game.map.terrains.get(Rules.START_TILE + Hex.NEIGHBOURS[i])) and not _shut.has(i):
+				_shut[i] = true
+				print("PLAY FAIL: water beside Monto Town on side %d, %s" % [i, seed_is])
+				failed += 1
 	if _locked or game.busy or not game.deck.hand.is_empty():
 		return
 	for t: Vector2i in game.map.terrains:

@@ -111,6 +111,7 @@ static func terrain_of(name) -> String:
 		_base.merge(TIER3)
 		for lm in LANDMARKS:
 			_base[lm] = _base[LANDMARKS[lm]]
+		_base.merge(StartTiles.STARTS)
 	return _base.get(name, name)
 
 

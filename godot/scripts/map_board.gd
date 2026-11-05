@@ -59,6 +59,7 @@ var _slot_mat: Material
 var _still_water: StandardMaterial3D
 var _glow: StandardMaterial3D          # toadstools
 var _lamp: StandardMaterial3D          # lanterns (tiles v12)
+var _st_glow: StandardMaterial3D
 var _mist_mat: ShaderMaterial
 var _fey: StandardMaterial3D           # fey wood's fairy rings and stepping caps, the Fey Court's stair
 var _window: StandardMaterial3D        # the Fey Court's windows
@@ -298,7 +299,7 @@ func canyon_open(t: Vector2i, i: int) -> bool:
 
 ## Where the party walks in file on a line of its own: the canyon's corridors, and the landmarks with routes of their own.
 func walks_in_file(t: Vector2i) -> bool:
-	return canyons.has(t) or terrains.get(t) in ["sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool"]
+	return canyons.has(t) or terrains.get(t) in ["sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool"] or StartTiles.is_start(terrains.get(t))
 
 
 ## The ground's height at a plan point where the tile gives it rather than collision, or NAN: on the canyon's lanes and
@@ -313,6 +314,16 @@ func walk_z(p: Vector2) -> float:
 		return hit.y if hit.x < 0.8 else 0.0
 	if SwampLands.LOOKS.has(terrains.get(t)):
 		return _marsh_z(t, terrains[t], p)
+	if terrains.get(t) == StartTiles.MONTO:
+		if wet_at(p):
+			return NAN
+		var local := p - Hex.tile_position(t.x, t.y)
+		var near := Vector2(INF, 0.0)
+		for line: PackedVector3Array in water_shapes[t].monto_lines:
+			var hit := _along_line(local, line)
+			if hit.x < near.x:
+				near = hit
+		return near.y if near.x < 0.8 else StartTiles.APRON_Z
 	if water_shapes.has(t) and water_shapes[t].has("lane_lines"):
 		var local := p - Hex.tile_position(t.x, t.y)
 		for line: PackedVector3Array in water_shapes[t].lane_lines:
@@ -712,6 +723,8 @@ func _update_smoke() -> void:
 func path_graph(t: Vector2i) -> TilePaths:
 	if not _graphs.has(t) and water_shapes.has(t):
 		_graphs[t] = _water_graph(t)
+	if not _graphs.has(t) and StartTiles.is_start(terrains.get(t)):
+		_graphs[t] = _start_graph(t)
 	if not _graphs.has(t) and canyons.has(t):
 		_graphs[t] = _canyon_graph(t)
 	if not _graphs.has(t) and terrains.get(t) in ["sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool"]:
@@ -828,6 +841,9 @@ func _setup_materials() -> void:
 	_lamp = _glow.duplicate() as StandardMaterial3D
 	_lamp.albedo_color = Hex.colour("lantern")
 	_lamp.emission = Hex.colour("lantern")
+	_st_glow = _glow.duplicate() as StandardMaterial3D   # the starting tiles' windows, lanterns and fire
+	_st_glow.albedo_color = Hex.colour("st_glow")
+	_st_glow.emission = Hex.colour("st_glow")
 	for mesh: Mesh in _kit.values():
 		for k in mesh.get_surface_count():
 			var name := Kit.material_name(mesh, k)
@@ -845,6 +861,8 @@ func _setup_materials() -> void:
 				mesh.surface_set_material(k, _glow)
 			elif name == "lantern":
 				mesh.surface_set_material(k, _lamp)
+			elif name == "st_glow":
+				mesh.surface_set_material(k, _st_glow)
 			elif name == "kit":
 				# tiles v9: one shared material, the colours in the vertex colours (glTF COLOR_0, linear)
 				var m := mesh.surface_get_material(k) as BaseMaterial3D
@@ -922,7 +940,7 @@ func _mist(at: Vector2) -> Node3D:
 ## Ground colour per tile in a small lookup texture; the shader fades it toward the neighbours.
 ## The colour of each terrain is the top material of its base slab in the kit.
 func _set_ground(t: Vector2i) -> void:
-	var name: String = terrains[t]
+	var name: String = StartTiles.GROUND.get(terrains[t], terrains[t])
 	var c: Color
 	if Variants.GROUND.has(name):
 		c = Hex.colour(Variants.GROUND[name])
@@ -994,6 +1012,8 @@ func _build_tile(t: Vector2i) -> void:
 		turn = LandmarkFlow.toward_edge(t, flow_toward)   # density bands lean toward the landmark
 	var spin := deg_to_rad(60.0 * turn)
 	Kit.place(node, _kit, name + centre, at, spin)
+	if _kit.has(name + "_plinth"):   # Dunfaire Tower's: its own piece, ready to swap for a hex column
+		Kit.place(node, _kit, name + "_plinth", at)
 	if centre == "_centre_mill":   # the small mill goes where the turned yard is, but doesn't turn itself
 		Kit.place(node, _kit, "windmill_small", at + Variants.SMALL_MILL_SPOT.rotated(spin))
 	if name == "greatwindmill":
@@ -1017,7 +1037,7 @@ func _build_tile(t: Vector2i) -> void:
 		# One mountain per group: a lone tile's own peak; a third on each corner where three hills tiles
 		# meet; otherwise half on each edge shared with one other hills tile. A landmark has none of this, its
 		# neighbours leave it out, and no mountain stands on a trail edge, so the range opens into a pass.
-		var clear_near: bool = flow_dist.get(t, 3) > 2
+		var clear_near: bool = flow_dist.get(t, 3) > 2 and not StartTiles.near_start(terrains, t) and not StartTiles.is_start(name)
 		if not Variants.LANDMARKS.has(name) and clear_near and not range(6).any(func(i): return _ranges(t, i)):
 			Kit.place(node, _kit, name + "_peak", at)
 		var parts := _mountain_parts(t)
@@ -1541,7 +1561,8 @@ func _ranges(t: Vector2i, i: int) -> bool:
 	var a = terrains.get(t)
 	var b = terrains.get(n)
 	return linked(a, b) and not i in LandmarkFlow.trail_edges(t, flow_toward) and not Variants.LANDMARKS.has(a) \
-			and not Variants.LANDMARKS.has(b)
+			and not Variants.LANDMARKS.has(b) and not StartTiles.is_start(a) and not StartTiles.is_start(b) \
+			and not StartTiles.near_start(terrains, t) and not StartTiles.near_start(terrains, n)
 
 
 ## The cliffs round a raised tile, at ground level whatever height the tile stands at: they're children of the tile's
@@ -1685,6 +1706,8 @@ func _water_inputs(t: Vector2i, name: String, pending := {}) -> Array:
 		near.append(pending.get(n, terrains.get(n)))
 		mask.append(Variants.is_water(near[-1]) and not _frozen_shut(t, n, i))
 	var widths := Water.edge_widths(name, near)
+	if name == StartTiles.MONTO:
+		return [StartTiles.MOUTH_WATER.duplicate(), widths]
 	for i in 6:   # both tiles keep the width the frozen tile has at their shared edge
 		var n: Vector2i = t + Hex.NEIGHBOURS[i]
 		if _troll_water.has(n) and mask[i]:
@@ -1734,13 +1757,16 @@ func _water_info(t: Vector2i) -> Dictionary:
 	var inputs := _water_inputs(t, name)
 	var mask: Array = inputs[0]
 	var widths: Array = inputs[1]
-	var key := [name, mask, widths, band]
+	var beyond := []   # Monto: which mouths have water past them
+	for i in 6:
+		beyond.append(name == StartTiles.MONTO and i in StartTiles.MOUTHS and Variants.is_water(terrains.get(t + Hex.NEIGHBOURS[i])))
+	var key := [name, mask, widths, band, beyond]
 	if _water_cache.has(t) and _water_cache[t].key == key:
 		return _water_cache[t]
-	var seed := "%d,%d" % [t.x, t.y]
+	var seed := StartTiles.WATER_SEED if name == StartTiles.MONTO else "%d,%d" % [t.x, t.y]
 	var style: String = Water.FAMILY.get(name, "")
 	var w := Water.tile_water(mask, seed, widths, style)
-	var landmark := Variants.LANDMARK_CENTRES.has(name)
+	var landmark := Variants.LANDMARK_CENTRES.has(name) or name == StartTiles.MONTO
 	w.merge({key = key, style = style, mask = mask, widths = widths, seed = seed, band = band, landmark = landmark, dry = []})
 	if style == "rapids" and mask.has(true):
 		var t0 := Time.get_ticks_usec()
@@ -1751,7 +1777,17 @@ func _water_info(t: Vector2i) -> Dictionary:
 		w.lane_lines = _lane_lines(w.gorge.walks)
 	w.props = Water.tile_props(mask, seed, widths, style, band, landmark)
 	var turn := 0
-	if name == "riverport":
+	if name == StartTiles.MONTO:
+		w.beyond = beyond
+		w.monto_lines = StartTiles.monto_lines(beyond)
+		for line: PackedVector3Array in w.monto_lines:
+			var wet_start := false
+			for e: int in StartTiles.MOUTHS:   # a mouth with water beyond starts wet; the bridge, boardwalks and aprons are dry
+				wet_start = wet_start or (beyond[e] and Vector2(line[0].x, line[0].y).distance_to(Water.normal(e) * Hex.A) < 0.01)
+			for k in range(2 if wet_start else 1, line.size()):
+				if line[k - 1].z > 0.0 or line[k].z > 0.0:
+					w.dry.append([Vector2(line[k - 1].x, line[k - 1].y), Vector2(line[k].x, line[k].y), 0.5])
+	elif name == "riverport":
 		turn = Water.port_turn(mask, seed)
 		var sh := Water.port_shape(mask, seed, widths, turn)
 		var arc: PackedVector2Array = Water.port_water(turn)[1]
@@ -1942,7 +1978,20 @@ func _water_graph(t: Vector2i) -> TilePaths:
 	var at := Hex.tile_position(t.x, t.y)
 	var name: String = terrains[t]
 	var stand := Vector2.ZERO
-	if name == "riverport":
+	if name == StartTiles.MONTO:
+		stand = StartTiles.stop()
+		for line: PackedVector3Array in w.monto_lines:
+			var plan := PackedVector2Array()
+			for q in line:
+				plan.append(Vector2(q.x, q.y))
+			g.add_line(plan, at)
+		for e in 6:
+			g.edge_node[e] = g._node(at + Water.normal(e) * Hex.A)
+		var r := Water.water_routes(w.mask, w.seed, w.widths, w.style)
+		for e in StartTiles.MOUTHS:   # a raft's way along the river, under the bridge
+			if w.beyond[e]:
+				g.add_line(r.lines[e], at)
+	elif name == "riverport":
 		var turn: int = landmark_turns.get(t, 0)
 		var r := Water.port_routes(w.mask, turn)
 		stand = Water.turned(Water.PORT_STOP, turn)
@@ -2055,6 +2104,11 @@ func _place_water_pieces(node: Node3D, t: Vector2i, at: Vector2) -> void:
 		for f in w.gorge.falls:
 			node.add_child(FarmFx.spray(Hex.to3(at + f.foot, -Gorge.DEPTH + 0.3)))
 	var turn: int = landmark_turns.get(t, 0)
+	if name == StartTiles.MONTO:
+		Kit.place(node, _kit, "montotown_centre", at)
+		for k: int in StartTiles.MOUTHS:   # a mouth with no water beyond ends in stone
+			if not w.beyond[k]:
+				Kit.place(node, _kit, "montotown_mouth", at, deg_to_rad(60.0 * k))
 	if name == "serpentlair":
 		Kit.place(node, _kit, "serpentlair_centre", at, deg_to_rad(60.0 * turn))
 		_deck(node, at, "serpentlair_centre", Vector2.ZERO, deg_to_rad(60.0 * turn), 0.7)
@@ -2080,6 +2134,18 @@ func _place_water_pieces(node: Node3D, t: Vector2i, at: Vector2) -> void:
 		mist.visible = false
 		node.add_child(mist)
 		_still_mists.append(mist)
+
+
+## A dry starting tile's routes (start_tiles.ring_lines): no path data in the glb, as for water.
+func _start_graph(t: Vector2i) -> TilePaths:
+	var g := TilePaths.new()
+	var at := Hex.tile_position(t.x, t.y)
+	for line: PackedVector2Array in StartTiles.ring_lines():
+		g.add_line(line, at)
+	for e in 6:
+		g.edge_node[e] = g._node(at + Water.normal(e) * Hex.A)
+	g.stand = g._node(at + StartTiles.stop())
+	return g
 
 
 ## Ground for the party over a piece's own path (a bridge's hump, the Lair's shelf): a strip it can feel.
@@ -2471,6 +2537,7 @@ func _process(delta: float) -> void:
 		_lamp.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: lit a little by day, bright at night
 		_fey.emission_energy_multiplier = 0.15 + 1.6 * night   # PLACEHOLDER: "glow softly at night"
 		_window.emission_energy_multiplier = 0.4 + 3.0 * night  # PLACEHOLDER: warm light inside
+		_st_glow.emission_energy_multiplier = 0.4 + 0.8 * night   # PLACEHOLDER: the kit's previews give it 1.2
 		_faint.emission_energy_multiplier = 0.1 + 0.9 * night   # PLACEHOLDER: dimmer than the windows
 		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
 		for g: StandardMaterial3D in _marsh_glow.values():

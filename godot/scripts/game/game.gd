@@ -89,7 +89,7 @@ func _ready() -> void:
 	map.time_of_day = clock
 	rig.floor_at = map.camera_floor
 	add_child(map)
-	map.place(Rules.START_TILE, Rules.START_TERRAIN)
+	map.place(Rules.START_TILE, run.start_tile())
 	order[Rules.START_TILE] = 0
 
 	for k in run.party_size:
@@ -169,8 +169,10 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--combatmap=")):
 		var wanted: String = Array(OS.get_cmdline_user_args()).filter(func(x): return x.begins_with("--combatmap="))[0].get_slice("=", 1)
 		debug_fight.call_deferred(wanted)
-	if "--startcheck" in OS.get_cmdline_user_args():
-		add_child(StartCheck.new())
+	if "--startcheck" in OS.get_cmdline_user_args() or "--startshots" in OS.get_cmdline_user_args():
+		var sc := StartCheck.new()
+		sc.game = self
+		add_child(sc)
 	if "--playcheck" in OS.get_cmdline_user_args():
 		var pc := PlayCheck.new()
 		pc.game = self
@@ -317,6 +319,8 @@ func why_not(t: Vector2i, terrain: String) -> String:
 		var other := land(t + n)
 		if other != "" and Rules.banned(terrain, other):
 			return "Clashes with %s" % Rules.NAMES.get(other, other)
+		if map.terrains.get(t + n) == StartTiles.MONTO and not StartTiles.monto_allows(Hex.NEIGHBOURS.find(t - (t + n)), terrain):
+			return "Clashes with Monto Town"   # its river is fixed (design/02 -> Terrain pairings)
 	return ""
 
 

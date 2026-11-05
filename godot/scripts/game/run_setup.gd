@@ -33,6 +33,11 @@ var safety_net := true
 var wide_deck := false
 
 
+## What the map starts from: the background's tile (design/06). The checks' wide deck keeps the old farmland, which their numbers rest on.
+func start_tile() -> String:
+	return Rules.START_TERRAIN if wide_deck else StartTiles.BACKGROUND.get(background, Rules.START_TERRAIN)
+
+
 static func for_launch() -> RunSetup:
 	if Hero.current != null:
 		return from_hero(Hero.current)
