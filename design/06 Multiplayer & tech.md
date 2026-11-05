@@ -122,7 +122,7 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Test notes | A flag button in test builds, on every screen, for typing an issue, bug or tweak during play. Each note is saved in app storage with a screenshot and game state, for collecting later (Ethan, Nov 4, 2026). No network, like the error log |
 | Ruins | Main's old ruins tile as a marked placeholder until ruins are decided. A finished ruins region stays plain, with no variant or landmark, and still counts toward the goal |
 | Shops | Every shop sells a simple health potion for now (Ethan, Nov 4, 2026); price and healing are placeholders |
-| Sneak past | Harder for tougher foes: heads needed by the toughest foe's role (minion 1, soldier 2, elite 3; proposed, a placeholder) |
+| Sneak past | The hero's Stealth check ([Classes & combat](03 Classes & combat.md) → Checks outside combat): heads needed by the toughest foe's role (minion 1, soldier 2, elite 3; a placeholder) |
 
 ## Open questions
 
