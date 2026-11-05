@@ -128,3 +128,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/encounter_badges_sizes_v1.png` | note | 32 pt; shrink on zoom too aggressive |
 | 2026-11-04 | `art/preview/encounter_glade_day_v1.png` | note | If used, glades appear at spawn; evaluate how many terrains need it first |
 | 2026-11-04 | `art/preview/encounter_badge_curve_v1.png` | approved | Eased curve, 32 pt; test in Godot |
+| 2026-11-04 | `art/preview/buried_r4_storm_b_over_v1.png` | rejected | Back to clouds: rolling, bubbling spheres in varying colours and opacity, made in Godot if cheaper |
