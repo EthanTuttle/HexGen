@@ -67,6 +67,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Which terrains get cluster goals
 - [ ] New: hex events list; dungeon rooms and traps
 - [ ] New: first playable: 3 or 4 events (see Multiplayer & tech)
+- [x] First playable: a run could lock one tile out from the start: a river tile whose only land neighbour is fenced with no gate toward the water (seed `o3`, Criminal). Fixed by a gate facing water (Ethan, Nov 5, 2026; [Map & exploration](02 Map & exploration.md) → Crossing water)
 - [ ] New: map encounters: silhouette or fade for covered figures (Godot comparison); how Scouting reveals past sight, region mixes, what roams (see Map & exploration)
 - [ ] New: obstacles: which terrain gets which, crossing gear, failure costs
 - [ ] New (placeholder): how much a level milestone widens sight range
