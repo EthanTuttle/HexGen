@@ -19,7 +19,8 @@ var cam := Camera3D.new()
 var ui := CanvasLayer.new()
 var safe := SafeArea.new()
 var title: TitleScreen
-var _fade := ColorRect.new()
+var creator: Creator
+var _backdrop := ColorRect.new()
 var _t := 0.0
 
 
@@ -45,20 +46,20 @@ func _ready() -> void:
 	print("FRONT world: %d tiles in %d ms" % [map.terrains.size(), Time.get_ticks_msec() - t0])
 	cam.current = true
 	add_child(ui)
+	_backdrop.color = Color("#BFD9D2")   # Creator v16's plain background
+	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_backdrop.visible = false
+	ui.add_child(_backdrop)
 	ui.add_child(safe)
 	title = TitleScreen.new(self)
 	safe.add_child(title)
-	_fade.color = Color("#24302C")
-	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fade.modulate.a = 0.0
-	ui.add_child(_fade)
 	_drift(0.0)
-	title.new_campaign.connect(func(): start_game(Hero.stand_in()))   # the creator comes next
+	title.new_campaign.connect(open_creator)
 	if "--check" in OS.get_cmdline_user_args():
 		var check := FrontCheck.new()
 		check.front = self
-		add_child(check)
+		get_tree().root.add_child.call_deferred(check)   # outlives the change of scene
 
 
 func _process(delta: float) -> void:
@@ -117,12 +118,24 @@ static func _terrain(q: int, r: int) -> String:
 	return "farmland" if q >= 3 else "plains"
 
 
-## Leaves for the game, with the screen dark while it loads.
-func start_game(hero: Dictionary) -> void:
-	Hero.current = hero
-	set_process_input(false)
-	var tw := create_tween()
-	tw.tween_property(_fade, "modulate:a", 1.0, 0.5)
-	await tw.finished
-	await get_tree().process_frame
-	get_tree().change_scene_to_file(GAME_SCENE)
+func open_creator() -> void:
+	title.visible = false
+	_backdrop.visible = true
+	map.visible = false
+	creator = Creator.new()
+	safe.add_child(creator)
+	creator.finished.connect(start_game)
+	creator.cancelled.connect(_close_creator)
+
+
+func _close_creator() -> void:
+	creator.queue_free()
+	creator = null
+	_backdrop.visible = false
+	map.visible = true
+	title.visible = true
+
+
+## Leaves for the game, through the send-off.
+func start_game(hero: Dictionary, banners: Array) -> void:
+	SendOff.new().play(get_tree(), hero, banners)

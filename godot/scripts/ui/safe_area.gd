@@ -39,6 +39,8 @@ func _update() -> void:
 		want.x = FAKE_INSET
 	elif _fake == "right":
 		want.y = FAKE_INSET
+	elif _fake == "both":   # what iOS reports today
+		want = Vector2(FAKE_INSET, FAKE_INSET)
 	else:
 		var screen := Vector2(DisplayServer.screen_get_size())
 		var safe := Rect2(DisplayServer.get_display_safe_area())

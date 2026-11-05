@@ -72,6 +72,23 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 | Multiplayer and Settings on the title | Show "Not in the prototype yet" (a listed placeholder sentence) | Not in the first playable. Multiplayer fills the row while Load is hidden |
 | Title's first-launch world | `Front._terrain`: a staged river, woods, farms and a town, real tiles at dusk; only tiles the camera sees are built | The docs ask for "a generic world" |
 | Title's camera | 5.8 m each way over 40 s (the mockup's time) | The mockup's pan is in screen pixels |
+| Locked classes (creator) | Dimmed banner with a lock badge; it opens to read, shows "Locked", and Next stays off | The docs say "show locked" and no mockup does (`Creator.PLAYABLE`) |
+| Mini on Look, Name and the send-off | The mockup's own flat drawing, from the same picks (`CreatorMini`) | Combat Art's mini kit isn't exported yet |
+| Heads and hairstyles | The mockup's numbered placeholders | Same |
+| Hero's banner after Begin | Stays 4 s, then rises away; 96 pt in from the safe edge, clear of the party tray (`SendOff`) | The docs don't say how long, and at the mockup's left it covers the tray |
+| Name step with a keyboard open | The step slides up clear of it | Not mocked; not yet seen on a phone |
+| What the picks do | The description has everything (`Hero`). Race and sub-type text shows as mocked but does nothing yet (docs: looks and names). Whether scores, proficiencies and gear reach play is up to the game's hooks | First playable |
+
+**Where the creator differs from Creator v22b:**
+
+- **Width.** Laid out for 734 pt inside the phone's safe area, where the picked banner is about 410 pt, not 460. Blurbs run to two lines. A race with sub-types puts its crest beside the name and blurb (`front_race_dragonborn.png`), and the background's tile is 80 pt, not 108. At full width it's the mockup's layout.
+- **Text under 11 pt** in the mockup (pips, chips, card names, gear labels) is 11, the phones' floor.
+- **"Pick 1 elven spell"** sits right of the cards, as on the left it hits Back at this width.
+- **Cut under Screen text:** the name field's "Type a name" (no hints for standard input; the plate says Name).
+- **Back in the details panes** is sand, not cream: on the cream pane the mockup's button has no visible edge.
+- **God and Spells** aren't built: only the Fighter can reach the next step.
+
+`scripts/creator/creator_data.gd` is generated from the mockup by `tools/creator_data.py`, so names, blurbs, card text and icons copy across. Don't edit it by hand.
 
 ## How the party moves
 
