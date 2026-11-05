@@ -29,7 +29,10 @@ var held := -1                        # index into the hand, or -1
 var busy := false                     # walking, in a pop-up or in a fight
 var minute := Rules.START_MINUTE      # minutes into the 30-minute day
 var day := 1
-var encounters := {}                  # tile -> {expires, persistent, dropped}
+var encounters := {}                  # tile -> {expires, persistent, dropped, entry, id, roam_at}
+var _encounter_views := {}            # encounter id -> its EncounterView
+var _encounter_count := 0
+var walk_limited := true              # the checks walk far on one call
 var finished := {}                    # tile -> region index
 var regions: Array[Dictionary] = []   # {terrain, tiles, name, landmark, landmark_tile, tier, variant}
 var order := {}                       # tile -> placement number (for "newest tile of a cluster")
@@ -147,6 +150,12 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--combatmap=")):
 		var wanted: String = Array(OS.get_cmdline_user_args()).filter(func(x): return x.begins_with("--combatmap="))[0].get_slice("=", 1)
 		debug_fight.call_deferred(wanted)
+	if Array(OS.get_cmdline_user_args()).any(func(x): return x.ends_with("check") or x == "--demo"):
+		walk_limited = false   # they walk far on one call; the encounter check turns it back on
+	if "--enccheck" in OS.get_cmdline_user_args():
+		var ec := EncounterCheck.new()
+		ec.game = self
+		add_child(ec)
 	elif "--feycheck" in OS.get_cmdline_user_args():
 		var fy := FeyCheck.new()
 		fy.game = self
@@ -219,6 +228,7 @@ func _process(delta: float) -> void:
 			delta * (Rules.DAY_MAX_ZOOM - Rules.NIGHT_MAX_ZOOM) / Rules.ZOOM_LIMIT_SECONDS)
 	if rig.distance > rig.max_distance:
 		rig.distance = rig.max_distance
+	_update_encounters()
 	# Spawned encounters disappear after about 15 minutes unless a wipe made them stay (DOCS).
 	for t in encounters.keys():
 		var e: Dictionary = encounters[t]
@@ -928,12 +938,11 @@ func markers() -> Array:
 		var goal := _goal_for(land(t))
 		out.append({key = "goal%s" % newest, kind = "goal", text = str(goal - cl.size()), world = _tile_top(newest),
 				aria = "Cluster goal: grow this %s to %d+ hexes" % [Rules.NAMES[land(t)].to_lower(), goal]})
-	for t: Vector2i in encounters:
-		out.append({key = "enc%s" % t, kind = "encounter", text = "", world = _tile_top(t)})
 	if picked != null:
 		# The first tap's walk: how far and how long (DOCS: Walking; the time is on the day clock).
-		var n := path_to(picked).size()
-		out.append({key = "walk%s" % picked, kind = "walk", world = _tile_top(picked), lift = 40,
+		var way := _in_reach(path_to(picked))
+		var n := way.size()
+		out.append({key = "walk%s" % picked, kind = "walk", world = _tile_top(way[-1] if n > 0 else picked), lift = 40,
 				text = "%d hex%s · %d min" % [n, "" if n == 1 else "es", roundi(n * Rules.STEP_MINUTES)]})
 	for g in regions:
 		var lt: Vector2i = g.landmark_tile
@@ -958,18 +967,86 @@ func _maybe_spawn(t: Vector2i) -> void:
 			active += 1
 	if active >= Rules.ENCOUNTERS_PER_REGION or rng.randf() >= Rules.ENCOUNTER_CHANCE:
 		return
-	var free := tiles.filter(func(c): return c != party_tile and map.can_visit(c))
+	var free := tiles.filter(func(c): return c != party_tile and map.can_visit(c) and not Variants.LANDMARKS.has(map.terrains[c]))   # DOCS: landmarks keep their own events
 	if free.is_empty():
 		return
-	add_encounter(free[rng.randi_range(0, free.size() - 1)], false)
+	add_encounter(free[rng.randi_range(0, free.size() - 1)], false, [], _roll_entry())
 
 
-func add_encounter(t: Vector2i, persistent: bool, dropped: Array = []) -> void:
+func _roll_entry() -> Dictionary:
+	var total := 0.0
+	for e: Dictionary in Rules.ENCOUNTER_TABLE:
+		total += e.weight
+	var pick_at := rng.randf() * total
+	for e: Dictionary in Rules.ENCOUNTER_TABLE:
+		pick_at -= e.weight
+		if pick_at <= 0.0:
+			return e
+	return Rules.ENCOUNTER_TABLE[0]
+
+
+## entry: a row of Rules.ENCOUNTER_TABLE, or a fight that stays put (what a wipe leaves, and the tests'). What it looks like: EncounterView, in _update_encounters.
+func add_encounter(t: Vector2i, persistent: bool, dropped: Array = [], entry := {}) -> void:
 	if encounters.has(t):
 		encounters[t].persistent = encounters[t].persistent or persistent
 		encounters[t].dropped.append_array(dropped)
 		return
-	encounters[t] = {expires = real_time + Rules.ENCOUNTER_LIFETIME, persistent = persistent, dropped = dropped}
+	if entry.is_empty():
+		entry = {kind = "fight", scene = "enc_fight_bandits" if GroundCover.hash01(t.x, t.y, 97) < 0.5 else "enc_fight_wolves", roams = false}
+	_encounter_count += 1
+	encounters[t] = {expires = real_time + Rules.ENCOUNTER_LIFETIME, persistent = persistent, dropped = dropped, entry = entry, id = _encounter_count,
+			roam_at = _now_minutes() + Rules.ROAM_MINUTES}
+
+
+func _now_minutes() -> float:
+	return day * Rules.DAY_MINUTES + minute
+
+
+func sees(t: Vector2i) -> bool:
+	return Rules.hex_distance(t, party_tile) <= Rules.sight_now(minute)
+
+
+## Encounters as the map shows them: figures and a badge within sight (DOCS: design/02 -> What you see), and a few moving on the clock.
+func _update_encounters() -> void:
+	var alive := {}
+	var moved := {}
+	for t: Vector2i in encounters.keys():
+		var e: Dictionary = encounters[t]
+		if e.entry.get("roams", false) and not e.persistent and not fight.active and _now_minutes() >= e.roam_at:
+			e.roam_at = _now_minutes() + Rules.ROAM_MINUTES
+			var to := _roam_to(t)
+			if to != t:
+				encounters.erase(t)
+				encounters[to] = e
+				moved[e.id] = true
+				t = to
+		alive[e.id] = true
+		if not _encounter_views.has(e.id):
+			_encounter_views[e.id] = EncounterView.make(e.entry.scene, e.entry.kind, e.id)
+			map.add_child(_encounter_views[e.id])
+			_encounter_views[e.id].place(self, t, false)
+		elif moved.has(e.id):
+			_encounter_views[e.id].place(self, t, sees(t))
+		_encounter_views[e.id].show_for(sees(t), rig)
+	for id: int in _encounter_views.keys():
+		if not alive.has(id):
+			_encounter_views[id].queue_free()
+			_encounter_views.erase(id)
+
+
+## A roamer's next tile: a neighbour in its region a party can reach, with nothing on it.
+func _roam_to(t: Vector2i) -> Vector2i:
+	var region := cluster(t)
+	var free := []
+	for n: Vector2i in Hex.NEIGHBOURS:
+		if region.has(t + n) and t + n != party_tile and not encounters.has(t + n) and map.can_visit(t + n) and not Variants.LANDMARKS.has(map.terrains[t + n]):
+			free.append(t + n)
+	return t if free.is_empty() else free[rng.randi_range(0, free.size() - 1)]
+
+
+## As much of a path as one tap walks (DOCS: design/02 -> one tap moves the party at most its sight range).
+func _in_reach(path: Array[Vector2i]) -> Array[Vector2i]:
+	return path.slice(0, Rules.sight_now(minute)) if walk_limited else path
 
 
 # --- Walking -----------------------------------------------------------------
@@ -1106,7 +1183,7 @@ func _chime_helper(proficiency: String) -> Dictionary:
 ## The prompt when a route needs a check: cross, or walk round where there's a way (DOCS: design/02 -> Crossing water).
 func _ask_crossing(goal: Vector2i, path: Array[Vector2i]) -> void:
 	busy = true
-	var way := _up_to_encounter(path_to(goal, true))
+	var way := _up_to_encounter(_in_reach(path_to(goal, true)))
 	var has_way := not way.is_empty() and not _needs_check(way)
 	var stay := func():
 		hud.check.visible = false
@@ -1166,7 +1243,7 @@ func _up_to_encounter(path: Array[Vector2i]) -> Array[Vector2i]:
 func walk_to(goal: Vector2i) -> void:
 	if busy or goal == party_tile:
 		return
-	var path := _up_to_encounter(path_to(goal))
+	var path := _up_to_encounter(_in_reach(path_to(goal)))
 	if path.is_empty():
 		return
 	if not debug_auto_cross and _needs_check(path):
@@ -1195,7 +1272,10 @@ func _walk(path: Array[Vector2i]) -> void:
 	map.party_moved(party_tile)
 	if encounters.has(party_tile):
 		_encounter_tile = party_tile
-		hud.show_encounter(Rules.NAMES[land(party_tile)], "ask", [])
+		if encounters[party_tile].entry.kind == "fight":
+			hud.show_encounter(Rules.NAMES[land(party_tile)], "ask", [])
+		else:
+			hud.show_event(Rules.NAMES[land(party_tile)], encounters[party_tile].entry.name)
 		return
 	if _open_port_shop():
 		return
@@ -1226,6 +1306,14 @@ func choose_sneak() -> void:
 
 func choose_carry_on() -> void:
 	hud.hide_encounter()
+	busy = false
+	_refresh()
+
+
+## PLACEHOLDER until the events exist: seen once, it's gone.
+func choose_event_done() -> void:
+	hud.hide_encounter()
+	encounters.erase(_encounter_tile)
 	busy = false
 	_refresh()
 
@@ -1438,8 +1526,11 @@ func _details(pos: Vector2) -> void:
 		title = Rules.NAMES[terrain]
 		var goal := _goal_for(terrain)
 		lines.append("Cluster: %d / %d hexes to a region" % [cluster(t).size(), goal])
-	if encounters.has(t):
-		lines.append("Encounter: [Enemy group], %d foes" % _foes_at(t))
+	if encounters.has(t) and sees(t):
+		if encounters[t].entry.kind == "fight":
+			lines.append("Encounter: [Enemy group], %d foes" % _foes_at(t))
+		else:
+			lines.append("Encounter: %s" % encounters[t].entry.name)
 	popup.show_at(pos, title, lines)
 
 
@@ -1457,7 +1548,7 @@ func pick(t) -> void:
 	picked = t
 	if t == null:
 		return
-	var path := path_to(t)
+	var path := _in_reach(path_to(t))
 	if path.is_empty():
 		picked = null
 		return

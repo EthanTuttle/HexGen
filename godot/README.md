@@ -506,6 +506,24 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.
 - How long a route takes to work out (233 ms at worst the first time on the Mac, 107 ms for a climb) and the rise's worst frame (73 ms on the Mac, when the tiles change).
 
+## Map encounters and the walking limit
+
+Rules: `design/02` -> Hex contents and encounters; look: `design/07` -> Encounters; art: `art/handoff/encounters_kit.md`. `-- --enccheck` (add `--shots` for `screens/enc_*.png`) checks it and ends `ENC DONE`; `--encclip` with `--write-movie` films walking and spotting by day and night.
+
+- **One tap** walks at most `Rules.sight_now`: the path's dots and its time stop there, with no new text. The other checks and the demo turn it off (`Game.walk_limited`), as they walk far on one call.
+- **What shows:** `EncounterView`, figures at scale 1 and a badge, only within sight; long-press details too. Walking onto one still stops the walk.
+
+| Placeholder | What |
+| --- | --- |
+| Sight | 2, twice that by day (`SIGHT_DAY_TIMES`). Level, Perception, gear and high ground aren't modelled |
+| The mix and who roams | `Rules.ENCOUNTER_TABLE`, one for every terrain; wolves, bandits and the trader roam |
+| Roam rate | `ROAM_MINUTES` 2.5 of the day clock (about 2 in-game hours), within its region, never onto a landmark or the party |
+| Social and Discovery | A pop-up with the name in brackets and Carry on; it's then gone, until the events exist |
+| Spawn | As before: a placement may spawn one, now not on a landmark. Docs' 8-hour rolls still aren't built |
+| Badge | Combat Art's meshes, 32 pt at 58 m, down to 60% zoomed in; to be swapped |
+| Fights | The minis don't match the figures that were on the map |
+| Figure spot | 1.5 m off the tile's middle by hash, so figures can stand in trees; no glade is cleared |
+
 ## Feywild crossing (tiles v84)
 
 Forest's tier 3 and the Fey Gate, from `art/handoff/feywild_kit.md`. `-- --feycheck` (add `--shots` for `screens/fey_*.png`) checks it and ends `FEY DONE`; `--feyclip` with `--write-movie` films the gate and a walk over a seam. `tools/fey_cases.py` and `tools/fey_check.gd` compare `FeyLands` with `fey_lands.py`: same trees, trails and faces, with a face or two's colour off, as `Vector3` is 32-bit.
@@ -527,7 +545,7 @@ Forest's tier 3 and the Fey Gate, from `art/handoff/feywild_kit.md`. `-- --feych
 
 Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatcheck` (add `--shots` for `screens/combat/`) checks it and ends `COMBAT DONE`. Debug: `-- --combatmap=<id>` or F10 (next map) jumps to any map by id. New: `combat_map.gd`, `game/combat_check.gd`; `Fight`, `CombatBoard`, `CameraRig.fly_to`, `Game.start_fight` changed.
 
-- **Which map:** the tile's variant's maps, its path maps too if the tile has paths. Tier 0 farmland, and terrains with no maps yet, keep the old board until their sets exist. A tier 0 village has its own maps. Hills maps come when they reach main.
+- **Which map:** the tile's variant's maps, its path maps too if the tile has paths. Terrains with no maps yet keep the old board until their sets exist. A tier 0 village has its own maps. Hills maps come when they reach main.
 - **Drawing:** each piece is one MultiMesh, so a map costs about 20 to 30 draw calls.
 - **Moving:** `Fight.step_cost` reads `cells`, `z` and `way_up`. A step onto or off a landing is an ordinary Move, +1 going up. A rise of 0.9 or more can't be crossed.
 - **Highlights** climb the treads beside a way up (`_lifted_mesh`); bases stay lined up with their cells.

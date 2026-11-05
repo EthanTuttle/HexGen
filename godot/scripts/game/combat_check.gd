@@ -51,6 +51,19 @@ func _run() -> void:
 		await _lava_clip()
 		get_tree().quit()
 		return
+	if "--lavatile" in OS.get_cmdline_user_args():   # the volcanic map tiles' lava, to set beside a fight's
+		game.spawn_forest_regions()
+		await _wait(1.0)
+		game.hud.visible = false
+		game.rig.focus = Vector2(422, 195)
+		for g: Dictionary in game.regions:
+			if g.variant == "volcanic_peaks":
+				var at := Hex.tile_position(g.landmark_tile.x, g.landmark_tile.y)
+				game.rig.frame(Hex.to3(at, 5.0), 20.0, 48.0)
+				await _wait(0.5)
+				await _shot("volcanic_tile")
+		get_tree().quit()
+		return
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--opening="):
 			await _wait(1.0)
@@ -95,7 +108,7 @@ func _run() -> void:
 
 func _check_data() -> void:
 	var maps := CombatMap.all()
-	_check(maps.size() == 86, "%d maps: 19 forest, 16 farmland, 15 plains, 20 village, 16 hills" % maps.size())
+	_check(maps.size() == 90, "%d maps: 19 forest, 20 farmland, 15 plains, 20 village, 16 hills" % maps.size())
 	var missing := 0
 	var empty := 0
 	var bad_starts := []
@@ -128,7 +141,8 @@ func _check_data() -> void:
 func _check_choices() -> void:
 	for name in ["forest", "plains"]:
 		_check(CombatMap.choices(name, true).size() == 3, "tier 0 %s: its 3 maps" % name)
-	for name in ["farmland", "river", "desert", "swamp"]:
+	_check(CombatMap.choices("farmland", false).size() == 3 and CombatMap.choices("farmland", true).size() == 4, "tier 0 farmland: 3 terrain maps, and its path map on a tile with paths")
+	for name in ["river", "desert", "swamp"]:
 		_check(CombatMap.choices(name, true).is_empty(), "%s: no maps yet, so the old board" % name)
 	_check(CombatMap.choices("deep_forest", false).size() == 3 and CombatMap.choices("deep_forest", true).size() == 4, "deep forest: 3 terrain maps, and its path map on a tile with paths")
 	_check(CombatMap.choices("village", true).size() == 4, "a tier 0 village has its own maps")

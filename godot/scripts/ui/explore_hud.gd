@@ -472,6 +472,20 @@ func show_encounter(where: String, stage: String, coins: Array) -> void:
 	_enc_layer.visible = true
 
 
+## A Social or Discovery encounter. PLACEHOLDER until the events exist: its name, and on.
+func show_event(where: String, what: String) -> void:
+	_enc_where.text = ("Encounter · " + where).to_upper()
+	_enc_text.text = what
+	_enc_coins.visible = false
+	for c in _enc_buttons.get_children():
+		_enc_buttons.remove_child(c)
+		c.queue_free()
+	var on := _pill_button("Carry on", "", UI.DARK, UI.CREAM)
+	on.pressed.connect(game.choose_event_done)
+	_enc_buttons.add_child(on)
+	_enc_layer.visible = true
+
+
 func hide_encounter() -> void:
 	_enc_layer.visible = false
 
@@ -590,14 +604,6 @@ func _make_mark(m: Dictionary) -> Control:
 			var l := UI.label(m.text, "n900", 11, UI.CREAM)
 			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			p.add_child(l)
-			p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			return p
-		"encounter":
-			var p := UI.panel(UI.RED, 12, UI.RED_EDGE, 3, Vector4(7, 0, 7, 0))
-			p.custom_minimum_size = Vector2(28, 24)
-			var cc := CenterContainer.new()
-			cc.add_child(UI.icon_rect("swords", UI.WHITE_WARM, 14, 2.6))
-			p.add_child(cc)
 			p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			return p
 		_:   # landmark pin, with its name while open

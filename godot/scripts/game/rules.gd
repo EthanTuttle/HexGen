@@ -42,7 +42,8 @@ const BANNED := [["desert", "swamp"], ["desert", "forest"], ["swamp", "hills"], 
 const REGION_TIER1 := 5                  # DOCS: a terrain's first region needs 5+ hexes
 const REGION_TIER2 := 7                  # DOCS: later regions of that terrain need 7+
 const GOAL_SHOWS_AT := 2                 # PLACEHOLDER: "when a placed tile grows a cluster to a few hexes"
-const SIGHT_RANGE := 2                   # DOCS: night building only within sight 2 of the party
+const SIGHT_RANGE := 2                   # DOCS: sight starts at 2: night building, what shows and how far a tap walks, all within it
+const SIGHT_DAY_TIMES := 2               # PLACEHOLDER (DOCS: "double, as a placeholder"): by day, what shows and how far a tap walks
 const MAP_LIMIT := 28                    # PLACEHOLDER: the endless map is capped by the ground-colour lookup texture
 
 # --- Day clock (design/02 -> Day and night; numbers as in Explore v8b) ------------
@@ -132,6 +133,15 @@ const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game
 const ENCOUNTER_CHANCE := 0.4            # PLACEHOLDER: chance a placement spawns one in its region
 const ENCOUNTERS_PER_REGION := 1         # PLACEHOLDER: "each region can hold a set number of active encounters"
 const ENCOUNTER_LIFETIME := 900.0        # DOCS: they disappear after about 15 minutes (half a day) if not dealt with
+const ROAM_MINUTES := 2.5                # PLACEHOLDER: minutes of the day clock (real minutes, about 2 in-game hours) between a roamer's moves, a tile at a time (design/02 open question)
+## PLACEHOLDER: one table for every terrain, and these weights (DOCS: each region's table sets the mix; open). Figures: art/handoff/encounters_kit.md.
+const ENCOUNTER_TABLE := [
+	{"kind": "fight", "scene": "enc_fight_wolves", "roams": true, "weight": 3.0},
+	{"kind": "fight", "scene": "enc_fight_bandits", "roams": true, "weight": 3.0},
+	{"kind": "social", "scene": "enc_social_trader", "name": "[Trader]", "roams": true, "weight": 1.5},
+	{"kind": "social", "scene": "enc_social_drinking", "name": "[Drinking contest]", "roams": false, "weight": 1.0},
+	{"kind": "discovery", "scene": "enc_discovery_treasure", "name": "[Buried treasure]", "roams": false, "weight": 1.5},
+]
 
 # --- Combat (design/03 Classes & combat.md) -----------------------------------
 
@@ -245,3 +255,8 @@ static func light_hour(minute: float) -> float:
 	if minute < NIGHT_AT:
 		return remap(minute, MIDDAY_UNTIL, NIGHT_AT, 16.5, 19.5)
 	return fmod(remap(minute, NIGHT_AT, DAY_MINUTES, 19.5, 29.5), 24.0)
+
+
+## How far the party sees now (DOCS: design/02 -> Day and night): wider by day. Level, Perception, gear and high ground aren't modelled yet.
+static func sight_now(minute: float) -> int:
+	return SIGHT_RANGE if is_night(minute) else SIGHT_RANGE * SIGHT_DAY_TIMES
