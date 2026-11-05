@@ -66,7 +66,7 @@ Each class chooses from the most basic weapons and armor in its own categories. 
   - **Reach** (spear, halberd, glaive): all attacks, including the basic attack, can hit 2 hexes away.
   - **Long Range** (longbow): shoots farther than normal.
   - **Point Blank** (crossbow): no ranged penalty when an enemy is adjacent (see Ranged).
-  - **Backstab** (dagger): the first dagger hit from behind each turn deals bonus damage. It stacks with the Rogue's Sneak Attack.
+  - **Backstab** (dagger): the first dagger hit from behind each turn deals bonus damage. It stacks with the Rogue's Sneak Attack. Placeholder (Ethan, Nov 5, 2026): +2 damage; a foe faces whoever it last moved toward or attacked, and the hex opposite is behind it.
 - **Ranged:** ranged attacks have a higher coin target when an enemy is adjacent; the crossbow's Point Blank modifier removes that penalty.
 - **Wand basic attack** (decided Oct 25, 2026): a wand's basic attack is Magic Bolt, a basic ranged spell (1 AP, repeatable, like any basic attack). Wands have no category cards.
 - **Thrown weapons** (any weapon that can be thrown, e.g. daggers, spears and battleaxes) return to the thrower's hand automatically.
@@ -87,7 +87,7 @@ AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Modifiers
 | Dagger | Throw (1 AP): ranged attack with the dagger. Backstab modifier |
 | Battleaxe | Hack (1 AP): a quick chop; the next hit on the same foe hits harder; Throw (1 AP): ranged attack with the axe |
 | Greataxe | Reckless Swing (1 AP): big damage, lower defense |
-| Mace | Bonebreaker (1 AP): lower enemy movement |
+| Mace | Bonebreaker (1 AP): lower enemy movement (-2 hexes per Move until the foe's next turn ends; placeholder, Nov 5, 2026) |
 | Warhammer | Shatter (1 AP): break enemy shields or cover |
 | Spear | Throw (1 AP): ranged attack. Reach modifier |
 | Halberd | Hook (1 AP): pull an enemy closer. Reach modifier |
@@ -97,7 +97,7 @@ AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Modifiers
 | Shortbow | Double Shot (1 AP): two quick arrows |
 | Longbow | Aimed Shot (3 AP): one huge shot. Long Range modifier |
 | Crossbow | Pinning Bolt (1 AP): root an enemy. Point Blank modifier |
-| Shields | Block: with a shield equipped, the basic defend action becomes Block (reduce damage this turn; 1 AP, like defend), not an extra card (decided Oct 25, 2026); Shield Bash (1 AP): push or stun |
+| Shields | Block: with a shield equipped, the basic defend action becomes Block (reduce damage this turn; 1 AP, like defend), not an extra card (decided Oct 25, 2026); Shield Bash (1 AP): push the foe 1 hex away (push only, Ethan, Nov 5, 2026: the Basher path builds on pushes, and stuns belong to brass knuckles) |
 
 Fist weapon category cards (Guard Up, Haymaker, Step and Strike) are listed with their mastery trees below.
 
@@ -287,7 +287,7 @@ Balance note: Knockout overlaps Execute-style finishers, and a Fighter could pai
 | 2 | **Braced Shot**: if you didn't move this turn, Heavy Bolt deals extra damage | New card: Tripwire (1 AP): string a line between two points; foes crossing it are knocked prone |
 | 3 (capstone) | New card: Ballista Bolt (3 AP): a massive bolt that pierces through every foe in a line | **Helpless** (passive): your crossbow attacks deal bonus damage to rooted or prone foes |
 
-### Shield (offhand; base category cards: Block, which replaces the basic defend action while a shield is equipped, reducing damage this turn (1 AP); Shield Bash, 1 AP, push or stun)
+### Shield (offhand; base category cards: Block, which replaces the basic defend action while a shield is equipped, reducing damage this turn (1 AP); Shield Bash, 1 AP, push 1 hex)
 
 Only martials learn shield mastery; Clerics use shields without the tree.
 
@@ -320,5 +320,5 @@ Only martials learn shield mastery; Clerics use shields without the tree.
 - [x] ~~Warhammer grip~~ (confirmed Oct 27, 2026: two-handed; the Presentation pose library's grip was corrected to match)
 - [ ] **New:** balance flag: Double Shot at 1 AP. Rapid Shot's Triple Shot then gives 3 arrows for 1 AP, close to the Barrage capstone's 5 arrows for 2 AP; recheck the Rapid Shot branch in playtest
 - [ ] **New:** balance flag: Reckless Swing at 1 AP. A Berserker can Rage, Reckless Swing and basic-attack in one turn
-- [ ] **New:** Shield Bash: who chooses push or stun, and which save resists the stun
+- [x] ~~Shield Bash: push or stun~~ (settled Nov 5, 2026: push only)
 - [ ] **New:** Backstab: does a thrown dagger from behind, or Heartseeker, use up the turn's Backstab bonus? ("Behind" on hexes is tracked in Classes & combat)
