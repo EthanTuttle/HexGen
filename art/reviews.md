@@ -127,3 +127,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/buried_r3_pit_medium_v1.png` | note | Sand stream starts float on the sand, especially at the round domes |
 | 2026-11-04 | `art/preview/encounter_badges_sizes_v1.png` | note | 32 pt; shrink on zoom too aggressive |
 | 2026-11-04 | `art/preview/encounter_glade_day_v1.png` | note | If used, glades appear at spawn; evaluate how many terrains need it first |
+| 2026-11-04 | `art/preview/encounter_badge_curve_v1.png` | approved | Eased curve, 32 pt; test in Godot |
