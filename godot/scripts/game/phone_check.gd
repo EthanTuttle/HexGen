@@ -39,6 +39,9 @@ func _ready() -> void:
 	if OS.get_environment("HEXGEN_FORESTPERF") == "1" or "--forestperf" in OS.get_cmdline_user_args():
 		_forest = true
 		_forest_perf.call_deferred()
+	elif OS.get_environment("HEXGEN_PHONELIST") == "1" or "--phonelist" in OS.get_cmdline_user_args():
+		_forest = true
+		_phone_list.call_deferred()
 
 
 func _process(delta: float) -> void:
@@ -112,6 +115,46 @@ func _forest_perf() -> void:
 	await _town_perf(game, vp)
 	await _river_perf(game, vp)
 	_say("FOREST PERF DONE")
+
+
+## The phone list's newer items, unattended: Feywild, deserts, swamps, then the heaviest fights and lava, then the older views. Lines start "LIST PERF".
+func _phone_list() -> void:
+	var game := get_parent() as Game
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	await get_tree().create_timer(3.0).timeout
+	var t0 := Time.get_ticks_msec()
+	game.spawn_forest_regions()
+	_say("LIST PERF spawning every debug region at once: %d ms" % (Time.get_ticks_msec() - t0))
+	game.minute = Rules.START_MINUTE
+	for g: Dictionary in game.regions:
+		if g.variant in ["feywild_crossing", "canyon", "wasteland", "rot_swamp", "smugglers_bayou", "volcanic_peaks", "scholars_town"]:
+			var at := Hex.to3(Hex.tile_position(g.landmark_tile.x, g.landmark_tile.y))
+			for d: float in [58.0, 30.0]:
+				game.rig.frame(at, d, 50.0)
+				await get_tree().create_timer(2.0).timeout
+				var m := await _measure(vp, 5.0)
+				_say("LIST PERF map %s at %.0f m: %.1f fps, worst %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms" % [g.variant, d, m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu])
+				await _shot_as("list_%s_%d" % [g.variant, int(d)])
+	for id: String in ["scholars_town_lawns", "village_lanes", "monastery_heights_gardens", "volcanic_peaks_fissures", "volcanic_peaks_crater", "plains_stones", "farmland_paddocks", "forest_windfall"]:
+		var t1 := Time.get_ticks_msec()
+		game.debug_fight(id)
+		await get_tree().create_timer(3.5).timeout
+		var m := await _measure(vp, 6.0)
+		_say("LIST PERF fight %s (opened %d ms before measuring): %.1f fps, worst %.1f ms, draw calls %d, triangles %d, CPU %.2f ms, GPU %.2f ms, build %.0f ms" % [id, Time.get_ticks_msec() - t1, m.fps, m.worst, m.calls, m.tris, m.cpu, m.gpu, game.fight.map_build_ms])
+		await _shot_as("list_fight_%s" % id)
+		game.fight.finished.emit(true)
+		await get_tree().create_timer(1.5).timeout
+		game.after.done.emit()
+		while game.busy:
+			await get_tree().process_frame
+		await get_tree().create_timer(0.5).timeout
+	game.encounters.clear()
+	_say("LIST PERF new items done")
+	await _hills_perf(game, vp)
+	await _town_perf(game, vp)
+	await _river_perf(game, vp)
+	_say("LIST PERF DONE")
 
 
 ## The hills: a view over the raised regions, a ledge climb, and a real rise, with the frame cost of each.
