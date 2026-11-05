@@ -278,8 +278,8 @@ func _prof_details() -> Control:
 	sv.add_child(CUI.wrap(UI.label(D.PROFD[prof][1], "n800", 11, UI.INK, 0, 1.25), inner - 16.0))
 	sig.add_child(sv)
 	v.add_child(sig)
-	if other == prof:
-		v.add_child(CUI.wrap(UI.label("Both picks match: rank 2" if picked else "Matches your other pick: choosing it makes rank 2", "n900", 11, Color("#3E6F8C")), inner))
+	if other == prof and not picked:   # once chosen, the rows' Rank 2 tags show it
+		v.add_child(CUI.wrap(UI.label("Matches your other pick: choosing it makes rank 2", "n900", 11, Color("#3E6F8C")), inner))
 	v.add_child(CUI.spring())
 	if picked:
 		v.add_child(CreatorTraining.chosen())
