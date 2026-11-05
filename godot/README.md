@@ -63,6 +63,16 @@ swift godot/tools/png_to_mp4.swift /tmp/variants godot/screens/variants_movie.mp
 
 The demo uses the same calls a player's clicks make, and plays simply. One exception: if no encounter has spawned by the time the hand runs low, it adds one and says so on screen. `--seed=N` changes the shuffle and the coin flips; the default is seed 1. `--demo=variants` stages its hand (5 forest, then 5 hills, then 5 plains, said on screen) so three regions finish in a row; placement still follows the rules.
 
+## The screens before the game (first playable)
+
+A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`). Any run with its own arguments or a `HEXGEN_PHONE*` variable goes straight to the game, so every check, demo and phone run starts as before; `-- --direct` asks for that with no other arguments, and `-- --front` forces the title. `-- --front --check` runs these screens by touch and prints `FRONT OK` / `FRONT FAIL` (add `--shots` for `screens/front_*.png`).
+
+| Placeholder | Value here | Why |
+| --- | --- | --- |
+| Multiplayer and Settings on the title | Show "Not in the prototype yet" (a listed placeholder sentence) | Not in the first playable. Multiplayer fills the row while Load is hidden |
+| Title's first-launch world | `Front._terrain`: a staged river, woods, farms and a town, real tiles at dusk; only tiles the camera sees are built | The docs ask for "a generic world" |
+| Title's camera | 5.8 m each way over 40 s (the mockup's time) | The mockup's pan is in screen pixels |
+
 ## How the party moves
 
 The rule is in `design/07 Presentation.md` → Exploration screen → Walking → How the party moves; it's built in `scripts/game/party_walker.gd` (the party on the map: each mini moves on its own), with every number a placeholder in `rules.gd`.
