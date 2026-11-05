@@ -49,6 +49,8 @@ static func for_launch() -> RunSetup:
 	for a: String in args:
 		if a.begins_with("--seed="):
 			run.seed_text = a.split("=")[1]
+		if a.begins_with("--background="):
+			run.background = a.split("=")[1]
 	return run
 
 

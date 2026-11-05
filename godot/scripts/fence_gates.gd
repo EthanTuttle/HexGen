@@ -24,6 +24,8 @@ static func gates(terrains: Dictionary, raised := {}, climbs := []) -> Dictionar
 		ranked.sort_custom(func(a, b): return _rank(t, a) < _rank(t, b))
 		var take := ranked.slice(0, 2 if GroundCover.hash01(t.x, t.y, 12) < 0.35 else 1)
 		out[t] = take.filter(func(i): return _walkable(terrains, raised, t + Hex.NEIGHBOURS[i]))
+		if t == Rules.START_TILE:
+			out[t] = edges   # a starting tile is open on every side (design/06 -> First playable)
 	# Every group gets a way out.
 	var seen := {}
 	for start: Vector2i in fence:
@@ -39,7 +41,7 @@ static func gates(terrains: Dictionary, raised := {}, climbs := []) -> Dictionar
 					seen[c] = true
 					group.append(c)
 			k += 1
-		if group.any(func(t): return not out[t].is_empty()):
+		if group.any(func(t): return out[t].any(func(i): return _walkable(terrains, raised, t + Hex.NEIGHBOURS[i]))):
 			continue
 		var best := INF
 		var best_tile := Vector2i.ZERO

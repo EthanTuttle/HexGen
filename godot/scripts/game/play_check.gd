@@ -13,6 +13,8 @@ var rests := 0
 var levels := 0
 var wipes := 0
 var drunk := 0
+var _shut := {}
+var _locked := false
 
 
 func _ready() -> void:
@@ -33,6 +35,7 @@ func _wait(s: float) -> void:
 func _run() -> void:
 	Engine.time_scale = 1.0 if "--slow" in OS.get_cmdline_user_args() else 16.0 if "--fast" in OS.get_cmdline_user_args() else 4.0
 	game.debug_auto_cross = true
+	game.event_screen = Callable()   # events as a pop-up it can answer; Screens' own checks play the Social screen
 	await _wait(0.5)
 	if "--bands" in OS.get_cmdline_user_args():
 		_tune()
@@ -55,6 +58,7 @@ func _run() -> void:
 		if game.hud.encounter_open():
 			await _answer()
 			continue
+		_watch_start()
 		if await _rest_if_hurt():
 			continue
 		if "--outward" in OS.get_cmdline_user_args() and steps % 3 == 0:
@@ -129,6 +133,25 @@ func _check_sneak() -> void:
 	game.rng.state = kept
 	_check(bad == 0, "the helper's one coin comes only on a miss by exactly 1")
 	Hero.current = before
+
+
+## Says so if a tile beside the start can't be stepped to, or the party has no cards and nothing left to walk to (design/06: a run can't stick that way).
+func _watch_start() -> void:
+	var seed_is := "seed %s, background %s" % [game.run.seed_text, game.run.background]
+	for n: Vector2i in Hex.NEIGHBOURS:
+		var t: Vector2i = Rules.START_TILE + n
+		if game.map.terrains.has(t) and not _shut.has(t) and not game.map.edge_open(Rules.START_TILE, t):
+			_shut[t] = true
+			print("PLAY START SHUT: %s, %s %s" % [seed_is, game.map.terrains[t], t])
+	if _locked or game.busy or not game.deck.hand.is_empty():
+		return
+	for t: Vector2i in game.map.terrains:
+		if t != game.party_tile and t != Rules.START_TILE and not game.path_to(t).is_empty():
+			return
+	if game.map.terrains.size() == 1:
+		return
+	_locked = true
+	print("PLAY LOCKED: %s, at %s, %d tiles, %d in the deck" % [seed_is, game.party_tile, game.map.terrains.size(), game.deck.draw_pile.size()])
 
 
 ## Until the game's free or an encounter asks something; takes the first terrain at a level's pick.

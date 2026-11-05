@@ -424,6 +424,8 @@ func edge_open(a: Vector2i, b: Vector2i) -> bool:
 		return false
 	if raised.has(a) != raised.has(b):
 		return not climb_between(a, b).is_empty()
+	if a == Rules.START_TILE or b == Rules.START_TILE:
+		return true   # no fence or street shuts a starting tile (design/06 -> First playable)
 	if streets.has(a) and streets.has(b):
 		return streets[a].has(Hex.NEIGHBOURS.find(b - a))
 	if gates.has(a) == gates.has(b):

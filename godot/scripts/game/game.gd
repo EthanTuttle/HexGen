@@ -169,6 +169,8 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--combatmap=")):
 		var wanted: String = Array(OS.get_cmdline_user_args()).filter(func(x): return x.begins_with("--combatmap="))[0].get_slice("=", 1)
 		debug_fight.call_deferred(wanted)
+	if "--startcheck" in OS.get_cmdline_user_args():
+		add_child(StartCheck.new())
 	if "--playcheck" in OS.get_cmdline_user_args():
 		var pc := PlayCheck.new()
 		pc.game = self
@@ -1070,10 +1072,6 @@ func _safety_net() -> void:
 			nearest = away
 			best = t
 	if best == null:
-		# PLACEHOLDER, not in design/06: fenced in with no cards (the start's fence shuts the only tile laid), nothing can be walked to, so a card comes instead.
-		deck.rest()
-		deck.draw(1)
-		_refresh()
 		return
 	var fights := Rules.ENCOUNTER_TABLE.filter(func(e): return e.kind == "fight")
 	var entry: Dictionary = fights[rng.randi_range(0, fights.size() - 1)].duplicate()
