@@ -489,7 +489,7 @@ class Banner extends Control:
 		var side: bool = w < 450.0 and not it.get("subs", []).is_empty()   # the phone's width, with sub-types to fit too
 		var v := CUI.vbox(5 if side else 6)
 		var head: Control
-		var words := CUI.vbox(3)
+		var words: VBoxContainer = CUI.vbox(3) if side else null
 		var name_l := UI.label(it.n, "lilita", 22, ink, 0, 1.0)
 		var bl := UI.label(it.bl, "n800", 12, Color(ink, 0.9), 0, 1.3)
 		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
