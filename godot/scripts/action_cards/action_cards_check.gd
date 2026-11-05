@@ -157,10 +157,14 @@ func _run() -> void:
 	var rig := game.rig
 	var cam_at: Vector3 = rig.target
 
+	# Shield users: Block in Basic, no Defend (04 -> Shields; from the member's cards, Rules.PARTY)
+	var guard := "block" if "block" in m.cards else "defend"
+	_check(screen.section_of("block") == "basic" and (guard == "defend" or not "defend" in m.cards), "%s: %s in Basic%s" % [m.name, guard.capitalize(), ", no Defend" if guard == "block" else ""])
+
 	# Tap: details
-	await _touch(_centre(_tile("defend")))
-	_check(screen.sel == "defend", "a tap shows the card's details")
-	_check("Once per turn" in _details_text() and not "Attack Flip" in _details_text(), "Defend: once per turn, no flip line (%s)" % _details_text())
+	await _touch(_centre(_tile(guard)))
+	_check(screen.sel == guard, "a tap shows the card's details")
+	_check("Once per turn" in _details_text() and not "Attack Flip" in _details_text(), "%s: once per turn, no flip line (%s)" % [guard, _details_text()])
 	await _touch(_centre(_tile("attack")))
 	_check("Repeatable" in _details_text() and "Attack Flip: " + String(m.ability) in _details_text(), "Attack: repeatable, attack flip on %s" % m.ability)
 	await _shot("details_attack")
@@ -192,18 +196,19 @@ func _run() -> void:
 	await get_tree().process_frame
 
 	# Drag a card from the list onto a slot that holds another
+	# (Use item: off the starting bar for everyone, as slots fill before it)
 	var s3 := screen.slots()[2] as String
-	await _touch(_centre(_tile("defend")), _centre(screen._slots[2]))
-	_check(screen.slots()[2] == "defend", "a dragged card lands in its slot")
-	_check(not s3 in m.hot or s3 == "defend", "the card it replaced leaves the bar (%s)" % s3)
-	_check(f.current.hot == m.hot and f.current.hot.has("defend"), "the fight's unit sees the new bar")
+	await _touch(_centre(_tile("use_item")), _centre(screen._slots[2]))
+	_check(screen.slots()[2] == "use_item", "a dragged card lands in its slot")
+	_check(not s3 in m.hot or s3 == "use_item", "the card it replaced leaves the bar (%s)" % s3)
+	_check(f.current.hot == m.hot and f.current.hot.has("use_item"), "the fight's unit sees the new bar")
 	await _shot("after_drag")
 
 	# A card already on the bar dragged from the list to another slot moves (swapping with what was there)
-	var at0 := screen.slots().find("defend")
+	var at0 := screen.slots().find("use_item")
 	var s5 := screen.slots()[4] as String
-	await _touch(_centre(_tile("defend")), _centre(screen._slots[4]))
-	_check(screen.slots()[4] == "defend" and screen.slots()[at0] == s5, "a card on the bar moves, swapping (%s to slot %d)" % [s5, at0 + 1])
+	await _touch(_centre(_tile("use_item")), _centre(screen._slots[4]))
+	_check(screen.slots()[4] == "use_item" and screen.slots()[at0] == s5, "a card on the bar moves, swapping (%s to slot %d)" % [s5, at0 + 1])
 
 	# Slot to slot swaps
 	var a := screen.slots()[0] as String
@@ -224,6 +229,14 @@ func _run() -> void:
 	_check(screen.slots() == was, "a list card dropped off the tray changes nothing")
 
 	_check(rig.target.distance_to(cam_at) < 0.01, "the camera stays put under the screen")
+
+	# The tabs: Set 1 picked, Set 2 dimmed with "No weapon", and a tap on it does nothing (Ethan, Nov 5, 2026)
+	var tab2: Control = screen._tabs.get_child(1)
+	_check(screen._tabs.get_child_count() == 2 and tab2.dim and tab2.gear == "No weapon", "Set 2's tab is dimmed, \"No weapon\"")
+	var bar_before: Array = screen.slots().duplicate()
+	await _touch(_centre(tab2))
+	_check(screen.slots() == bar_before and tab2.dim, "a tap on Set 2 does nothing")
+	_check(screen._slots.all(func(sl): return sl.get_child_count() == 1), "no number badges on the slots")
 
 	# Another member
 	if game.party.size() > 1:

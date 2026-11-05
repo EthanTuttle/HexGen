@@ -115,13 +115,14 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 
 | Placeholder | Value here | Why |
 | --- | --- | --- |
-| Weapon sets | One, "Set 1 · <weapon>" in the list's header. The Set 1 / Set 2 tabs 07 asks for aren't in yet: how the empty Set 2 looks is with Ethan | Party members have one weapon |
+| Weapon sets | One. The Set 1 / Set 2 tabs always show; Set 2 is dimmed with "No weapon" and can't be picked (Ethan, Nov 5) | Party members have one weapon |
+| Block in Basic | Shield users see Block in Basic and no Defend (04 -> Shields), from the member's cards. Its card keeps Builder's Weapon band | `Cards.ALL.block` is a Weapon card |
 | List columns | 3 on a phone, 4 at full width | v3 has 4 at 844 pt |
 | Scrolling the list by touch | A quick swipe up or down in the list scrolls it until the finger leaves the list, which lifts the card. A sideways move, or a move after a long-press, lifts it at once. With the mouse, every drag lifts and the wheel scrolls | v3 drags on every move, which leaves no way to scroll by finger |
 | Subtitles | The hero's from the creator. Companions: "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue" · Lv. No subclass before level 5 | Fluffy's race name is open |
 | Gear screen way in | Not hooked up | No gear screen yet; the menu backdrop is built |
 
-Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt details panel with its sizes (name 17, text 11), and every card fits it (`--cardscheck` shows each one; Breath Weapon, blue, is the tallest at 188 of 276 pt); no label column on the tray. Cut: v3's hints, the drag footer, tiles' source words and slot numbers, "always available", and the Class section's race and class. "Empty" stays in empty slots.
+Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt details panel with its sizes (name 17, text 11), and every card fits it (`--cardscheck` shows each one; Breath Weapon, blue, is the tallest at 188 of 276 pt); no label column on the tray. Cut: v3's hints, the drag footer, tiles' source words and slot numbers, the slots' number badges, "always available", the set's name in the list's header (the tab says it), and the Class section's race and class. "Empty" stays in empty slots.
 
 ## Test notes
 
