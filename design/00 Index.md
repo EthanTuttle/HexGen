@@ -85,6 +85,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Teleportation rune vs "no fast travel"~~ (settled Oct 23: "the party walks" rule dropped)
 
 **Classes & combat**
+- [ ] New (Nov 5, 2026): the combat hotbar: how many slots fit (Ethan finds 6 limited, and the bar sits off-centre over the details pane), and the rule for what starts on it, with weapon arts for martials and racial cards
+- [ ] New (Nov 5, 2026): cover: can a coin penalty take a flip below 1 coin, and do crops and brush hide anyone?
 
 - [ ] New: each companion's ability scores and gear at each stage of the game (mockups use placeholders)
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
