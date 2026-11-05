@@ -33,6 +33,7 @@ func _shot(name: String) -> void:
 
 
 func _run() -> void:
+	game.event_screen = Callable()   # the pop-up it reads; Screens' own checks play the Social screen
 	game.walk_limited = true
 	game.spawn_forest_regions()
 	await _wait(1.0)
