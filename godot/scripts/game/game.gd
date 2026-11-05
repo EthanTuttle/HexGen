@@ -1161,7 +1161,10 @@ func spend(n: int) -> bool:
 
 ## Is the party standing on a town? Its Enter card shows then (design/06 -> Towns).
 func can_enter_town() -> bool:
-	return not busy and Variants.terrain_of(map.terrains.get(party_tile)) == "village"
+	if busy:
+		return false
+	# Monto Town and The Oak & Lantern are a town and an inn, whatever their tile's terrain (design/06 -> Towns).
+	return Variants.terrain_of(map.terrains.get(party_tile)) == "village" or (party_tile == Rules.START_TILE and run.background in ["criminal", "folk_hero"])
 
 
 ## What the Enter card opens (Screens: enter_town_screen).

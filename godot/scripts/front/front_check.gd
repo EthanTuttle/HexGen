@@ -264,6 +264,7 @@ func _game_run() -> void:
 	check(g.party[0].name == "Hilde Oakshield", "the game has the hero's name")
 	check(g.party.size() == 2 and g.party[1].name == "Fluffy", "the party is the hero and Fluffy")
 	check(g.run.background == "folk_hero", "the run starts from the background")
+	check(g.can_enter_town(), "town: a Folk Hero's start tile, the inn, can be entered")
 	var next: Vector2i = Rules.START_TILE + Hex.NEIGHBOURS[0]
 	g.map.retile({next: "village"})
 	g.order[next] = 1
