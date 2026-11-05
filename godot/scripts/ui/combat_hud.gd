@@ -490,7 +490,7 @@ func _build_all() -> void:
 	var edit := TagButton.make("Edit hotbar", 120, 36, 14)
 	edit.cut = 10
 	edit.icon = UI.icon("M4 20h4L19 9l-4-4L4 16z M13 7l4 4", UI.WHITE_WARM, 16, 2.4)
-	edit.pressed.connect(func(): fight.game.toast("Not in the prototype yet", false))
+	edit.pressed.connect(func(): _all.visible = false; ActionCards.open_from_fight(fight))
 	head.add_child(edit)
 	var close := HexShape.make(30, 30, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("close", UI.INK_SOFT, 16, 2.6)
 	close.clickable = true
