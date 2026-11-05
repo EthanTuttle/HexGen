@@ -202,7 +202,7 @@ func _race_items() -> Array:
 			passives.append_array(D.SP2.get(sb.id, []))
 		out.append({"id": r.id, "n": c.race_name() if picked and not sb.is_empty() else r.id, "bl": sx.bl if not sb.is_empty() else rx.bl,
 			"icon": D.RIC[r.id], "cloth": cloth, "dark": dark, "chips": [] if r.id == "Human" else r.b, "lines": lines, "kit": kit,
-			"passives": passives, "subs": r.get("subs", []) if picked else [], "hang_label": "Pick 1 elven spell" if not sb.is_empty() and sb.id == "High elf" else ""})
+			"passives": passives, "subs": r.get("subs", []) if picked else [], "hang_label": ""})   # no "Pick 1 elven spell": the to-do dot shows it (07 -> Screen text)
 	return out
 
 
@@ -242,6 +242,12 @@ func _buildhang() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	for i in kit.size():
 		var k: Dictionary = kit[i]
+		if k.get("pickable", false) and (i == 0 or not kit[i - 1].get("pickable", false)):
+			# The high elf's spell pick: the to-do dot just left of the spells, a tick once one is picked (Ethan, Nov 5, 2026).
+			var dot := CenterContainer.new()
+			dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			dot.add_child(CUI.mark(kit.any(func(q): return q.get("chosen", false))))
+			row.add_child(dot)
 		var card: Control = _card(k, i) if k.card else _slot(k)
 		row.add_child(card)
 	hang.add_child(row)
@@ -284,7 +290,7 @@ func _card(k: Dictionary, i: int) -> Control:
 	var ic := UI.icon_rect(k.icon, Color("#9A4A12"), 18, 2.2)
 	UI.at(ic, 22, 11)
 	t.add_child(ic)
-	var name_l := UI.label(k.n, "n900", 11, UI.INK, 0, 1.0)
+	var name_l := UI.label("\n".join(Cards.name_lines(str(k.n), UI.font("n900"), 11, 56)), "n900", 11, UI.INK, 0, 1.0)
 	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_l.position = Vector2(2, 32)
@@ -594,26 +600,34 @@ class Banner extends Control:
 		s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return s
 
+	## The sub-types stand out above the boosts: bigger tokens and the to-do dot, a green tick once one is picked (design/07 -> v7a: nothing is preselected and no text says so).
 	func _sub_row(subs: Array, inner: float, stitch: Color, ink: Color, view: CreatorBanners) -> Control:
 		var holder := Control.new()
-		holder.custom_minimum_size = Vector2(inner, 54)
+		holder.custom_minimum_size = Vector2(inner, 70)
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var line := _stitch(stitch, inner)
-		line.position = Vector2(0, 14)
+		line.position = Vector2(0, 21)
 		holder.add_child(line)
 		var row := CUI.hbox(14)
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.size = Vector2(inner, 54)
+		row.size = Vector2(inner, 70)
 		var c: Creator = view.c
 		var drag: bool = c.race == "Dragonborn"
+		var dot := Control.new()   # the to-do dot just left of the first token, at the tokens' middle (Ethan, Nov 5, 2026)
+		dot.custom_minimum_size = Vector2(16, 70)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var mark := CUI.mark(c.sub != "")
+		mark.position = Vector2(0, 16)
+		dot.add_child(mark)
+		row.add_child(dot)
 		for x: Dictionary in subs:
 			var d: Dictionary = CreatorData.SX[x.id]
 			var sel: bool = c.sub == x.id
 			var icon: String = CreatorData.PI[CreatorData.DRI[x.id]] if drag else CreatorData.PI[CreatorData.SUBI[x.id]]
 			var face := Color(d.c) if drag else UI.CREAM_LIGHT
 			var hink := (UI.WHITE_WARM if d.get("dark", 0) else UI.INK) if drag else Color("#33403B")
-			var hx := CUI.hex(32, 37, CUI.SEL_RIM if sel else UI.RIM, 4 if sel else 3, icon, hink, 16, face, sel).with_shadow(Color(0.141, 0.188, 0.172, 0.35), 2)
-			var lab := UI.label(d.s, "n900", 11, Color(ink, 1.0 if sel else 0.78))
+			var hx := CUI.hex(42, 48, CUI.SEL_RIM if sel else UI.RIM, 4 if sel else 3, icon, hink, 22, face, sel).with_shadow(Color(0.141, 0.188, 0.172, 0.35), 2)
+			var lab := UI.label(d.s, "n900", 12, Color(ink, 1.0 if sel else 0.78))
 			var t := CUI.tap_column(str(x.id), [hx, lab], 2)
 			t.pressed.connect(func():
 				c.sub = x.id

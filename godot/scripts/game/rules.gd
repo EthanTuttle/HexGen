@@ -180,7 +180,8 @@ const WARD_POINTS := 2                   # PLACEHOLDER: Ward's small shield, unt
 const XP_FIRST_LEVEL := 20               # design/06: XP per level, 20 then 10 more each level
 const XP_MORE_EACH := 10
 
-## The party and their cards as in the combat mockup (Combat v14): [Hero name] the Fighter (longsword and
+## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
+## place (04 -> Shields), and Backstab is a dagger modifier, not a card (04 -> Weapon rules): [Hero name] the Fighter (longsword and
 ## shield), Fluffy (wizard, staff), Chelmsford (cleric, mace and shield) and Mel (rogue, dagger). `ability` is the
 ## weapon's (or a caster's) score for attacks. Scores drive attacks, spells, saves and checks (DOCS: design/06 -> First
 ## playable -> Races); unlisted scores are 1. Companions' scores: DOCS (design/03 -> Ability scores -> Starting scores);
@@ -189,16 +190,16 @@ const XP_MORE_EACH := 10
 const PARTY := [
 	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
 		"weapon": "longsword",
-		"cards": ["move", "attack", "defend", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
+		"cards": ["move", "attack", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
 	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "scores": {"INT": 3, "DEX": 2},
 		"weapon": "staff",
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
 	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "scores": {"WIS": 2, "STR": 2, "CON": 2},
 		"weapon": "mace",
-		"cards": ["move", "attack", "defend", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
+		"cards": ["move", "attack", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
 	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
 		"weapon": "dagger",
-		"cards": ["move", "attack", "defend", "use_item", "backstab", "throw", "sneak_attack", "poison_blade"]},
+		"cards": ["move", "attack", "defend", "use_item", "throw", "sneak_attack", "poison_blade"]},
 ]
 ## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
 ## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.

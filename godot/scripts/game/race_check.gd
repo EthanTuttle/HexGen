@@ -146,6 +146,13 @@ func _run() -> void:
 	_check(f.attack_score(fluffy, Cards.get_card("firebolt")) == 3 and f.save_coins(fluffy, {}, "DEX") == 2, "Fluffy: INT 3 on Firebolt, DEX 2 on saves")
 	_check(f.attack_score(chelm, Cards.get_card("attack")) == 2 and f.save_coins(chelm, {}, "DEX") == 1, "Chelmsford: STR 2, DEX 1")
 	_check(f.attack_score(mel, Cards.get_card("attack")) == 2 and f.save_coins(mel, {}, "WIS") == 2, "Mel: DEX 2, WIS 2")
+	var f9 := UI.font("n900")
+	var too_wide := []
+	for id: String in Cards.ALL:
+		for line in Cards.name_lines(Cards.ALL[id].n, f9, 11, 56):
+			if f9.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x > 56:
+				too_wide.append(line)
+	_check(too_wide.is_empty(), "every card name's lines fit a creator card (56 pt) and a hotbar card: %s" % [too_wide])
 	var ls := f.flip_check(0, 1)
 	var ls2 := f.flip_check(1, 2)
 	_check(ls.coins.size() == 2 and ls.need == 2 and ls2.need == 3, "the long shot: 0 coins needing 1 is 2 heads in a row, 1 needing 2 is 3")
