@@ -71,23 +71,37 @@ func setup(board: MapBoard, tile: Vector2i, minis: Array = []) -> void:
 	for m in Minis.PARTY:
 		if not minis.is_empty() and not m[0] in minis:
 			continue
-		var c: Vector2i = m[1]
-		var node := Minis.make(m[0], Vector2.ZERO, Vector2(0, -1))
-		add_child(node)
-		# Between the mini's spot (which turns it) and its body (which waddles): the tilt onto the slope.
-		var body: MeshInstance3D = node.get_node("body")
-		var tilt := Node3D.new()
-		tilt.name = "tilt"
-		node.add_child(tilt)
-		body.reparent(tilt, false)
-		_clears_stencil(body)
-		var box := body.mesh.get_aabb()
-		# The standing cluster faces south; offsets are relative to the hero, in that frame.
-		members.append({node = node, tilt = tilt, body = body,
-				radius = maxf(box.size.x, box.size.z) * 0.5,   # the base's corners (it fills a combat cell)
-				offset = (Hex.cell_position(c.x, c.y) - HERO_CELL) * Rules.STAND_SPREAD,
-				phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0, high = false, from = 0.0, leg = PackedVector2Array(), join = 0.0})
+		_add_mini(m)
 	place_at(tile)
+
+
+func _add_mini(m: Array) -> void:
+	var c: Vector2i = m[1]
+	var node := Minis.make(m[0], Vector2.ZERO, Vector2(0, -1))
+	add_child(node)
+	# Between the mini's spot (which turns it) and its body (which waddles): the tilt onto the slope.
+	var body: MeshInstance3D = node.get_node("body")
+	var tilt := Node3D.new()
+	tilt.name = "tilt"
+	node.add_child(tilt)
+	body.reparent(tilt, false)
+	_clears_stencil(body)
+	var box := body.mesh.get_aabb()
+	# The standing cluster faces south; offsets are relative to the hero, in that frame.
+	members.append({node = node, tilt = tilt, body = body,
+			radius = maxf(box.size.x, box.size.z) * 0.5,   # the base's corners (it fills a combat cell)
+			offset = (Hex.cell_position(c.x, c.y) - HERO_CELL) * Rules.STAND_SPREAD,
+			phase = 0.0, side = 1.0, yaw = 0.0, up = Vector3.UP, squeeze = 1.0, high = false, from = 0.0, leg = PackedVector2Array(), join = 0.0})
+
+
+## Someone joins where the party stands.
+func add_member(mini_id: String) -> void:
+	for m in Minis.PARTY:
+		if m[0] == mini_id:
+			_add_mini(m)
+	_gaps = _file_gaps()   # a file's spacing is per member
+	_file_end = false
+	place_at(_tile)
 
 
 ## Where the hero stands on a tile.

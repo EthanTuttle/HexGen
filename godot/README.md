@@ -525,6 +525,13 @@ Rules: `design/02` -> Hex contents and encounters; look: `design/07` -> Encounte
 
 ## First playable (design/06 -> First playable)
 
+**PLACEHOLDER, party and foes (balance run, Nov 4, 2026; design/06's table still has the older numbers until Ethan picks):**
+
+- Chelmsford joins after 2 fights won and Mel after 6, with no words: the tray and the mini show it. Real recruiting comes later.
+- `scripts/game/foes.gd`, near / mid / far: HP x1.5 / x2 / x2.5, damage x1.5 / x1.5 / x2 (rounded), coins +0 / +1 / +2, 3 / 3 / 3-4 foes; near has 2-3 while the party is two. Foes attack once a turn; the far band no longer needs an extra heads.
+- With nothing to walk to and no cards (the start's fence can shut the only tile laid), a card comes instead of a fight.
+- `--playcheck --realfights --bands [--fast] [--each=n] [--tune=...]` compares these at party sizes 2, 3 and 4, and runs without a window with `--headless`.
+
 `scripts/game/run_setup.gd` says what a run starts from (`Hero.current`, from the creator; none is a direct start). The checks and demo use `RunSetup.test()`: four in the party, the wide deck, seed 1, no rolls, no goal. `-- --playcheck [--seed=x] [--realfights] [--bands]` plays a whole run by itself to the end panel, and with `--realfights` plays the fights and prints how each went.
 
 Hooks for Screens: `Hero.current`, `game.can_enter_town()`, `enter_town()` and `enter_town_screen`, `rest_here()`, `gold`, `spend(n)`, `potions`, `event_screen`, `choose_event_done()`, `event_start_fight(t)`.

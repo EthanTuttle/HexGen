@@ -26,6 +26,7 @@ var background := "soldier"
 var appearance := {}           # for the mini, from the creator
 var seed_text := ""            # "" rolls one
 var party_size := 2            # the hero and Fluffy (design/06). Recruiting comes later
+var joins_after := [2, 6]      # fights won when the next member joins, in Rules.PARTY's order (design/06). PLACEHOLDER: Chelmsford, then Mel, with no scene
 var goal_regions := 3          # finish this many, then the end panel; 0: no goal
 var spawn_rolls := true        # encounters on the clock (design/02); off: a placement may spawn one, as the checks expect
 var safety_net := true
@@ -65,6 +66,7 @@ static func test() -> RunSetup:
 	var run := RunSetup.new()
 	run.seed_text = "1"
 	run.party_size = 4
+	run.joins_after = []
 	run.goal_regions = 0
 	run.spawn_rolls = false
 	run.safety_net = false
