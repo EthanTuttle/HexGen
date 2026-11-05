@@ -227,7 +227,12 @@ func _refresh_details() -> void:
 	# Sizes for the short panel (design/07: everything must fit; text stays at 11 pt or more): name 17, text 11.
 	var name := _wrap(UI.label(k.n, "lilita", 17))
 	_details.add_child(name)
-	_details.add_child(_wrap(UI.label(k.desc, "n700", 11, UI.INK_SOFT)))
+	# Option B (design/07, Ethan, Nov 5, 2026): the description hides once a target is picked or a result shows, which
+	# leaves room for Breath Weapon's targets, the coin line's modifiers, the target's statuses and Lucky.
+	var aimed_any: bool = not fight.result.is_empty() or not (fight.ally_target if k.kind == "ally" else fight.target).is_empty() \
+			or (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind == "cell" and fight.cell_target != null) or fight.self_done == k.id
+	if not aimed_any:
+		_details.add_child(_wrap(UI.label(k.desc, "n700", 11, UI.INK_SOFT)))
 	var div := ColorRect.new()
 	div.color = Color(UI.HEX_SHADOW, 0.5)
 	div.custom_minimum_size = Vector2(146, 2)
@@ -247,7 +252,12 @@ func _refresh_details() -> void:
 			coins.add_child(CoinView.make(h, 22))
 		if not fight.result.coins.is_empty():
 			_details.add_child(coins)
-		_details.add_child(_wrap(UI.label(fight.result.title, "lilita", 17, Color("#2E7A3E") if fight.result.good else UI.RED)))
+		var title := HBoxContainer.new()
+		title.add_theme_constant_override("separation", 6)
+		title.add_child(UI.label(fight.result.title, "lilita", 17, Color("#2E7A3E") if fight.result.good else UI.RED))
+		if fight.result.get("lucky", false):   # Lucky reflipped a coin in this flip
+			title.add_child(_icon(status_path("clover"), Color("#2E7A3E"), 16))
+		_details.add_child(title)
 		if fight.result.sub != "":
 			_details.add_child(_wrap(UI.label(fight.result.sub, "n700", 12, UI.INK_SOFT)))
 	elif targeting and has_target:
@@ -255,6 +265,13 @@ func _refresh_details() -> void:
 		var row := VBoxContainer.new()   # the name over its HP bar, so long names wrap inside the panel
 		row.add_theme_constant_override("separation", 2)
 		row.add_child(_wrap(UI.label(t.name, "lilita", 14)))
+		var fx := fight.status_icons(t)
+		if not fx.is_empty():   # the target's statuses, as icons
+			var icons := HBoxContainer.new()
+			icons.add_theme_constant_override("separation", 3)
+			for e in fx:
+				icons.add_child(_icon(status_path(e[0]), Color(STATUS_INK.get(e[0], "#33403B")), 14))
+			row.add_child(icons)
 		var bar := Bar.make(40, 6, UI.DARK, UI.GREEN if t.ally else Color("#C4542A"), float(maxi(t.hp, 0)) / t.max_hp)
 		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -263,13 +280,15 @@ func _refresh_details() -> void:
 		if k.kind == "ally":
 			_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
 		elif k.kind == "attack":
-			var n: int = fight.attack_coins(u, fight.target, k)
-			_details.add_child(_wrap(UI.label("%d coins · %s · needs %d heads%s" % [n, k.get("ab", u.ability), fight.heads_needed(fight.target) if not fight.target.is_empty() else Rules.HEADS_TO_HIT, " · +1 Bless" if u.blessed else ""], "n800", 13)))
+			_details.add_child(_wrap(UI.label(coin_line(u, fight.target, k), "n800", 13)))
 		else:
-			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS], "n800", 13)))
+			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads%s" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS,
+					" · +1 cover" if fight.cover_between(u, fight.target) == "partial" else ""], "n800", 13)))
+	elif k.kind == "breath" and (aimed or fight.result.has("rows")):
+		_breath_rows(u, k)
 	elif k.kind == "cell" and aimed:
 		_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
-	elif k.kind in ["self", "breath", "cell"] and fight.self_done == k.id:
+	elif k.kind in ["self", "cell"] and fight.self_done == k.id:
 		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))   # no message: HP bars and effects show it
 
 	# The button (and the note under it when the card can't be used)
@@ -297,6 +316,59 @@ func _refresh_details() -> void:
 			var nl := _wrap(UI.label(note, "n800", 11, UI.INK_MUTED))
 			nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_button_box.add_child(nl)
+
+
+func _icon(path: String, col: Color, px: float) -> TextureRect:
+	var r := TextureRect.new()
+	r.texture = UI.icon(path, col, px, 2.4)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return r
+
+
+## The attack's coin line with what changed the coins: Bless, cover, and the long shot when there are fewer coins than
+## heads needed (design/03 -> Coin checks, Combat -> Cover). Forge, glow and acid coins are in the count.
+func coin_line(u: Dictionary, t: Dictionary, k: Dictionary) -> String:
+	var n: int = fight.attack_coins(u, t, k)
+	var need: int = fight.heads_needed(t) if not t.is_empty() else Rules.HEADS_TO_HIT
+	var ab: String = k.get("ab", u.ability)
+	var mods := ""
+	if u.blessed:
+		mods += " · +1 Bless"
+	if not t.is_empty() and fight.cover_between(u, t) == "partial":
+		mods += " · −%d cover" % Rules.COVER_COINS
+	if n < need:   # the long shot: 1 coin, heads in a row
+		return "Long shot · %s · %d heads in a row%s" % [ab, need + (need - n), mods]
+	return "%d coins · %s · needs %d heads%s" % [n, ab, need, mods]
+
+
+## Breath Weapon: each one in the line, with their save; after the cast, their coins and what they took.
+func _breath_rows(u: Dictionary, k: Dictionary) -> void:
+	var rows: Array = fight.result.get("rows", [])
+	if rows.is_empty():
+		var partial := false
+		for c: Vector2i in fight.breath_line(u, fight.breath_dir):
+			var t := fight.unit_at(c)
+			if not t.is_empty() and not t.down and t != u:
+				rows.append({name = t.name, line = "Save: %d coins · DEX" % fight.save_coins(t, {}, "DEX", partial)})
+			if fight.cover.get(c, "") == "partial":
+				partial = true
+	for r: Dictionary in rows:
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 1)
+		box.add_child(_wrap(UI.label(r.name, "n900", 11)))
+		if r.has("coins"):
+			var line := HBoxContainer.new()
+			line.add_theme_constant_override("separation", 2)
+			for h in r.coins:
+				line.add_child(CoinView.make(h, 16))
+			line.add_child(UI.label("  -%d" % r.dmg, "lilita", 14, UI.RED if r.dmg > 0 else UI.INK_SOFT))
+			if r.get("lucky", false):
+				line.add_child(_icon(status_path("clover"), Color("#2E7A3E"), 14))
+			box.add_child(line)
+		else:
+			box.add_child(_wrap(UI.label(r.line, "n800", 11)))
+		_details.add_child(box)
 
 
 # --- Hotbar (top 286): 7 slots and All actions, from the party tray to the details panel's right edge --------------

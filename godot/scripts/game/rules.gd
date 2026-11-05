@@ -225,7 +225,7 @@ const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing 
 const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
 ## Weapon and class card amounts (Ethan, Nov 5, 2026; placeholders in design/03 and 04 until the balance pass).
 const BACKSTAB := 2                      # PLACEHOLDER (04): the first dagger hit from behind each turn
-const BONEBREAKER_SLOW := 2              # PLACEHOLDER (04): hexes off each Move until the foe's next turn ends
+const BONEBREAKER_SLOW := 1              # PLACEHOLDER (04, Nov 5, 2026: 1, so a 2-hex foe still moves): hexes off each Move until the foe's next turn ends
 const FROST_SLOW := 1                    # PLACEHOLDER (03): Frost Ray, the same
 const WHITE_SLOW := 1                    # PLACEHOLDER (06): white breath, the same
 const PUSH_HEXES := 1                    # DOCS (04): Shield Bash pushes the foe 1 hex

@@ -132,6 +132,10 @@ func _play(u: Dictionary, id: String, at, coins: Array) -> void:
 
 func _run() -> void:
 	await _wait(1.0)
+	if "--panelshots" in OS.get_cmdline_user_args():
+		await _panel_shots()
+		get_tree().quit()
+		return
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--covermap="):
 			await _fight(a.trim_prefix("--covermap="))
@@ -575,6 +579,63 @@ func _cover_data_checks() -> void:
 				_check(up != "none" and down == "none", "a terrace curb: %s from below, %s from the top" % [up, down])
 			found[key] = true
 	print("RACE cover data cases: %s" % [found.keys()])
+
+
+## Option B's panel in its fullest new states (design/07): a 3-target Breath Weapon result, and a long shot through cover.
+## `-- --racecheck --panelshots --shots` saves screens/race/panel_*.png.
+func _panel_shots() -> void:
+	await _fight("plains_stones")
+	var chelm := _who("Chelmsford")
+	var mel := _who("Mel")
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	var line := _free_line(5)
+	var s: Vector2i = line[0]
+	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	_clear_round(s, [])
+	_place(chelm, s)
+	for i in mini(3, foes.size()):
+		_fresh(foes[i])
+		_place(foes[i], s + dv * (i + 1))
+	_turn(chelm)
+	f.pick_card("breath")
+	await f.click_cell(s + dv)
+	game.rig.ease_to(f.global_position + chelm.mini.position, game.rig.distance, game.rig.yaw_deg)
+	await _wait(0.6)
+	await _shot("panel_breath_aimed")
+	Coins.forced.assign([false, false, true, false, false, true])
+	await f.press_button()
+	Coins.forced.clear()
+	await _wait(0.3)
+	await _shot("panel_breath_result")
+	_check(f.result.rows.size() == 3, "the breath result lists 3 targets")
+	var box: Control = f.hud._details_panel.get_child(0)
+	_check(box.get_combined_minimum_size().y + 24.0 <= CombatHud.DETAILS_H, "the 3-target breath result fits the panel (%.0f of %.0f)" % [box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H])
+	# A long shot through cover: Mel's Throw at a foe behind brush that needs 2 heads.
+	var foe: Dictionary = foes[0]
+	_fresh(foe)
+	for a: Vector2i in f.grid:
+		for d in Hex.NEIGHBOURS:
+			var b: Vector2i = a + d
+			var c: Vector2i = a + d * 2
+			if f.grid[a].kind == "open" and f.cover.get(b, "") == "partial" and f.grid.has(c) and f.grid[c].kind == "open" and f.grid[c].z == f.grid[a].z and f.unit_at(a).is_empty() and f.unit_at(c).is_empty():
+				_clear_round(a, [])
+				_place(mel, a)
+				_place(foe, c)
+				foe.heads = 2
+				_turn(mel)
+				f.pick_card("throw")
+				await f.click_cell(c)
+				game.rig.ease_to(f.global_position + mel.mini.position, game.rig.distance, game.rig.yaw_deg)
+				await _wait(0.6)
+				await _shot("panel_longshot_aimed")
+				print("RACE coin line: %s" % f.hud.coin_line(mel, foe, f.card()))
+				Coins.forced.assign([true, true, false])
+				await f.press_button()
+				Coins.forced.clear()
+				await _wait(0.3)
+				await _shot("panel_longshot_result")
+				_check(box.get_combined_minimum_size().y + 24.0 <= CombatHud.DETAILS_H, "the long-shot result fits the panel")
+				return
 
 
 func _done() -> void:

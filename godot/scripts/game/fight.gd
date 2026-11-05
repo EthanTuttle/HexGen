@@ -930,7 +930,8 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	var need: int = check.need
 	var shown: Array[bool] = await hud.flip_coins(a, check.coins, need, Rules.COIN_STEP if a.ally else Rules.COIN_STEP_FOE)
 	var coins: Array[bool] = await lucky(a if a.ally else t, a, check.coins, need)
-	if coins != check.coins:
+	var lucked: bool = coins != check.coins
+	if lucked:
 		shown = coins
 	var hit: bool = Coins.heads(coins) >= need
 	var dmg := 0
@@ -960,7 +961,7 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		if a.poison_blade:   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
 			t.poison.append(Rules.DOT_TURNS)
 	if a.ally:
-		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit,
+		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit, lucky = lucked,
 				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
 		hud.refresh()
 	a.facing = _dir_toward(a.cell, t.cell)   # it faces whoever it last attacked
@@ -1115,6 +1116,7 @@ func _breath(a: Dictionary, d: int) -> void:
 	self_done = "breath"
 	var line := breath_line(a, d)
 	breath_dir = -1
+	result = {coins = [], title = "", good = true, sub = "", rows = []}   # each target's save and damage, for the panel
 	refresh()
 	var partial := false
 	for c: Vector2i in line:
@@ -1138,6 +1140,8 @@ func _breath(a: Dictionary, d: int) -> void:
 						t.acid = _until_next_turn_of(t)
 					"Green":
 						t.poison.append(Rules.DOT_TURNS)
+			result.rows.append({name = t.name, coins = coins, dmg = dmg, lucky = coins != check.coins})
+			hud.refresh()
 			await board.attack(a.mini, t.mini, true)
 			hud.float_text(t, "-%d" % dmg, true)
 			await _hurt(t, dmg)
