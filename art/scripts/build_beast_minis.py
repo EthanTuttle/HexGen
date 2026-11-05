@@ -14,7 +14,7 @@ Proposed swatches are in BEAST_SWATCHES.
   beast_wolf_band   the same with a cloth across its back, which reads from the combat camera: the approved wolf (Nov 5, 2026)
   beast_bear        broad and heavy on all fours, head up, the same back cloth (approved Nov 5, 2026)
   beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth (approved Nov 5, 2026)
-  beast_hawk        wings spread on a flight stand, looking down, a band on its leg in the ranger's cloth, its shadow painted on the base
+  beast_hawk        wings spread on a flight stand, looking down, bands and a cloth tie on its legs in the ranger's cloth, its shadow painted on the base
 """
 import math
 import os
@@ -36,7 +36,7 @@ Z0 = sm.BASE_H + 0.005
 SIDE = (-1, 1)
 zone = hb.zone
 
-hk.PALETTE.update({"stand_wood": "#5E4430", "hawk_shadow": "#7C583A", "beak": "#3E3A36", "cere": "#E3B23C"})
+hk.PALETTE.update({"stand_wood": "#5E4430", "hawk_shadow": "#5E4330", "beak": "#3E3A36", "cere": "#E3B23C"})
 
 # Beast eyes (Ethan, Nov 5, 2026): gold, green and brown from the hero kit's eyes, and a pale blue; never red or violet,
 # which read as a foe's on an animal. Godot's picker offers only these for a beast.
@@ -291,9 +291,21 @@ def hawk(col):
     p.blob(at(0, 0.02, 0.03), 0.075, "stand_wood", squash=0.7)
     vr.spike(p, at(0.04, 0.04, 0.05), at(0.14, 0.1, 0.11), 0.018, "stand_wood", segments=3)
     em.limb(p, [at(0, 0.02, 0.05), at(0, 0.02, lift - 0.06)], [0.03, 0.026], ["stand_wood"], sides=6)
-    # Its shadow on the base: wings and body, from the sun overhead.
-    for box, w in (((0, 0.04), (0.72, 0.075)), ((0, 0.02), (0.08, 0.36))):
-        p.box(at(box[0], box[1], 0), (w[0], w[1], 0.003), "hawk_shadow")
+    # Its shadow on the base, a bird's silhouette (not a cross, which read as a target marker): swept wings with fingered
+    # tips, body, head and fanned tail, each a flat convex shape just over the base, a hair apart so they don't flicker.
+    def flat(points, dz):
+        c = sum(points, V((0, 0))) / len(points)
+        ring = sorted(points, key=lambda q: math.atan2(q.y - c.y, q.x - c.x))  # anticlockwise, as prism wants
+        p.prism([V((q.x, q.y, 0)) for q in ring], Z0, Z0 + dz, "hawk_shadow")
+    for x in SIDE:
+        flat([V((x * 0.03, -0.035)), V((x * 0.2, -0.03)), V((x * 0.2, 0.075)), V((x * 0.03, 0.07))], 0.0025)
+        flat([V((x * 0.2, -0.03)), V((x * 0.33, -0.005)), V((x * 0.33, 0.06)), V((x * 0.2, 0.075))], 0.0025)
+        for k in range(3):
+            y0 = -0.003 + k * 0.022
+            flat([V((x * 0.33, y0)), V((x * 0.42, y0 + 0.012)), V((x * 0.33, y0 + 0.02))], 0.0025)
+    flat([V((0.05 * math.cos(a), 0.02 + 0.13 * math.sin(a))) for a in [k * math.pi / 4 for k in range(8)]], 0.0032)
+    flat([V((0.035 * math.cos(a), -0.13 + 0.035 * math.sin(a))) for a in [k * math.pi / 3 for k in range(6)]], 0.0032)
+    flat([V((-0.025, 0.12)), V((0.025, 0.12)), V((0.075, 0.27)), V((-0.075, 0.27))], 0.0028)
 
     # Body: a deep breast tapering to the tail.
     def plumage(c, n):
@@ -334,6 +346,10 @@ def hawk(col):
         em.loft(p, [em.section(hip.lerp(ankle, t), r, r, along=ankle - hip, sides=6) for t, r in ((0.45, 0.022), (0.8, 0.019))], lambda c, n: zone("cloth"))
         for d in (-0.02, 0.0, 0.02):
             vr.spike(p, ankle, ankle + V((x * 0.01 + d, -0.04, -0.025)), 0.008, "cere", segments=3)
+        if x > 0:  # a cloth tie streaming from the right leg, out in front where the combat camera sees it
+            tie = [ankle.lerp(hip, 0.35), at(0.07, -0.1, lift - 0.21), at(0.1, -0.1, lift - 0.3), at(0.14, -0.07, lift - 0.38)]
+            em.loft(p, [em.section(q, w, 0.006, along=(tie[min(i + 1, 3)] - tie[max(i - 1, 0)]), sides=4) for i, (q, w) in enumerate(zip(tie, (0.022, 0.034, 0.034, 0.026)))],
+                    lambda c, n: zone("cloth") if n.z > -0.2 else zone("cloth", 0.85))
 
     # Tail fanned behind.
     em.loft(p, [em.section(at(0, y, lift + z), w, 0.01, sides=4) for y, z, w in ((0.1, 0.0, 0.035), (0.2, -0.02, 0.06), (0.27, -0.035, 0.075))],
