@@ -44,7 +44,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: a pass on combat map buildings over the 0.15 overhang limit (haunted house, two barns; see Presentation)
 - [x] ~~How ramps should look~~ (settled Nov 3: cut paths for canyons and hills ledges, timber for the Raider Stronghold; see Presentation)
 - [x] ~~Combat map ways up~~ (settled Nov 3: landing with steps into every neighbouring cell; see Presentation)
-- [ ] New: cover on combat maps: whether crops and forest brush hide anyone (walkable with no rule for now; see Classes & combat)
+- [x] ~~Cover on combat maps~~ (settled Nov 5, 2026: see Classes & combat → Combat → Cover)
 **World & story**
 
 - [ ] Chapter beats for each background path and for the shared main story after Gronogon
