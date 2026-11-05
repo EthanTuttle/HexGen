@@ -75,7 +75,7 @@ Columns: **Worst side** is the highest share on any side, distance and figure. *
 - **Hills and peaks:** what hides them is mountains and ridges, not props. A surrounded tile's middle is a mountainside, and no flat spot exists, so a clearing would mean cutting into the range. At a region's edge the hidden share falls to about 25%. Keeping encounters to those tiles or to a look's valleys would be a rules change, not art.
 - **Deep forest and Feywild crossing:** wedges or the code-built layer do most of the hiding. A wider cut changes much more of the tile.
 - **Scholars' town, Monastery, Excavation, Heartwood:** clearing the centre takes it to 0%, but those centres are much of what makes the look, so a clearing replaces a feature rather than a few trees.
-- **Desert:** the 25% is mostly the base sinking into dune slopes. Setting the figure to the sand's height, or using a clear spot, should solve it.
+- **Desert:** the 25% looks like the base sinking into dune slopes, judged from the render. A clear spot on the tile measures 2%, and setting the figure to the sand's height may also solve it.
 - **Windmill country:** the 25% at a region's edge is the mill, on the tiles that have one. A spot beside it is clear.
 - **River looks:** cover isn't the problem. A surrounded river tile is open water, so the figures stand on it in the render. They need a land spot, which this survey didn't search for.
 - **One see-through effect instead of pieces (untested):** Godot could fade whatever stands between the camera and an encounter, with one shader instead of up to 58 pieces, and it would turn with the camera. It wouldn't clear a spot on the ground, and I haven't tried it.
