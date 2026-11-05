@@ -66,7 +66,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] Neighbour-to-variant leanings
 - [ ] Which terrains get cluster goals
 - [ ] New: hex events list; dungeon rooms and traps
-- [ ] New: first playable: XP per level, shop stock, 3 or 4 events, six starting tile looks (see Multiplayer & tech)
+- [ ] New: first playable: shop stock, 3 or 4 events, six starting tile looks (see Multiplayer & tech)
 - [ ] New: map encounters: silhouette or fade for covered figures (Godot comparison); how Scouting reveals past sight, region mixes, what roams (see Map & exploration)
 - [ ] New: obstacles: which terrain gets which, crossing gear, failure costs
 - [ ] New (placeholder): how much a level milestone widens sight range
