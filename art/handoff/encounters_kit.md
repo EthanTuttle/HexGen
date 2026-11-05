@@ -75,31 +75,34 @@ New icons for `Icons.PATHS`. The line `swords` turned to specks at badge sizes, 
 "sparkle": "M12 2c.8 5.6 3.4 8.2 10 10-6.6 1.8-9.2 4.4-10 10-.8-5.6-3.4-8.2-10-10 6.6-1.8 9.2-4.4 10-10z",
 ```
 
-Size and fade by camera distance `d`. `far` is 32 or 40, as Ethan picks:
+Size and fade by camera distance `d` (32 pt chosen by Ethan, Nov 4, 2026; this eased curve is under review):
 
 ```
-var w := far * lerpf(0.55, 1.0, clampf((d - 24.0) / 34.0, 0.0, 1.0))   # steady from 58 m out, 55% at 24 m and closer
-var alpha := clampf((d - 18.0) / 12.0, 0.0, 1.0)                       # solid from 30 m out, gone at 18 m
-var h := w * 51.0 / 44.0                                               # the app's hex proportions
-var inset := maxf(0.75, 0.09 * w)                                      # the rim
+var w := 32.0 * lerpf(0.75, 1.0, clampf((d - 18.0) / 40.0, 0.0, 1.0))   # steady from 58 m out, 24 pt at 18 m and closer
+var alpha := clampf((d - 12.0) / 12.0, 0.0, 1.0)                        # solid from 24 m out, gone at 12 m
+var h := w * 51.0 / 44.0                                                # the app's hex proportions
+var inset := maxf(0.75, 0.09 * w)                                       # the rim
 var icon_size := 0.66 * w
 ```
 
-| Camera distance | 110 m | 58 m | 40 m | 30 m | 24 m | 18 m |
-|---:|---:|---:|---:|---:|---:|---:|
-| Width at far 32 (pt) | 32 | 32 | 24 | 20 | 18 | gone |
-| Width at far 40 (pt) | 40 | 40 | 30 | 25 | 22 | gone |
-| Opacity | 1 | 1 | 1 | 1 | 0.5 | 0 |
-| One figure's height (pt) | 9 | 17 | 25 | 33 | 41 | 55 |
+| Camera distance | 110 m | 58 m | 40 m | 30 m | 24 m | 18 m | 12 m |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| First curve: width (pt) | 32 | 32 | 24 | 20 | 18 | gone | gone |
+| First curve: opacity | 1 | 1 | 1 | 1 | 0.5 | 0 | 0 |
+| Eased curve: width (pt) | 32 | 32 | 28 | 26 | 25 | 24 | gone |
+| Eased curve: opacity | 1 | 1 | 1 | 1 | 1 | 0.5 | 0 |
+| One figure's height (pt) | 9 | 17 | 25 | 33 | 41 | 55 | 82 |
 
 - **Build:** `HexShape.make(w, h, rim, face, inset).with_icon(name, ink, icon_size, 2.2, true).with_shadow(edge, 2.0)`, faded with `modulate.a`. Hide it at opacity 0.
 - **Anchor:** the tile's scene, 0.35 m above its highest point, unprojected. The badge's lowest point, its edge included, sits 4 points above that, centred.
 - **Icon textures:** `UI.icon` makes and keeps a texture for each size, so a size that changes every frame would pile them up. Draw one texture scaled, or step the width to whole points.
 - **Input:** leave `mouse_filter` on ignore, so a tap still reaches the tile.
 - **At night:** the same colours, since badges are unlit. Night zoom stops at 60 m, so 110 m is a day view only.
-- **Previews:** `art/preview/encounter_badges_sizes_v1.png` (32 left, 40 right), `encounter_badges32_*` and `encounter_badges40_*` at full size, `encounter_badges_swords_v1.png` (line against solid, at 18, 22, 26, 32 and 40 pt, drawn at twice real size).
+- **Previews:** `art/preview/encounter_badge_curve_v1.png` (first curve left, eased right, at 58, 40, 30, 24, 18 and 12 m), `encounter_badge_curve_night_30m_v1.png`, `encounter_badges_sizes_v1.png` (32 left, 40 right), `encounter_badges32_*` and `encounter_badges40_*` at full size, `encounter_badges_swords_v1.png` (line against solid, at 18, 22, 26, 32 and 40 pt, drawn at twice real size).
 
 ## Forest glade (on trial)
+
+How many looks would need this: [encounter_cover_survey.md](encounter_cover_survey.md).
 
 `forest_centre_glade` is the plain forest tile's centre with its trees gone and a lighter floor, for comparing with the tile as it is. Scene and badge are the same in both.
 

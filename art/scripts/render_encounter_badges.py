@@ -1,6 +1,6 @@
 """Renders true-scale encounter figures with their kind's badge drawn over the frame, as Godot would draw it: a HexShape in the HUD (art/handoff/encounters_kit.md).
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_encounter_badges.py
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_encounter_badges.py [-- --curve]
 Writes art/preview/encounter_badges<width>_<shot>_vN.png, the side-by-side sheets encounter_badges_sizes_vN.png and encounter_glade_<light>_vN.png, and encounter_badges_swords_vN.png.
 
 The badge isn't in the 3D scene: each frame is rendered without one, then the hex is painted in layout points at twice the 844 x 390 layout, so it's unlit and over the trees by nature.
@@ -22,7 +22,7 @@ import render_preview as rp  # noqa: E402
 
 PIXELS = 2  # pixels per layout point
 SAMPLES = 4
-SMALLEST = 0.55
+SMALLEST, SHRINK_END, FADE = 0.75, 18, (12, 24)  # Ethan, Nov 4, 2026: the first curve (0.55, 24, (18, 30)) shrank too hard
 ICON = 0.66  # of the badge's width
 HEX_RATIO = 51 / 44  # the app's hexes, tall for their width
 GAP = 4  # points between the anchor and the badge's foot
@@ -58,12 +58,12 @@ PATHS = {"swords": "M5 5l11 11 M19 5L8 16 M14 18l4-4 M10 18l-4-4 M17 17l3 3 M7 1
 
 
 def width_at(d, far):
-    """The badge's width in layout points at camera distance d: far from 58 m out, then shrinking to SMALLEST of that at 24 m as the figures grow."""
-    return far * (SMALLEST + (1 - SMALLEST) * min(1.0, max(0.0, (d - 24) / (58 - 24))))
+    """The badge's width in layout points at camera distance d: far from 58 m out, then easing to SMALLEST of that at SHRINK_END as the figures grow."""
+    return far * (SMALLEST + (1 - SMALLEST) * min(1.0, max(0.0, (d - SHRINK_END) / (58 - SHRINK_END))))
 
 
 def alpha_at(d):
-    return min(1.0, max(0.0, (d - 18) / (30 - 18)))
+    return min(1.0, max(0.0, (d - FADE[0]) / (FADE[1] - FADE[0])))
 
 
 def srgb(colour):
@@ -239,13 +239,23 @@ def clear_or_restore(trial, tile_at, glade_ob, cleared):
 if __name__ == "__main__":
     hk_temp = tempfile.mkdtemp()
     print("SWORDS", PATHS["swords_solid"])
-    swords_sheet()
     trial = ef.Trial()
     trial.scale(1)
     for _, badge in trial.scenes:
         badge.hide_render = True
     wolves, drinkers, bandits, trader, treasure = [ob for ob, _ in trial.scenes]
     import render_forest_maps as fm
+    if "--curve" in sys.argv:
+        # The first curve on the left, the eased one on the right.
+        stems = []
+        for d in (58, 40, 30, 24, 18, 12):
+            for name, curve in (("first", (0.55, 24, (18, 30))), ("eased", (0.75, 18, (12, 24)))):
+                SMALLEST, SHRINK_END, FADE = curve
+                stems.append(shot(trial, drinkers.location, d, False, f"encounter_badge_curve_{name}_{d}m", 32))
+        fm.sheet(stems, "encounter_badge_curve", cols=2)
+        SMALLEST, SHRINK_END, FADE = 0.75, 18, (12, 24)
+        shot(trial, bandits.location, 30, True, "encounter_badge_curve_night_30m", 32)
+        sys.exit()
     sized = []
     for spec in ((ef.GROUND, 110, False, "map_day_110m"), (ef.GROUND, 58, False, "map_day_58m"), (ef.GROUND, 58, True, "map_night_58m"), (bandits.location, 40, False, "open_day_40m"),
                  (bandits.location, 30, False, "open_day_30m"), (bandits.location, 24, False, "open_day_24m")):
