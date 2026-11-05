@@ -34,6 +34,8 @@ static func goes_direct() -> bool:
 func _ready() -> void:
 	TestNotes.attach(get_tree())
 	if goes_direct():
+		for unused: Node in [map, cam, ui, safe, _backdrop]:   # never added to the tree, so nothing else frees them
+			unused.free()
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 		return
 	clock = Stage.create(self)
