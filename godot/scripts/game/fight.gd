@@ -1728,7 +1728,7 @@ func status_icons(u: Dictionary) -> Array:
 	if not u.ally and allies().any(func(a): return a.mark == u):
 		out.append(["mark", "Marked", "+%d damage from the Ranger's hits" % Rules.MARK_DAMAGE])
 	if on(u, "snared"):
-		out.append(["snare", "Snared", "can't move until the end of its next turn"])
+		out.append(["snare", "Rooted", "can't move until the end of its next turn"])   # Snare and Pinning Bolt alike (Ethan, Nov 5, 2026)
 	return out
 
 
