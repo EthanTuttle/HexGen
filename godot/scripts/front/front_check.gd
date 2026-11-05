@@ -120,7 +120,20 @@ func _creator() -> void:
 	await shot("class_none")
 	text_sizes("class", c)
 	await _cost("creator class")
-	# Every class can be read; only the Fighter goes on.
+	# The Ranger (06 -> Start, Nov 5, 2026): playable, its kit shows Hunter's Mark and Snare, and gear offers only its own
+	# weapons and light or medium armour, unless the hero is Human (Versatile).
+	await tap_on("Ranger")
+	await _wait(0.6)
+	check(c.cls == "Ranger" and c.done("class"), "class: the Ranger is playable")
+	check(control("Hunter's Mark") != null and control("Snare") != null, "class: the Ranger's kit shows Hunter's Mark and Snare")
+	await shot("class_ranger")
+	var ranger_w: Array = c.allowed_weapons().map(func(w): return w.id)
+	check(ranger_w == ["longsword", "shortsword", "scimitar", "dagger", "spear", "glaive", "shortbow", "longbow", "crossbow", "gauntlets", "knuckles", "wraps"], "gear: a Ranger gets only Ranger weapons: %s" % [ranger_w])
+	check(c.cls_data().a == ["Light", "Medium"], "gear: a Ranger wears light or medium armour")
+	c.race = "Human"
+	check(c.allowed_weapons().size() == CreatorData.W.size(), "gear: a Human Ranger gets every weapon (Versatile)")
+	c.race = ""
+	# Every class can be read; Fighter and Ranger go on.
 	await tap_on("Wizard")
 	await _wait(0.6)
 	check(c.cls == "Wizard" and not c.done("class"), "class: Wizard opens to read and stays locked")

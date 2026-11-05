@@ -238,9 +238,9 @@ func _refresh_details() -> void:
 	div.custom_minimum_size = Vector2(146, 2)
 	_details.add_child(div)
 
-	var targeting: bool = k.kind in ["attack", "save", "ally"]
+	var targeting: bool = k.kind in ["attack", "save", "ally", "mark"]
 	var has_target: bool = not (fight.ally_target if k.kind == "ally" else fight.target).is_empty()
-	var aimed: bool = (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind == "cell" and fight.cell_target != null)
+	var aimed: bool = (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind in ["cell", "arc"] and fight.cell_target != null)
 	# Screen text (DOCS: UI -> Screen text): no Move rule sentence and no "pick a target" prompts; the lit
 	# hexes, gold rings and AP pips show them. A check shows only the coin line.
 	if targeting and not fight.result.is_empty():
@@ -277,7 +277,7 @@ func _refresh_details() -> void:
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
 		_details.add_child(row)
-		if k.kind == "ally":
+		if k.kind in ["ally", "mark"]:
 			_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
 		elif k.kind == "attack":
 			_details.add_child(_wrap(UI.label(coin_line(u, fight.target, k), "n800", 13)))
@@ -288,7 +288,7 @@ func _refresh_details() -> void:
 		_breath_rows(u, k)
 	elif k.kind == "cell" and aimed:
 		_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
-	elif k.kind in ["self", "cell"] and fight.self_done == k.id:
+	elif k.kind in ["self", "cell", "arc"] and fight.self_done == k.id:
 		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))   # no message: HP bars and effects show it
 
 	# The button (and the note under it when the card can't be used)
@@ -298,21 +298,23 @@ func _refresh_details() -> void:
 			label = "Cast again" if not fight.result.is_empty() else "Cast"
 		elif k.kind == "save":
 			label = "Cast"
+		elif k.kind == "mark":
+			label = "Use"
 		else:
 			label = "Flip again" if not fight.result.is_empty() else "Flip coins"
 	elif k.kind == "self":
 		label = "Use"
-	elif aimed:
-		label = "Cast"
+	elif aimed:   # spells cast; Sweeping Arc flips; the Snare and Dancing Step are used
+		label = "Flip coins" if k.kind == "arc" else ("Cast" if k.src in ["elven", "bloodline", "race"] else "Use")
 	if label != "":
 		var note := fight.cant_use(u, k)
-		if (k.kind in ["attack", "save"] and fight.target.is_empty()) or (k.kind == "ally" and fight.ally_target.is_empty()):
+		if (k.kind in ["attack", "save", "mark"] and fight.target.is_empty()) or (k.kind == "ally" and fight.ally_target.is_empty()):
 			note = note if note != "" else "Pick a target again"
 		var b := TagButton.make(label, 146, 36, 15, true)   # drawn 36 high; taps still get the 44 pt finger area
 		b.disabled = note != "" or fight.busy
 		b.pressed.connect(fight.press_button)
 		_button_box.add_child(b)
-		if note != "" and not fight.spent(u, k):   # no use-limit note: the header gives the limit and the card dims (07)
+		if note != "" and not fight.spent(u, k) and not note.begins_with("_"):   # no use-limit note: the header gives the limit and the card dims (07)
 			var nl := _wrap(UI.label(note, "n800", 11, UI.INK_MUTED))
 			nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_button_box.add_child(nl)
@@ -330,12 +332,12 @@ func _icon(path: String, col: Color, px: float) -> TextureRect:
 ## heads needed (design/03 -> Coin checks, Combat -> Cover). Forge, glow and acid coins are in the count.
 func coin_line(u: Dictionary, t: Dictionary, k: Dictionary) -> String:
 	var n: int = fight.attack_coins(u, t, k)
-	var need: int = fight.heads_needed(t) if not t.is_empty() else Rules.HEADS_TO_HIT
+	var need: int = fight.heads_needed(t, u, k) if not t.is_empty() else Rules.HEADS_TO_HIT
 	var ab: String = k.get("ab", u.ability)
 	var mods := ""
 	if u.blessed:
 		mods += " · +1 Bless"
-	if not t.is_empty() and fight.cover_between(u, t) == "partial":
+	if not t.is_empty() and fight.cover_between(u, t) == "partial" and not k.get("pierce", false):
 		mods += " · −%d cover" % Rules.COVER_COINS
 	if n < need:   # the long shot: 1 coin, heads in a row
 		return "Long shot · %s · %d heads in a row%s" % [ab, need + (need - n), mods]
@@ -806,8 +808,8 @@ func float_icon(u: Dictionary, icon: String) -> void:
 
 
 ## Status and Lucky icons: the HUD's own, else the creator's, else these PLACEHOLDER paths.
-const STATUS_PATHS := {"lock": "M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v9H5z", "acid": "M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z M9 15h6"}
-const STATUS_INK := {"spark": "#B07A12", "moon": "#3E5A70", "drop": "#B3261E", "skull": "#3E7A2E", "snow": "#3F8FC4", "acid": "#4F7A12", "lock": "#33403B"}
+const STATUS_PATHS := {"mark": "M12 3v4 M12 17v4 M3 12h4 M17 12h4 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8", "snare": "M4 18h16 M7 18l5-9 5 9 M12 9V5", "lock": "M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v9H5z", "acid": "M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z M9 15h6"}
+const STATUS_INK := {"mark": "#B3261E", "snare": "#5A4528", "spark": "#B07A12", "moon": "#3E5A70", "drop": "#B3261E", "skull": "#3E7A2E", "snow": "#3F8FC4", "acid": "#4F7A12", "lock": "#33403B"}
 
 
 static func status_path(n: String) -> String:

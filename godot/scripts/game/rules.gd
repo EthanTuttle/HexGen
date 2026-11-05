@@ -191,20 +191,22 @@ const PARTY := [
 	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
 		"weapon": "longsword",
 		"cards": ["move", "attack", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
-	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "scores": {"INT": 3, "DEX": 2},
+	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "armour": "none", "scores": {"INT": 3, "DEX": 2},
 		"weapon": "staff",
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
-	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "scores": {"WIS": 2, "STR": 2, "CON": 2},
+	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "armour": "Medium", "scores": {"WIS": 2, "STR": 2, "CON": 2},
 		"weapon": "mace",
 		"cards": ["move", "attack", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
-	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
+	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "armour": "Light", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
 		"weapon": "dagger",
 		"cards": ["move", "attack", "defend", "use_item", "throw", "sneak_attack", "poison_blade"]},
 ]
 ## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
 ## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.
 const HOTBAR_SLOTS := 7                  # DOCS (design/07 -> Combat screen, Nov 5, 2026); the starting bar: Races.starting_bar
-const HERO_DEFAULT := {"race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2}}
+const HERO_DEFAULT := {"race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2}, "main": "longsword", "off": "shield", "armour": "Medium"}
+## PLACEHOLDER armour (06: armour applies to everyone; companions' isn't set): Fluffy none (wizards wear none), Chelmsford
+## medium (a cleric's heaviest), Mel light (a rogue's only); the default hero medium.
 ## DOCS: design/01 -> Companion proficiencies. PLACEHOLDER: the hero has none yet (they come from the background).
 const PROFICIENCIES := {"Fluffy": ["Persuade", "Lore"], "Chelmsford": ["Persuade", "Athletics"], "Mel": ["Deceive", "Thievery"]}
 ## Written chime-ins (design/characters/<name>.md): the stage note, then the line. Only what the prototype's checks use.
@@ -229,6 +231,16 @@ const BONEBREAKER_SLOW := 1              # PLACEHOLDER (04, Nov 5, 2026: 1, so a
 const FROST_SLOW := 1                    # PLACEHOLDER (03): Frost Ray, the same
 const WHITE_SLOW := 1                    # PLACEHOLDER (06): white breath, the same
 const PUSH_HEXES := 1                    # DOCS (04): Shield Bash pushes the foe 1 hex
+const SNARE_RANGE := 3                   # PLACEHOLDER (03): an empty walkable hex up to 3 away
+const SNARE_DAMAGE := 1                  # PLACEHOLDER (03)
+const MARK_DAMAGE := 1                   # PLACEHOLDER (03): Hunter's Mark, on every hit you land on the marked foe
+const DANCE_HEXES := 2                   # PLACEHOLDER (04): Dancing Step
+const STEP_STRIKE_HEXES := 2             # PLACEHOLDER (04): Step and Strike
+const AIMED_TIMES := 4                   # PLACEHOLDER (04): Aimed Shot's damage, ignoring cover and armour
+const QUICK_SLASH_LESS := 1              # PLACEHOLDER (04): free Quick Slash right after a shortsword hit, once a turn, -1 damage
+const GUARD_UP_LESS := 2                 # PLACEHOLDER (04)
+const HAYMAKER_AP := 1                   # PLACEHOLDER (04): on a failed CON save the foe loses this much AP next turn
+const RANGED_ADJACENT := 1               # PLACEHOLDER (04): +1 heads for a ranged attack with a foe next to you (not crossbows)
 const MOVE_PER_DEX := 1                  # DOCS (03): a Move is MOVE_HEXES, +1 for every DEX point above 1, plus race
 const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn
 ## Races in play (rules: design/03 -> Races and Racial spells). Amounts are PLACEHOLDER, all from design/06 -> First playable ->

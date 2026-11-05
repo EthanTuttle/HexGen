@@ -15,7 +15,7 @@ const BACKGROUNDS := {
 	"folk_hero": {"terrain": "forest", "place": "The Oak & Lantern"},
 	"noble": {"terrain": "farmland", "place": "Weizenhof Estate"},
 }
-const CLASS_TERRAINS := {"fighter": ["plains", "desert"]}
+const CLASS_TERRAINS := {"fighter": ["plains", "desert"], "ranger": ["forest", "plains"]}   # DOCS (05 -> Starting decks)
 const CARDS_EACH := 5
 const ONE_OF_EACH := ["forest", "plains", "farmland", "village", "river", "hills", "swamp", "desert", "ruins"]   # design/06: so all can be built
 
@@ -26,6 +26,9 @@ var sub := ""                  # the race's sub-type: "Wood elf", "Metal", "Blue
 var elf_spell := ""            # a high elf's pick: "Lull"
 var scores := {}               # STR .. CHA from the creator; empty: Rules.HERO_DEFAULT's
 var proficiencies: Array = []
+var main := ""                 # the creator's weapons and armour (CreatorData.W ids; "shield", "none"; "Light" ..); "": HERO_DEFAULT's
+var off := ""
+var armour := ""
 var background := "soldier"
 var appearance := {}           # for the mini, from the creator
 var seed_text := ""            # "" rolls one
@@ -67,6 +70,15 @@ static func for_launch() -> RunSetup:
 			run.sub = a.split("=")[1]
 		if a.begins_with("--spell="):
 			run.elf_spell = a.split("=")[1]
+		# Test aid: the hero's class and gear ("--class=ranger --main=shortbow --armour=Light").
+		if a.begins_with("--class="):
+			run.klass = a.split("=")[1]
+		if a.begins_with("--main="):
+			run.main = a.split("=")[1]
+		if a.begins_with("--off="):
+			run.off = a.split("=")[1]
+		if a.begins_with("--armour="):
+			run.armour = a.split("=")[1]
 	return run
 
 
@@ -79,6 +91,9 @@ static func from_hero(hero: Hero) -> RunSetup:
 	run.elf_spell = hero.elf_spell
 	run.scores = hero.scores.duplicate()
 	run.proficiencies = hero.proficiencies.duplicate()
+	run.main = hero.gear.get("main", "")
+	run.off = hero.gear.get("off", "")
+	run.armour = hero.gear.get("armour", "")
 	run.background = hero.background
 	run.appearance = hero.appearance
 	return run

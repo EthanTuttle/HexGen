@@ -89,6 +89,15 @@ static func wood_elf_in(party: Array) -> bool:
 ## The hero's member from a run: race, sub, spell and scores from the creator, or HERO_DEFAULT; the racial cards join the
 ## All actions list only (the default hotbars stay as they are for now).
 static func make_hero(m: Dictionary, run: RunSetup) -> void:
+	# Gear counts in play (06 -> Start): the weapon sets the attack's score and cards, a shield gives Block and Shield Bash,
+	# armour sets defence; the class gives its cards and HP.
+	m.weapon = run.main if run.main != "" else Rules.HERO_DEFAULT.main
+	m.off = run.off if run.main != "" else Rules.HERO_DEFAULT.off
+	m.armour = run.armour if run.main != "" else Rules.HERO_DEFAULT.armour
+	m.ability = Weapons.of(m.weapon).ab
+	m.klass = run.klass
+	m.cards = Weapons.cards_for(run.klass, m.weapon, m.off)
+	m.hp = Weapons.CLASS_HP.get(run.klass, m.hp)
 	m.race = run.race if run.race != "" else Rules.HERO_DEFAULT.race
 	m.sub = run.sub if run.race != "" else Rules.HERO_DEFAULT.sub
 	m.spell = run.elf_spell

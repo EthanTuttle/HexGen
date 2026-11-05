@@ -50,6 +50,16 @@ func _ready_card(f: Fight, u: Dictionary, id: String) -> bool:
 	return id in u.cards and f.cant_use(u, Cards.get_card(id, u.weapon, u.sub)) == ""
 
 
+## Plays a card aimed at a cell (Snare, Dancing Step, Sweeping Arc).
+func _aim(f: Fight, u: Dictionary, id: String, c: Vector2i) -> void:
+	f.pick_card(id)
+	await _wait(0.05)
+	await f.click_cell(c)
+	await f.press_button()
+	used[id] = used.get(id, 0) + 1
+	await _settle(f)
+
+
 func _settle(f: Fight) -> void:
 	await _wait(0.2)
 	while f.busy:
@@ -99,15 +109,47 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 				used["breath"] = used.get("breath", 0) + 1
 				await _settle(f)
 				continue
+		# The Ranger: mark the nearest foe, set the Snare on the hex in front of it, sweep an arc that holds foes.
+		if _ready_card(f, u, "hunters_mark") and (u.mark.is_empty() or u.mark.down):
+			f.pick_card("hunters_mark")
+			await _wait(0.05)
+			await f.click_cell(foe.cell)
+			await f.press_button()
+			used["hunters_mark"] = used.get("hunters_mark", 0) + 1
+			await _settle(f)
+			continue
+		if _ready_card(f, u, "snare") and f.dist(foe, u) > 1:
+			var spots := f.cell_options(u, Cards.get_card("snare"))
+			spots.sort_custom(func(a, b): return Rules.hex_distance(a, foe.cell) < Rules.hex_distance(b, foe.cell))
+			if not spots.is_empty():
+				await _aim(f, u, "snare", spots[0])
+				continue
+		if _ready_card(f, u, "sweeping_arc"):
+			var best_c = null
+			var most := 0
+			for c: Vector2i in f.grid:
+				var n: int = f.arc_cells(u, c).filter(func(x): var t := f.unit_at(x); return not t.is_empty() and not t.ally and not t.down).size()
+				if n > most:
+					most = n
+					best_c = c
+			if best_c != null:
+				await _aim(f, u, "sweeping_arc", best_c)
+				continue
 		if u.hp * 2 < u.max_hp and _ready_card(f, u, "second_wind"):
 			picked = "second_wind"
 		elif u.hp * 2 < u.max_hp and _ready_card(f, u, "lockdown") and f.dist(foe, u) == 1:
 			picked = "lockdown"
+		elif _ready_card(f, u, "guard_up") and f.dist(foe, u) == 1 and f.ap_left(u) == 1:
+			picked = "guard_up"
 		elif u.hp * 2 < u.max_hp and f.cant_use(u, Cards.get_card("use_item")) == "":
 			picked = "use_item"
 			drunk += 1
 		else:
-			for id: String in ["faerie_fire", "lull", "firebolt", "frost_ray", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack", "throw", "shield_bash", "attack"]:
+			var order: Array = ["faerie_fire", "lull", "firebolt", "frost_ray", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
+					"pinning_bolt", "double_shot", "haymaker", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
+			if f.ap_left(u) >= 3 and u.ap == Rules.AP:
+				order.push_front("aimed_shot")   # a whole turn's shot, only at the start of a turn
+			for id: String in order:
 				if _ready_card(f, u, id):
 					var c := Cards.get_card(id, u.weapon)
 					if f.in_reach(u, foe, c) and not (id == "lull" and foe.lull) and not (id == "faerie_fire" and f.on(foe, "glow")):
@@ -121,6 +163,12 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 					best = c
 			if best == u.cell:
 				return
+			if _ready_card(f, u, "dancing_step"):   # a free step toward the foe after a scimitar attack
+				var steps := f.cell_options(u, Cards.get_card("dancing_step"))
+				steps.sort_custom(func(a, b): return Rules.hex_distance(a, foe.cell) < Rules.hex_distance(b, foe.cell))
+				if not steps.is_empty() and Rules.hex_distance(steps[0], foe.cell) < Rules.hex_distance(u.cell, foe.cell):
+					await _aim(f, u, "dancing_step", steps[0])
+					continue
 			f.pick_card("move")
 			await _wait(0.05)
 			await f.click_cell(best)
@@ -128,7 +176,7 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			continue
 		f.pick_card(picked)
 		await _wait(0.05)
-		if Cards.get_card(picked).kind in ["attack", "save"]:
+		if Cards.get_card(picked).kind in ["attack", "save", "mark"]:
 			await f.click_cell(foe.cell)
 			await _wait(0.05)
 		await f.press_button()
