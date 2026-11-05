@@ -36,6 +36,7 @@ func _ready() -> void:
 	if goes_direct():
 		for unused: Node in [map, cam, ui, safe, _backdrop]:   # never added to the tree, so nothing else frees them
 			unused.free()
+		set_process(false)   # the drift reads the camera, freed above
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 		return
 	clock = Stage.create(self)
