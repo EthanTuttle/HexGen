@@ -1,6 +1,6 @@
 # Town scenes kit hand-off (town_scenes_v4)
 
-The first playable's town square and inn interior, for `TownScene._frame`. **Not yet approved; not yet tried in Godot.** Looks: `design/07` → Town scenes, Town screen. Plan: `mockups/town/Town-v9-SwapDetails`.
+The first playable's town square and inn interior, for `TownScene._frame`. **Approved by Ethan on Nov 4, 2026 (v4); not yet tried in Godot.** Looks: `design/07` → Town scenes, Town screen. Plan: `mockups/town/Town-v9-SwapDetails`.
 
 - **Models:** `art/export/town_scenes.glb`, from `art/town/town_scenes_v4.blend`. Load with `Kit.meshes("res://art/town_scenes.glb")`, as `EncounterView` loads its kit: meshes `town_square` and `town_inn`, at scale 1, in Blender's frame turned Y-up by the export.
 - **Data:** `art/export/town_scenes.json`: every hex's middle, the party's spots, the keepers and where the services stand.
