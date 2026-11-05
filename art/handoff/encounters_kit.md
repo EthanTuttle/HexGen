@@ -1,8 +1,8 @@
-# Map encounter kit hand-off (encounters_v3)
+# Map encounter kit hand-off (encounters_v4)
 
-Ethan chose true-scale figures with badges (Nov 4, 2026; design/07): place every scene at scale 1. The oversized look and the measurements for it stay below as the trial's record. The badge look is still being reviewed. The trader, the drinkers, the treasure, the badges and their colours are stand-ins of ours, open to Ethan.
+Ethan chose true-scale figures with badges (Nov 4, 2026; design/07): place every scene at scale 1. The oversized look and the measurements for it stay below as the trial's record. Ethan approved the eased badge curve at 32 pt (Nov 4, 2026), to test in Godot.The trader, the drinkers, the treasure, the badges and their colours are stand-ins of ours, open to Ethan.
 
-- **Models:** `art/export/encounters.glb` (from `art/encounters/encounters_v3.blend`), the shared `kit` material with vertex colours.
+- **Models:** `art/export/encounters.glb` (from `art/encounters/encounters_v4.blend`), the shared `kit` material with vertex colours.
 - **Scripts:** `art/scripts/build_encounter_figures.py`, `art/scripts/render_encounter_figures.py`.
 - **Previews:** `art/preview/encounters_x<scale>_<light>_<distance>m_v1.png`, `encounters_x1_day_58m_swapped_v1.png` and `encounters_x2.5_day_58m_swapped_v1.png` (wolves in the open, bandits in the forest), `encounters_badges_<light>_58m_v1.png`, `encounters_close_all_v1.png`.
 
@@ -100,9 +100,9 @@ var icon_size := 0.66 * w
 - **At night:** the same colours, since badges are unlit. Night zoom stops at 60 m, so 110 m is a day view only.
 - **Previews:** `art/preview/encounter_badge_curve_v1.png` (first curve left, eased right, at 58, 40, 30, 24, 18 and 12 m), `encounter_badge_curve_night_30m_v1.png`, `encounter_badges_sizes_v1.png` (32 left, 40 right), `encounter_badges32_*` and `encounter_badges40_*` at full size, `encounter_badges_swords_v1.png` (line against solid, at 18, 22, 26, 32 and 40 pt, drawn at twice real size).
 
-## Forest glade (on trial)
+## Forest glade (not in the kit)
 
-How many looks would need this: [encounter_cover_survey.md](encounter_cover_survey.md).
+**No glades for now (Ethan, Nov 4, 2026).** Scenes stand on chosen spots instead, and Godot compares a silhouette against fading for what still covers them. `forest_centre_glade` isn't in `encounters.glb`; it's kept in `encounters_v3.blend` as the record of this trial. Rebuild it with `build_encounter_figures.py -- --glade`. Numbers: [encounter_cover_survey.md](encounter_cover_survey.md).
 
 `forest_centre_glade` is the plain forest tile's centre with its trees gone and a lighter floor, for comparing with the tile as it is. Scene and badge are the same in both.
 

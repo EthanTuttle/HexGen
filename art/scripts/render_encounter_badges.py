@@ -263,6 +263,8 @@ if __name__ == "__main__":
             sized.append(shot(trial, spec[0], spec[1], spec[2], f"encounter_badges{far}_{spec[3]}", far))
     fm.sheet(sized, "encounter_badges_sizes", cols=2)
     # The forest tile as it is, against the glade, at the same zooms. Badges at 32.
+    with bpy.data.libraries.load(os.path.join(hk.ART, "encounters", "encounters_v3.blend"), link=False) as (src, dst):  # the kit dropped it at v4
+        dst.objects = ["forest_centre_glade"]
     glade = rp.place(bpy.data.objects, "forest_centre_glade", bpy.data.collections["encounters"], wolves.location.copy())
     centre = next(ob for ob in bpy.data.objects if ob.get("piece") == "forest_centre" and (ob.location - wolves.location).length < 0.1)
     glade.rotation_euler.z = centre.rotation_euler.z

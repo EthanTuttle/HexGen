@@ -10,7 +10,7 @@ Every scene is one mesh at true mini scale, its pivot on the ground at its middl
   enc_social_drinking    three drinkers round a table, mugs up, with a barrel
   enc_discovery_treasure a half-dug chest, a heap of earth and a spade
   enc_badge_fight, _social, _discovery   a hex plate with an icon and no text, standing upright, its pivot at its foot. Face it to the camera.
-  forest_centre_glade    a forest tile's centre with no trees and a lighter floor, on trial
+  forest_centre_glade    only with --glade: a forest tile's centre with no trees and a lighter floor. Not in the export (no glades for now, Nov 4, 2026); encounters_v3.blend holds the one the renders used
 The trader, the drinkers and the treasure are stand-ins of ours, with their looks open to Ethan.
 """
 import math
@@ -216,7 +216,8 @@ def build():
     for make in (trader, drinking, treasure):
         make().finish(col)
     hk.STANDS_ALONE = False  # a tile piece, wound as tiles are
-    glade().finish(col)
+    if "--glade" in sys.argv:
+        glade().finish(col)
     badge("fight", "badge_fight", swords).finish(col)
     badge("social", "badge_social", speech).finish(col)
     badge("discovery", "badge_discovery", sparkle).finish(col)
