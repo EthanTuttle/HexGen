@@ -112,13 +112,18 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Rest | At the background's tile, and in towns and shops as mocked up, entered with an Enter card |
 | After a fight | Downed allies stand at 1 HP, HP carries until rest, no injuries for now |
 | Fight rewards | Cards, plus gold and XP: per foe by role (minion 2, soldier 4, elite 8), times distance band (near 1, mid 2, far 3). Wins only; Sneak past gives none |
-| Levels | Simple: XP fills a bar, and a level gives a terrain card pick. The full Level-up screen and gear come later. XP per level: open |
+| Levels | Simple: XP fills a bar, and a level gives a terrain card pick. The full Level-up screen and gear come later |
 | Social and Discovery | The Social encounter screen, with 3 or 4 events written with Ethan |
+| Party | The hero and Fluffy, balanced for about 2 in early fights. Recruiting comes later. Races are looks and names for now |
+| Hero minis | Scripted low-poly parts with better faces, replaced later by the pipeline in [Presentation](07 Presentation.md) → Art direction |
+| Towns | Standing on a town shows an Enter card, like the Rest card on a camp; tapping it opens the scene |
+| Foes | Minion 4, soldier 6, elite 10 HP; damage 1, 2, 3, times the band. Near is up to 4 tiles from the start, mid 5 to 9, far 10 and over. The figure's kind sets the mix: 2 or 3 foes, one elite from mid on |
+| XP per level | 20, then 10 more each level |
 | Sneak past | Harder for tougher foes: heads needed by the toughest foe's role (minion 1, soldier 2, elite 3; proposed, a placeholder) |
 
 ## Open questions
 
-- [ ] **New (Nov 4, 2026):** first playable: XP per level, what town shops sell before gear exists, the 3 or 4 events, and the six starting tiles' looks
+- [ ] **New (Nov 4, 2026):** first playable: what town shops sell before gear exists, the 3 or 4 events, and the six starting tiles' looks
 - [x] ~~Hills look~~ (settled Oct 30, 2026: smooth raised slopes, with joined hills sharing one mountain; see Engine prototype)
 - [x] ~~Desert dunes~~ (settled Oct 30, 2026: rolling sand swells; see Engine prototype)
 - [ ] Placement: simultaneous placement in multiplayer
