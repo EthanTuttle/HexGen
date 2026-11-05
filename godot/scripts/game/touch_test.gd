@@ -532,13 +532,13 @@ func _fight() -> void:
 
 ## Fights open close, so a target can start off screen or under a panel: pans to it with one finger, as a player does.
 func _pan_to(world: Vector3) -> void:
-	var open := Rect2(Rules.FIGHT_FOCUS - Rules.FIGHT_OPEN * 0.5, Rules.FIGHT_OPEN).grow(-20)
+	var open := game.fight.open_area().grow(-20)
 	for _k in 8:
 		var at := screen_of(world)
 		if open.has_point(at):
 			return
-		var step := (Rules.FIGHT_FOCUS - at).limit_length(160.0)
-		await drag(Rules.FIGHT_FOCUS - step * 0.5, Rules.FIGHT_FOCUS + step * 0.5, 0.3)
+		var step := (open.get_center() - at).limit_length(160.0)
+		await drag(open.get_center() - step * 0.5, open.get_center() + step * 0.5, 0.3)
 		await _wait(0.1)
 	check(false, "panned a fight's target into view")
 

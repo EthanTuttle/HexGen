@@ -151,8 +151,9 @@ func _phone_list() -> void:
 		await get_tree().create_timer(0.5).timeout
 	game.encounters.clear()
 	_say("LIST PERF new items done")
-	await _hills_perf(game, vp)
-	await _town_perf(game, vp)
+	if OS.get_environment("HEXGEN_PHONEQUICK") != "1":
+		await _hills_perf(game, vp)
+		await _town_perf(game, vp)
 	await _river_perf(game, vp)
 	_say("LIST PERF DONE")
 

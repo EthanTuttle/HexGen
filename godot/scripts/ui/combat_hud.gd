@@ -11,6 +11,9 @@ var _phase_label: Label
 var _portraits := VBoxContainer.new()
 var _hotbar := HBoxContainer.new()
 var _details := VBoxContainer.new()
+var _cam_column: Control
+var _details_panel: Control
+var _hotbar_row: Control
 var _button_box := VBoxContainer.new()
 var _all: PanelContainer
 var _all_grid := GridContainer.new()
@@ -131,8 +134,17 @@ class _EndHex extends Control:
 
 # --- Camera buttons (left 96, top 14) --------------------------------------------
 
+## The screen rect between the panels, in viewport units: what a fight's opening frames (Fight.open_area). The Dynamic Island's inset moves the panels on a phone.
+func open_rect() -> Rect2:
+	var left: float = _cam_column.get_global_rect().end.x
+	var right: float = _details_panel.get_global_rect().position.x
+	var bottom: float = _hotbar_row.get_global_rect().position.y
+	return Rect2(left, 0.0, right - left, bottom)
+
+
 func _build_cam() -> void:
 	var v := VBoxContainer.new()
+	_cam_column = v
 	v.add_theme_constant_override("separation", 4)
 	UI.at(v, 96, 14)
 	for b in [["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["rot_l", "Rotate left"], ["rot_r", "Rotate right"], ["center", "Center on the acting character"]]:
@@ -168,6 +180,7 @@ func _cam(which: String) -> void:
 
 func _build_details() -> void:
 	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(12, 12, 12, 12))
+	_details_panel = p
 	p.custom_minimum_size = Vector2(170, 366)
 	p.size = Vector2(170, 366)
 	p.clip_contents = true
@@ -284,6 +297,7 @@ func _refresh_details() -> void:
 
 func _build_hotbar() -> void:
 	var row := HBoxContainer.new()
+	_hotbar_row = row
 	row.add_theme_constant_override("separation", 10)
 	UI.at(row, 100, 286)
 	row.custom_minimum_size = Vector2(546, 92)

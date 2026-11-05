@@ -2134,9 +2134,12 @@ func _ground_body(node: Node3D, faces: PackedVector3Array) -> void:
 ## The water's material for a style: the shared shader, with the kit's colour (PLACEHOLDER colours; deep is that darkened).
 func _water_material(style: String) -> ShaderMaterial:
 	if not Water.WATER_MAT.has(style):
-		return load("res://shaders/water.tres")
+		var plain := load("res://shaders/water.tres") as ShaderMaterial
+		plain.set_shader_parameter("ripple_map", Water.ripple_texture())
+		return plain
 	if not _water_mats.has(style):
 		var m := (load("res://shaders/water.tres") as ShaderMaterial).duplicate() as ShaderMaterial
+		m.set_shader_parameter("ripple_map", Water.ripple_texture())
 		var c := Hex.colour(Water.WATER_MAT[style]).srgb_to_linear()
 		m.set_shader_parameter("shallow", Vector3(c.r, c.g, c.b))
 		m.set_shader_parameter("deep", Vector3(c.r, c.g, c.b) * 0.7)

@@ -13,6 +13,9 @@ uniform float period = 2.0;
 uniform float bump_strength = 2.0;  // Blender: 0.7; raised by eye, its Bump node reads stronger than this port
 uniform float bump_distance = 0.08;
 uniform float sparkle_strength = 2.5;
+uniform sampler2D ripple_map : repeat_enable, filter_linear_mipmap;
+const float TILE = 8.9;          // metres the baked tile covers (Water.RIPPLE_TILE)
+const float SLOPE_RANGE = 4.0;   // the slopes it can hold (Water.RIPPLE_SLOPE)
 uniform float night = 0.0;  // 0 by day, 1 at night: set by the map so the water doesn't outshine the land
 
 varying vec3 world_pos;
@@ -25,7 +28,8 @@ void vertex() {
 	flow = UV2;
 }
 
-// --- Noise (stand-ins for Blender's Noise, Voronoi and White Noise textures) ---
+// --- Noise -------------------------------------------------------------------
+// Ripples come from one baked tile (Water.ripple_texture: height in R, slopes in G and B), as working out 3D noise per pixel took a phone under 60 fps on broad water.
 
 vec3 hash33(vec3 p) {
 	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
@@ -33,40 +37,16 @@ vec3 hash33(vec3 p) {
 	return fract((p.xxy + p.yxx) * p.zyx);
 }
 
-float gradient_noise(vec3 p) {
-	vec3 i = floor(p);
-	vec3 f = fract(p);
-	vec3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-	float n = 0.0;
-	float v[8];
-	for (int k = 0; k < 8; k++) {
-		vec3 o = vec3(float(k & 1), float((k >> 1) & 1), float((k >> 2) & 1));
-		vec3 g = hash33(i + o) * 2.0 - 1.0;
-		v[k] = dot(g, f - o);
-	}
-	return mix(mix(mix(v[0], v[1], u.x), mix(v[2], v[3], u.x), u.y),
-			mix(mix(v[4], v[5], u.x), mix(v[6], v[7], u.x), u.y), u.z);
+// Height in x, its slope per metre in y and z. Two layers drifting apart stand in for the noise evolving.
+vec3 ripples(vec2 p) {
+	vec2 slow = vec2(TIME * 0.05, -TIME * 0.03);
+	vec3 a = texture(ripple_map, (p + slow) / TILE).rgb;
+	vec3 b = texture(ripple_map, (p * 0.77 - slow + vec2(2.3, 5.1)) / TILE).rgb;
+	vec3 c = mix(a, b, 0.5);
+	return vec3(c.r, (c.gb - 0.5) * SLOPE_RANGE);
 }
 
-// fBm in [0, 1] around 0.5, like the Noise texture's Fac (detail = extra octaves, roughness 0.5).
-float noise_fac(vec3 p, int detail) {
-	float sum = 0.0, amp = 1.0, total = 0.0;
-	for (int k = 0; k <= detail; k++) {
-		sum += amp * gradient_noise(p);
-		total += amp;
-		amp *= 0.5;
-		p *= 2.0;
-	}
-	return 0.5 + 0.5 * 1.4 * sum / total;
-}
-
-// --- The water ---------------------------------------------------------------
-
-float ripples(vec2 p) {
-	return noise_fac(vec3(p * 0.9, TIME * 0.12 * 0.9), 3);
-}
-
-float flowing(vec2 pos, float ph0, float ph1, float blend) {
+vec3 flowing(vec2 pos, float ph0, float ph1, float blend) {
 	vec2 p0 = pos - flow * (ph0 * period);
 	vec2 p1 = pos - flow * (ph1 * period) + vec2(3.7, 1.9);
 	return mix(ripples(p0), ripples(p1), blend);
@@ -74,18 +54,15 @@ float flowing(vec2 pos, float ph0, float ph1, float blend) {
 
 void fragment() {
 	vec2 pos = world_pos.xz;
-	float cycle = TIME / period + noise_fac(vec3(pos * 0.25, 0.0), 0) * 3.0;
+	float cycle = TIME / period + texture(ripple_map, pos * 0.25 / TILE).r * 3.0;
 	float ph0 = fract(cycle);
 	float ph1 = fract(cycle + 0.5);
 	float blend = abs((ph0 - 0.5) * 2.0);  // 1 when copy 0 restarts
 
-	float wave = flowing(pos, ph0, ph1, blend);
+	vec3 ripple = flowing(pos, ph0, ph1, blend);
+	float wave = ripple.x;
 	// Bump: the ripples' slope tilts the normal, so highlights move with them.
-	const float e = 0.04;
-	float wx = flowing(pos + vec2(e, 0.0), ph0, ph1, blend);
-	float wz = flowing(pos + vec2(0.0, e), ph0, ph1, blend);
-	vec3 n = normalize(vec3(-(wx - wave) / e * bump_distance * bump_strength, 1.0,
-			-(wz - wave) / e * bump_distance * bump_strength));
+	vec3 n = normalize(vec3(-ripple.y * bump_distance * bump_strength, 1.0, -ripple.z * bump_distance * bump_strength));
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
 
 	vec3 col = mix(shallow, deep, smoothstep(0.2, 2.2, depth));
@@ -95,14 +72,14 @@ void fragment() {
 	float foam = depth < edge ? 1.0 : 0.0;
 	col = mix(col, foam_colour, foam * 0.55);  // 0.55 (Blender 0.75): the rim read as ice at game distance
 
-	// Sparkle: 3D Voronoi cells (scale 2.6) drifting with the flow, sliced at the water's height.
-	vec3 drift = vec3(pos - flow * TIME, world_pos.y) * 2.6;
-	vec3 cell_id = floor(drift);
+	// Sparkle: Voronoi cells (scale 2.6) drifting with the flow.
+	vec2 drift = (pos - flow * TIME) * 2.6;
+	vec2 cell_id = floor(drift);
 	float best = 1e9;
 	vec3 best_cell = vec3(0.0);
-	for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) for (int z = -1; z <= 1; z++) {
-		vec3 c = cell_id + vec3(float(x), float(y), float(z));
-		float d = length(c + hash33(c) - drift);
+	for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) {
+		vec3 c = vec3(cell_id + vec2(float(x), float(y)), 0.0);
+		float d = length(c.xy + hash33(c).xy - drift);
 		if (d < best) {
 			best = d;
 			best_cell = c;

@@ -571,7 +571,7 @@ Fights on the approved maps, from `art/handoff/combat_*_kit.md`. `-- --combatche
 | Lava: who it affects | Foes aren't told to avoid it; like everyone, of two paths that cost the same they take the one with less lava. Nobody is immune. Defend doesn't reduce it. Giants won't step on it. Nothing pushes anyone yet, so pushes in don't exist |
 | Lava on the Move highlight | `move_lava` colour |
 | Moving lava | `shaders/combat_lava.gdshader`: hard flat bands (Ethan's pick), three colours; speed, spacing and colours by eye. Craters, streaks and vents are one flat colour, `hot`. `CombatMap.flow_mesh` gives each cell's triangles its way in and out, so chevrons meet at the necks instead of the art's V jumping there; Crater's hairpins and the fall's lip are still a little rough. Smoke from craters and night aren't built |
-| Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in `Rules.FIGHT_OPEN` at `FIGHT_FOCUS`, 14 to 28 m back (`FIGHT_DISTANCE_*`, to judge on the phone). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
+| Camera | Opens close (docs: Fight camera): whoever acts, the party, then foes from the nearest, framed in the gap between the panels, read from the HUD (`Fight.open_area`, narrower on a phone with its inset), 14 to 28 m back (`FIGHT_DISTANCE_*`, to judge on the phone). Pans stop `FIGHT_PAN_MARGIN` 1.5 m past the outer cells; the room left round the minis is `Fight.PAD_*` |
 
 **Not built:** fire, smoke and other effects on maps (`combat_*_paths.json`), night on maps. 21 `map_*_gates` and `_wall_to_towers` placements have no mesh on purpose; the art export will stop writing them.
 

@@ -219,7 +219,7 @@ func _load(id: String) -> void:
 	fight._clear_overlays()
 	fight._setup_map(id)
 	fight.open_distance = _whole_map_distance()
-	game.rig.focus = Rules.FIGHT_FOCUS
+	game.rig.focus = fight.open_area().get_center()
 	var c: Array = CombatMap.all()[id].centre
 	game.rig.frame(fight.position + Hex.to3(Vector2(c[0], c[1])), fight.open_distance, 52.0)
 
@@ -227,8 +227,9 @@ func _load(id: String) -> void:
 ## How far back the whole map fits, for counting what tall pieces hide (no longer how a fight opens: DOCS, starts close, then pans).
 func _whole_map_distance() -> float:
 	var box := fight._cells_box()
-	var wide := (box.size.x + 1.2) / (fight._per_unit() * Rules.FIGHT_OPEN.x)
-	var deep := (box.size.y + 2.4) * sin(deg_to_rad(52.0)) / (fight._per_unit() * Rules.FIGHT_OPEN.y)
+	var open := fight.open_area()
+	var wide := (box.size.x + 1.2) / (fight._per_unit() * open.size.x)
+	var deep := (box.size.y + 2.4) * sin(deg_to_rad(52.0)) / (fight._per_unit() * open.size.y)
 	return clampf(maxf(wide, deep), 14.0, 34.0)
 
 
@@ -510,7 +511,7 @@ func _check_flow() -> void:
 
 
 func _hills_shots() -> void:
-	game.rig.focus = Rules.FIGHT_FOCUS
+	game.rig.focus = fight.open_area().get_center()
 	await _wait(1.5)   # the burns' floating numbers
 	for id: String in ["snowy_peaks_shelf", "monastery_heights_ridge", "monastery_heights_climb", "volcanic_peaks_fissures", "volcanic_peaks_crater"]:
 		_load(id)
@@ -533,7 +534,7 @@ func _hills_shots() -> void:
 		await _shot("necks_%s" % row[0])
 		game.rig.frame(fight.global_position + fight.cell_point(lava[lava.size() / 2]), 5.5, 58.0)
 		await _shot("necks_%s_close" % row[0])
-	game.rig.focus = Rules.FIGHT_FOCUS
+	game.rig.focus = fight.open_area().get_center()
 	if fight.hud:
 		fight.hud.visible = true
 	# Move's highlights over a lift's treads, from both sides of the camera.
@@ -584,7 +585,7 @@ func _lava_clip() -> void:
 ## Is this unit's foot between the panels?
 func _on_screen(u: Dictionary) -> bool:
 	var at := game.rig.camera.unproject_position(fight.global_position + u.mini.position) * Vector2(844, 390) / game.get_viewport().get_visible_rect().size
-	return Rect2(Rules.FIGHT_FOCUS - Rules.FIGHT_OPEN * 0.5, Rules.FIGHT_OPEN).has_point(at)
+	return fight.open_area().has_point(at)
 
 
 func _check_heights() -> void:

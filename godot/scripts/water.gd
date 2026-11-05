@@ -4,6 +4,8 @@ extends RefCounted
 ## Line by line, in one tile's own plan coordinates (pointy-top, centre at the origin, edge 0 facing +X).
 ## PyRandom makes the seeded curves and dressing identical to the Blender reference.
 
+const RIPPLE_TILE := 8.9         # metres the water shader's baked ripples cover (shaders/water.gdshader: TILE)
+const RIPPLE_SLOPE := 4.0        # the slopes they can hold (SLOPE_RANGE)
 const R := 4.5
 const A := R * sqrt(3.0) / 2.0
 const RIVER_WIDTH := 1.5
@@ -1255,3 +1257,33 @@ static func cover_shape(own: String, neighbours: Array, seed: String) -> Array:
 		var cut: Array = Gorge.build(mask, seed, widths, own == "trollbridge").cut
 		return [cut if not cut.is_empty() else w.outlines, w.shores]
 	return [w.outlines, w.shores]
+
+
+static var _ripples: ImageTexture
+
+
+## The water shader's ripples, baked: height in R, its slope per metre along x and y in G and B. One tile, as the shader's old per-pixel noise took a phone under 60 fps on broad water.
+static func ripple_texture() -> ImageTexture:
+	if _ripples == null:
+		const SIZE := 256
+		var look := FastNoiseLite.new()
+		look.noise_type = FastNoiseLite.TYPE_PERLIN
+		look.frequency = 8.0 / SIZE
+		look.fractal_type = FastNoiseLite.FRACTAL_FBM
+		look.fractal_octaves = 4
+		var src := look.get_seamless_image(SIZE, SIZE)
+		var h := PackedFloat32Array()
+		h.resize(SIZE * SIZE)
+		for y in SIZE:
+			for x in SIZE:
+				h[y * SIZE + x] = 0.5 + (src.get_pixel(x, y).r - 0.5) * 0.55   # about the old noise's contrast
+		var per_metre := SIZE / RIPPLE_TILE * 0.5
+		var out := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
+		for y in SIZE:
+			for x in SIZE:
+				var sx := (h[y * SIZE + (x + 1) % SIZE] - h[y * SIZE + (x + SIZE - 1) % SIZE]) * per_metre
+				var sy := (h[(y + 1) % SIZE * SIZE + x] - h[(y + SIZE - 1) % SIZE * SIZE + x]) * per_metre
+				out.set_pixel(x, y, Color(h[y * SIZE + x], clampf(0.5 + sx / RIPPLE_SLOPE, 0.0, 1.0), clampf(0.5 + sy / RIPPLE_SLOPE, 0.0, 1.0)))
+		out.generate_mipmaps()
+		_ripples = ImageTexture.create_from_image(out)
+	return _ripples

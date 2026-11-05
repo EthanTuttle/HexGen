@@ -84,8 +84,9 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 		game.safe.add_child(hud)
 		game.popup.move_to_front()
 	hud.visible = true
-	game.rig.focus = Rules.FIGHT_FOCUS
+	await get_tree().process_frame   # the panels' places, for the framing
 	var view := opening()
+	game.rig.focus = open_area().get_center()
 	open_distance = view.distance
 	game.rig.limits = _pan_limits()
 	game.rig.frame(view.target, open_distance * Rules.ZOOM_IN_FROM, 52.0)
@@ -131,7 +132,8 @@ func opening() -> Dictionary:
 		elif missed == null and not u.ally:
 			missed = _plan(u.mini.position, from.y)
 	var d: float = Rules.FIGHT_DISTANCE_MAX if missed != null else clampf(_distance_to_fit(box), Rules.FIGHT_DISTANCE_MIN, Rules.FIGHT_DISTANCE_MAX)
-	var half := Vector2(Rules.FIGHT_OPEN.x, Rules.FIGHT_OPEN.y / sin(deg_to_rad(52.0))) * 0.5 * _per_unit() * d
+	var open := open_area()
+	var half := Vector2(open.size.x, open.size.y / sin(deg_to_rad(52.0))) * 0.5 * _per_unit() * d
 	var cells := _cells_box()
 	var want: Vector2 = missed if missed != null else box.get_center()
 	if missed == null:   # with room to spare, more of the map and less of what's past it
@@ -147,6 +149,15 @@ const PAD_NEAR := 0.5
 const PAD_FAR := 1.2
 
 
+## The open area between the panels, in the camera's 844-wide layout. Its size and middle set the framing.
+func open_area() -> Rect2:
+	if hud == null or not hud.is_inside_tree():
+		return Rect2(145, 5, 510, 280)
+	var r: Rect2 = hud.open_rect()
+	var k := 844.0 / game.get_viewport().get_visible_rect().size.x
+	return Rect2(r.position * k, r.size * k)
+
+
 ## Where p shows on the opening's ground plane at height y: higher things look further up the screen at this tilt.
 func _plan(p: Vector3, y: float) -> Vector2:
 	return Vector2(p.x, -p.z + (p.y - y) / tan(deg_to_rad(52.0)))
@@ -157,8 +168,9 @@ func _per_unit() -> float:
 
 
 func _distance_to_fit(box: Rect2) -> float:
-	var wide := (box.size.x + 2.0 * PAD_SIDE) / (_per_unit() * Rules.FIGHT_OPEN.x)
-	var deep := (box.size.y + PAD_NEAR + PAD_FAR) * sin(deg_to_rad(52.0)) / (_per_unit() * Rules.FIGHT_OPEN.y)
+	var open := open_area()
+	var wide := (box.size.x + 2.0 * PAD_SIDE) / (_per_unit() * open.size.x)
+	var deep := (box.size.y + PAD_NEAR + PAD_FAR) * sin(deg_to_rad(52.0)) / (_per_unit() * open.size.y)
 	return maxf(wide, deep)
 
 
