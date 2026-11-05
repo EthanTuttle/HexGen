@@ -153,7 +153,7 @@ const ENCOUNTER_TABLE := [
 
 const AP := 3                            # DOCS
 const HEADS_TO_HIT := 1                  # DOCS: at low levels the target is mostly 1
-const MOVE_HEXES := 2                    # PLACEHOLDER: the combat mockups' 2-hex Move; the docs don't set it
+const MOVE_HEXES := 2                    # DOCS (03 -> Combat): 2 hexes, then DEX and race
 const UPHILL_RISE := 0.3                 # PLACEHOLDER (design/03, open question): a rise this high costs one more movement
 const UPHILL_COST := 1
 const HEIGHT_SLACK := 0.01                # heights are in steps of 0.15, and their differences aren't exact in floats
@@ -223,7 +223,13 @@ const SAVE_HEADS := 1                    # PLACEHOLDER (Combat v14): any save, a
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
 const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
 const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
-const POISON_BONUS := 1                  # PLACEHOLDER: Poison Blade's extra damage per hit this turn
+## Weapon and class card amounts (Ethan, Nov 5, 2026; placeholders in design/03 and 04 until the balance pass).
+const BACKSTAB := 2                      # PLACEHOLDER (04): the first dagger hit from behind each turn
+const BONEBREAKER_SLOW := 2              # PLACEHOLDER (04): hexes off each Move until the foe's next turn ends
+const FROST_SLOW := 1                    # PLACEHOLDER (03): Frost Ray, the same
+const WHITE_SLOW := 1                    # PLACEHOLDER (06): white breath, the same
+const PUSH_HEXES := 1                    # DOCS (04): Shield Bash pushes the foe 1 hex
+const MOVE_PER_DEX := 1                  # DOCS (03): a Move is MOVE_HEXES, +1 for every DEX point above 1, plus race
 const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn
 ## Races in play (rules: design/03 -> Races and Racial spells). Amounts are PLACEHOLDER, all from design/06 -> First playable ->
 ## Races (Ethan, Nov 5, 2026), until the balance pass.

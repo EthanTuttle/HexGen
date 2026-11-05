@@ -71,10 +71,14 @@ func _clear_round(from: Vector2i, keep: Array) -> void:
 ## Clears riders left by an earlier case.
 func _fresh(u: Dictionary) -> void:
 	u.hp = u.max_hp
+	u.down = false
+	u.lost_ap = 0
+	(u.mini.get_node("body") as Node3D).quaternion = Quaternion.IDENTITY
 	u.glow = -1
 	u.slowed = -1
 	u.acid = -1
-	u.poison_turns = 0
+	u.poison = []
+	u.slow_hexes = 0
 	u.bleed_turns = 0
 	u.lull = false
 	u.lockdown = false
@@ -128,6 +132,13 @@ func _play(u: Dictionary, id: String, at, coins: Array) -> void:
 
 func _run() -> void:
 	await _wait(1.0)
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--covermap="):
+			await _fight(a.trim_prefix("--covermap="))
+			_cover_data_checks()
+			print("RACE DONE: %d failed" % failed)
+			get_tree().quit()
+			return
 	await _fight("plains_stones")
 	var hero: Dictionary = f.units[0]
 	var fluffy := _who("Fluffy")
@@ -158,7 +169,7 @@ func _run() -> void:
 	_check(ls.coins.size() == 2 and ls.need == 2 and ls2.need == 3, "the long shot: 0 coins needing 1 is 2 heads in a row, 1 needing 2 is 3")
 
 	# Wood elf: Mel's +1 hex per Move, and the party walks faster and spends less clock.
-	_check(f.move_hexes(mel) == Rules.MOVE_HEXES + 1 and f.move_hexes(fluffy) == Rules.MOVE_HEXES, "wood elf Mel moves %d hexes, Fluffy %d" % [f.move_hexes(mel), f.move_hexes(fluffy)])
+	_check(f.move_hexes(mel) == 4 and f.move_hexes(fluffy) == 3 and f.move_hexes(chelm) == 2, "a Move: 2, +1 a DEX point over 1, +1 wood elf: Mel (DEX 2, wood elf) %d, Fluffy (DEX 2) %d, Chelmsford (DEX 1) %d" % [f.move_hexes(mel), f.move_hexes(fluffy), f.move_hexes(chelm)])
 	_check(is_equal_approx(game.step_minutes(), Rules.STEP_MINUTES * Rules.WOOD_ELF_CLOCK), "with Mel in the party a hex costs %.2f min" % game.step_minutes())
 
 	# Claw Swipe (Fluffy): DEX attack, 2 damage, bleed 1 at the start of the foe's next 2 turns.
@@ -205,9 +216,78 @@ func _run() -> void:
 	mel.hp = mel.max_hp
 	fluffy.hp = fluffy.max_hp
 
+	await _card_checks(hero, fluffy, chelm, mel, foe, s, line[1])
 	await _hero_checks(hero, fluffy, foe, s, line[1], level)
 	await _cover_checks()
 	_done()
+
+
+## 03 and 04's card rules (Ethan, Nov 5, 2026): facing and Backstab, the slows, Shield Bash's push, stacking poison.
+func _card_checks(hero: Dictionary, fluffy: Dictionary, chelm: Dictionary, mel: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	# Facing: a foe faces whoever it last attacked or the way it last moved.
+	_clear_round(s, [])
+	_fresh(foe)
+	_place(foe, s + dv)
+	_place(mel, s)
+	Coins.forced.assign([false, false, false, false, false, false])
+	f.phase = "enemies"
+	await f._attack(foe, mel, Cards.get_card("attack", "spear"))
+	Coins.forced.clear()
+	_check(foe.facing == (d + 3) % 6, "a foe faces whoever it last attacked")
+	await f._walk(foe, [s + dv * 2])
+	_check(foe.facing == d, "and the way it last moved")
+	# Backstab: Mel in the hex behind it, +2 on the first dagger hit each turn.
+	_place(mel, s + dv)   # foe at s + 2dv faces d: behind it is s + dv
+	_check(f.behind(mel, foe), "Mel stands behind the foe")
+	var hp: int = foe.hp
+	await _play(mel, "attack", foe.cell, [true, true])
+	_check(hp - foe.hp == Races.score(mel.member, "DEX") + Rules.BACKSTAB, "Backstab: %d damage from behind (DEX %d + %d)" % [hp - foe.hp, Races.score(mel.member, "DEX"), Rules.BACKSTAB])
+	foe.facing = d   # Mel's hit doesn't turn it
+	hp = foe.hp
+	Coins.forced.assign([true, true])
+	await f.press_button()
+	Coins.forced.clear()
+	_check(hp - foe.hp == Races.score(mel.member, "DEX"), "only the first dagger hit each turn (%d)" % (hp - foe.hp))
+	# Poison Blade: every hit this turn poisons, and the poisons stack.
+	_fresh(foe)
+	await _play(mel, "poison_blade", null, [])
+	mel.ap = Rules.AP
+	f.pick_card("attack")
+	await f.click_cell(foe.cell)
+	for i in 2:
+		Coins.forced.assign([true, true])
+		await f.press_button()
+	Coins.forced.clear()
+	hp = foe.hp
+	await f._turn_starts(foe)
+	_check(foe.poison.size() == 2 and hp - foe.hp == 2 * Rules.DOT_DAMAGE, "Poison Blade: 2 hits stack, %d damage at the turn's start" % (hp - foe.hp))
+	# Slows: Frost Ray -1, Bonebreaker -2, until the foe's next turn ends; no prone.
+	_fresh(foe)
+	_clear_round(s, [])
+	_place(fluffy, s)
+	_place(foe, s + dv * 2)
+	await _play(fluffy, "frost_ray", foe.cell, [true, true, true])
+	_check(f.move_hexes(foe) == Rules.MOVE_HEXES - Rules.FROST_SLOW and foe.lost_ap == 0, "Frost Ray slows the foe to %d hexes, and doesn't knock it prone" % f.move_hexes(foe))
+	_place(chelm, s + dv)
+	await _play(chelm, "bonebreaker", foe.cell, [true, true])
+	_check(f.move_hexes(foe) == maxi(Rules.MOVE_HEXES - Rules.BONEBREAKER_SLOW, 0), "Bonebreaker slows it to %d hexes" % f.move_hexes(foe))
+	f.phase_no += 2
+	_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the slow ends after its next turn")
+	# Shield Bash: push 1 hex away; blocked behind, it stays.
+	_fresh(foe)
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(foe, s + dv)
+	await _play(hero, "shield_bash", foe.cell, [true, true, true])
+	_check(foe.cell == s + dv * 2 and foe.lost_ap == 0, "Shield Bash pushes the foe 1 hex, no stun")
+	_place(foe, s + dv)
+	_place(fluffy, s + dv * 2)
+	await _play(hero, "shield_bash", foe.cell, [true, true, true])
+	_check(foe.cell == s + dv, "with the hex behind taken, it stays put")
+	_fresh(foe)
+	_fresh(mel)
+	_fresh(fluffy)
 
 
 func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int, level: int) -> void:
@@ -437,6 +517,58 @@ func _panel_fit() -> void:
 	for r in rows.slice(0, 12) + over:
 		print("FIT %.0f of %.0f, widest %.0f of 146: %s %s %s" % [r[0], CombatHud.DETAILS_H, r[1], r[2], r[3], r[4]])
 	print("FIT %d states, %d over" % [rows.size(), over.size()])
+
+
+## The art's cover data on line pieces (art/handoff/combat_cover_data.md), on one map: `-- --racecheck --covermap=<id>`.
+## Counts what each piece gives and finds a shot through each kind.
+func _cover_data_checks() -> void:
+	var data: Dictionary = CombatMap.all()[f.map_id]
+	var pieces: Array = data.placements.filter(func(p): return p.has("cover"))
+	print("RACE cover data on %s: %d pieces (%s), %d partial and %d full cells, %d low edges" % [f.map_id, pieces.size(),
+			", ".join(pieces.map(func(p): return p.cover)), f.cover.values().count("partial"), f.cover.values().count("full"), f.edge_cover.size()])
+	var shooter := _who("Fluffy")
+	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+	_fresh(foe)
+	var found := {}
+	for p in pieces:
+		for c in p.get("cells", []):
+			var b := Vector2i(int(c[0]), int(c[1]))
+			for d in Hex.NEIGHBOURS:
+				var a: Vector2i = b - d
+				var t: Vector2i = b + d
+				if found.has(p.cover) or not (f.grid.has(a) and f.grid.has(t) and f.grid[a].kind == "open" and f.grid[t].kind == "open" and f.unit_at(a).is_empty() and f.unit_at(t).is_empty() and absf(f.grid[a].z - f.grid[t].z) < 0.01):
+					continue
+				_place(shooter, a)
+				_place(foe, t)
+				var got: String = f.cover_between(shooter, foe)
+				_check(got == ("full" if p.cover == "wall" else "partial"), "%s: a shot over its cell gets %s cover" % [p.cover, got])
+				found[p.cover] = true
+		for e in p.get("edges", []):
+			var c1 := Vector2i(int(e[0][0]), int(e[0][1]))
+			var c2 := Vector2i(int(e[1][0]), int(e[1][1]))
+			var d: Vector2i = c2 - c1
+			var a: Vector2i = c1 - d
+			var t: Vector2i = c2 + d
+			var key := "edge %s" % ("flat" if f.grid[c1].z == f.grid[c2].z else "curb")
+			# A clean case: one step, each side level, no cover on the cells, no other edge on the line.
+			if found.has(key) or not (f.grid.has(a) and f.grid.has(t) and f.grid[a].kind == "open" and f.grid[t].kind == "open" and f.unit_at(a).is_empty() and f.unit_at(t).is_empty()):
+				continue
+			if f.grid[a].z != f.grid[c1].z or f.grid[t].z != f.grid[c2].z or f.cover.has(c1) or f.cover.has(c2) or f.edge_cover.has([a, c1] if a < c1 else [c1, a]) or f.edge_cover.has([c2, t] if c2 < t else [t, c2]):
+				continue
+			var low: Vector2i = a if f.grid[c1].z <= f.grid[c2].z else t
+			var high: Vector2i = t if low == a else a
+			_place(shooter, low)
+			_place(foe, high)
+			var up: String = f.cover_between(shooter, foe)
+			_place(shooter, high)
+			_place(foe, low)
+			var down: String = f.cover_between(shooter, foe)
+			if key == "edge flat":
+				_check(up == "partial" and down == "partial", "a flat low edge: partial both ways (%s, %s)" % [up, down])
+			else:
+				_check(up != "none" and down == "none", "a terrace curb: %s from below, %s from the top" % [up, down])
+			found[key] = true
+	print("RACE cover data cases: %s" % [found.keys()])
 
 
 func _done() -> void:
