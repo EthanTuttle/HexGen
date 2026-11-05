@@ -1,6 +1,6 @@
 """Renders the hero kit assembled from descriptions: every head up close, the combos at the Look step's size, builds, and the map's sizes.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_hero_kit.py [-- faces | look | map]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_hero_kit.py [-- faces | look | map | weapons | dragons]
 Writes art/preview/hero_kit_*_vN.png.
 """
 import math
@@ -130,6 +130,48 @@ def look():
     fm.sheet(stems, "hero_kit_hair", cols=6)
 
 
+def weapons():
+    """Every weapon, cycling the races to test the fit: a shield or second weapon where it's one-handed, every third."""
+    cast = [("human", S["skin"]["human"][1], "short", H[1]), ("elf", S["skin"]["elf"][0], "long", H[3]), ("dwarf", S["skin"]["dwarf"][2], "crest", H[5]), ("halfling", S["skin"]["halfling"][3], "topknot", H[0]),
+            ("golem", S["skin"]["golem_metal"][0], None, H[0]), ("dragonborn", hb.DRAGON_TYPES["blue"], None, H[0]), ("tiefling", S["skin"]["tiefling"][1], "tail", H[0])]
+    stems = []
+    for i, weapon in enumerate(hb.GRIP_OF):
+        race, skin, hair, hc = cast[i % len(cast)]
+        off = ("shield", None, "dagger")[i % 3] if weapon in hb.ONE_HANDED else None
+        t, col = start()
+        floor(col)
+        _, n = stand(t, col, hero(race, "average", "abcd"[i % 4], hair, skin, hc, E[3] if race in ("golem", "dragonborn", "tiefling") else E[1], C[i % 6], ("light", "medium", "heavy")[i % 3], weapon, off), "w", spin=-25)
+        print("WEAPONTRIS", weapon, race, n)
+        stem = f"hero_kit_weapon_{weapon}"
+        shot(stem, Vector((0, 0, 0.85)), 3.6, 12, (560, 820))
+        stems.append(stem)
+    fm.sheet(stems, "hero_kit_weapons", cols=7)
+
+
+def dragons():
+    """The four heads close from the front and from the side, with Chelmsford's colours, then whole at the Look step's size."""
+    stems = []
+    for spin, tag in ((-30, "three"), (-90, "side"), (0, "front")):
+        for head in hb.HEADS:
+            t, col = start()
+            floor(col)
+            stand(t, col, hero("dragonborn", "broad", head, None, hb.DRAGON_TYPES["blue"], H[0], E[3], C[4], "heavy", "shortsword"), "d", spin=spin)
+            stem = f"hero_kit_dragon_{tag}_{head}"
+            shot(stem, hb.full("dragonborn", hb.head_point("dragonborn", "broad")) + Vector((0, 0, 0.02)), 1.5, 8, (460, 420))
+            stems.append(stem)
+    fm.sheet(stems, "hero_kit_dragon_heads", cols=4)
+    stems = []
+    looks = [("a", "blue", "broad", "heavy", "mace", "shield", C[4]), ("b", "red", "average", "medium", "greatsword", None, C[0]), ("c", "green", "broad", "light", "greataxe", None, C[2]), ("d", "white", "slim", "heavy", "longsword", "shield", C[1]), ("a", "black", "average", "none", "glaive", None, C[3])]
+    for head, kind, build, tier, main, off, cloth in looks:
+        t, col = start()
+        floor(col)
+        stand(t, col, hero("dragonborn", build, head, None, hb.DRAGON_TYPES[kind], H[0], E[3], cloth, tier, main, off), "d", spin=-28)
+        stem = f"hero_kit_dragon_look_{kind}"
+        shot(stem, Vector((0, 0, 0.85)), 3.2, 12, (560, 820))
+        stems.append(stem)
+    fm.sheet(stems, "hero_kit_dragon_look", cols=5)
+
+
 def on_map():
     """On a real patch: plains and forest, with enemies beside them, at 58, 30 and 18 m from the game's camera."""
     hk.empty_scene()
@@ -149,10 +191,14 @@ def on_map():
 
 
 if __name__ == "__main__":
-    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["faces", "look", "map"]
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["faces", "look", "map", "weapons", "dragons"]
     if "faces" in args:
         faces()
     if "look" in args:
         look()
     if "map" in args:
         on_map()
+    if "weapons" in args:
+        weapons()
+    if "dragons" in args:
+        dragons()

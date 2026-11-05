@@ -10,7 +10,7 @@ Separate pieces, assembled from a description (assemble()), which is what Godot 
   hero_hair_<style>                   pivot at the head's middle, for a human head; race scale in RACES
   hero_arm_upper_<kind>, hero_arm_fore_<kind>   length 1 along +Z, radius 1: bare, chain, plate, golem
   hero_hand_<kind>                    bare, gauntlet, golem
-  hero_<weapon>, hero_shield          pivot in GRIPS' terms, length along +Z
+  hero_<weapon>, hero_shield          pivot in GRIP_OF's terms, length along +Z
 
 Colours the player picks are marked in the vertex colours (see zone()), and swapped at assembly. Race shapes, heads, hair and armour looks are proposals; heights and swatches start from the v22b mockup.
 """
@@ -140,13 +140,13 @@ def legs(p, f, trousers, boot, sole):
         boots(p, foot, f["leg"] * 0.9, boot, sole)
 
 
-def trunk(p, f, light, dark, grow=1.0, top=True):
+def trunk(p, f, light, dark, grow=1.0, top=True, paint=None):
     hip, chest = f["hip"], f["chest"]
     mid = hip.lerp(chest, 0.45)
     rings = [(hip + V((0, 0, -0.03)), f["hw"] * grow, f["depth"] * 0.85 * grow), (mid, f["waist"] * grow, f["depth"] * 0.86 * grow), (chest + V((0, 0, -0.07)), f["sw"] * 0.98 * grow, f["depth"] * grow), (chest + V((0, 0, 0.02)), f["sw"] * grow, f["depth"] * 0.92 * grow)]
     if top:
         rings.append((chest + V((0, 0, 0.075)), f["sw"] * 0.5 * grow, f["depth"] * 0.55 * grow))
-    hm.torso(p, rings, hm.shaded(light, dark))
+    hm.torso(p, rings, paint or hm.shaded(light, dark))
 
 
 def tail(p, race, f):
@@ -176,11 +176,15 @@ def body(race, build):
         scaled = race == "dragonborn"
         trousers = zone("cloth", 0.55) if scaled else zone("cloth", 0.6)
         legs(p, f, trousers, "boot", "bandit_leather_dark")
-        trunk(p, f, zone("skin") if scaled else zone("cloth", 0.82), zone("skin", 0.8) if scaled else zone("cloth", 0.62))
-        if scaled:  # the paler throat and belly
-            p.box(f["hip"].lerp(f["chest"], 0.5) + V((0, -f["depth"] * 0.84, -0.09)), (f["waist"] * 1.2, 0.02, 0.26), zone("skin", 1.3))
+        if scaled:  # the paler belly, on the faces toward the front
+            pale, s_, d_ = zone("skin", 1.3), zone("skin"), zone("skin", 0.8)
+            trunk(p, f, s_, d_, paint=lambda c, n: pale if n.y < -0.62 else (s_ if n.z > 0.1 or n.y < -0.3 else d_))
+        else:
+            trunk(p, f, zone("cloth", 0.82), zone("cloth", 0.62))
     neck = [f["chest"] + V((0, 0, 0.05)), head_point(race, build) + V((0, 0.02, -f["head"] * 0.55))]
     em.limb(p, neck, [f["head"] * 0.62 * (1.2 if race == "dragonborn" else 1.0), f["head"] * 0.5], [zone("skin", 0.92)], sides=6)
+    if race == "dragonborn":  # the pale throat
+        em.limb(p, [neck[0] + V((0, -f["head"] * 0.34, 0)), neck[1] + V((0, -f["head"] * 0.3, -f["head"] * 0.1))], [f["head"] * 0.42, f["head"] * 0.32], [zone("skin", 1.3)], sides=5)
     if race in ("dragonborn", "tiefling"):
         tail(p, race, f)
     finish_scale(p, race)
@@ -398,48 +402,55 @@ def horns(p, s, head):
 
 
 def dragon(p, head):
-    """Long snout, soft jaw, big eye: a bit intimidating at first, but kind. a long, b short and round, c broad, d narrow with a crest."""
+    """A skull with a brow, then a step down to a long, blunt muzzle with its own nose, over a separate soft jaw: a bit intimidating at first, but kind. Horns sweep back. a long, b short and deep, c heavy, d slim with more spines."""
     r = RACES["dragonborn"]["head"]
-    s, side, pale = zone("skin"), zone("skin", 0.8), zone("skin", 1.3)
-    long = {"a": 1.0, "b": 0.72, "c": 0.9, "d": 1.14}[head]
-    wide = {"a": 1.0, "b": 1.0, "c": 1.2, "d": 0.84}[head]
-    tone = lambda c, n: s if n.z > -0.15 else side  # noqa: E731
+    s, side, pale, dark = zone("skin"), zone("skin", 0.8), zone("skin", 1.3), zone("skin", 0.66)
+    long = {"a": 1.0, "b": 0.74, "c": 0.92, "d": 1.12}[head]
+    wide = {"a": 1.0, "b": 1.06, "c": 1.2, "d": 0.86}[head]
+    deep = {"a": 1.0, "b": 1.14, "c": 1.16, "d": 0.88}[head]
+    tone = lambda c, n: s if n.z > -0.2 else side  # noqa: E731
     fwd = V((0, -1, 0))
-    em.loft(p, [em.section(V((0, r * 0.82, 0.0)), r * 0.62, r * 0.62, along=fwd, sides=8),
-                em.section(V((0, r * 0.1, r * 0.1)), r * 0.98 * wide, r * 0.88, along=fwd, sides=8),
-                em.section(V((0, -r * 0.55, r * 0.02)), r * 0.82 * wide, r * 0.72, along=fwd, sides=8),
-                em.section(V((0, -r * 1.25 * long, -r * 0.2)), r * 0.54 * wide, r * 0.38, along=fwd, sides=8),
-                em.section(V((0, -r * 1.95 * long, -r * 0.3)), r * 0.42 * wide, r * 0.26, along=fwd, sides=8),
-                [V((0, -r * 2.12 * long, -r * 0.32))]], tone)
-    # The jaw: paler, below, and a dark line where it meets.
-    em.loft(p, [em.section(V((0, -r * 0.42, -r * 0.62)), r * 0.68 * wide, r * 0.2, along=fwd, sides=6),
-                em.section(V((0, -r * 1.25 * long, -r * 0.62)), r * 0.42 * wide, r * 0.13, along=fwd, sides=6),
-                [V((0, -r * 1.8 * long, -r * 0.56))]], lambda c, n: pale if n.z < 0.5 else zone("skin", 0.92))
+    em.loft(p, [em.section(V((0, r * 0.8, r * 0.02)), r * 0.6, r * 0.6, along=fwd, sides=8),
+                em.section(V((0, r * 0.12, r * 0.14)), r * 0.98 * wide, r * 0.84, along=fwd, sides=8),
+                em.section(V((0, -r * 0.48, r * 0.16)), r * 0.86 * wide, r * 0.68, along=fwd, sides=8),
+                em.section(V((0, -r * 0.74, -r * 0.1)), r * 0.58 * wide, r * 0.44 * deep, along=fwd, sides=8),
+                em.section(V((0, -r * 1.4 * long, -r * 0.2)), r * 0.5 * wide, r * 0.34 * deep, along=fwd, sides=8),
+                em.section(V((0, -r * 1.92 * long, -r * 0.16)), r * 0.54 * wide, r * 0.36 * deep, along=fwd, sides=8),
+                em.section(V((0, -r * 2.18 * long, -r * 0.2)), r * 0.38 * wide, r * 0.22 * deep, along=fwd, sides=8)], tone)
+    # The jaw, separate, blunt and paler.
+    jaw = -r * (0.56 + 0.1 * (deep - 1))
+    em.loft(p, [em.section(V((0, -r * 0.32, jaw)), r * 0.64 * wide, r * 0.24, along=fwd, sides=6),
+                em.section(V((0, -r * 1.25 * long, jaw - r * 0.02)), r * 0.44 * wide, r * 0.17, along=fwd, sides=6),
+                em.section(V((0, -r * 1.86 * long, jaw + r * 0.03)), r * 0.42 * wide, r * 0.15, along=fwd, sides=6)], lambda c, n: pale if n.z < 0.5 else zone("skin", 0.92))
     for x in SIDE:
-        # a soft smile along the jaw, and a tooth or two
-        em.limb(p, [V((x * r * 0.75 * wide, -r * 0.42, -r * 0.4)), V((x * r * 0.5 * wide, -r * 1.2 * long, -r * 0.48)), V((x * r * 0.34 * wide, -r * 1.85 * long, -r * 0.5))], [r * 0.035] * 3, ["hero_mouth"], sides=4)
-        vr.spike(p, V((x * r * 0.42 * wide, -r * 1.5 * long, -r * 0.46)), V((x * r * 0.42 * wide, -r * 1.5 * long, -r * 0.68)), r * 0.05, "hero_tooth", segments=3)
-        p.box(V((x * r * 0.2 * wide, -r * 2.0 * long, -r * 0.2)), (r * 0.09, r * 0.09, r * 0.05), "hero_pupil")
-        # big eyes, on the sides of the front
-        at = V((x * r * 0.6 * wide, -r * 0.62, r * 0.26))
-        p.blob(at, r * 0.27, "hero_eye_white", squash=1.02)
-        plate(p, at + V((0, -r * 0.28, 0)), r * 0.34, r * 0.38, zone("eyes"))
-        plate(p, at + V((-x * r * 0.04, -r * 0.3, 0)), r * 0.15, r * 0.24, "hero_pupil")
-        em.limb(p, [V((x * r * 0.42 * wide, -r * 0.85, r * 0.42)), V((x * r * 0.95 * wide, -r * 0.42, r * 0.62))], [r * 0.13, r * 0.17], [zone("skin", 0.86)], sides=5)
-        # horns back from the top of the head
-        b = V((x * r * 0.5, r * 0.12, r * 0.72))
+        # the mouth's line, turned up at the back, and a tooth
+        em.limb(p, [V((x * r * 0.62 * wide, -r * 0.5, -r * 0.2)), V((x * r * 0.5 * wide, -r * 1.2 * long, jaw + r * 0.17)), V((x * r * 0.45 * wide, -r * 1.95 * long, jaw + r * 0.2))], [r * 0.032] * 3, ["hero_mouth"], sides=3)
+        vr.spike(p, V((x * r * 0.42 * wide, -r * 1.62 * long, jaw + r * 0.2)), V((x * r * 0.42 * wide, -r * 1.62 * long, jaw + r * 0.02)), r * 0.05, "hero_tooth", segments=3)
+        # the nose: a bump and a nostril
+        p.blob(V((x * r * 0.26 * wide, -r * 2.0 * long, r * (0.1 * deep))), r * 0.15, side, squash=0.85)
+        plate(p, V((x * r * 0.24 * wide, -r * 2.2 * long, -r * 0.14)), r * 0.09, r * 0.06, "hero_pupil")
+        # big eyes under a brow
+        at = V((x * r * 0.62 * wide, -r * 0.56, r * 0.3))
+        p.blob(at, r * 0.25, "hero_eye_white", squash=1.02)
+        plate(p, at + V((-x * r * 0.02, -r * 0.255, 0)), r * 0.31, r * 0.36, zone("eyes"))
+        plate(p, at + V((-x * r * 0.05, -r * 0.27, 0)), r * 0.14, r * 0.23, "hero_pupil")
+        em.limb(p, [V((x * r * 0.3 * wide, -r * 0.8, r * 0.46)), V((x * r * 0.92 * wide, -r * 0.42, r * 0.66))], [r * 0.1, r * 0.17], [dark], sides=5)
+        # a cheek fin behind the jaw
+        vr.spike(p, V((x * r * 0.74 * wide, r * 0.02, -r * 0.34)), V((x * r * 1.08 * wide, r * 0.62, -r * 0.42)), r * 0.2, pale, segments=4)
+        # horns sweep back from the top of the head
+        b = V((x * r * 0.5, r * 0.18, r * 0.72))
         if head == "a":
-            pts = [b, b + V((x * r * 0.32, r * 0.9, r * 0.4)), b + V((x * r * 0.46, r * 1.95, r * 0.42))]
+            pts = [b, b + V((x * r * 0.3, r * 0.88, r * 0.34)), b + V((x * r * 0.44, r * 1.95, r * 0.32))]
         elif head == "b":
-            pts = [b, b + V((x * r * 0.42, r * 0.5, r * 0.36)), b + V((x * r * 0.62, r * 1.05, r * 0.12))]
+            pts = [b, b + V((x * r * 0.42, r * 0.6, r * 0.32)), b + V((x * r * 0.56, r * 1.15, -r * 0.08))]
         elif head == "c":
-            pts = [b, b + V((x * r * 0.75, r * 0.3, r * 0.5)), b + V((x * r * 1.1, r * 0.75, r * 1.08))]
+            pts = [b, b + V((x * r * 0.5, r * 0.75, r * 0.2)), b + V((x * r * 0.7, r * 1.65, r * 0.46))]
         else:
-            pts = [b, b + V((x * r * 0.14, r * 1.05, r * 0.52)), b + V((x * r * 0.14, r * 2.2, r * 0.72))]
-        em.limb(p, pts, [r * 0.21, r * 0.15, 0], ["hero_horn"], sides=5)
+            pts = [b, b + V((x * r * 0.12, r * 1.05, r * 0.42)), b + V((x * r * 0.14, r * 2.3, r * 0.5))]
+        em.limb(p, pts, [r * (0.26 if head == "c" else 0.2), r * 0.15, 0], ["hero_horn"], sides=5)
     for k in range(5 if head == "d" else 3):  # spines down the back of the head
-        at = V((0, r * (0.75 + k * 0.08), r * (0.72 - k * 0.42)))
-        vr.spike(p, at, at + V((0, r * 0.52, r * 0.14)), r * 0.2, zone("skin", 0.74), segments=4)
+        at = V((0, r * (0.72 + k * 0.08), r * (0.66 - k * 0.38)))
+        vr.spike(p, at, at + V((0, r * 0.5, r * 0.14)), r * 0.2, dark, segments=4)
 
 
 def golem_face(p, head):
@@ -580,6 +591,70 @@ def axe_bit(p, at, side, reach, tall, paint="steel"):
                 [at + x * reach + z * tall + V((0, -0.005, 0)), at + x * reach + z * tall + V((0, 0.005, 0)), at + x * reach - z * tall + V((0, 0.005, 0)), at + x * reach - z * tall + V((0, -0.005, 0))]], lambda c, n: paint)
 
 
+def more_weapons():
+    made = []
+    p = blade_piece("rapier", 0.82, 0.016, grip=0.13, guard=0.05)  # thin, with a cup at the hand
+    p.blob(V((0, 0, 0.055)), 0.052, "steel_dark", squash=0.62)
+    made.append(p)
+    # Scimitar: pivot at the hand, a single curved edge.
+    p = hk.Piece("hero_scimitar")
+    em.limb(p, [V((0, 0, -0.13)), V((0, 0, 0.06))], [0.018, 0.018], ["bandit_leather_dark"], sides=4)
+    em.limb(p, [V((-0.08, 0, 0.065)), V((0.08, 0, 0.065))], [0.018, 0.018], ["hero_gold"], sides=4)
+    bend = ((0.07, 0.0, 0.03), (0.25, 0.012, 0.05), (0.42, 0.05, 0.062), (0.58, 0.115, 0.05))
+    rows = [[V((x - w, -0.012, z)), V((x - w, 0.012, z)), V((x + w, 0.012, z)), V((x + w, -0.012, z))] for z, x, w in bend]
+    em.loft(p, rows + [[V((0.19, 0, 0.68))]], lambda c, n: "steel" if n.x > 0 else "steel_dark")
+    p.blob(V((0, 0, -0.145)), 0.024, "hero_gold")
+    made.append(p)
+    made.append(blade_piece("dagger", 0.3, 0.036, grip=0.1, guard=0.065))
+    # Glaive: pivot at the back hand, a long haft and one long curved blade.
+    p = hk.Piece("hero_glaive")
+    em.limb(p, [V((0, 0, -0.32)), V((0, 0, 1.0))], [0.018, 0.016], ["bow_wood"], sides=4)
+    bend = ((0.92, 0.0, 0.03), (1.08, 0.015, 0.058), (1.24, 0.06, 0.056))
+    rows = [[V((x - w, -0.012, z)), V((x - w, 0.012, z)), V((x + w, 0.012, z)), V((x + w, -0.012, z))] for z, x, w in bend]
+    em.loft(p, rows + [[V((0.14, 0, 1.42))]], lambda c, n: "steel" if n.x > 0 else "steel_dark")
+    p.cylinder(V((0, 0, 0)), 0.026, 0.03, "hero_iron", segments=5, z=0.9)
+    made.append(p)
+    # Staff: pivot at its middle, iron at both ends.
+    p = hk.Piece("hero_staff")
+    em.limb(p, [V((0, 0, -0.72)), V((0, 0, 0.72))], [0.019, 0.019], ["bow_wood"], sides=5)
+    for z in (-0.72, 0.68):
+        p.cylinder(V((0, 0, 0)), 0.026, 0.05, "hero_iron", segments=5, z=z)
+    made.append(p)
+    # Wand: pivot at the hand.
+    p = hk.Piece("hero_wand")
+    em.limb(p, [V((0, 0, -0.07)), V((0, 0, 0.3))], [0.014, 0.007], ["bandit_leather_dark"], sides=4)
+    p.blob(V((0, 0, 0.31)), 0.02, "hero_gold")
+    p.cylinder(V((0, 0, 0)), 0.018, 0.024, "hero_gold", segments=5, z=-0.02)
+    made.append(p)
+    # Crossbow: pivot at the stock's butt, +Z forward, +X across.
+    p = hk.Piece("hero_crossbow")
+    em.limb(p, [V((0, 0, 0)), V((0, 0, 0.5))], [0.028, 0.02], ["bow_wood"], sides=4)
+    pts = [V((x, 0, 0.5 - 0.1 * abs(x) / 0.27)) for x in (-0.27, -0.13, 0, 0.13, 0.27)]
+    em.limb(p, pts, [0.009, 0.015, 0.018, 0.015, 0.009], ["hero_iron"], sides=4)
+    em.limb(p, [pts[0], V((0, 0, 0.26)), pts[-1]], [0.003, 0.003, 0.003], ["hero_string"], sides=3)
+    em.limb(p, [V((0, -0.024, 0.26)), V((0, -0.024, 0.56))], [0.007, 0.004], ["hero_iron"], sides=3)
+    made.append(p)
+    # Fist weapons: one per hand, size 1 for the hand's radius, +Z toward the knuckles, the wrist behind.
+    p = hk.Piece("hero_gauntlets")
+    p.blob(V((0, 0, 0.05)), 1.14, "steel", squash=1.0)
+    em.limb(p, [V((0, 0, -0.5)), V((0, 0, -1.7))], [1.08, 1.2], ["steel_dark"], sides=6)
+    p.box(V((0, 0, 0.62)), (1.6, 1.3, 0.42), "steel_dark")
+    made.append(p)
+    p = hk.Piece("hero_brass_knuckles")
+    p.box(V((0, 0, 0.72)), (2.1, 1.0, 0.56), "hero_gold")
+    for x in (-0.68, 0, 0.68):
+        vr.spike(p, V((x, 0, 1.2)), V((x, 0, 1.75)), 0.28, "hero_gold", segments=4)
+    made.append(p)
+    p = hk.Piece("hero_wraps")
+    hk.PALETTE["hero_wrap"] = "#E6DCC8"
+    hk.PALETTE["hero_wrap_shade"] = "#BFB39C"
+    p.blob(V((0, 0, 0.05)), 1.12, "hero_wrap")
+    for z, tone in ((-0.55, "hero_wrap_shade"), (-1.15, "hero_wrap"), (-1.75, "hero_wrap_shade")):
+        em.limb(p, [V((0, 0, z)), V((0, 0, z - 0.5))], [1.08, 1.08], [tone], sides=6)
+    made.append(p)
+    return made
+
+
 def weapon_pieces():
     made = [blade_piece("longsword", 0.72, 0.042), blade_piece("shortsword", 0.46, 0.046)]
     # Greatsword: pivot on the ground, +Z up, its grip at length 1 (the assembler scales it to the hands).
@@ -629,6 +704,7 @@ def weapon_pieces():
         em.limb(p, pts, [0.012, 0.018, 0.022, 0.022, 0.018, 0.012], ["bow_wood"], sides=4)
         em.limb(p, [pts[0], pts[-1]], [0.004, 0.004], ["hero_string"], sides=3)
         made.append(p)
+    made += more_weapons()
     # Shield: pivot at the forearm, facing -Y.
     p = hk.Piece("hero_shield")
     p.log(V((0, 0.012, 0)), 0.2, 0.022, "hero_gold", spin=math.pi / 2, z=0.0, segments=10)
@@ -638,10 +714,11 @@ def weapon_pieces():
     return made
 
 
-# Which grip each weapon uses. Left out for now, and what stands in: see FALLBACK.
-GRIP_OF = {"longsword": "forward", "shortsword": "forward", "mace": "raised", "battleaxe": "raised", "greatsword": "planted", "warhammer": "planted", "greataxe": "shoulder", "spear": "upright", "halberd": "upright", "shortbow": "bow", "longbow": "bow"}
-FALLBACK = {"rapier": "shortsword", "scimitar": "shortsword", "dagger": "shortsword", "glaive": "halberd", "staff": "spear", "crossbow": "shortbow", "wand": "shortsword", "gauntlets": "mace", "brass knuckles": "mace", "wraps": "mace"}
-ONE_HANDED = ("longsword", "shortsword", "mace", "battleaxe")
+# Which grip each weapon uses (design/07's Pose library, the nearest each can be without crouching or spinning the body).
+GRIP_OF = {"longsword": "forward", "shortsword": "forward", "mace": "raised", "battleaxe": "raised", "greatsword": "planted", "warhammer": "planted", "greataxe": "shoulder", "spear": "upright", "halberd": "upright", "shortbow": "bow", "longbow": "bow",
+           "rapier": "fencer", "scimitar": "slash", "dagger": "reverse", "glaive": "sweep", "staff": "across", "wand": "point", "crossbow": "aim", "gauntlets": "guard", "brass_knuckles": "haymaker", "wraps": "stance"}
+ONE_HANDED = ("longsword", "shortsword", "mace", "battleaxe", "rapier", "scimitar", "dagger", "wand", "spear", "staff")
+FIST = ("gauntlets", "brass_knuckles", "wraps")
 
 
 def aimed(at, along, out=V((1, 0, 0))):
@@ -662,7 +739,7 @@ def grip_layout(race, build, weapon, offhand):
     f = frame(race, build)
     chest, w = f["chest"], f["sw"]
     wd = BUILDS[build]["sw"]
-    grip = GRIP_OF[weapon]
+    grip = "upright" if weapon == "staff" and offhand else GRIP_OF[weapon]  # one-handed, planted
     rest = chest + V((-w * 1.25, -0.06, -0.3))
     out = []
     left = rest
@@ -686,7 +763,44 @@ def grip_layout(race, build, weapon, offhand):
         left = rest
     elif grip == "upright":
         right = chest + V((w * 1.55, -0.14, -0.05))
-        out.append((f"hero_{weapon}", aimed(V((right.x, right.y, Z0)), V((0, 0, 1)), V((0, -1, 0)))))
+        out.append((f"hero_{weapon}", aimed(V((right.x, right.y, Z0 + (0.73 if weapon == "staff" else 0.0))), V((0, 0, 1)), V((0, -1, 0)))))
+    elif grip == "fencer":  # en garde: arm out, the other raised behind
+        right = chest + V((w * 1.2, -0.42, -0.02))
+        left = chest + V((-w * 1.5, 0.2, 0.16))
+        out.append((f"hero_{weapon}", aimed(right, V((0.03, -1, 0.06)))))
+    elif grip == "slash":  # out to the side, the blade swinging round
+        right = chest + V((w * 1.8, -0.14, 0.06))
+        out.append((f"hero_{weapon}", aimed(right, V((0.8, -0.3, 0.55)), V((0.2, -1, 0.2)))))
+    elif grip == "reverse":  # low, the blade down and forward
+        right = chest + V((w * 1.2, -0.22, -0.3))
+        out.append((f"hero_{weapon}", aimed(right, V((0.1, -0.4, -1)))))
+    elif grip == "sweep":  # across the body, the blade out and up
+        right = chest + V((w * 1.15, -0.12, -0.22))
+        left = chest + V((-w * 0.55, -0.34, 0.04))
+        out.append((f"hero_{weapon}", aimed(right, left - right, V((0, -0.5, 1)))))
+    elif grip == "across":  # a guard, both hands
+        mid = chest + V((0, -0.26, -0.1))
+        d = V((1, 0, 0.24)).normalized()
+        right, left = mid + d * 0.24, mid - d * 0.24
+        out.append((f"hero_{weapon}", aimed(mid, d, V((0, -1, 0)))))
+    elif grip == "point":  # arm out, aimed at the foe
+        right = chest + V((w * 1.2, -0.42, 0.04))
+        out.append((f"hero_{weapon}", aimed(right, V((0.05, -1, 0.1)))))
+    elif grip == "aim":  # the stock at the shoulder
+        butt = chest + V((w * 0.68, -0.13, 0.04))
+        d = V((-0.08, -1, 0.02)).normalized()
+        right = butt + d * 0.2 + V((0.02, 0, -0.045))
+        left = butt + d * 0.46 + V((0, 0, -0.045))
+        out.append((f"hero_{weapon}", aimed(butt, d)))
+    elif grip == "guard":  # fists at the face
+        right = chest + V((w * 0.68, -0.3, 0.05))
+        left = chest + V((-w * 0.68, -0.25, 0.0))
+    elif grip == "haymaker":  # one fist pulled back
+        right = chest + V((w * 1.15, 0.2, 0.04))
+        left = chest + V((-w * 0.7, -0.34, 0.03))
+    elif grip == "stance":  # palm forward, the other at the hip
+        right = chest + V((w * 0.85, -0.42, 0.06))
+        left = chest + V((-w * 1.12, -0.06, -0.3))
     else:  # bow: held out to the left, the right hand drawing at the cheek
         left = chest + V((-w * 1.1, -0.42, 0.06))
         right = chest + V((w * 0.42, -0.18, 0.14))
@@ -733,6 +847,8 @@ def layout(desc):
         pieces.append((f"hero_arm_fore_{kind}", to_full @ limb_matrix(elbow, hand, r * 0.86)))
         size = r * 0.98
         pieces.append((f"hero_hand_{fist}", to_full @ Matrix.Translation(hand) @ Matrix.Diagonal((size, size, size, 1))))
+        if desc["main"] in FIST:
+            pieces.append((f"hero_{desc['main']}", to_full @ aimed(hand, hand - elbow, V((0, 1, 0))) @ Matrix.Diagonal((size, size, size, 1))))
     for name, m in held:
         pieces.append((name, to_full @ m))
     return pieces
