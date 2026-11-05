@@ -335,7 +335,7 @@ static func _tile_trails(terrains: Dictionary, q: int, r: int, edges: Array, out
 
 ## A region's far tile: [corner k, x, y, spin] of what its trail ends at, or null.
 static func _trail_finish(tile: Dictionary):
-	if tile.edges.size() != 1 or LANDMARK_KEEP.has(tile.name) or tile.out == null:
+	if tile.edges.size() != 1 or LANDMARK_KEEP.has(tile.name) or tile.out == null or not FINISH.has(tile.look):   # plain swamp has no landmark, so no finish of its own
 		return null
 	var k := _end_corner(tile.q, tile.r, tile.out)
 	var p := Water.corner(k) * (END_R / Water.R)

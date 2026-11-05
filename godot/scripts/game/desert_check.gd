@@ -8,6 +8,7 @@ extends Node
 var game: Game
 var shots := false
 var failed := 0
+var _lanes_checked := false
 
 
 func _ready() -> void:
@@ -324,6 +325,7 @@ func _rock_rays(map: MapBoard, g: Dictionary, body: StaticBody3D) -> void:
 	_check(unjoined == 0, "every lane meets the land at its top and the floor at its foot (%d of %d don't)" % [unjoined, c.entrances.size()])
 	_check(off_lane < 0.12, "the route walks on the lane's path, within %.3f m" % off_lane)
 	_check(steep < 28.0, "the steepest lane is %.1f degrees; the minis' limit is 28" % steep)
+	_check_every_lane()
 	var over := 0
 	var samples := 0
 	var worst := 0.0
@@ -804,6 +806,27 @@ static func _differs(a: Image, b: Image) -> int:
 			if absf(p.r - q.r) + absf(p.g - q.g) + absf(p.b - q.b) > 0.1:
 				n += 1
 	return n
+
+
+## A lane's slope comes from where its tile's hash puts the junction and bend, so one region can't speak for all: every edge of every tile within 30 of the start, plain and as the landmark.
+func _check_every_lane() -> void:
+	if _lanes_checked:
+		return
+	_lanes_checked = true
+	var worst := 0.0
+	var count := 0
+	for q in range(-30, 31):
+		for r in range(-30, 31):
+			var t := Vector2i(q, r)
+			for i in 6:
+				for lm: Array in [[Vector2i(999, 999), 0], [t, (q + r + i) % 6 if q + r + i >= 0 else 0]]:
+					var line := Canyon.ramp_line(t, i, lm[0], lm[1])
+					count += 1
+					for k in range(1, line.size()):
+						var d := Vector2(line[k].x, line[k].y).distance_to(Vector2(line[k - 1].x, line[k - 1].y))
+						if d > 1e-4:
+							worst = maxf(worst, rad_to_deg(atan2(absf(line[k].z - line[k - 1].z), d)))
+	_check(worst < 28.0, "the steepest of %d possible lanes is %.2f degrees; the minis' limit is 28" % [count, worst])
 
 
 ## A canyon generated off the main thread while the game runs, the party standing on one of its tiles, then tiles added.

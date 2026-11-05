@@ -172,34 +172,34 @@ func _kinds() -> void:
 	_check(not game.encounters.has(at) and not game.busy, "Carry on closes it, and it's gone (PLACEHOLDER)")
 
 
-## Walking and spotting, by day and at night.
+## Walking and spotting, by day and at night: encounters beside the way, which appear as they come within sight.
 func _clip() -> void:
-	_day()
-	game.rig.frame(game.party_node.centre(), 30.0, 50.0)
-	game.rig.player_moved = false
-	var rows := Rules.ENCOUNTER_TABLE
-	var spots := [[3, 3], [4, 0], [5, 2], [6, 1], [7, 4], [8, 3]]
-	for s: Array in spots:
-		var t := _ring_tile(s[0])
-		if t != Vector2i(999, 999):
-			game.add_encounter(t, false, [], rows[s[1]])
-	await _wait(1.0)
-	for pass_ in 2:
-		if pass_ == 1:
+	game.hud.visible = true
+	for leg in 2:
+		if leg == 0:
+			_day()
+		else:
 			_night()
-			await _wait(1.5)
-		for step in 2:
-			var goal := _far(8)
+		await _wait(0.5)
+		var goal := _far(10)
+		var way := game.path_to(goal)
+		var rows := [3, 4, 2, 0]
+		for k in rows.size():
+			var at: Vector2i = way[mini(3 + 2 * k, way.size() - 1)]
+			for n: Vector2i in Hex.NEIGHBOURS:
+				if game.map.terrains.has(at + n) and not way.has(at + n) and game.map.can_visit(at + n) and not game.encounters.has(at + n) and not Variants.LANDMARKS.has(game.map.terrains[at + n]):
+					game.add_encounter(at + n, false, [], Rules.ENCOUNTER_TABLE[rows[k]])
+					break
+		game.rig.frame(game.party_node.centre(), 24.0, 50.0)
+		game.rig.player_moved = false
+		await _wait(1.0)
+		for step in 3 if leg == 0 else 4:
 			game.pick(goal)
 			await _wait(1.2)
 			game.walk_to(goal)
 			await _wait(0.1)
-			while game.busy and not game.hud.encounter_open():
+			while game.busy:
 				await get_tree().process_frame
-			if game.hud.encounter_open():
-				await _wait(0.8)
-				if game.encounters.has(game.party_tile) and game.encounters[game.party_tile].entry.kind != "fight":
-					game.choose_event_done()
-				else:
-					game.choose_carry_on()
 			await _wait(0.8)
+		game.encounters.clear()
+		await _wait(0.2)

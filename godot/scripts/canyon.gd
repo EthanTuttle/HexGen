@@ -271,7 +271,15 @@ static func junction(t: Vector2i, landmark: Vector2i, turn: int) -> Vector2:
 static func line_to_junction(t: Vector2i, i: int, landmark: Vector2i, turn: int) -> PackedVector2Array:
 	var n := Water.normal(i)
 	var side := Vector2(-n.y, n.x)
-	return PackedVector2Array([n * Water.A, n * 2.1 + side * ((_h(t, i, 76) - 0.5) * 1.7), junction(t, landmark, turn)])
+	var start := n * Water.A
+	var end := junction(t, landmark, turn)
+	var off := (_h(t, i, 76) - 0.5) * 1.7
+	var need := -FLOOR / tan(deg_to_rad(RAMP_STEEP))
+	var bend := n * 2.1 + side * off
+	while start.distance_to(bend) + bend.distance_to(end) < need:   # too short to reach the floor within the minis' limit: bend it wider until it's long enough
+		off += 0.02 if off >= 0.0 else -0.02
+		bend = n * 2.1 + side * off
+	return PackedVector2Array([start, bend, end])
 
 
 ## edge -> its corridor, for tile t's open edges.

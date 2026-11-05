@@ -65,6 +65,7 @@ func _run() -> void:
 	await _wait(1.0)
 	map = game.map
 	game.debug_auto_cross = true
+	_check_every_look()
 	_check_tiles()
 	_check_edges()
 	_check_kit()
@@ -79,6 +80,21 @@ func _run() -> void:
 	print("SWAMP DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
+
+
+## Every look that can be a plain tile, at many spots, with a trail through it, starting on it and none: no spot should be able to break it.
+func _check_every_look() -> void:
+	var made := 0
+	var bad := 0
+	for look: String in ["swamp", "bog", "wisp_marsh", "rot_swamp", "smugglers_bayou"]:
+		for q in range(-6, 7, 3):
+			for r in range(-6, 7, 3):
+				for row: Array in [[[], null], [[2], 2], [[1, 4], 4]]:
+					var tile := SwampLands.marsh_tile({Vector2i(q, r): look}, q, r, row[0], row[1])
+					made += 1
+					if tile.finish != null and not SwampLands.FINISH.has(look):
+						bad += 1
+	_check(bad == 0, "%d plain tiles worked out with trail edges and without, on every look (a tier 0 swamp with a trail has no finish)" % made)
 
 
 func _check_tiles() -> void:
