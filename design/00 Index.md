@@ -36,7 +36,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 ## Master open questions
 
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
-- [ ] New: Buried city direction (Ethan, Nov 4): rough studies of shifting sand levels, sandfalls and cut-away dunes; nothing chosen
+- [ ] New: Buried city: how the party's routes and height follow the sand level (see Presentation)
 - [ ] New: ruins are hex-column land (Ethan, Nov 4): round 2 paused while he thinks more (claude/art-ruins-2, not merged); who built them (left open), how Dunfaire Tower sits on it (decide with the starting tiles)
 - [x] ~~Path pass so hexes don't show~~ (cancelled Nov 3: the game is about hexes, so hexes showing in paths is fine; fix single things as they bother Ethan)
 - [x] ~~Recheck Scholars' Town tiles against its combat maps~~ (done Nov 3: see Presentation → Region variant looks)
