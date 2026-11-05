@@ -180,15 +180,15 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
 | Greataxe | Two-handed | Carried on the shoulder |
 | Mace | One-handed | Raised high (Chelmsford, minis v2a) |
 | Warhammer | Two-handed | Head resting on the ground, a resting pose rather than a swing (grip corrected Oct 27, 2026: warhammers are two-handed) |
-| Spear | One-handed | Javelin wind-up |
+| Spear | One-handed | Upright at attention, like the halberd (changed Nov 5, 2026 by Ethan from a javelin wind-up) |
 | Spear | Two-handed | Braced pike, point forward |
 | Halberd | Two-handed | Upright at attention |
 | Glaive | Two-handed | Mid-sweep |
 | Staff | One-handed | Staff planted, free hand raised as if casting |
 | Staff | Two-handed | Quarterstaff guard, held across the body |
 | Wand | One-handed | Arm extended, wand pointed at the foe |
-| Shortbow | Two-handed | Nocking quickly, arrow half-drawn |
-| Longbow | Two-handed | Full draw, steady aim |
+| Shortbow | Two-handed | Drawn to the cheek, arrow nocked, body side-on so the bow aims the way the mini faces; one pose shared with the longbow (changed Nov 5, 2026 by Ethan from nocking, half-drawn) |
+| Longbow | Two-handed | The same drawn pose as the shortbow (Nov 5, 2026) |
 | Crossbow | Two-handed | Stock at the shoulder, aiming |
 | Gauntlets | Both hands (fist) | High guard, fists at the face |
 | Brass knuckles | Both hands (fist) | Haymaker wind-up, one fist pulled back |
@@ -196,9 +196,11 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
 
 | Offhand arm variant | Pose |
 | --- | --- |
-| Shield | Raised in front, across the chest (as in minis v2a) |
+| Shield | Held low at the side, facing forward (changed Nov 5, 2026 by Ethan from raised across the chest, as in minis v2a) |
 | Second weapon | Held back, ready, behind the main weapon |
 | Empty hand | No variant: the base pose's free hand is used |
+
+**Legs and anatomy** (Ethan, Nov 5, 2026): each weapon pose sets the legs too (a lunge, crouch or wide stance, staying inside the cell), not only the arms, and every pose must bend the way real elbows, shoulders and torsos do (a wind-up twists the torso, the elbow trails the fist). **Staff casting pose** (Ethan, Nov 5, 2026): a caster class (Wizard, Cleric, Bard) holding a staff with an empty off hand shows the planted staff and raised casting hand, and still counts as two-handed for damage ([Weapons & gear](04 Weapons & gear.md) → Weapon rules); martials show the quarterstaff guard.
 
 Two-handed grips and fist weapons use no offhand variant. A shield or second weapon replaces the base pose's free hand, so a staff held one-handed with a shield loses its raised casting hand.
 
