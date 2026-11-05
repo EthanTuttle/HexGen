@@ -1,15 +1,15 @@
-# Starting tiles kit hand-off (tiles_v86)
+# Starting tiles kit hand-off (tiles_v87)
 
 The six starting tiles of the first playable, one per background. **Not yet approved; not yet tried in Godot.** Looks: `design/07` → Starting tiles.
 
-- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v86.blend`.
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v87.blend`.
 - **Code:** `art/scripts/start_tiles.py`. Its first section is plain Python to copy: `route`, `ring_walk`, `stop`, `ground`, `rime_height`. **Test:** `Blender -b --factory-startup --python art/scripts/test_start_tiles.py`. **Previews:** `art/scripts/render_start_tiles.py`, `art/preview/start_kit_*_v1.png`, `start_kit_sheet_v1.png`.
 
 | Background | Tile name | Terrain | Pieces | Triangles with slab |
 | --- | --- | --- | --- | --- |
 | Soldier | `dunfairetower` | ruins | `_centre`, `_plinth`, `_edge_same`, `_edge_other` | 2,598 |
 | Acolyte | `eastrimechapel` | hills | `_centre`, `_edge_same`, `_edge_other` | 3,752 |
-| Criminal | `montotown` | river | `_centre` only, plus the engine's water | 3,280 + water, at most 1,072: 4,352 |
+| Criminal | `montotown` | river | `_centre` only, plus the engine's water | 2,096 + water, at most 1,072: 3,168 |
 | Sage | `sternbrunnspire` | desert | `_centre`, `_edge_same`, `_edge_other` | 2,376, plus the engine's sand |
 | Folk Hero | `oaklantern` | forest | `_centre`, `_edge_same`, `_edge_other` | 1,812 |
 | Noble | `weizenhof` | farmland | `_centre`, `_edge_same`, `_edge_other` | 2,576 |
@@ -40,24 +40,41 @@ From `start_tiles.py`; there's no path data in the glb, as for water.
 | `stop(name, same)` | Where the party stops: 2.05 out on edge 5's spoke |
 | `ground(name, x, y, same)` | The walking height. `same[i]`: does edge `i`'s neighbour share the terrain? It only matters on the hills |
 
-The ring's radius is 2.9. On Monto Town the ring and spurs are a boardwalk at 0.3, with a ramp down to z = 0 at each edge's midpoint.
+The ring's radius is 2.9. Monto Town has no ring: see below.
 
 The party rests at the stop. Going in isn't walked: it's the game's Rest card, or the Enter card at Monto Town and The Oak & Lantern (`design/06`).
 
 ## Monto Town's water
 
-A river tile's water depends on its neighbours: alone, it's a pond in the middle (radius about 1.9), and it changes as tiles are placed. So the town doesn't rely on any shape: houses stand on stilts, and the boardwalk ring crosses whatever's there, so shores can always be crossed. The arched footbridge goes from the stop's side to the town's deck.
+**Pending Ethan's pick:** `art/preview/monto_options_sheet_v1.png` shows this beside two alternatives that aren't in the kit.
 
-Check: rafts. `raft_can_enter` lets a raft in, and its route runs under the boardwalk. Whether it should stop here is the game's call.
+One straight bridge from edge 5's midpoint through the middle to edge 2's, level at 0.3 with a ramp at each end, and two short boardwalks under the stilt houses. `monto_line(i, j)` walks it: edges 5 and 2 are its ends, and the other four come straight in by a side way to where it's nearest, 1.95 from the middle. `monto_needs_check(i, water, seed)` says when a side way crosses water: that's the usual Athletics check or raft, or walking round (design/02).
+
+A river tile's water depends on its neighbours, so across all 64 layouts:
+
+| Water edges | Layouts | All land edges free of a check | A bridge end over water |
+| --- | --- | --- | --- |
+| 0 (alone, a pond) | 1 | 1 | 0 |
+| 1 | 6 | 2 | 2 |
+| 2 | 15 | 6 | 9 |
+| 3 | 20 | 6 | 16 |
+| 4 | 15 | 5 | 14 |
+| 5 | 6 | 2 | 6 |
+| 6 | 1 | 1 | 1 |
+| **All** | **64** | **23** | **48** |
+
+**So it doesn't handle every pattern.** In 41 layouts at least one land edge needs a check to reach it, and in 48 one end stops at a neighbour's water, which is a dead end for a party on foot. On a river along its line, it runs lengthwise over the water.
+
+Check: rafts. `raft_can_enter` lets a raft in, under the bridge. Whether it should stop here is the game's call.
 
 ## Test
 
-`test_start_tiles.py` on every route and every edge-to-edge walk, on all 64 neighbour mixes for East Rime:
+`test_start_tiles.py` on every route and every edge-to-edge walk, on all 64 neighbour mixes for East Rime. Monto's row is from tiles_v87; the other five are from tiles_v86, with their pieces unchanged since:
 
 | Check | Result |
 | --- | --- |
-| Steepest walk | East Rime 26.1°, Monto 16.7° (limit 28°), the rest flat |
-| Nearest anything standing to a walk (limit 0.34) | Dunfaire 0.55, East Rime 0.36, Monto 0.41 (above deck height only), Spire 0.43, Oak 0.49, Weizenhof 0.42 |
+| Steepest walk | East Rime 26.1°, Monto 23.2° (limit 28°), the rest flat |
+| Nearest anything standing to a walk (limit 0.34) | Dunfaire 0.55, East Rime 0.36, Monto 0.35 (above deck height only), Spire 0.43, Oak 0.49, Weizenhof 0.42 |
 | Routes reach their edge and the stop; East Rime's edge heights meet its neighbour's | Yes |
 
 `test_sand.py`: 0 failures.

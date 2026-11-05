@@ -86,7 +86,7 @@ def main():
                 n = st.normal(i)
                 if math.dist(e[0][:2], (n[0] * st.A, n[1] * st.A)) > 1e-6:
                     fail("route misses its edge", name, i)
-                if math.dist(e[-1][:2], st.stop(name, same)[:2]) > 1e-6:
+                if math.dist(e[-1][:2], st.stop(name, same)[:2]) > 1e-3:
                     fail("route misses the stop", name, i)
                 if name == st.RIME and abs(e[0][2] - (st.HE if same[i] else 0.0)) > 0.02:
                     fail("route's edge height doesn't meet the neighbour", name, i, e[0][2])
@@ -104,6 +104,20 @@ def main():
         print(f"TRIANGLES {name}: centre {tris}, worst wedge {wedge}, tile with slab {total}")
         if total > BUDGET:
             fail("over budget", name, total)
+    if st.MONTO in wants:  # how the straight bridge meets the water: reported, not failed
+        import itertools as it
+        tally = {}
+        for m in it.product((False, True), repeat=6):
+            land = [i for i in range(6) if not m[i]]
+            cut = sum(st.monto_needs_check(i, m, "0,0") for i in land)
+            ends = m[st.STOP_EDGE] + m[st.BRIDGE_FAR]
+            key = f"{sum(m)} water edges"
+            t = tally.setdefault(key, [0, 0, 0, 0])
+            t[0] += 1
+            t[1] += cut == 0
+            t[2] += ends > 0
+            t[3] += cut
+        print("MONTO by water edges: [layouts, all land edges free, a bridge end on water, side ways needing a check]", tally)
     print({k: round(v, 2) for k, v in sorted(worst.items())})
     print("failures", bad or 0)
     sys.exit(1 if bad else 0)

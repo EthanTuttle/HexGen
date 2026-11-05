@@ -20,6 +20,7 @@ import variants as vr  # noqa: E402,F401
 
 TITLES = {st.DUNFAIRE: "Dunfaire Tower", st.RIME: "East Rime Chapel", st.MONTO: "Monto Town", st.SPIRE: "Sternbrunn Spire", st.OAK: "The Oak & Lantern", st.WEIZEN: "Weizenhof Estate"}
 N = hk.NEIGHBOURS
+SHEET_STEM = "start_kit_sheet"
 
 
 def near_map(name):
@@ -110,7 +111,7 @@ def sheet(rows):
     h, w = s.shape[:2]
     out = bpy.data.images.new("sheet", w, h, alpha=False)
     out.pixels.foreach_set(s.ravel())
-    out.filepath_raw = os.path.join(hk.ART, "preview", f"start_kit_sheet_v{rp.next_n('start_kit_sheet')}.png")
+    out.filepath_raw = os.path.join(hk.ART, "preview", f"{SHEET_STEM}_v{rp.next_n(SHEET_STEM)}.png")
     out.file_format = "PNG"
     out.save()
     print("SHEET", out.filepath_raw)

@@ -1,6 +1,6 @@
 """The six starting tiles of the first playable (design/06 -> First playable, design/07 -> Starting tiles): one per background, each with its own centre and edge pieces on its terrain. A starting tile is placed alone, so it has no landmark turn: its door always faces the map camera (-Y), with the party's stop on edge 5's spoke.
 
-Routes (route): in along an edge's spoke to a ring of radius RING_R, round the ring to edge 5's spoke, and in to the stop. Everything standing stays inside the ring, and the wedges keep off it and the spokes. Monto Town's ring and spokes are a raised boardwalk, so they cross whatever water the tile has; a river tile's water depends on its neighbours.
+Routes (route): in along an edge's spoke to a ring of radius RING_R, round the ring to edge 5's spoke, and in to the stop. Everything standing stays inside the ring, and the wedges keep off it and the spokes. Monto Town is different: one straight bridge between edges 5 and 2, which side ways join. A river tile's water depends on its neighbours, so a side way can meet water: monto_needs_check says when, and that's the usual river crossing.
 
 The first section is plain Python so the engines can copy it, and test_start_tiles.py checks it. The rest uses the Piece API.
 """
@@ -11,7 +11,9 @@ X0 = 0.45 * A
 RING_R = 2.9
 STOP_R = 2.05
 STOP_EDGE = 5
-DECK_Z = 0.3        # Monto Town's boardwalk
+DECK_Z = 0.3        # Monto Town's bridge and boardwalks
+BRIDGE_FAR = 2      # its bridge runs from edge 5 to this edge, through the middle
+MONTO_JOIN = 1.95   # side ways join the bridge this far either side of the middle
 PLATEAU = 0.82      # East Rime's hilltop is levelled to this: a gentler mound than a plain hill's, so its walks stay under the tilt limit
 RIME_H0 = 0.62      # its height at the centre piece's edge
 PLINTH_TOP = 0.47   # Dunfaire Tower stands on this; the plinth is its own piece, ready to swap for a hex column
@@ -60,8 +62,56 @@ def ground(name, x, y, same=(False,) * 6):
     return rime_height(d, abs(lat) / (d * TAN30), "same" if same[i] else "other")
 
 
+def deck_z(t):
+    """The bridge's height, t from the tile's middle along it: level, with a ramp at each end down to the edge's midpoint."""
+    return DECK_Z * min(1.0, (A - t) / 0.7)
+
+
+def monto_side(i):
+    """Where edge i's side way meets the bridge: straight in from its midpoint to the nearest point of the bridge."""
+    n, d = normal(i), normal(STOP_EDGE)
+    t = (n[0] * d[0] + n[1] * d[1]) * A
+    return t, (d[0] * t, d[1] * t)
+
+
+def monto_line(i, j=None):
+    """The (x, y, z) walk on Monto Town from edge i to the stop, or across to edge j, by the bridge."""
+    d = normal(STOP_EDGE)
+
+    def on_bridge(t0, t1):
+        n_ = max(1, int(abs(t1 - t0) / 0.2))
+        return [(d[0] * (t0 + (t1 - t0) * k / n_), d[1] * (t0 + (t1 - t0) * k / n_), deck_z(abs(t0 + (t1 - t0) * k / n_))) for k in range(n_ + 1)]
+
+    def join(e):
+        if e == STOP_EDGE:
+            return [], A
+        if e == BRIDGE_FAR:
+            return [], -A
+        t, q = monto_side(e)
+        n = normal(e)
+        side = [(n[0] * A + (q[0] - n[0] * A) * k / 12, n[1] * A + (q[1] - n[1] * A) * k / 12, DECK_Z * _smooth(0.5, 1.0, k / 12)) for k in range(12)]
+        return side, t
+
+    head, t0 = join(i)
+    if j is None:
+        return head + on_bridge(t0, STOP_R)
+    tail, t1 = join(j)
+    return head + on_bridge(t0, t1) + tail[::-1]
+
+
+def monto_needs_check(i, water, seed):
+    """Does edge i's side way cross water on this tile? Then it's the usual Athletics check or raft (design/02), or the party walks round. The bridge itself never needs one."""
+    import water as wt
+    if i in (STOP_EDGE, BRIDGE_FAR) or water[i]:
+        return False
+    outlines = wt.tile_water(list(water), seed)[0]
+    return any(wt.in_water(outlines, q[:2]) for q in monto_line(i)[:12])
+
+
 def route(name, i, same=(False,) * 6, step=15):
     """The walk from edge i's midpoint to the stop, tile-local (x, y, z). Between two edges, go in along one's route as far as the ring, round it, and out along the other's: ring_walk."""
+    if name == MONTO:
+        return monto_line(i)
     n = normal(i)
     line = [(n[0] * A, n[1] * A)]
     turn = (STOP_EDGE - i + 3) % 6 - 3  # the short way round; opposite the stop it goes clockwise
@@ -77,6 +127,8 @@ def route(name, i, same=(False,) * 6, step=15):
 
 def ring_walk(name, i, j, same=(False,) * 6, step=15):
     """The walk across the tile from edge i to edge j, tile-local (x, y, z): in along i's spoke, round the ring the short way, out along j's."""
+    if name == MONTO:
+        return monto_line(i, j)
     a, b = normal(i), normal(j)
     line = [(a[0] * A, a[1] * A)]
     turn = (j - i + 3) % 6 - 3
@@ -96,10 +148,7 @@ def with_heights(name, line, same):
     out.append(line[-1])
     pts = []
     for x, y in out:
-        z = ground(name, x, y, same)
-        if name == MONTO:  # a ramp up from the edge's middle to the deck
-            z = DECK_Z * min(1.0, (A - math.hypot(x, y)) / (A - RING_R)) if math.hypot(x, y) > RING_R else DECK_Z
-        pts.append((x, y, z))
+        pts.append((x, y, ground(name, x, y, same)))
     return pts
 
 
@@ -243,34 +292,31 @@ def walkway(p, a, b, z0, z1=None, width=0.5, piles=True):
 
 
 def monto_town(p):
-    """Houses on stilts over the water, a boardwalk ring that crosses any channel, spurs to every edge, and an arched footbridge from the stop's side up to the town's deck."""
-    for x, y, w, d, h, r in ((-1.25, 0.95, 0.8, 0.68, 0.5, "st_roof"), (-0.42, 0.9, 0.72, 0.68, 0.62, "st_roof_b"), (0.42, 0.95, 0.8, 0.68, 0.5, "st_thatch"), (1.25, 0.9, 0.8, 0.72, 0.7, "st_roof"), (-0.8, 1.72, 0.8, 0.66, 0.62, "st_thatch"), (0.75, 1.72, 0.85, 0.66, 0.55, "st_roof_b")):
-        stilt_house(p, x, y, w, d, h, r)
-    walkway(p, (-1.75, 0.35), (1.75, 0.35), DECK_Z, width=0.42)
-    corners = [(RING_R * math.cos(math.radians(k * 15)), RING_R * math.sin(math.radians(k * 15))) for k in range(24)]
-    for a, b in zip(corners, corners[1:] + corners[:1]):
-        walkway(p, a, b, DECK_Z)
-    for i in range(6):
-        n = normal(i)
-        walkway(p, (n[0] * RING_R, n[1] * RING_R), (n[0] * A, n[1] * A), DECK_Z, 0.0)
-    s = normal(STOP_EDGE)
-    walkway(p, (s[0] * RING_R, s[1] * RING_R), (s[0] * (STOP_R - 0.35), s[1] * (STOP_R - 0.35)), DECK_Z, width=0.7)
-    # the bridge: from the stop's platform over the middle to the town's deck, arched in stone-footed timber
-    foot, top = (0.2, -1.58), (0.2, 0.15)
-    n = 8
+    """One long straight bridge between edges 5 and 2, through the tile's middle, with short boardwalks off it under the stilt houses."""
+    a, b = normal(STOP_EDGE), normal(BRIDGE_FAR)
+    ang = math.atan2(a[1], a[0])
+    n = 18
     for k in range(n):
-        f0, f1 = k / n, (k + 1) / n
-        fm = (f0 + f1) / 2
-        z = DECK_Z + 0.5 * math.sin(math.pi * fm)
-        y = foot[1] + (top[1] - foot[1]) * fm
-        p.box(_v(foot[0], y), (0.72, (top[1] - foot[1]) / n * 1.04, 0.06), "st_plank_l" if k % 2 else "st_plank", z=z - 0.06)
-        for sx in (-1, 1):
-            p.box(_v(foot[0] + sx * 0.36, y), (0.05, (top[1] - foot[1]) / n * 1.04, 0.05), "st_timber", z=z + 0.24)
-            if k % 2 == 0:
-                p.cylinder(_v(foot[0] + sx * 0.36, y), 0.022, 0.26, "st_timber", segments=4, z=z)
-                p.cylinder(_v(foot[0] + sx * 0.36, y), 0.04, z + 0.5, "st_timber", segments=5, z=-0.5)
-    walkway(p, (foot[0], foot[1]), (s[0] * (STOP_R - 0.35), s[1] * (STOP_R - 0.35)), DECK_Z, width=0.6)
-    lantern(p, 0.65, -1.3, DECK_Z)
+        f = (k + 0.5) / n
+        t = -A + 2 * A * f
+        x, y = a[0] * t, a[1] * t
+        z = deck_z(abs(t))
+        p.box(_v(x, y), (2 * A / n * 1.03, 0.8, 0.07), "st_plank_l" if k % 2 else "st_plank", z=z - 0.07, spin=ang)
+        if k % 2 == 0:
+            p.box(_v(x, y), (0.09, 0.88, z + 0.45), "st_timber", z=-0.55, spin=ang)
+        joins = min(abs(t - MONTO_JOIN), abs(t + MONTO_JOIN))
+        if joins > 0.5:  # rails, open where the side ways join
+            side = (-a[1] * 0.38, a[0] * 0.38)
+            for s_ in (-1, 1):
+                p.box(_v(x + s_ * side[0], y + s_ * side[1]), (2 * A / n * 1.03, 0.05, 0.05), "st_timber", z=z + 0.28, spin=ang)
+                if k % 2 == 0:
+                    p.box(_v(x + s_ * side[0], y + s_ * side[1]), (0.05, 0.05, 0.3), "st_timber", z=z)
+    # two short boardwalks off the bridge, under the stilt houses
+    walkway(p, (0.05, 0.3), (2.35, 0.3), DECK_Z, width=0.46)
+    walkway(p, (0.3, -0.72), (-2.5, -0.72), DECK_Z, width=0.46)
+    for x, y, w, d, h, r in ((0.72, 0.9, 0.78, 0.68, 0.55, "st_roof"), (1.55, 0.88, 0.76, 0.68, 0.68, "st_roof_b"), (2.3, 0.95, 0.68, 0.66, 0.5, "st_thatch"), (1.15, 1.72, 0.8, 0.66, 0.5, "st_thatch"), (-1.25, -0.12, 0.78, 0.68, 0.62, "st_roof_b"), (-2.12, -0.14, 0.78, 0.68, 0.5, "st_roof")):
+        stilt_house(p, x, y, w, d, h, r)
+    lantern(p, 0.15, -1.5, DECK_Z)
 
 
 def spire(p):
