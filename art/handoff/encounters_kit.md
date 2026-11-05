@@ -25,6 +25,7 @@ Largest scale: the widest span against the tile's 7.79 m flats.
 
 - **Scenes:** one mesh each, at true mini scale, with the pivot on the ground at its middle. Version B places it at scale 1. Version A is the same mesh at a larger uniform scale, so its triangle count is the same.
 - **Badges:** upright, facing -Y in Blender, with the pivot at the foot and an icon on both faces. The trial renders turn them to the camera and float them 1.6 m wide above the scene. Their icons carry no text. Size on screen is untested in the engine.
+- **Materials:** the glb holds `kit` and `kit.001`, one from the minis and one from the new pieces. Both are the same vertex-colour material.
 - **In a forest:** trees cover a badge low on the tile. It needs to float above the canopy or be drawn on top (`encounters_badges_night_58m_v1.png` shows the problem).
 
 ## On-screen height at the game's map camera
@@ -42,8 +43,11 @@ Whole scene, in layout points on the 844 x 390 layout (pitch 50, 50 mm lens). Th
 | Drinkers | 1 | 83 | 62 | 42 | 22 |
 | | 2 | 169 | 125 | 86 | 45 |
 | | 2.5 | 213 | 158 | 108 | 56 |
+| Trader | 1 | 73 | 54 | 37 | 20 |
+|  | 2 | 150 | 111 | 76 | 39 |
+|  | 2.5 | 191 | 140 | 95 | 49 |
 | Treasure | 1 | 51 | 38 | 26 | 14 |
 | | 2 | 104 | 77 | 53 | 28 |
 | | 2.5 | 130 | 97 | 67 | 35 |
 
-These include the ground a scene covers. The trader was measured before its goods were added and is a little taller now. A single 1.3 m figure is about 17 points tall at 58 m at scale 1, so about 34 at 2 and 43 at 2.5.
+These include the ground a scene covers. A single 1.3 m figure is about 17 points tall at 58 m at scale 1, so about 34 at 2 and 43 at 2.5.
