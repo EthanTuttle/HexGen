@@ -8,8 +8,8 @@ const UNWALKABLE := ["river"]             # water: rivers and lakes
 
 
 ## terrains: tile -> terrain (variants and landmarks already turned into their terrain). raised: all raised tiles.
-## climbs: every raised region's Cliffs.climbs(). Returns tile -> the edges of that fenced tile that show a gate.
-static func gates(terrains: Dictionary, raised := {}, climbs := []) -> Dictionary:
+## climbs: every raised region's Cliffs.climbs(). starts: the starting tiles. Returns tile -> the edges of that fenced tile that show a gate.
+static func gates(terrains: Dictionary, raised := {}, climbs := [], starts := []) -> Dictionary:
 	var out := {}
 	var fence := {}
 	for t: Vector2i in terrains:
@@ -58,6 +58,11 @@ static func gates(terrains: Dictionary, raised := {}, climbs := []) -> Dictionar
 		var facing: int = (c[1] + 2) % 6
 		if fence.has(front) and not facing in out[front]:
 			out[front].append(facing)
+	# A starting tile's sides are never shut (design/06 -> First playable), by its own fence or by a farm or village beside it.
+	for t: Vector2i in fence:
+		for i: int in fence[t]:
+			if (t in starts or t + Hex.NEIGHBOURS[i] in starts) and not i in out[t]:
+				out[t].append(i)
 	return out
 
 

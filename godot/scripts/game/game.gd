@@ -93,9 +93,7 @@ func _ready() -> void:
 	order[Rules.START_TILE] = 0
 
 	for k in run.party_size:
-		var member: Dictionary = Rules.PARTY[k].duplicate(true)
-		member.max_hp = member.hp
-		party.append(member)
+		_add_member(k)
 	party[0].name = run.hero_name
 	party_node = PartyWalker.new()
 	party_node.name = "party"
@@ -171,6 +169,8 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--combatmap=")):
 		var wanted: String = Array(OS.get_cmdline_user_args()).filter(func(x): return x.begins_with("--combatmap="))[0].get_slice("=", 1)
 		debug_fight.call_deferred(wanted)
+	if "--startcheck" in OS.get_cmdline_user_args():
+		add_child(StartCheck.new())
 	if "--playcheck" in OS.get_cmdline_user_args():
 		var pc := PlayCheck.new()
 		pc.game = self
@@ -1062,7 +1062,7 @@ func _safety_net() -> void:
 	if not run.safety_net or busy or not deck.hand.is_empty() or fight.active:
 		return
 	for t: Vector2i in encounters:
-		if encounters[t].entry.kind == "fight":
+		if encounters[t].entry.kind == "fight" and not path_to(t).is_empty():   # one that can't be walked to doesn't save the run
 			return
 	var best = null
 	var nearest := 1 << 20
@@ -1147,7 +1147,7 @@ func open_event(t: Vector2i) -> void:
 ## A Social or Discovery encounter's fight, when its event turns into one (Screens). Rolls foes if it had none.
 func event_start_fight(t: Vector2i) -> void:
 	if encounters[t].roles.is_empty():
-		encounters[t].roles = Foes.roll_roles(Foes.band(t), rng)
+		encounters[t].roles = Foes.roll_roles(Foes.band(t), rng, party.size())
 	start_fight(t)
 
 
@@ -1182,7 +1182,7 @@ func add_encounter(t: Vector2i, persistent: bool, dropped: Array = [], entry := 
 	if entry.is_empty():
 		entry = {kind = "fight", scene = "enc_fight_bandits" if GroundCover.hash01(t.x, t.y, 97) < 0.5 else "enc_fight_wolves", roams = false}
 	_encounter_count += 1
-	var roles: Array = Foes.roll_roles(Foes.band(t), rng) if entry.kind == "fight" and not run.wide_deck else []
+	var roles: Array = Foes.roll_roles(Foes.band(t), rng, party.size()) if entry.kind == "fight" and not run.wide_deck else []
 	encounters[t] = {expires = real_time + Rules.ENCOUNTER_LIFETIME, persistent = persistent, dropped = dropped, entry = entry, id = _encounter_count, roles = roles,
 			roam_at = _now_minutes() + Rules.ROAM_MINUTES}
 
@@ -1532,14 +1532,19 @@ func _open_port_shop() -> bool:
 	return true
 
 
-## Stealth group check (DOCS: a group check; on a pass the encounter stays on the map).
-## PLACEHOLDER (Explore v8b's text): everyone flips one coin; 1 heads passes. A fail starts the fight.
+## The hero's solo Stealth check, whatever the party's size (DOCS: 03 -> Checks outside combat); on a pass the encounter stays on the map. A fail starts the fight.
 func choose_sneak() -> void:
-	var coins: Array[bool] = []
-	for m in party:
-		coins.append_array(Coins.flip(rng, Rules.SNEAK_COINS_EACH))
+	var coins := sneak_flip()
 	var ok := Coins.heads(coins) >= sneak_heads()
 	hud.show_encounter(Rules.NAMES[land(_encounter_tile)], "passed" if ok else "spotted", coins)
+
+
+## The hero's coins, then a proficient companion's 1 on a miss by exactly 1 (DOCS: 03 -> Companion chime-in). No companion has Stealth yet, and no line is written for it.
+func sneak_flip(proficiency := "Stealth") -> Array[bool]:
+	var coins: Array[bool] = Coins.flip(rng, Hero.coins_for("DEX", "Stealth"))
+	if Coins.heads(coins) == sneak_heads() - 1 and not _chime_helper(proficiency).is_empty():
+		coins.append_array(Coins.flip(rng, 1))
+	return coins
 
 
 func choose_carry_on() -> void:
@@ -1623,6 +1628,7 @@ func start_fight(t: Vector2i) -> void:
 	map.visible = true
 	if not won:
 		party_tile = Rules.START_TILE
+	_members_join()
 	map.party_moved(party_tile)
 	party_node.place_at(party_tile)
 	party_node.visible = true
@@ -1633,6 +1639,20 @@ func start_fight(t: Vector2i) -> void:
 		return
 	busy = false   # no defeat toast: the results screen already showed the dropped cards (DOCS: UI -> Screen text)
 	_refresh()
+
+
+func _add_member(k: int) -> void:
+	var member: Dictionary = Rules.PARTY[k].duplicate(true)
+	member.max_hp = member.hp
+	party.append(member)
+
+
+## After a win: the next member joins on the fights' breakpoints (design/06), with no words; the tray and the mini show it.
+func _members_join() -> void:
+	var due := run.party_size + run.joins_after.filter(func(n): return fights_won >= n).size()
+	while party.size() < mini(due, Rules.PARTY.size()):
+		_add_member(party.size())
+		party_node.add_member(party[-1].mini)
 
 
 ## Which map a fight on tile t takes: rolled evenly (PLACEHOLDER: how a fight picks is open, design/07) from the tile's variant's maps, its path
