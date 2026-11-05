@@ -35,6 +35,7 @@ var _encounter_count := 0
 var walk_limited := true              # the checks walk far on one call
 var run: RunSetup
 var gold := 0
+var potions := 0                      # health potions, from a shop; Use item drinks one in a fight (design/06)
 var xp := 0
 var level := 1
 var _picks := 0
@@ -492,6 +493,12 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		return
 	var first := not regions.any(func(g): return g.terrain == terrain)
 	var variant: String = Variants.TIER1[terrain] if first else _roll_tier2(terrain)
+	if terrain == "ruins" and not run.wide_deck:   # design/06: ruins aren't rebuilt yet, so a finished region stays plain, with no landmark, and still counts toward the goal
+		var plain := new_region(terrain, tiles, "", tiles[0])
+		plain.name = Rules.NAMES.ruins
+		plain.landmark = ""
+		deck.draw(Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION)
+		return
 	var region := new_region(terrain, tiles, variant, _landmark_tile(variant, tiles))
 	_transform(tiles, region, t)
 	var draw := Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION
@@ -984,6 +991,8 @@ func markers() -> Array:
 		out.append({key = "walk%s" % picked, kind = "walk", world = _tile_top(way[-1] if n > 0 else picked), lift = 40,
 				text = "%d hex%s · %d min" % [n, "" if n == 1 else "es", roundi(n * Rules.STEP_MINUTES)]})
 	for g in regions:
+		if g.landmark == "":
+			continue
 		var lt: Vector2i = g.landmark_tile
 		var open: bool = _open_pin == lt or _reveal_pin == lt
 		out.append({key = "pin%s%s" % [lt, open], kind = "pin", text = "%s%s" % [g.landmark, open], world = _tile_top(lt),

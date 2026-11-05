@@ -173,6 +173,10 @@ const FIGHT_PAN_MARGIN := 1.5            # PLACEHOLDER: how far past a map's out
 const DEFEND_REDUCTION := 1              # PLACEHOLDER: defend/brace exists but has no number
 ## PLACEHOLDER (Explore v8b's text): Sneak past is a group check where everyone flips one coin and 1 heads passes.
 const SNEAK_COINS_EACH := 2              # PLACEHOLDER: 2 each, as with two in the party 1 each could never make an elite's 3 heads
+const COIN_STEP := 0.22                  # PLACEHOLDER: seconds a coin, the party's flips (design/07: one at a time, until the target)
+const COIN_STEP_FOE := 0.12              # PLACEHOLDER: a foe's, so a 5-coin foe doesn't drag
+const COIN_HOLD := 0.22                  # PLACEHOLDER: the result held before the attack plays
+const POTION_HEAL := 6                   # PLACEHOLDER (design/06): a health potion, drunk with Use item at its 1 AP
 const PRONE_AP := 1                      # PLACEHOLDER: what prone costs a foe next turn (Trip, Frost Ray)
 const WARD_POINTS := 2                   # PLACEHOLDER: Ward's small shield, until the next turn
 const XP_FIRST_LEVEL := 20               # design/06: XP per level, 20 then 10 more each level

@@ -521,8 +521,27 @@ Rules: `design/02` -> Hex contents and encounters; look: `design/07` -> Encounte
 | Social and Discovery | A pop-up with the name in brackets and Carry on; it's then gone, until the events exist |
 | Spawn | As before: a placement may spawn one, now not on a landmark. Docs' 8-hour rolls still aren't built |
 | Badge | Combat Art's meshes, 32 pt at 58 m, down to 60% zoomed in; to be swapped |
-| Fights | The minis don't match the figures that were on the map |
 | Figure spot | 1.5 m off the tile's middle by hash, so figures can stand in trees; no glade is cleared |
+
+## First playable (design/06 -> First playable)
+
+`scripts/game/run_setup.gd` says what a run starts from (`Hero.current`, from the creator; none is a direct start). The checks and demo use `RunSetup.test()`: four in the party, the wide deck, seed 1, no rolls, no goal. `-- --playcheck [--seed=x] [--realfights] [--bands]` plays a whole run by itself to the end panel, and with `--realfights` plays the fights and prints how each went.
+
+Hooks for Screens: `Hero.current`, `game.can_enter_town()`, `enter_town()` and `enter_town_screen`, `rest_here()`, `gold`, `spend(n)`, `potions`, `event_screen`, `choose_event_done()`, `event_start_fight(t)`.
+
+| Placeholder | What |
+| --- | --- |
+| Foes | `Foes`: 06's HP, damage and rewards; a foe attacks with all its AP; ranged foes fight in melee; riders on weapon cards below. Names in brackets |
+| Rolls | `ROLL_FIRST` 3, `ROLL_EVERY` 10 minutes, `ROLL_TILES` 2, `ROLL_CHANCE` 0.6, 0.85 at night; `ENCOUNTERS_PER_REGION` 1, 2 on tier 2 |
+| Level pick | Three terrains: the biggest unfinished cluster's first, then two at random. One card into the hand |
+| Weapon cards | Parry, Block, Shield Bash, Trip, Ward at 04's 1 AP. Bash stuns (no AP next turn); Trip and Frost Ray cost a foe `PRONE_AP` 1; Ward absorbs `WARD_POINTS` 2; Firebolt +1 damage |
+| Potion | `POTION_HEAL` 6, Use item's 1 AP, in fights only |
+| Sneak past | `SNEAK_COINS_EACH` 2 each, so two can make an elite's 3 heads |
+| Coins | `COIN_STEP` 0.22 s, `COIN_STEP_FOE` 0.12 s, `COIN_HOLD` 0.22 s, drawn over whoever flips |
+| Ruins | Main's old tile; a finished region stays plain with no landmark and counts toward the goal |
+| Start | The background's tile is the old start tile until its art arrives; the end panel's New campaign reloads the scene |
+
+**Not built:** autosave and Continue, starting gear and quests, recruits. **Rise:** one 106 ms frame on the phone, when tiles change; listed, not fixed.
 
 ## Feywild crossing (tiles v84)
 
