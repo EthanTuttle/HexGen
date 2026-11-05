@@ -718,6 +718,9 @@ class Piece:
             twin = self.bm.faces.new([self.bm.verts.new(v.co) for v in reversed(f.verts)])
             twin.material_index = f.material_index
             self.surface.add(twin)
+            for layer in self.bm.loops.layers.uv.values():  # the same UVs behind, so a surface that scrolls by them shows the same from both sides
+                for near, far in zip(reversed(f.loops), twin.loops):
+                    far[layer].uv = near[layer].uv
 
     def face_open_sheets_out(self):
         """recalc_face_normals can't tell which way an open sheet should face, as it has no inside, and a face wound by hand can simply be wrong. Turn over each sheet that a camera above would see from behind.

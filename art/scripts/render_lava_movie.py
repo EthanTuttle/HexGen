@@ -2,7 +2,7 @@
 A look target for the engine: the shipped material is flat colour.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_lava_movie.py -- volcanic_peaks_fissures
-Add --stills for one frame from each shot. Writes art/preview/lava_movie_<map>_vN.mp4 and lava_shot_<map>_<shot>_vN.png (never overwrites).
+Add --stills for one frame from each shot, or --bands for the same shots in Godot's flat three-band target (lava_bands_<map>_<shot>_vN.png). Writes art/preview/lava_movie_<map>_vN.mp4 and lava_shot_<map>_<shot>_vN.png (never overwrites).
 """
 import math
 import os
@@ -74,6 +74,42 @@ def glow():
     return time
 
 
+def bands():
+    """Godot's flat target (godot/shaders/combat_lava.gdshader): three colours in crisp chevrons drifting down the flow, unlit."""
+    mat = bpy.data.materials["lava_flow"]
+    tree = mat.node_tree
+    nodes, links = tree.nodes, tree.links
+
+    def maths(op, a, b=None):
+        n = nodes.new("ShaderNodeMath")
+        n.operation = op
+        for k, v in enumerate((a, b)):
+            if v is None:
+                continue
+            if isinstance(v, (int, float)):
+                n.inputs[k].default_value = v
+            else:
+                links.new(v, n.inputs[k])
+        return n.outputs[0]
+
+    uv = nodes.new("ShaderNodeUVMap")
+    uv.uv_map = "UVMap"
+    split = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(uv.outputs["UV"], split.inputs[0])
+    along = maths("SUBTRACT", split.outputs["Y"], maths("MULTIPLY", maths("ABSOLUTE", split.outputs["X"]), 0.6))
+    f = maths("FRACT", maths("MULTIPLY", along, 1.3))
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = "CONSTANT"
+    ramp.color_ramp.elements[0].position, ramp.color_ramp.elements[1].position = 0.0, 0.5
+    ramp.color_ramp.elements.new(0.8)
+    for e, c in zip(ramp.color_ramp.elements, ("#FFC44D", "#F4792A", "#C1340F")):
+        e.color = (*(hk.srgb_to_linear(int(c[i:i + 2], 16) / 255) for i in (1, 3, 5)), 1.0)
+    links.new(f, ramp.inputs["Fac"])
+    emit = nodes.new("ShaderNodeEmission")
+    links.new(ramp.outputs["Color"], emit.inputs["Color"])
+    links.new(emit.outputs[0], nodes.get("Material Output").inputs["Surface"])
+
+
 def shots(name, cells):
     z = rh.HEIGHTS[name]
     path = rh.flow_cells(rh.MAPS[name])
@@ -113,6 +149,12 @@ def main():
     scene = bpy.context.scene
     cam = scene.camera
     views = shots(name, cells)
+    if "--bands" in args:
+        bands()
+        for shot, (frm, to) in views.items():
+            look(cam, frm, to)
+            rp.render(f"lava_bands_{name}_{shot}")
+        return
     time = glow().outputs[0]
     if "--stills" in args:
         time.default_value = 0.4
