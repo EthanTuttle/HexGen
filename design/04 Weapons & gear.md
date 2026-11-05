@@ -87,7 +87,7 @@ AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Modifiers
 | Dagger | Throw (1 AP): ranged attack with the dagger. Backstab modifier |
 | Battleaxe | Hack (1 AP): a quick chop; the next hit on the same foe hits harder; Throw (1 AP): ranged attack with the axe |
 | Greataxe | Reckless Swing (1 AP): big damage, lower defense |
-| Mace | Bonebreaker (1 AP): lower enemy movement (-2 hexes per Move until the foe's next turn ends; placeholder, Nov 5, 2026) |
+| Mace | Bonebreaker (1 AP): lower enemy movement (-1 hex per Move until the foe's next turn ends, like Frost Ray; placeholder, Nov 5, 2026, lowered from -2 the same day, which stopped a foe walking at all) |
 | Warhammer | Shatter (1 AP): break enemy shields or cover |
 | Spear | Throw (1 AP): ranged attack. Reach modifier |
 | Halberd | Hook (1 AP): pull an enemy closer. Reach modifier |
