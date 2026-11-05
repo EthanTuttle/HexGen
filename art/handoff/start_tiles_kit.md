@@ -1,15 +1,15 @@
-# Starting tiles kit hand-off (tiles_v87)
+# Starting tiles kit hand-off (tiles_v88)
 
 The six starting tiles of the first playable, one per background. **Not yet approved; not yet tried in Godot.** Looks: `design/07` → Starting tiles.
 
-- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v87.blend`.
+- **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v88.blend`.
 - **Code:** `art/scripts/start_tiles.py`. Its first section is plain Python to copy: `route`, `ring_walk`, `stop`, `ground`, `rime_height`. **Test:** `Blender -b --factory-startup --python art/scripts/test_start_tiles.py`. **Previews:** `art/scripts/render_start_tiles.py`, `art/preview/start_kit_*_v1.png`, `start_kit_sheet_v1.png`.
 
 | Background | Tile name | Terrain | Pieces | Triangles with slab |
 | --- | --- | --- | --- | --- |
 | Soldier | `dunfairetower` | ruins | `_centre`, `_plinth`, `_edge_same`, `_edge_other` | 2,598 |
 | Acolyte | `eastrimechapel` | hills | `_centre`, `_edge_same`, `_edge_other` | 3,752 |
-| Criminal | `montotown` | river | `_centre` only, plus the engine's water | 2,096 + water, at most 1,072: 3,168 |
+| Criminal | `montotown` | river | `_centre`, `_mouth` at each land mouth, plus the engine's fixed water | 2,892 with water and both mouths |
 | Sage | `sternbrunnspire` | desert | `_centre`, `_edge_same`, `_edge_other` | 2,376, plus the engine's sand |
 | Folk Hero | `oaklantern` | forest | `_centre`, `_edge_same`, `_edge_other` | 1,812 |
 | Noble | `weizenhof` | farmland | `_centre`, `_edge_same`, `_edge_other` | 2,576 |
@@ -37,7 +37,7 @@ A starting tile can always be walked across every side: no fence, wall or bank s
 2. **Mountains:** `near_start(terrains)`: tiles next to a starting tile get no mountain, ridge or peak, and share none, as they'd otherwise ring it (`PartyWalker.blocked` walks round them). Port it to `map_board`'s range rules.
 3. **Weizenhof:** `_edge_other` is always the gate piece, so Godot's piece choice and its walk check both need to treat all six sides as open.
 
-The test checks each side's walk is clear inside the tile. Courtyard and yard walls stand inside the ring, away from every edge. **Monto Town is the exception:** see below.
+The test checks each side's walk is clear inside the tile. Courtyard and yard walls stand inside the ring, away from every edge. Monto Town's mouths are the one exception, when water lies beyond them: see below.
 
 ## Routes
 
@@ -56,30 +56,37 @@ The party rests at the stop. Going in isn't walked: it's the game's Rest card, o
 
 ## Monto Town's water
 
-**Pending Ethan's pick:** `art/preview/monto_options_sheet_v1.png` shows this beside two alternatives that aren't in the kit.
+**Pending Ethan's approval.** Sheet: `art/preview/monto_water_sheet_v1.png`, from the map camera and turned. Rule: `design/02` → Terrain pairings.
 
-One straight bridge from edge 5's midpoint through the middle to edge 2's, level at 0.3 with a ramp at each end, and two short boardwalks under the stilt houses. `monto_line(i, j)` walks it: edges 5 and 2 are its ends, and the other four come straight in by a side way to where it's nearest, 1.95 from the middle. `monto_needs_check(i, water, seed)` says when a side way crosses water: that's the usual Athletics check or raft, or walking round (design/02).
+**The water is fixed.** On this tile only, call the water functions with `MOUTH_WATER` and `WATER_SEED`, never its neighbours: a river from edge 0 to edge 3, straight across the bridge. Neighbours don't change it.
 
-A river tile's water depends on its neighbours, so across all 64 layouts:
+**Placement, for the engine to enforce:** `monto_allows(i, terrain)`. A river or lake tile may touch Monto only on edges 0 and 3, the mouths. So edges 1, 2, 4 and 5 are never water, and the bridge's ends, on 5 and 2, never meet it. A neighbour's edge width always matches at a mouth, as its sides toward edges 1 and 5 can't be water. A neighbour counts Monto as water on its side of a mouth, as usual, and on no other side.
 
-| Water edges | Layouts | All land edges free of a check | A bridge end over water |
-| --- | --- | --- | --- |
-| 0 (alone, a pond) | 1 | 1 | 0 |
-| 1 | 6 | 2 | 2 |
-| 2 | 15 | 6 | 9 |
-| 3 | 20 | 6 | 16 |
-| 4 | 15 | 5 | 14 |
-| 5 | 6 | 2 | 6 |
-| 6 | 1 | 1 | 1 |
-| **All** | **64** | **23** | **48** |
+**Pieces:**
 
-**So it doesn't handle every pattern, and it breaks the every-side rule whenever a side way meets water.** In 41 layouts at least one land edge needs a check to reach it, and in 48 one end stops at a neighbour's water, which is a dead end for a party on foot. On a river along its line, it runs lengthwise over the water.
+| Piece | Place it | Triangles |
+| --- | --- | --- |
+| `montotown_centre` | Always | 1,684 |
+| `montotown_mouth` | On each mouth with no river or lake beyond it, turned 60° × the edge, so edge 3 turns 180°. Take it away if a river is placed there. An empty slot counts as land | 60 |
 
-Check: rafts. `raft_can_enter` lets a raft in, under the bridge. Whether it should stop here is the game's call.
+With slab, water (676) and both mouths: 2,892, of 4,816.
+
+**Walks:** `monto_line(i, j)`. Edges 5 and 2 are the bridge's ends. Edges 1 and 4 come straight in over dry ground to the bridge. A mouth comes along its apron to the bank, then over dry ground to the bridge: edge 0 joins on the south bank, edge 3 on the north. Its apron's at 0.06.
+
+**Every side:**
+
+| Side | Beyond it | Walked with no check? |
+| --- | --- | --- |
+| 5, 2 (bridge ends) | Never water | Yes |
+| 1, 4 | Never water | Yes |
+| 0, 3 (mouths) | Land or nothing | Yes, along the apron |
+| 0, 3 (mouths) | **River or lake** | **No: the usual Athletics check or raft, or walk round** (`monto_needs_check`). The water runs on across that side |
+
+Rafts go along the river and under the bridge, entering by a mouth with water beyond.
 
 ## Test
 
-`test_start_tiles.py` on every route and every edge-to-edge walk, on all 64 neighbour mixes for East Rime. Monto's row is from tiles_v87; the other five are from tiles_v86, with their pieces unchanged since:
+`test_start_tiles.py` on every route and every edge-to-edge walk, on all 64 neighbour mixes for East Rime. Monto's row is from tiles_v88; the other five are from tiles_v86, with their pieces unchanged since:
 
 | Check | Result |
 | --- | --- |

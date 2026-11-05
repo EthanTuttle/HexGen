@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import canyon_takes as ct  # noqa: E402
 import hexkit as hk  # noqa: E402
@@ -75,13 +75,13 @@ def label(text, sub):
     ob.visible_shadow = False
 
 
-def shot(name, world, stem, sub, dist=30):
+def shot(name, world, stem, sub, dist=30, turn=0.0):
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     minis = rp.load_templates(rp.latest(os.path.join("minis", "standins"), "standin_minis"))
     rp.build_map(templates, tiles=world)
     col = bpy.data.collections["map"]
-    same = [world.get(d) and vr.terrain_of(world[d]) == st.STARTS[name] for d in N]
+    same = [bool(world.get(d)) and vr.terrain_of(world[d]) == st.STARTS[name] for d in N]
     x, y, z = st.stop(name, same)
     ct._mini_spots(col, minis, [((x, y, z + 0.02), math.radians(120))])
     d = bpy.data.materials.get("st_glow")
@@ -91,6 +91,9 @@ def shot(name, world, stem, sub, dist=30):
         b.inputs["Emission Strength"].default_value = 1.2
     rp.stage(Vector((0, -0.2, 0.7)), dist, 46)
     scene = bpy.context.scene
+    if turn:  # the map camera turned about the tile
+        target = Vector((0, -0.2, 0.7))
+        rp.look_at(scene.camera, Matrix.Rotation(turn, 3, "Z") @ (scene.camera.location - target) + target, target)
     scene.render.resolution_x, scene.render.resolution_y = 800, 500
     label(TITLES[name], sub)
     rp.render(stem)

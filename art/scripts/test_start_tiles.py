@@ -104,20 +104,28 @@ def main():
         print(f"TRIANGLES {name}: centre {tris}, worst wedge {wedge}, tile with slab {total}")
         if total > BUDGET:
             fail("over budget", name, total)
-    if st.MONTO in wants:  # how the straight bridge meets the water: reported, not failed
-        import itertools as it
-        tally = {}
-        for m in it.product((False, True), repeat=6):
-            land = [i for i in range(6) if not m[i]]
-            cut = sum(st.monto_needs_check(i, m, "0,0") for i in land)
-            ends = m[st.STOP_EDGE] + m[st.BRIDGE_FAR]
-            key = f"{sum(m)} water edges"
-            t = tally.setdefault(key, [0, 0, 0, 0])
-            t[0] += 1
-            t[1] += cut == 0
-            t[2] += ends > 0
-            t[3] += cut
-        print("MONTO by water edges: [layouts, all land edges free, a bridge end on water, side ways needing a check]", tally)
+    if st.MONTO in wants:  # its fixed water: the bridge crosses it and its ends stay dry; every way in reaches the bridge dry
+        import water as wt
+        out = wt.tile_water(st.MOUTH_WATER, st.WATER_SEED)[0]
+        d = st.normal(st.STOP_EDGE)
+        wet = [t / 20 * st.A for t in range(-20, 21) if wt.in_water(out, (d[0] * t / 20 * st.A, d[1] * t / 20 * st.A))]
+        print(f"MONTO river crosses the bridge from {wet[0]:.2f} to {wet[-1]:.2f}; stop at {st.STOP_R}")
+        if not wet or wt.in_water(out, st.stop(st.MONTO)[:2]):
+            fail("the stop's in the water", wet)
+        for e in (st.STOP_EDGE, st.BRIDGE_FAR):
+            n = st.normal(e)
+            if wt.in_water(out, (n[0] * st.A * 0.97, n[1] * st.A * 0.97)):
+                fail("a bridge end meets water", e)
+        for i in range(6):
+            if i in (st.STOP_EDGE, st.BRIDGE_FAR):
+                continue
+            line = st.monto_line(i)
+            joined = next(k for k, q in enumerate(line) if abs(q[2] - st.DECK_Z) < 1e-6)
+            for q in line[(7 if i in st.MOUTHS else 0):joined]:  # past the apron at a mouth
+                if wt.in_water(out, q[:2]):
+                    fail("a way in crosses water", i, q)
+        for name_, edges in (("river at both", (0, 3)), ("at one", (0,))):
+            print(f"MONTO {name_}: sides needing a check", [i for i in range(6) if st.monto_needs_check(i, i in edges)])
     print({k: round(v, 2) for k, v in sorted(worst.items())})
     print("failures", bad or 0)
     sys.exit(1 if bad else 0)

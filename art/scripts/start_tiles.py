@@ -1,6 +1,6 @@
 """The six starting tiles of the first playable (design/06 -> First playable, design/07 -> Starting tiles): one per background, each with its own centre and edge pieces on its terrain. A starting tile is placed alone, so it has no landmark turn: its door always faces the map camera (-Y), with the party's stop on edge 5's spoke.
 
-Routes (route): in along an edge's spoke to a ring of radius RING_R, round the ring to edge 5's spoke, and in to the stop. Everything standing stays inside the ring, and the wedges keep off it and the spokes. Monto Town is different: one straight bridge between edges 5 and 2, which side ways join. A river tile's water depends on its neighbours, so a side way can meet water: monto_needs_check says when, and that's the usual river crossing.
+Routes (route): in along an edge's spoke to a ring of radius RING_R, round the ring to edge 5's spoke, and in to the stop. Everything standing stays inside the ring, and the wedges keep off it and the spokes. Monto Town is different: one straight bridge between edges 5 and 2, which side ways join. Its water is fixed: a river running from mouth to mouth across the bridge, whatever its neighbours are (design/02). A mouth with land beyond it ends in a stone apron you can walk along to the bank (montotown_mouth).
 
 The first section is plain Python so the engines can copy it, and test_start_tiles.py checks it. The rest uses the Piece API.
 """
@@ -14,6 +14,12 @@ STOP_EDGE = 5
 DECK_Z = 0.3        # Monto Town's bridge and boardwalks
 BRIDGE_FAR = 2      # its bridge runs from edge 5 to this edge, through the middle
 MONTO_JOIN = 1.95   # side ways join the bridge this far either side of the middle
+MOUTHS = (0, 3)     # Monto's river runs from edge 0 to edge 3, straight across the bridge. Only these edges can touch a river or lake
+MOUTH_WATER = [i in MOUTHS for i in range(6)]  # pass this and WATER_SEED to the water functions on Monto's tile, never its neighbours
+WATER_SEED = "monto"
+APRON_X = A - 0.2   # the stone apron's walk at a land mouth
+APRON_Z = 0.06
+APRON_Y = -1.05     # the bank it reaches, in the mouth's own frame (edge along +x): the same way round at both mouths, so the join's the nearer one
 PLATEAU = 0.82      # East Rime's hilltop is levelled to this: a gentler mound than a plain hill's, so its walks stay under the tilt limit
 RIME_H0 = 0.62      # its height at the centre piece's edge
 PLINTH_TOP = 0.47   # Dunfaire Tower stands on this; the plinth is its own piece, ready to swap for a hex column
@@ -89,6 +95,14 @@ def monto_line(i, j=None):
             return [], -A
         t, q = monto_side(e)
         n = normal(e)
+        if e in MOUTHS:  # along the apron to the bank, then over the dry ground to the bridge
+            def frame(x, y):
+                return (n[0] * x - n[1] * y, n[1] * x + n[0] * y)
+            side = [(*frame(A, 0.0), 0.0), (*frame(APRON_X, 0.0), APRON_Z)]
+            side += [(*frame(APRON_X, APRON_Y * k / 5), APRON_Z) for k in range(1, 6)]
+            bank = frame(APRON_X, APRON_Y)
+            side += [(bank[0] + (q[0] - bank[0]) * k / 8, bank[1] + (q[1] - bank[1]) * k / 8, APRON_Z + (DECK_Z - APRON_Z) * _smooth(0.5, 1.0, k / 8)) for k in range(1, 8)]
+            return side, t
         side = [(n[0] * A + (q[0] - n[0] * A) * k / 12, n[1] * A + (q[1] - n[1] * A) * k / 12, DECK_Z * _smooth(0.5, 1.0, k / 12)) for k in range(12)]
         return side, t
 
@@ -99,13 +113,14 @@ def monto_line(i, j=None):
     return head + on_bridge(t0, t1) + tail[::-1]
 
 
-def monto_needs_check(i, water, seed):
-    """Does edge i's side way cross water on this tile? Then it's the usual Athletics check or raft (design/02), or the party walks round. The bridge itself never needs one."""
-    import water as wt
-    if i in (STOP_EDGE, BRIDGE_FAR) or water[i]:
-        return False
-    outlines = wt.tile_water(list(water), seed)[0]
-    return any(wt.in_water(outlines, q[:2]) for q in monto_line(i)[:12])
+def monto_needs_check(i, neighbour_is_water):
+    """Does crossing edge i need the usual Athletics check or raft (design/02)? Only at a mouth with a river or lake beyond it: the water runs on across that side. Every other way across is dry or on the bridge."""
+    return i in MOUTHS and neighbour_is_water
+
+
+def monto_allows(i, terrain):
+    """Can a tile of this terrain go on Monto Town's edge i? A river or lake only at a mouth (design/02), so the bridge's ends never meet water."""
+    return i in MOUTHS or terrain != "river"
 
 
 def route(name, i, same=(False,) * 6, step=15):
@@ -328,6 +343,16 @@ def monto_town(p):
     lantern(p, 0.15, -1.5, DECK_Z)
 
 
+def monto_mouth(p):
+    """Where Monto's river meets land: a stone apron across the channel's end on edge 0, a dark culvert the water runs into, and the walk along its top to the bank. The engine places it, turned, on each mouth with no water beyond."""
+    half = 1.0
+    p.box(_v(A - 0.21, 0), (0.42, 2 * half, 0.56), "st_stone", z=APRON_Z - 0.56)
+    p.box(_v(A - 0.21, 0), (0.42, 2 * half + 0.06, 0.02), "st_stone_l", z=APRON_Z - 0.02)
+    p.box(_v(A - 0.43, 0), (0.02, 0.72, 0.1), "st_dark", z=APRON_Z - 0.17)
+    for y in (-0.5, 0.5):
+        p.box(_v(A - 0.44, y), (0.04, 0.14, 0.24), "st_stone_d", z=APRON_Z - 0.26)
+
+
 def spire(p):
     """A slim sandstone spire under a blue dome set with gold stars, with a star-well at its foot."""
     p.cylinder(_v(0, 0.45), 0.85, 0.45, "st_sand_d", segments=10, z=-0.2)
@@ -463,10 +488,12 @@ def _builder(name):
             CENTRES[name](p)
         elif kind == "plinth":
             dunfaire_plinth(p)
+        elif kind == "mouth":
+            monto_mouth(p)
         elif name in WEDGES:
             WEDGES[name](p, rng, kind)
     return build
 
 
 GROUND = {DUNFAIRE: "plains", RIME: "hills", MONTO: "plains", SPIRE: "desert", OAK: "forest", WEIZEN: "farmland"}
-VARIANTS = {name: (terrain, _builder(name), GROUND[name], ("plinth",) if name == DUNFAIRE else ()) for name, terrain in STARTS.items()}
+VARIANTS = {name: (terrain, _builder(name), GROUND[name], ("plinth",) if name == DUNFAIRE else ("mouth",) if name == MONTO else ()) for name, terrain in STARTS.items()}

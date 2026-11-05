@@ -327,9 +327,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         if terrain == "river":
             # Water is drawn per tile from its own water neighbours, the way the engines will.
             near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
-            mask = [vr.terrain_of(n) == "river" if n else False for n in near]
+            mask = list(vr.st.MOUTH_WATER) if name == vr.st.MONTO else [vr.terrain_of(n) == "river" if n else False for n in near]  # Monto's water is fixed
             p = hk.Piece(f"water_{q}_{r}")
-            seed = f"{q},{r}"
+            seed = vr.st.WATER_SEED if name == vr.st.MONTO else f"{q},{r}"
             port = wt.port_turn(mask, seed) if name == "riverport" else None
             band = dist.get((q, r), 0) if dist.get((q, r), 0) in (1, 2) else 0
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
@@ -350,6 +350,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 place(templates, "trollbridge_centre", col, at + Vector((mid[0], mid[1], 0)), ang)
             if name == vr.st.MONTO:
                 place(templates, f"{name}_centre", col, at)
+                for k in vr.st.MOUTHS:  # a mouth with no water beyond ends in stone
+                    if vr.terrain_of(near[k]) != "river" if near[k] else True:
+                        place(templates, f"{name}_mouth", col, at, math.radians(60 * k))
             if port is not None:  # the port's piece, its boats, and a water gate on each back edge with water beyond it
                 spin = math.radians(60 * port)
                 place(templates, f"{name}_centre", col, at, spin)
@@ -898,7 +901,7 @@ if __name__ == "__main__":
             if vr.terrain_of(name) != "river":
                 continue
             near = [tiles_map.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
-            mask = [vr.terrain_of(n) == "river" if n else False for n in near]
+            mask = list(vr.st.MOUTH_WATER) if name == vr.st.MONTO else [vr.terrain_of(n) == "river" if n else False for n in near]  # Monto's water is fixed
             kit = vr.wedges_of(name)
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
             at, seed = hk.tile_position(q, r), f"{q},{r}"
