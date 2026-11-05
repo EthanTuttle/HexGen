@@ -278,7 +278,7 @@ func _every_sub_type(c: Creator) -> void:
 			check(c.sub == x.id, "race %s: tapping %s picks it" % [r.id, x.id])
 			check(c.done("race") == (x.id != "High elf"), "race %s: Next after %s" % [r.id, x.id])
 			check((control("Next") as TagButton).disabled != c.done("race"), "race %s: the Next button follows it after %s" % [r.id, x.id])
-			await shot("race_%s" % str(x.id).to_lower().replace(" ", "_"))
+			await shot("race_pick_%s" % str(x.id).to_lower().replace(" ", "_"))
 		if subs.any(func(x): return x.id == "High elf"):
 			await tap_on("High elf")
 			await _wait(0.4)

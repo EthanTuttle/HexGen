@@ -421,7 +421,7 @@ func _panel_fit() -> void:
 				for c in hud._details.get_children() + hud._button_box.get_children():
 					wide = maxf(wide, c.get_combined_minimum_size().x)
 				rows.append([need, wide, u.name, id, state])
-				if "--shots" in OS.get_cmdline_user_args() and (need > CombatHud.DETAILS_H or wide > 146.5):
+				if "--shots" in OS.get_cmdline_user_args() and (need > CombatHud.DETAILS_H - 16.0 or wide > 146.5):
 					await _shot("fit_%s_%s_%s" % [u.name.replace("[", "").replace("]", "").replace(" ", "_"), id, state])
 				u.blessed = false
 				f.result = {}
