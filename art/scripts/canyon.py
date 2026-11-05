@@ -123,8 +123,14 @@ def line_to_junction(t, i, landmark=None, turn=0):
     """A corridor from edge i's midpoint, by way of a bend, to the junction, in the tile's frame."""
     n = wt.normal(i)
     side = (-n[1], n[0])
-    bend = wt.add(wt.mul(n, 2.1), wt.mul(side, (h(t, i, 76) - 0.5) * 1.7))
-    return [wt.mul(n, wt.A), bend, junction(t, landmark, turn)]
+    start, end = wt.mul(n, wt.A), junction(t, landmark, turn)
+    off = (h(t, i, 76) - 0.5) * 1.7
+    need = -FLOOR / math.tan(math.radians(RAMP_STEEP))
+    bend = wt.add(wt.mul(n, 2.1), wt.mul(side, off))
+    while math.dist(start, bend) + math.dist(bend, end) < need:  # too short to reach the floor within the minis' limit: bend it wider until it's long enough
+        off += 0.02 if off >= 0.0 else -0.02
+        bend = wt.add(wt.mul(n, 2.1), wt.mul(side, off))
+    return [start, bend, end]
 
 
 def tile_lines(t, openset, entrances, landmark=None, turn=0):
