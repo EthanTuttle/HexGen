@@ -89,6 +89,8 @@ func _ready() -> void:
 	map.time_of_day = clock
 	rig.floor_at = map.camera_floor
 	add_child(map)
+	map.party_walks = true
+	map.party_at = party_tile
 	map.place(Rules.START_TILE, run.start_tile())
 	order[Rules.START_TILE] = 0
 

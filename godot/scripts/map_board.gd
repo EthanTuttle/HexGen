@@ -69,6 +69,8 @@ var flow_dist := {}                    # tile -> steps to its region's landmark
 var flow_toward := {}                  # tile -> the region neighbour one step closer
 var landmark_turns := {}               # landmark tile -> 60 degree steps its centre piece turns
 var gates := {}                        # fenced tile -> the edges that show a gate (FenceGates)
+var water_gates := {}                  # fenced tile -> the gates facing water opened so a party isn't cut off; they stay (design/02 -> Crossing water)
+var party_walks := false               # a party walks this map, so water gates apply (the game, not the title's world or the look tests)
 var lightning: Lightning               # stormy plains' strikes
 var _faint: StandardMaterial3D         # the Abandoned Barn's light through its boards
 var _graphs := {}                      # tile -> its drawn paths (TilePaths), built when asked for
@@ -190,6 +192,7 @@ func retile(changes: Dictionary) -> void:
 	touched.merge(_update_raised())
 	touched.merge(_update_gates())
 	touched.merge(_update_streets())
+	touched.merge(_open_cut_off())
 	touched.merge(_canyon_dirty)   # a far tile that had to take an entrance (Canyon._repair)
 	_canyon_dirty.clear()
 	if changes.values().any(func(n): return n in ["badlands", "raiderstronghold"]):
@@ -398,7 +401,7 @@ func _update_gates() -> Dictionary:
 	var by_terrain := {}
 	for t: Vector2i in terrains:
 		by_terrain[t] = Variants.terrain_of(terrains[t])
-	var now := FenceGates.gates(by_terrain, raised, climbs, [Rules.START_TILE])
+	var now := FenceGates.gates(by_terrain, raised, climbs, [Rules.START_TILE], water_gates)
 	var changed := {}
 	for t: Vector2i in now:
 		if now[t] != gates.get(t, []):
@@ -408,6 +411,47 @@ func _update_gates() -> Dictionary:
 
 
 ## Works out the village streets; returns the tiles whose streets changed, as they need rebuilding.
+## If the party can't reach the rest of the map and a fence facing water it can reach is what cuts it off, that fence gets
+## a gate facing the water, by _rank among the edges that reconnect it (design/02 -> Crossing water). Returns the tile to rebuild.
+func _open_cut_off() -> Dictionary:
+	if not party_walks or not terrains.has(party_at):
+		return {}
+	var reach := _reach()
+	if reach.size() == terrains.size():
+		return {}
+	var edges := []
+	for w: Vector2i in reach:
+		if Variants.is_water(terrains[w]):
+			for i in 6:
+				var f: Vector2i = w + Hex.NEIGHBOURS[i]
+				if gates.has(f) and not reach.has(f) and not (i + 3) % 6 in gates[f]:
+					edges.append([f, (i + 3) % 6])
+	edges.sort_custom(func(a, b): return FenceGates._rank(a[0], a[1]) < FenceGates._rank(b[0], b[1]))
+	for e in edges:
+		gates[e[0]].append(e[1])
+		var after := _reach()
+		var beyond: bool = after.size() == terrains.size() or after.keys().any(func(t): return not reach.has(t) and not gates.has(t))
+		if beyond:
+			water_gates[e[0]] = water_gates.get(e[0], []) + [e[1]]
+			return {e[0]: true}
+		gates[e[0]].erase(e[1])
+	return {}
+
+
+## Every tile the party can walk to from where it stands, crossings included.
+func _reach() -> Dictionary:
+	var seen := {party_at: true}
+	var todo: Array[Vector2i] = [party_at]
+	while not todo.is_empty():
+		var t: Vector2i = todo.pop_back()
+		for n in Hex.NEIGHBOURS:
+			var c: Vector2i = t + n
+			if terrains.has(c) and not seen.has(c) and edge_open(t, c):
+				seen[c] = true
+				todo.append(c)
+	return seen
+
+
 func _update_streets() -> Dictionary:
 	var by_terrain := {}
 	var trails := {}
@@ -555,6 +599,7 @@ func party_moved(t: Vector2i) -> void:
 		return
 	var touched := _update_raised()
 	touched.merge(_update_gates())
+	touched.merge(_open_cut_off())
 	for c: Vector2i in touched:
 		_build_tile(c)
 		_add_cover(c)

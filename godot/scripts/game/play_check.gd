@@ -15,6 +15,7 @@ var wipes := 0
 var drunk := 0
 var _shut := {}
 var _locked := false
+var _water_gates := {}
 
 
 func _ready() -> void:
@@ -149,6 +150,11 @@ func _watch_start() -> void:
 				_shut[i] = true
 				print("PLAY FAIL: water beside Monto Town on side %d, %s" % [i, seed_is])
 				failed += 1
+	for t: Vector2i in game.map.water_gates:
+		if not _water_gates.has(t):
+			_water_gates[t] = true
+			print("PLAY WATER GATE: %s, %s %s edge %s, %d tiles, monto %s" % [seed_is, game.map.terrains[t], t, game.map.water_gates[t],
+					game.map.terrains.size(), game.map.terrains[Rules.START_TILE] == StartTiles.MONTO])
 	if _locked or game.busy or not game.deck.hand.is_empty():
 		return
 	for t: Vector2i in game.map.terrains:

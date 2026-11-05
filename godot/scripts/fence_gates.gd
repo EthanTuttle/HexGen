@@ -8,8 +8,9 @@ const UNWALKABLE := ["river"]             # water: rivers and lakes
 
 
 ## terrains: tile -> terrain (variants and landmarks already turned into their terrain). raised: all raised tiles.
-## climbs: every raised region's Cliffs.climbs(). starts: the starting tiles. Returns tile -> the edges of that fenced tile that show a gate.
-static func gates(terrains: Dictionary, raised := {}, climbs := [], starts := []) -> Dictionary:
+## climbs: every raised region's Cliffs.climbs(). starts: the starting tiles. kept: fenced tile -> edges that stay gates whatever
+## else changes (MapBoard's water gates; only a game has them, so art/scripts/fence_gates.py doesn't). Returns tile -> the edges of that fenced tile that show a gate.
+static func gates(terrains: Dictionary, raised := {}, climbs := [], starts := [], kept := {}) -> Dictionary:
 	var out := {}
 	var fence := {}
 	for t: Vector2i in terrains:
@@ -63,6 +64,11 @@ static func gates(terrains: Dictionary, raised := {}, climbs := [], starts := []
 		for i: int in fence[t]:
 			if (t in starts or t + Hex.NEIGHBOURS[i] in starts) and not i in out[t]:
 				out[t].append(i)
+	for t: Vector2i in kept:
+		if fence.has(t):
+			for i: int in kept[t]:
+				if i in fence[t] and not i in out[t]:
+					out[t].append(i)
 	return out
 
 

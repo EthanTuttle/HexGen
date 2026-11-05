@@ -38,9 +38,44 @@ func _run() -> void:
 		if not (i + 3) % 6 in out[farm]:
 			print("START FAIL farm beside a start: no gate on side %d" % i)
 			failed += 1
+	failed += _check_water_gate()
 	print("START DONE: %d failed" % failed)
 	if "--quit" in OS.get_cmdline_user_args():
 		get_tree().quit()
+
+
+## A fence that cuts the party off across water gets a gate, which stays when land opens another way; one that doesn't, doesn't.
+func _check_water_gate() -> int:
+	var failed := 0
+	var map := MapBoard.new()
+	add_child(map)
+	map.party_walks = true
+	map.party_at = Rules.START_TILE
+	var river: Vector2i = Rules.START_TILE + Hex.NEIGHBOURS[0]
+	var farm: Vector2i = river + Hex.NEIGHBOURS[0]
+	map.place(Rules.START_TILE, StartTiles.MONTO)
+	map.place(river, "river")
+	map.place(farm, "farmland")
+	var opened: bool = 3 in map.water_gates.get(farm, []) and map.edge_open(river, farm)
+	map.place(river + Hex.NEIGHBOURS[1], "plains")
+	map.place(river + Hex.NEIGHBOURS[5], "plains")
+	var stayed: bool = 3 in map.gates.get(farm, []) and map.edge_open(river, farm)
+	print("START %s water gate: opens when cut off, stays when land opens another way" % ("OK" if opened and stayed else "FAIL"))
+	failed += 0 if opened and stayed else 1
+	remove_child(map)
+	map.free()
+	map = MapBoard.new()
+	add_child(map)
+	map.party_walks = true
+	map.party_at = Rules.START_TILE
+	map.place(Rules.START_TILE, "plains")
+	map.place(Rules.START_TILE + Hex.NEIGHBOURS[0], "river")
+	map.place(Rules.START_TILE + Hex.NEIGHBOURS[1], "farmland")
+	print("START %s water gate: none when the fence doesn't cut the party off" % ("OK" if map.water_gates.is_empty() else "FAIL"))
+	failed += 0 if map.water_gates.is_empty() else 1
+	remove_child(map)
+	map.free()
+	return failed
 
 
 ## Each background's tile by day and night, alone, then among neighbours, walked across on the way (`-- --startshots --background=<name>`).
