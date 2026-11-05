@@ -17,6 +17,7 @@ MONTO_JOIN = 1.95   # side ways join the bridge this far either side of the midd
 MOUTHS = (0, 3)     # Monto's river runs from edge 0 to edge 3, straight across the bridge. Only these edges can touch a river or lake
 MOUTH_WATER = [i in MOUTHS for i in range(6)]  # pass this and WATER_SEED to the water functions on Monto's tile, never its neighbours
 WATER_SEED = "monto"
+WEIZEN_BACK = 0.3   # how far Weizenhof's manor stands back from the tile's middle, so its gate has room for a drive
 APRON_X = A - 0.2   # the stone apron's walk at a land mouth
 APRON_Z = 0.06
 APRON_Y = -1.05     # the bank it reaches, in the mouth's own frame (edge along +x): the same way round at both mouths, so the join's the nearer one
@@ -400,8 +401,9 @@ def oak_inn(p):
 
 
 def weizen_manor(p):
-    """A stately manor behind a walled court with a gateway and banners."""
-    p.box(_v(0, 0.2), (3.3, 2.0, 0.015), "st_yard", z=0.005)
+    """A stately manor behind a walled court with a gateway and banners, set back in its grounds. A drive runs from the gate to the tracks on edges 4 and 5, past the stop. Crops stay out beyond the ring."""
+    import bmesh
+    p.box(_v(0, 0.2), (3.3, 2.0, 0.015), "st_yard", z=0.012)
     block(p, 0, 0.95, 2.3, 0.95, 1.1, "st_white")
     p.gable_roof(_v(0, 0.95), 2.45, 1.2, 0.72, "st_roof", z=1.1)
     for x in (-1.15, 1.15):
@@ -421,6 +423,19 @@ def weizen_manor(p):
     bench(p, 0.9, -0.2)
     for x, y in ((-1.0, -0.15), (-0.75, 0.05)):
         p.cone(_v(x, y), 0.13, 0.32, "st_wheat", segments=5)
+    bmesh.ops.translate(p.bm, verts=p.bm.verts[:], vec=(0, WEIZEN_BACK, 0))
+    # the grounds: a green hex inside the ring, the drive on it
+    ring = [_v(RING_R * 0.93 * math.cos(math.radians(60 * k + 30)), RING_R * 0.93 * math.sin(math.radians(60 * k + 30))) for k in range(6)]
+    p.flat(ring, 0.006, "plains")
+    gate_y = -0.75 + WEIZEN_BACK
+    fork = (0.0, gate_y - 0.55)
+    p.box(_v(0, (gate_y + fork[1]) / 2), (0.62, gate_y - fork[1] + 0.1, 0.012), "road", z=0.008)
+    for e in (STOP_EDGE, 4):
+        n = normal(e)
+        mid = (n[0] * STOP_R, n[1] * STOP_R)
+        for a, b in ((fork, mid), (mid, (n[0] * RING_R, n[1] * RING_R))):
+            ln = math.dist(a, b)
+            p.box(_v((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), (ln + 0.3, 0.56, 0.012), "road", z=0.008, spin=math.atan2(b[1] - a[1], b[0] - a[0]))
 
 
 # Wedge spots keep to the tile's corners: outside the ring, and off the spoke (wedge frame: the spoke runs along +x).
@@ -457,20 +472,29 @@ def forest_wedge(p, rng, kind):
 
 
 def farm_wedge(p, rng, kind):
+    """A track from the ring out to the edge, the ring's own track, and rows of crops either side beyond the ring, stopping clean at it. Facing other land, a fence with its gate standing open: all six sides stay open."""
     import bmesh
 
     import build_tiles as bt
-    bt.farmland(p, rng, "same" if kind == "same" else "edge_gate")
-    # the walk keeps to tracks: clear crops and anything else off the ring and the spoke, and lay the ring's track
-    gone = []
-    for f in p.bm.faces:
-        pts = [v.co for v in f.verts] + [f.calc_center_median()]
-        if max(v.co.z for v in f.verts) > 0.03 and any(abs(math.hypot(c.x, c.y) - RING_R) < 0.42 or (abs(c.y) < 0.42 and c.x > RING_R) for c in pts):
-            gone.append(f)
-    bmesh.ops.delete(p.bm, geom=gone, context="FACES")
+    bt.track(p, x0=RING_R)
+    x_end = A - 0.04
+    if kind != "same":
+        bt.farm_gate(p, rng)
+        gone = [f for f in p.bm.faces if max(v.co.z for v in f.verts) > 0.03 and any(abs(math.hypot(c.x, c.y) - RING_R) < 0.42 or (abs(c.y) < 0.42 and c.x > RING_R) for c in [v.co for v in f.verts] + [f.calc_center_median()])]
+        bmesh.ops.delete(p.bm, geom=gone, context="FACES")
+        x_end = bt.BORDER_X - 0.22
     for k in range(-2, 3):
         a = math.radians(k * 13)
         p.box(_v(RING_R * math.cos(a), RING_R * math.sin(a)), (0.56, 0.72, 0.012), "road", z=0.004, spin=a)
+    for sign in (-1, 1):
+        y = 0.5
+        row = 0
+        while y < 2.0:
+            x0 = max(math.sqrt(max(0.0, (RING_R + 0.42) ** 2 - y * y)), y / TAN30 + 0.1)
+            if x_end - x0 > 0.2:
+                p.box(_v((x0 + x_end) / 2, sign * y), (x_end - x0, 0.14, 0.14), "field_a" if row % 2 else "field_b", z=0.0)
+            y += 0.22
+            row += 1
 
 
 def desert_wedge(p, rng, kind):
