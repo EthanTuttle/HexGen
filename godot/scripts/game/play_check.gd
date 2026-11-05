@@ -12,6 +12,7 @@ var empties := 0
 var rests := 0
 var levels := 0
 var wipes := 0
+var drunk := 0
 
 
 func _ready() -> void:
@@ -30,13 +31,22 @@ func _wait(s: float) -> void:
 
 
 func _run() -> void:
-	Engine.time_scale = 4.0
+	Engine.time_scale = 1.0 if "--slow" in OS.get_cmdline_user_args() else 4.0
 	game.debug_auto_cross = true
 	await _wait(0.5)
+	if "--bands" in OS.get_cmdline_user_args():
+		if "--once" in OS.get_cmdline_user_args():
+			Foes.attacks_per_turn = 1
+		if "--adds" in OS.get_cmdline_user_args():
+			Foes.damage_adds = true
+		await _bands()
+		get_tree().quit()
+		return
 	_check(game.party.size() == 2 and game.party[1].name == "Fluffy", "the party is the hero and Fluffy")
 	var total: int = game.deck.draw_pile.size() + game.deck.hand.size()
 	_check(total == 24, "the deck is 05's 15 cards plus one of every terrain: %s" % [game.run.deck_cards()])
 	_check(game.run.seed_text != "", "seed %s" % game.run.seed_text)
+	game.potions = 2
 	var steps := 0
 	while not game._ended and steps < MAX_STEPS:
 		steps += 1
@@ -53,7 +63,7 @@ func _run() -> void:
 		await _go_to_a_fight()
 	print("PLAY %d steps; %d regions, %d fights, %d wipes, %d levels (level %d, %d gold), %d times out of cards, day %d" % [steps, game.regions.size(), fights, wipes, levels, game.level, game.gold, empties, game.day])
 	_check(game.fights_won == 0 or game.gold > 0, "wins pay gold")
-	print("PLAY party HP at the end: %s" % [game.party.map(func(m): return m.hp)])
+	print("PLAY party HP at the end: %s; %d potions drunk, %d left" % [game.party.map(func(m): return m.hp), drunk, game.potions])
 	_check(game._ended, "the goal's 3 regions brought up the end panel")
 	_check(game.end_panel.visible, "the end panel shows")
 	print("PLAY DONE: %d failed" % failed)
@@ -110,6 +120,36 @@ func _go_to_a_fight() -> void:
 	await _wait(0.1)
 
 
+## How fights go at each band for a fresh party at a given level's HP (design/06's numbers), for the balance report.
+func _bands() -> void:
+	for band in [1, 2, 3]:
+		Foes.debug_band = band
+		for k in 5:
+			for m in game.party:
+				m.hp = m.max_hp
+			game.encounters.clear()
+			game.busy = false
+			var map_id: String = ["plains_stones", "forest_knoll", "plains_trees", "forest_glade", "plains_long_grass"][k]
+			game.force_map = map_id
+			game.add_encounter(game.party_tile, false, [], Rules.ENCOUNTER_TABLE[k % 2])
+			game.start_fight(game.party_tile)
+			while not game.fight.active:
+				await get_tree().process_frame
+			await _wait(0.5)
+			await _play_fight()
+			while not game.after.visible:
+				await get_tree().process_frame
+			await _wait(0.1)
+			game.after.done.emit()
+			while game.busy:
+				if game.level_pick.visible:
+					game.level_picked(game._pick_options[0])
+				await get_tree().process_frame
+			game.level = 1
+			game.xp = 0
+	print("PLAY DONE: %d failed" % failed)
+
+
 ## A plain player: Fluffy's bolts and frost when in reach, the hero's Shield Bash then attacks, Second Wind when hurt. Notes how each fight went, for the balance report.
 func _play_fight() -> void:
 	var f := game.fight
@@ -155,6 +195,9 @@ func _take_turn(f: Fight, u: Dictionary) -> void:
 		var picked := ""
 		if u.hp * 2 < u.max_hp and f.cant_use(u, Cards.get_card("second_wind")) == "" and "second_wind" in u.cards:
 			picked = "second_wind"
+		elif u.hp * 2 < u.max_hp and f.cant_use(u, Cards.get_card("use_item")) == "":
+			picked = "use_item"
+			drunk += 1
 		else:
 			for id: String in ["firebolt", "frost_ray", "shield_bash", "attack"]:
 				if id in u.cards:

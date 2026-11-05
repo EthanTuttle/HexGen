@@ -65,6 +65,10 @@ func _run() -> void:
 	game.spawn_forest_regions()
 	print("DESERT spawn of every debug region took %d ms" % (Time.get_ticks_msec() - t0))
 	await _wait(1.0)
+	if "--silhouetteonly" in OS.get_cmdline_user_args():
+		await _silhouette(map)
+		get_tree().quit()
+		return
 	if "--shimmeronly" in OS.get_cmdline_user_args():
 		await _shimmer_shows(map)
 		get_tree().quit()

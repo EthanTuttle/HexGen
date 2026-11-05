@@ -16,8 +16,15 @@ const NEAR_UP_TO := 4
 const MID_UP_TO := 9
 
 
+static var attacks_per_turn := 3   # PLACEHOLDER: as many as its AP allows
+static var damage_adds := false    # test aid: damage + band - 1, not times the band
+static var debug_band := 0   # a test aid: every fight at this band
+
+
 ## 1 near, 2 mid, 3 far, by tiles from the start.
 static func band(t: Vector2i) -> int:
+	if debug_band > 0:
+		return debug_band
 	var away := Rules.hex_distance(t, Rules.START_TILE)
 	return 1 if away <= NEAR_UP_TO else 2 if away <= MID_UP_TO else 3
 
@@ -40,7 +47,7 @@ static func roster(scene: String, roles: Array, at_band: int) -> Array:
 		var r: Dictionary = ROLES[role]
 		var look: Array = MIX.get(scene, MIX.enc_fight_bandits)[role]
 		var hp: int = r.hp * at_band
-		out.append({name = look[1], mini = look[0], role = role, ability = "STR", hp = hp, max_hp = hp, score = r.coins + 2 * (at_band - 1), damage = r.damage * at_band,
+		out.append({name = look[1], mini = look[0], role = role, ability = "STR", hp = hp, max_hp = hp, score = r.coins + 2 * (at_band - 1), damage = r.damage + at_band - 1 if damage_adds else r.damage * at_band,
 				heads = 1 + (1 if role == "elite" else 0) + (1 if at_band >= 3 else 0)})
 	return out
 

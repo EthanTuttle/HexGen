@@ -353,8 +353,8 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 		return "Once per fight: already used" if c.limit == "fight" else "Once per turn: already used"
 	if ap_left(u) < c.ap:
 		return "Not enough AP"
-	if c.get("effect", "") == "item":
-		return "No consumable equipped"    # PLACEHOLDER: no consumables in the loop yet
+	if c.get("effect", "") == "item" and game.potions <= 0:
+		return "No consumable equipped"
 	return ""
 
 
@@ -757,6 +757,7 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	var coins := Coins.flip(rng, n)
 	var heads := Coins.heads(coins)
 	var hit := heads >= heads_needed(t)
+	coins = await hud.flip_coins(a, coins, heads_needed(t), Rules.COIN_STEP if a.ally else Rules.COIN_STEP_FOE)
 	var dmg := 0
 	if hit:
 		dmg = a.damage if a.damage >= 0 else a.score + k.get("bonus", 0)
@@ -808,6 +809,7 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	var coins := Coins.flip(rng, Rules.ENEMY_SAVE_COINS)
 	var heads := Coins.heads(coins)
 	var saved := heads >= 1
+	coins = await hud.flip_coins(t, coins, 1, Rules.COIN_STEP_FOE)
 	var dmg: int = Rules.SPELL_DAMAGE / 2 if saved else Rules.SPELL_DAMAGE
 	result = {coins = coins, title = "Saved: half damage" if saved else "Failed save!", good = not saved,
 			sub = "Damage: %d [placeholder]" % dmg}   # the coins show the heads
@@ -844,6 +846,11 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.poison = true
 		"defend":
 			a.defending = true
+		"item":
+			game.potions -= 1
+			var before: int = a.hp
+			a.hp = mini(a.max_hp, a.hp + Rules.POTION_HEAL)
+			hud.float_text(a, "+%d" % (a.hp - before), false, true)
 		"parry":
 			a.parry = true
 		"ward":
@@ -936,6 +943,7 @@ func _enemy_phase() -> void:
 		e.defending = false
 		e.ap = maxi(Rules.AP - e.lost_ap, 0)   # stunned or prone
 		e.lost_ap = 0
+		var attacks := 0
 		while e.ap > 0 and not e.down and active and phase == "enemies":
 			var targets := foes_of(e)
 			if targets.is_empty():
@@ -943,6 +951,9 @@ func _enemy_phase() -> void:
 			targets.sort_custom(func(a, b): return dist(a, e) < dist(b, e))
 			var t: Dictionary = targets[0]
 			if dist(t, e) == 1:
+				if attacks >= Foes.attacks_per_turn:
+					break
+				attacks += 1
 				e.ap -= 1
 				await _attack(e, t, Cards.get_card("attack", "spear"))
 				busy = true

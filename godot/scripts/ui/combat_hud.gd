@@ -630,6 +630,36 @@ func _make_bar(u: Dictionary) -> Control:
 	return v
 
 
+## An attack's coins over who's flipping, one at a time (design/07): stops at the heads it needs, then holds so the result can be read. Returns the coins shown.
+func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float) -> Array[bool]:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 3)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(row)
+	var cam := fight.game.rig.camera
+	var shown: Array[bool] = []
+	var heads := 0
+	var size_ := 24.0
+	var at := cam.unproject_position(u.mini.global_position + Vector3(0, 2.4, 0))
+	var count := coins.size()
+	row.global_position = at - Vector2((size_ + 3.0) * count * 0.5, size_)
+	for h: bool in coins:
+		var coin := CoinView.make(h, size_)
+		coin.pivot_offset = Vector2(size_, size_) * 0.5
+		coin.scale = Vector2(0.05, 1.0)
+		row.add_child(coin)
+		var tw := create_tween()
+		tw.tween_property(coin, "scale:x", 1.0, step * 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		await get_tree().create_timer(step).timeout
+		shown.append(h)
+		heads += 1 if h else 0
+		if heads >= need:
+			break
+	await get_tree().create_timer(Rules.COIN_HOLD).timeout
+	row.queue_free()
+	return shown
+
+
 func float_text(u: Dictionary, text: String, hurt: bool, heal := false) -> void:
 	var l := UI.label(text, "lilita", 18, Color("#2E7A3E") if heal else (UI.RED if hurt else UI.INK_SOFT))
 	l.add_theme_constant_override("outline_size", 6)
