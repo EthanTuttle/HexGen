@@ -372,8 +372,30 @@ func _refresh_hotbar() -> void:
 		c.queue_free()
 	if fight.current.is_empty():
 		return
-	for id in fight.current.hot:
-		_hotbar.add_child(_card_button(id, true))
+	# Each card keeps its slot: Edit hotbar's `hot_slots` ("" for a cleared slot) when there are any, else `hot` in order;
+	# empty slots draw as a faint outline, so the bar always has Rules.HOTBAR_SLOTS places.
+	var slots: Array = fight.current.member.get("hot_slots", fight.current.hot)
+	for i in Rules.HOTBAR_SLOTS:
+		var id: String = slots[i] if i < slots.size() else ""
+		_hotbar.add_child(_card_button(id, true) if id != "" else _EmptySlot.new())
+
+
+## A cleared hotbar slot: the card's outline, faint and dashed. PLACEHOLDER look.
+class _EmptySlot extends Control:
+	func _init() -> void:
+		custom_minimum_size = Vector2(74, 92)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var r := Rect2(Vector2(1, 9), Vector2(72, 82))
+		var col := Color(UI.CREAM_LIGHT, 0.7)
+		var pts := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y), r.position]
+		for k in 4:
+			var a: Vector2 = pts[k]
+			var b: Vector2 = pts[k + 1]
+			var n := int(a.distance_to(b) / 9.0)
+			for j in n:
+				draw_line(a.lerp(b, float(j) / n), a.lerp(b, (j + 0.55) / n), col, 2.0)
 
 
 ## A hotbar card (74 x 84): colour band, AP hex, repeat icon or once-per-fight tag, icon and name.
