@@ -7,6 +7,7 @@ Art for the Godot and Unity engine prototypes. The decisions behind it (terrains
 | `scripts/` | Blender Python that builds the first drafts, exports and renders previews; `water.py`, `ground_cover.py`, `landmark_flow.py` and `fence_gates.py` are references the engines copy |
 | `tiles/` | Map tile kit, `tiles_vN.blend` |
 | `combat/` | Combat cell kit, `combat_cells_vN.blend` |
+| `town/` | Town square and inn scenes, `town_scenes_vN.blend` |
 | `minis/` | Minis (worked on in its own session); `minis/standins/` holds the low-poly stand-ins |
 | `export/` | `.glb` files the engines import; always the latest version |
 | `preview/` | Rendered test views, `*_vN.png` |
