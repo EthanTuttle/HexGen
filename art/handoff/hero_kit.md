@@ -99,7 +99,7 @@ A hero is one merged mesh, rebuilt from its description once per hero and per ch
 - Weapon names in the data have `brass_knuckles` with an underscore.
 - **Matrices** are 12 numbers: the basis's x, y and z columns, then the origin. They're in the glb's frame, which is Godot's: `Transform3D(Basis(Vector3(m0, m1, m2), Vector3(m3, m4, m5), Vector3(m6, m7, m8)), Vector3(m9, m10, m11))`.
 - **Scale isn't uniform** on arms and planted weapons. Transform normals by the inverse transpose, or recompute them.
-- A mini faces -Z, its pivot at the base's centre on the ground, as the enemy minis do.
+- A mini faces +Z in the glb's frame (-Y in Blender), with its pivot at the base's centre on the ground, as the enemy minis do.
 
 **2. The colours.** After merging, go through the vertex colours, converting each from linear to sRGB bytes (`Color.linear_to_srgb()`):
 
