@@ -165,7 +165,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 
 | NPC | Role | Personality / notes |
 | --- | --- | --- |
-| The wizard tower's master | Mentor | When cultists attack the tower, the master force-teleports the whole tower away, leaving the hero outside. A story event that removes the starting hex; the hex reverts to plains/grassland (see [Map & exploration](02 Map & exploration.md) → Placement). |
+| The wizard tower's master | Mentor | When cultists attack the tower, the master force-teleports the whole tower away, leaving the hero outside. A story event that removes the starting hex; the hex reverts to desert (Nov 4, 2026; it starts on desert) (see [Map & exploration](02 Map & exploration.md) → Placement). |
 | Frim | Companion: rogue (Gambler), wood elf | Follows their gut; takes a gamble on the hero because something about them says to follow |
 | Grimhold | Companion: cleric (Order of Evil), human, from the cultists | Also wants to know what's in the tome and helps the Sage; they get along over a shared interest in knowledge. Initially draws his power from Egan; this may become part of his personal quest |
 
