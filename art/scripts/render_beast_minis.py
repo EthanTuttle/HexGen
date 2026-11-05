@@ -2,7 +2,7 @@
 the combat camera's height and distance.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_beast_minis.py [-- wolf bear panther hawk | solo:wolf ...]
-solo:<beast> renders beast_<beast>_solo_vN.png: the beast alone, large, from four sides and the combat camera.
+faces:<beast>:<v>:<v> puts two solo face views side by side. solo:<beast> renders beast_<beast>_solo_vN.png: the beast alone, large, from four sides and the combat camera.
 Options built beside a beast (beast_wolf_band) join the combat-camera row.
 Uses the latest beast_minis, hero_kit and enemy_minis. Writes art/preview/beast_<beast>_*_vN.png and the sheet beast_<beast>_vN.png.
 """
@@ -67,7 +67,7 @@ def enemy(t, piece, col, at, spin):
 
 
 # What each beast stands beside: its enemy kind where there is one, else the approved ally wolf.
-BESIDE = {"wolf": "enemy_wolf", "bear": "beast_wolf_band", "panther": "beast_wolf_band", "hawk": "beast_wolf_band"}
+BESIDE = {"wolf": "enemy_wolf", "bear": "beast_wolf", "panther": "beast_wolf", "hawk": "beast_wolf"}
 
 
 def other(t, beast_name, col, at, spin):
@@ -127,7 +127,7 @@ def render(beast_name):
 
 
 # The piece each beast is, where the approved one isn't plain beast_<name>.
-PIECE = {"wolf": "beast_wolf_band"}
+PIECE = {}
 
 
 def solo(beast_name):
@@ -173,10 +173,31 @@ def sheet_full(stems, out, cols):
     print("SHEET", im.filepath_raw)
 
 
+def face_compare(beast_name, before, after):
+    """The face close-up of two solo versions side by side: beast_<beast>_face_before_after_vN.png."""
+    tiles = []
+    for v in (before, after):
+        im = bpy.data.images.load(os.path.join(hk.ART, "preview", f"beast_{beast_name}_solo_face_v{v}.png"))
+        w, h = im.size
+        tiles.append(np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4))
+    pixels = np.ones((tiles[0].shape[0], tiles[0].shape[1] * 2 + 12, 4), dtype=np.float32)
+    pixels[:, :tiles[0].shape[1]] = tiles[0]
+    pixels[:, tiles[0].shape[1] + 12:] = tiles[1]
+    out = f"beast_{beast_name}_face_before_after"
+    im = bpy.data.images.new(out, pixels.shape[1], pixels.shape[0], alpha=True)
+    im.pixels[:] = pixels.ravel().tolist()
+    im.filepath_raw = os.path.join(hk.ART, "preview", f"{out}_v{rp.next_n(out)}.png")
+    im.file_format = "PNG"
+    im.save()
+    print("SHEET", im.filepath_raw)
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["wolf"]
     for name in args:
-        if name.startswith("solo:"):
+        if name.startswith("faces:"):  # faces:<beast>:<before>:<after>
+            face_compare(*name.split(":")[1:2], *map(int, name.split(":")[2:]))
+        elif name.startswith("solo:"):
             solo(name[5:])
         else:
             render(name)

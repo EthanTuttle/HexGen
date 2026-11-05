@@ -10,10 +10,10 @@ assembler swaps them. For a beast the zones mean:
   eyes   the eyes           cloth  the neckerchief, which ties it to its ranger
 Proposed swatches are in BEAST_SWATCHES.
 
-  beast_wolf        alert, head up, tail out straight: the enemy wolf stalks low with its jaws open
-  beast_wolf_band   the same with a cloth across its back, which reads from the combat camera: the approved wolf (Nov 5, 2026)
-  beast_bear        broad and heavy on all fours, head up, the same back cloth (approved Nov 5, 2026)
-  beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth (approved Nov 5, 2026)
+  beast_wolf        alert, head up, tail out straight, a draped saddle in the ranger's cloth: the enemy wolf stalks low with
+                    its jaws open. (Until beast_minis_v8 the approved wolf was beast_wolf_band; Ethan's critical pass reopened it.)
+  beast_bear        broad and heavy on all fours, head up, the same back cloth
+  beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth
   beast_hawk        wings spread on a flight stand, looking down, bands and a cloth tie on its legs in the ranger's cloth, its shadow painted on the base
 """
 import math
@@ -58,10 +58,11 @@ BEAST_SWATCHES = {
 }
 
 
-def wolf(col, band=False):
+def wolf(col):
     """Head held high and turned a touch to its right, ears pricked, mouth shut, tail out straight behind: alert, wild, and on
-    your side. band: a cloth band round its chest as well, in the ranger's colour, which shows from the combat camera (option)."""
-    p = hk.Piece("beast_wolf_band" if band else "beast_wolf")
+    your side. v5 (after Ethan's critical pass): a draped saddle and a flat neckerchief, shaped legs, a shorter, thicker
+    muzzle, a soft ruff, brows, eyes and mouth set on the head."""
+    p = hk.Piece("beast_wolf")
     sm.base(p, "ring_ally")
     coat, back, side, pale, dark = zone("skin"), zone("skin", 0.8), zone("skin", 0.92), zone("hair"), zone("skin", 0.62)
 
@@ -71,67 +72,52 @@ def wolf(col, band=False):
     def fur(c, n):
         return back if n.z > 0.55 else pale if n.z < -0.3 else coat
 
-    # Body: deep chest, tucked waist, level back, the enemy wolf's size standing up instead of stalking.
+    # Body: deep chest, tucked waist, level back.
     body = [(0.33, 0.36, 0.05, 0.05), (0.27, 0.37, 0.125, 0.13), (0.08, 0.38, 0.12, 0.12),
             (-0.09, 0.39, 0.15, 0.17), (-0.2, 0.42, 0.14, 0.15)]
     em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.1) for y, z, w, h in body], fur)
-    if band:
-        em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.1, sides=6) for y, z, w, h in ((-0.1, 0.392, 0.162, 0.182), (0.0, 0.386, 0.15, 0.162), (0.1, 0.38, 0.132, 0.134))], lambda c, n: zone("cloth") if n.z > -0.3 else zone("cloth", 0.8))
+    saddle(p, lambda y: at(0, y, 0.385), -0.13, 0.13)
 
-    # Neck rises to a head held up, turned a little to its right so it doesn't read as a bar from above.
-    turn = 0.05
-    up = V((0, -0.55, 1)).normalized()
-    neck = [em.section(at(0, -0.17, 0.43), 0.125, 0.14, along=up), em.section(at(0, -0.24, 0.57), 0.1, 0.1, along=up)]
-    em.loft(p, neck, fur)
-    # The neckerchief: a band round the neck and a point down the chest, in the ranger's cloth.
-    em.loft(p, [em.section(at(0, -0.19, 0.49 + dz), 0.122, 0.128, along=up, sides=8) for dz in (-0.02, 0.03)], lambda c, n: zone("cloth"))
-    em.loft(p, [[at(-0.1, -0.27, 0.48), at(0.1, -0.27, 0.48), at(0, -0.3, 0.49)], [at(0, -0.31, 0.35)]], lambda c, n: zone("cloth", 0.88))
+    # A soft ruff: the neck itself full and rounded, rising to the head.
+    em.loft(p, [em.section(at(0, y, z), w, h, along=V((0, -0.55, 1)), sides=8) for y, z, w, h in
+                ((-0.15, 0.42, 0.13, 0.15), (-0.2, 0.5, 0.135, 0.135), (-0.25, 0.58, 0.1, 0.1))], fur)
+    neckerchief(p, at(0, -0.155, 0.43), at(0, -0.25, 0.58), 0.4, lambda z: at(0, -0.7, z), 0.43, 0.3, 0.085)
 
-    # Head: a flatter skull than v3's, a long muzzle, pale underneath; ruffs at the cheeks and chest.
+    # Head: a shorter, thicker muzzle than v4's, pale underneath, the nose capping its tip.
     fwd = V((0.18, -1, -0.12)).normalized()
-    hc = at(turn, -0.28, 0.63)
+    hc = at(0.05, -0.28, 0.63)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
 
     def head_fur(c, n):
-        return pale if n.z < -0.25 or (c - hc).dot(fwd) > 0.13 and n.z < 0.4 else back if n.z > 0.6 else coat
-    em.loft(p, [em.section(h(-0.08, 0.0), 0.06, 0.055, along=fwd, sides=8), em.section(h(0.0, 0.0), 0.098, 0.08, along=fwd, sides=8),
-                em.section(h(0.08, -0.005), 0.088, 0.07, along=fwd, sides=8), em.section(h(0.14, -0.03), 0.056, 0.046, along=fwd, sides=8),
-                em.section(h(0.25, -0.042), 0.042, 0.036, along=fwd, sides=8), em.section(h(0.285, -0.046), 0.03, 0.024, along=fwd, sides=8)], head_fur)
-    p.blob(h(0.29, -0.032), 0.02, "hero_pupil", squash=0.8)  # nose
+        ahead = (c - hc).dot(fwd)
+        if n.z < -0.3 or (ahead > 0.1 and n.z < -0.05 and n.dot(fwd) < 0.6):
+            return pale
+        return back if n.z > 0.6 else coat
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=8) for y, z, w, d in
+                ((-0.08, 0.0, 0.065, 0.058), (0.0, 0.0, 0.106, 0.086), (0.07, -0.005, 0.094, 0.078), (0.12, -0.028, 0.07, 0.06),
+                 (0.195, -0.038, 0.058, 0.05), (0.232, -0.043, 0.043, 0.035))], head_fur)
+    p.blob(h(0.234, -0.028), 0.024, "hero_pupil", squash=0.8)  # nose
+    face(p, h, fwd, eye=(0.07, 0.026, 0.06, 0.03, 0.017), brow=((0.088, 0.05, 0.03), (0.066, 0.047, 0.074)), dark=dark,
+         mouth=[(0.222, -0.066, 0.012), (0.175, -0.07, 0.036), (0.125, -0.058, 0.052)])
     for x in SIDE:
-        # mouth shut
-        em.limb(p, [h(0.285, -0.066, x * 0.008), h(0.2, -0.07, x * 0.036), h(0.14, -0.058, x * 0.05)], [0.005] * 3, ["hero_mouth"], sides=3)
-        # small almond eyes set to the sides, no whites, under a dark brow ridge
-        look = (fwd + V((x * 0.75, 0, 0.1))).normalized()
-        e = h(0.085, 0.026, x * 0.064) + look * 0.004
-        hb_plate(p, e, look, 0.03, 0.017, zone("eyes"))
-        hb_plate(p, e + look * 0.002 + V((-x * 0.002, 0, 0)), look, 0.009, 0.015, "hero_pupil")
-        em.limb(p, [h(0.105, 0.05, x * 0.035), h(0.08, 0.047, x * 0.08)], [0.011, 0.007], [dark], sides=4)
-        # ears smaller and set back, pricked
         root = h(-0.035, 0.055, x * 0.06)
         vr.spike(p, root, root + V((x * 0.035, 0.03, 0.095)), 0.04, back, segments=3)
         vr.spike(p, root + fwd * 0.01 + V((0, 0, 0.01)), root + fwd * 0.01 + V((x * 0.03, 0.025, 0.075)), 0.022, pale, segments=3)
-        # ruff: tufts back from the cheeks, and down the sides of the throat
-        for k, (dy, dz) in enumerate(((0.02, -0.04), (-0.04, -0.06))):
-            c = h(dy, dz, x * 0.085)
-            vr.spike(p, c, c + V((x * 0.06, 0.07, -0.02 - 0.02 * k)), 0.035, side, segments=3)
-        c = at(x * 0.1, -0.22, 0.47)
-        vr.spike(p, c, c + V((x * 0.05, 0.06, -0.06)), 0.04, side, segments=3)
 
-    # Legs: standing square and ready, near fore paw a half step ahead.
-    for s, y_paw in ((-1, -0.25), (1, -0.19)):
-        x = 0.1 * s
-        em.limb(p, [V((x, -0.16, Z0 + 0.32)), V((x * 1.05, -0.2, Z0 + 0.18)), V((x * 1.08, y_paw, Z0 + 0.06)), V((x * 1.08, y_paw - 0.03, Z0 + 0.022))],
-                [0.072, 0.05, 0.038, 0.043], [coat, coat, pale])
-    for s, y_paw in ((-1, 0.27), (1, 0.3)):
-        x = 0.1 * s
-        em.limb(p, [V((x, 0.25, Z0 + 0.32)), V((x * 1.06, 0.31, Z0 + 0.2)), V((x * 1.08, y_paw + 0.02, Z0 + 0.1)), V((x * 1.08, y_paw, Z0 + 0.022))],
-                [0.088, 0.06, 0.036, 0.043], [coat, coat, pale])
+    # Legs: shoulder and hip inside the body, an elbow back, a knee forward, a hock, slim wrists and pale paws.
+    for s_, step in ((-1, -0.03), (1, 0.02)):
+        x = 0.085 * s_
+        leg(p, [at(x * 0.8, -0.13 + step, 0.42), at(x, -0.1 + step, 0.25), at(x * 1.04, -0.17 + step, 0.09), at(x * 1.04, -0.19 + step, 0.045)],
+            [0.072, 0.056, 0.037, 0.034], [coat, coat, coat], at(x * 1.04, -0.205 + step, 0.0), 0.043, 0.024, pale)
+    for s_, step in ((-1, 0.0), (1, 0.03)):
+        x = 0.09 * s_
+        leg(p, [at(x * 0.8, 0.25 + step, 0.4), at(x * 1.02, 0.18 + step, 0.24), at(x * 1.04, 0.3 + step, 0.11), at(x * 1.04, 0.28 + step, 0.045)],
+            [0.09, 0.064, 0.037, 0.033], [coat, coat, coat], at(x * 1.04, 0.265 + step, 0.0), 0.043, 0.024, pale)
 
-    # Tail: straight out behind and a little down, a thick brush with a dark tip, inside the cell. (The enemy's hangs low.)
-    em.limb(p, [at(0, 0.32, 0.4), at(0.02, 0.38, 0.39), at(0.04, 0.45, 0.34), at(0.05, 0.49, 0.3)], [0.04, 0.06, 0.05, 0.0], [coat, coat, dark])
+    # Tail: straight out behind and a little down, a thick brush with a dark tip, inside the cell.
+    em.limb(p, [at(0, 0.32, 0.4), at(0.02, 0.38, 0.39), at(0.04, 0.45, 0.34), at(0.05, 0.49, 0.3)], [0.04, 0.06, 0.05, 0.0], [coat, coat, dark], sides=6)
     return p.finish(col)
 
 
@@ -358,6 +344,109 @@ def hawk(col):
     return p.finish(col)
 
 
+def saddle(p, axis, y0, y1, rows=7, cols=13):
+    """A cloth draped over the back only: cast onto the body built so far, hanging further down the sides in the middle than
+    at its soft rounded ends, its lower edge standing a little off the coat; a darker hem. axis(y): the body's middle line."""
+    grid = []
+    for i in range(rows):
+        t = i / (rows - 1)
+        reach = math.radians(68 + 34 * math.sin(math.pi * t))
+        row = []
+        for j in range(cols):
+            a = reach * (2 * j / (cols - 1) - 1)
+            out = V((math.sin(a), 0, math.cos(a)))
+            edge = j in (0, cols - 1)
+            row.append((axis(y0 + (y1 - y0) * t) + out * 0.5, -out, V((math.sin(a) * 0.012, 0, -0.008)) if edge else V()))
+        grid.append(row)
+    drape(p, grid, lambda i, j: zone("cloth", 0.78) if j in (0, cols - 2) else zone("cloth"), lift=0.016)  # clear of the coat's facets
+
+
+def neckerchief(p, a, b, t, front, z0, z1, w):
+    """A neckerchief lying flat: a band round the neck at t between a and b, and a point down the chest, both cast onto what's
+    built so far. front(z): a point well in front of the chest at that height; the point runs from z0 down to z1, w wide."""
+    axis = (b - a).normalized()
+    ref = V((1, 0, 0))
+    u, v = ref, axis.cross(ref).normalized()
+    ring = []
+    for k in (0, 1):
+        c = a.lerp(b, t + 0.12 * k)
+        row = []
+        for m in range(17):
+            ang = 2 * math.pi * m / 16
+            out = u * math.cos(ang) + v * math.sin(ang)
+            row.append((c + out * 0.4, -out, V()))
+        ring.append(row)
+    drape(p, ring, lambda i, j: zone("cloth"), lift=0.014)
+    bib = []
+    for k in range(4):
+        z = z0 + (z1 - z0) * k / 3
+        half = w * (1 - k / 3.3)
+        bib.append([(front(z) + V((half * (2 * m / 4 - 1), 0, 0)), V((0, 1, 0.12)), V()) for m in range(5)])
+    drape(p, bib, lambda i, j: zone("cloth", 0.9), lift=0.01)
+
+
+def leg(p, pts, radii, paints, paw_at, w, h, paw_paint, sides=6):
+    """A shaped leg: starting inside the body so no seam shows, through its joints, to a paw set flat on the base."""
+    em.limb(p, pts, radii, paints, sides=sides)
+    paw(p, paw_at + V((0, 0, h)), V((0, -1, 0)), w, h, paw_paint)
+
+
+def paw(p, at, d, w, h, paint):
+    """A low rounded paw along d: heel, ball, toes."""
+    em.loft(p, [em.section(at - d * w * 0.7, w * 0.7, h * 0.85, along=d, sides=6), em.section(at, w, h, along=d, sides=6),
+                em.section(at + d * w * 0.85, w * 0.8, h * 0.6, along=d, sides=6)], lambda c, n: paint)
+
+
+def face(p, h, fwd, eye, brow, dark, mouth=None, slit=False):
+    """Eyes, brows and a mouth line set on the head built so far: eyes cast onto it, brows and mouth sunk into it so only a
+    ridge or a line shows. eye: (ahead, up, out, width, height); brow: two (ahead, up, out) points; mouth: (ahead, up, out)."""
+    tree = BVHTree.FromBMesh(p.bm)
+
+    def onto(q, d):
+        hit = tree.ray_cast(q + d * 0.2, -d, 0.4)
+        return (hit[0], hit[1]) if hit[0] is not None else None
+    for x in SIDE:
+        side_ = V((x, 0, 0))
+        look = (fwd + side_ * 0.75 + V((0, 0, 0.1))).normalized()
+        hit = onto(h(eye[0], eye[1], x * eye[2]), look)
+        if hit:
+            e, n = hit[0] + hit[1] * 0.003, hit[1]
+            hb_plate(p, e, n, eye[3], eye[4], zone("eyes"))
+            hb_plate(p, e + n * 0.002, n, eye[4] * (0.35 if slit else 0.55), eye[4] * 0.9, "hero_pupil")
+        ends = [onto(h(y, z, x * o), (look + V((0, 0, 0.4))).normalized()) for y, z, o in brow]
+        if all(ends):
+            em.limb(p, [q - n * 0.005 for q, n in ends], [0.013, 0.009], [dark], sides=4)  # a low ridge, set in
+        if mouth:
+            line = [onto(h(y, z, x * o), (side_ + V((0, 0, -0.3))).normalized()) for y, z, o in mouth]
+            if all(line):
+                em.limb(p, [q - n * 0.0015 for q, n in line], [0.0055] * len(line), ["hero_mouth"], sides=3)
+            else:
+                print("NOMOUTH", p.name, x)
+
+
+def drape(p, grid, paint, lift=0.006):
+    """A sheet over what's built so far: grid rows of (ray origin, direction, extra offset); each hit lifted off the surface.
+    Its faces point outward, matching the surface under them."""
+    tree = BVHTree.FromBMesh(p.bm)
+    pts = []
+    for row in grid:
+        out = []
+        for o, d, extra in row:
+            hit = tree.ray_cast(o, d.normalized(), 2.0)
+            out.append((p.bm.verts.new(hit[0] + hit[1] * lift + extra), hit[1]) if hit[0] is not None else None)
+        pts.append(out)
+    for i in range(len(pts) - 1):
+        for j in range(len(pts[i]) - 1):
+            quad = [pts[i][j], pts[i][j + 1], pts[i + 1][j + 1], pts[i + 1][j]]
+            if not all(quad):
+                continue
+            f = p.bm.faces.new([q[0] for q in quad])
+            f.normal_update()
+            if f.normal.dot(sum((q[1] for q in quad), V())) < 0:
+                f.normal_flip()
+            f.material_index = p._slot(paint(i, j))
+
+
 def on_surface(p, origin, direction):
     """Where a ray from origin first meets what's built so far: (point, normal), or None."""
     hit = BVHTree.FromBMesh(p.bm).ray_cast(origin, direction.normalized(), 1.0)
@@ -376,7 +465,7 @@ def hb_plate(p, at, facing, w, h, paint):
 def build():
     hk.empty_scene()
     col = hk.new_collection("beasts")
-    for ob in (wolf(col), wolf(col, band=True), bear(col), panther(col), hawk(col)):
+    for ob in (wolf(col), bear(col), panther(col), hawk(col)):
         ob.data.calc_loop_triangles()
         print(f"TRIS {ob.name}: {len(ob.data.loop_triangles)} top {max((ob.matrix_world @ v.co).z for v in ob.data.vertices):.2f}")
     out = os.path.join(hk.ART, "minis", "heroes")
