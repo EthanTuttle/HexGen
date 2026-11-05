@@ -199,6 +199,14 @@ const PARTY := [
 const PROFICIENCIES := {"Fluffy": ["Persuade", "Lore"], "Chelmsford": ["Persuade", "Athletics"], "Mel": ["Deceive", "Thievery"]}
 ## Written chime-ins (design/characters/<name>.md): the stage note, then the line. Only what the prototype's checks use.
 const CHIME_LINES := {"Chelmsford": {"Athletics": ["As he heaves alongside", "\"Right then, mind your fingers!\""]}}
+## design/characters: each companion's chime-in per proficiency, and their fallback line at the bar.
+const COMPANION_CHIMES := {"Fluffy": {"Persuade": "\"Agree, and I shall permit you to sit near me, briefly.\"", "Lore": "\"Why, I'll be. Has nobody here read anything at all?\""}}
+const BAR_LINES := {"Fluffy": "\"Innkeeper, another saucer, for I am celebrating being magnificent.\""}
+
+
+static func chime_line(who: String, proficiency: String) -> String:
+	return COMPANION_CHIMES.get(who, {}).get(proficiency, "[%s's line]" % who)
+
 const ENEMY := {"name": "[Enemy %s]", "mini": "standin_enemy", "ability": "STR", "score": 2, "hp": 6}
 const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's save flips 2 coins, 1 heads saves
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)

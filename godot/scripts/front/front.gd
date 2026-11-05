@@ -137,5 +137,5 @@ func _close_creator() -> void:
 
 
 ## Leaves for the game, through the send-off.
-func start_game(hero: Dictionary, banners: Array) -> void:
+func start_game(hero: Hero, banners: Array) -> void:
 	SendOff.new().play(get_tree(), hero, banners)

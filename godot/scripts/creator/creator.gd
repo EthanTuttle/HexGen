@@ -5,7 +5,7 @@ extends Control
 ## God and Spells can't be reached while only the Fighter is playable, so they aren't built. Other classes show locked:
 ## PLACEHOLDER look, no mockup (a dimmed banner with a lock; it opens to read, and Next stays off).
 
-signal finished(hero: Dictionary, banners: Array)
+signal finished(hero: Hero, banners: Array)
 signal cancelled
 
 const D = preload("res://scripts/creator/creator_data.gd")
@@ -324,17 +324,22 @@ func hero_banners() -> Array:
 
 
 ## The description the game reads (Hero).
-func hero() -> Dictionary:
-	var b := bg_data()
-	return {
-		"name": hero_name.strip_edges(), "pronouns": pronouns, "cls": cls,
-		"race": race, "sub": sub, "race_name": race_name(), "elf_spell": elf_spell,
-		"background": bg, "start_place": b.hex, "start_terrain": b.t,
-		"scores": scores(), "proficiencies": [pb, pc],
-		"gear": {"main": main, "off": off, "armour": arm},
-		"look": {"build": build, "head": head, "hair": hair, "skin": colour_of("skin"), "hair_colour": colour_of("hair"),
-			"eyes": colour_of("eyes"), "cloth": colour_of("cloth")},
-	}
+func hero() -> Hero:
+	var h := Hero.new()
+	h.name = hero_name.strip_edges()
+	h.klass = cls.to_lower()
+	h.race = race
+	h.sub = sub
+	h.race_name = race_name()
+	h.elf_spell = elf_spell
+	h.pronouns = pronouns
+	h.background = bg.to_lower().replace(" ", "_")
+	h.scores = scores()
+	h.proficiencies = [pb, pc]
+	h.gear = {"main": main, "off": off, "armour": arm}
+	h.appearance = {"race": race, "sub": sub, "build": build, "head": head, "hair": hair, "skin": colour_of("skin"),
+		"hair_colour": colour_of("hair"), "eyes": colour_of("eyes"), "cloth": colour_of("cloth")}
+	return h
 
 
 func finish() -> void:

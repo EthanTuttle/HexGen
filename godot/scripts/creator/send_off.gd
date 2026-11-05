@@ -12,7 +12,7 @@ var _cover := ColorRect.new()
 
 
 ## `hero` becomes Hero.current. `banners` and `cloth` are the mockup's; with none it just fades.
-func play(tree: SceneTree, hero: Dictionary, banners: Array) -> void:
+func play(tree: SceneTree, hero: Hero, banners: Array) -> void:
 	layer = 50
 	tree.root.add_child(self)
 	_cover.color = UI.CREAM
@@ -48,9 +48,9 @@ func play(tree: SceneTree, hero: Dictionary, banners: Array) -> void:
 	queue_free()
 
 
-func _drop_banner(hero: Dictionary, banners: Array) -> void:
+func _drop_banner(hero: Hero, banners: Array) -> void:
 	var cloth := CreatorName.HeroCloth.new()
-	cloth.setup(Color(hero.look.cloth), banners, 120, 170, 18)
+	cloth.setup(Color(hero.appearance.cloth), banners, 120, 170, 18)
 	cloth.name_label.text = hero.name
 	var safe := SafeArea.new()
 	add_child(safe)

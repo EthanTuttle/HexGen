@@ -65,7 +65,7 @@ The demo uses the same calls a player's clicks make, and plays simply. One excep
 
 ## The screens before the game (first playable)
 
-A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`). Any run with its own arguments or a `HEXGEN_PHONE*` variable goes straight to the game, so every check, demo and phone run starts as before; `-- --direct` asks for that with no other arguments, and `-- --front` forces the title. `-- --front --check` runs these screens by touch and prints `FRONT OK` / `FRONT FAIL` (add `--shots` for `screens/front_*.png`).
+A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`). Any run with its own arguments or a `HEXGEN_PHONE*` variable goes straight to the game, so every check, demo and phone run starts as before; `-- --direct` asks for that with no other arguments, and `-- --front` forces the title. `-- --front --check` plays the whole run by touch, from the title through the creator into the game, a town with its shop and inn, and a Social event with a check and a fight, and prints `FRONT OK` / `FRONT FAIL` (add `--shots` for `screens/front_*.png`, `--safe=both` for what iOS reports today).
 
 | Placeholder | Value here | Why |
 | --- | --- | --- |
@@ -77,7 +77,23 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 | Heads and hairstyles | The mockup's numbered placeholders | Same |
 | Hero's banner after Begin | Stays 4 s, then rises away; 96 pt in from the safe edge, clear of the party tray (`SendOff`) | The docs don't say how long, and at the mockup's left it covers the tray |
 | Name step with a keyboard open | The step slides up clear of it | Not mocked; not yet seen on a phone |
-| What the picks do | The description has everything (`Hero`). Race and sub-type text shows as mocked but does nothing yet (docs: looks and names). Whether scores, proficiencies and gear reach play is up to the game's hooks | First playable |
+| What the picks do | The description has everything (`Hero`). Scores and proficiencies set a check's coins (`Hero.coins_for`). Gear is recorded and shows on the mini; combat keeps the placeholder Fighter kit. Race and sub-type text shows as mocked but does nothing yet (docs: looks and names) | First playable |
+
+| The town's stage (temporary) | The camera holds on the town's own tile with the party on it. `TownScene._frame` is where Terrain Art's square and inn interior go | Ethan: art pass first, Nov 4. Not polished, on purpose |
+| Enter card | The Rest card's look with the village icon and a brown band, beside Rest if both show | The docs say "like the Rest card" |
+| Inn's price | 5 gold (`TownScene.INN_PRICE`) | Docs: gold, price not set |
+| Shop stock | Town v9's own 7 items at 5-30 gold (`TownShop.STOCK`). Buying takes the gold, pops and flies to equipment, and does nothing yet (`TownShop.bag`) | design/06: what shops sell is open |
+| Town and keepers' words | [Town name], [Town greeting], [Shopkeeper line], [Innkeeper line] and so on, as in the mockup, plus [Shopkeeper buy line] and [Shopkeeper / Innkeeper can't afford line] for Places.md's slots. At Monto Town and The Oak & Lantern the name is real | design/characters/Places.md has the slots, not the lines |
+| At the bar | Fluffy's written fallback line, then [Hero toast line]. Mugs show on the tray; tokens don't hop | No interior yet; pair lines need the party |
+| Left out of Town v9 | Quest board (no quests), Swap party (nobody waits), Sell (no inventory), the Injuries chip (no injuries) | First playable |
+| Gold pill and the speaker's panel on a phone | The panel narrows to 478 pt so the pill fits beside it; the pill shows in the square and inn too, not only the shop | Mockup's 844 pt; the inn charges |
+| Social event | Every Social and Discovery encounter plays one stand-in, the Lady of the Lake's first talk with her written lines, without her sword quest (`SocialScreen.STAND_IN`) | Ethan's 3 or 4 events are coming |
+| Coins and heads in the stand-in | Coins from the hero's score, +1 if proficient; needs 2 heads (the mockup's). A hero with CHA 1 can pass Swear only through Fluffy's chime-in | Placeholder numbers; for Ethan when the events are written |
+| Blessing | Pops and flies toward the party tray; nothing holds it yet | No passives in the first playable |
+| Not built on the Social screen | Silver Tongue's reflip and the who-flips picker | The stand-in's checks are social and the hero's |
+| Character lines | Fluffy's Persuade chime-in and special line follow design/characters/Fluffy.md, newer than Social v9 | The docs are the canon |
+
+**Where the scenes differ from Town v9 and Social v9:** the tray is the game's own, so it isn't redrawn; "Carry on", option cards and bands use 11 pt or more; option words are 12 pt, not 11, as they're read at arm's length.
 
 **Where the creator differs from Creator v22b:**
 

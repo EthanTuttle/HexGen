@@ -128,6 +128,7 @@ func _ready() -> void:
 	safe.add_child(popup)
 	_connect_gestures()
 	DebugMenu.attach(self)
+	Screens.attach(self)
 	end_panel = EndPanel.attach(self)
 	level_pick = LevelPick.attach(self)
 	_next_roll = Rules.ROLL_FIRST
