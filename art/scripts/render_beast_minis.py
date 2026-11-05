@@ -1,16 +1,19 @@
 """Renders an ally beast for review: front and turned beside a hero mini and the enemy wolf, its colour options, and the three at
 the combat camera's height and distance.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_beast_minis.py [-- wolf bear panther hawk]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_beast_minis.py [-- wolf bear panther hawk | solo:wolf ...]
+solo:<beast> renders beast_<beast>_solo_vN.png: the beast alone, large, from four sides and the combat camera.
 Options built beside a beast (beast_wolf_band) join the combat-camera row.
 Uses the latest beast_minis, hero_kit and enemy_minis. Writes art/preview/beast_<beast>_*_vN.png and the sheet beast_<beast>_vN.png.
 """
+import glob
 import math
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
+import numpy as np  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 import build_beast_minis as bb  # noqa: E402
@@ -123,6 +126,57 @@ def render(beast_name):
         rh.shot(f"beast_{beast_name}_combat_{d}m", Vector((0, 0, 0.4)), d, 50, (1500, 700))
 
 
+# The piece each beast is, where the approved one isn't plain beast_<name>.
+PIECE = {"wolf": "beast_wolf_band"}
+
+
+def solo(beast_name):
+    """The beast alone in its default coat, large: front, three-quarter, side and back, close from the combat camera, and its face."""
+    piece = PIECE.get(beast_name, f"beast_{beast_name}")
+    stems = []
+    views = ((0, "front", 12), (-35, "three", 12), (-90, "side", 12), (180, "back", 12), (-30, "combat", 50), (-25, "face", 6))
+    for spin, tag, pitch in views:
+        t, col = start()
+        ob, n = beast(t, piece, looks(beast_name)[0], beast_name, col, (0, 0, 0), spin)
+        pts = [ob.matrix_world @ v.co for v in ob.data.vertices if (ob.matrix_world @ v.co).z > 0.12]
+        top = max(q.z for q in pts)
+        target, distance = Vector((0, 0, top * 0.48)), {"side": 2.3, "combat": 2.2}.get(tag, 2.0)
+        if tag == "face":  # the head: the points furthest forward in the beast's own frame, in its top quarter
+            high = [q for q in pts if q.z > top * 0.72] or pts
+            ahead = sorted(high, key=lambda q: (ob.matrix_world.inverted() @ q).y)[:max(6, len(high) // 4)]
+            target, distance = sum(ahead, Vector()) / len(ahead), 0.75
+        stem = f"beast_{beast_name}_solo_{tag}"
+        rh.shot(stem, target, distance, pitch, (900, 900))
+        stems.append(stem)
+    print("SOLOTRIS", beast_name, n)
+    sheet_full(stems, f"beast_{beast_name}_solo", cols=3)
+
+
+def sheet_full(stems, out, cols):
+    """The renders side by side at full size (fm.sheet halves them)."""
+    tiles = []
+    for stem in stems:
+        im = bpy.data.images.load(max(glob.glob(os.path.join(hk.ART, "preview", f"{stem}_v*.png")), key=os.path.getmtime))
+        w, h = im.size
+        tiles.append(np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4))
+    h, w, _ = tiles[0].shape
+    rows = (len(tiles) + cols - 1) // cols
+    pixels = np.ones((rows * h, cols * w, 4), dtype=np.float32)
+    for i, tile in enumerate(tiles):
+        y, x = (rows - 1 - i // cols) * h, (i % cols) * w
+        pixels[y:y + h, x:x + w] = tile
+    im = bpy.data.images.new(out, cols * w, rows * h, alpha=True)
+    im.pixels[:] = pixels.ravel().tolist()
+    im.filepath_raw = os.path.join(hk.ART, "preview", f"{out}_v{rp.next_n(out)}.png")
+    im.file_format = "PNG"
+    im.save()
+    print("SHEET", im.filepath_raw)
+
+
 if __name__ == "__main__":
-    for name in (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["wolf"]):
-        render(name)
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["wolf"]
+    for name in args:
+        if name.startswith("solo:"):
+            solo(name[5:])
+        else:
+            render(name)
