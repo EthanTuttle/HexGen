@@ -123,7 +123,7 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 
 ## Open questions
 
-- [ ] **New (Nov 4, 2026):** first playable: what town shops sell before gear exists, the 3 or 4 events, and the six starting tiles' looks
+- [ ] **New (Nov 4, 2026):** first playable: what town shops sell before gear exists, and the 3 or 4 events
 - [x] ~~Hills look~~ (settled Oct 30, 2026: smooth raised slopes, with joined hills sharing one mountain; see Engine prototype)
 - [x] ~~Desert dunes~~ (settled Oct 30, 2026: rolling sand swells; see Engine prototype)
 - [ ] Placement: simultaneous placement in multiplayer
