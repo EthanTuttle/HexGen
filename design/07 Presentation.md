@@ -34,6 +34,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   - **Ponds:** a water tile with no water neighbours is a small round pond.
   - **Stable while building:** a tile's water shape depends only on its own water neighbours, so placing a tile reshapes only that tile and the ones touching it.
   - **Look:** a slow ripple and sparkle that flows along rivers, a light foam rim at the shore and a darker deep middle, bank dressing (reeds, rocks, lily pads, a small jetty), and the boats above on lakes and wide rivers.
+- **Town scenes** (chosen Nov 4, 2026): the town square and inn stand on one floor with hexes set into it by dark joints, focused and real rather than separate plates. In the inn, the innkeeper stands behind the bar, on a dark warm backdrop.
 - **Starting tiles** (chosen Nov 4, 2026): each background's place is a world tile on its terrain, with its door facing the map camera.
   | Place | Look |
   | --- | --- |
