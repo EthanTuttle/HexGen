@@ -140,3 +140,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 - 2026-11-04 | `art/preview/monto_options_sheet_v1.png` (claude/art-start-tiles) | Straight bridge chosen, a and b not taken | Needs fixed water across the bridge; river and lake tiles touch only at its two mouths
 - 2026-11-04 | `art/preview/town_kit_sheet_v2.png` (claude/art-town-scenes) | Change requested | Trim the plank floor outside the inn's back-left and right walls; show again before merging
 | 2026-11-04 | `art/preview/town_kit_sheet_v3.png` | note | Inn floor trim good; remove the cut hex sliver beyond the hearth and the floor corner past the stair, show again |
+| 2026-11-04 | `art/preview/monto_water_sheet_v1.png` | approved | Monto Town: straight bridge, fixed river, stone aprons at land mouths |
+| 2026-11-04 | `art/preview/start_sides_sheet_v1.png` | note | Weizenhof: keep the fences, move the estate, paths and crops so paths connect to its front. No mountains beside a start accepted. Oak & Lantern left as is |
