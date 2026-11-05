@@ -333,7 +333,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
             if kit == "rapids":
                 widths = wt.with_falls(widths, mask, q, r)
-            is_lm = name in vr.LANDMARK_CENTRES
+            is_lm = name in vr.LANDMARK_CENTRES or name in vr.st.STARTS
             wt.add_water(p, mask, seed, plates=not animated, boats=not animated, widths=widths, style=wt.FAMILY.get(kit), near=band, port=port, landmark=is_lm, ground=vr.VARIANTS[kit][2] if kit in vr.VARIANTS else "plains")
             p.finish(col, at)
             water_tiles.append((q, r, at, mask))
@@ -346,6 +346,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             elif name == "trollbridge":
                 mid, ang, _ = wt.bridge_spot(mask, seed, widths, wt.TROLL_HALF)
                 place(templates, "trollbridge_centre", col, at + Vector((mid[0], mid[1], 0)), ang)
+            if name == vr.st.MONTO:
+                place(templates, f"{name}_centre", col, at)
             if port is not None:  # the port's piece, its boats, and a water gate on each back edge with water beyond it
                 spin = math.radians(60 * port)
                 place(templates, f"{name}_centre", col, at, spin)
@@ -373,6 +375,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         if centre in ("centre_mid", "centre_near") and f"{name}_centre_mid" in templates:
             spin = math.radians(60 * lf.toward_edge((q, r), toward))  # density bands lean toward the landmark
         place(templates, f"{name}_{centre}", col, at, spin)
+        if f"{name}_plinth" in templates:  # Dunfaire Tower's plinth is its own piece, ready to swap for a hex column
+            place(templates, f"{name}_plinth", col, at)
         if centre == "centre_mill":  # the small mill goes where the turned yard is, but doesn't turn itself
             place(templates, "windmill_small", col, at + Matrix.Rotation(spin, 3, "Z") @ vr.SMALL_MILL_SPOT)
         for part, (_, hub) in vr.LANDMARK_PARTS.items():  # e.g. the Great Windmill's sails, turned with it
@@ -409,16 +413,17 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             def ranges(t, i):  # do tile t and its neighbour on edge i share a mountain?
                 n = (t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])
                 return (linked(MAP[t], MAP.get(n)) and i not in lf.trail_edges(t, toward)
-                        and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS)
+                        and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS
+                        and MAP[t] not in vr.st.STARTS and MAP.get(n) not in vr.st.STARTS)
             ranged = [ranges((q, r), i) for i in range(6)]
 
             def corner_shared(i):  # all three tiles round corner i must share: every copy of the third must be drawn
                 n = (q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1])
                 return ranged[i] and ranged[(i + 1) % 6] and ranges(n, (i + 2) % 6)
             triple = [corner_shared(i) for i in range(6)]  # corner i: between edges i and i + 1
-            if name in vr.LANDMARKS:
+            if name in vr.LANDMARKS or name in vr.st.STARTS:
                 ranged = triple = [False] * 6
-            elif not any(ranged) and dist.get((q, r), 3) > 2:
+            elif not any(ranged) and dist.get((q, r), 3) > 2 and name not in vr.st.STARTS:
                 place(templates, f"{name}_peak", col, at)
             parts = []
             for i in range(6):

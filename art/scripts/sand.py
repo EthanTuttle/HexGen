@@ -27,7 +27,7 @@ WIND = math.radians(25)    # the wind blows along this direction; crests run acr
 FADE = (0.3, 2.8)          # flat within 0.3 m of a non-desert edge, full height from 2.8 m
 ND, NV = 14, 16            # grid samples across one sixth of a tile: depth, side to side (swells are 6.5 m long)
 PROP_CELL = 1.4
-LOOKS = {"desert": "desert", "wasteland": "wasteland", "sandstonesphinx": "wasteland"}  # the desert terrain, its variants and landmarks -> whose sand
+LOOKS = {"desert": "desert", "wasteland": "wasteland", "sandstonesphinx": "wasteland", "sternbrunnspire": "sternbrunn_sand"}  # the desert terrain, its variants and landmarks -> whose sand
 DUNE_H = 2.2  # the Sphinx's dune, at its crest
 SPHINX_STOP = (3.1, 0.0)  # where the party stops, facing the altar, on the piece's +X
 PROP_R = {"cactus": 0.35, "rock": 0.3, "bush": 0.25, "cracked": 0.0, "column": 1.1, "wall": 1.15, "statue": 1.2, "bones": 0.7, "deadtree": 0.45}  # how far a prop reaches from its point
@@ -83,6 +83,8 @@ def seg_dist(p, a, b):
 
 def fade(terrains, q, r, x, y):
     """0 near any edge of tile (q, r) facing a tile with other sand or none, 1 deep in the sand. (x, y) is world space."""
+    if terrains[(q, r)] == "sternbrunnspire":  # Sternbrunn Spire stands on level sand, so its door and stop are at the ground's height
+        return 0.0
     cx, cy = gc.tile_centre(q, r)
     p = (x - cx, y - cy)
     near = min([seg_dist(p, wt.corner(i - 1), wt.corner(i)) for i, (dq, dr) in enumerate(gc.NEIGHBOURS)
@@ -195,7 +197,7 @@ def props(terrains, q, r, near=None):
     the tile. near: on a wasteland tile, its steps from the landmark. The Sphinx's tile has none: its piece holds its own."""
     cx, cy = gc.tile_centre(q, r)
     out = []
-    if terrains[(q, r)] == "sandstonesphinx":
+    if terrains[(q, r)] in ("sandstonesphinx", "sternbrunnspire"):
         return out
     waste = terrains[(q, r)] == "wasteland"
     cell, keep = (1.8, 0.6) if waste else (PROP_CELL, 0.5)
