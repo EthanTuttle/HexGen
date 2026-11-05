@@ -36,6 +36,8 @@ var rocks: Array = []
 var trees: Array = []
 var busy := false
 var hud: CombatHud
+const NO_ARMOUR_ARG := "--noarmour"   # test aid: fights with nobody's armour, for the balance comparison
+static var NO_ARMOUR: bool = NO_ARMOUR_ARG in OS.get_cmdline_user_args()
 var phase_no := 0                # counts phases (allies, enemies, allies ...): riders last until the end of a given one
 var breath_dir := -1             # Breath Weapon's aim: which of Hex.NEIGHBOURS, or -1
 var cell_target = null           # Glimmerstep's empty hex, or null
@@ -331,7 +333,7 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			parry = false, ward = 0, lost_ap = 0, sub = m.get("sub", ""),
 			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
 			facing = _dir_of(facing), backstabbed = false,
-			armour = Weapons.ARMOUR.get(m.get("armour", ""), 0) if ally else Weapons.foe_armour(m), off = m.get("off", ""),
+			armour = 0 if NO_ARMOUR else (Weapons.ARMOUR.get(m.get("armour", ""), 0) if ally else Weapons.foe_armour(m)), off = m.get("off", ""),
 			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}}
 	units.append(u)
 	if u.down:
