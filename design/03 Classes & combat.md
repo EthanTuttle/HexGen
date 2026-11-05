@@ -214,7 +214,7 @@ Decided Oct 22, 2026. Details for each kind of check are in progress.
 
 - **Kinds of checks:** social (persuade, deceive, intimidate in dialogue encounters), traversal (climbing, swimming, crossing hazards), dungeon and hex events (traps, locks, hidden doors, puzzles) and scouting (spotting, tracking, revealing nearby hexes).
 - **Checks and combat:** before a fight, a check can decide who is surprised (surprised foes count as unaware, e.g. for Sneak Attack and Assassinate), and a stealth or social check can avoid an encounter entirely.
-- **Who flips:** depends on the check. Some are group checks (everyone flips, e.g. sneaking past); others are solo checks, made by one party member.
+- **Who flips:** depends on the check. Some are group checks (everyone flips); others are solo checks, made by one party member. Sneaking past an encounter is the hero's solo Stealth check, gated by the hero's skill rather than party size, and a proficient ally can chime in as below (Ethan, Nov 4, 2026). Elites are supposed to be hard to sneak past.
 - **Failure:** each check sets its own cost of failure.
 - **Scouting:** two checks. Spot encounters: entering a hex, a check reveals encounters on nearby hexes and what they are. Ambush: before a fight, a check decides who is surprised.
 - **Avoiding a fight:** an avoided encounter isn't cleared. It stays on the map until it despawns as normal (see [Map & exploration](02 Map & exploration.md) → Hex contents and encounters), so it can still be fought later.
@@ -240,7 +240,7 @@ Skills (learned at class locations such as Training Grounds, Tree of Life and Co
 | Deceive | CHA | Lies and bluffs | Bluff past an encounter, or start the fight with foes unaware |
 | Intimidate | STR | Threats | Shaken start: foes start the fight frightened (flip one fewer coin on their first attack) |
 | Perception | WIS | Spotting encounters, ambush defense, hidden doors | +1 sight range (see [Map & exploration](02 Map & exploration.md) → Day and night), which also reveals encounters farther away |
-| Stealth | DEX | Ambushing, sneaking past (group check) | Ambush: the party can ambush, so foes start the fight unaware |
+| Stealth | DEX | Ambushing, sneaking past (the hero's check) | Ambush: the party can ambush, so foes start the fight unaware |
 | Athletics | STR | Cliffs and deep water | No gear needed: lead a climb or swim without crossing gear |
 | Survival | CON | Dense growth and harsh climate | No gear needed: lead through dense growth or harsh climate without crossing gear (the rough-terrain version of Athletics) |
 | Nature | INT | Terrain, plant and weather events | Herbalism: hex events with plants can yield a healing consumable |
