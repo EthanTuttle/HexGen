@@ -1071,7 +1071,7 @@ func _safety_net() -> void:
 	if best == null:
 		# PLACEHOLDER, not in design/06: fenced in with no cards (the start's fence shuts the only tile laid), nothing can be walked to, so a card comes instead.
 		deck.rest()
-		deck.hand.append_array(deck.draw(1))
+		deck.draw(1)
 		_refresh()
 		return
 	var fights := Rules.ENCOUNTER_TABLE.filter(func(e): return e.kind == "fight")
