@@ -1,6 +1,6 @@
 # Buried city kit hand-off (tiles_v85)
 
-Desert tier 3, with the ancient library as its landmark. **Not yet approved; not yet tried in Godot.**
+Desert tier 3, with the ancient library as its landmark. **Approved by Ethan on Nov 4, 2026; not yet tried in Godot, which builds it after the first playable.**
 
 - **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v85.blend`. Its `buried_city_*` and `ancientlibrary_centre` pieces are empty, so a per-tile layer holds everything.
 - **Code:** `art/scripts/buried_lands.py`. Its first section is plain Python to copy, with `Region` and `buried_tile` as the entry points. **Test:** `python3 art/scripts/test_buried.py 16`. **Previews:** `art/scripts/render_buried.py`, `art/preview/buried_kit_*_v1.png`.

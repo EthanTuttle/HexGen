@@ -174,7 +174,7 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
-- **tiles_v85:** Buried city kit (desert tier 3) and the ancient library, not approved. Hand-off: `handoff/buried_kit.md`.
+- **tiles_v85:** Buried city kit (desert tier 3) and the ancient library, approved (Ethan, Nov 4, 2026). Hand-off: `handoff/buried_kit.md`.
 - **tiles_v84:** Feywild crossing and the Fey Gate approved (Ethan, Nov 4, 2026): the gate's fork prongs run out under its crowns. Hand-off: `handoff/feywild_kit.md`.
 - **tiles_v83:** the Fey Gate's crowns closer in on fatter, forked branches. Feywild crossing, not approved.
 - **tiles_v82:** the Fey Gate's trunks wind round each other at the top, with four round crowns off them, one per season. Feywild crossing, not approved.
