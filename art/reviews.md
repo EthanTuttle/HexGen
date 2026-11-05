@@ -143,3 +143,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/monto_water_sheet_v1.png` | approved | Monto Town: straight bridge, fixed river, stone aprons at land mouths |
 | 2026-11-04 | `art/preview/start_sides_sheet_v1.png` | note | Weizenhof: keep the fences, move the estate, paths and crops so paths connect to its front. No mountains beside a start accepted. Oak & Lantern left as is |
 | 2026-11-04 | `art/preview/town_kit_sheet_v4.png` | approved | Inn and square town scenes: merge to main |
+| 2026-11-04 | `art/preview/weizenhof_sheet_v1.png` | note | Paths good. No wheat on the tile: green estate grounds, but it should still connect well to neighbouring fields |
