@@ -63,11 +63,14 @@ const JOIN := 5                         # route samples (about 1.2 m) either sid
 static var HERO_CELL := Vector2.ZERO
 
 
-func setup(board: MapBoard, tile: Vector2i) -> void:
+## minis: who's in the party, by mini name.
+func setup(board: MapBoard, tile: Vector2i, minis: Array = []) -> void:
 	map = board
 	var hero_cell: Vector2i = Minis.PARTY[0][1]
 	HERO_CELL = Hex.cell_position(hero_cell.x, hero_cell.y)
 	for m in Minis.PARTY:
+		if not minis.is_empty() and not m[0] in minis:
+			continue
 		var c: Vector2i = m[1]
 		var node := Minis.make(m[0], Vector2.ZERO, Vector2(0, -1))
 		add_child(node)

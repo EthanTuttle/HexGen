@@ -262,7 +262,7 @@ func _refresh_details() -> void:
 			_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
 		elif k.kind == "attack":
 			var n: int = u.score + (1 if u.blessed else 0)
-			_details.add_child(_wrap(UI.label("%d coins · %s · needs %d heads%s" % [n, u.ability, Rules.HEADS_TO_HIT, " · +1 Bless" if u.blessed else ""], "n800", 13)))
+			_details.add_child(_wrap(UI.label("%d coins · %s · needs %d heads%s" % [n, u.ability, fight.heads_needed(fight.target) if not fight.target.is_empty() else Rules.HEADS_TO_HIT, " · +1 Bless" if u.blessed else ""], "n800", 13)))
 		else:
 			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs 1 heads" % [Rules.ENEMY_SAVE_COINS, k.save], "n800", 13)))
 	elif k.kind == "self" and fight.self_done == k.id:
