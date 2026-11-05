@@ -176,10 +176,10 @@ Terrains: plains, forest, farmland, river (river/lake) and village, plus (from t
 
 ## Versions
 
-- **tiles_v89:** Weizenhof's manor stands back, with a drive from its gate to the tracks, a track ring from all six sides and crops outside it; not approved.
-- **tiles_v88:** Monto Town's water is fixed, a river from edge 0 to edge 3 across its bridge; `montotown_mouth` ends it in stone where land lies beyond; not approved.
-- **tiles_v87:** Monto Town's ring gives way to one straight bridge with short boardwalks; pending Ethan's pick.
-- **tiles_v86:** the six starting tiles of the first playable, not approved. Hand-off: `handoff/start_tiles_kit.md`.
+- **tiles_v89:** Weizenhof's manor stands back, with a drive from its gate to the tracks, a track ring from all six sides and crops outside it. The starting tiles, approved (Ethan, Nov 4, 2026).
+- **tiles_v88:** Monto Town's water is fixed, a river from edge 0 to edge 3 across its bridge; `montotown_mouth` ends it in stone where land lies beyond.
+- **tiles_v87:** Monto Town's ring gives way to one straight bridge with short boardwalks.
+- **tiles_v86:** the six starting tiles of the first playable. Hand-off: `handoff/start_tiles_kit.md`.
 - **tiles_v85:** Buried city kit (desert tier 3) and the ancient library, approved (Ethan, Nov 4, 2026). Hand-off: `handoff/buried_kit.md`.
 - **tiles_v84:** Feywild crossing and the Fey Gate approved (Ethan, Nov 4, 2026): the gate's fork prongs run out under its crowns. Hand-off: `handoff/feywild_kit.md`.
 - **tiles_v83:** the Fey Gate's crowns closer in on fatter, forked branches. Feywild crossing, not approved.

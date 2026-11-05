@@ -1,6 +1,6 @@
 # Starting tiles kit hand-off (tiles_v89)
 
-The six starting tiles of the first playable, one per background. **Not yet approved; not yet tried in Godot.** Looks: `design/07` → Starting tiles.
+The six starting tiles of the first playable, one per background. **Approved by Ethan on Nov 4, 2026; not yet tried in Godot.** Looks: `design/07` → Starting tiles.
 
 - **Models:** `art/export/tiles.glb`, from `art/tiles/tiles_v89.blend`.
 - **Code:** `art/scripts/start_tiles.py`. Its first section is plain Python to copy: `route`, `ring_walk`, `stop`, `ground`, `rime_height`. **Test:** `Blender -b --factory-startup --python art/scripts/test_start_tiles.py`. **Previews:** `art/scripts/render_start_tiles.py`, `art/preview/start_kit_*_v1.png`, `start_kit_sheet_v1.png`.
@@ -86,7 +86,7 @@ Rafts go along the river and under the bridge, entering by a mouth with water be
 
 ## Test
 
-`test_start_tiles.py` on every route and every edge-to-edge walk, on all 64 neighbour mixes for East Rime. Weizenhof's row is from tiles_v89 and Monto's from tiles_v88; the other four are from tiles_v86, with their pieces unchanged since:
+`test_start_tiles.py` on every route and every edge-to-edge walk, on all 64 neighbour mixes for East Rime. Run on tiles_v89:
 
 | Check | Result |
 | --- | --- |
