@@ -105,7 +105,7 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Part | First playable |
 | --- | --- |
 | Start | Title screen and New campaign, then the character creator, all steps as mocked up. Fighter is playable and other classes show locked. Race, background and appearance apply, with a small customization pass for minis |
-| Starting place | The party starts on its background's tile. All six get a new world tile ([World & story](01 World & story.md) → Backgrounds) |
+| Starting place | The party starts on its background's tile. All six get a new world tile ([World & story](01 World & story.md) → Backgrounds). A starting tile can always be walked across every side: no fence, wall or bank shuts one (Ethan, Nov 4, 2026), so the party can't be trapped on it with its first placed tile |
 | Deck | As [Cards & progression](05 Cards & progression.md) → Starting decks, plus one card of every terrain so all can be built (Nov 4, 2026). Terrains with no combat maps use the old board for now |
 | Goal | Finish 3 regions, then an end panel. For the prototype only: the real campaign doesn't end this way |
 | Encounters | Rolls as in [Map & exploration](02 Map & exploration.md), plus a safety net: if the hand is empty and no fight is on the map, one fight spawns nearby |
@@ -114,10 +114,10 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Fight rewards | Cards, plus gold and XP: per foe by role (minion 2, soldier 4, elite 8), times distance band (near 1, mid 2, far 3). Wins only; Sneak past gives none |
 | Levels | Simple: XP fills a bar, and a level gives a terrain card pick. The full Level-up screen and gear come later |
 | Social and Discovery | The Social encounter screen, with 3 or 4 events written with Ethan |
-| Party | Starts as the hero and Fluffy. A 3rd member joins after 2 fights, and a 4th after 4 more (Ethan, Nov 4, 2026); fights are balanced around those breakpoints. Real recruiting comes later. Races are looks and names for now |
+| Party | Starts as the hero and Fluffy. A 3rd member joins after 2 fights won, and a 4th after 4 more wins (Ethan, Nov 4, 2026); wipes and Sneak past don't count. This is a placeholder for real progression, and fights are balanced around those breakpoints. Real recruiting comes later. Races are looks and names for now |
 | Hero minis | Scripted low-poly parts with better faces, replaced later by the pipeline in [Presentation](07 Presentation.md) → Art direction |
 | Towns | Standing on a town shows an Enter card, like the Rest card on a camp; tapping it opens the scene. The town square and inn get an art pass first, not stand-ins |
-| Foes | Minion 4, soldier 6, elite 10 HP; damage 1, 2, 3, times the band. Near is up to 4 tiles from the start, mid 5 to 9, far 10 and over. The figure's kind sets the mix: 2 or 3 foes, one elite from mid on |
+| Foes | Placeholders, retuned Nov 4, 2026 from bot runs at party sizes 2, 3 and 4. Minion 4, soldier 6, elite 10 HP; damage 1, 2, 3. Near is up to 4 tiles from the start, mid 5 to 9, far 10 and over. Near / mid / far: HP ×1.5 / ×2 / ×2.5; damage ×1.5 / ×1.5 / ×2, rounded; coins +0 / +1 / +2; 3 foes / 3 foes / 3 or 4 foes, with near at 2 or 3 while the party is two. Each foe attacks once a turn. The figure's kind sets the mix, one elite from mid on. A mid fight can come before the 3rd member joins: distance stays the only rule and the badge shows the risk (Ethan, Nov 4, 2026) |
 | XP per level | 20, then 10 more each level |
 | Test notes | A flag button in test builds, on every screen, for typing an issue, bug or tweak during play. Each note is saved in app storage with a screenshot and game state, for collecting later (Ethan, Nov 4, 2026). No network, like the error log |
 | Ruins | Main's old ruins tile as a marked placeholder until ruins are decided. A finished ruins region stays plain, with no variant or landmark, and still counts toward the goal |
