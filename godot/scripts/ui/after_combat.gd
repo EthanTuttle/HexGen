@@ -18,7 +18,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 
-func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String], dropped: Array) -> void:
+func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String], dropped: Array, earned := 0) -> void:
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
@@ -41,7 +41,7 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 	head.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var title := UI.label("Victory!" if won else "Defeat", "lilita", 30, Color("#2E6B3A") if won else UI.RED)
 	head.add_child(title)
-	var sub := UI.label("[Enemy group] defeated" if won else "The party fell back to camp", "n800", 13, UI.INK_SOFT)
+	var sub := UI.label("" if won else "The party fell back to camp", "n800", 13, UI.INK_SOFT)
 	sub.size_flags_vertical = Control.SIZE_SHRINK_END
 	head.add_child(sub)
 	v.add_child(head)
@@ -51,7 +51,7 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(row)
 	row.add_child(_party_panel(game, downed))
-	row.add_child(_rewards_panel(won, drawn, dropped))
+	row.add_child(_rewards_panel(won, drawn, dropped, earned))
 
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 10)
@@ -61,15 +61,15 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 		xp.add_theme_constant_override("separation", 5)
 		xp.custom_minimum_size.x = 330
 		var xr := HBoxContainer.new()
-		xr.add_child(UI.label("+[XP] XP", "lilita", 18))
+		xr.add_child(UI.label("+%d XP" % earned, "lilita", 18))
 		var sp := Control.new()
 		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		xr.add_child(sp)
-		var lv := UI.label("Party level [level]", "n800", 11, UI.INK_SOFT)
+		var lv := UI.label("Party level %d" % game.level, "n800", 11, UI.INK_SOFT)
 		lv.size_flags_vertical = Control.SIZE_SHRINK_END
 		xr.add_child(lv)
 		xp.add_child(xr)
-		xp.add_child(Bar.make(330, 14, Color("#E6DCC8"), UI.GOLD, 0.62, UI.HEX_SHADOW))
+		xp.add_child(Bar.make(330, 14, Color("#E6DCC8"), UI.GOLD, float(game.xp) / game.xp_needed(), UI.HEX_SHADOW))
 		bottom.add_child(xp)
 	var sp2 := Control.new()
 	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -118,7 +118,7 @@ func _party_panel(game: Game, downed: Dictionary) -> Control:
 	return p
 
 
-func _rewards_panel(won: bool, drawn: Array[String], dropped: Array) -> Control:
+func _rewards_panel(won: bool, drawn: Array[String], dropped: Array, earned: int) -> Control:
 	var p := Panel.new()
 	var sb := UI.box(UI.CREAM_LIGHT, 14)
 	sb.border_color = Color("#E2D5BC")
@@ -153,7 +153,7 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array) -> Control:
 		var cc := CenterContainer.new()
 		cc.add_child(dot)
 		gh.add_child(cc)
-		var gl := UI.label("+[gold]", "lilita", 20, UI.CREAM)
+		var gl := UI.label("+%d" % earned, "lilita", 20, UI.CREAM)
 		gl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		gl.size_flags_vertical = Control.SIZE_FILL
 		gh.add_child(gl)

@@ -27,6 +27,7 @@ var moved := 0                   # hexes moved by the last Move
 var phase := "allies"
 var grid := {}                   # cell -> {kind, z, way_up}
 var treads := {}                 # cell -> [mask of neighbours, height]: a hills map's long steps (CombatMap.treads_of)
+var roster: Array = []           # who this fight is against (Foes.roster); empty: the checks' one stat line, as many as the map or the board has
 var map_id := ""                 # the map this fight is on; "" on the old board
 var map_tris := 0
 var map_build_ms := 0.0
@@ -211,11 +212,8 @@ func _setup_board(terrain: String, tile: Vector2i, foes: int) -> void:
 		grid[c] = {kind = "blocked" if c in rocks else "open", z = 0.0, way_up = false}
 	for i in game.party.size():
 		_add_unit(game.party[i], PARTY_CELLS[i], true, "")
-	for i in foes:
-		var e: Dictionary = Rules.ENEMY.duplicate()
-		e.max_hp = e.hp
-		e.name = e.name % LABELS[i]
-		_add_unit(e, ENEMY_CELLS[i], false, LABELS[i])
+	for i in (roster.size() if not roster.is_empty() else foes):
+		_add_unit(_foe(i), ENEMY_CELLS[i], false, LABELS[i])
 
 
 ## An approved map. The party takes the sample starts of its stand-ins, anyone else the nearest free cell; every enemy start is
@@ -253,16 +251,27 @@ func _setup_map(id: String) -> void:
 			_add_unit(m, Vector2i(int(at[0].q), int(at[0].r)), true, "", foes_at)
 	for m: Dictionary in waiting:
 		_add_unit(m, _free_near(party_at, units[0] if not units.is_empty() else {}), true, "", foes_at)
-	var n := 0
-	for st: Dictionary in starts:
-		if not String(st.mini).begins_with("standin_"):
-			var e: Dictionary = Rules.ENEMY.duplicate()
-			e.max_hp = e.hp
-			e.name = e.name % LABELS[n]
-			e.mini = st.mini
-			_add_unit(e, Vector2i(int(st.q), int(st.r)), false, LABELS[n], party_at, int(st.get("turn", 0)))
-			n += 1
+	if roster.is_empty():
+		var n := 0
+		for st: Dictionary in starts:
+			if not String(st.mini).begins_with("standin_"):
+				var e := _foe(n)
+				e.mini = st.mini
+				_add_unit(e, Vector2i(int(st.q), int(st.r)), false, LABELS[n], party_at, int(st.get("turn", 0)))
+				n += 1
+	else:
+		var slots := starts.filter(func(st): return not String(st.mini).begins_with("standin_") and not String(st.mini).begins_with("giant_"))
+		for k in roster.size():
+			var at := Vector2i(int(slots[k].q), int(slots[k].r)) if k < slots.size() else _free_near(foes_at, {})
+			_add_unit(_foe(k), at, false, LABELS[k], party_at)
 	map_build_ms = (Time.get_ticks_usec() - t0) / 1000.0
+
+
+func _foe(k: int) -> Dictionary:
+	var e: Dictionary = roster[k].duplicate() if k < roster.size() else Rules.ENEMY.duplicate()
+	e.max_hp = e.hp
+	e.name = e.name % LABELS[k]
+	return e
 
 
 ## The free cell nearest a point that the first of the party can walk to, so a hillside's cliff doesn't cut anyone off. Never lava.
@@ -307,7 +316,8 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			cell = c, hp = m.hp, max_hp = m.max_hp, score = m.score, ability = m.ability, ally = ally,
 			down = m.hp <= 0, ap = 0, bonus = 0, defending = false, used = {}, used_fight = {},
 			blessed = false, poison = false, weapon = m.get("weapon", "spear"),
-			hot = m.get("hot", []), cards = m.get("cards", []), member = m}
+			hot = m.get("hot", []), cards = m.get("cards", []), member = m, damage = m.get("damage", -1), heads = m.get("heads", Rules.HEADS_TO_HIT), role = m.get("role", ""),
+			parry = false, ward = 0, lost_ap = 0}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -628,6 +638,8 @@ func _start_allies() -> void:
 			u.bonus = 0
 			u.used = {}
 			u.defending = false      # Defend lasts until your next turn
+			u.parry = false
+			u.ward = 0
 			u.poison = false
 	current = {}
 	game.rig.player_moved = false   # PLACEHOLDER ("the next action" isn't decided): a new turn centres again
@@ -744,17 +756,27 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	a.blessed = false
 	var coins := Coins.flip(rng, n)
 	var heads := Coins.heads(coins)
-	var hit := heads >= Rules.HEADS_TO_HIT
+	var hit := heads >= heads_needed(t)
 	var dmg := 0
 	if hit:
-		dmg = a.score
+		dmg = a.damage if a.damage >= 0 else a.score + k.get("bonus", 0)
 		if k.get("effect", "") == "sneak" and _flanked(a, t):
 			dmg += Rules.SNEAK_BONUS
 		if a.poison:
 			dmg += Rules.POISON_BONUS
 		if t.defending:
 			dmg -= Rules.DEFEND_REDUCTION
-		dmg = maxi(dmg, 0)
+		if t.parry and k.get("range", 1) <= 1:   # the next melee hit (DOCS: design/04 -> Longsword)
+			t.parry = false
+			dmg = 0
+		var warded := mini(t.ward, maxi(dmg, 0))
+		t.ward -= warded
+		dmg = maxi(dmg - warded, 0)
+		match k.get("rider", ""):
+			"stun":
+				t.lost_ap = Rules.AP
+			"prone":
+				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 	if a.ally:
 		result = {coins = coins, title = "Hit!" if hit else "Miss", good = hit,
 				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
@@ -765,6 +787,11 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		await _hurt(t, dmg)
 	busy = false
 	_check_end()
+
+
+## What an attack on t needs (DOCS: design/03 -> Hit chance scaling).
+func heads_needed(t: Dictionary) -> int:
+	return t.get("heads", Rules.HEADS_TO_HIT)
 
 
 func _flanked(a: Dictionary, t: Dictionary) -> bool:
@@ -817,6 +844,10 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.poison = true
 		"defend":
 			a.defending = true
+		"parry":
+			a.parry = true
+		"ward":
+			a.ward = Rules.WARD_POINTS
 
 
 ## u walks a path, burning on each lava cell it enters (design/03 -> Lava) and stopping there if that downs it.
@@ -903,7 +934,8 @@ func _enemy_phase() -> void:
 		if e.ally or e.down or not active or phase != "enemies":
 			continue
 		e.defending = false
-		e.ap = Rules.AP
+		e.ap = maxi(Rules.AP - e.lost_ap, 0)   # stunned or prone
+		e.lost_ap = 0
 		while e.ap > 0 and not e.down and active and phase == "enemies":
 			var targets := foes_of(e)
 			if targets.is_empty():

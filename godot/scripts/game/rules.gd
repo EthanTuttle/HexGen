@@ -172,7 +172,11 @@ const FIGHT_DISTANCE_MIN := 14.0         # PLACEHOLDER
 const FIGHT_PAN_MARGIN := 1.5            # PLACEHOLDER: how far past a map's outer cells the camera's target can pan
 const DEFEND_REDUCTION := 1              # PLACEHOLDER: defend/brace exists but has no number
 ## PLACEHOLDER (Explore v8b's text): Sneak past is a group check where everyone flips one coin and 1 heads passes.
-const SNEAK_COINS_EACH := 1
+const SNEAK_COINS_EACH := 2              # PLACEHOLDER: 2 each, as with two in the party 1 each could never make an elite's 3 heads
+const PRONE_AP := 1                      # PLACEHOLDER: what prone costs a foe next turn (Trip, Frost Ray)
+const WARD_POINTS := 2                   # PLACEHOLDER: Ward's small shield, until the next turn
+const XP_FIRST_LEVEL := 20               # design/06: XP per level, 20 then 10 more each level
+const XP_MORE_EACH := 10
 
 ## The party and their cards as in the combat mockup (Combat v14): [Hero name] the Fighter (longsword and
 ## shield), Fluffy (wizard, staff), Chelmsford (cleric, mace and shield) and Mel (rogue, dagger), with the

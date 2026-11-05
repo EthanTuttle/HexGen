@@ -444,7 +444,7 @@ func show_encounter(where: String, stage: String, coins: Array) -> void:
 	_enc_where.text = ("Encounter · " + where).to_upper()
 	# The coin check line (DOCS: UI -> Screen text keeps it), then just the result.
 	_enc_text.text = {
-		"ask": "%d coins · Stealth · needs %d heads" % [game.party.size() * Rules.SNEAK_COINS_EACH, Rules.HEADS_TO_HIT],
+		"ask": "%d coins · Stealth · needs %d heads" % [game.party.size() * Rules.SNEAK_COINS_EACH, game.sneak_heads()],
 		"passed": "Slipped past",
 		"spotted": "Spotted!"}[stage]
 	for c in _enc_coins.get_children():

@@ -17,6 +17,7 @@ const BACKGROUNDS := {
 }
 const CLASS_TERRAINS := {"fighter": ["plains", "desert"]}
 const CARDS_EACH := 5
+const ONE_OF_EACH := ["forest", "plains", "farmland", "village", "river", "hills", "swamp", "desert", "ruins"]   # design/06: so all can be built
 
 var hero_name := "[Hero name]"
 var klass := "fighter"
@@ -32,6 +33,8 @@ var wide_deck := false
 
 
 static func for_launch() -> RunSetup:
+	if Hero.current != null:
+		return from_hero(Hero.current)
 	if next != null:
 		var run := next
 		next = null
@@ -45,6 +48,16 @@ static func for_launch() -> RunSetup:
 	for a: String in args:
 		if a.begins_with("--seed="):
 			run.seed_text = a.split("=")[1]
+	return run
+
+
+static func from_hero(hero: Hero) -> RunSetup:
+	var run := RunSetup.new()
+	run.hero_name = hero.name
+	run.klass = hero.klass
+	run.race = hero.race
+	run.background = hero.background
+	run.appearance = hero.appearance
 	return run
 
 
@@ -67,4 +80,6 @@ func deck_cards() -> Dictionary:
 	var terrains: Array = CLASS_TERRAINS[klass] + [BACKGROUNDS[background].terrain]
 	for t: String in terrains:
 		cards[t] = cards.get(t, 0) + CARDS_EACH
+	for t: String in ONE_OF_EACH:
+		cards[t] = cards.get(t, 0) + 1
 	return cards
