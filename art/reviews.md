@@ -146,3 +146,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/weizenhof_sheet_v1.png` | note | Paths good. No wheat on the tile: green estate grounds, but it should still connect well to neighbouring fields |
 | 2026-11-04 | `art/preview/weizenhof_nowheat_sheet_v1.png` | rejected | Neither no-wheat version taken; keep the wheat |
 | 2026-11-04 | `art/preview/weizenhof_sheet_v1.png` | approved | Weizenhof with wheat crops, drive to the front (`tiles_v89`). All six starting tiles: merge |
+| 2026-11-05 | `art/preview/cover_data_v1.png` | note | Monastery low garden walls should be partial cover, not walls; redraw |
+| 2026-11-05 | `art/preview/cover_data_v2.png`, `cover_data_v2_monastery.png` | approved | Cover data for combat maps (fences, low edges, walls): merge |
