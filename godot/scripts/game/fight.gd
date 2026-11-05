@@ -1155,8 +1155,8 @@ static func _cube_round(v: Vector3) -> Vector2i:
 
 
 ## Which cells give cover, from the map's cells and what stands on them. Crops and brush cells, and trees, fences, hedges and
-## low props on a cell, give partial cover; anything else that blocks a cell blocks fully (rocks, walls, buildings). PLACEHOLDER
-## (Ethan to confirm, option A): which props count as low; fences and walls drawn as map pieces carry no cells, so their
+## low props on a cell, give partial cover; anything else that blocks a cell blocks fully (rocks, walls, buildings). DOCS (03,
+## Ethan picked option A): which props count as low. Fences and walls drawn as map pieces carry no cells yet, so their
 ## cells block fully.
 const PARTIAL_COVER := ["tree", "grove", "thicket", "roots", "hedge", "fence", "stump", "log", "hay", "crates", "sacks", "baskets",
 	"butt", "benches", "graves", "scarecrow", "washing", "well", "fire", "mushrooms", "junk", "goods", "wares", "rugs", "racks",
