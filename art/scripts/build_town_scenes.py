@@ -33,7 +33,7 @@ LIGHTS = {"inn": [{"at": "hearth", "colour": "#FF8C40", "energy": "placeholder"}
 
 # The floor goes on past v9's 19 hexes, so everything in a scene stands on a hex. The party's spots stay on the 19.
 SQUARE_FLOOR = sorted(set(HEXES) | {(q, r) for q in range(-6, 7) for r in range(-6, 3) if max(abs(q), abs(r), abs(q + r)) <= 5 and abs(hx(q, r).x) < 6.9 and (r <= 0 or max(abs(q), abs(r), abs(q + r)) == 3)})
-INN_FLOOR = sorted(set(HEXES) | {(4, -2)} | {(q, r) for q in range(-5, 6) for r in range(-3, 3) if (max(abs(q), abs(r), abs(q + r)) == 3 or r == -3) and -5.8 < hx(q, r).x < 6.4 and hx(q, r).y > -2.5})
+INN_FLOOR = sorted(set(HEXES) | {(4, -2)} | {(q, r) for q in range(-5, 6) for r in range(-3, 3) if (max(abs(q), abs(r), abs(q + r)) == 3 or r == -3) and -5.8 < hx(q, r).x < 6.4 and hx(q, r).y > -2.5} - {(-3, 0)})
 
 
 # The inn's walls: the floor stops at their outer faces.
@@ -61,7 +61,9 @@ def inn_bands(ring):
     """A floor hex as what's inside the inn's walls: up to three convex parts, front to back."""
     parts = []
     ring = clip(ring, 1, INN_BACK + WALL_HALF, True)
-    for y0, y1, x0, x1 in ((-99, LEFT_FROM, -99, 99), (LEFT_FROM, RIGHT_FROM, INN_LEFT - WALL_HALF, 99), (RIGHT_FROM, 99, INN_LEFT - WALL_HALF, INN_RIGHT + WALL_HALF)):
+    beside_stair = sum(q.y for q in ring) / len(ring) > RIGHT_FROM - 0.6  # a hex level with the right wall's foot stops at its line all the way down, leaving no corner past the stair
+    mid_right = INN_RIGHT + WALL_HALF if beside_stair else 99
+    for y0, y1, x0, x1 in ((-99, LEFT_FROM, -99, mid_right), (LEFT_FROM, RIGHT_FROM, INN_LEFT - WALL_HALF, mid_right), (RIGHT_FROM, 99, INN_LEFT - WALL_HALF, INN_RIGHT + WALL_HALF)):
         part = ring
         for axis, limit, low in ((1, y1, True), (1, y0, False), (0, x1, True), (0, x0, False)):
             if part:
@@ -97,7 +99,7 @@ def planks(p, c, z, mat):
         if wy > INN_BACK - 0.02:
             continue
         x0 = max(c.x - half, INN_LEFT if wy > LEFT_FROM else -99)
-        x1 = min(c.x + half, INN_RIGHT if wy > RIGHT_FROM else 99)
+        x1 = min(c.x + half, INN_RIGHT if wy > RIGHT_FROM or c.y > RIGHT_FROM - 0.6 else 99)
         if x1 - x0 > 0.2:
             p.box(Vector(((x0 + x1) / 2, wy, 0)), (x1 - x0, 0.018, 0.008), mat, z=z)
 
