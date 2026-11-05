@@ -40,7 +40,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | --- | --- |
   | Dunfaire Tower | A round guard tower on an old plinth. How it sits on ruins' hex columns is decided with ruins |
   | East Rime Chapel | A hilltop chapel with walled graves |
-  | Monto Town | Houses on stilts and boardwalks by the river, with a real bridge so the shores can be crossed |
+  | Monto Town | Houses on stilts and boardwalks by the river, with one straight bridge so the shores can be crossed. Its water is fixed, unlike any other river tile: the river always runs across the bridge ([Map & exploration](02 Map & exploration.md) → Terrain pairings) |
   | Sternbrunn Spire | A slim spire with a star dome |
   | The Oak & Lantern | A long thatched inn and stable, with an oak behind |
   | Weizenhof Estate | A manor with a walled court |
