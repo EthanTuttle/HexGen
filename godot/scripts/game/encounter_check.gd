@@ -33,6 +33,7 @@ func _shot(name: String) -> void:
 
 
 func _run() -> void:
+	game.walk_limited = true
 	game.spawn_forest_regions()
 	await _wait(1.0)
 	game.debug_auto_cross = true
@@ -117,11 +118,16 @@ func _sight() -> void:
 	game.rig.frame(Hex.to3(Hex.tile_position(near.x, near.y)), 58.0, 50.0)
 	await _wait(0.2)
 	await _shot("day_map_zoom")
-	game.rig.frame(Hex.to3(Hex.tile_position(near.x, near.y)), 16.0, 45.0)
+	game.rig.frame(Hex.to3(Hex.tile_position(near.x, near.y)), 30.0, 45.0)
 	await _wait(0.2)
 	await _shot("close")
-	var pts := vn.badge.scale.x * 844.0 / (2.0 * tan(deg_to_rad(game.rig.camera.fov) * 0.5) * game.rig.distance)
-	_check(pts < EncounterView.POINTS and pts >= EncounterView.POINTS * EncounterView.SMALLEST, "the badge shrinks gently zoomed in: %.0f pt at %.0f m" % [pts, game.rig.distance])
+	var marks := game.markers().filter(func(m): return m.kind == "encounter")
+	_check(marks.size() == 1 and marks[0].width == 26, "only what's in sight has a badge, on the eased curve: %s pt at 30 m" % (marks[0].width if not marks.is_empty() else "none"))
+	game.rig.distance = 58.0
+	marks = game.markers().filter(func(m): return m.kind == "encounter")
+	_check(not marks.is_empty() and marks[0].width == 32, "32 pt at the map's opening zoom")
+	game.rig.distance = 10.0
+	_check(game.markers().filter(func(m): return m.kind == "encounter").is_empty(), "gone close up, where the figures are plain to see")
 	var gone: int = game.encounters[near].id
 	game.encounters.erase(near)
 	game.encounters.erase(far)

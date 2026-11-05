@@ -133,6 +133,12 @@ const REST_MINUTES := 10.0               # DOCS: resting fast-forwards 8 in-game
 const ENCOUNTER_CHANCE := 0.4            # PLACEHOLDER: chance a placement spawns one in its region
 const ENCOUNTERS_PER_REGION := 1         # PLACEHOLDER: "each region can hold a set number of active encounters"
 const ENCOUNTER_LIFETIME := 900.0        # DOCS: they disappear after about 15 minutes (half a day) if not dealt with
+const ROLL_EVERY := 10.0                 # DOCS: spawn rolls every 8 in-game hours, about 10 minutes of the day clock
+const ROLL_FIRST := 3.0                  # PLACEHOLDER: minutes into a run of the first roll, so the map isn't empty for 10 minutes
+const ROLL_TILES := 2                    # PLACEHOLDER: random placed tiles each roll tries (DOCS: "each on random already-placed tiles")
+const ROLL_CHANCE := 0.6                 # PLACEHOLDER
+const ROLL_CHANCE_NIGHT := 0.85          # PLACEHOLDER (DOCS: more spawn at night)
+const ENCOUNTERS_PER_TIER2_REGION := 2   # PLACEHOLDER (DOCS: tier 2 regions hold more)
 const ROAM_MINUTES := 2.5                # PLACEHOLDER: minutes of the day clock (real minutes, about 2 in-game hours) between a roamer's moves, a tile at a time (design/02 open question)
 ## PLACEHOLDER: one table for every terrain, and these weights (DOCS: each region's table sets the mix; open). Figures: art/handoff/encounters_kit.md.
 const ENCOUNTER_TABLE := [

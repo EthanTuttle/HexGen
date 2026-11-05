@@ -579,6 +579,8 @@ func _place_marks() -> void:
 		var world: Vector3 = m.world
 		node.visible = not cam.is_position_behind(world)
 		var p := cam.unproject_position(world)
+		node.modulate.a = m.get("alpha", 1.0)
+		node.visible = node.visible and node.modulate.a > 0.0
 		node.global_position = p - Vector2(node.size.x * 0.5, node.size.y) - Vector2(0, m.get("lift", 26))  # on the board, so screen coordinates
 	for key in _mark_nodes.keys():
 		if not want.has(key):
@@ -586,8 +588,18 @@ func _place_marks() -> void:
 			_mark_nodes.erase(key)
 
 
+const BADGES := {"fight": [UI.RED, UI.RED_EDGE, UI.WHITE_WARM, "swords_solid"], "social": [Color("#225C91"), Color("#163E63"), UI.WHITE_WARM, "bubble"],
+	"discovery": [UI.GOLD, UI.GOLD_EDGE, UI.INK, "sparkle"]}
+
+
 func _make_mark(m: Dictionary) -> Control:
 	match m.kind:
+		"encounter":   # art/handoff/encounters_kit.md -> Badges. Whole points, as a size that changes every frame would pile up icon textures
+			var look: Array = BADGES[m.encounter]
+			var w := float(m.width)
+			var h := HexShape.make(w, w * 51.0 / 44.0, UI.CREAM_LIGHT, look[0], maxf(0.75, 0.09 * w)).with_icon(look[3], look[2], 0.66 * w, 2.2, true).with_shadow(look[1], 2.0)
+			h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			return h
 		"goal":
 			var p := UI.panel(UI.DARK, 12, UI.DARK_EDGE, 3, Vector4(7, 0, 7, 0))
 			p.custom_minimum_size = Vector2(22, 24)
