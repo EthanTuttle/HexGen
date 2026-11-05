@@ -46,6 +46,7 @@ import hexkit as hk  # noqa: E402
 import map_catalogue as mc  # noqa: E402
 import render_forest_boards as rb  # noqa: E402
 import check_winding as cw  # noqa: E402
+import cover_data  # noqa: E402
 import render_preview as rp  # noqa: E402
 import variants as vr  # noqa: E402
 
@@ -1070,6 +1071,8 @@ def export(maps, build, load, variant_of, stem, cell_extra=None):
                       "cells": rows, "placements": placements, "starts": starts}
         if "kind" in m:
             data[name]["kind"] = m["kind"]
+        missing = cover_data.annotate(name, data[name], cells)  # which cells or edges each fence, wall or low edge stands on
+        assert not missing, f"{name}: no cover data for {missing}"
     for o in list(bpy.data.objects):
         if o.name not in keep.objects:
             bpy.data.objects.remove(o)
