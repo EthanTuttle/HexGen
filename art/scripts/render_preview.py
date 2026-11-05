@@ -316,7 +316,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         terrain = vr.terrain_of(name)
         at = hk.tile_position(q, r)
         kit = vr.wedges_of(name)  # a centre-only landmark takes its variant's wedges and ground colour
-        no_slab = kit in ("canyon", "plaguepit") or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
+        no_slab = kit in ("canyon", "plaguepit", vr.bl.VARIANT) or (kit == "rapids" and any(vr.terrain_of(MAP.get((q + dq, r + dr))) == "river" if MAP.get((q + dq, r + dr)) else False for dq, dr in hk.NEIGHBOURS))  # their geometry is their ground: a slab would cover the cut
         base = place(templates, f"base_{terrain}", col, at) if not no_slab else None
         if kit in vr.VARIANTS and base:
             # Variants use their terrain's base with their own ground colour on top (slot 0 is the top).
@@ -390,6 +390,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             p = hk.Piece(f"fey_{q}_{r}")
             vr.fl.add_fey(p, vr.fl.fey_tile(vr.fl.region_of(MAP, toward, turns), (q, r)))
             p.finish(col, at)
+        if name in vr.bl.LOOKS:
+            # The Buried city, worked out in world space at its current levels, the way the engines will.
+            vr.bl.add_tile(col, at, vr.bl.buried_tile(vr.bl.region_of(MAP), (q, r)), f"{q}_{r}")
         if name in vr.sl.LOOKS:
             # The wetland, worked out in world space, the way the engines will.
             tile_ = marsh_tiles[(q, r)] = vr.sl.marsh_tile(MAP, q, r, trails, lf.toward_edge((q, r), toward) if (q, r) in toward else None, turns.get((q, r), 0), dist.get((q, r), 9))
