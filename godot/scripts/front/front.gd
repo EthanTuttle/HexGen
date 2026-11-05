@@ -32,6 +32,7 @@ static func goes_direct() -> bool:
 
 
 func _ready() -> void:
+	TestNotes.attach(get_tree())
 	if goes_direct():
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 		return

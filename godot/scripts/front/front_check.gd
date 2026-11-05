@@ -8,6 +8,8 @@ var failed := 0
 
 
 func _ready() -> void:
+	TestNotes.dir = "user://test_notes_check"
+	DirAccess.make_dir_recursive_absolute(TestNotes.dir)
 	_run.call_deferred()
 
 
@@ -82,6 +84,7 @@ func text_sizes(where: String, root: Node) -> void:
 func _run() -> void:
 	await _wait(1.6)
 	await _title()
+	await _note("title")
 	await _creator()
 	await _game_run()
 	print("FRONT DONE: %d failed" % failed)
@@ -239,6 +242,7 @@ func _creator() -> void:
 	await _wait(0.1)
 	check(not (control("Begin") as TagButton).disabled, "name: a typed name lets Begin on")
 	await shot("name")
+	await _note("creator")
 	text_sizes("name", front.creator)
 	await tap_on("Begin")
 	await _wait(0.6)
@@ -255,6 +259,7 @@ func _game_run() -> void:
 	await _wait(5.0)   # the banner drops in and rises away
 	var g := get_tree().current_scene as Game
 	check(g != null, "the game scene is running")
+	await _note("map")
 	check(g.party[0].name == "Hilde Oakshield", "the game has the hero's name")
 	check(g.party.size() == 2 and g.party[1].name == "Fluffy", "the party is the hero and Fluffy")
 	check(g.run.background == "folk_hero", "the run starts from the background")
@@ -280,12 +285,12 @@ func _game_run() -> void:
 	await tap_on("Shop")
 	await _wait(0.3)
 	await shot("town_shop")
-	await tap_on("Battleaxe")
+	await tap_on("Health potion")
 	await _wait(0.2)
 	await shot("town_shop_item")
-	await tap_on("Buy Battleaxe")
+	await tap_on("Buy Health potion")
 	await _wait(0.3)
-	check(g.gold == 20, "shop: buying spends gold")
+	check(g.gold == 35 and g.potions == 1, "shop: a potion spends gold and goes to the count Use item reads")
 	await shot("town_shop_bought")
 	await _wait(2.2)
 	await tap_on("Back")
@@ -296,7 +301,7 @@ func _game_run() -> void:
 	text_sizes("inn", g.safe)
 	await tap_on("Rest the night")
 	await _wait(0.3)
-	check(g.gold == 15, "inn: the rest charges gold")
+	check(g.gold == 30, "inn: the rest charges gold")
 	await shot("town_inn_bar")
 	var scene := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
 	while scene._phase == "revel":
@@ -312,7 +317,7 @@ func _game_run() -> void:
 	await _wait(0.2)
 	await tap_on("Rest the night")
 	await _wait(0.2)
-	check(g.gold == 15, "inn: one rest a visit")
+	check(g.gold == 30, "inn: one rest a visit")
 	await tap_on("Back")
 	await _wait(0.2)
 	await tap_on("Leave")
@@ -376,4 +381,32 @@ func _social(g: Game) -> void:
 	await tap(Vector2(420, 180))
 	await _wait(3.0)
 	check(g.fight.active, "social: a failed threat starts the fight")
+	await _note("fight")
 	await shot("social_fight")
+
+
+## The test note's flag on this screen: opens, pauses, keeps the words, saves one note, and comes back as it was.
+func _note(where: String) -> void:
+	var before := DirAccess.get_files_at(TestNotes.dir).size()
+	check(control("Test note") != null, "note: the flag shows on %s" % where)
+	await tap_on("Test note")
+	await _wait(0.15)
+	check(get_tree().paused, "note: the game holds while the box is open (%s)" % where)
+	var edit := control("Note text") as TextEdit
+	edit.text = "[check] on %s" % where
+	edit.text_changed.emit()
+	await _wait(0.1)
+	if where == "map":
+		await shot("note_box")
+	await tap_on("Save")
+	await _wait(0.2)
+	check(not get_tree().paused, "note: Save lets the game go on (%s)" % where)
+	var names := DirAccess.get_files_at(TestNotes.dir)
+	check(names.size() >= before + 2, "note: a JSON and a screenshot saved (%s)" % where)
+	var newest := ""
+	for n in names:
+		if n.ends_with(".json") and n > newest:
+			newest = n
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TestNotes.dir.path_join(newest)))
+	print("FRONT note %s: %s" % [where, JSON.stringify(data).left(400)])
+	check(data.get("text", "") == "[check] on %s" % where, "note: the text is kept (%s)" % where)

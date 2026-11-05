@@ -2,27 +2,19 @@ class_name TownShop
 extends Control
 ## The shopkeeper's counter (Town v2a, as in v9): items as hexes on a wooden counter, the gear screen's item pop-up over the
 ## picked one. Gold spends here.
-## PLACEHOLDERS: the stock is Town v9's own list, the prices are made up, and buying takes the gold but does nothing yet
-## (no gear or camp kits in the first playable): design/06 -> open question, what shops sell. No Sell tab: nothing to sell.
+## Every shop sells one thing for now, a health potion (Ethan, Nov 4, 2026; design/06), which Use item drinks in a fight.
+## PLACEHOLDER: its price. No Sell tab: nothing to sell.
 
 signal closed
 
 const STOCK := [
-	{"name": "Camp kit", "r": "C", "icon": "tent", "kind": "Consumable", "price": 10, "desc": "Pitch a camp. One kit covers the whole party."},
-	{"name": "Potion", "r": "C", "icon": "potion", "kind": "Consumable", "price": 5},
-	{"name": "Spear", "r": "C", "icon": "spear", "kind": "Weapon", "price": 15, "desc": "Versatile. Reach: hits 2 squares away.", "cards": ["Throw"]},
-	{"name": "Battleaxe", "r": "C", "icon": "axe", "kind": "Weapon", "price": 20, "desc": "Versatile. Can be thrown.", "cards": ["Hack", "Throw"]},
-	{"name": "Shortbow", "r": "C", "icon": "bow", "kind": "Weapon", "price": 20},
-	{"name": "Light armor", "r": "C", "icon": "armor", "kind": "Armor", "price": 25},
-	{"name": "Dagger", "r": "R", "icon": "sword", "kind": "Weapon", "price": 30, "cards": ["Backstab", "Throw"]},
+	{"name": "Health potion", "r": "C", "icon": "potion", "kind": "Consumable", "price": 5},
 ]
 const RIM := {"C": "#BFAE8E", "R": "#3F86C8", "L": "#E07A2F"}
 const FACE := {"C": "#FCF7EE", "R": "#EAF3FB", "L": "#FDEEDF"}
 const INK := {"C": "#33403B", "R": "#225C91", "L": "#9A4A12"}
 const TAG_INK := {"C": "#5A5040", "R": "#225C91", "L": "#9A4A12"}
 const RARITY := {"C": "Common", "R": "Rare", "L": "Legendary"}
-
-static var bag: Array = []             # PLACEHOLDER: what's been bought, until there's an inventory
 
 var scene: TownScene
 var _pop: Control
@@ -96,16 +88,7 @@ func _toggle(i: int) -> void:
 	var v := CUI.vbox(6)
 	v.add_child(UI.label(("%s · %s" % [it.kind, RARITY[it.r]]).to_upper(), "n900", 11, Color(TAG_INK[it.r]), 1))
 	v.add_child(UI.label(it.name, "lilita", 20, UI.INK, 0, 1.1))
-	if it.has("desc"):
-		v.add_child(CUI.wrap(UI.label(it.desc, "n700", 12, CUI.SOFT_INK, 0, 1.35), 190))
-	if it.has("cards"):
-		var cards := CUI.hbox(5)
-		for c: String in it.cards:
-			var chip := UI.panel(Color("#F1E8D8"), 9, Color(0, 0, 0, 0), 0, Vector4(8, 1, 8, 1))
-			chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			chip.add_child(UI.label(c, "n800", 11, UI.INK_MUTED))
-			cards.add_child(chip)
-		v.add_child(cards)
+	v.add_child(CUI.wrap(UI.label("Heal %d HP." % Rules.POTION_HEAL, "n700", 12, CUI.SOFT_INK, 0, 1.35), 190))
 	var buy := TagButton.make("Buy · %d" % it.price, 130, 44, 14)
 	buy.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	buy.ink = UI.WHITE_WARM
@@ -132,7 +115,7 @@ func _buy(i: int) -> void:
 	if not scene.game.spend(int(it.price)):
 		scene.head.say("[Shopkeeper]", "%s · Shop" % scene.town_name(), "[Shopkeeper can't afford line]", Color("#F2D8B0"), TownScene.SHOP_C, SceneUI.ICONS.person)
 		return
-	bag.append(it.name)
+	scene.game.potions += 1
 	scene._refresh_gold()
 	scene.head.say("[Shopkeeper]", "%s · Shop" % scene.town_name(), "[Shopkeeper buy line]", Color("#F2D8B0"), TownScene.SHOP_C, SceneUI.ICONS.person)
 	_close_pop()

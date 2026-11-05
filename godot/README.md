@@ -82,7 +82,7 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 | The town's stage (temporary) | The camera holds on the town's own tile with the party on it. `TownScene._frame` is where Terrain Art's square and inn interior go | Ethan: art pass first, Nov 4. Not polished, on purpose |
 | Enter card | The Rest card's look with the village icon and a brown band, beside Rest if both show | The docs say "like the Rest card" |
 | Inn's price | 5 gold (`TownScene.INN_PRICE`) | Docs: gold, price not set |
-| Shop stock | Town v9's own 7 items at 5-30 gold (`TownShop.STOCK`). Buying takes the gold, pops and flies to equipment, and does nothing yet (`TownShop.bag`) | design/06: what shops sell is open |
+| Shop stock | One health potion, price 5 (`TownShop`). Ethan chose the potion (Nov 4); the price is the placeholder. Buying adds to `game.potions`, which Use item drinks in a fight | design/06 |
 | Town and keepers' words | [Town name], [Town greeting], [Shopkeeper line], [Innkeeper line] and so on, as in the mockup, plus [Shopkeeper buy line] and [Shopkeeper / Innkeeper can't afford line] for Places.md's slots. At Monto Town and The Oak & Lantern the name is real | design/characters/Places.md has the slots, not the lines |
 | At the bar | Fluffy's written fallback line, then [Hero toast line]. Mugs show on the tray; tokens don't hop | No interior yet; pair lines need the party |
 | Left out of Town v9 | Quest board (no quests), Swap party (nobody waits), Sell (no inventory), the Injuries chip (no injuries) | First playable |
@@ -105,6 +105,25 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 - **God and Spells** aren't built: only the Fighter can reach the next step.
 
 `scripts/creator/creator_data.gd` is generated from the mockup by `tools/creator_data.py`, so names, blurbs, card text and icons copy across. Don't edit it by hand.
+
+## Test notes
+
+A small flag sits in the top right corner on every screen in test builds (`scripts/test_notes.gd`, debug builds only): on the phone in the strip beyond the safe area, clear of the island and the HUD. Tapping it takes a screenshot, holds the game and opens a box; Save writes the note, Cancel drops it.
+
+- **Where:** `user://test_notes/note_<date>_<time>.json` and `.jpg`, at half the screen's size, on the phone in the app's `Documents/test_notes`. No network.
+- **In each note:** the text, the saved time, scene and screen (title, creator step, map, scene, fight), tile and its terrain, combat map id, seed, background, day and minute, gold, XP, level, potions, hand, tiles, regions, encounters, each party member's HP, and the hero's name, race and gear.
+- **Cap:** 500 notes or 150 MB (both placeholders). Past the bytes a note saves with no screenshot; at 500 the box says it's full and Save is off. **Nothing here deletes a note.** Uninstalling the app from the phone does, so collect first.
+- **Hidden on checks and demos,** so their screens and numbers hold; shown on a plain launch, on `--direct`, `--front` and the phone-check variables. `-- --front --check` tries it on the title, creator, map and a fight, writing to its own `user://test_notes_check`.
+
+Collect them (copies only, into `build/notes/`):
+
+```bash
+godot/tools/collect_notes.sh phone
+```
+
+```bash
+godot/tools/collect_notes.sh mac
+```
 
 ## How the party moves
 
