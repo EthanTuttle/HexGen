@@ -148,3 +148,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/weizenhof_sheet_v1.png` | approved | Weizenhof with wheat crops, drive to the front (`tiles_v89`). All six starting tiles: merge |
 | 2026-11-05 | `art/preview/cover_data_v1.png` | note | Monastery low garden walls should be partial cover, not walls; redraw |
 | 2026-11-05 | `art/preview/cover_data_v2.png`, `cover_data_v2_monastery.png` | approved | Cover data for combat maps (fences, low edges, walls): merge |
+| 2026-11-05 | `art/preview/beast_wolf_v3.png` | note | Ally wolf: wilder look (straighter tail, smaller eyes, closer to a real wolf), then show again. Hawk to use a flight stand (rod, wings spread, shadow on the base) |
