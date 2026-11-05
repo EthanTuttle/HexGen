@@ -9,7 +9,7 @@ On each `map_<map>_<piece>` placement in `art/export/combat_maps_{farmland,plain
 
 | Field | Meaning |
 |---|---|
-| `cover` | `fence` (fence, slum fence or hedge), `barrier` (jousting barrier) or `edge` (plot edge or terrace curb): partial cover. `wall` (town wall, monastery wall or palisade): blocks |
+| `cover` | `fence` (fence, slum fence, hedge or low monastery garden wall), `barrier` (jousting barrier) or `edge` (plot edge or terrace curb): partial cover. `wall` (town wall or palisade): blocks |
 | `cells` | `[[q, r], ...]`: the cells the piece stands on. Gaps and gates aren't listed, so shots pass there |
 | `edges` | `[[[q1, r1], [q2, r2]], ...]`: the two cells the piece lies between. Both cells are always on the board |
 
@@ -22,7 +22,7 @@ A piece has either `cells` or `edges`. The `[q, r]` values are axial, as in the 
 | `fence_*` | 12 farmland maps (50 pieces) | cells | fence |
 | `barrier_*` | tourney_fields_lists | cells | barrier |
 | `palisade_*` | battlefield_palisade | cells | wall |
-| `wall_*` | monastery_heights climb, gardens, walled | cells | wall |
+| `wall_*` | monastery_heights climb, gardens, walled (low garden walls, about 0.54 high) | cells | fence |
 | `terrace_curbs`, `plot_edges` | the 4 monastery_heights maps | edges | edge |
 | `line_*` | fortified_town (wall), slums_fences (fence), village_gardens (picket fence), scholars_town court and walk (hedge, tagged `fence`) | cells | as shown |
 | `wall_to_towers` | fortified_town breach and corner | cells | wall |
@@ -35,6 +35,7 @@ A piece has either `cells` or `edges`. The `[q, r]` values are axial, as in the 
 
 - `art/scripts/cover_data.py` writes the data from each map's plan and checks it. Pass `-- --check` to check only. The check confirms:
   - every listed cell and edge is on the board, and every line piece has data
+  - each kind has the right form (`edge` with edges, the rest with cells), and `wall` appears only on fortified_town and battlefield maps
   - each map's plan still matches its JSON's cells
   - each piece's mesh in the latest blend sits on what's listed: every vertex lies near a listed cell or edge, and every listed cell or edge has mesh on it
 - The map export (`render_forest_maps.export`) calls `cover_data.annotate`, so a re-export keeps the data. It fails if a line piece is left without data.

@@ -6,8 +6,8 @@ Reads each map's plan from its render script, writes the fields onto the map_ pl
 (farmland, plains, hills, village), then checks them. --check only checks. fm.export calls annotate() too, so a re-export keeps them.
 
 On a placement:
-  "cover"  fence (a fence, slum fence or hedge: partial), barrier (jousting barrier: partial), edge (plot edge or terrace curb:
-           partial) or wall (town wall, monastery wall, palisade: blocks)
+  "cover"  fence (a fence, slum fence, hedge or low monastery garden wall: partial), barrier (jousting barrier: partial), edge
+           (plot edge or terrace curb: partial) or wall (town wall or palisade: blocks)
   "cells"  [[q, r], ...] for a piece standing on whole cells: a line's L cells; its gaps and gates are left out
   "edges"  [[[q1, r1], [q2, r2]], ...] for a piece along cell edges: the two cells it lies between, both on the board
 The checks: every listed cell or edge is on the board, every line piece has data, the plan still matches the JSON's cells, and
@@ -24,7 +24,7 @@ import hexkit as hk  # noqa: E402
 NEIGHBOURS = hk.NEIGHBOURS
 FAMILIES = {"farmland": "render_farmland_maps", "plains": "render_plains_maps", "hills": "render_hills_maps", "village": "render_village_maps"}
 LINE_KIND = {"farmland": "fence", "haunted_homesteads": "fence", "raided_farms": "fence", "windmill_country": "fence", "cider_orchards": "fence",
-             "battlefield": "wall", "tourney_fields": "barrier", "monastery_heights": "wall",
+             "battlefield": "wall", "tourney_fields": "barrier", "monastery_heights": "fence",
              "fortified_town": "wall", "village": "fence", "slums": "fence", "scholars_town": "fence"}
 PREFIX = {"battlefield": "palisade", "tourney_fields": "barrier", "monastery_heights": "wall", **{v: "line" for v in ("fortified_town", "village", "slums", "scholars_town")}}  # as each line_wall names its piece
 LINE_PREFIX = ("fence_", "barrier_", "palisade_", "line_", "wall_")
@@ -111,6 +111,10 @@ def check(name, entry):
         if "cover" not in p or not (p.get("cells") or p.get("edges")):
             bad.append(f"{p['piece']}: no data")
             continue
+        if p["cover"] not in ("fence", "barrier", "edge", "wall") or ("edges" in p) != (p["cover"] == "edge"):
+            bad.append(f"{p['piece']}: cover {p['cover']} with {'edges' if 'edges' in p else 'cells'}")
+        if p["cover"] == "wall" and entry["variant"] not in ("fortified_town", "battlefield"):  # only town walls and palisades block
+            bad.append(f"{p['piece']}: wall on {entry['variant']}")
         for c in p.get("cells", []):
             if tuple(c) not in board:
                 bad.append(f"{p['piece']}: cell {c} off the board")
