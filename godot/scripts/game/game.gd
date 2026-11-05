@@ -963,7 +963,8 @@ func markers() -> Array:
 			if order.get(c, 0) > order.get(newest, 0):
 				newest = c
 		var goal := _goal_for(land(t))
-		out.append({key = "goal%s" % newest, kind = "goal", text = str(goal - cl.size()), world = _tile_top(newest),
+		var boxed_in := not cl.any(func(c): return Hex.NEIGHBOURS.any(func(n): return map.slot_nodes.has(c + n)))   # DOCS: design/02 -> Boxed in: crossed out and faded, no reward
+		out.append({key = "goal%s" % newest, kind = "goal", text = "×" if boxed_in else str(goal - cl.size()), alpha = 0.55 if boxed_in else 1.0, world = _tile_top(newest),
 				aria = "Cluster goal: grow this %s to %d+ hexes" % [Rules.NAMES[land(t)].to_lower(), goal]})
 	var d := rig.distance
 	var alpha := clampf((d - 12.0) / 12.0, 0.0, 1.0)   # art/handoff/encounters_kit.md: the eased curve
