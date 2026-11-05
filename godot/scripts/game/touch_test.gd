@@ -297,6 +297,7 @@ func _run() -> void:
 	say("Tap a card, then tap a lit slot")
 	var j := demo._pick_card()
 	var slot2 := demo._best_slot(game.deck.hand[j])
+	demo.free()
 	await tap((game.hud._hand_grid.get_child(j) as Control).get_global_rect().get_center())
 	check(game.held == j, "tapping a card holds it")
 	await _wait(0.3)
