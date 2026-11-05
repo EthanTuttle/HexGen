@@ -164,6 +164,12 @@ func _run() -> void:
 			if f9.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x > 56:
 				too_wide.append(line)
 	_check(too_wide.is_empty(), "every card name's lines fit a creator card (56 pt) and a hotbar card: %s" % [too_wide])
+	hero.member.hot_slots = ["move", "", "attack"]   # Edit hotbar cleared the middle slot
+	f.select(hero)
+	f.hud.refresh()
+	var bar: Array = f.hud._hotbar.get_children()
+	_check(bar.size() == Rules.HOTBAR_SLOTS and bar[1].get_class() == "Control" and bar[1].get_script() != bar[0].get_script() and bar[2].k.id == "attack", "a cleared slot stays empty and the cards keep their slots")
+	hero.member.erase("hot_slots")
 	var ls := f.flip_check(0, 1)
 	var ls2 := f.flip_check(1, 2)
 	_check(ls.coins.size() == 2 and ls.need == 2 and ls2.need == 3, "the long shot: 0 coins needing 1 is 2 heads in a row, 1 needing 2 is 3")
