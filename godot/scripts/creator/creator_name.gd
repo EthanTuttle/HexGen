@@ -48,10 +48,10 @@ func refresh() -> void:
 	_dangle(hero, 0.2)
 	_banner_name = hero.name_label
 	_banner_name.text = "[Hero name]" if c.hero_name.strip_edges() == "" else c.hero_name.strip_edges()
-	var mini := CreatorMini.new()
-	mini.setup(c, 0, false, 140, 190)
-	UI.at(mini, cx - 70.0, size.y - 46 - 8 - 190)
+	var mini := HeroView.new(150, 204)
+	UI.at(mini, cx - 75.0, size.y - 46 - 4 - 204)
 	add_child(mini)
+	mini.show_hero.call_deferred(HeroMini.description(c.hero()))
 	var row := CUI.hbox(0)
 	row.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	row.offset_top = -46

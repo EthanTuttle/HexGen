@@ -83,6 +83,7 @@ func text_sizes(where: String, root: Node) -> void:
 
 func _run() -> void:
 	await _wait(1.6)
+	_kit_report()
 	await _title()
 	await _note("title")
 	await _creator()
@@ -410,3 +411,37 @@ func _note(where: String) -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TestNotes.dir.path_join(newest)))
 	print("FRONT note %s: %s" % [where, JSON.stringify(data).left(400)])
 	check(data.get("text", "") == "[check] on %s" % where, "note: the text is kept (%s)" % where)
+
+
+## The hero kit (art/handoff/hero_kit.md): the colours as Godot imported them, every shape the Fighter can pick assembles,
+## triangles, and what a rebuild costs.
+func _kit_report() -> void:
+	print("FRONT kit decode: ", HeroMini.decode_report())
+	var t := HeroMini.table()
+	var tris := []
+	var times := []
+	var built := 0
+	var missing := {}
+	var kit := Kit.meshes(HeroMini.GLB)
+	for race: String in t.races:
+		for build: String in t.builds:
+			for main: String in t.races[race].builds[build].poses:
+				for hold: String in t.races[race].builds[build].poses[main]:
+					var off: String = {"none": "", "shield": "shield", "second": "dagger"}[hold]
+					for armour: String in ["none", "heavy"]:
+						var d := {"race": race, "build": build, "head": "a", "hair": "long", "armour": armour, "main": main, "offhand": off,
+							"colours": {"skin": "#C68E64", "hair": "#2B211C", "eyes": "#4F7A33", "cloth": "#3E6F8C"}}
+						for part: Array in HeroMini.parts(d):
+							if not kit.has(part[0]):
+								missing[part[0]] = true
+						if not missing.is_empty():
+							continue
+						var t0 := Time.get_ticks_usec()
+						var m := HeroMini.build(d)
+						times.append((Time.get_ticks_usec() - t0) / 1000.0)
+						tris.append(m.surface_get_array_index_len(0) / 3)
+						built += 1
+	check(missing.is_empty(), "kit: every piece the table asks for exists %s" % [missing.keys() if not missing.is_empty() else ""])
+	times.sort()
+	print("FRONT kit: %d heroes, %d to %d triangles; rebuild median %.1f ms, worst %.1f ms" % [built, tris.min(), tris.max(), times[times.size() / 2], times[-1]])
+	check(tris.max() <= 1300, "kit: a hero stays near the hand-off's 1,256 triangles")

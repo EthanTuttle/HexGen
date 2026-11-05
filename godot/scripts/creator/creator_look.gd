@@ -1,8 +1,7 @@
 class_name CreatorLook
 extends Control
 ## The Look step (Creator v21a): the mini large in the middle with the starting place's tile faint behind it, body options
-## on the left and colours on the right. The mini is the mockup's own flat stand-in (CreatorMini) until Combat Art's mini
-## kit arrives: PLACEHOLDER. Heads and hairstyles are placeholders in the mockup too.
+## on the left and colours on the right. The mini is the real one (HeroView), rebuilt on each pick.
 
 const D = preload("res://scripts/creator/creator_data.gd")
 const VIEWS: Array[String] = ["Front", "Right side", "Back", "Left side"]
@@ -10,6 +9,7 @@ const VIEWS: Array[String] = ["Front", "Right side", "Back", "Left side"]
 var c: Creator
 var turn := 0
 var _risen := false
+var _mini: HeroView
 
 
 func _init(creator: Creator) -> void:
@@ -19,8 +19,9 @@ func _init(creator: Creator) -> void:
 
 func refresh() -> void:
 	for ch in get_children():
-		remove_child(ch)
-		ch.queue_free()
+		if ch != _mini:
+			remove_child(ch)
+			ch.queue_free()
 	var side := 238.0 if size.x >= 760.0 else 228.0
 	var left := _left()
 	left.position = Vector2.ZERO
@@ -136,17 +137,19 @@ func _middle(x: float, w: float) -> void:
 	tile.modulate.a = 0.38
 	UI.at(tile, cx - 125.0, 4)
 	add_child(tile)
-	var mini := CreatorMini.new()
-	mini.setup(c, turn, true, 196, 236)
-	UI.at(mini, cx - 98.0, size.y - 44 - 4 - 236)
-	add_child(mini)
+	if _mini == null:
+		_mini = HeroView.new(240, 256)
+		add_child(_mini)
+	UI.at(_mini, cx - 120.0, size.y - 44 - 256)
+	move_child(_mini, tile.get_index() + 1)
+	_mini.show_hero(HeroMini.description(c.hero()))
 	if not _risen:   # CSS minirise: up from small with a glow
-		mini.pivot_offset = Vector2(98, 200)
-		mini.scale = Vector2(0.6, 0.6)
-		mini.modulate.a = 0.0
-		var tw := mini.create_tween().set_parallel()
-		tw.tween_property(mini, "scale", Vector2.ONE, 0.9).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.tween_property(mini, "modulate:a", 1.0, 0.5)
+		_mini.pivot_offset = Vector2(120, 220)
+		_mini.scale = Vector2(0.6, 0.6)
+		_mini.modulate.a = 0.0
+		var tw := _mini.create_tween().set_parallel()
+		tw.tween_property(_mini, "scale", Vector2.ONE, 0.9).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_mini, "modulate:a", 1.0, 0.5)
 	var row := CUI.hbox(8)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(_turn_button("Turn left", "M4 12a8 8 0 1 0 2.5-5.8 M4 4v4h4", -1))
@@ -175,6 +178,7 @@ func _turn_button(what: String, icon: String, by: int) -> Control:
 	t.custom_minimum_size = Vector2(44, 44)
 	t.pressed.connect(func():
 		turn += by
+		_mini.turn_to(turn)
 		c.render())
 	return t
 
