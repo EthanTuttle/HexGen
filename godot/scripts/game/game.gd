@@ -127,6 +127,7 @@ func _ready() -> void:
 	safe.add_child(popup)
 	_connect_gestures()
 	DebugMenu.attach(self)
+	Screens.attach(self)
 	end_panel = EndPanel.attach(self)
 	level_pick = LevelPick.attach(self)
 	_next_roll = Rules.ROLL_FIRST
@@ -1129,10 +1130,11 @@ func sneak_heads() -> int:
 	return Foes.sneak_heads(encounters[_encounter_tile].roles) if encounters.has(_encounter_tile) else Rules.HEADS_TO_HIT
 
 
-## A new campaign from here. The title screen will take this over.
+## A new campaign from here: back to the title (a run started directly starts again from there too).
 func restart_run() -> void:
 	RunSetup.next = null
-	get_tree().reload_current_scene()
+	Hero.current = null
+	get_tree().change_scene_to_file("res://scenes/front.tscn")
 
 
 ## What a Social or Discovery encounter opens (Screens: event_screen). Until then its name in a pop-up.
@@ -1161,7 +1163,10 @@ func spend(n: int) -> bool:
 
 ## Is the party standing on a town? Its Enter card shows then (design/06 -> Towns).
 func can_enter_town() -> bool:
-	return not busy and Variants.terrain_of(map.terrains.get(party_tile)) == "village"
+	if busy:
+		return false
+	# Monto Town and The Oak & Lantern are a town and an inn, whatever their tile's terrain (design/06 -> Towns).
+	return Variants.terrain_of(map.terrains.get(party_tile)) == "village" or (party_tile == Rules.START_TILE and run.background in ["criminal", "folk_hero"])
 
 
 ## What the Enter card opens (Screens: enter_town_screen).

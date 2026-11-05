@@ -12,6 +12,9 @@ var text := ""
 var text_size := 15
 var cut := 12.0
 var coin := false
+var drop := 4.0                 # the hard shadow's depth
+var soft_shadow := false
+var font_kind := "lilita"
 var icon: Texture2D             # optional icon before the label (e.g. the pencil on Edit hotbar)
 var disabled := false:
 	set(v):
@@ -35,10 +38,14 @@ func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	var b := Color("#E6DCC8") if disabled else bg
 	var k := Color("#6B6152") if disabled else ink
+	if soft_shadow:   # CSS filter: drop-shadow(0 3px 8px), for a button floating over the map
+		for i in 4:
+			var s := 2.0 + i * 2.0
+			draw_colored_polygon(UI.tag_points(Rect2(Vector2(-s, 3 + drop - s), size + Vector2(s, s) * 2.0), cut), Color(0.141, 0.188, 0.172, 0.05))
 	if not disabled and shadow.a > 0:
-		draw_colored_polygon(UI.tag_points(Rect2(Vector2(0, 4), size), cut), shadow)
+		draw_colored_polygon(UI.tag_points(Rect2(Vector2(0, drop), size), cut), shadow)
 	draw_colored_polygon(UI.tag_points(r, cut), b)
-	var f := UI.font("lilita")
+	var f := UI.font(font_kind)
 	var ts := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size)
 	var w := ts.x + (26.0 if coin else 0.0) + (22.0 if icon else 0.0)
 	var x := (size.x - w) * 0.5

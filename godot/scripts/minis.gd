@@ -18,6 +18,8 @@ static func make(name: String, at_plan: Vector2, facing_plan: Vector2) -> Node3D
 
 
 static func _mesh(name: String) -> Mesh:
+	if name == "standin_hero" and Hero.current != null:   # the hero made in the creator
+		return HeroMini.mesh_for(Hero.current)
 	if name.begins_with("standin_"):
 		var standins := Kit.meshes("res://art/standin_minis.glb")
 		Kit.combat_materials(standins)   # their colours are in the vertices too, since the art's facing fix

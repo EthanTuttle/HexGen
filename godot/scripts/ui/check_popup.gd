@@ -43,7 +43,7 @@ func _process(_delta: float) -> void:
 
 ## The prompt, before the party sets off. view: tag, tag_bg, text, initial, face, line, coins. `on_stay` and `on_go`
 ## are the two buttons; stay_label names the first: "Walk round" where there's a way round, else "Back".
-func ask(view: Dictionary, stay_label: String, on_stay: Callable, on_go: Callable) -> void:
+func ask(view: Dictionary, stay_label: String, on_stay: Callable, on_go: Callable, go_label := "Cross") -> void:
 	_run += 1
 	_clear()
 	_head(view)
@@ -52,9 +52,11 @@ func ask(view: Dictionary, stay_label: String, on_stay: Callable, on_go: Callabl
 		row.add_child(CoinView.blank(34))
 	var buttons := _buttons()
 	var stay := _pill(stay_label, UI.SAND, UI.INK)
+	stay.accessibility_name = stay_label
 	stay.pressed.connect(on_stay)
 	buttons.add_child(stay)
-	var go := TagButton.make("Cross", 0, 40)
+	var go := TagButton.make(go_label, 0, 40)
+	go.accessibility_name = go_label
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	go.pressed.connect(on_go)
 	buttons.add_child(go)
@@ -101,6 +103,7 @@ func play(view: Dictionary, flips: Array[bool], helper: Dictionary, helper_heads
 		_land(theirs, helper_heads)
 	_box.add_child(UI.label("Passed!" if passed else "Failed", "lilita", 20, Color("#2E6B3A") if passed else UI.RED))
 	var on := _pill("Continue", UI.DARK, UI.CREAM)
+	on.accessibility_name = "Continue"
 	on.pressed.connect(func():
 		visible = false
 		continued.emit())
@@ -183,11 +186,12 @@ func _chime(helper: Dictionary) -> Control:
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 0)
-	v.add_child(UI.label("%s · +1 coin" % helper.name, "n900", 10, Color("#2E6B3A")))
+	v.add_child(UI.label("%s · +1 coin" % helper.name, "n900", 11, Color("#2E6B3A")))
 	if helper.note != "":
 		v.add_child(UI.label(helper.note, "n700", 11, UI.INK_MUTED))
 	var line := UI.label(helper.line, "n800", 12)
 	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.custom_minimum_size.x = 250
 	v.add_child(line)
 	p.add_child(v)
 	h.add_child(p)

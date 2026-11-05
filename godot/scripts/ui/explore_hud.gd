@@ -301,6 +301,8 @@ func _refresh_hand() -> void:
 # Along the bottom, like the combat hotbar's cards and the scenes' option cards; centred under the open board.
 
 var _rest: Control
+var _enter: _RestCard
+var _in_scene := false
 
 
 func _build_rest() -> void:
@@ -309,10 +311,20 @@ func _build_rest() -> void:
 	_rest.pressed.connect(game.rest)
 	UI.at(_rest, 378 - 37, 390 - 92 - 6)
 	add_child(_rest)
+	_enter = _RestCard.new()
+	_enter.word = "Enter"
+	_enter.icon_name = "t_village"
+	_enter.band = Color("#7A4A22")   # PLACEHOLDER band: the village's ink. DOCS: an Enter card, like Rest on a camp
+	_enter.accessibility_name = "Enter"
+	_enter.pressed.connect(game.enter_town)
+	add_child(_enter)
 
 
 class _RestCard extends Control:
 	signal pressed
+	var word := "Rest"
+	var icon_name := "camp"
+	var band := Color("#8A6446")   # PLACEHOLDER band colour (the camp's brown)
 
 	func _init() -> void:
 		custom_minimum_size = Vector2(74, 92)
@@ -323,16 +335,15 @@ class _RestCard extends Control:
 	func _draw() -> void:
 		# The combat hotbar card's look (Combat v14), with no AP hex: the map has no AP.
 		var r := Rect2(Vector2(0, 8), Vector2(74, 84))
-		var band := Color("#8A6446")   # PLACEHOLDER band colour (the camp's brown)
 		draw_style_box(UI.box(UI.HEX_SHADOW, 10), Rect2(r.position + Vector2(0, 4), r.size))
 		var face := UI.box(UI.CREAM_LIGHT, 10)
 		face.border_color = band
 		face.set_border_width_all(2)
 		draw_style_box(face, r)
 		draw_rect(Rect2(r.position + Vector2(2.5, 2.5), Vector2(69, 6)), band)
-		draw_texture_rect(UI.icon("camp", Color("#5E4C30"), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
+		draw_texture_rect(UI.icon(icon_name, Color("#5E4C30"), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
 		var f := UI.font("n900")
-		draw_string(f, r.position + Vector2(37 - f.get_string_size("Rest", 0, -1, 11).x * 0.5, 60), "Rest",
+		draw_string(f, r.position + Vector2(37 - f.get_string_size(word, 0, -1, 11).x * 0.5, 60), word,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.INK)
 
 	func _gui_input(e: InputEvent) -> void:
@@ -495,6 +506,18 @@ func encounter_open() -> bool:
 
 
 ## Scenes show the party and the camera, not the map's hand and clock (Town v2a).
+## Scenes (town, social) show the party and the camera, not the hand, clock, Rest or Enter (Town v2a).
+func set_scene(on: bool) -> void:
+	_in_scene = on
+	_clock_panel.visible = not on
+	_hand_panel.visible = not on
+	refresh()
+
+
+func gear_button_centre() -> Vector2:
+	return _gear_button.get_global_rect().get_center()
+
+
 func open_shop(where: String, on_buy: Callable, on_close: Callable) -> void:
 	_clock_panel.visible = false
 	_hand_panel.visible = false
@@ -528,7 +551,9 @@ func refresh() -> void:
 	_refresh_tray()
 	_refresh_hand()
 	# The Rest card shows while the party stands on a camp (DOCS: Exploration screen -> Resting).
-	_rest.visible = game.party_tile == Rules.START_TILE and not game.busy
+	_rest.visible = game.party_tile == Rules.START_TILE and not game.busy and not _in_scene
+	_enter.visible = game.can_enter_town() and not _in_scene
+	UI.at(_enter, 378 - 37 + (82 if _rest.visible else 0), 390 - 92 - 6)
 	var held := game.held_terrain()
 	# The banner shows only while a card is held, and names it (DOCS: UI -> Screen text).
 	_banner.visible = held != ""

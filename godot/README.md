@@ -63,6 +63,70 @@ swift godot/tools/png_to_mp4.swift /tmp/variants godot/screens/variants_movie.mp
 
 The demo uses the same calls a player's clicks make, and plays simply. One exception: if no encounter has spawned by the time the hand runs low, it adds one and says so on screen. `--seed=N` changes the shuffle and the coin flips; the default is seed 1. `--demo=variants` stages its hand (5 forest, then 5 hills, then 5 plains, said on screen) so three regions finish in a row; placement still follows the rules.
 
+## The screens before the game (first playable)
+
+A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`). Any run with its own arguments or a `HEXGEN_PHONE*` variable goes straight to the game, so every check, demo and phone run starts as before; `-- --direct` asks for that with no other arguments, and `-- --front` forces the title. `-- --front --check` plays the whole run by touch, from the title through the creator into the game, a town with its shop and inn, and a Social event with a check and a fight, and prints `FRONT OK` / `FRONT FAIL` (add `--shots` for `screens/front_*.png`, `--safe=both` for what iOS reports today).
+
+| Placeholder | Value here | Why |
+| --- | --- | --- |
+| Multiplayer and Settings on the title | Show "Not in the prototype yet" (a listed placeholder sentence) | Not in the first playable. Multiplayer fills the row while Load is hidden |
+| Title's first-launch world | `Front._terrain`: a staged river, woods, farms and a town, real tiles at dusk; only tiles the camera sees are built | The docs ask for "a generic world" |
+| Title's camera | 5.8 m each way over 40 s (the mockup's time) | The mockup's pan is in screen pixels |
+| Locked classes (creator) | Dimmed banner with a lock badge; it opens to read, shows "Locked", and Next stays off | The docs say "show locked" and no mockup does (`Creator.PLAYABLE`) |
+| Hero mini | The kit (`art/handoff/hero_kit.md`), one merged mesh from a description (`scripts/hero_mini.gd`), on Look, Name, the map and fights. `HeroView` lights and frames it on the creator: placeholder light and camera. Companions stay stand-ins | Scripted minis, replaced later (design/06) |
+| Heads and hairstyles | Picked by number, as in the mockup: the kit's four heads and six styles in its order | The kit's shapes are proposals |
+| Hero's banner after Begin | Stays 4 s, then rises away; 96 pt in from the safe edge, clear of the party tray (`SendOff`) | The docs don't say how long, and at the mockup's left it covers the tray |
+| Name step with a keyboard open | The step slides up clear of it | Not mocked; not yet seen on a phone |
+| What the picks do | The description has everything (`Hero`). Scores and proficiencies set a check's coins (`Hero.coins_for`). Gear is recorded and shows on the mini; combat keeps the placeholder Fighter kit. Race and sub-type text shows as mocked but does nothing yet (docs: looks and names) | First playable |
+
+| The town's stage (temporary) | The camera holds on the town's own tile with the party on it. `TownScene._frame` is where Terrain Art's square and inn interior go | Ethan: art pass first, Nov 4. Not polished, on purpose |
+| Enter card | The Rest card's look with the village icon and a brown band, beside Rest if both show | The docs say "like the Rest card" |
+| Inn's price | 5 gold (`TownScene.INN_PRICE`) | Docs: gold, price not set |
+| Shop stock | One health potion, price 5 (`TownShop`). Ethan chose the potion (Nov 4); the price is the placeholder. Buying adds to `game.potions`, which Use item drinks in a fight | design/06 |
+| Town and keepers' words | [Town name], [Town greeting], [Shopkeeper line], [Innkeeper line] and so on, as in the mockup, plus [Shopkeeper buy line] and [Shopkeeper / Innkeeper can't afford line] for Places.md's slots. At Monto Town and The Oak & Lantern the name is real | design/characters/Places.md has the slots, not the lines |
+| At the bar | Fluffy's written fallback line, then [Hero toast line]. Mugs show on the tray; tokens don't hop | No interior yet; pair lines need the party |
+| Left out of Town v9 | Quest board (no quests), Swap party (nobody waits), Sell (no inventory), the Injuries chip (no injuries) | First playable |
+| Gold pill and the speaker's panel on a phone | The panel narrows to 478 pt so the pill fits beside it; the pill shows in the square and inn too, not only the shop | Mockup's 844 pt; the inn charges |
+| Social event | Every Social and Discovery encounter plays one stand-in, the Lady of the Lake's first talk with her written lines, without her sword quest (`SocialScreen.STAND_IN`) | Ethan's 3 or 4 events are coming |
+| Coins and heads in the stand-in | Coins from the hero's score, +1 if proficient; needs 2 heads (the mockup's). A hero with CHA 1 can pass Swear only through Fluffy's chime-in | Placeholder numbers; for Ethan when the events are written |
+| Blessing | Pops and flies toward the party tray; nothing holds it yet | No passives in the first playable |
+| Not built on the Social screen | Silver Tongue's reflip and the who-flips picker | The stand-in's checks are social and the hero's |
+| Character lines | Fluffy's Persuade chime-in and special line follow design/characters/Fluffy.md, newer than Social v9 | The docs are the canon |
+
+**Where the scenes differ from Town v9 and Social v9:** the tray is the game's own, so it isn't redrawn; "Carry on", option cards and bands use 11 pt or more; option words are 12 pt, not 11, as they're read at arm's length.
+
+**Hero kit in Godot (Nov 4, 2026, Mac, Mobile renderer):** 1,722 heroes from the table assemble (every race, build and weapon, each hold, no armour and heavy) at 480-1,282 triangles. A rebuild takes 0.4 ms at the median, 3.8 ms at worst, so each pick on Look rebuilds the merged mesh and the separate-nodes fallback isn't needed. Colours come through import in 8-bit linear as the hand-off warned: zones read right (no mark missed), and shades run 0.38-1.29. Not timed on a phone yet.
+
+**Where the creator differs from Creator v22b:**
+
+- **Width.** Laid out for 734 pt inside the phone's safe area, where the picked banner is about 410 pt, not 460. Blurbs run to two lines. A race with sub-types puts its crest beside the name and blurb (`front_race_dragonborn.png`), and the background's tile is 80 pt, not 108. At full width it's the mockup's layout.
+- **Text under 11 pt** in the mockup (pips, chips, card names, gear labels) is 11, the phones' floor.
+- **"Pick 1 elven spell"** sits right of the cards, as on the left it hits Back at this width.
+- **Cut under Screen text:** the name field's "Type a name" (no hints for standard input; the plate says Name).
+- **Back in the details panes** is sand, not cream: on the cream pane the mockup's button has no visible edge.
+- **God and Spells** aren't built: only the Fighter can reach the next step.
+
+`scripts/creator/creator_data.gd` is generated from the mockup by `tools/creator_data.py`, so names, blurbs, card text and icons copy across. Don't edit it by hand.
+
+## Test notes
+
+A small flag sits in the top right corner on every screen in test builds (`scripts/test_notes.gd`, debug builds only): on the phone in the strip beyond the safe area, clear of the island and the HUD. Tapping it takes a screenshot, holds the game and opens a box; Save writes the note, Cancel drops it.
+
+- **Where:** `user://test_notes/note_<date>_<time>.json` and `.jpg`, at half the screen's size, on the phone in the app's `Documents/test_notes`. No network.
+- **In each note:** the text, the saved time, scene and screen (title, creator step, map, scene, fight), tile and its terrain, combat map id, seed, background, day and minute, gold, XP, level, potions, hand, tiles, regions, encounters, each party member's HP, and the hero's name, race and gear.
+- **Cap:** 500 notes or 150 MB (both placeholders). Past the bytes a note saves with no screenshot; at 500 the box says it's full and Save is off. **Nothing here deletes a note.** Uninstalling the app from the phone does, so collect first.
+- **Hidden on checks and demos,** so their screens and numbers hold; shown on a plain launch, on `--direct`, `--front` and the phone-check variables. `-- --front --check` tries it on the title, creator, map and a fight, writing to its own `user://test_notes_check`.
+
+Collect them (copies only, into `build/notes/`):
+
+```bash
+godot/tools/collect_notes.sh phone
+```
+
+```bash
+godot/tools/collect_notes.sh mac
+```
+
 ## How the party moves
 
 The rule is in `design/07 Presentation.md` → Exploration screen → Walking → How the party moves; it's built in `scripts/game/party_walker.gd` (the party on the map: each mini moves on its own), with every number a placeholder in `rules.gd`.
