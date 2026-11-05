@@ -121,3 +121,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/buried_study_cutaway_map_v1.png` | rejected | Not taken forward |
 | 2026-11-04 | `art/preview/encounters_x1_day_58m_v1.png` | approved | True-scale encounter figures with badges; iterate badges |
 | 2026-11-04 | `art/preview/encounters_x2.5_day_58m_v1.png` | rejected | Oversized look not chosen |
+| 2026-11-04 | `art/preview/buried_r2_low_map_v1.png` | note | One more study before a kit; big pit holds the library |
