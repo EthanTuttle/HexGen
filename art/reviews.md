@@ -116,3 +116,6 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/plains_maps_plains_beside_tile_v2.png` | approved | Plain plains tier 0: Trees, Stones, Long Grass |
 | 2026-11-04 | `art/preview/fey_gate_arch_v6.png` | approved | Feywild crossing and Fey Gate; nudge the fork prong clear of the orange ball; merges |
 | 2026-11-04 | `art/preview/farmland_maps_farmland_beside_tile_v1.png` | rejected | Plain farmland: more wheat, brighter, in blocks like the tile; same fights |
+| 2026-11-04 | `art/preview/farmland_maps_farmland_beside_tile_v3.png` | approved | Plain farmland tier 0: Fields, Yard, Paddocks, Track; all tier 0 sets done |
+| 2026-11-04 | `art/preview/buried_study_shifting_clear_map_v1.png` | approved | Direction, not final art: shifting sands with a few sandfalls; turquoise domes kept; break up the tidy town |
+| 2026-11-04 | `art/preview/buried_study_cutaway_map_v1.png` | rejected | Not taken forward |

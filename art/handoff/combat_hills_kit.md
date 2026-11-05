@@ -1,8 +1,8 @@
-# Combat hills kit hand-off (combat_hills_v9, combat_maps_hills_v14)
+# Combat hills kit hand-off (combat_hills_v9, combat_maps_hills_v15)
 
 Sixteen custom hills combat maps: three terrain maps for each of the five variants, plus one path map for `monastery_heights`, the only variant with drawn roads ([hills_kit.md](hills_kit.md) → Which variants have trails). Every map is a hillside: level cells at many heights (design/07 → Combat maps, chosen Nov 3, 2026). Layouts are with Ethan. The camera check and the rest of the data format are as in the forest kit: see [combat_forest_kit.md](combat_forest_kit.md). This kit's raised ground and lifts replace the forest kit's ways up, on these maps only.
 
-- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v9.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v14.blend`). Minis as in the forest hand-off.
+- **Models:** `art/export/combat_hills.glb` (from `art/combat/combat_hills_v9.blend`), `art/export/combat_maps_hills.glb` (`art/combat/combat_maps_hills_v15.blend`). Minis as in the forest hand-off.
 - **Map data:** `art/export/combat_maps_hills.json`. `variant` is `hills`, `highlands`, `snowy_peaks`, `volcanic_peaks` or `monastery_heights`, with `"kind": "path"` on `monastery_heights_climb`.
 - **Scripts:** `art/scripts/build_hills_cells.py`, `art/scripts/render_hills_maps.py` (the plans and each map's hill, in readable text). They reuse the plains and forest scripts.
 - **Catalogue:** `art/combat/maps/README.md` has each map's shape, size and idea, and its current image.
@@ -69,8 +69,8 @@ Each `map_<map>_lava_flow` piece has two materials: `lava_flow`, the moving surf
 - **UV0, on `lava_flow` faces only:** U is metres across the flow from its centre line, about -0.41 to 0.41. Blender's V is metres along it from the crater, always growing downstream.
 - **Reading it in Godot:** glTF flips V, so metres along = `1.0 - UV.y`. Checked in the exported glb: `UV.y` runs from 1.0 at the crater to -17.59 at the end of the fall on Fissures, and to -9.82 on Crater. So values are far outside 0 to 1: use a repeating noise. Not yet tried in Godot.
 - **Scroll:** to move the pattern downstream, sample at `along - TIME * speed`.
-- **Look target:** `art/preview/lava_movie_volcanic_peaks_fissures_v2.mp4` and `lava_movie_volcanic_peaks_crater_v1.mp4`, made by `art/scripts/render_lava_movie.py`: noise stretched across the flow, between deep and hot orange, moving at about 0.45 metres a second, about 55% emission over 45% lit colour. Stills: `lava_shot_<map>_<cone|edge|front|turned>_vN.png`. Older `lava_movie_volcanic_peaks_fissures_v1.mp4` and the `_channel` and `_lobes` files are the trial; the lobes were rejected.
-- **Pattern jumps:** U and V come from the nearest point on the centre line, so the pattern shifts sharply at the necks where the flow zigzags between cells, and where the fall turns down. Most visible on Crater's five cells. A soft, across-stretched noise hides it best.
+- **Look target:** `art/preview/lava_movie_volcanic_peaks_fissures_v2.mp4` and `lava_movie_volcanic_peaks_crater_v1.mp4` (Crater's older, zigzag route), made by `art/scripts/render_lava_movie.py`: noise stretched across the flow, between deep and hot orange, moving at about 0.45 metres a second, about 55% emission over 45% lit colour. Stills: `lava_shot_<map>_<cone|edge|front|turned>_vN.png`. Older `lava_movie_volcanic_peaks_fissures_v1.mp4` and the `_channel` and `_lobes` files are the trial; the lobes were rejected.
+- **Pattern jumps:** U and V come from the nearest point on the centre line, so the pattern shifts sharply at the necks where the flow zigzags between cells, and where the fall turns down. Most visible on Fissures. Crater's flow runs straight, three cells in a line, so its bands read clean: `art/preview/lava_bands_volcanic_peaks_crater_<cone|edge|front|turned>_v1.png` show the flat three-band target. Second faces behind the channel carry the same UVs.
 - **Culling:** the flow's faces are wound outward, so back-face culling is safe.
 - **What's not in the flow:** the cone's own crater pool is `lava`, so the two glow separately where the channel leaves it. Matching their colours is the engine's job.
 

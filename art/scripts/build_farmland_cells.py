@@ -21,13 +21,13 @@ import build_plains_cells as pc  # noqa: E402
 import hexkit as hk  # noqa: E402
 import variants as vr  # noqa: E402
 
-VARIANTS = ["windmill_country", "haunted_homesteads", "raided_farms", "cider_orchards"]
-GROUND = {"windmill_country": "plains", "haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass"}
+VARIANTS = ["farmland", "windmill_country", "haunted_homesteads", "raided_farms", "cider_orchards"]
+GROUND = {"farmland": "plains", "windmill_country": "plains", "haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass"}
 BARE = {v: "road" for v in VARIANTS}  # the tile tracks' colour
-FIELD = {"windmill_country": "hay", "haunted_homesteads": "withered_soil", "raided_farms": "scorched", "cider_orchards": None}
-fc.ROCK.update({"windmill_country": ("rock", "rock_dark", "grass_ink"), "haunted_homesteads": ("rock_shade", "bark_grey", None),
+FIELD = {"farmland": "hay", "windmill_country": "hay", "haunted_homesteads": "withered_soil", "raided_farms": "scorched", "cider_orchards": None}
+fc.ROCK.update({"farmland": ("rock", "rock_dark", None), "windmill_country": ("rock", "rock_dark", "grass_ink"), "haunted_homesteads": ("rock_shade", "bark_grey", None),
                 "raided_farms": ("rock_dark", "rock_shade", None), "cider_orchards": ("rock", "rock_dark", "grass_ink")})
-fc.BARK.update({"windmill_country": "trunk", "haunted_homesteads": "bark_grey", "raided_farms": "char", "cider_orchards": "trunk"})
+fc.BARK.update({"farmland": "trunk", "windmill_country": "trunk", "haunted_homesteads": "bark_grey", "raided_farms": "char", "cider_orchards": "trunk"})
 ZERO, SINGLE, LINE3, TRIANGLE, FLOWER7 = pc.ZERO, pc.SINGLE, pc.LINE3, pc.TRIANGLE, pc.FLOWER7
 
 hk.PALETTE.update({"stack": "#D1B668", "stack_dark": fc.mix("#D1B668", "#000000", 0.2), "stack_light": fc.mix("#D1B668", "#FFFFFF", 0.15), "ash": "#8D877B", "burnt_wood": "#5C5044"})
@@ -49,7 +49,7 @@ def grown(p, k, about, make):
 
 
 def litter(p, rng, v):
-    if v == "windmill_country":  # cut straw
+    if v in ("farmland", "windmill_country"):  # cut straw
         for k in range(5):
             a = rng.uniform(0, 6.3)
             p.box(Vector((math.cos(a), math.sin(a), 0)) * rng.uniform(0.05, 0.3), (0.26, 0.03, 0.012), "hay", spin=rng.uniform(0, 3))
@@ -66,10 +66,22 @@ def litter(p, rng, v):
 
 def brush(p, rng, v):
     """A walkable block of crop, up to a mini's knees: ripe wheat, withered stalks, trampled and burnt crop, tall orchard grass."""
+    if v == "farmland":  # the tile's yellow, the cell itself a field, with a few broad open tufts: fields fill these maps
+        for k in range(5):
+            a = (k - 1) * 2 * math.pi / 4 + rng.uniform(-0.3, 0.3)
+            at = Vector((math.cos(a), math.sin(a), 0)) * (0.26 if k else 0.0)
+            h = rng.uniform(0.3, 0.4)
+            ring = [p.bm.verts.new(at + Vector((math.cos(j * math.pi / 2 + a), math.sin(j * math.pi / 2 + a), 0)) * 0.17) for j in range(4)]
+            tip = p.bm.verts.new(at + Vector((0, 0, h)))
+            for j in range(4):
+                f = p.bm.faces.new((ring[j], ring[(j + 1) % 4], tip))
+                f.material_index = p._slot(("field_a", "field_b")[k % 2])
+                p.surface.add(f)
+        return
     if v == "cider_orchards":
         pc.brush(p, rng, "meadows")
         return
-    mat, h = {"windmill_country": ("hay", 0.42), "haunted_homesteads": ("withered", 0.42), "raided_farms": ("withered_dark", 0.2)}[v]
+    mat, h = {"farmland": ("hay", 0.42), "windmill_country": ("hay", 0.42), "haunted_homesteads": ("withered", 0.42), "raided_farms": ("withered_dark", 0.2)}[v]
     for row in (-1, 0, 1):
         for col in (-1, 0, 1):
             at = Vector((col * 0.26 + rng.uniform(-0.03, 0.03), row * 0.26 + rng.uniform(-0.03, 0.03), 0))
@@ -94,6 +106,12 @@ def haystack(p, rng, at):
         a = k * 1.05 + rng.uniform(-0.2, 0.2)
         q = at + Vector((math.cos(a), math.sin(a), 0)) * 0.42
         p.cone(q, 0.07, 0.14, "stack_light", segments=3, spin=a)
+
+
+def farmhouse(p, rng, at, spin):
+    """The plain farm tile's small farmhouse."""
+    p.box(at, (0.72, 0.52, 0.42), "wall", spin=spin)
+    p.gable_roof(at, 0.82, 0.66, 0.32, "roof", z=0.42, spin=spin)
 
 
 def burnt_barn(p, rng, at, spin, w, d, h):
@@ -196,6 +214,12 @@ def stones_row(p, rng, cells):
 
 # Letter in a map's plan -> (kind, cells, maker), per variant. render_farmland_maps.py reads this.
 KIT = {
+    "farmland": {
+        "P": ("farmhouse_3", TRIANGLE, lambda p, r: barn(p, r, pc.mean(TRIANGLE), 1.65, farmhouse)),
+        "J": ("hay", SINGLE, lambda p, r: haystack(p, r, ZERO)),
+        "Y": ("cart", SINGLE, lambda p, r: short_cart(p, r, "stack")),
+        "I": ("sacks", SINGLE, sack_pile),
+    },
     "windmill_country": {
         "T": ("tree", SINGLE, lambda p, r: pc.broad_tree(p, r, ZERO)),
         "Q": ("mill_7", FLOWER7, lambda p, r: mill(p, r, ZERO, 2.0)),
@@ -236,7 +260,7 @@ def build():
         p = fc.cell(f"cell_{v}_litter", f"cell_{v}_a")
         litter(p, hk.seeded(p.name), v)
         p.finish(col)
-        p = fc.cell(f"cell_{v}_brush", f"cell_{v}_cover")
+        p = fc.cell(f"cell_{v}_brush", "field_a" if v == "farmland" else f"cell_{v}_cover")
         brush(p, hk.seeded(p.name), v)
         p.finish(col)
         main, side, top = fc.ROCK[v]
@@ -246,6 +270,9 @@ def build():
             p.finish(col)
         fc.obstacle(col, f"ob_{v}_boulder_3", TRIANGLE, lambda p, r, v=v: fc.big_boulder(p, r, v))
         fc.obstacle(col, f"ob_{v}_stump", SINGLE, lambda p, r, v=v: fc.stump(p, r, v))
+        if v == "farmland":  # the tile's trees: dark pines and round broadleaves
+            for j, k in enumerate("abc"):
+                fc.obstacle(col, f"ob_{v}_tree_{k}", SINGLE, lambda p, r, j=j: fc.full_tree(p, r, "forest", ZERO, j))
         for mark, (kind, cells, make) in KIT[v].items():
             fc.obstacle(col, f"ob_{v}_{kind}", cells, make)
     check_overhangs(col)

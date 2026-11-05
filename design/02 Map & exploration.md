@@ -39,11 +39,12 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 
 - A card is placed first, then the party walks in. Random content on plain land (fights, passing merchants, village quests) rolls per region and is spread across the region's tiles, not rolled per tile (decided Oct 23, 2026). Landmark and Story contents are fixed.
 - Already-placed tiles have a chance to spawn encounters. Spawning works per region: each region can hold a set number of active encounters, and tier-2 regions hold more and tougher ones. More spawn at night, and limited vision makes it harder to see what is around the hero.
+- **Three kinds of encounter** (decided Nov 4, 2026): random map events are one system, all spawning on the same rolls, region limits and lifespan: **Fight**, **Social** (e.g. a roaming trader, a drinking contest) and **Discovery** (e.g. buried treasure). Each region's table sets the mix. Landmarks keep their own events. **A few roam** (Nov 4, 2026): some table entries, such as traders, patrols and beasts, move a tile at a time on the clock; the rest stay put until they expire. **What you know** (Nov 4, 2026): an encounter's kind can always be seen on visible tiles; its exact foes or offer show only when the party is close or has scouted it. Which range counts as close: open.
 - **Encounter rolls** (decided Nov 1, 2026): spawning rolls every 8 in-game hours (about 10 real minutes), so a full day has three rolls, each on random already-placed tiles. Encounters are temporary (fights, passing merchants and the like).
 - Spawned encounters disappear after about 15 minutes (12 in-game hours, half a day cycle) if not dealt with (exception: see Defeat).
 - Each terrain type has its own encounter table.
 - Enemies scale with distance from the starting point: more HP and damage, more foes and more elites per fight, and more or nastier cards. Their attack coins and heads targets also step up by distance band (near, mid, far; decided Nov 1, 2026): see [Classes & combat](03 Classes & combat.md) → Hit chance scaling. Staying near the start to play it safe is the player's choice, and so is building a long corridor out to a Story card or far from the start: the hero still has to walk it and fight through spawns.
-- **Hex events** (decided Oct 22, 2026): short text events with 2–3 choices, each resolved by a check. They can appear rarely on plain terrain hexes and are guaranteed at landmarks. Event list: in progress.
+- **Hex events** (decided Oct 22, 2026; changed Nov 4, 2026): short text events with 2–3 choices, each resolved by a check. On plain land they now come as Social and Discovery encounters, visible on the map rather than stepped on unseen; they're guaranteed at landmarks. Event list: in progress.
 - **Dungeons** (decided Oct 22, 2026): a short chain of rooms, mixing fights with event rooms resolved by checks (traps, locked doors, secrets), with a boss at the end. Some traps also appear on the tactical grid during fights. Room counts and the trap list: in progress.
 - Scouting checks (spotting encounters, ambushes) and avoiding fights: see [Classes & combat](03 Classes & combat.md) → Checks outside combat.
 - Enemy types and bosses: see [World & story](01 World & story.md) → Enemies.
@@ -180,6 +181,7 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [ ] **New:** region size for a tier 3 roll: the tier 2 target (7+), or bigger?
 - [ ] Neighbour-to-variant leanings (which neighbouring terrains tip which variants)
 - [ ] Which terrains get cluster goals (note: "connected clusters of the same terrain transform into special regions" currently reads as all of them)
+- [ ] **New (Nov 4, 2026):** encounters: how close counts for seeing details, how Scouting and night change it, each region's mix of the three kinds, which entries roam and how fast, and keeping a map drinking contest distinct from the Harvest Festival's
 - [ ] **New:** hex events list; dungeon room counts, event rooms and trap list
 - [x] ~~Rethink the Rapids variant~~ (settled Nov 2, 2026: a river gorge with a narrow channel and no wide pools, so a bridge fits every tile; see [Presentation](07 Presentation.md) → Region variant looks)
 - [ ] **New:** obstacles: which terrain (or region variant) gets which obstacles and how often, the crossing gear items, and each obstacle's failure cost
