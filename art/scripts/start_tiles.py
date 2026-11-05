@@ -158,6 +158,15 @@ def stop(name, same=(False,) * 6):
     return (x, y, ground(name, x, y, same))
 
 
+def near_start(terrains):
+    """The tiles next to a starting tile. They keep clear ground: no mountain, ridge or peak (the party walks round those), so a ring of hills tiles can't shut a starting tile in."""
+    out = set()
+    for (q, r), name in terrains.items():
+        if name in STARTS:
+            out.update((q + dq, r + dr) for dq, dr in ((1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)))
+    return out
+
+
 # --- Blender from here ---------------------------------------------------------------------------------------
 
 PALETTE = {

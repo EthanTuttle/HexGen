@@ -29,6 +29,16 @@ Place them as a region variant's tile is placed: terrain from `STARTS`, centre, 
 
 **Glow:** `st_glow` (windows, lanterns, fire) is its own material. Previews give it emission 1.2. Placeholder.
 
+## Every side walkable
+
+A starting tile can always be walked across every side: no fence, wall or bank shuts one (`design/06` → First playable). What this takes from the map, besides the pieces:
+
+1. **Fences:** `fence_gates(terrains, raised, climbs, starts)`: every fence edge on a starting tile shows a gate, whatever's beyond it, and so does a farm or village neighbour's edge facing one. Port this: `fence_gates.gd` doesn't have it yet.
+2. **Mountains:** `near_start(terrains)`: tiles next to a starting tile get no mountain, ridge or peak, and share none, as they'd otherwise ring it (`PartyWalker.blocked` walks round them). Port it to `map_board`'s range rules.
+3. **Weizenhof:** `_edge_other` is always the gate piece, so Godot's piece choice and its walk check both need to treat all six sides as open.
+
+The test checks each side's walk is clear inside the tile. Courtyard and yard walls stand inside the ring, away from every edge. **Monto Town is the exception:** see below.
+
 ## Routes
 
 From `start_tiles.py`; there's no path data in the glb, as for water.
@@ -63,7 +73,7 @@ A river tile's water depends on its neighbours, so across all 64 layouts:
 | 6 | 1 | 1 | 1 |
 | **All** | **64** | **23** | **48** |
 
-**So it doesn't handle every pattern.** In 41 layouts at least one land edge needs a check to reach it, and in 48 one end stops at a neighbour's water, which is a dead end for a party on foot. On a river along its line, it runs lengthwise over the water.
+**So it doesn't handle every pattern, and it breaks the every-side rule whenever a side way meets water.** In 41 layouts at least one land edge needs a check to reach it, and in 48 one end stops at a neighbour's water, which is a dead end for a party on foot. On a river along its line, it runs lengthwise over the water.
 
 Check: rafts. `raft_can_enter` lets a raft in, under the bridge. Whether it should stop here is the game's call.
 

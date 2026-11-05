@@ -307,7 +307,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
     all_ledges = [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)]
-    gates = fg.fence_gates(terrains, raised, all_ledges)
+    starts = {t for t, n in MAP.items() if n in vr.st.STARTS}
+    near_start = vr.st.near_start(MAP)
+    gates = fg.fence_gates(terrains, raised, all_ledges, starts)
     ledge_tops = cliffs.ledge_tops(all_ledges)
     streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
     for (q, r), name in MAP.items():
@@ -414,7 +416,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 n = (t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])
                 return (linked(MAP[t], MAP.get(n)) and i not in lf.trail_edges(t, toward)
                         and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS
-                        and MAP[t] not in vr.st.STARTS and MAP.get(n) not in vr.st.STARTS)
+                        and t not in starts and n not in starts and t not in near_start and n not in near_start)
             ranged = [ranges((q, r), i) for i in range(6)]
 
             def corner_shared(i):  # all three tiles round corner i must share: every copy of the third must be drawn
@@ -423,7 +425,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             triple = [corner_shared(i) for i in range(6)]  # corner i: between edges i and i + 1
             if name in vr.LANDMARKS or name in vr.st.STARTS:
                 ranged = triple = [False] * 6
-            elif not any(ranged) and dist.get((q, r), 3) > 2 and name not in vr.st.STARTS:
+            elif not any(ranged) and dist.get((q, r), 3) > 2 and name not in vr.st.STARTS and (q, r) not in near_start:
                 place(templates, f"{name}_peak", col, at)
             parts = []
             for i in range(6):
