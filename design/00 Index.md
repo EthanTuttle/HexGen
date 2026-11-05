@@ -86,7 +86,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Classes & combat**
 - [ ] New (Nov 5, 2026): check the combat details panel fits everything it can show at its shorter height (7 slots, shorter panel and starting hotbar chosen Nov 5, 2026: see Presentation → Combat screen and Action cards screen)
-- [ ] New (Nov 5, 2026): cover: can a coin penalty take a flip below 1 coin, and do crops and brush hide anyone?
+- [ ] New (Nov 5, 2026): cover: do crops and brush hide anyone? (Below 1 coin: the long shot, settled Nov 5, 2026.) Combat map art needs per-cell data for fences and walls
 
 - [ ] New: each companion's ability scores and gear at each stage of the game (mockups use placeholders)
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
