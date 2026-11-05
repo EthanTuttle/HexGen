@@ -119,3 +119,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/farmland_maps_farmland_beside_tile_v3.png` | approved | Plain farmland tier 0: Fields, Yard, Paddocks, Track; all tier 0 sets done |
 | 2026-11-04 | `art/preview/buried_study_shifting_clear_map_v1.png` | approved | Direction, not final art: shifting sands with a few sandfalls; turquoise domes kept; break up the tidy town |
 | 2026-11-04 | `art/preview/buried_study_cutaway_map_v1.png` | rejected | Not taken forward |
+| 2026-11-04 | `art/preview/encounters_x1_day_58m_v1.png` | approved | True-scale encounter figures with badges; iterate badges |
+| 2026-11-04 | `art/preview/encounters_x2.5_day_58m_v1.png` | rejected | Oversized look not chosen |
