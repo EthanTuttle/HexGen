@@ -105,7 +105,7 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Part | First playable |
 | --- | --- |
 | Start | Title screen and New campaign, then the character creator, all steps as mocked up. Fighter is playable and other classes show locked. Race, background and appearance apply, with a small customization pass for minis |
-| Starting place | The party starts on its background's tile. All six get a new world tile ([World & story](01 World & story.md) → Backgrounds). A starting tile can always be walked across every side: no fence, wall or bank shuts one (Ethan, Nov 4, 2026), so the party can't be trapped on it with its first placed tile |
+| Starting place | The party starts on its background's tile. All six get a new world tile ([World & story](01 World & story.md) → Backgrounds). A starting tile can always be walked across every side: no fence, wall or bank shuts one, and a farm or village's fence facing one shows a gate (Ethan, Nov 4, 2026), so the party can't be trapped on it with its first placed tile. One exception: a Monto Town river mouth facing a river or lake is real water, so it takes the usual check, raft or walk round |
 | Deck | As [Cards & progression](05 Cards & progression.md) → Starting decks, plus one card of every terrain so all can be built (Nov 4, 2026). Terrains with no combat maps use the old board for now |
 | Goal | Finish 3 regions, then an end panel. For the prototype only: the real campaign doesn't end this way |
 | Encounters | Rolls as in [Map & exploration](02 Map & exploration.md), plus a safety net: if the hand is empty and no fight is on the map, one fight spawns nearby |
