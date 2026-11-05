@@ -36,26 +36,70 @@ SQUARE_FLOOR = sorted(set(HEXES) | {(q, r) for q in range(-6, 7) for r in range(
 INN_FLOOR = sorted(set(HEXES) | {(4, -2)} | {(q, r) for q in range(-5, 6) for r in range(-3, 3) if (max(abs(q), abs(r), abs(q + r)) == 3 or r == -3) and -5.8 < hx(q, r).x < 6.4 and hx(q, r).y > -2.5})
 
 
-def floor(p, way_mat, joint, side, seed_mat=None, hexes=None):
+# The inn's walls: the floor stops at their outer faces.
+INN_LEFT = hx(-2, 1).x - 1.25
+INN_RIGHT = hx(2, 0).x + 1.2
+INN_BACK = hx(0, -2).y + 1.3
+WALL_HALF = 0.11
+LEFT_FROM, RIGHT_FROM = -0.75, 1.6  # where each side wall starts, coming from the camera: in front of that the floor runs on
+
+
+def clip(poly, axis, limit, keep_low):
+    """A convex outline cut by a line."""
+    out = []
+    for a, b in zip(poly, poly[1:] + poly[:1]):
+        ia, ib = (a[axis] <= limit) == keep_low, (b[axis] <= limit) == keep_low
+        if ia:
+            out.append(a)
+        if ia != ib:
+            f = (limit - a[axis]) / (b[axis] - a[axis])
+            out.append(a + (b - a) * f)
+    return out
+
+
+def inn_bands(ring):
+    """A floor hex as what's inside the inn's walls: up to three convex parts, front to back."""
+    parts = []
+    ring = clip(ring, 1, INN_BACK + WALL_HALF, True)
+    for y0, y1, x0, x1 in ((-99, LEFT_FROM, -99, 99), (LEFT_FROM, RIGHT_FROM, INN_LEFT - WALL_HALF, 99), (RIGHT_FROM, 99, INN_LEFT - WALL_HALF, INN_RIGHT + WALL_HALF)):
+        part = ring
+        for axis, limit, low in ((1, y1, True), (1, y0, False), (0, x1, True), (0, x0, False)):
+            if part:
+                part = clip(part, axis, limit, low)
+        if len(part) >= 3:
+            parts.append(part)
+    return parts
+
+
+def floor(p, way_mat, joint, side, seed_mat=None, hexes=None, cut=None):
     """A dark bed under the hexes, showing as joints."""
     hexes = hexes or HEXES
+    def outline(c, k):
+        return [c + Vector((R * k * math.cos(math.radians(60 * j + 30)), R * k * math.sin(math.radians(60 * j + 30)), 0)) for j in range(6)]
+
     for q, r in hexes:
-        ts.plate(p, q, r, -0.015, joint, side, "b", z=0.0)
+        for part in (cut or (lambda ring: [ring]))(outline(hx(q, r), 0.992)):
+            p.prism(part, -0.5, -0.015, joint, side_mat=side)
     for i, (q, r) in enumerate(hexes):
         c = hx(q, r)
-        ring = [c + Vector((R * 0.965 * math.cos(math.radians(60 * j + 30)), R * 0.965 * math.sin(math.radians(60 * j + 30)), 0)) for j in range(6)]
-        p.prism(ring, -0.34, FLOOR_Z, way_mat(q, r), side_mat=joint)
+        for part in (cut or (lambda ring: [ring]))(outline(c, 0.965)):
+            p.prism(part, -0.34, FLOOR_Z, way_mat(q, r), side_mat=joint)
         if seed_mat:
             seed_mat(p, c, i, q, r)
 
 
 def planks(p, c, z, mat):
-    """Seams across a floor hex, each kept inside it."""
+    """Seams across a floor hex, each kept inside it and inside the inn's walls."""
     for k in range(-3, 4):
         y = k * 0.26
-        half = ts.A if abs(y) <= R / 2 else ts.A * (R - abs(y)) / (R / 2)
-        if half > 0.12:
-            p.box(c + Vector((0, y, 0)), (2 * half * 0.9, 0.018, 0.008), mat, z=z)
+        half = (ts.A if abs(y) <= R / 2 else ts.A * (R - abs(y)) / (R / 2)) * 0.9
+        wy = c.y + y
+        if wy > INN_BACK - 0.02:
+            continue
+        x0 = max(c.x - half, INN_LEFT if wy > LEFT_FROM else -99)
+        x1 = min(c.x + half, INN_RIGHT if wy > RIGHT_FROM else 99)
+        if x1 - x0 > 0.2:
+            p.box(Vector(((x0 + x1) / 2, wy, 0)), (x1 - x0, 0.018, 0.008), mat, z=z)
 
 
 def townhouse(p, x, y, w, d, h, wall, roof, z=0.0, windows=True):
@@ -168,22 +212,20 @@ def inn():
     def dress(pc, c, i, q, r):
         planks(pc, c, FLOOR_Z, "ts_plank_seam")
 
-    floor(p, mat, "ts_wall_d", "ts_wood_d", dress, INN_FLOOR)
-    back_y = hx(0, -2).y + 1.3
+    floor(p, mat, "ts_wall_d", "ts_wood_d", dress, INN_FLOOR, inn_bands)
+    back_y, left_x, right_x = INN_BACK, INN_LEFT, INN_RIGHT
     mid = hx(1, -2).x
-    left_x = hx(-2, 1).x - 1.25
-    right_x = hx(2, 0).x + 1.2
     # three walls, cut away toward the camera: back, left, and a stub on the right
-    p.box(Vector((mid - 0.1, back_y, 0)), (right_x - left_x + 0.4, 0.22, 3.0), "ts_wall", z=-0.3)
-    p.box(Vector((left_x, 1.45, 0)), (0.22, 4.4, 3.0), "ts_wall", z=-0.3)
-    p.box(Vector((right_x, 2.5, 0)), (0.22, 1.8, 3.0), "ts_wall", z=-0.3)
+    p.box(Vector(((left_x + right_x) / 2, back_y, 0)), (right_x - left_x + 0.22, 0.22, 3.0), "ts_wall", z=-0.3)
+    p.box(Vector((left_x, (LEFT_FROM + back_y) / 2, 0)), (0.22, back_y - LEFT_FROM, 3.0), "ts_wall", z=-0.3)
+    p.box(Vector((right_x, (RIGHT_FROM + back_y) / 2, 0)), (0.22, back_y - RIGHT_FROM, 3.0), "ts_wall", z=-0.3)
     for y_ in (0.55, 1.6):  # beams across the back wall's foot and head
-        p.box(Vector((mid - 0.1, back_y - 0.12, 0)), (right_x - left_x + 0.4, 0.03, 0.1), "ts_timber", z=y_)
+        p.box(Vector(((left_x + right_x) / 2, back_y - 0.12, 0)), (right_x - left_x, 0.03, 0.1), "ts_timber", z=y_)
     for x in (left_x + 1.1, mid - 1.7, mid + 1.7, right_x - 0.3):
         p.box(Vector((x, back_y - 0.12, 0)), (0.13, 0.04, 2.7), "ts_timber", z=0.0)
     for k in range(3):  # rafters over the bar, high enough to see past
         p.box(Vector((left_x + 1.4 + k * 2.7, back_y - 0.9, 0)), (0.13, 1.8, 0.13), "ts_timber", z=2.55)
-    p.box(Vector((mid - 0.1, back_y - 1.7, 0)), (right_x - left_x + 0.4, 0.14, 0.14), "ts_timber", z=2.45)
+    p.box(Vector(((left_x + right_x) / 2, back_y - 1.7, 0)), (right_x - left_x, 0.14, 0.14), "ts_timber", z=2.45)
     # windows: night outside, day by the same glass
     for x in (left_x + 0.85, right_x - 0.55):
         p.box(Vector((x, back_y - 0.13, 0)), (0.62, 0.03, 0.74), "ts_timber", z=1.25)

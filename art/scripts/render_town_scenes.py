@@ -123,7 +123,11 @@ def check():
         hexes = bs.SQUARE_FLOOR if name == "square" else bs.INN_FLOOR
         centres = [ts.hx(q, r) for q, r in hexes]
 
-        def on_floor(x, y):  # inside a hexagon of the floor, pointy-topped
+        def on_floor(x, y):  # inside a hexagon of the floor, pointy-topped, and inside the inn's walls
+            if name == "inn":
+                eps = bs.WALL_HALF + 0.01
+                if y > bs.INN_BACK + eps or (y > bs.LEFT_FROM + 0.01 and x < bs.INN_LEFT - eps) or (y > bs.RIGHT_FROM + 0.01 and x > bs.INN_RIGHT + eps):
+                    return False
             for c in centres:
                 dx, dy = abs(x - c.x), abs(y - c.y)
                 if dx <= ts.A + 1e-3 and dy <= ts.R + 1e-3 and dx * 0.5 + dy * ts.A / ts.R * 1.0 <= ts.A + 1e-3:
