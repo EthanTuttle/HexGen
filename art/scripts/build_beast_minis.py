@@ -13,7 +13,8 @@ Proposed swatches are in BEAST_SWATCHES.
   beast_wolf        alert, head up, tail out straight: the enemy wolf stalks low with its jaws open
   beast_wolf_band   the same with a cloth across its back, which reads from the combat camera: the approved wolf (Nov 5, 2026)
   beast_bear        broad and heavy on all fours, head up, the same back cloth (approved Nov 5, 2026)
-  beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth
+  beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth (approved Nov 5, 2026)
+  beast_hawk        wings spread on a flight stand, looking down, a band on its leg in the ranger's cloth, its shadow painted on the base
 """
 import math
 import os
@@ -35,7 +36,13 @@ Z0 = sm.BASE_H + 0.005
 SIDE = (-1, 1)
 zone = hb.zone
 
-# Proposals: six coats, six markings, the hero kit's eyes and cloth.
+hk.PALETTE.update({"stand_wood": "#5E4430", "hawk_shadow": "#7C583A", "beak": "#3E3A36", "cere": "#E3B23C"})
+
+# Beast eyes (Ethan, Nov 5, 2026): gold, green and brown from the hero kit's eyes, and a pale blue; never red or violet,
+# which read as a foe's on an animal. Godot's picker offers only these for a beast.
+BEAST_EYES = ("#C9A24A", "#4F7A33", "#7A5230", "#9CC4DE")
+
+# Six coats, six markings, the hero kit's cloth.
 BEAST_SWATCHES = {
     "wolf": {"coat": ("#8E8A84", "#6B5444", "#3A3836", "#D8D4CC", "#B0703E", "#A89A82"),
              "markings": ("#E4DDD0", "#C9B48E", "#7E7A74", "#F4F1EA", "#E8CFA6", "#5A4E40")},
@@ -45,6 +52,9 @@ BEAST_SWATCHES = {
     # black, leopard gold, tawny, snow, jaguar brown, slate; rosettes are a dark shade of the coat, so they hide on black
     "panther": {"coat": ("#2A282E", "#C9984A", "#A97E52", "#C8C6C0", "#8A5A2E", "#5A5E66"),
                 "markings": ("#45414A", "#EFDDB4", "#E4D2B0", "#EEEDE8", "#D9BC8E", "#8E929A")},
+    # red-tail brown, dark, goshawk grey, golden, white, rust; markings are the pale breast and underwings
+    "hawk": {"coat": ("#7A5234", "#3A3532", "#6E7378", "#8A5E2E", "#E2DFD8", "#A85A30"),
+             "markings": ("#E9DCC2", "#8A847E", "#DCDDDA", "#C9A266", "#FAF8F2", "#E6C9A0")},
 }
 
 
@@ -266,6 +276,72 @@ def panther(col):
     return p.finish(col)
 
 
+def hawk(col):
+    """Gliding on a flight stand, wings spread and raised a little, head turned down to look for what hides, talons ready:
+    a thick dark rod from a stump with a twig, so it reads from the combat camera. Its shadow is painted on the base, so the
+    cell reads wherever the light falls. The ranger's cloth is a band on each leg."""
+    p = hk.Piece("beast_hawk")
+    coat, back, pale, dark = zone("skin"), zone("skin", 0.82), zone("hair"), zone("skin", 0.58)
+    lift = 0.78  # the body's height over the base
+
+    def at(x, y, z):
+        return V((x, y, Z0 + z))
+
+    # The stand: a stump with a twig, and a thick rod up to the belly.
+    p.blob(at(0, 0.02, 0.03), 0.075, "stand_wood", squash=0.7)
+    vr.spike(p, at(0.04, 0.04, 0.05), at(0.14, 0.1, 0.11), 0.018, "stand_wood", segments=3)
+    em.limb(p, [at(0, 0.02, 0.05), at(0, 0.02, lift - 0.06)], [0.03, 0.026], ["stand_wood"], sides=6)
+    # Its shadow on the base: wings and body, from the sun overhead.
+    for box, w in (((0, 0.04), (0.72, 0.075)), ((0, 0.02), (0.08, 0.36))):
+        p.box(at(box[0], box[1], 0), (w[0], w[1], 0.003), "hawk_shadow")
+
+    # Body: a deep breast tapering to the tail.
+    def plumage(c, n):
+        return back if n.z > 0.4 else pale
+    em.loft(p, [em.section(at(0, y, lift + z), w, h, sides=8) for y, z, w, h in
+                ((0.12, 0.0, 0.035, 0.028), (0.06, -0.005, 0.065, 0.06), (-0.03, 0.0, 0.075, 0.075), (-0.1, 0.02, 0.055, 0.055))], plumage)
+    # Head turned down and a little to its right, looking for what hides.
+    fwd = V((0.25, -1, -0.55)).normalized()
+    hc = at(0.0, -0.12, lift + 0.05)
+
+    def h(y, z, x=0.0):
+        return hc + fwd * y + V((x, 0, z))
+    em.loft(p, [em.section(h(-0.04, 0.0), 0.045, 0.045, along=fwd, sides=8), em.section(h(0.0, 0.01), 0.058, 0.058, along=fwd, sides=8),
+                em.section(h(0.045, 0.0), 0.045, 0.042, along=fwd, sides=8), em.section(h(0.07, -0.005), 0.026, 0.024, along=fwd, sides=8)],
+            lambda c, n: back if n.z > 0.5 else coat)
+    em.limb(p, [h(0.06, 0.005), h(0.09, -0.004), h(0.105, -0.03)], [0.02, 0.012, 0.0], ["cere", "beak", "beak"], sides=5)  # hooked beak
+    for x in SIDE:
+        look = (fwd + V((x * 0.9, 0, 0.2))).normalized()
+        hit = on_surface(p, h(0.02, 0.012, x * 0.04) + look * 0.2, -look)
+        e, n = (hit[0] + hit[1] * 0.004, hit[1]) if hit else (h(0.02, 0.012, x * 0.04), look)
+        hb_plate(p, e, n, 0.024, 0.02, zone("eyes"))
+        hb_plate(p, e + n * 0.002, n, 0.011, 0.012, "hero_pupil")
+        em.limb(p, [h(0.035, 0.035, x * 0.012), h(0.005, 0.034, x * 0.045)], [0.009, 0.006], [dark], sides=4)  # a stern brow
+
+        # Wings spread and raised a little, pale underneath, the tips fingered.
+        root, elbow, wrist = at(x * 0.05, -0.04, lift + 0.03), at(x * 0.2, -0.03, lift + 0.08), at(x * 0.33, 0.0, lift + 0.12)
+        def wing(c, n):
+            return coat if n.z > 0 else pale
+        segs = ((root, 0.085), (elbow, 0.08), (wrist, 0.06))
+        em.loft(p, [em.section(q + V((0, 0.03, 0)), c, 0.014, along=V((x, 0, 0.25)), sides=4) for q, c in segs], wing)
+        for k in range(4):  # primaries
+            base_ = wrist + V((0, -0.03 + k * 0.03, 0))
+            vr.spike(p, base_, base_ + V((x * (0.11 - k * 0.012), 0.02 + k * 0.012, 0.03)), 0.02, back, segments=3)
+
+        # Legs down and forward, talons open; the ranger's band on each.
+        hip, ankle = at(x * 0.03, -0.01, lift - 0.05), at(x * 0.035, -0.07, lift - 0.13)
+        em.limb(p, [hip, ankle], [0.022, 0.012], [pale], sides=5)
+        em.loft(p, [em.section(hip.lerp(ankle, t), r, r, along=ankle - hip, sides=6) for t, r in ((0.45, 0.022), (0.8, 0.019))], lambda c, n: zone("cloth"))
+        for d in (-0.02, 0.0, 0.02):
+            vr.spike(p, ankle, ankle + V((x * 0.01 + d, -0.04, -0.025)), 0.008, "cere", segments=3)
+
+    # Tail fanned behind.
+    em.loft(p, [em.section(at(0, y, lift + z), w, 0.01, sides=4) for y, z, w in ((0.1, 0.0, 0.035), (0.2, -0.02, 0.06), (0.27, -0.035, 0.075))],
+            lambda c, n: coat if n.z > 0 else pale)
+    sm.base(p, "ring_ally")
+    return p.finish(col)
+
+
 def on_surface(p, origin, direction):
     """Where a ray from origin first meets what's built so far: (point, normal), or None."""
     hit = BVHTree.FromBMesh(p.bm).ray_cast(origin, direction.normalized(), 1.0)
@@ -284,7 +360,7 @@ def hb_plate(p, at, facing, w, h, paint):
 def build():
     hk.empty_scene()
     col = hk.new_collection("beasts")
-    for ob in (wolf(col), wolf(col, band=True), bear(col), panther(col)):
+    for ob in (wolf(col), wolf(col, band=True), bear(col), panther(col), hawk(col)):
         ob.data.calc_loop_triangles()
         print(f"TRIS {ob.name}: {len(ob.data.loop_triangles)} top {max((ob.matrix_world @ v.co).z for v in ob.data.vertices):.2f}")
     out = os.path.join(hk.ART, "minis", "heroes")

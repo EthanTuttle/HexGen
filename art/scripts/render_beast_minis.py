@@ -1,7 +1,7 @@
 """Renders an ally beast for review: front and turned beside a hero mini and the enemy wolf, its colour options, and the three at
 the combat camera's height and distance.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_beast_minis.py [-- wolf bear panther]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_beast_minis.py [-- wolf bear panther hawk]
 Options built beside a beast (beast_wolf_band) join the combat-camera row.
 Uses the latest beast_minis, hero_kit and enemy_minis. Writes art/preview/beast_<beast>_*_vN.png and the sheet beast_<beast>_vN.png.
 """
@@ -26,10 +26,9 @@ RANGER = rh.hero("elf", "slim", "c", "long", S["skin"]["elf"][1], S["hair"][3], 
 
 
 def looks(beast):
-    """Six colour options: each coat with its markings, the hero kit's cloth in turn, and gold, green or brown eyes (red and
-    violet read as a foe's on an animal)."""
+    """Six colour options: each coat with its markings, the hero kit's cloth in turn, and the beast eyes in turn."""
     sw = bb.BEAST_SWATCHES[beast]
-    return [dict(skin=sw["coat"][i], hair=sw["markings"][i], eyes=S["eyes"][(3, 0, 2)[i % 3]], cloth=S["cloth"][i]) for i in range(6)]
+    return [dict(skin=sw["coat"][i], hair=sw["markings"][i], eyes=bb.BEAST_EYES[i % 4], cloth=S["cloth"][i]) for i in range(6)]
 
 
 def start():
@@ -65,7 +64,7 @@ def enemy(t, piece, col, at, spin):
 
 
 # What each beast stands beside: its enemy kind where there is one, else the approved ally wolf.
-BESIDE = {"wolf": "enemy_wolf", "bear": "beast_wolf_band", "panther": "beast_wolf_band"}
+BESIDE = {"wolf": "enemy_wolf", "bear": "beast_wolf_band", "panther": "beast_wolf_band", "hawk": "beast_wolf_band"}
 
 
 def other(t, beast_name, col, at, spin):
