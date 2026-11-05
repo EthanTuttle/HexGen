@@ -1,8 +1,10 @@
-# Hero mini kit (draft, not exported)
+# Hero mini kit
 
-Scripted hero minis for the first playable (design/06 → Hero minis), replaced later by 07's pipeline. **Not exported yet: this waits on the contact sheets.** Race shapes, heads, hair, armour looks and which weapons come first are proposals. Heights and swatches start from the v22b mockup.
+Scripted hero minis for the first playable (design/06 → Hero minis), replaced later by 07's pipeline. Ethan approved the kit (Nov 4, 2026). Race shapes, heads, hair and armour looks came from proposals; swatches are v22b's, with the flags below still open.
 
-- **Scripts:** `art/scripts/build_hero_kit.py`, `art/scripts/render_hero_kit.py`. Blend: `art/minis/heroes/hero_kit_v2.blend`.
+- **Models:** `art/export/heroes.glb` (from `art/minis/heroes/heroes_v1.blend`, a copy of `hero_kit_v2.blend` named for the export), one shared `kit` material with vertex colours. 152 nodes at the origin, named as below. **Place them only through the assembler:** player colours are marks, which look wrong until swapped.
+- **Placements:** `art/export/heroes_placements.json`, 554 KB. Parse once and keep it.
+- **Scripts:** `art/scripts/build_hero_kit.py`, `export_hero_kit.py`, `render_hero_kit.py`. `assemble()` in the build script is the model for Godot's.
 - **Previews (`art/preview/`):** `hero_kit_weapons_v1.png` (all 21 weapons, cycling races, gear and offhands), `hero_kit_dragon_heads_v1.png` (the 4 dragonborn heads from three sides), `hero_kit_dragon_look_v1.png` (5 dragon types at Look size), `hero_kit_look_v2.png`, `hero_kit_look_back_v2.png`, `hero_kit_faces_v2.png`, `hero_kit_builds_v2.png`, `hero_kit_hair_v2.png`. Map sizes, from before the new heads and weapons: `hero_kit_map_58m_v1.png`, `hero_kit_map_30m_v1.png`, `hero_kit_map_18m_v1.png`.
 
 ## A hero as a description
@@ -75,11 +77,48 @@ Unchanged from v22b, six each: `SWATCHES` in the script holds skin per race, the
 
 ## What Godot needs
 
-1. **Assembler:** place each piece at its matrix and merge into one mesh per hero, once per hero and per change. `assemble()` in the script is the model. On the Look step that's a rebuild on each pick; its cost hasn't been measured.
-2. **Placements:** `layout()` in the script gives the list. At export it becomes a table (race, build, weapon, offhand → pieces and matrices), so Godot needs no pose maths.
-3. **Colour marks:** in sRGB, a vertex colour with blue 255 and red a multiple of 20 is a mark: red ÷ 20 is the zone (1 skin, 2 hair, 3 eyes, 4 cloth), green ÷ 100 is the shade (in Blender: swatch x shade^2.2 in linear). All other colours stay. Colours in the glb are linear, so convert first. Marks look wrong if a piece is drawn unassembled.
-4. **Non-uniform scale:** arms are stretched, and planted weapons a little, so normals must be recomputed, not just moved.
-5. **Saves and multiplayer:** the description, not the mesh.
+A hero is one merged mesh, rebuilt from its description once per hero and per change. **Checked:** for 6 heroes, following the steps below from the glb and the table alone gave the same triangle counts and bounds as Blender's assembler, and every piece name exists. Not yet run in Godot.
+
+**1. The parts.** With `T` the JSON, and `row = T.races[race].builds[build]`:
+
+| Part | Piece | Matrix |
+|---|---|---|
+| Base | `hero_base` | identity |
+| Body | `hero_body_<race>_<build>` | identity |
+| Armour, unless `none` | `hero_armour_<tier>_<race>_<build>` | identity |
+| Head | `hero_head_<race>_<head>` | `row.head` |
+| Hair, unless `T.hairless` has the race or there's none picked | `hero_hair_<style>` | `row.hair` |
+| Arms | `hero_arm_upper_<kind>`, `hero_arm_fore_<kind>`, `hero_hand_<fist>` | `pose.right` then `pose.left`, three each, in that order |
+| Main weapon | `hero_<main>` | `pose.main` |
+| Offhand | `hero_shield` or `hero_<offhand>` | `pose.offhand` |
+| Fist weapon, instead of main | `hero_<main>`, twice | `pose.fists`, right then left |
+
+- `pose = row.poses[main][none | shield | second]`. Only weapons in `T.one_handed` have `shield` and `second`. `second` holds whichever one-handed weapon is the offhand.
+- `kind`: `golem` for a golem, otherwise `bare` for no or light armour, `chain` for medium, `plate` for heavy.
+- `fist`: `golem` for a golem, `gauntlet` for heavy armour, otherwise `bare`.
+- Weapon names in the data have `brass_knuckles` with an underscore.
+- **Matrices** are 12 numbers: the basis's x, y and z columns, then the origin. They're in the glb's frame, which is Godot's: `Transform3D(Basis(Vector3(m0, m1, m2), Vector3(m3, m4, m5), Vector3(m6, m7, m8)), Vector3(m9, m10, m11))`.
+- **Scale isn't uniform** on arms and planted weapons. Transform normals by the inverse transpose, or recompute them.
+- A mini faces -Z, its pivot at the base's centre on the ground, as the enemy minis do.
+
+**2. The colours.** After merging, go through the vertex colours, converting each from linear to sRGB bytes (`Color.linear_to_srgb()`):
+
+- **Blue 253 or more is a mark.** Nothing else in the kit has it.
+- **Zone:** red ÷ 20, rounded: 1 skin, 2 hair, 3 eyes, 4 cloth.
+- **Shade:** green ÷ 100.
+- **New colour,** in linear: the swatch's linear colour × shade^2.2, each clamped to 1. Alpha 1.
+- Everything else stays as it is.
+
+Godot may hold imported vertex colours in 8 bits, in linear, which loses precision at the dark end. Rounding the zone copes with that by my arithmetic, and the shade would be off by a few percent. Worth one test.
+
+**3. Elsewhere.**
+
+- **Same material as the other minis:** `Kit.combat_materials`, once.
+- **Height:** `T.races[race].height` is included in all the pieces and matrices; don't scale again.
+- **The Look step:** a rebuild on each pick. Its cost hasn't been measured. If it's slow, keep the pieces as separate nodes there, swapping colours per piece, and merge when done.
+- **Dragon type and golem sub-type** change only `colours.skin`. Defaults are in `T.dragon_types` and `T.swatches.skin`.
+- **Saves and multiplayer:** send the description, not the mesh.
+- **`EncounterView` and the party** can both take a hero the same way later. Companions aren't in this kit.
 
 ## Weak spots
 
@@ -88,4 +127,4 @@ Unchanged from v22b, six each: `SWATCHES` in the script holds skin per race, the
 - Builds now differ, but slim is close to average. Tunics are flat.
 - Small weapons (wand, dagger) barely read below Look size. Gauntlets are bulky on a broad or golem arm, and fists up partly crowd the head.
 - Faces read well close up. At 58 m they're gone: only colour, height, horns and big gear show.
-- Not done: the export and its table, runtime colour swap, anything in Godot.
+- Not done: anything in Godot, and a phone test for triangle counts. A hero tops out around 1,260.
