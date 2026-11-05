@@ -10,7 +10,7 @@ static func create(parent: Node) -> TimeOfDay:
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	# Contact shade where pieces meet the ground, so props don't look pasted on (engine choice, tuned by eye).
-	env.ssao_enabled = true
+	env.ssao_enabled = RenderingServer.get_current_rendering_method() != "mobile"   # the Mobile renderer has none, and warns
 	env.ssao_radius = 0.6
 	env.ssao_intensity = 1.6
 	env.ssao_light_affect = 0.15
