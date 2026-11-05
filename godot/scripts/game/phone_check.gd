@@ -151,7 +151,9 @@ func _phone_list() -> void:
 		await get_tree().create_timer(0.5).timeout
 	game.encounters.clear()
 	_say("LIST PERF new items done")
-	if OS.get_environment("HEXGEN_PHONEQUICK") != "1":
+	if OS.get_environment("HEXGEN_PHONEQUICK") == "1":
+		await _rise_perf(game)
+	else:
 		await _hills_perf(game, vp)
 		await _town_perf(game, vp)
 	await _river_perf(game, vp)
@@ -195,7 +197,12 @@ func _hills_perf(game: Game, vp: RID) -> void:
 	await _shot_as("hills_climbing")
 	while game.busy:
 		await get_tree().process_frame
-	# A real rise, with the party on it: seven tiles on spare land.
+	await _rise_perf(game)
+
+
+## A real rise, with the party on it: seven tiles on spare land. Shots are taken outside the timing: saving one stalls a frame for over a second.
+func _rise_perf(game: Game) -> void:
+	var map := game.map
 	var c := Vector2i(16, 10)
 	var tiles: Array[Vector2i] = [c]
 	for n in Hex.NEIGHBOURS:
@@ -212,21 +219,23 @@ func _hills_perf(game: Game, vp: RID) -> void:
 	game.rig.frame(Hex.to3(Hex.tile_position(c.x, c.y), 2.0), 40.0, 50.0)
 	await get_tree().create_timer(1.0).timeout
 	var region := game.new_region("hills", tiles, "volcanic_peaks", tiles[1])
-	t0 = Time.get_ticks_usec()
+	var t0 := Time.get_ticks_usec()
 	game._transform(tiles, region, c)
 	var frames := 0
 	var worst := 0.0
+	var over := 0
 	var last := Time.get_ticks_usec()
-	var shot := false
 	while game.busy:
 		await get_tree().process_frame
 		var now := Time.get_ticks_usec()
-		worst = maxf(worst, (now - last) / 1000.0)
+		var took := (now - last) / 1000.0
+		worst = maxf(worst, took)
+		over += 1 if took > 16.7 else 0
+		if took > 25.0:
+			_say("HILLS PERF a %.0f ms frame at %.2f s into the rise" % [took, (now - t0) / 1e6])
 		last = now
 		frames += 1
-		if not shot and map.lift.get(c, 0.0) > 2.5:
-			shot = true
-			await _shot_as("hills_rising")
+	_say("HILLS PERF frames over 16.7 ms: %d of %d" % [over, frames])
 	_say("HILLS PERF the rise, with the tiles' change before it: %.1f fps, worst frame %.1f ms over %.1f s" % [frames / ((last - t0) / 1e6), worst, (last - t0) / 1e6])
 	await _shot_as("hills_risen")
 

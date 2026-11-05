@@ -144,7 +144,7 @@ func opening() -> Dictionary:
 	return {target = target + Vector3(0, from.y, 0), distance = d, framed = framed}
 
 
-const PAD_SIDE := 0.6    # PLACEHOLDER: room round the framed minis, in metres; the far side for what stands on the far row
+const PAD_SIDE := 1.0    # PLACEHOLDER: room round the framed minis, in metres; the far side for what stands on the far row
 const PAD_NEAR := 0.5
 const PAD_FAR := 1.2
 
