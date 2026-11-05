@@ -157,3 +157,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-05 | `art/preview/beast_bear_solo_v1.png` | note | Reopens the approved bear: claws on the paws, no boot band; rounder head on a thick neck, round ears; draped saddle cloth; fill the thigh hollow, shaped legs |
 | 2026-11-05 | `art/preview/beast_panther_solo_v1.png` | note | Reopens the approved panther: big-cat shape (longer, lower, broader head, small round ears); face; clean hind legs and smooth tail; draped cloth, flat neckerchief, flush rosettes |
 | 2026-11-05 | `art/preview/beast_hawk_solo_v1.png` | note | Hawk v2: broad wings wide at the shoulder; sleeker raptor body with a tail that reads side-on; short light tie and slim bands. Stand stays |
+| 2026-11-05 | `art/preview/beast_wolf_solo_v2.png` | note | Wolf v5: drop the saddle for a scarf, face the head forward (centred), and a more wolf-like muzzle. Bear and panther also get scarves instead of saddles |
