@@ -165,6 +165,8 @@ func _flip(id: String) -> void:
 	if game.debug_near_miss != 0:
 		for i in flips.size():
 			flips[i] = i < int(k.need) - 1
+	var first := flips.duplicate()
+	var luck := game.lucky_check(flips, int(k.need))
 	var heads := Coins.heads(flips)
 	var helper := {}
 	var helper_heads := false
@@ -175,7 +177,7 @@ func _flip(id: String) -> void:
 			helper = {"initial": m.initial, "face": m.color, "name": m.name, "note": "", "line": lines.get(m.name, Rules.chime_line(m.name, APPROACH[k.approach].prof))}
 			helper_heads = game.debug_near_miss > 0 or (game.debug_near_miss == 0 and game.rng.randf() < 0.5)
 	var passed: bool = heads + (1 if helper_heads else 0) >= int(k.need)
-	game.hud.check.play(view, flips, helper, helper_heads, passed)
+	game.hud.check.play(view, first, helper, helper_heads, passed, luck)
 	await game.hud.check.continued
 	_busy = false
 	_used[id] = true

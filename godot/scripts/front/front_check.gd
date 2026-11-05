@@ -135,6 +135,7 @@ func _creator() -> void:
 	await tap_on("Next")
 	await _wait(0.3)
 	await shot("race_none")
+	await _every_sub_type(c)
 	# The longest race for the row of sub-types and a card, then the race the run goes on with.
 	await tap_on("Dragonborn")
 	await _wait(0.6)
@@ -259,6 +260,34 @@ func _creator() -> void:
 
 
 ## On into the game: the run from the creator, a town, then a Social event, all by touch.
+## Every race at this width: nothing is preselected, Next stays off until a sub-type is picked, each selector is on screen and a finger's tap on it counts (design/07 -> Character creator).
+func _every_sub_type(c: Creator) -> void:
+	var screen := get_viewport().get_visible_rect()
+	for r: Dictionary in CreatorData.RACES:
+		await tap_on(r.id)
+		await _wait(0.6)
+		var subs: Array = r.get("subs", [])
+		check(c.race == r.id and c.sub == "", "race %s: picked, with no sub-type preselected" % r.id)
+		check(c.done("race") == subs.is_empty(), "race %s: Next is %s" % [r.id, "on" if subs.is_empty() else "off until a sub-type"])
+		await shot("race_%s_open" % str(r.id).to_lower())
+		for x: Dictionary in subs:
+			var t := control(str(x.id))
+			check(t != null and screen.encloses(t.get_global_rect()), "race %s: %s is on screen %s" % [r.id, x.id, t.get_global_rect() if t else ""])
+			await tap_on(str(x.id))
+			await _wait(0.5)
+			check(c.sub == x.id, "race %s: tapping %s picks it" % [r.id, x.id])
+			check(c.done("race") == (x.id != "High elf"), "race %s: Next after %s" % [r.id, x.id])
+			check((control("Next") as TagButton).disabled != c.done("race"), "race %s: the Next button follows it after %s" % [r.id, x.id])
+			await shot("race_%s" % str(x.id).to_lower().replace(" ", "_"))
+		if subs.any(func(x): return x.id == "High elf"):
+			await tap_on("High elf")
+			await _wait(0.4)
+			for spell: String in ["Glimmerstep", "Faerie Fire", "Lull"]:
+				await tap_on(spell)
+				await _wait(0.3)
+				check(c.elf_spell == spell and c.done("race"), "race Elf: picking %s turns Next on" % spell)
+
+
 func _game_run() -> void:
 	await _wait(5.0)   # the banner drops in and rises away
 	var g := get_tree().current_scene as Game

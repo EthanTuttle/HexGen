@@ -21,7 +21,11 @@ const ONE_OF_EACH := ["forest", "plains", "farmland", "village", "river", "hills
 
 var hero_name := "[Hero name]"
 var klass := "fighter"
-var race := ""                 # a look and a name for now (design/06)
+var race := ""                 # "" with no creator: Rules.HERO_DEFAULT
+var sub := ""                  # the race's sub-type: "Wood elf", "Metal", "Blue", "Hayes"
+var elf_spell := ""            # a high elf's pick: "Lull"
+var scores := {}               # STR .. CHA from the creator; empty: Rules.HERO_DEFAULT's
+var proficiencies: Array = []
 var background := "soldier"
 var appearance := {}           # for the mini, from the creator
 var seed_text := ""            # "" rolls one
@@ -56,6 +60,13 @@ static func for_launch() -> RunSetup:
 			run.seed_text = a.split("=")[1]
 		if a.begins_with("--background="):
 			run.background = a.split("=")[1]
+		# Test aid: a hero of this race, sub-type and elven spell, with HERO_DEFAULT's scores ("--sub=Forge dwarf" quoted).
+		if a.begins_with("--race="):
+			run.race = a.split("=")[1]
+		if a.begins_with("--sub="):
+			run.sub = a.split("=")[1]
+		if a.begins_with("--spell="):
+			run.elf_spell = a.split("=")[1]
 	return run
 
 
@@ -64,6 +75,10 @@ static func from_hero(hero: Hero) -> RunSetup:
 	run.hero_name = hero.name
 	run.klass = hero.klass
 	run.race = hero.race
+	run.sub = hero.sub
+	run.elf_spell = hero.elf_spell
+	run.scores = hero.scores.duplicate()
+	run.proficiencies = hero.proficiencies.duplicate()
 	run.background = hero.background
 	run.appearance = hero.appearance
 	return run

@@ -4,13 +4,21 @@ extends RefCounted
 ## what each one does in the loop. Card rules: design/03 Classes & combat.md -> Combat; Martial class cards;
 ## the spell sections. ap = -1 means the AP cost isn't set in the docs (the card shows "?" and can't be used,
 ## as in the mockup).
-##   kind: "move", "attack" (flip to hit), "save" (the foe flips to save), "ally" (no roll), "self"
+##   kind: "move", "attack" (flip to hit), "save" (the foe flips to save), "ally" (no roll), "self", "breath" (a line,
+##         aimed by a lit hex), "cell" (an empty hex: Glimmerstep)
 ##   limit: "" (repeatable basic), "turn" (once per turn: the default), "fight" (once per fight)
+##   ab: the score an attack flips (default: the character's weapon ability); dmg: a set damage instead of the score
+## Racial cards and racial spells (design/03 -> Races, Racial spells): text from the creator's (CreatorData), as the docs
+## give it; amounts in Rules (design/06 -> First playable -> Races).
 
 const SRC := {
 	"basic": {"band": "#BFAE8E", "ink": "#5A5040", "label": "Basic", "icon_ink": "#33403B"},
 	"weapon": {"band": "#5F7F99", "ink": "#3E5A70", "label": "Weapon", "icon_ink": "#3E5A70"},
 	"klass": {"band": "#B5532F", "ink": "#9A4A12", "label": "Class", "icon_ink": "#9A4A12"},
+	# PLACEHOLDER colours: the creator's racial card and elven spell bands, with class ink.
+	"race": {"band": "#B5532F", "ink": "#9A4A12", "label": "Racial card", "icon_ink": "#9A4A12"},
+	"elven": {"band": "#3E6F8C", "ink": "#2F5670", "label": "Elven spell", "icon_ink": "#2F5670"},
+	"bloodline": {"band": "#3E6F8C", "ink": "#2F5670", "label": "Bloodline spell", "icon_ink": "#2F5670"},
 }
 
 const ALL := {
@@ -34,6 +42,17 @@ const ALL := {
 	"backstab": {"n": "Backstab", "src": "weapon", "ap": -1, "kind": "attack", "limit": "turn", "range": 1, "icon": "dagger", "desc": "Dagger: bonus damage from behind."},
 	"throw": {"n": "Throw", "src": "weapon", "ap": -1, "kind": "attack", "limit": "turn", "range": 4, "icon": "throw", "desc": "Dagger: a ranged attack with the dagger. It returns to your hand."},
 	"sneak_attack": {"n": "Sneak Attack", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "eye", "effect": "sneak", "desc": "Rogue: a weapon attack with bonus damage if the foe is flanked or unaware."},
+	"duck_behind": {"n": "Duck Behind", "src": "race", "ap": 1, "kind": "ally", "limit": "turn", "range": 1, "icon": "M7 7h11l-3-3 M17 17H6l3 3", "effect": "swap", "desc": "Swap places with an adjacent ally."},
+	"breath": {"n": "Breath Weapon", "src": "race", "ap": 2, "kind": "breath", "limit": "turn", "save": "DEX", "icon": "M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2-7 1 2 2 3 3 3 0-3-1-5 0-7z", "desc": "A line of 3 hexes in one of the 6 directions. Everyone in it, allies included, makes a DEX save (half damage on a pass). Damage grows with level."},
+	"lockdown": {"n": "Lockdown", "src": "race", "ap": 1, "kind": "self", "limit": "turn", "icon": "M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v9H5z", "effect": "lockdown", "desc": "Your damage reduction doubles until your next turn, but you can’t move."},
+	"stone_throw": {"n": "Stone Throw", "src": "race", "ap": 1, "kind": "attack", "limit": "turn", "range": Rules.RACIAL_RANGE, "ab": "STR", "dmg": Rules.RACIAL_DAMAGE, "icon": "M5 16l3-7 6-2 5 5-2 6-8 1z", "desc": "A ranged STR attack, usable whatever weapon you hold."},
+	"claw_swipe": {"n": "Claw Swipe", "src": "race", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "ab": "DEX", "dmg": Rules.CLAW_DAMAGE, "rider": "bleed", "icon": "M6 5l3 14 M11 4l2 15 M17 5l-2 14", "desc": "A melee scratch that makes the foe bleed. DEX attack."},
+	"glimmerstep": {"n": "Glimmerstep", "src": "elven", "ap": 1, "kind": "cell", "limit": "turn", "range": Rules.GLIMMERSTEP_RANGE, "icon": "glim", "effect": "blink", "desc": "Vanish and reappear in an empty hex up to 3 hexes away."},
+	"faerie_fire": {"n": "Faerie Fire", "src": "elven", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.RACIAL_RANGE, "save": "DEX", "icon": "spark", "effect": "glow", "desc": "The foe glows until your next turn: attacks against it flip 1 extra coin, and it can’t hide. DEX save."},
+	"lull": {"n": "Lull", "src": "elven", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.RACIAL_RANGE, "save": "WIS", "icon": "moon", "effect": "lull", "desc": "The foe dozes off and loses its next attack. Any hit wakes it. WIS save."},
+	"scorch": {"n": "Scorch", "src": "bloodline", "ap": 1, "kind": "attack", "limit": "turn", "range": Rules.RACIAL_RANGE, "ab": "CHA", "dmg": Rules.RACIAL_DAMAGE, "icon": "flame", "desc": "A lance of fire at one foe in range. Attack flip to hit."},
+	"ember_mend": {"n": "Ember Mend", "src": "bloodline", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.RACIAL_RANGE, "icon": "heart", "effect": "mend", "desc": "Heal an ally a little, more if they’re below half HP."},
+	"guiding_ember": {"n": "Guiding Ember", "src": "bloodline", "ap": 1, "kind": "self", "limit": "turn", "icon": "spark", "effect": "guide", "desc": "A small light drifts out and reveals hidden foes and traps within 3 hexes."},
 	"poison_blade": {"n": "Poison Blade", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "drop", "effect": "poison", "desc": "Rogue: every hit for the rest of this turn poisons."},
 }
 
@@ -41,12 +60,18 @@ const ALL := {
 const WEAPON_ICON := {"longsword": "sword", "staff": "staff", "mace": "mace", "dagger": "dagger"}
 
 
-static func get_card(id: String, weapon := "") -> Dictionary:
+## A card for whoever holds it: the basic attack's weapon, and Breath Weapon's dragon type (sub: "Blue"), as the creator shows it.
+static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 	var c: Dictionary = ALL[id].duplicate()
 	c.id = id
 	if id == "attack":
 		c.icon = WEAPON_ICON.get(weapon, "sword")
 		c.desc = c.desc % weapon
+	if CreatorData.PI.has(c.get("icon", "")) and not Icons.PATHS.has(c.icon):
+		c.icon = CreatorData.PI[c.icon]
+	if id == "breath" and CreatorData.DRI.has(sub):
+		c.icon = CreatorData.PI[CreatorData.DRI[sub]]
+		c.desc = "%s %s" % [c.desc, CreatorData.ELEM[sub]]
 	return c
 
 

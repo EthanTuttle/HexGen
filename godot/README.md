@@ -348,6 +348,10 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 | Ally cards target like attacks: green circles, no roll | 07 → Combat screen (combat v14) | |
 | Enemies scale with distance from the start | 02 → Hex contents and encounters | One more foe per 3 hexes |
 | Defeat: retreat to camp, the hand is dropped at the fight; the encounter stays until cleared; clearing it gives the cards back | 02 → Defeat | |
+| Scores drive play: attacks, spells, saves and checks use each character's own scores, the hero's from the creator | 06 → First playable → Races; 03 → Starting scores | Fluffy INT 3, DEX 2; Chelmsford WIS, STR, CON 2; Mel DEX, WIS, CHA 2; others 1 |
+| Races in play: Lucky, wood elf (+1 hex a Move, and the party walks faster), forge dwarf coin, shield dwarf HP, metal golem reduction and Lockdown, Regrowth, Stone Throw, Breath Weapon (5 types), Duck Behind, Cat Reflexes and Claw Swipe, high elf spells (Glimmerstep, Faerie Fire, Lull), tiefling spells (Scorch, Ember Mend, Guiding Ember) | 03 → Races, Racial spells; 06 → First playable → Races | `races.gd`, `fight.gd`; racial cards are in All actions only, the default hotbars are unchanged. `-- --racecheck --race=… --sub=… --spell=…` checks each. Not built: the level-7 tiefling spells, subclasses; Human's Versatile changes nothing for a Fighter |
+| Cover: trees, fences, hedges, crops and brush cost the attacker 1 coin (or give a saver 1); rocks, walls and sheer rises block | 03 → Combat → Cover | Ranged attacks, spells and Breath Weapon |
+| The long shot: fewer coins than heads needed flips 1 coin needing heads in a row (target plus coins short) | 03 → Coin checks | Shown as that many coins that all need heads |
 
 ## Placeholders
 
@@ -361,7 +365,14 @@ Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where i
 | Starting hand | 7 cards | The docs don't say how many cards the campaign starts with |
 | Starting hex | A farmland tile, not counted in regions | The Noble's farm estate is a Story card with no art |
 | Camp | The start hex | No camp kits or inns yet; rest and retreat need somewhere |
-| Party | [Hero name], Fluffy, Chelmsford and Mel, with the combat mockup's scores (STR 3, INT 3, STR 2, DEX 3) and cards | The party and its cards come from the combat mockup |
+| Party | [Hero name], Fluffy, Chelmsford and Mel, with the combat mockup's cards; companions' scores from 03 | The party and its cards come from the combat mockup |
+| Hero with no creator | Human Fighter, STR 3, CON 2 (`Rules.HERO_DEFAULT`) | The checks and the demo need a hero; it keeps the old STR 3 |
+| Race amounts | Metal golem reduction 1, +1 every 5 levels; Regrowth 1 HP, 2 from level 10; shield dwarf +2 max HP, +1 a level; a wood elf in the party: walking 25% faster, 25% less clock a hex; Breath 3 (red 4), +1 every 5 levels; white −1 hex a Move, black +1 coin on attacks at it, green 1 damage at the start of its next 2 turns, until its next turn ends; Stone Throw and Scorch 3, range 4; Claw Swipe 2 and bleed 1 for 2 turns; Ember Mend 2, or 4 below half HP; Faerie Fire, Lull and Ember Mend range 4 | 06 → First playable → Races gives them as placeholders until the balance pass |
+| Saves | Any save needs 1 heads; allies flip their own score | The combat mockup's number |
+| Cover pieces | Brush cells give partial cover; on blocked cells, trees, groves, thickets, roots, stumps, logs, hay, crates, sacks, barrels, benches, graves, scarecrows, washing, wells, fires, mushrooms, junk, stalls' goods and the like give partial cover; buildings, boulders, standing stones, cairns, statues, carts and anything unnamed block. Fences and walls drawn as `map_` pieces carry no cells in the map data, so their cells block fully | 03 names trees, fences, hedges, crops, brush, rocks, walls and sheer rises only (option A, asked of Ethan) |
+| Sheer rise in the way | A cell standing 0.9 m above the straight line between attacker and target | How "sheer rises block" reads on a line isn't set |
+| Race icons and look | Status icons over the minis (Glowing spark, Dozing moon, Bleeding drop, Poisoned skull, Slowed snowflake, Acid-burned drop, Lockdown padlock), Lucky's clover, Claw Swipe's icon, Glimmerstep's vanish (the mini hides as it slides), the racial card and spell colour bands | 07 asks for icons; none are drawn yet |
+| Faerie Fire and Lull's result | "Saved" or "Failed save!" | New text: "Saved" (asked) |
 | HP | Hero 12, Fluffy 8, Chelmsford 14, Mel 8; foes 6 | No HP rules yet |
 | Damage | The attack's ability score; Sacred Flame 2 (1 on a save); Sneak Attack +2 when another ally is next to the foe; Poison Blade +1 a hit this turn; Defend −1 a hit until your next turn; heals 4 | The docs say scores decide damage, not how |
 | Bless | +1 coin on the ally's next check | As the mockup describes it; the docs give the card, not the number |

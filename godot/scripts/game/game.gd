@@ -96,7 +96,6 @@ func _ready() -> void:
 
 	for k in run.party_size:
 		_add_member(k)
-	party[0].name = run.hero_name
 	party_node = PartyWalker.new()
 	party_node.name = "party"
 	add_child(party_node)
@@ -164,6 +163,10 @@ func _ready() -> void:
 		var dc := DesertCheck.new()
 		dc.game = self
 		add_child(dc)
+	elif "--racecheck" in OS.get_cmdline_user_args():
+		var rc := RaceCheck.new()
+		rc.game = self
+		add_child(rc)
 	elif "--combatcheck" in OS.get_cmdline_user_args():
 		var cc := CombatCheck.new()
 		cc.game = self
@@ -996,7 +999,7 @@ func markers() -> Array:
 		var way := _in_reach(path_to(picked))
 		var n := way.size()
 		out.append({key = "walk%s" % picked, kind = "walk", world = _tile_top(way[-1] if n > 0 else picked), lift = 40,
-				text = "%d hex%s · %d min" % [n, "" if n == 1 else "es", roundi(n * Rules.STEP_MINUTES)]})
+				text = "%d hex%s · %d min" % [n, "" if n == 1 else "es", roundi(n * step_minutes())]})
 	for g in regions:
 		if g.landmark == "":
 			continue
@@ -1099,6 +1102,10 @@ func _add_xp(n: int) -> void:
 		xp -= xp_needed()
 		level += 1
 		_picks += 1
+		for m in party:   # PLACEHOLDER (06): a shield dwarf's extra HP per level, current HP too
+			var more := Races.extra_hp(m, level) - Races.extra_hp(m, level - 1)
+			m.max_hp += more
+			m.hp += more
 
 
 ## A level's terrain pick (design/06). Three terrains: first what the biggest unfinished cluster is short of, so a run that's nearly there can finish, then two others at random (PLACEHOLDER).
@@ -1408,18 +1415,19 @@ func _bank_limit() -> float:
 ## encounter screen). Coins: the base ability's plus the proficiency's (DOCS: 03 -> Proficiency rules).
 func _cross_view() -> Dictionary:
 	var hero := party[0]
-	var n: int = hero.score + (1 if "Athletics" in Rules.PROFICIENCIES.get(hero.name, []) else 0)
+	var n: int = Races.score(hero, "STR") + (1 if "Athletics" in hero.get("proficiencies", []) else 0)
 	return {tag = "Athletics · STR", tag_bg = Color("#8A6420"), text = "Cross the water?", initial = hero.initial, face = hero.color,
 			coins = n, line = "%s · %d coin%s · STR · needs %d heads" % [hero.name, n, "" if n == 1 else "s", Rules.CROSS_HEADS]}
 
 
 ## Who chimes in on a miss by exactly 1 (DOCS: 03 -> Companion chime-in): a proficient companion with the highest
-## score, ties by party order. {} if none. PLACEHOLDER: the prototype's members have one score each.
+## score in the proficiency's ability, ties by party order. {} if none.
 func _chime_helper(proficiency: String) -> Dictionary:
 	var best := {}
+	var ab: String = CreatorData.PROFB.get(proficiency, "STR")
 	for k in range(1, party.size()):
 		var m := party[k]
-		if proficiency in Rules.PROFICIENCIES.get(m.name, []) and (best.is_empty() or m.score > best.score):
+		if proficiency in Rules.PROFICIENCIES.get(m.name, []) and (best.is_empty() or Races.score(m, ab) > Races.score(best, ab)):
 			best = m
 	return best
 
@@ -1452,6 +1460,8 @@ func _cross_check() -> void:
 		var heads_up: int = 0 if debug_fail_crossing else Rules.CROSS_HEADS - 1
 		for k in flips.size():
 			flips[k] = k < heads_up
+	var first := flips.duplicate()
+	var luck := lucky_check(flips, Rules.CROSS_HEADS)
 	var heads := Coins.heads(flips)
 	var helper := {}
 	var helper_heads := false
@@ -1463,7 +1473,7 @@ func _cross_check() -> void:
 			helper_heads = debug_near_miss > 0 or (debug_near_miss == 0 and rng.randf() < 0.5)
 	var passed: bool = heads + (1 if helper_heads else 0) >= Rules.CROSS_HEADS
 	if not debug_auto_cross:
-		hud.check.play(view, flips, helper, helper_heads, passed)
+		hud.check.play(view, first, helper, helper_heads, passed, luck)
 		await hud.check.continued
 	party_node.go_on()
 	if passed:
@@ -1505,10 +1515,11 @@ func _walk(path: Array[Vector2i]) -> void:
 	# The day clock moves on as the hero steps onto each hex (PartyWalker: How the party moves).
 	var on_step := func(t: Vector2i):
 		party_tile = t
-		_advance(Rules.STEP_MINUTES)
+		_advance(step_minutes())
 	party_node.free_out = _bank_limit()
 	party_node.entered.connect(on_step)
 	party_node.waded.connect(_cross_check)
+	party_node.speed_factor = Rules.WOOD_ELF_WALK if Races.wood_elf_in(party) else 1.0
 	await party_node.walk(path)
 	party_node.entered.disconnect(on_step)
 	party_node.waded.disconnect(_cross_check)
@@ -1538,6 +1549,18 @@ func _open_port_shop() -> bool:
 	return true
 
 
+## Lucky out of combat (design/03 -> Races -> Halfling): a halfling hero with a charge left reflips one of their tails when
+## the check misses by 1 heads, before any companion chimes in. Changes flips; returns {at, heads} for the pop-up, or {}.
+func lucky_check(flips: Array[bool], need: int) -> Dictionary:
+	var hero: Dictionary = party[0]
+	if int(hero.get("lucky", 0)) <= 0 or Coins.heads(flips) != need - 1 or not flips.has(false):
+		return {}
+	hero.lucky -= 1
+	var at := flips.find(false)
+	flips[at] = Coins.flip(rng, 1)[0]
+	return {at = at, heads = flips[at]}
+
+
 ## The hero's solo Stealth check, whatever the party's size (DOCS: 03 -> Checks outside combat); on a pass the encounter stays on the map. A fail starts the fight.
 func choose_sneak() -> void:
 	var coins := sneak_flip()
@@ -1548,6 +1571,7 @@ func choose_sneak() -> void:
 ## The hero's coins, then a proficient companion's 1 on a miss by exactly 1 (DOCS: 03 -> Companion chime-in). No companion has Stealth yet, and no line is written for it.
 func sneak_flip(proficiency := "Stealth") -> Array[bool]:
 	var coins: Array[bool] = Coins.flip(rng, Hero.coins_for("DEX", "Stealth"))
+	lucky_check(coins, sneak_heads())   # PLACEHOLDER look: the encounter pop-up shows the reflipped coin as it landed
 	if Coins.heads(coins) == sneak_heads() - 1 and not _chime_helper(proficiency).is_empty():
 		coins.append_array(Coins.flip(rng, 1))
 	return coins
@@ -1649,7 +1673,12 @@ func start_fight(t: Vector2i) -> void:
 
 func _add_member(k: int) -> void:
 	var member: Dictionary = Rules.PARTY[k].duplicate(true)
-	member.max_hp = member.hp
+	if k == 0:
+		member.name = run.hero_name
+		Races.make_hero(member, run)
+	else:
+		member.proficiencies = Rules.PROFICIENCIES.get(member.name, [])
+	Races.join(member, level)
 	party.append(member)
 
 
@@ -1714,9 +1743,16 @@ func rest() -> void:
 
 
 ## The rest itself, for an inn too, which charges first (spend).
+## The day clock one hex of walking costs: less with a wood elf in the party (design/06 -> First playable -> Races).
+func step_minutes() -> float:
+	return Rules.STEP_MINUTES * (Rules.WOOD_ELF_CLOCK if Races.wood_elf_in(party) else 1.0)
+
+
 func rest_here() -> void:
 	for m in party:
 		m.hp = m.max_hp
+		if m.has("lucky"):
+			m.lucky = Rules.LUCKY_CHARGES   # DOCS: Lucky's reflips come back on each rest
 	deck.rest()
 	_advance(Rules.REST_MINUTES)
 	held = -1

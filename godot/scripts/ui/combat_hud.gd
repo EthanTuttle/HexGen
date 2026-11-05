@@ -236,6 +236,7 @@ func _refresh_details() -> void:
 
 	var targeting: bool = k.kind in ["attack", "save", "ally"]
 	var has_target: bool = not (fight.ally_target if k.kind == "ally" else fight.target).is_empty()
+	var aimed: bool = (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind == "cell" and fight.cell_target != null)
 	# Screen text (DOCS: UI -> Screen text): no Move rule sentence and no "pick a target" prompts; the lit
 	# hexes, gold rings and AP pips show them. A check shows only the coin line.
 	if targeting and not fight.result.is_empty():
@@ -261,11 +262,13 @@ func _refresh_details() -> void:
 		if k.kind == "ally":
 			_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
 		elif k.kind == "attack":
-			var n: int = u.score + (1 if u.blessed else 0)
-			_details.add_child(_wrap(UI.label("%d coins · %s · needs %d heads%s" % [n, u.ability, fight.heads_needed(fight.target) if not fight.target.is_empty() else Rules.HEADS_TO_HIT, " · +1 Bless" if u.blessed else ""], "n800", 13)))
+			var n: int = fight.attack_coins(u, fight.target, k)
+			_details.add_child(_wrap(UI.label("%d coins · %s · needs %d heads%s" % [n, k.get("ab", u.ability), fight.heads_needed(fight.target) if not fight.target.is_empty() else Rules.HEADS_TO_HIT, " · +1 Bless" if u.blessed else ""], "n800", 13)))
 		else:
-			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs 1 heads" % [Rules.ENEMY_SAVE_COINS, k.save], "n800", 13)))
-	elif k.kind == "self" and fight.self_done == k.id:
+			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS], "n800", 13)))
+	elif k.kind == "cell" and aimed:
+		_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
+	elif k.kind in ["self", "breath", "cell"] and fight.self_done == k.id:
 		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))   # no message: HP bars and effects show it
 
 	# The button (and the note under it when the card can't be used)
@@ -279,6 +282,8 @@ func _refresh_details() -> void:
 			label = "Flip again" if not fight.result.is_empty() else "Flip coins"
 	elif k.kind == "self":
 		label = "Use"
+	elif aimed:
+		label = "Cast"
 	if label != "":
 		var note := fight.cant_use(u, k)
 		if (k.kind in ["attack", "save"] and fight.target.is_empty()) or (k.kind == "ally" and fight.ally_target.is_empty()):
@@ -607,6 +612,17 @@ func _process(_delta: float) -> void:
 		node.global_position = cam.unproject_position(world) - Vector2(node.size.x * 0.5, node.size.y)  # screen coordinates
 		var bar: Bar = node.get_meta("bar")
 		bar.value = float(maxi(u.hp, 0)) / u.max_hp
+		var fx: Array = fight.status_icons(u).map(func(e): return e[0])
+		if fx != node.get_meta("fx_key", []):
+			node.set_meta("fx_key", fx)
+			var row: HBoxContainer = node.get_meta("fx")
+			for c in row.get_children():
+				c.queue_free()
+			for icon: String in fx:
+				var r := TextureRect.new()
+				r.texture = UI.icon(status_path(icon), Color(STATUS_INK.get(icon, "#33403B")), 13, 2.4)
+				r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				row.add_child(r)
 	for key in _bar_nodes.keys():
 		if not fight.units.any(func(u): return u.mini.get_instance_id() == key):
 			_bar_nodes[key].queue_free()
@@ -626,6 +642,12 @@ func _make_bar(u: Dictionary) -> Control:
 	var bar := Bar.make(24, 4, UI.DARK, UI.GREEN if u.ally else Color("#C4542A"))
 	v.add_child(bar)
 	v.set_meta("bar", bar)
+	var fx := HBoxContainer.new()   # status icons under the bar
+	fx.add_theme_constant_override("separation", 1)
+	fx.alignment = BoxContainer.ALIGNMENT_CENTER
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(fx)
+	v.set_meta("fx", fx)
 	v.reset_size()
 	return v
 
@@ -658,6 +680,29 @@ func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float) -> Ar
 	await get_tree().create_timer(Rules.COIN_HOLD).timeout
 	row.queue_free()
 	return shown
+
+
+## An icon rising over a mini, as float_text: Lucky's clover when it fires (design/07: icons, not words). PLACEHOLDER icon.
+func float_icon(u: Dictionary, icon: String) -> void:
+	var t := TextureRect.new()
+	t.texture = UI.icon(status_path(icon), Color("#2E7A3E"), 26, 2.6)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(t)
+	var cam := fight.game.rig.camera
+	t.global_position = cam.unproject_position(u.mini.global_position + Vector3(0, 2.2, 0)) - Vector2(13, 30)
+	var tw := create_tween().set_parallel()
+	tw.tween_property(t, "position:y", t.position.y - 24, 1.0)
+	tw.tween_property(t, "modulate:a", 0.0, 0.6).set_delay(0.6)
+	tw.chain().tween_callback(t.queue_free)
+
+
+## Status and Lucky icons: the HUD's own, else the creator's, else these PLACEHOLDER paths.
+const STATUS_PATHS := {"lock": "M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v9H5z", "acid": "M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z M9 15h6"}
+const STATUS_INK := {"spark": "#B07A12", "moon": "#3E5A70", "drop": "#B3261E", "skull": "#3E7A2E", "snow": "#3F8FC4", "acid": "#4F7A12", "lock": "#33403B"}
+
+
+static func status_path(n: String) -> String:
+	return Icons.PATHS.get(n, CreatorData.PI.get(n, STATUS_PATHS.get(n, n)))
 
 
 func float_text(u: Dictionary, text: String, hurt: bool, heal := false) -> void:

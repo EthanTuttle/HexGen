@@ -32,6 +32,7 @@ var _s0 := 0.0                          # where the hero starts on the route (af
 var _file_start := false                # the party starts this walk stopped in a file on a narrow path
 var _file_end := false                  # and ends it so (DOCS: Walking: a tighter cluster that fits the path)
 var _tail := PackedVector2Array()       # the stretch of route the stopped file stands on, last follower to hero
+var speed_factor := 1.0                 # a wood elf in the party walks it faster (Game sets it; design/06 -> First playable -> Races)
 var has_raft := false                   # the party's raft, a permanent purchase (design/02 -> Crossing water)
 var _raft: MeshInstance3D = null
 var _spans: Array = []                  # the route's stretches on water: {from, to, raft}, by distance along it
@@ -899,7 +900,7 @@ func _step(delta: float) -> void:
 		var terrain: String = map.terrains.get(GroundCover.tile_at(p), "")
 		var ease_in := minf(1.0, 0.3 + 0.7 * (_s - _s0) / Rules.WALK_EASE_IN)
 		var ease_out := clampf((total - _s) / Rules.WALK_EASE_OUT, 0.15, 1.0)
-		_s = minf(total, _s + Rules.WALK_SPEED * Rules.TERRAIN_SPEED.get(terrain, 1.0) * ease_in * ease_out * delta)
+		_s = minf(total, _s + Rules.WALK_SPEED * speed_factor * Rules.TERRAIN_SPEED.get(terrain, 1.0) * ease_in * ease_out * delta)
 		var t := GroundCover.tile_at(_point_at(_s))
 		if t != _tile and map.terrains.has(t):
 			_tile = t

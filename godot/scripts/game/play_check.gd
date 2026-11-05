@@ -13,6 +13,7 @@ var rests := 0
 var levels := 0
 var wipes := 0
 var drunk := 0
+var bot: FightBot
 var _shut := {}
 var _locked := false
 var _water_gates := {}
@@ -285,94 +286,17 @@ func _band_fights(each: int) -> void:
 			game.xp = 0
 
 
-## A plain player: Fluffy's bolts and frost when in reach, the hero's Shield Bash then attacks, Second Wind when hurt. Notes how each fight went, for the balance report.
+## The fight bot (FightBot) plays it out; notes how each fight went, for the balance report.
 func _play_fight() -> void:
 	var f := game.fight
 	var band := Foes.band(game.party_tile)
 	var roles: Array = f.units.filter(func(u): return not u.ally).map(func(u): return u.role)
-	var hp0: int = f.allies().reduce(func(n, u): return n + u.hp, 0)
-	var rounds := 0
-	while f.active and f.phase != "over":
-		if f.phase != "allies" or f.busy:
-			await _wait(0.1)
-			continue
-		rounds += 1
-		for u: Dictionary in f.allies():
-			if not f.active or f.phase != "allies" or u.down:
-				continue
-			f.select(u)
-			await _wait(0.1)
-			await _take_turn(f, u)
-		if f.active and f.phase == "allies":
-			f.end_phase()
-			await _wait(0.2)
-			if f.hud.confirm_open():
-				f.confirm_end()
-		await _wait(0.1)
-		if rounds > 30:
-			break
-	var hp1: int = f.allies().reduce(func(n, u): return n + maxi(u.hp, 0), 0)
-	var downs: int = f.allies().filter(func(u): return u.down).size()
-	var wiped: bool = f.allies().all(func(u): return u.down)
-	print("PLAY FIGHT party %d band %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().size(), band, roles, rounds, hp0, hp1, downs, ", WIPED" if wiped else ""])
-	wipes += 1 if wiped else 0
-
-
-func _take_turn(f: Fight, u: Dictionary) -> void:
-	var tries := 0
-	while f.active and f.phase == "allies" and f.ap_left(u) > 0 and tries < 8:
-		tries += 1
-		var foes := f.foes_of(u)
-		if foes.is_empty():
-			return
-		foes.sort_custom(func(a, b): return f.dist(a, u) < f.dist(b, u))
-		var foe: Dictionary = foes[0]
-		var picked := ""
-		var hurt: Array = f.allies().filter(func(a): return not a.down and a.hp * 2 < a.max_hp and f.dist(a, u) <= 5)
-		if "healing_word" in u.cards and not hurt.is_empty() and f.cant_use(u, Cards.get_card("healing_word")) == "":
-			f.pick_card("healing_word")
-			await _wait(0.05)
-			await f.click_cell(hurt[0].cell)
-			await _wait(0.05)
-			await f.press_button()
-			await _wait(0.2)
-			while f.busy:
-				await _wait(0.05)
-			continue
-		if u.hp * 2 < u.max_hp and f.cant_use(u, Cards.get_card("second_wind")) == "" and "second_wind" in u.cards:
-			picked = "second_wind"
-		elif u.hp * 2 < u.max_hp and f.cant_use(u, Cards.get_card("use_item")) == "":
-			picked = "use_item"
-			drunk += 1
-		else:
-			for id: String in ["firebolt", "frost_ray", "sacred_flame", "backstab", "sneak_attack", "throw", "shield_bash", "attack"]:
-				if id in u.cards:
-					var c := Cards.get_card(id, u.weapon)
-					if f.cant_use(u, c) == "" and f.dist(foe, u) <= c.get("range", 1):
-						picked = id
-						break
-		if picked == "":
-			var options: Dictionary = f.reachable(u)
-			var best := u.cell as Vector2i
-			for c in options:
-				if Rules.hex_distance(c, foe.cell) < Rules.hex_distance(best, foe.cell):
-					best = c
-			if best == u.cell:
-				return
-			f.pick_card("move")
-			await _wait(0.05)
-			await f.click_cell(best)
-			await _wait(0.1)
-			continue
-		f.pick_card(picked)
-		await _wait(0.05)
-		if Cards.get_card(picked).kind in ["attack", "save"]:
-			await f.click_cell(foe.cell)
-			await _wait(0.05)
-		await f.press_button()
-		await _wait(0.2)
-		while f.busy:
-			await _wait(0.05)
+	if bot == null:
+		bot = FightBot.new(get_tree())
+	var r := await bot.play(f)
+	drunk = bot.drunk
+	print("PLAY FIGHT party %d band %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().size(), band, roles, r.rounds, r.hp0, r.hp1, r.downs, ", WIPED" if r.wiped else ""])
+	wipes += 1 if r.wiped else 0
 
 
 func _answer() -> void:

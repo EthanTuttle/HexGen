@@ -65,7 +65,8 @@ func ask(view: Dictionary, stay_label: String, on_stay: Callable, on_go: Callabl
 
 ## Flips: the same head, the coins landing in turn, then the helper (if any) and the result. flips: the hero's coins;
 ## helper: {} or initial, face, name, note, line; helper_heads: their coin; passed: the result. Emits continued.
-func play(view: Dictionary, flips: Array[bool], helper: Dictionary, helper_heads: bool, passed: bool) -> void:
+## lucky: Lucky's reflip (design/03 -> Races -> Halfling), {at, heads}: that coin spins again under the clover, before any chime-in.
+func play(view: Dictionary, flips: Array[bool], helper: Dictionary, helper_heads: bool, passed: bool, lucky := {}) -> void:
 	_run += 1
 	var run := _run
 	_clear()
@@ -83,6 +84,21 @@ func play(view: Dictionary, flips: Array[bool], helper: Dictionary, helper_heads
 		if run != _run:
 			return
 		_land(coins[k], flips[k])
+	if not lucky.is_empty():
+		await get_tree().create_timer(CHIME_WAIT).timeout
+		if run != _run:
+			return
+		var clover := TextureRect.new()   # PLACEHOLDER icon
+		clover.texture = UI.icon(CreatorData.PI.clover, UI.GREEN, 20, 2.4)
+		clover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(clover)
+		row.move_child(clover, lucky.at)
+		coins[lucky.at].is_blank = true
+		_spinning.append(coins[lucky.at])
+		await get_tree().create_timer(CHIME_FLIP).timeout
+		if run != _run:
+			return
+		_land(coins[lucky.at], lucky.heads)
 	await get_tree().create_timer(CHIME_WAIT).timeout
 	if run != _run:
 		return

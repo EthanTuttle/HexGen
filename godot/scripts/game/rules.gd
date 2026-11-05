@@ -181,22 +181,28 @@ const XP_FIRST_LEVEL := 20               # design/06: XP per level, 20 then 10 m
 const XP_MORE_EACH := 10
 
 ## The party and their cards as in the combat mockup (Combat v14): [Hero name] the Fighter (longsword and
-## shield), Fluffy (wizard, staff), Chelmsford (cleric, mace and shield) and Mel (rogue, dagger), with the
-## mockup's scores (coins). PLACEHOLDER: HP; the docs set scores but not HP or damage.
+## shield), Fluffy (wizard, staff), Chelmsford (cleric, mace and shield) and Mel (rogue, dagger). `ability` is the
+## weapon's (or a caster's) score for attacks. Scores drive attacks, spells, saves and checks (DOCS: design/06 -> First
+## playable -> Races); unlisted scores are 1. Companions' scores: DOCS (design/03 -> Ability scores -> Starting scores);
+## races: DOCS (design/01: Chelmsford a blue dragonborn, Mel a wood elf; design/03: Fluffy's cat race).
+## The hero's come from the creator; with no creator behind the run, HERO_DEFAULT. PLACEHOLDER: HP.
 const PARTY := [
-	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "score": 3, "hp": 12,
+	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
 		"weapon": "longsword", "hot": ["move", "attack", "parry", "shield_bash", "second_wind", "action_surge"],
 		"cards": ["move", "attack", "defend", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
-	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "score": 3, "hp": 8,
+	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "scores": {"INT": 3, "DEX": 2},
 		"weapon": "staff", "hot": ["move", "attack", "firebolt", "frost_ray", "trip", "ward"],
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
-	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "score": 2, "hp": 14,
+	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "scores": {"WIS": 2, "STR": 2, "CON": 2},
 		"weapon": "mace", "hot": ["move", "attack", "sacred_flame", "bless", "bonebreaker", "block"],
 		"cards": ["move", "attack", "defend", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
-	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "score": 3, "hp": 8,
+	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
 		"weapon": "dagger", "hot": ["move", "attack", "backstab", "throw", "sneak_attack", "poison_blade"],
 		"cards": ["move", "attack", "defend", "use_item", "backstab", "throw", "sneak_attack", "poison_blade"]},
 ]
+## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
+## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.
+const HERO_DEFAULT := {"race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2}}
 ## DOCS: design/01 -> Companion proficiencies. PLACEHOLDER: the hero has none yet (they come from the background).
 const PROFICIENCIES := {"Fluffy": ["Persuade", "Lore"], "Chelmsford": ["Persuade", "Athletics"], "Mel": ["Deceive", "Thievery"]}
 ## Written chime-ins (design/characters/<name>.md): the stage note, then the line. Only what the prototype's checks use.
@@ -211,11 +217,39 @@ static func chime_line(who: String, proficiency: String) -> String:
 
 const ENEMY := {"name": "[Enemy %s]", "mini": "standin_enemy", "ability": "STR", "score": 2, "hp": 6}
 const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's save flips 2 coins, 1 heads saves
+const SAVE_HEADS := 1                    # PLACEHOLDER (Combat v14): any save, a foe's or an ally's (their own score), needs 1 heads
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
 const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
 const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
 const POISON_BONUS := 1                  # PLACEHOLDER: Poison Blade's extra damage per hit this turn
 const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn
+## Races in play (rules: design/03 -> Races and Racial spells). Amounts are PLACEHOLDER, all from design/06 -> First playable ->
+## Races (Ethan, Nov 5, 2026), until the balance pass.
+const LUCKY_CHARGES := 3                 # DOCS (design/03): 3 reflips, back on each rest
+const METAL_REDUCTION := 1               # PLACEHOLDER (06): metal golem damage reduction, +1 every METAL_EVERY levels
+const METAL_EVERY := 5
+const REGROWTH := 1                      # PLACEHOLDER (06): wood golem, 1 HP at the start of each turn, 2 from level REGROWTH_BIGGER_AT
+const REGROWTH_BIGGER := 2
+const REGROWTH_BIGGER_AT := 10
+const SHIELD_DWARF_HP := 2               # PLACEHOLDER (06): shield dwarf +2 max HP at level 1, then +1 per level
+const SHIELD_DWARF_HP_LEVEL := 1
+const WOOD_ELF_MOVE := 1                 # DOCS (design/03): +1 hex per Move in combat
+const WOOD_ELF_WALK := 1.25              # PLACEHOLDER (06): any wood elf in the party: the party walks 25% faster ...
+const WOOD_ELF_CLOCK := 0.75             # ... and each hex costs 25% less clock
+const BREATH_DAMAGE := 3                 # PLACEHOLDER (06): Breath Weapon 3 damage (red 4), +1 every BREATH_EVERY levels
+const BREATH_RED := 1
+const BREATH_EVERY := 5
+const BREATH_LINE := 3                   # DOCS (design/03): a line of 3 hexes, blue 1 farther
+const BREATH_BLUE := 1
+const DOT_DAMAGE := 1                    # PLACEHOLDER (06): green breath's poison and Claw Swipe's bleed, 1 damage ...
+const DOT_TURNS := 2                     # ... at the start of the target's next 2 turns
+const RACIAL_DAMAGE := 3                 # PLACEHOLDER (06): Stone Throw and Scorch
+const CLAW_DAMAGE := 2                   # PLACEHOLDER (06): Claw Swipe
+const RACIAL_RANGE := 4                  # PLACEHOLDER (06): Stone Throw, Scorch, Faerie Fire, Lull and Ember Mend
+const EMBER_MEND := 2                    # PLACEHOLDER (06): Ember Mend heals 2, or 4 below half HP
+const EMBER_MEND_LOW := 4
+const GLIMMERSTEP_RANGE := 3             # DOCS (design/03)
+const COVER_COINS := 1                   # PLACEHOLDER (design/03 -> Combat -> Cover: the 1 coin is a placeholder)
 const ENEMIES_BASE := 2                  # PLACEHOLDER: foes per fight ...
 const ENEMIES_PER_DISTANCE := 3          # ... plus one per this many hexes from the start (enemies scale with distance: DOCS)
 const ENEMIES_MAX := 4
