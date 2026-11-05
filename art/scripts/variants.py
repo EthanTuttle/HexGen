@@ -5153,6 +5153,7 @@ PROP_PIECES.update({k: badlands_prop(k) for k in ("badlands_mesa_big", "badlands
 import swamp_lands as sl  # noqa: E402
 import fey_lands as fl  # noqa: E402
 import buried_lands as bl  # noqa: E402
+import start_tiles as st  # noqa: E402
 
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -5203,9 +5204,11 @@ VARIANTS = {
 VARIANTS.update(sl.VARIANTS)
 VARIANTS.update(fl.VARIANTS)
 VARIANTS.update(bl.VARIANTS)
+VARIANTS.update(st.VARIANTS)
 hk.PALETTE.update(fl.PALETTE)
 hk.PALETTE.update(bl.PALETTE)
-hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN
+hk.PALETTE.update(st.PALETTE)
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG
 LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)

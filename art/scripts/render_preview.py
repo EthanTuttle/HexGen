@@ -307,7 +307,9 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
     raised = set(t for tiles_, _ in raised_regions for t in tiles_)
     terrains = {k: vr.terrain_of(n) for k, n in MAP.items()}
     all_ledges = [c for tiles_, _ in raised_regions for c in cliffs.climbs(set(tiles_), terrains, raised)]
-    gates = fg.fence_gates(terrains, raised, all_ledges)
+    starts = {t for t, n in MAP.items() if n in vr.st.STARTS}
+    near_start = vr.st.near_start(MAP)
+    gates = fg.fence_gates(terrains, raised, all_ledges, starts)
     ledge_tops = cliffs.ledge_tops(all_ledges)
     streets = vs.streets(terrains, [(t, i) for t in terrains for i in lf.trail_edges(t, toward)])
     for (q, r), name in MAP.items():
@@ -325,15 +327,15 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         if terrain == "river":
             # Water is drawn per tile from its own water neighbours, the way the engines will.
             near = [MAP.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
-            mask = [vr.terrain_of(n) == "river" if n else False for n in near]
+            mask = list(vr.st.MOUTH_WATER) if name == vr.st.MONTO else [vr.terrain_of(n) == "river" if n else False for n in near]  # Monto's water is fixed
             p = hk.Piece(f"water_{q}_{r}")
-            seed = f"{q},{r}"
+            seed = vr.st.WATER_SEED if name == vr.st.MONTO else f"{q},{r}"
             port = wt.port_turn(mask, seed) if name == "riverport" else None
             band = dist.get((q, r), 0) if dist.get((q, r), 0) in (1, 2) else 0
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
             if kit == "rapids":
                 widths = wt.with_falls(widths, mask, q, r)
-            is_lm = name in vr.LANDMARK_CENTRES
+            is_lm = name in vr.LANDMARK_CENTRES or name in vr.st.STARTS
             wt.add_water(p, mask, seed, plates=not animated, boats=not animated, widths=widths, style=wt.FAMILY.get(kit), near=band, port=port, landmark=is_lm, ground=vr.VARIANTS[kit][2] if kit in vr.VARIANTS else "plains")
             p.finish(col, at)
             water_tiles.append((q, r, at, mask))
@@ -346,6 +348,11 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             elif name == "trollbridge":
                 mid, ang, _ = wt.bridge_spot(mask, seed, widths, wt.TROLL_HALF)
                 place(templates, "trollbridge_centre", col, at + Vector((mid[0], mid[1], 0)), ang)
+            if name == vr.st.MONTO:
+                place(templates, f"{name}_centre", col, at)
+                for k in vr.st.MOUTHS:  # a mouth with no water beyond ends in stone
+                    if vr.terrain_of(near[k]) != "river" if near[k] else True:
+                        place(templates, f"{name}_mouth", col, at, math.radians(60 * k))
             if port is not None:  # the port's piece, its boats, and a water gate on each back edge with water beyond it
                 spin = math.radians(60 * port)
                 place(templates, f"{name}_centre", col, at, spin)
@@ -373,6 +380,8 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
         if centre in ("centre_mid", "centre_near") and f"{name}_centre_mid" in templates:
             spin = math.radians(60 * lf.toward_edge((q, r), toward))  # density bands lean toward the landmark
         place(templates, f"{name}_{centre}", col, at, spin)
+        if f"{name}_plinth" in templates:  # Dunfaire Tower's plinth is its own piece, ready to swap for a hex column
+            place(templates, f"{name}_plinth", col, at)
         if centre == "centre_mill":  # the small mill goes where the turned yard is, but doesn't turn itself
             place(templates, "windmill_small", col, at + Matrix.Rotation(spin, 3, "Z") @ vr.SMALL_MILL_SPOT)
         for part, (_, hub) in vr.LANDMARK_PARTS.items():  # e.g. the Great Windmill's sails, turned with it
@@ -409,16 +418,17 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
             def ranges(t, i):  # do tile t and its neighbour on edge i share a mountain?
                 n = (t[0] + hk.NEIGHBOURS[i][0], t[1] + hk.NEIGHBOURS[i][1])
                 return (linked(MAP[t], MAP.get(n)) and i not in lf.trail_edges(t, toward)
-                        and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS)
+                        and MAP[t] not in vr.LANDMARKS and MAP.get(n) not in vr.LANDMARKS
+                        and t not in starts and n not in starts and t not in near_start and n not in near_start)
             ranged = [ranges((q, r), i) for i in range(6)]
 
             def corner_shared(i):  # all three tiles round corner i must share: every copy of the third must be drawn
                 n = (q + hk.NEIGHBOURS[i][0], r + hk.NEIGHBOURS[i][1])
                 return ranged[i] and ranged[(i + 1) % 6] and ranges(n, (i + 2) % 6)
             triple = [corner_shared(i) for i in range(6)]  # corner i: between edges i and i + 1
-            if name in vr.LANDMARKS:
+            if name in vr.LANDMARKS or name in vr.st.STARTS:
                 ranged = triple = [False] * 6
-            elif not any(ranged) and dist.get((q, r), 3) > 2:
+            elif not any(ranged) and dist.get((q, r), 3) > 2 and name not in vr.st.STARTS and (q, r) not in near_start:
                 place(templates, f"{name}_peak", col, at)
             parts = []
             for i in range(6):
@@ -891,7 +901,7 @@ if __name__ == "__main__":
             if vr.terrain_of(name) != "river":
                 continue
             near = [tiles_map.get((q + dq, r + dr)) for dq, dr in hk.NEIGHBOURS]
-            mask = [vr.terrain_of(n) == "river" if n else False for n in near]
+            mask = list(vr.st.MOUTH_WATER) if name == vr.st.MONTO else [vr.terrain_of(n) == "river" if n else False for n in near]  # Monto's water is fixed
             kit = vr.wedges_of(name)
             widths = wt.edge_widths(kit, [n and vr.wedges_of(n) for n in near])
             at, seed = hk.tile_position(q, r), f"{q},{r}"

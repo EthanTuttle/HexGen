@@ -14,6 +14,7 @@ edges:
 4. A fenced tile in front of a ledge's foot (cliffs.climbs) always gets a gate on the edge facing the foot, on
    top of the above, so a group's way up never stands in for its way out over land.
 Run it again when a raised region rises or changes: a gate that now faces a cliff goes back to fence.
+5. A starting tile can always be walked across every side (design/06 -> First playable): every fence edge on it shows a gate, whatever's beyond, and so does any fenced neighbour's edge facing it. Pass its tiles as starts.
 The ranking only depends on the tile and its fence edges, so gates stay put as the map grows. They only
 change where the group itself changes (a farm or village placed next to it removes that fence) or where the
 group's fallback gate gives way to its first ranked one. The engine may keep a fallback gate once shown.
@@ -27,9 +28,9 @@ FENCED = {"farmland", "village"}  # terrains inside the fence (their variants co
 UNWALKABLE = {"river"}  # water: rivers and lakes (a lake is a clump of river tiles; the delta is a river variant)
 
 
-def fence_gates(terrains, raised=(), climbs=()):
+def fence_gates(terrains, raised=(), climbs=(), starts=()):
     """terrains: (q, r) -> terrain (variants and landmarks already turned into their terrain). raised: all raised
-    tiles. climbs: every raised region's cliffs.climbs(). Returns (q, r) -> the edges of that fenced tile that show
+    tiles. climbs: every raised region's cliffs.climbs(). starts: the starting tiles. Returns (q, r) -> the edges of that fenced tile that show
     a gate."""
     def walkable(q, r, i):
         n = (q + NEIGHBOURS[i][0], r + NEIGHBOURS[i][1])
@@ -70,4 +71,9 @@ def fence_gates(terrains, raised=(), climbs=()):
         front = (q + dq, r + dr)
         if front in fence and (i + 2) % 6 not in gates[front]:
             gates[front].append((i + 2) % 6)
+    for t in fence:  # a starting tile's sides are never shut
+        for k in fence[t]:
+            n = (t[0] + NEIGHBOURS[k][0], t[1] + NEIGHBOURS[k][1])
+            if (t in starts or n in starts) and k not in gates[t]:
+                gates[t] = gates[t] + [k]
     return gates
