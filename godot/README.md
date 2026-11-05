@@ -103,7 +103,7 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 - **Width.** Laid out for 734 pt inside the phone's safe area, where the picked banner is about 410 pt, not 460. Blurbs run to two lines. A race with sub-types puts its crest beside the name and blurb (`front_race_dragonborn.png`), and the background's tile is 80 pt, not 108. At full width it's the mockup's layout.
 - **Text under 11 pt** in the mockup (pips, chips, card names, gear labels) is 11, the phones' floor.
 - **"Pick 1 elven spell"** sits right of the cards, as on the left it hits Back at this width.
-- **Cut under Screen text:** the name field's "Type a name" (no hints for standard input; the plate says Name).
+- **Cut under Screen text:** the name field's "Type a name" (no hints for standard input; the plate says Name); gear's "Nothing worn" and "Nothing in the offhand", beside No armour and Empty hand; skills' "Both picks match: rank 2", beside the Rank 2 tags.
 - **Back in the details panes** is sand, not cream: on the cream pane the mockup's button has no visible edge.
 - **God and Spells** aren't built: only the Fighter can reach the next step.
 

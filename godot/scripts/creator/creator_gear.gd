@@ -251,7 +251,7 @@ func _details() -> Control:
 			v.add_child(chips)
 		if slot != "arm":
 			for card: Array in D.WC.get(det.id, []):
-				v.add_child(_action_card(card, _icon_of(det), inner))
+				v.add_child(_action_card(card, inner))
 		if not mod.is_empty():
 			v.add_child(CUI.wrap(UI.label("%s: %s" % [mod[0], mod[1]], "n700", 11, CUI.SOFT_INK, 0, 1.25), inner))
 		var note := _note_of(det)
@@ -281,17 +281,17 @@ func _chip(t: String, bg: Color, ink: Color) -> Control:
 
 func _note_of(o: Dictionary) -> String:
 	if slot == "arm":
-		return "Nothing worn" if o.id == "none" else "[Item stats]"
+		return "" if o.id == "none" else "[Item stats]"
 	if slot == "off":
 		if o.id == "none":
 			var mw := c.weapon(c.main)
-			return "The %s is held in both hands for more damage" % str(mw.n).to_lower() if str(mw.h) == "v" else "Nothing in the offhand"
+			return "The %s is held in both hands for more damage" % str(mw.n).to_lower() if str(mw.h) == "v" else ""
 		if str(o.get("h", 0)) == "1":
 			return "Free offhand attack once per turn"
 	return ""
 
 
-func _action_card(card: Array, _icon: String, w: float) -> Control:
+func _action_card(card: Array, w: float) -> Control:
 	var p := PanelContainer.new()
 	var sb := CUI.tile_box(Color("#D9CDB6"), 1.5, 8, Vector4(30, 4, 6, 4))
 	p.add_theme_stylebox_override("panel", sb)

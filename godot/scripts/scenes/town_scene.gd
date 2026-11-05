@@ -199,11 +199,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_next_banter()
 
 
-func next_line() -> void:
-	if _phase == "revel":
-		_next_banter()
-
-
 func _next_banter() -> void:
 	_step += 1
 	if _step < _banter.size():

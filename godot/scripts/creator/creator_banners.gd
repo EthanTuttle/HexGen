@@ -14,11 +14,8 @@ var c: Creator
 var _items: Array = []
 var _banners: Array[Banner] = []
 var _row := Control.new()
-var _hang: Control
-var _pop: Control
 var _pop_key := ""
 var _step := ""
-var _picked_now := ""
 
 
 func _init(creator: Creator) -> void:
@@ -72,9 +69,7 @@ func refresh() -> void:
 			_row.add_child(b)
 			_banners.append(b)
 	_place_banners(not fresh)
-	_hang = null
-	_pop = null
-	_build_hang()
+	_buildhang()
 	_build_pop()
 
 
@@ -222,7 +217,7 @@ func _bg_items() -> Array:
 
 # --- The picked banner's hanging cards and their pop-up ---------------------------------
 
-func _build_hang() -> void:
+func _buildhang() -> void:
 	var picked := _picked_id()
 	if picked == "":
 		return
@@ -235,29 +230,29 @@ func _build_hang() -> void:
 	if kit.is_empty() and label == "":
 		return
 	var cx := _picked_centre()
-	_hang = CUI.vbox(0)
-	_hang.alignment = BoxContainer.ALIGNMENT_END
+	var hang := CUI.vbox(0)
+	hang.alignment = BoxContainer.ALIGNMENT_END
 	var string := ColorRect.new()
 	string.color = Color("#6E5A44")
 	string.custom_minimum_size = Vector2(2, 12)
 	string.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	string.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hang.add_child(string)
+	hang.add_child(string)
 	var row := CUI.hbox(6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	for i in kit.size():
 		var k: Dictionary = kit[i]
 		var card: Control = _card(k, i) if k.card else _slot(k)
 		row.add_child(card)
-	_hang.add_child(row)
-	add_child(_hang)
-	_hang.reset_size()
-	var w := _hang.get_combined_minimum_size().x
+	hang.add_child(row)
+	add_child(hang)
+	hang.reset_size()
+	var w := hang.get_combined_minimum_size().x
 	# The mockup hangs them from the banner's tip, 50 pt below the row, between Back and Next.
-	_hang.position = Vector2(cx - w * 0.5, size.y - 82 - 4)
-	_hang.modulate.a = 0.0
-	var tw := _hang.create_tween()
-	tw.tween_property(_hang, "modulate:a", 1.0, 0.25).set_delay(0.2)
+	hang.position = Vector2(cx - w * 0.5, size.y - 82 - 4)
+	hang.modulate.a = 0.0
+	var tw := hang.create_tween()
+	tw.tween_property(hang, "modulate:a", 1.0, 0.25).set_delay(0.2)
 	if label != "":
 		var chip := UI.panel(UI.DARK, 10, Color(0, 0, 0, 0), 0, Vector4(9, 0, 9, 0))
 		chip.custom_minimum_size.y = 20
@@ -380,7 +375,6 @@ func _build_pop() -> void:
 	box.reset_size()
 	var x := clampf(_picked_centre(), 124.0, size.x - 124.0) - 118.0
 	box.position = Vector2(x, size.y - 80 - box.size.y)
-	_pop = box
 
 
 func _pop_chip(t: String, bg: Color, ink: Color) -> Control:
@@ -495,7 +489,7 @@ class Banner extends Control:
 		var side: bool = w < 450.0 and not it.get("subs", []).is_empty()   # the phone's width, with sub-types to fit too
 		var v := CUI.vbox(5 if side else 6)
 		var head: Control
-		var words := CUI.vbox(3)
+		var words: VBoxContainer = CUI.vbox(3) if side else null
 		var name_l := UI.label(it.n, "lilita", 22, ink, 0, 1.0)
 		var bl := UI.label(it.bl, "n800", 12, Color(ink, 0.9), 0, 1.3)
 		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

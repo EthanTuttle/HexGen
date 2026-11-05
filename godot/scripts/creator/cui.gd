@@ -5,7 +5,6 @@ extends RefCounted
 
 const SEL_RIM := Color("#B5532F")
 const FOCUS_RIM := Color("#4A86C8")
-const GLOW := Color("#FFE9A8")
 const SOFT_INK := Color("#43524D")
 const CAP_INK := Color("#5A6862")
 const PANEL_LINE := Color("#E2D5BC")

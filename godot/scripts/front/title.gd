@@ -52,10 +52,7 @@ func _ready() -> void:
 	gear.pressed.connect(_not_yet)
 	UI.at_right(gear, 844 - 22 - 46, 18)
 	add_child(gear)
-	_place_left()
-
-
-func _process(_delta: float) -> void:
+	resized.connect(_place_left)   # the safe area moved
 	_place_left()
 
 

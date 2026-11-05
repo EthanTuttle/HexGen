@@ -9,7 +9,6 @@ const VIEW_YAW: Array[float] = [0.0, PI * 0.5, PI, -PI * 0.5]   # Front, Right s
 var _vp := SubViewport.new()
 var _body := MeshInstance3D.new()
 var _key := ""
-var _turn := 0
 var _anim_left := 0.0
 
 
@@ -76,13 +75,11 @@ func show_hero(d: Dictionary) -> float:
 	var t0 := Time.get_ticks_usec()
 	_body.mesh = HeroMini.build(d)
 	var ms := (Time.get_ticks_usec() - t0) / 1000.0
-	print("HERO rebuild %.1f ms, %d triangles" % [ms, _body.mesh.surface_get_array_index_len(0) / 3])
 	_redraw_for(0.1)
 	return ms
 
 
 func turn_to(view: int) -> void:
-	_turn = view
 	var tw := create_tween()
 	var from := _body.rotation.y
 	var to: float = from + wrapf(VIEW_YAW[posmod(view, 4)] - from, -PI, PI)
