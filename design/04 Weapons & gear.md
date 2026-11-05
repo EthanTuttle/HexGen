@@ -60,14 +60,15 @@ Each class chooses from the most basic weapons and armor in its own categories. 
 - Design intent: weapons carry their own action cards. This is what makes weapon combat as interesting and varied as spell combat. To keep martials as interesting as casters, the loot pool needs lots of weapons with interesting effects or special cards; this is the main way martials grow their options, where casters grow through spell picks. Martials get 1–2 cards per weapon, both sets when dual-wielding, and two swappable weapon sets.
 - Weapon action cards come by weapon category (shared by all weapons of that category); the number varies by category. Rarity doesn't change category cards: higher rarity adds stats, and special weapons add extra cards of their own.
 - Each category sets the ability its attacks use: STR for heavy weapons, DEX for finesse and ranged weapons, and INT or WIS for wands and staves.
-- **Hands:** two-handed weapons (greatsword, greataxe, warhammer, halberd, glaive, shortbow, longbow, crossbow) leave no hand free for a shield or an offhand weapon. Versatile weapons (longsword, battleaxe, spear, staff) can be used one- or two-handed; two-handed only when nothing is in the other hand, and deal more damage when held two-handed. One-handed weapons: shortsword, rapier, scimitar, dagger, mace, wand.
+- **Hands:** two-handed weapons (greatsword, greataxe, warhammer, halberd, glaive, shortbow, longbow, crossbow) leave no hand free for a shield or an offhand weapon. Versatile weapons (longsword, battleaxe, spear, staff) can be used one- or two-handed; two-handed only when nothing is in the other hand, and deal more damage when held two-handed (+2 damage; placeholder, Ethan, Nov 5, 2026). One-handed weapons: shortsword, rapier, scimitar, dagger, mace, wand.
 - **Weapon sets:** a weapon set is a main hand plus an offhand (a weapon or a shield), or a single two-handed weapon. **Swapping sets mid-fight** (decided Oct 25, 2026) costs 0 AP, once per turn; the hotbar swaps with it (see [Presentation](07 Presentation.md) → Action cards screen).
 - **Weapon modifiers** are always on and aren't cards, so they cost no AP (Long Range, Point Blank and Backstab moved from cards to modifiers, Oct 25, 2026):
   - **Reach** (spear, halberd, glaive): all attacks, including the basic attack, can hit 2 hexes away.
   - **Long Range** (longbow): shoots farther than normal.
+  - **Ranges** (placeholders, Ethan, Nov 5, 2026): shortbow 6 hexes, crossbow 6, longbow 8 (Long Range is the +2), thrown daggers and spears 4.
   - **Point Blank** (crossbow): no ranged penalty when an enemy is adjacent (see Ranged).
   - **Backstab** (dagger): the first dagger hit from behind each turn deals bonus damage. It stacks with the Rogue's Sneak Attack. Placeholder (Ethan, Nov 5, 2026): +2 damage; a foe faces whoever it last moved toward or attacked, and the hex opposite is behind it.
-- **Ranged:** ranged attacks have a higher coin target when an enemy is adjacent; the crossbow's Point Blank modifier removes that penalty.
+- **Ranged:** ranged attacks have a higher coin target when an enemy is adjacent; the crossbow's Point Blank modifier removes that penalty. Placeholder (Ethan, Nov 5, 2026): +1 heads needed, for every ranged attack: bows, crossbows, thrown weapons, Stone Throw and attack spells.
 - **Wand basic attack** (decided Oct 25, 2026): a wand's basic attack is Magic Bolt, a basic ranged spell (1 AP, repeatable, like any basic attack). Wands have no category cards.
 - **Thrown weapons** (any weapon that can be thrown, e.g. daggers, spears and battleaxes) return to the thrower's hand automatically.
 - **Dual-wielding:** any class can dual-wield one-handed weapons. Once per turn, after a main-hand attack, the offhand weapon makes a free attack at full strength. A dual-wielder gets both weapons' category cards.
@@ -75,7 +76,7 @@ Each class chooses from the most basic weapons and armor in its own categories. 
 
 ## Weapon category cards
 
-AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Modifiers (Reach, Long Range, Point Blank, Backstab) are in Weapon rules.
+AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Placeholder effects (Ethan, Nov 5, 2026): Quick Slash costs 0 AP right after a shortsword hit (once a turn, -1 damage), otherwise 1 AP. Dancing Step moves 2 hexes after any scimitar attack, hit or miss. Sweeping Arc hits the 3 hexes in front at reach 1 or 2, one flip each. Double Shot is two flips at normal damage. Aimed Shot deals 4× damage and ignores cover and armour, but still flips to hit. Pinning Bolt deals normal damage and roots until the foe's next turn ends. Guard Up: 2 less damage taken, and the first foe to hit you takes a normal hit back. Haymaker: double damage, and on a failed save the foe loses 1 AP on its next turn (what stun means for now). Step and Strike: move 2 hexes, then a normal attack. Modifiers (Reach, Long Range, Point Blank, Backstab) are in Weapon rules.
 
 | Category | Action cards |
 | --- | --- |
