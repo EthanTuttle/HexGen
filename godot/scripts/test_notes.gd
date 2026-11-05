@@ -25,6 +25,7 @@ var _warn: Label
 var _shot: Image
 var _state := {}
 var _was_paused := false
+var _full := false
 
 
 ## Called once at launch; the layer lives on the tree's root, so it stays through every change of scene.
@@ -121,12 +122,13 @@ func _open() -> void:
 		_warn.text = "Full: collect the notes first"
 	elif _bytes() >= MAX_BYTES:
 		_warn.text = "Nearly full: no screenshot"
+	_full = count >= MAX_NOTES
 	_refresh_save()
 	_edit.grab_focus()
 
 
 func _refresh_save() -> void:
-	_save.disabled = _edit.text.strip_edges() == "" or _note_files().size() >= MAX_NOTES
+	_save.disabled = _edit.text.strip_edges() == "" or _full
 
 
 func _close() -> void:
