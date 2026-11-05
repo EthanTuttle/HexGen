@@ -115,7 +115,7 @@ Decided Oct 24, 2026. Each is variant → its Legendary location.
 | Great city | Safe (no wild spawns); extra shops and quest givers; the quest board refreshes faster |
 | Fairgrounds | Shows and minigames across its tiles; fewer hostile spawns; festive events |
 | Enchanted lake | Water-spirit events; resting by the lake gives a blessing for the next day (lost if the party beats the Lady of the Lake in a fight: [World & story](01 World & story.md) → The Lady of the Lake) |
-| Buried city | Sandstorms hide and reveal tiles: storms pass on the clock and change tiles' sand levels (Nov 4, 2026; timing open). Discovery encounters and pits, including the ancient library's, can only be reached at low sand, so storms can bury the library for a time; the party rides up with the sand and is never buried. Trap and relic events; construct and undead foes |
+| Buried city | Sandstorms hide and reveal tiles: storms pass on the clock and change tiles' sand levels (Nov 4, 2026; timing open). Discovery encounters and pits, including the ancient library's, can only be reached at low sand, so storms can bury the library for a time; the party rides up with the sand and is never buried. A level can jump straight between any two under the storm; off trails the party walks in along one spoke and out along another, as in Feywild crossing. Trap and relic events; construct and undead foes |
 | Breadbasket kingdom | Cheap supplies; resting there gives a buff; bandit raids more often |
 | Feywild crossing | Fey encounters with tricks or boons; the day clock runs oddly (faster or slower) inside |
 | Dungeon of the Mad King | Royal decrees: each day the Mad King issues a random decree that bends the rules in the region (e.g. no healing, double gold) |
