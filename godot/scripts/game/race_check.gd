@@ -136,6 +136,10 @@ func _run() -> void:
 	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
 	var level: int = game.level
 	print("RACE hero: %s %s %s, scores %s" % [hero.member.race, hero.sub, hero.member.get("spell", ""), hero.member.scores])
+	if "--panelfit" in OS.get_cmdline_user_args():
+		await _panel_fit()
+		get_tree().quit()
+		return
 
 	# Scores drive play (06): the hero's from the creator (or HERO_DEFAULT), companions' from 03.
 	_check(f.attack_score(hero, Cards.get_card("attack")) == Races.score(hero.member, "STR"), "the hero's attack flips their own STR")
@@ -328,7 +332,9 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		"Human":
 			_check(Races.cards(m).is_empty(), "Human: Versatile changes nothing for a Fighter, no card")
 	_check(Races.cards(m).all(func(id): return id in hero.cards), "the hero's racial cards are in All actions: %s" % [Races.cards(m)])
-	_check(Rules.PARTY[0].hot == hero.hot, "the default hotbar is unchanged")
+	for u in f.allies():
+		var want: Array = ["move", "attack"] + Races.cards(u.member)
+		_check(u.hot.size() == mini(Rules.HOTBAR_SLOTS, u.cards.size()) and u.hot.slice(0, want.size()) == want, "%s's starting bar: %s" % [u.name, u.hot])
 
 
 ## Cover (design/03 -> Combat -> Cover) on a map with brush and blocked cells.
@@ -359,6 +365,71 @@ func _cover_checks() -> void:
 				_check(t == "full" and not f.in_reach(shooter, foe, Cards.get_card("firebolt")), "full cover: can't aim through")
 			found[kind] = true
 	print("RACE cover cases on %s: %s" % [f.map_id, found.keys()])
+
+
+## The details panel at its short height (design/07 -> Combat screen: everything it can show must fit): every card of every
+## member in its fullest states, with the longest foe name. Prints FIT lines (height needed of the panel's, widest line of
+## its 146), worst first; with --shots, the worst ones to screens/race/fit_*.png.
+func _panel_fit() -> void:
+	var hud: CombatHud = f.hud
+	print("FIT layout: screen %s, details %s, bar %s, cards %s, all actions %s" % [hud.get_viewport_rect().size, hud._details_panel.get_global_rect(), hud._hotbar_row.get_global_rect(), hud._hotbar.get_child_count(), hud._hotbar_row.get_child(1).get_global_rect()])
+	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+	foe.name = "[Bandit archer A]"   # the longest foe name in Foes.MIX
+	var rows := []
+	for u in f.allies():
+		for id: String in u.cards:
+			for state in ["picked", "target", "used_note", "result"]:
+				_turn(u)
+				f.pick_card(id)
+				var k := f.card()
+				u.blessed = state != "picked"
+				foe.glow = f.phase_no if state != "picked" else -1
+				if state != "picked":
+					match k.kind:
+						"attack", "save":
+							f.target = foe
+						"ally":
+							f.ally_target = _who("Chelmsford") if u.name != "Chelmsford" else _who("Fluffy")
+						"breath":
+							f.breath_dir = 0
+						"cell":
+							var spots := f.blink_cells(u)
+							f.cell_target = spots[0] if not spots.is_empty() else null
+						"self":
+							f.self_done = id if state == "result" else ""
+				if state in ["used_note", "result"]:   # a played card shows its result with the used note under the button
+					u.used[id] = true
+					u.used_fight[id] = true
+				if state == "result":
+					var n: int = f.attack_coins(u, foe, k) if k.kind == "attack" else (f.save_coins(foe, u, k.get("save", "DEX")) if k.kind == "save" else 0)
+					var miss: Array[bool] = []
+					for i in n:
+						miss.append(false)
+					match k.kind:
+						"attack":
+							f.result = {coins = miss, title = "Hit!", good = true, sub = "Damage: 12 [placeholder]"}
+						"save":
+							f.result = {coins = miss, title = "Saved: half damage", good = false, sub = "Damage: 12 [placeholder]"}
+						"ally":
+							f.result = {coins = [], title = "Blessed", good = true, sub = "%s flips an extra coin on their next check." % "Chelmsford"}
+				hud.refresh()
+				await get_tree().process_frame
+				await get_tree().process_frame
+				var box: Control = hud._details_panel.get_child(0)
+				var need: float = box.get_combined_minimum_size().y + 24.0
+				var wide := 0.0
+				for c in hud._details.get_children() + hud._button_box.get_children():
+					wide = maxf(wide, c.get_combined_minimum_size().x)
+				rows.append([need, wide, u.name, id, state])
+				if "--shots" in OS.get_cmdline_user_args() and (need > CombatHud.DETAILS_H or wide > 146.5):
+					await _shot("fit_%s_%s_%s" % [u.name.replace("[", "").replace("]", "").replace(" ", "_"), id, state])
+				u.blessed = false
+				f.result = {}
+	rows.sort_custom(func(a, b): return a[0] > b[0])
+	var over := rows.filter(func(r): return r[0] > CombatHud.DETAILS_H or r[1] > 146.5)
+	for r in rows.slice(0, 12) + over:
+		print("FIT %.0f of %.0f, widest %.0f of 146: %s %s %s" % [r[0], CombatHud.DETAILS_H, r[1], r[2], r[3], r[4]])
+	print("FIT %d states, %d over" % [rows.size(), over.size()])
 
 
 func _done() -> void:

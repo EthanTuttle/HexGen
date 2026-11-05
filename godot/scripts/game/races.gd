@@ -96,11 +96,26 @@ static func make_hero(m: Dictionary, run: RunSetup) -> void:
 	m.proficiencies = run.proficiencies.duplicate()
 
 
-## Racial cards go to the end of All actions, and the hero's HP and Lucky charges are set once on joining.
+## The starting hotbar (DOCS: design/07 -> Combat screen -> Starting hotbar, Ethan, Nov 5, 2026): Move, Attack, the racial
+## card, class cards and spells, weapon arts, then Defend and Use item if slots are left. Passives take no slot; the rest
+## stay in All actions. Racial spells count with the racial card.
+static func starting_bar(m: Dictionary) -> Array:
+	var order := ["move", "attack"]
+	order.append_array(cards(m))
+	for src in ["klass", "weapon"]:
+		for id: String in m.cards:
+			if Cards.ALL[id].src == src and not id in order:
+				order.append(id)
+	order.append_array(["defend", "use_item"])
+	return order.filter(func(id): return id in m.cards).slice(0, Rules.HOTBAR_SLOTS)
+
+
+## Racial cards join the card list, the starting hotbar is set, and the hero's HP and Lucky charges are set once on joining.
 static func join(m: Dictionary, level: int) -> void:
 	for id in cards(m):
 		if not id in m.cards:
 			m.cards.append(id)
+	m.hot = starting_bar(m)
 	m.hp += extra_hp(m, level)
 	m.max_hp = m.hp
 	if lucky(m):

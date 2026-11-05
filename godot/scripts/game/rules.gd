@@ -188,20 +188,21 @@ const XP_MORE_EACH := 10
 ## The hero's come from the creator; with no creator behind the run, HERO_DEFAULT. PLACEHOLDER: HP.
 const PARTY := [
 	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
-		"weapon": "longsword", "hot": ["move", "attack", "parry", "shield_bash", "second_wind", "action_surge"],
+		"weapon": "longsword",
 		"cards": ["move", "attack", "defend", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
 	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "scores": {"INT": 3, "DEX": 2},
-		"weapon": "staff", "hot": ["move", "attack", "firebolt", "frost_ray", "trip", "ward"],
+		"weapon": "staff",
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
 	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "scores": {"WIS": 2, "STR": 2, "CON": 2},
-		"weapon": "mace", "hot": ["move", "attack", "sacred_flame", "bless", "bonebreaker", "block"],
+		"weapon": "mace",
 		"cards": ["move", "attack", "defend", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
 	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
-		"weapon": "dagger", "hot": ["move", "attack", "backstab", "throw", "sneak_attack", "poison_blade"],
+		"weapon": "dagger",
 		"cards": ["move", "attack", "defend", "use_item", "backstab", "throw", "sneak_attack", "poison_blade"]},
 ]
 ## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
 ## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.
+const HOTBAR_SLOTS := 7                  # DOCS (design/07 -> Combat screen, Nov 5, 2026); the starting bar: Races.starting_bar
 const HERO_DEFAULT := {"race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2}}
 ## DOCS: design/01 -> Companion proficiencies. PLACEHOLDER: the hero has none yet (they come from the background).
 const PROFICIENCIES := {"Fluffy": ["Persuade", "Lore"], "Chelmsford": ["Persuade", "Athletics"], "Mel": ["Deceive", "Thievery"]}

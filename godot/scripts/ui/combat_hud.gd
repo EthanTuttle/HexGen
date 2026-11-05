@@ -1,7 +1,7 @@
 class_name CombatHud
 extends Control
 ## The combat screen's HUD, built from Combat v14 (mockups/combat/Combat-v14-AllyTargets.dc.html) in its
-## 844 x 390 layout: the party tray with phase, End and AP pips; camera buttons; the details panel with
+## 844 x 390 layout: the party tray with phase, End and AP pips; camera buttons; the short details panel with
 ## the card, target, coins and the action button; the hotbar and All actions; the End confirmation;
 ## HP bars standing over the minis.
 
@@ -176,18 +176,18 @@ func _cam(which: String) -> void:
 				rig.ease_to(fight.global_position + fight.current.mini.position, rig.distance, rig.yaw_deg)
 
 
-# --- Details panel (left 656, top 12, 170 x 366) ------------------------------------
+# --- Details panel (left 656, top 12, 170 x 268: it ends above the hotbar, design/07 -> Combat screen) --------------
 
 func _build_details() -> void:
 	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(12, 12, 12, 12))
 	_details_panel = p
-	p.custom_minimum_size = Vector2(170, 366)
-	p.size = Vector2(170, 366)
+	p.custom_minimum_size = Vector2(170, DETAILS_H)
+	p.size = Vector2(170, DETAILS_H)
 	p.clip_contents = true
 	UI.at_right(p, 656, 12)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
-	_details.add_theme_constant_override("separation", 6)
+	_details.add_theme_constant_override("separation", 2)   # tight, so the fullest states fit the short panel (design/07)
 	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_details)
 	_button_box.add_theme_constant_override("separation", 4)
@@ -224,9 +224,10 @@ func _refresh_details() -> void:
 		_details.add_child(head)
 	else:
 		_details.add_child(_wrap(UI.label(head_text, "n900", 11, Color(src.ink), 1)))
-	var name := _wrap(UI.label(k.n, "lilita", 20))
+	# Sizes for the short panel (design/07: everything must fit; text stays at 11 pt or more): name 17, text 11.
+	var name := _wrap(UI.label(k.n, "lilita", 17))
 	_details.add_child(name)
-	_details.add_child(_wrap(UI.label(k.desc, "n700", 12, UI.INK_SOFT)))
+	_details.add_child(_wrap(UI.label(k.desc, "n700", 11, UI.INK_SOFT)))
 	if k.limit == "fight":
 		_details.add_child(_wrap(UI.label("Once per fight: stays used until the next fight.", "n800", 12, Color("#9A4A12"))))
 	var div := ColorRect.new()
@@ -240,20 +241,22 @@ func _refresh_details() -> void:
 	# Screen text (DOCS: UI -> Screen text): no Move rule sentence and no "pick a target" prompts; the lit
 	# hexes, gold rings and AP pips show them. A check shows only the coin line.
 	if targeting and not fight.result.is_empty():
-		var coins := HBoxContainer.new()
-		coins.add_theme_constant_override("separation", 6)
+		var coins := HFlowContainer.new()   # 22 pt coins that wrap, so 6 or more stay inside the panel
+		coins.add_theme_constant_override("h_separation", 3)
+		coins.add_theme_constant_override("v_separation", 3)
+		coins.custom_minimum_size.x = 146
 		for h in fight.result.coins:
-			coins.add_child(CoinView.make(h, 34))
+			coins.add_child(CoinView.make(h, 22))
 		if not fight.result.coins.is_empty():
 			_details.add_child(coins)
-		_details.add_child(_wrap(UI.label(fight.result.title, "lilita", 22, Color("#2E7A3E") if fight.result.good else UI.RED)))
+		_details.add_child(_wrap(UI.label(fight.result.title, "lilita", 17, Color("#2E7A3E") if fight.result.good else UI.RED)))
 		if fight.result.sub != "":
 			_details.add_child(_wrap(UI.label(fight.result.sub, "n700", 12, UI.INK_SOFT)))
 	elif targeting and has_target:
 		var t: Dictionary = fight.ally_target if k.kind == "ally" else fight.target
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		row.add_child(UI.label(t.name, "lilita", 16))
+		var row := VBoxContainer.new()   # the name over its HP bar, so long names wrap inside the panel
+		row.add_theme_constant_override("separation", 2)
+		row.add_child(_wrap(UI.label(t.name, "lilita", 14)))
 		var bar := Bar.make(40, 6, UI.DARK, UI.GREEN if t.ally else Color("#C4542A"), float(maxi(t.hp, 0)) / t.max_hp)
 		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -288,7 +291,7 @@ func _refresh_details() -> void:
 		var note := fight.cant_use(u, k)
 		if (k.kind in ["attack", "save"] and fight.target.is_empty()) or (k.kind == "ally" and fight.ally_target.is_empty()):
 			note = note if note != "" else "Pick a target again"
-		var b := TagButton.make(label, 146, 44, 15, true)
+		var b := TagButton.make(label, 146, 36, 15, true)   # drawn 36 high; taps still get the 44 pt finger area
 		b.disabled = note != "" or fight.busy
 		b.pressed.connect(fight.press_button)
 		_button_box.add_child(b)
@@ -298,16 +301,30 @@ func _refresh_details() -> void:
 			_button_box.add_child(nl)
 
 
-# --- Hotbar (left 100, top 286) ----------------------------------------------------
+# --- Hotbar (top 286): 7 slots and All actions, from the party tray to the details panel's right edge --------------
+
+const DETAILS_H := 268.0   # the panel's bottom stays 6 above the hotbar's lifted card
+const BAR_TOP := 286.0
+const BAR_LEFT := 95.0     # 11 past the party tray
+const CARD_W := 74.0
+
+
+## The bar spans from BAR_LEFT to the details panel's right edge, which moves with the screen's width and safe areas:
+## the gaps share what's left (4 to 24 each); on a very wide screen the bar sits centred in that span.
+func _layout_bar() -> void:
+	var right: float = _details_panel.position.x + _details_panel.size.x
+	var gap := clampf((right - BAR_LEFT - Rules.HOTBAR_SLOTS * CARD_W - 56.0) / Rules.HOTBAR_SLOTS, 4.0, 24.0)
+	var width: float = Rules.HOTBAR_SLOTS * CARD_W + Rules.HOTBAR_SLOTS * gap + 56.0
+	_hotbar.add_theme_constant_override("separation", int(gap))
+	_hotbar_row.add_theme_constant_override("separation", int(gap))
+	_hotbar_row.position = Vector2(BAR_LEFT + maxf(0.0, (right - BAR_LEFT - width) * 0.5), BAR_TOP)
+
 
 func _build_hotbar() -> void:
 	var row := HBoxContainer.new()
 	_hotbar_row = row
-	row.add_theme_constant_override("separation", 10)
-	UI.at(row, 100, 286)
-	row.custom_minimum_size = Vector2(546, 92)
-	_hotbar.add_theme_constant_override("separation", 6)
-	_hotbar.alignment = BoxContainer.ALIGNMENT_END
+	UI.at(row, BAR_LEFT, BAR_TOP)
+	row.custom_minimum_size = Vector2(0, 92)
 	row.add_child(_hotbar)
 	var all := UI.FingerButton.new()
 	all.text = "All actions"
@@ -599,6 +616,7 @@ func _process(_delta: float) -> void:
 	if not visible:
 		return
 	_enemy_pill.position = Vector2(368 - _enemy_pill.size.x * 0.5, 14)
+	_layout_bar()
 	var cam := fight.game.rig.camera
 	for u in fight.units:
 		var key: int = u.mini.get_instance_id()
