@@ -60,11 +60,12 @@ BEAST_SWATCHES = {
 
 def wolf(col):
     """Head held high and straight ahead, ears pricked, mouth shut, tail out straight behind: alert, wild, and on your side.
-    v6: a knotted scarf in the ranger's cloth instead of the saddle, a wolf's long tapered snout with a stop and a strong jaw,
-    shaped legs, a soft ruff, brows, eyes and mouth set on the head."""
+    v7: a knotted scarf in the ranger's cloth (a small knot, a long tail down the back), a wolf's long tapered snout with a stop,
+    a strong jaw and the nose part of its tip, a small soft-edged pale patch under the muzzle, shaped legs, a soft ruff."""
     p = hk.Piece("beast_wolf")
     sm.base(p, "ring_ally")
     coat, back, side, pale, dark = zone("skin"), zone("skin", 0.8), zone("skin", 0.92), zone("hair"), zone("skin", 0.62)
+    light = zone("skin", 1.14)
 
     def at(x, y, z):
         return V((x, y, Z0 + z))
@@ -94,8 +95,12 @@ def wolf(col):
         # line, the darker coat on top and over the brow, coat between.
         ahead = (c - hc).dot(fwd)
         rise = (c - (hc + fwd * ahead)).z
-        if rise < -0.02 and ahead > -0.02:
+        if ahead > 0.246 and rise > -0.022:  # the nose, the end of the snout
+            return "hero_pupil"
+        if rise < -0.034 and ahead > 0.0:  # a small pale patch under the muzzle
             return pale
+        if rise < -0.016 and ahead > -0.02:  # a lighter band between, so its edge is soft
+            return light
         return back if rise > 0.03 else coat
     top = 0.018  # the snout's flat top line, above the head's middle line
     em.loft(p, [em.section(h(y, z), w, d, along=fwd, ridge=r, sides=8) for y, z, w, d, r in
@@ -103,8 +108,8 @@ def wolf(col):
                  (0.085, top - 0.058, 0.074, 0.058, 0.6), (0.165, top - 0.05, 0.062, 0.05, 0.55), (0.225, top - 0.042, 0.048, 0.042, 0.55),
                  (0.25, top - 0.036, 0.034, 0.032, 0.6))], head_fur)
     em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=6) for y, z, w, d in
-                ((0.02, -0.06, 0.062, 0.032), (0.13, -0.072, 0.05, 0.028), (0.22, -0.066, 0.03, 0.018))], lambda c, n: pale)  # the jaw
-    p.blob(h(0.252, top - 0.012), 0.024, "hero_pupil", squash=0.75)  # nose at the tip
+                ((0.02, -0.06, 0.062, 0.032), (0.13, -0.072, 0.05, 0.028), (0.22, -0.066, 0.03, 0.018))],
+            lambda c, n: pale if (c - (hc + fwd * (c - hc).dot(fwd))).z < -0.085 else light)  # the jaw: pale only underneath
     face(p, h, fwd, eye=(0.045, 0.03, 0.055, 0.03, 0.017), brow=((0.06, 0.056, 0.026), (0.042, 0.05, 0.07)), dark=dark,
          mouth=[(0.24, -0.05, 0.014), (0.18, -0.062, 0.036), (0.12, -0.066, 0.05)])
     for x in SIDE:
@@ -114,7 +119,8 @@ def wolf(col):
 
     # The ranger's scarf, knotted at the throat, one tail down the chest and one back over the shoulder, where the combat camera sees it.
     scarf(p, at(0, -0.155, 0.43), at(0, -0.25, 0.58), at, knot=(0.05, -0.27, 0.47), chest=(0.06, 0.45, 0.3),
-          shoulder=[(0.1, -0.2, 0.47), (0.09, -0.12, 0.52), (0.07, -0.03, 0.54), (0.05, 0.06, 0.53)], floor=0.36, w=0.072)
+          shoulder=[(0.1, -0.2, 0.47), (0.09, -0.12, 0.52), (0.07, -0.03, 0.54), (0.05, 0.06, 0.53), (0.035, 0.15, 0.52), (0.025, 0.23, 0.5)],
+          floor=0.36, w=0.072)
 
     # Legs: shoulder and hip inside the body, an elbow back, a knee forward, a hock, slim wrists and pale paws.
     for s_, step in ((-1, -0.03), (1, 0.02)):
@@ -388,8 +394,8 @@ def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055):
     k_at = at(*knot)
     hit = BVHTree.FromBMesh(p.bm).ray_cast(k_at + V((0, -0.4, 0)), V((0, 1, 0)), 1.0)
     base_, n = (hit[0], hit[1]) if hit[0] is not None else (k_at, V((0, -1, 0)))
-    em.loft(p, [em.section(base_ + n * d, r, r * 0.85, along=n, sides=6) for d, r in ((0.0, 0.04), (0.03, 0.042), (0.055, 0.03))],
-            lambda c, n_: zone("cloth", 0.88))
+    em.loft(p, [em.section(base_ + n * d, r, r * 0.7, along=n, sides=6) for d, r in ((0.0, 0.03), (0.022, 0.026))],
+            lambda c, n_: zone("cloth", 0.88))  # a small, flat knot
     # Front tail: hanging from the knot down the chest, narrowing to its end.
     x0, z0, z1 = chest
     front = []
