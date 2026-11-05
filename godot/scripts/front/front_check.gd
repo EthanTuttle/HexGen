@@ -5,6 +5,7 @@ extends Node
 
 var front: Front
 var failed := 0
+var shots_on := "--shots" in OS.get_cmdline_user_args()
 
 
 func _ready() -> void:
@@ -61,7 +62,7 @@ func check(ok: bool, what: String) -> void:
 
 
 func shot(name: String) -> void:
-	if not "--shots" in OS.get_cmdline_user_args():
+	if not shots_on:
 		return
 	await RenderingServer.frame_post_draw
 	var dir := ProjectSettings.globalize_path("res://screens")
@@ -105,6 +106,7 @@ func _title() -> void:
 	await _wait(0.2)
 	check(front.title._toast != null, "title: Settings says it isn't in yet")
 	await shot("title_toast")
+	await _cost("title")
 	await _wait(1.5)
 	text_sizes("title", front.title)
 
@@ -117,6 +119,7 @@ func _creator() -> void:
 	check(control("Back") != null and (control("Back") as TagButton).disabled, "class: Back is off on the first step")
 	await shot("class_none")
 	text_sizes("class", c)
+	await _cost("creator class")
 	# Every class can be read; only the Fighter goes on.
 	await tap_on("Wizard")
 	await _wait(0.6)
@@ -297,11 +300,13 @@ func _game_run() -> void:
 	var day_minute := g.minute
 	g.minute = 25.0
 	town.stage.set_night(true)
-	await _wait(3.5)
+	if shots_on:   # the light eases after the clock; only a picture needs it settled
+		await _wait(3.5)
 	await shot("town_square_night")
 	town.stage.set_night(false)
 	g.minute = day_minute
-	await _wait(3.5)
+	if shots_on:
+		await _wait(3.5)
 	text_sizes("town", g.safe)
 	await tap_on("Shop")
 	await _wait(0.3)
@@ -331,11 +336,13 @@ func _game_run() -> void:
 	g.rig.yaw_deg = 0.0
 	g.minute = 25.0
 	town.stage.set_night(true)
-	await _wait(3.5)
+	if shots_on:
+		await _wait(3.5)
 	await shot("town_inn_night_light")
 	town.stage.set_night(false)
 	g.minute = day_minute
-	await _wait(3.5)
+	if shots_on:
+		await _wait(3.5)
 	text_sizes("inn", g.safe)
 	await tap_on("Rest the night")
 	await _wait(0.3)
@@ -485,3 +492,10 @@ func _kit_report() -> void:
 	times.sort()
 	print("FRONT kit: %d heroes, %d to %d triangles; rebuild median %.1f ms, worst %.1f ms" % [built, tris.min(), tris.max(), times[times.size() / 2], times[-1]])
 	check(tris.max() <= 1300, "kit: a hero stays near the hand-off's 1,256 triangles")
+
+
+## What a screen costs to draw.
+func _cost(where: String) -> void:
+	for _k in 10:
+		await get_tree().process_frame
+	print("FRONT cost %s: %d draw calls, %d nodes" % [where, Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.OBJECT_NODE_COUNT)])
