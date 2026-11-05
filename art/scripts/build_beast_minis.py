@@ -59,9 +59,9 @@ BEAST_SWATCHES = {
 
 
 def wolf(col):
-    """Head held high and turned a touch to its right, ears pricked, mouth shut, tail out straight behind: alert, wild, and on
-    your side. v5 (after Ethan's critical pass): a draped saddle and a flat neckerchief, shaped legs, a shorter, thicker
-    muzzle, a soft ruff, brows, eyes and mouth set on the head."""
+    """Head held high and straight ahead, ears pricked, mouth shut, tail out straight behind: alert, wild, and on your side.
+    v6: a knotted scarf in the ranger's cloth instead of the saddle, a wolf's long tapered snout with a stop and a strong jaw,
+    shaped legs, a soft ruff, brows, eyes and mouth set on the head."""
     p = hk.Piece("beast_wolf")
     sm.base(p, "ring_ally")
     coat, back, side, pale, dark = zone("skin"), zone("skin", 0.8), zone("skin", 0.92), zone("hair"), zone("skin", 0.62)
@@ -76,35 +76,45 @@ def wolf(col):
     body = [(0.33, 0.36, 0.05, 0.05), (0.27, 0.37, 0.125, 0.13), (0.08, 0.38, 0.12, 0.12),
             (-0.09, 0.39, 0.15, 0.17), (-0.2, 0.42, 0.14, 0.15)]
     em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.1) for y, z, w, h in body], fur)
-    saddle(p, lambda y: at(0, y, 0.385), -0.13, 0.13)
 
     # A soft ruff: the neck itself full and rounded, rising to the head.
     em.loft(p, [em.section(at(0, y, z), w, h, along=V((0, -0.55, 1)), sides=8) for y, z, w, h in
                 ((-0.15, 0.42, 0.13, 0.15), (-0.2, 0.5, 0.135, 0.135), (-0.25, 0.58, 0.1, 0.1))], fur)
-    neckerchief(p, at(0, -0.155, 0.43), at(0, -0.25, 0.58), 0.4, lambda z: at(0, -0.7, z), 0.43, 0.3, 0.085)
 
-    # Head: a shorter, thicker muzzle than v4's, pale underneath, the nose capping its tip.
-    fwd = V((0.18, -1, -0.12)).normalized()
-    hc = at(0.05, -0.28, 0.63)
+    # Head straight ahead along the body. A wolf's: a broad skull, a clear stop at the brow, then a long snout tapering to the
+    # nose with a flat top, over a strong separate jaw.
+    fwd = V((0, -1, -0.12)).normalized()
+    hc = at(0, -0.28, 0.63)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
 
     def head_fur(c, n):
+        # By where the face sits, not its normal (a loft along fwd can hand this a flipped one): pale below the snout's middle
+        # line, the darker coat on top and over the brow, coat between.
         ahead = (c - hc).dot(fwd)
-        if n.z < -0.3 or (ahead > 0.1 and n.z < -0.05 and n.dot(fwd) < 0.6):
+        rise = (c - (hc + fwd * ahead)).z
+        if rise < -0.02 and ahead > -0.02:
             return pale
-        return back if n.z > 0.6 else coat
-    em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=8) for y, z, w, d in
-                ((-0.08, 0.0, 0.065, 0.058), (0.0, 0.0, 0.106, 0.086), (0.07, -0.005, 0.094, 0.078), (0.12, -0.028, 0.07, 0.06),
-                 (0.195, -0.038, 0.058, 0.05), (0.232, -0.043, 0.043, 0.035))], head_fur)
-    p.blob(h(0.234, -0.028), 0.024, "hero_pupil", squash=0.8)  # nose
-    face(p, h, fwd, eye=(0.07, 0.026, 0.06, 0.03, 0.017), brow=((0.088, 0.05, 0.03), (0.066, 0.047, 0.074)), dark=dark,
-         mouth=[(0.222, -0.066, 0.012), (0.175, -0.07, 0.036), (0.125, -0.058, 0.052)])
+        return back if rise > 0.03 else coat
+    top = 0.018  # the snout's flat top line, above the head's middle line
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, ridge=r, sides=8) for y, z, w, d, r in
+                ((-0.085, 0.0, 0.062, 0.056, 1.0), (-0.01, 0.008, 0.104, 0.084, 1.0), (0.05, 0.0, 0.092, 0.07, 0.9),
+                 (0.085, top - 0.058, 0.074, 0.058, 0.6), (0.165, top - 0.05, 0.062, 0.05, 0.55), (0.225, top - 0.042, 0.048, 0.042, 0.55),
+                 (0.25, top - 0.036, 0.034, 0.032, 0.6))], head_fur)
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=6) for y, z, w, d in
+                ((0.02, -0.06, 0.062, 0.032), (0.13, -0.072, 0.05, 0.028), (0.22, -0.066, 0.03, 0.018))], lambda c, n: pale)  # the jaw
+    p.blob(h(0.252, top - 0.012), 0.024, "hero_pupil", squash=0.75)  # nose at the tip
+    face(p, h, fwd, eye=(0.045, 0.03, 0.055, 0.03, 0.017), brow=((0.06, 0.056, 0.026), (0.042, 0.05, 0.07)), dark=dark,
+         mouth=[(0.24, -0.05, 0.014), (0.18, -0.062, 0.036), (0.12, -0.066, 0.05)])
     for x in SIDE:
-        root = h(-0.035, 0.055, x * 0.06)
+        root = h(-0.035, 0.058, x * 0.06)
         vr.spike(p, root, root + V((x * 0.035, 0.03, 0.095)), 0.04, back, segments=3)
         vr.spike(p, root + fwd * 0.01 + V((0, 0, 0.01)), root + fwd * 0.01 + V((x * 0.03, 0.025, 0.075)), 0.022, pale, segments=3)
+
+    # The ranger's scarf, knotted at the throat, one tail down the chest and one back over the shoulder, where the combat camera sees it.
+    scarf(p, at(0, -0.155, 0.43), at(0, -0.25, 0.58), at, knot=(0.05, -0.27, 0.47), chest=(0.06, 0.45, 0.3),
+          shoulder=[(0.1, -0.2, 0.47), (0.09, -0.12, 0.52), (0.07, -0.03, 0.54), (0.05, 0.06, 0.53)], floor=0.36, w=0.072)
 
     # Legs: shoulder and hip inside the body, an elbow back, a knee forward, a hock, slim wrists and pale paws.
     for s_, step in ((-1, -0.03), (1, 0.02)):
@@ -361,6 +371,47 @@ def saddle(p, axis, y0, y1, rows=7, cols=13):
     drape(p, grid, lambda i, j: zone("cloth", 0.78) if j in (0, cols - 2) else zone("cloth"), lift=0.016)  # clear of the coat's facets
 
 
+def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055):
+    """A knotted scarf in the ranger's cloth, cast onto what's built so far: a thick band round the neck between a and b, a knot
+    at the throat, one tail down the chest and one back over the shoulder. at(x, y, z): the beast's frame. knot (x, y, z);
+    chest (x, z from, z to): the front tail; shoulder: points (x, y, z) the back tail runs along, from the knot outward, cast
+    toward the body's middle line and kept above floor (a height over the base), so it lies on the back."""
+    axis = (b - a).normalized()
+    u, v = V((1, 0, 0)), axis.cross(V((1, 0, 0))).normalized()
+    band = []
+    for k in range(4):
+        c = a.lerp(b, 0.12 + 0.13 * k)
+        band.append([(c + (u * math.cos(2 * math.pi * m / 16) + v * math.sin(2 * math.pi * m / 16)) * 0.4,
+                      -(u * math.cos(2 * math.pi * m / 16) + v * math.sin(2 * math.pi * m / 16)), V()) for m in range(17)])
+    drape(p, band, lambda i, j: zone("cloth", 0.82) if i in (0, 2) else zone("cloth"), lift=0.022)
+    # The knot: a short fat roll standing off the throat.
+    k_at = at(*knot)
+    hit = BVHTree.FromBMesh(p.bm).ray_cast(k_at + V((0, -0.4, 0)), V((0, 1, 0)), 1.0)
+    base_, n = (hit[0], hit[1]) if hit[0] is not None else (k_at, V((0, -1, 0)))
+    em.loft(p, [em.section(base_ + n * d, r, r * 0.85, along=n, sides=6) for d, r in ((0.0, 0.04), (0.03, 0.042), (0.055, 0.03))],
+            lambda c, n_: zone("cloth", 0.88))
+    # Front tail: hanging from the knot down the chest, narrowing to its end.
+    x0, z0, z1 = chest
+    front = []
+    for i in range(5):
+        z = z0 + (z1 - z0) * i / 4
+        half = w * (1 - 0.35 * i / 4)
+        front.append([(at(x0 + half * (2 * m / 2 - 1), -0.7, z), V((0, 1, 0.1)), V((0, -0.006 * i, 0))) for m in range(3)])
+    drape(p, front, lambda i, j: zone("cloth", 0.92), lift=0.014)
+    # Back tail: over the shoulder onto the back, cast from above, so it shows from the combat camera.
+    pts = [at(*q) for q in shoulder]
+    back = []
+    for i, q in enumerate(pts):
+        d = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
+        side_ = d.cross(V((0, 0, 1))).normalized() * w * (1 - 0.3 * i / (len(pts) - 1))
+        row = []
+        for m in range(3):
+            o = q + side_ * (2 * m / 2 - 1) + V((0, 0, 0.5))
+            row.append((o, at(0, q.y, floor + 0.02) - o, V()))
+        back.append(row)
+    drape(p, back, lambda i, j: zone("cloth"), lift=0.016, floor=at(0, 0, floor).z)
+
+
 def neckerchief(p, a, b, t, front, z0, z1, w):
     """A neckerchief lying flat: a band round the neck at t between a and b, and a point down the chest, both cast onto what's
     built so far. front(z): a point well in front of the chest at that height; the point runs from z0 down to z1, w wide."""
@@ -424,7 +475,7 @@ def face(p, h, fwd, eye, brow, dark, mouth=None, slit=False):
                 print("NOMOUTH", p.name, x)
 
 
-def drape(p, grid, paint, lift=0.006):
+def drape(p, grid, paint, lift=0.006, floor=None):
     """A sheet over what's built so far: grid rows of (ray origin, direction, extra offset); each hit lifted off the surface.
     Its faces point outward, matching the surface under them."""
     tree = BVHTree.FromBMesh(p.bm)
@@ -433,7 +484,8 @@ def drape(p, grid, paint, lift=0.006):
         out = []
         for o, d, extra in row:
             hit = tree.ray_cast(o, d.normalized(), 2.0)
-            out.append((p.bm.verts.new(hit[0] + hit[1] * lift + extra), hit[1]) if hit[0] is not None else None)
+            ok = hit[0] is not None and (floor is None or hit[0].z > floor)
+            out.append((p.bm.verts.new(hit[0] + hit[1] * lift + extra), hit[1]) if ok else None)
         pts.append(out)
     for i in range(len(pts) - 1):
         for j in range(len(pts[i]) - 1):
