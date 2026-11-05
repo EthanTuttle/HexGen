@@ -120,6 +120,7 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Foes | Minion 4, soldier 6, elite 10 HP; damage 1, 2, 3, times the band. Near is up to 4 tiles from the start, mid 5 to 9, far 10 and over. The figure's kind sets the mix: 2 or 3 foes, one elite from mid on |
 | XP per level | 20, then 10 more each level |
 | Test notes | A flag button in test builds, on every screen, for typing an issue, bug or tweak during play. Each note is saved in app storage with a screenshot and game state, for collecting later (Ethan, Nov 4, 2026). No network, like the error log |
+| Ruins | Main's old ruins tile as a marked placeholder until ruins are decided. A finished ruins region stays plain, with no variant or landmark, and still counts toward the goal |
 | Sneak past | Harder for tougher foes: heads needed by the toughest foe's role (minion 1, soldier 2, elite 3; proposed, a placeholder) |
 
 ## Open questions
