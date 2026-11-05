@@ -59,7 +59,7 @@ static func open_from_fight(f: Fight) -> ActionCards:
 	f.hud.visible = false   # v3b: only the world shows behind, dimmed
 	s.closed.connect(func():
 		f.hud.visible = true
-		f.hud.refresh())
+		f.refresh())   # combat's bar reads `hot_slots`, gaps included
 	f.game.ui.add_child(s)
 	return s
 

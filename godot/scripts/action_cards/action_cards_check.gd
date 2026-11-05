@@ -246,13 +246,20 @@ func _run() -> void:
 		await _shot("other_member")
 		await _touch(_centre(screen._party.get_child(0)))
 
-	# Back: the fight draws the new bar
+	# A middle slot cleared, so the fight's bar should keep the gap
+	await _touch(_centre(screen._slots[2]), _centre(screen._list_panel))
+	_check(screen.slots()[2] == "", "slot 3 cleared")
+	var expect: Array = screen.slots().duplicate()
+
+	# Back: the fight draws the new bar, gaps where the slots are empty (combat reads `hot_slots`)
 	var back: Control = screen._top.get_child(0)
 	await _touch(_centre(back))
 	await _wait(0.2)
 	_check(not is_instance_valid(screen) or not screen.is_inside_tree(), "Back closes the screen")
-	var drawn := hud._hotbar.get_child_count()
-	_check(drawn == m.hot.size(), "back in the fight, the hotbar has the %d cards placed" % m.hot.size())
+	var drawn := hud._hotbar.get_children()
+	var shown := drawn.map(func(c): return "" if not c.has_method("setup") else String(c.k.id))
+	_check(drawn.size() == Rules.HOTBAR_SLOTS, "back in the fight, the bar has %d places" % drawn.size())
+	_check(shown == expect, "each card in its slot, gaps kept (%s)" % [shown])
 	await _shot("back_in_fight")
 	print("CARDS bar at the end: %s" % [m.hot])
 	print("CARDS DONE: %d failed" % failed)
