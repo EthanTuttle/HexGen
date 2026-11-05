@@ -402,6 +402,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **One icon per weapon category** (Ethan, Oct 30, 2026): every weapon category has its own icon and no two repeat, so players learn to recognise a weapon type by its icon alone. The same icon is used on every screen that shows the weapon. The first set of stand-ins (21) is in character creator v18a/v18b; older mockups still share icons between swords, axes, polearms and fist weapons.
 - **Plain screen backgrounds** (Ethan, Oct 30, 2026): screens sit on a plain colour, with no hex-line pattern behind them, as most screens already do. The pattern made the background too busy. It's taken out of the character creator (v16) and the character and gear screen (v13a/v13c, copies of v12a/v12c).
 - Coins are shown as 3D coin flips.
+- **Combat flips come first** (Ethan, Nov 4, 2026): coins flip one at a time until the heads target is reached or the coins run out, then the attack animation plays, so the player can take in the result before it. Coins left over once the target is reached don't flip.
 - At night, the camera tightens on the hero (see [Map & exploration](02 Map & exploration.md) → Day and night).
 
 **Title screen, name and app icon** (first mockups Nov 1, 2026; **title screen final: v11** (approved Nov 1, 2026, replacing v8 and before it v5 on the Final screens canvas); **app icon final: v8**, approved Nov 1, 2026 and copied there too; [Heads or Hexes · Title screen & app icon (working)](https://claude.ai/artifact/Y8BF1Dp9ohrGr732CHTZ2g))
