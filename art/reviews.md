@@ -134,3 +134,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-04 | `art/preview/hero_kit_look_v1.png` | note | Build all 10 missing weapon meshes, show the set; dragonborn heads too conical |
 | 2026-11-04 | `art/preview/buried_kit_map_mixed_v1.png` | approved | Buried city kit merges |
 | 2026-11-04 | `art/preview/town_scenes_sheet_v1.png` | approved | Direction: b, one floor with hexes set in, for square and inn; innkeeper behind the bar, dark backdrop |
+| 2026-11-04 | `art/preview/hero_kit_dragon_look_v1.png` | approved | Hero kit for the first playable: all weapons, new dragonborn heads; export |
