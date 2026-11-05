@@ -115,14 +115,13 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 
 | Placeholder | Value here | Why |
 | --- | --- | --- |
-| Racial cards and spells | Their own "Race" section after Class | 07 has Basic, Weapon and Class only (question to Ethan) |
-| Weapon sets | One, so no set tabs. The weapon shows on the Weapon section | Party members have one weapon |
-| Layout at 7 slots | v3's layout, with the tray's "Hotbar" and set label dropped so seven 66 pt slots fit. On a phone the details panel is combat's 170, not 186. The list has 3 columns on a phone, 4 at full width | v3 has 6 slots |
+| Weapon sets | One, "Set 1 · <weapon>" in the list's header. The Set 1 / Set 2 tabs 07 asks for aren't in yet: how the empty Set 2 looks is with Ethan | Party members have one weapon |
+| List columns | 3 on a phone, 4 at full width | v3 has 4 at 844 pt |
 | Scrolling the list by touch | A quick swipe up or down in the list scrolls it until the finger leaves the list, which lifts the card. A sideways move, or a move after a long-press, lifts it at once. With the mouse, every drag lifts and the wheel scrolls | v3 drags on every move, which leaves no way to scroll by finger |
 | Subtitles | The hero's from the creator. Companions: "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue" · Lv. No subclass before level 5 | Fluffy's race name is open |
 | Gear screen way in | Not hooked up | No gear screen yet; the menu backdrop is built |
 
-**Cut under Screen text:** "Tap for details · drag onto the hotbar", the details panel's drag footer, a tile's source word when it isn't on the bar (its section says it), and the Class section's race and class (the subtitle says it). Kept: "· always available" on Basic, "Slot N" on tiles, "Empty" in empty slots.
+Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt details panel with its sizes (name 17, text 11), and every card fits it (`--cardscheck` shows each one; Breath Weapon, blue, is the tallest at 188 of 276 pt); no label column on the tray. Cut: v3's hints, the drag footer, tiles' source words and slot numbers, "always available", and the Class section's race and class. "Empty" stays in empty slots.
 
 ## Test notes
 

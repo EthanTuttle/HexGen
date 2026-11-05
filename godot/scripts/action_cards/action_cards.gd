@@ -7,10 +7,9 @@ extends Control
 ## Opened from combat's Edit hotbar (All actions pop-up). There's no gear screen yet, so the gear way in isn't hooked up.
 ## The bar is kept per member as `hot_slots` (Rules.HOTBAR_SLOTS ids, "" for empty), and `hot` (what combat draws) is the same
 ## cards without the gaps, changed in place so a fight's unit, which holds the same array, sees it.
-## PLACEHOLDERS: the Race section (where racial cards and spells go isn't decided); one weapon set, so no set tabs; the
-## layout at 7 slots (v3 had 6): the details panel is combat's 170 wide on a phone and the tray drops its "Hotbar" label.
-## Not in the mockup's text (design/07 -> Screen text): "Tap for details · drag onto the hotbar", the drag footer, a
-## tile's source word (its section says it) and the Class section's race and class (the subtitle says it).
+## Phone layout (design/07, Ethan, Nov 5, 2026): v3's arrangement with combat's 170 pt details panel and no label column on
+## the tray, so 7 slots fit; the set's name is in the list's header. Race comes first in the list. Cut from v3's text (design/07):
+## the hints, tiles' source words and slot numbers, "always available", and the Class section's race and class.
 
 const SLOT := Vector2(66, 76)
 const SLOT_GAP := 6.0
@@ -18,12 +17,12 @@ const TILE_H := 44.0
 const COMBAT_DIM := Color(0.141, 0.188, 0.172, 0.42)
 const MENU_BG := Color("#BFD9D2")
 const TILE_EDGE := Color("#E2D5BC")
-const ON_BAR := Color("#2E6B3A")
 const WELL := Color("#9E8264")
 const BACK_ICON := "M15 5l-7 7 7 7"
-## How the sections group the cards' sources. PLACEHOLDER: racial cards and spells in their own section (question to Ethan).
-const SECTIONS := [["basic", "Basic", ["basic"]], ["weapon", "Weapon", ["weapon"]], ["klass", "Class", ["klass"]],
-	["race", "Race", ["race", "elven", "bloodline"]]]
+## How the sections group the cards' sources (design/07: Race first, with the racial card and racial spells).
+const SECTIONS := [["race", "Race", ["race", "elven", "bloodline"]], ["basic", "Basic", ["basic"]], ["weapon", "Weapon", ["weapon"]],
+	["klass", "Class", ["klass"]]]
+const DETAILS_W := 170.0           # combat's (design/07 -> Action cards screen -> Phone layout)
 ## DOCS: design/01 -> Companions (classes); Fluffy's race name is open, so the mockup's "Cat" stands in.
 const COMPANION := {"Fluffy": ["Cat", "Wizard"], "Chelmsford": ["Dragonborn", "Cleric"], "Mel": ["Wood Elf", "Rogue"]}
 
@@ -32,6 +31,7 @@ signal closed
 var game: Game
 var from := "combat"               # or "gear"
 var ci := 0                        # whose cards
+var set_idx := 0                   # which weapon set: members have one, so always Set 1 (tabs: to come)
 var sel := ""
 var _safe := SafeArea.new()
 var _root := Control.new()         # inside the safe area
@@ -40,6 +40,7 @@ var _party := HBoxContainer.new()
 var _list_panel: PanelContainer
 var _list := VBoxContainer.new()
 var _scroll := ScrollContainer.new()
+var _set_name: Label
 var _tray: PanelContainer
 var _slots: Array[_Slot] = []
 var _details_panel: PanelContainer
@@ -115,7 +116,7 @@ func _draw() -> void:
 func _layout() -> void:
 	var w := _root.size.x
 	var m := 18.0 if w >= 844.0 else 12.0
-	var dw := 186.0 if w >= 844.0 else 170.0
+	var dw := DETAILS_W
 	var lw := w - m * 2.0 - dw - 12.0
 	_top.position = Vector2(m, 12)
 	_top.size = Vector2(w - m * 2.0, 54)
@@ -166,6 +167,11 @@ func _build_top() -> void:
 	_top.add_child(_party)
 
 
+## The set's weapon as the tab and the list's header say it. Members have one set.
+func weapon_name(i: int) -> String:
+	return String(member().get("weapon", "")).capitalize() if i == 0 else "No weapon"
+
+
 func _fill_party() -> void:
 	for c in _party.get_children():
 		_party.remove_child(c)
@@ -192,6 +198,7 @@ func subtitle(m: Dictionary) -> String:
 
 func _pick_member(i: int) -> void:
 	ci = clampi(i, 0, game.party.size() - 1)
+	set_idx = 0
 	var m := member()
 	sel = "attack" if "attack" in m.get("cards", []) else ""
 	_name.text = m.name
@@ -218,6 +225,12 @@ func card(id: String) -> Dictionary:
 ## The member's slots, Rules.HOTBAR_SLOTS long; made from `hot` the first time.
 func slots() -> Array:
 	var m := member()
+	if set_idx == 1:
+		if not m.has("hot_slots_2"):
+			m.hot_slots_2 = Array([], TYPE_NIL, "", null)
+			m.hot_slots_2.resize(Rules.HOTBAR_SLOTS)
+			m.hot_slots_2.fill("")
+		return m.hot_slots_2
 	if not m.has("hot_slots"):
 		var s: Array = m.get("hot", []).duplicate()
 		s.resize(Rules.HOTBAR_SLOTS)
@@ -227,6 +240,9 @@ func slots() -> Array:
 
 func _set_slots(s: Array) -> void:
 	var m := member()
+	if set_idx == 1:
+		m.hot_slots_2 = s   # kept, but no fight swaps sets yet
+		return
 	m.hot_slots = s
 	if not m.has("hot"):
 		m.hot = []
@@ -291,7 +307,14 @@ func _build_list() -> void:
 	_root.add_child(_list_panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
-	v.add_child(UI.label("All actions", "lilita", 15))
+	var head := HBoxContainer.new()
+	head.add_child(UI.label("All actions", "lilita", 15))
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(gap)
+	_set_name = UI.label("", "n800", 11, UI.INK_SOFT)
+	head.add_child(_set_name)
+	v.add_child(head)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_list.add_theme_constant_override("separation", 8)
@@ -310,8 +333,11 @@ func _fill_list() -> void:
 	var inner := _list_panel.size.x - 24.0 - 6.0
 	var cols := 4 if inner >= 560.0 else 3
 	var m_cards: Array = m.get("cards", [])
+	_set_name.text = set_title()
 	for sec: Array in SECTIONS:
 		var ids := m_cards.filter(func(id): return Cards.ALL[id].src in sec[2])
+		if sec[0] == "weapon" and set_idx == 1:
+			ids = []   # Set 2 holds no weapon
 		if ids.is_empty():
 			continue
 		var block := VBoxContainer.new()
@@ -325,9 +351,6 @@ func _fill_list() -> void:
 		band.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		head.add_child(band)
 		head.add_child(UI.label(String(sec[1]).to_upper(), "n900", 11, Color(src.ink), 1))
-		var note := _section_note(sec[0])
-		if note != "":
-			head.add_child(UI.label(note, "n700", 11, UI.INK_SOFT))
 		block.add_child(head)
 		var grid := GridContainer.new()
 		grid.columns = cols
@@ -348,13 +371,9 @@ func _fill_list() -> void:
 		_list.add_child(block)
 
 
-func _section_note(key: String) -> String:
-	match key:
-		"basic":
-			return "· always available"
-		"weapon":
-			return "· " + String(member().get("weapon", "")).capitalize()
-	return ""
+## The set being edited, for the list's header.
+func set_title() -> String:
+	return "Set %d · %s" % [set_idx + 1, weapon_name(set_idx)]
 
 
 # --- Details (v3: source and AP, name, text, Use, and Attack Flip or Save) ------------------------------------------------
@@ -379,8 +398,9 @@ func _fill_details() -> void:
 	var top := VBoxContainer.new()
 	top.add_theme_constant_override("separation", 0)
 	top.add_child(_wrap(UI.label(("%s · %s" % [src.label, "AP not set" if k.ap < 0 else "%d AP" % k.ap]).to_upper(), "n900", 11, Color(src.ink), 1), wide))
-	top.add_child(_wrap(UI.label(k.n, "lilita", 20, UI.INK, 0, 1.1), wide))
-	top.add_child(_wrap(UI.label(k.desc, "n700", 12, UI.INK_SOFT), wide))
+	# Combat's sizes from its fit pass (design/07: everything fits, 11 pt or more): name 17, text 11.
+	top.add_child(_wrap(UI.label(k.n, "lilita", 17, UI.INK, 0, 1.1), wide))
+	top.add_child(_wrap(UI.label(k.desc, "n700", 11, UI.INK_SOFT), wide))
 	_details.add_child(top)
 	var div := ColorRect.new()
 	div.color = Color(UI.HEX_SHADOW, 0.5)
@@ -405,8 +425,8 @@ func resolves(k: Dictionary) -> Array:
 func _line(a: String, b: String) -> HBoxContainer:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 4)
-	h.add_child(UI.label(a, "n700", 12, UI.INK_SOFT))
-	h.add_child(UI.label(b, "n900", 12))
+	h.add_child(UI.label(a, "n700", 11, UI.INK_SOFT))
+	h.add_child(UI.label(b, "n900", 11))
 	return h
 
 
@@ -509,7 +529,7 @@ func close() -> void:
 
 # --- Drawn pieces ----------------------------------------------------------------------------------------------------
 
-## A card in the list (v3b: 44 tall): AP hex, icon, name, and its hotbar slot when it has one.
+## A card in the list (v3b: 44 tall): AP hex, icon and name. No slot number (design/07: the hotbar shows it).
 class _Tile extends Control:
 	var screen: ActionCards
 	var id := ""
@@ -532,12 +552,7 @@ class _Tile extends Control:
 		var ap := Cards.ap_text(k)
 		draw_string(f, Vector2(18 - f.get_string_size(ap, 0, -1, 11).x * 0.5, 26), ap, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
 		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 18, 2), Rect2(Vector2(34, 13), Vector2(18, 18)), false)
-		var room := size.x - 64.0
-		var y := 27.0 if slot < 0 else 20.0
-		draw_string(f, Vector2(58, y), k.n, HORIZONTAL_ALIGNMENT_LEFT, room, 12, UI.INK, TextServer.JUSTIFICATION_NONE,
-			TextServer.DIRECTION_AUTO, TextServer.ORIENTATION_HORIZONTAL)
-		if slot >= 0:
-			draw_string(UI.font("n700"), Vector2(58, 35), "Slot %d" % (slot + 1), HORIZONTAL_ALIGNMENT_LEFT, room, 11, ActionCards.ON_BAR)
+		draw_string(f, Vector2(58, 27), k.n, HORIZONTAL_ALIGNMENT_LEFT, size.x - 64.0, 12, UI.INK)
 
 	func _gui_input(e: InputEvent) -> void:
 		if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and e.pressed:

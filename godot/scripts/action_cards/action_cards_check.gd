@@ -125,6 +125,35 @@ func _run() -> void:
 	var tray := screen._tray.get_global_rect()
 	_check(screen._slots.all(func(s): return tray.encloses(s.get_global_rect())), "%d slots inside the tray" % screen._slots.size())
 
+	# Every card's details fit the 170 pt panel at 11 pt or more (design/07), Breath Weapon for every dragon type
+	var panel := screen._details_panel
+	var room := panel.size.y - 24.0
+	var worst := ["", 0.0]
+	var sub_was: String = m.get("sub", "")
+	var subs: Array = [""] + CreatorData.DRI.keys()
+	for id: String in Cards.ALL:
+		for sub: String in (subs if id == "breath" else [""]):
+			m.sub = sub
+			screen.select(id)
+			await get_tree().process_frame
+			var need: float = screen._details.get_combined_minimum_size().y
+			var wide: float = screen._details.get_combined_minimum_size().x
+			if need > worst[1]:
+				worst = [id + (" " + sub if sub != "" else ""), need]
+			var small := screen._details.find_children("*", "Label", true, false).filter(func(l): return l.get_theme_font_size("font_size") < 11)
+			if need > room or wide > panel.size.x - 24.0 or not small.is_empty():
+				_check(false, "%s %s fits: %.0f of %.0f tall, %.0f wide" % [id, sub, need, room, wide])
+	m.sub = sub_was
+	_check(worst[1] <= room, "every card's details fit the %.0f pt panel (tallest: %s, %.0f of %.0f)" % [panel.size.x, worst[0], worst[1], room])
+	var tallest: PackedStringArray = String(worst[0]).split(" ")
+	m.sub = tallest[1] if tallest.size() > 1 else sub_was
+	screen.select(tallest[0])   # shown even if this member doesn't have it
+	await _shot("details_longest")
+	m.sub = sub_was
+	screen.select("attack")
+	for _f in 2:
+		await get_tree().process_frame
+
 	var rig := game.rig
 	var cam_at: Vector3 = rig.target
 
