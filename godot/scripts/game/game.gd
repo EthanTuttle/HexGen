@@ -1128,10 +1128,11 @@ func sneak_heads() -> int:
 	return Foes.sneak_heads(encounters[_encounter_tile].roles) if encounters.has(_encounter_tile) else Rules.HEADS_TO_HIT
 
 
-## A new campaign from here. The title screen will take this over.
+## A new campaign from here: back to the title (a run started directly starts again from there too).
 func restart_run() -> void:
 	RunSetup.next = null
-	get_tree().reload_current_scene()
+	Hero.current = null
+	get_tree().change_scene_to_file("res://scenes/front.tscn")
 
 
 ## What a Social or Discovery encounter opens (Screens: event_screen). Until then its name in a pop-up.
