@@ -6,6 +6,8 @@ Ethan chose true-scale figures with badges (Nov 4, 2026; design/07): place every
 - **Scripts:** `art/scripts/build_encounter_figures.py`, `art/scripts/render_encounter_figures.py`.
 - **Previews:** `art/preview/encounters_x<scale>_<light>_<distance>m_v1.png`, `encounters_x1_day_58m_swapped_v1.png` and `encounters_x2.5_day_58m_swapped_v1.png` (wolves in the open, bandits in the forest), `encounters_badges_<light>_58m_v1.png`, `encounters_close_all_v1.png`.
 
+**Where they stand:** [encounter_spots.md](encounter_spots.md), spots per look and data in `encounter_spots.json`.
+
 ## Pieces
 
 | Piece | What it is | Triangles | Footprint (m) | Height (m) | Largest scale inside a tile |
