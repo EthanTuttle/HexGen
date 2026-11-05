@@ -1534,14 +1534,19 @@ func _open_port_shop() -> bool:
 	return true
 
 
-## Stealth group check (DOCS: a group check; on a pass the encounter stays on the map).
-## PLACEHOLDER (Explore v8b's text): everyone flips one coin; 1 heads passes. A fail starts the fight.
+## The hero's solo Stealth check, whatever the party's size (DOCS: 03 -> Checks outside combat); on a pass the encounter stays on the map. A fail starts the fight.
 func choose_sneak() -> void:
-	var coins: Array[bool] = []
-	for m in party:
-		coins.append_array(Coins.flip(rng, Rules.SNEAK_COINS_EACH))
+	var coins := sneak_flip()
 	var ok := Coins.heads(coins) >= sneak_heads()
 	hud.show_encounter(Rules.NAMES[land(_encounter_tile)], "passed" if ok else "spotted", coins)
+
+
+## The hero's coins, then a proficient companion's 1 on a miss by exactly 1 (DOCS: 03 -> Companion chime-in). No companion has Stealth yet, and no line is written for it.
+func sneak_flip(proficiency := "Stealth") -> Array[bool]:
+	var coins: Array[bool] = Coins.flip(rng, Hero.coins_for("DEX", "Stealth"))
+	if Coins.heads(coins) == sneak_heads() - 1 and not _chime_helper(proficiency).is_empty():
+		coins.append_array(Coins.flip(rng, 1))
+	return coins
 
 
 func choose_carry_on() -> void:

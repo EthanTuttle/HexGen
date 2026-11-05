@@ -44,6 +44,7 @@ func _run() -> void:
 	_check(total == 24, "the deck is 05's 15 cards plus one of every terrain: %s" % [game.run.deck_cards()])
 	_check(game.run.seed_text != "", "seed %s" % game.run.seed_text)
 	game.potions = 2
+	_check_sneak()
 	var steps := 0
 	while not game._ended and steps < MAX_STEPS:
 		steps += 1
@@ -106,6 +107,28 @@ func _place_one() -> bool:
 	game.try_place(best_t)
 	await _wait(0.05)
 	return true
+
+
+## Sneak past goes by the hero, not the party; a helper's coin comes only on a miss by exactly 1 (design/03).
+func _check_sneak() -> void:
+	var hero := Hero.new()
+	hero.scores = {"DEX": 2}
+	hero.proficiencies = ["Stealth"]
+	var before := Hero.current
+	Hero.current = hero
+	_check(Hero.coins_for("DEX", "Stealth") == 3, "Sneak past's coins are the hero's DEX and Stealth")
+	hero.proficiencies = []
+	_check(Hero.coins_for("DEX", "Stealth") == 2, "an unskilled hero has DEX alone")
+	var kept := game.rng.state   # so a seed still means the same run
+	var bad := 0
+	for k in 200:
+		var coins: Array[bool] = game.sneak_flip("Persuade")   # Fluffy stands in for a proficient helper
+		var first := coins.slice(0, 2)
+		var near_miss: bool = Coins.heads(first) == game.sneak_heads() - 1
+		bad += 0 if coins.size() == (3 if near_miss else 2) else 1
+	game.rng.state = kept
+	_check(bad == 0, "the helper's one coin comes only on a miss by exactly 1")
+	Hero.current = before
 
 
 ## Until the game's free or an encounter asks something; takes the first terrain at a level's pick.

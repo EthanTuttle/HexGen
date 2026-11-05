@@ -41,7 +41,7 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
 | Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E and the nav buttons turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
 
-Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (Stealth, group). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
+Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (the hero's Stealth). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
 
 **In a fight** (combat v14): click a portrait in the tray (or an ally on the board) to act with them, pick a card on the hotbar, then tap a target and press **Flip coins** (attacks), **Cast** (spells) or **Use** (self cards). Move lights the hexes you can reach; tap one. **All actions** lists every card. **End** hands the turn to the foes, and asks first if anyone still has AP. The camera buttons are the column beside the tray.
 
@@ -334,7 +334,7 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 | A terrain's first finished region becomes its tier 1 variant; tiles added later join it; no rim, the variant keeps blending into the land around it | 02 → Region tiers; 07 → Exploration screen (cluster goals), Art direction → Region variant looks | Tiles swap to the variant's pieces with a short transition. Tier 2 regions keep their terrain's look (no tier 2 art yet) |
 | Encounters spawn per region, show on their hex, despawn after ~15 minutes | 02 → Hex contents and encounters | |
 | Walking along placed hexes, one step at a time, camera follows, minis face the way they walk | 07 → Exploration screen | |
-| Encounter pop-up: Fight, or Sneak past (Stealth group check); an avoided encounter stays | 07 → Exploration screen; 03 → Checks outside combat | |
+| Encounter pop-up: Fight, or Sneak past (the hero's Stealth check); an avoided encounter stays | 07 → Exploration screen; 03 → Checks outside combat | |
 | Coin checks: flip coins equal to the score, heads count, 1 heads to pass | 03 → Coin checks | |
 | Save spells: the target flips to save; a save halves damage and ignores riders | 03 → Coin checks; Combat | Sacred Flame |
 | 3 AP each; up to 6 with bonus AP, spent first and lost at the end of the turn | 03 → Turns, AP and health | Action Surge, with the lightning pips |
@@ -593,7 +593,7 @@ Rules: `design/02` -> Hex contents and encounters; look: `design/07` -> Encounte
 
 - Chelmsford joins after 2 fights won and Mel after 6, with no words: the tray and the mini show it. Real recruiting comes later.
 - `scripts/game/foes.gd`, near / mid / far: HP x1.5 / x2 / x2.5, damage x1.5 / x1.5 / x2 (rounded), coins +0 / +1 / +2, 3 / 3 / 3-4 foes; near has 2-3 while the party is two. Foes attack once a turn; the far band no longer needs an extra heads.
-- With nothing to walk to and no cards (the start's fence can shut the only tile laid), a card comes instead of a fight.
+- With nothing to walk to and no cards (the start's fence can shut the only tile laid), a card comes instead of a fight. Seed `o1` with `--outward` builds that case: run it with the suite.
 - `--playcheck --realfights --bands [--fast] [--each=n] [--tune=...]` compares these at party sizes 2, 3 and 4, and runs without a window with `--headless`.
 
 `scripts/game/run_setup.gd` says what a run starts from (`Hero.current`, from the creator; none is a direct start). The checks and demo use `RunSetup.test()`: four in the party, the wide deck, seed 1, no rolls, no goal. `-- --playcheck [--seed=x] [--realfights] [--bands]` plays a whole run by itself to the end panel, and with `--realfights` plays the fights and prints how each went.
@@ -607,7 +607,7 @@ Hooks for Screens: `Hero.current`, `game.can_enter_town()`, `enter_town()` and `
 | Level pick | Three terrains: the biggest unfinished cluster's first, then two at random. One card into the hand |
 | Weapon cards | Parry, Block, Shield Bash, Trip, Ward at 04's 1 AP. Bash stuns (no AP next turn); Trip and Frost Ray cost a foe `PRONE_AP` 1; Ward absorbs `WARD_POINTS` 2; Firebolt +1 damage |
 | Potion | `POTION_HEAL` 6, Use item's 1 AP, in fights only |
-| Sneak past | `SNEAK_COINS_EACH` 2 each, so two can make an elite's 3 heads |
+| Sneak past | The hero's DEX and Stealth coins (`Hero.coins_for`), heads by the toughest foe. With no creator behind the run, 1 coin. No companion has Stealth, so no chime-in comes up yet, and no line is written for one |
 | Coins | `COIN_STEP` 0.22 s, `COIN_STEP_FOE` 0.12 s, `COIN_HOLD` 0.22 s, drawn over whoever flips |
 | Ruins | Main's old tile; a finished region stays plain with no landmark and counts toward the goal |
 | Start | The background's tile is the old start tile until its art arrives; the end panel's New campaign reloads the scene |
