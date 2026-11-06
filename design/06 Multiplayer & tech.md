@@ -48,8 +48,8 @@ Platform, business model, multiplayer rules, saving and implementation. This doc
 
 ## Saving
 
-- Autosave on every hex move; the last 10 autosaves are kept **per hero**.
-- Manual save slots as well, also **per hero** (chosen Nov 1, 2026: each hero keeps their own autosaves and slots, and Load groups them by hero): **3 slots per hero** (chosen Nov 1, 2026).
+- Autosave on every hex move, after every fight and after every rest; the last 10 autosaves are kept **per hero** (fights and rests added Nov 5, 2026 by Ethan; the save's cost on the phone is to be measured). A fight isn't saved mid-way: loading puts the party back just before it, with its encounter pop-up showing again (Ethan, Nov 5, 2026).
+- Manual save slots as well, also **per hero** (chosen Nov 1, 2026: each hero keeps their own autosaves and slots, and Load groups them by hero): **3 slots per hero** (chosen Nov 1, 2026). Saving over a used slot asks to confirm first, and Load can delete a hero's saves, with a confirm (Ethan, Nov 5, 2026). A finished run's saves load as usual, to its end panel. In the first playable, manual saves live in a small pause menu opened from a map button (Save, Load, Settings, Quit to title), to be mocked up first (Ethan, Nov 5, 2026).
 - Saves are stored locally and synced to the cloud. Reloading saves to undo permanent failures (save-scumming) is left up to the player; the game does not prevent it. If saves conflict across devices, the player picks which one to keep.
 
 ## Implementation
