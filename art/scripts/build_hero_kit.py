@@ -1009,6 +1009,10 @@ def layout(desc):
         elbow = ik(shoulder, hand, reach * 0.73, reach * 0.67, pole if world else turn3 @ pole)
         if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "bow" and side == 1:
             elbow = hand + V((0, reach * 0.67, 0))  # the drawing forearm straight back from the jaw along the arrow's line
+        if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "haymaker" and side == 1:
+            # A pulled-back haymaker (Ethan, round 5): the elbow kept back at shoulder height, the forearm level with the upper
+            # arm, running forward and a little out from it, so the fist sits at shoulder height beside the shoulder.
+            hand = elbow + V((0.25, -1, 0)).normalized() * reach * 0.67
         pieces.append((f"hero_arm_upper_{kind}", to_full @ limb_matrix(shoulder, elbow + (elbow - shoulder).normalized() * r * 0.5, r)))
         pieces.append((f"hero_arm_fore_{kind}", to_full @ limb_matrix(elbow, hand, r * 0.86)))
         size = r * 0.98

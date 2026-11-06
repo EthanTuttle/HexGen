@@ -53,7 +53,7 @@ ROWS = [
     ("Longbow", "two-handed", "The same drawn pose as the shortbow", "longbow", None, {}, "ROUND 4 (3): the same fix"),
     ("Crossbow", "two-handed", "Stock at the shoulder, aiming", "crossbow", None, {}, f"kept; {ALL}"),
     ("Gauntlets", "both hands (fist)", "High guard, fists at the face", "gauntlets", None, {}, "CHANGED (15): fists at the chin, below the eyes"),
-    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 5: the rear elbow dropped behind and below the fist, cocked punch and twist kept"),
+    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 6: elbow kept; the forearm level with the upper arm, fist at shoulder height"),
     ("Wraps", "both hands (fist)", "Martial-arts stance, palm forward, other hand at the hip", "wraps", None, {}, "ROUND 5: a new open hand, wrapped palm and wrist, bare fingers and thumb"),
     ("Offhand: shield", "on a longsword", "Held low at the side, facing forward", "longsword", "shield", {}, "ROUND 3: the longsword's new pose"),
     ("Offhand: second weapon", "a dagger, on a longsword", "Held back, ready, behind the main weapon", "longsword", "dagger", {}, "ROUND 3: the longsword's new pose, the dagger edge forward"),
@@ -249,6 +249,9 @@ if __name__ == "__main__":
         sys.exit()
     if "hand" in sys.argv:
         wraps_hand()
+        sys.exit()
+    if "round6" in sys.argv:  # a sheet of panels already rendered with this kit: the glaive's hand fix and the haymaker
+        sheet(["pose_check_panel_16", "pose_check_panel_24"], 1, out="pose_check_round6")
         sys.exit()
     if "round5" in sys.argv:  # the changed panels of round 5 and their sheet
         rows = (16, 24, 25)
