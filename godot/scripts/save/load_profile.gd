@@ -79,10 +79,53 @@ func _run() -> void:
 				await get_tree().process_frame
 				worst = maxf(worst, _ms(f0))
 			steps.worst_first_frame = worst
+			if "cover_queue" in game.map:   # the queued cover: when the last tile's is built, and the worst frame till then
+				steps.cover_queued_tiles = game.map.cover_queue.size()
+				worst = 0.0
+				while not game.map.cover_queue.is_empty():
+					var f0 := Time.get_ticks_usec()
+					await get_tree().process_frame
+					worst = maxf(worst, _ms(f0))
+				steps.cover_done = _ms(scene_t)
+				steps.worst_frame_while_queued = worst
 			results[tiles].append(steps)
 			print("LOADPROF %d tiles, run %d: %s" % [tiles, k + 1, steps])
 	_report()
+	await _placements()
 	get_tree().quit()
+
+
+## Card placement on the whole map: places PLACES tiles beside the map's edge (each a copy of a neighbour's terrain),
+## the camera on each, and times the place call, the worst of the next 30 frames, and the frames till any queued cover is built.
+const PLACES := 6
+
+func _placements() -> void:
+	var m: MapBoard = game.map
+	var spots := []
+	for t: Vector2i in m.terrains.keys():
+		for n in Hex.NEIGHBOURS:
+			if not m.terrains.has(t + n) and not spots.any(func(s): return s[0] == t + n) \
+					and Rules.hex_distance(t + n, Rules.START_TILE) % 3 == 0:
+				spots.append([t + n, m.terrains[t]])
+	spots.sort_custom(func(a, b): return Rules.hex_distance(a[0], Rules.START_TILE) < Rules.hex_distance(b[0], Rules.START_TILE))
+	var step := maxi(spots.size() / PLACES, 1)
+	for i in PLACES:
+		var s: Array = spots[mini(i * step, spots.size() - 1)]
+		game.rig.target = Hex.to3(Hex.tile_position(s[0].x, s[0].y), 0.0)   # looking at it, as when a card is dropped
+		for _f in 10:
+			await get_tree().process_frame
+		var t0 := Time.get_ticks_usec()
+		m.place(s[0], s[1])
+		var call_ms := _ms(t0)
+		var worst := 0.0
+		var frames := 0
+		while frames < 30 or ("cover_queue" in m and not m.cover_queue.is_empty()):
+			var f0 := Time.get_ticks_usec()
+			await get_tree().process_frame
+			worst = maxf(worst, _ms(f0))
+			frames += 1
+		print("LOADPROF place %s %s on %d tiles: call %s ms, worst frame after %s ms, %d frames till cover done" % [
+				s[0], s[1], m.terrains.size(), call_ms, worst, frames])
 
 
 func _ms(t0: int) -> float:
@@ -176,8 +219,11 @@ static func restore_profiled(m: MapBoard, changes: Dictionary) -> void:
 		by[name] = [e[0] + (Time.get_ticks_usec() - t0) / 1000.0, e[1] + 1]
 	lap.call("build_tiles")
 	profile.build_by_terrain = by
-	for c: Vector2i in touched:
-		m._add_cover(c)
+	if m.has_method("_add_covers"):   # as retile does: the tiles in view now, the rest queued a few a frame
+		m._add_covers(touched.keys())
+	else:
+		for c: Vector2i in touched:
+			m._add_cover(c)
 	lap.call("ground_cover")
 	m._update_smoke()
 	m._update_lightning()
