@@ -355,7 +355,7 @@ AP costs set in the Oct 21, 2026 class pass. Upgrades change an existing card an
 | Fighter | Holy Defender (5) | Divine Smite: a weapon attack with heavy radiant bonus damage | 2 | **Blessed Wind**: Second Wind also heals adjacent allies |
 | Fighter | Tactician (5) | Reposition: swap places with an ally, or move an adjacent ally 2 hexes (replaced Command, Oct 22, 2026) | 1 | **Battle Surge**: Action Surge also gives every ally +1 bonus AP |
 | Fighter | Arcane Knight (5) | Arcane Shield: you take less damage until your next turn (all damage, corrected Oct 22, 2026) | 1 | **Second Ward**: Second Wind also grants a ward (a damage-absorbing barrier) |
-| Rogue (theme: mix) | Level 1 | Sneak Attack: a weapon attack that deals bonus damage if the foe is flanked or unaware | 1 | — |
+| Rogue (theme: mix) | Level 1 | Sneak Attack: a weapon attack that deals bonus damage if the foe is flanked or unaware. Placeholder (Ethan, Nov 6, 2026): the weapon's damage doubles; Backstab's +2 still stacks | 1 | — |
 | Rogue | Level 3 | Poison Blade: every hit for the rest of this turn poisons (each hit adds its own 1 damage at the start of the foe's next 2 turns, stacking; Ethan, Nov 5, 2026, placeholder) | 1 | — |
 | Rogue | Con Artist (5) | Fake Surrender: the foe lowers its guard (CHA save); on a fail, it becomes unaware of you | 1 | **Sleeping Draught**: Poison Blade becomes Sleeping Draught: hits this turn make foes drowsy (they flip one fewer coin). Con Artist was rebuilt as a social fighter, Oct 22, 2026 (replaced "Sneak Attack also works on confused foes") |
 | Rogue | Assassin (5) | Vanish: become hidden (Assassinate moved to level 15, Oct 22, 2026) | 1 | **Poison Blade+**: Poison Blade's poison is deadlier |

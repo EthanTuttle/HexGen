@@ -23,7 +23,7 @@ Equipment, weapon and armor categories, weapon rules, weapon category cards, wea
 | Class | Weapons | Armor |
 | --- | --- | --- |
 | Fighter | All | All, including shields |
-| Rogue | Daggers, shortswords, rapiers, scimitars, shortbows, crossbows, fist weapons | Light |
+| Rogue | Daggers, shortswords, rapiers, scimitars, shortbows, crossbows, fist weapons | Clothes only (Ethan, Nov 6, 2026, under the armour rework; was Light) |
 | Wizard | Daggers, staves, wands | None |
 | Cleric | Maces, warhammers, staves | Light, medium, shields |
 | Ranger | Longswords, shortswords, scimitars, daggers, spears, glaives, shortbows, longbows, crossbows, fist weapons | Light, medium |
@@ -85,7 +85,7 @@ AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Placehold
 | Greatsword | Cleave (1 AP): hit all adjacent enemies |
 | Longsword | Parry (1 AP): block the next melee hit |
 | Shortsword | Quick Slash (1 AP): a cheap extra attack |
-| Rapier | Disarm (1 AP): knock the enemy's weapon away |
+| Rapier | Disarm (1 AP): knock the enemy's weapon away; the foe loses 1 AP on its next turn recovering it (Ethan, Nov 6, 2026, placeholder) |
 | Scimitar | Dancing Step (0 AP): right after a scimitar attack, take a free short move |
 | Dagger | Throw (1 AP): ranged attack with the dagger. Backstab modifier |
 | Battleaxe | Hack (1 AP): a quick chop; the next hit on the same foe hits harder; Throw (1 AP): ranged attack with the axe |
