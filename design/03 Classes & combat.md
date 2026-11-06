@@ -311,7 +311,7 @@ Decided Nov 1, 2026. **Bounded hit chances:** hit chances stay in about the same
 
 - **Heroes attacking enemies:** the heads target is 1 for ordinary foes. Elites, bosses and Legendary foes add +1. The far distance band adds +1 to everyone (far ordinary foes need 2, far elites and bosses 3). Armour then takes coins: [Weapons & gear](04 Weapons & gear.md) → Armour.
 - **Hero coins:** main scores grow 3 → 4 → 5 → 6 → 7 at levels 4, 8, 12 and 16 (see Ability scores), matching the target steps.
-- **Enemies attacking heroes:** the hero's level sets the heads target: 1 from level 1, 2 from level 8, 3 from level 16.
+- **Enemies attacking heroes:** the hero's armour or DEX sets the heads target (Armoured 2, Armoured with a shield 3, Clothes equal to DEX; [Weapons & gear](04 Weapons & gear.md) → Armour; changed Nov 5, 2026 by Ethan, replacing the hero-level targets of 1 / 2 / 3 from levels 1 / 8 / 16). Foes' own targets (role and distance) are the tuning knobs for fights.
 - **Enemy coins:** set by role (minion 2, soldier 3, elite 4, boss 5), plus 2 per distance band (near +0, mid +2, far +4).
 - **Heroes growing harder to hit:** armour tier, Rare or Legendary armour taking 1 more coin, a feat adding another −1 (Plate Master, Nimble), and damage reduction from better gear: see [Weapons & gear](04 Weapons & gear.md) → Armour.
 
