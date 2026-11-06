@@ -11,7 +11,7 @@ var _phase_label: Label
 var _portraits := VBoxContainer.new()
 var _hotbar := HBoxContainer.new()
 var _details := VBoxContainer.new()
-var _cam_column: Control
+var _tray_panel: Control
 var _details_panel: Control
 var _hotbar_row: Control
 var _button_box := VBoxContainer.new()
@@ -36,7 +36,6 @@ func _ready() -> void:
 	_bars.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_bars)
 	_build_tray()
-	_build_cam()
 	_build_details()
 	_build_hotbar()
 	_build_all()
@@ -50,6 +49,7 @@ func _build_tray() -> void:
 	var p := UI.panel(UI.TRAY, 18, UI.TRAY_EDGE, 4, Vector4(6, 8, 6, 8))
 	p.custom_minimum_size.x = 72       # CSS width 60 + padding (content-box)
 	UI.at(p, 12, 12)
+	_tray_panel = p
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	_phase_label = UI.label("Allies", "lilita", 12)
@@ -83,7 +83,9 @@ func _refresh_tray() -> void:
 		h.clickable = true
 		h.accessibility_name = u.name
 		h.tooltip_text = UI.effects_tip(u.name, fight.effects(u))   # DOCS: Long-press on HUD controls
-		h.pressed.connect(fight.select.bind(u))
+		h.pressed.connect(func():
+			fight.select(u)
+			_recentre(u))
 		if u.down:
 			h.modulate.a = 0.5
 		var cc := CenterContainer.new()
@@ -132,48 +134,22 @@ class _EndHex extends Control:
 		return UI.finger_rect(size).has_point(point)
 
 
-# --- Camera buttons (left 96, top 14) --------------------------------------------
+# --- The open area and recentring ------------------------------------------------
+# No camera buttons: the camera moves by gestures, and tapping a portrait in the tray recentres on that character
+# (Ethan, Nov 5, 2026; design/07 -> Menu replaces the nav button).
 
 ## The screen rect between the panels, in viewport units: what a fight's opening frames (Fight.open_area). The Dynamic Island's inset moves the panels on a phone.
 func open_rect() -> Rect2:
-	var left: float = _cam_column.get_global_rect().end.x
+	var left: float = _tray_panel.get_global_rect().end.x
 	var right: float = _details_panel.get_global_rect().position.x
 	var bottom: float = _hotbar_row.get_global_rect().position.y
 	return Rect2(left, 0.0, right - left, bottom)
 
 
-func _build_cam() -> void:
-	var v := VBoxContainer.new()
-	_cam_column = v
-	v.add_theme_constant_override("separation", 4)
-	UI.at(v, 96, 14)
-	for b in [["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["rot_l", "Rotate left"], ["rot_r", "Rotate right"], ["center", "Center on the acting character"]]:
-		var h := HexShape.make(40, 46, UI.RIM, UI.CREAM_LIGHT).with_icon(b[0], Color("#33403B"), 18, 2.4).with_shadow(UI.HEX_SHADOW)
-		h.clickable = true
-		h.accessibility_name = b[1]
-		h.pressed.connect(_cam.bind(b[0]))
-		v.add_child(h)
-	add_child(v)
-
-
-func _cam(which: String) -> void:
+func _recentre(u: Dictionary) -> void:
 	var rig := fight.game.rig
-	if which == "center":
-		rig.player_moved = false   # the centre button gives the camera back to the game
-	else:
-		rig._player()
-	match which:
-		"zoom_in":
-			rig._zoom(0.75)
-		"zoom_out":
-			rig._zoom(1.33)
-		"rot_l":
-			rig.ease_to(rig.target, rig.distance, rig.yaw_deg + Rules.ROTATE_STEP)
-		"rot_r":
-			rig.ease_to(rig.target, rig.distance, rig.yaw_deg - Rules.ROTATE_STEP)
-		"center":
-			if not fight.current.is_empty():
-				rig.ease_to(fight.global_position + fight.current.mini.position, rig.distance, rig.yaw_deg)
+	rig.player_moved = false   # the camera goes back to the game
+	rig.ease_to(fight.global_position + u.mini.position, rig.distance, rig.yaw_deg)
 
 
 # --- Details panel (left 656, top 12, 170 x 268: it ends above the hotbar, design/07 -> Combat screen) --------------
@@ -583,7 +559,7 @@ func _build_all() -> void:
 	var edit := TagButton.make("Edit hotbar", 120, 36, 14)
 	edit.cut = 10
 	edit.icon = UI.icon("M4 20h4L19 9l-4-4L4 16z M13 7l4 4", UI.WHITE_WARM, 16, 2.4)
-	edit.pressed.connect(func(): fight.game.toast("Not in the prototype yet", false))
+	edit.pressed.connect(func(): _all.visible = false; ActionCards.open_from_fight(fight))
 	head.add_child(edit)
 	var close := HexShape.make(30, 30, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("close", UI.INK_SOFT, 16, 2.6)
 	close.clickable = true

@@ -319,7 +319,7 @@ func _run() -> void:
 	check(game.map.terrains.size() > 0 and game.picked == null, "the long-press didn't pick a walk")
 
 	# 5. Long-press on HUD controls (DOCS: Touch controls -> Long-press on HUD controls): only a party portrait
-	# with effects opens anything; a hand card, the Quests and nav buttons and a portrait with no effects don't.
+	# with effects opens anything; a hand card, the Quests and menu buttons and a portrait with no effects don't.
 	game.popup.visible = false   # the hex's pop-up from step 4
 	if not game.deck.hand.is_empty():
 		say("Long-press a card: nothing")
@@ -328,12 +328,12 @@ func _run() -> void:
 		await hold_still(c.get_global_rect().get_center())
 		check(not game.popup.visible, "a long-press on a hand card opens nothing")
 		check(game.held == held_before, "letting go after a long-press on a hand card doesn't hold it")
-	say("Long-press Quests and the nav button: nothing")
+	say("Long-press Quests and the menu button: nothing")
 	var toasts_before: String = game.hud._toast_text.text
 	await hold_still(control("Quests"))
 	check(not game.popup.visible and game.hud._toast_text.text == toasts_before, "a long-press on Quests opens nothing and doesn't press it")
-	await hold_still(control("Camera"))
-	check(not game.popup.visible and not game.hud._cam_buttons.visible, "a long-press on the nav button opens nothing and doesn't open it")
+	await hold_still(control("Menu"))
+	check(not game.popup.visible and game.ui.find_children("*", "SavePopups", true, false).is_empty(), "a long-press on the menu button opens nothing and doesn't open it")
 	say("Long-press a portrait with no effects: nothing")
 	var portrait := control(game.party[1].name)
 	await hold_still(portrait)
@@ -382,14 +382,13 @@ func _run() -> void:
 	await _wait(0.3)
 	check(game.rig.target.distance_to(target0) > 2.0 and game.picked == null, "a one-finger drag pans and doesn't tap")
 
-	# 9. The nav button's centre gives the camera back.
-	say("Nav: centre")
-	await tap(control("Camera"))
-	await _wait(0.3)
-	await tap(control("Center"))
-	await _wait(0.6)
-	check(not game.rig.player_moved, "the nav button's centre gives the camera back to the game")
-	await tap(control("Camera"))
+	# 9. Tapping the hero's portrait gives the camera back, centred on the party (design/07: no nav button).
+	say("Tap the hero's portrait: recentre")
+	var away := game.rig.target.distance_to(game.party_node.centre())
+	await tap(control(game.party[0].name))
+	await _wait(1.0)
+	check(away > 1.0 and not game.rig.player_moved and game.rig.target.distance_to(game.party_node.centre()) < 0.5,
+			"tapping the hero's portrait recentres the camera on the party (%.1f m away before)" % away)
 
 	# 10. The Rest card shows while the party stands on the camp; tapping it rests.
 	say("Tap Rest")
@@ -494,6 +493,13 @@ func _fight() -> void:
 				u.defending = false
 				f.hud.refresh()
 				game.popup.visible = false
+				say("Pan, then tap a portrait: recentre on them")   # design/07: no camera buttons in combat
+				await drag(Vector2(420, 200), Vector2(520, 140), 0.4)
+				await _wait(0.2)
+				await tap(control(u.name))
+				await _wait(1.0)
+				var at: Vector3 = f.global_position + u.mini.position
+				check(not game.rig.player_moved and game.rig.target.distance_to(at) < 0.5, "tapping a combat portrait recentres on that character")
 			var tries := 0
 			while f.active and f.phase == "allies" and f.ap_left(u) > 0 and tries < 5:
 				tries += 1

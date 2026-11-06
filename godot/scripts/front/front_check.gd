@@ -3,6 +3,8 @@ extends Node
 ## A scripted run of the screens before the game, by touch (`-- --front --check`, add `--shots` to save
 ## screens/front_*.png). Prints `FRONT OK` / `FRONT FAIL` for each check and quits. A test aid, not game UI.
 
+const SAVES_DIR := "user://saves_front_check"   # Front empties it, so the title is a first launch
+
 var front: Front
 var failed := 0
 var shots_on := "--shots" in OS.get_cmdline_user_args()

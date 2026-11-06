@@ -39,11 +39,11 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | Rest the mouse on a hex (or long-press it on touch) | Its details: terrain, region and cluster progress, the variant once finished, any encounter |
 | The **Rest** card along the bottom (shown while the party stands on the camp) | Rest at camp: heal, +8 hours, discard down to 7, reshuffle the discard pile |
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
-| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E and the nav buttons turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
+| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; tapping the hero's portrait recentres it and gives it back |
 
 Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (the hero's Stealth). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
 
-**In a fight** (combat v14): click a portrait in the tray (or an ally on the board) to act with them, pick a card on the hotbar, then tap a target and press **Flip coins** (attacks), **Cast** (spells) or **Use** (self cards). Move lights the hexes you can reach; tap one. **All actions** lists every card. **End** hands the turn to the foes, and asks first if anyone still has AP. The camera buttons are the column beside the tray.
+**In a fight** (combat v14): click a portrait in the tray (or an ally on the board) to act with them, pick a card on the hotbar, then tap a target and press **Flip coins** (attacks), **Cast** (spells) or **Use** (self cards). Move lights the hexes you can reach; tap one. **All actions** lists every card. **End** hands the turn to the foes, and asks first if anyone still has AP. There are no camera buttons: gestures move the camera, and tapping a portrait in the tray recentres on that character (design/07, Nov 5).
 
 **After the fight** (after combat v7): Victory, the party's HP, the cards the win draws, then **Back to map**.
 
@@ -111,6 +111,40 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 
 `scripts/creator/creator_data.gd` is generated from the mockup by `tools/creator_data.py`, so names, blurbs, card text and icons copy across. Don't edit it by hand.
 
+## Action cards screen
+
+`scripts/action_cards/`, from Action cards v3b, opened by combat's Edit hotbar (All actions). `-- --cardscheck` plays it by touch in a fight and prints `CARDS OK` / `CARDS FAIL` (add `--shots` for `screens/action_cards/`, `--safe=both` for the phone). Each member keeps its 7 slots as `hot_slots`, gaps included. `hot`, which combat draws, is the same cards without the gaps, changed in place so the fight sees it.
+
+| Placeholder | Value here | Why |
+| --- | --- | --- |
+| Weapon sets | One. The Set 1 / Set 2 tabs always show; Set 2 is dimmed with "No weapon" and can't be picked (Ethan, Nov 5) | Party members have one weapon |
+| List columns | 3 on a phone, 4 at full width | v3 has 4 at 844 pt |
+| Scrolling the list by touch | A quick swipe up or down in the list scrolls it until the finger leaves the list, which lifts the card. A sideways move, or a move after a long-press, lifts it at once. With the mouse, every drag lifts and the wheel scrolls | v3 drags on every move, which leaves no way to scroll by finger |
+| Subtitles | The hero's from the creator. Companions: "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue" · Lv. No subclass before level 5 | Fluffy's race name is open |
+| Gear screen way in | Not hooked up | No gear screen yet; the menu backdrop is built |
+
+Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt details panel with its sizes (name 17, text 11), and every card fits it (`--cardscheck` shows each one; Breath Weapon, blue, is the tallest at 188 of 276 pt); no label column on the tray. Cut: v3's hints, the drag footer, tiles' source words and slot numbers, the slots' number badges, "always available", the set's name in the list's header (the tab says it), and the Class section's race and class. "Empty" stays in empty slots.
+
+## Saving
+
+`scripts/save/`, from design/06 -> Saving. `SaveGame` turns a running game into plain data and back. `Saves` keeps the files: per hero, a ring of the last 10 autosaves and 3 slots under `user://saves/<hero id>/`, plus `index.json`, which lists every hero for the title and Load. Saves are JSON (`JSON.from_native`, so tiles come back as tiles), written to a `.tmp` file and renamed, so a save is never half written. A save from a newer build, or one that won't read, shows dimmed in Load.
+
+- **When it saves:** every step onto a hex (the party's `entered` signal), after every fight (the results screen's `done`), and after every rest (one line in `Game.rest_here`). Only a campaign with a hero saves: checks and direct starts never write real saves.
+- **Fights:** a fight isn't saved mid-way. The step onto its hex was saved, so loading shows its pop-up again. Owed level picks reopen with the same three options, and a finished run opens on its end panel.
+- **What's kept:** the hero, the run, the RNG's state, the party (each member's whole dictionary), the deck, the clock, encounters (time left), and the map. The map keeps everything that depends on its history: tiles with their looks, regions, trails, water gates, Troll Bridge water, raised regions and canyon mazes. Everything else is rebuilt by one `retile`.
+- **Guard:** `SaveGame.SAVED` and `REBUILT` list every variable of Game, MapBoard and PartyWalker, and `--savecheck` fails on any variable missing from both. Sort a new variable into one list.
+- **Performance:** the capture runs on the frame. Encoding and writing run on a worker thread (`Saves._drain`). Numbers are in the table below.
+- **Title:** Continue opens the latest autosave and shows its hero, level, place and time. Load groups saves by hero, with Delete (it asks first). The backdrop is the latest save's map, around where the party stood.
+- **Check:** `-- --savecheck` plays a real run with PlayCheck's moves. At 4 points it saves to a slot, reads the file back, loads it into a fresh scene and saves again, and every field must match, along with the rebuilt map (gates, streets, cliffs, water, canyon mazes, slots, reach). It does the same for the debug map (every variant) and for a grown canyon and a grown raised region. It also covers the 10-save ring, slots, time stamps, a broken file, a too-new file, two heroes with the same name, and delete. It prints `SAVE OK` / `SAVE FAIL` and timings, then `SAVE DONE`. `--savetime` prints every save's timing in any run.
+
+| Placeholder | Value here | Why |
+| --- | --- | --- |
+| Time stamps | "Today 9:40 pm", then "Yesterday 9:40 pm", then "Nov 3, 9:40 pm" (with the year if it isn't this year) | 07 gives only "Today 9:40 pm"; approved for the plan |
+| Place in a save's row | The finished region's name; on the starting tile the background's place; else the terrain's name | Same |
+| Load on a first launch | Hidden with Continue until a save exists | Title v11 always shows Load; an empty Load has nothing to show |
+| A hero's hex in Load | The hero's tray colour and initial | The mockup numbers them |
+| Canyons on load | Rebuilt from the saved maze (`Canyon.generate`'s `maze`), so walls and openings match exactly. A canyon that grew was built in steps, so its kept tiles' rock is drawn again from the whole maze and can look slightly different | Known look difference (planner, Nov 5); keeping each step's rock would mean saving the build history |
+
 ## Test notes
 
 A small flag sits in the top right corner on every screen in test builds (`scripts/test_notes.gd`, debug builds only): on the phone in the strip beyond the safe area, clear of the island and the HUD. Tapping it takes a screenshot, holds the game and opens a box; Save writes the note, Cancel drops it.
@@ -169,10 +203,10 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 | Two fingers turning | Rotate, freely: nothing snaps when the fingers lift (as with a right-drag) |
 | Tap | What a click does: hold a card, place it, pick a hex to walk to, act in combat |
 | Long-press on the board | A map hex's details (as hovering does with a mouse); on a combat token, a foe's name, HP and what it does, or an ally's HP, AP and status |
-| Long-press on a HUD control | Only a **party portrait** opens anything: that character's effects (injuries, buffs, conditions) and what each does, and nothing if they have none. Combat's action cards also keep their details (docs: Action cards). Everything else (hand cards, Quests, equipment, the nav and camera buttons, End hex, the landmark pin, the Rest card, Edit hotbar, the results screen's card hexes) does nothing, and letting go after the hold doesn't press it. Mouse hover follows the same rule |
+| Long-press on a HUD control | Only a **party portrait** opens anything: that character's effects (injuries, buffs, conditions) and what each does, and nothing if they have none. Combat's action cards also keep their details (docs: Action cards). Everything else (hand cards, Quests, the menu, equipment, End hex, the landmark pin, the Rest card, Edit hotbar, the results screen's card hexes) does nothing, and letting go after the hold doesn't press it. Mouse hover follows the same rule |
 | Drag a card out of the hand | It rides just above the finger; let go over a lit slot to place it, anywhere else to put it back |
 
-**Rotation is free** (docs, Oct 30, 2026): twisting and right-dragging turn the view by exactly as much as the fingers or the mouse, with no snap. The nav button's rotate buttons and Q / E turn it by `Rules.ROTATE_STEP` (60°, placeholder).
+**Rotation is free** (docs, Oct 30, 2026): twisting and right-dragging turn the view by exactly as much as the fingers or the mouse, with no snap. Q / E turn it by `Rules.ROTATE_STEP` (60°, placeholder).
 
 **Thresholds** (`scripts/game/rules.gd`, all placeholders): a tap moves less than **8 pt** and lets go within **350 ms**; moving 8 pt or more makes it a drag; a press held still past **350 ms** is a long-press, and it opens the details right then (the docs give one time, so a still press that can no longer be a tap becomes a long-press). A mouse resting still for 350 ms shows the same pop-up. The smallest tap target is **44 pt** (`Rules.FINGER`). The layout's units are about 1 pt on an iPhone (844 × 390 against the iPhone 15 Pro's 852 × 393 pt in landscape).
 
@@ -181,22 +215,21 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 - `scripts/gestures.gd` reads `InputEventScreenTouch` / `InputEventScreenDrag` straight, and treats the left mouse button as one more finger. It turns them into tap, drag, long-press, pinch, twist and hover. It lives on the camera rig, which pans, zooms and turns from it; the map (`game.gd`) and combat (`fight.gd`) take the taps and long-presses.
 - **Gestures don't fight:** a second finger cancels any tap, hold or pan in progress, and the finger left behind does nothing until both have lifted, so a pinch never places, walks or acts. A press that moves 8 pt is a drag and can no longer tap, on the board and on every HUD button (`UI.is_tap`).
 - **No double fire:** Godot's mouse-from-touch emulation stays on, because the HUD's buttons need it. The board ignores the emulated mouse events (device −1) and reads the touches only. A long-press on a HUD control swallows the release, so it doesn't also press the control.
-- **The player's camera wins:** any pan, pinch, twist, wheel, right-drag, key or nav zoom/rotate sets `CameraRig.player_moved`. While it's set, the camera doesn't follow the walking party or centre on whoever acts in combat. It clears at the next walk on the map, at the start of each allies' turn in combat, and when the nav button's centre is pressed.
+- **The player's camera wins:** any pan, pinch, twist, wheel, right-drag, key sets `CameraRig.player_moved`. While it's set, the camera doesn't follow the walking party or centre on whoever acts in combat. It clears at the next walk on the map, at the start of each allies' turn in combat, and when a portrait's tap recentres it.
 - **Finger-sized targets:** controls drawn smaller than 44 pt keep their look and get a 44 × 44 hit area (`UI.finger_rect`, used by `HexShape`, `TagButton`, the landmark pin, combat's End hex, hotbar and All actions cards, and the `UI.FingerButton` text buttons). The ones that needed it, from the touch test's audit:
 
   | Control | Drawn | Where |
   | --- | --- | --- |
   | Hand cards | 40 × 46 | Map |
-  | Quests, equipment, nav and its five camera buttons | 40 × 46 | Map |
+  | Quests, the menu and equipment | 40 × 46 | Map |
   | Party portraits | 38 × 44 | Map and combat tray |
-  | Combat's camera buttons | 40 × 46 | Combat |
-  | End phase hex | 38 × 47 | Combat |
+    | End phase hex | 38 × 47 | Combat |
   | Landmark pin | 22 × 24 | Map |
   | Encounter pop-up's Fight button | 40 tall | Map |
 
   The grown areas of neighbouring hand cards and portraits overlap by 2–3 pt; the one drawn on top wins.
 
-**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (39 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex and a foe; long-press on HUD controls: a hand card, Quests, the nav button, End hex and a portrait with no effects open nothing and aren't pressed, a portrait with an effect shows it, on the map and in combat (the test adds a "[Test effect]" or sets Defending for that check, then takes it off); no hover text on any control the docs give none; no visible text under 11 pt on the map, in combat and on the results screen; pinch, a free twist, pan, the nav centre, the Rest card, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines). The Nov 1 run was at 852 × 393 pt (`--resolution 1704x786`) with the Mobile renderer and the phone's shadow settings (`--rendering-method mobile -- --phone`): 0 failed. `screens/touch_03_long_press_portrait.png` and `touch_08_long_press_combat_portrait.png` show the portrait pop-ups; the `loop_*.png` stills were retaken the same way.
+**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (41 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex and a foe; long-press on HUD controls: a hand card, Quests, the menu button, End hex and a portrait with no effects open nothing and aren't pressed, a portrait with an effect shows it, on the map and in combat (the test adds a "[Test effect]" or sets Defending for that check, then takes it off); no hover text on any control the docs give none; no visible text under 11 pt on the map, in combat and on the results screen; pinch, a free twist, pan, the hero's portrait recentring (map and combat), the Rest card, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines). The Nov 1 run was at 852 × 393 pt (`--resolution 1704x786`) with the Mobile renderer and the phone's shadow settings (`--rendering-method mobile -- --phone`): 0 failed. `screens/touch_03_long_press_portrait.png` and `touch_08_long_press_combat_portrait.png` show the portrait pop-ups; the `loop_*.png` stills were retaken the same way.
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 -- --touch           # play with the mouse as a finger, phone-sized
@@ -593,6 +626,7 @@ No phone runs until the Engine Planner says the phone is plugged in and unlocked
 - **Desert:** heat shimmer reads the screen, so the frame rate with it on (`DESERT PERF` lines); the silhouette's stencil on the phone's GPU; generating a canyon (about 680 ms on the Mac) and growing one, and its worst frame in play; a sand region's retile (395 ms on the Mac, on the main thread); the wasteland's view at 1,513 draw calls.
 - **Swamp:** a swamp card placed beside others and a region turning (`SWAMP PERF` lines; `marsh_tile` 26 ms a tile on the Mac, off the main thread when a region turns, on it when a card lands); the wisps, bubbles and mist on a real screen.
 - **Feywild crossing:** `FEY PERF` lines; 3,500 to 3,900 triangles a tile and their shadow pass (the region alone is heavy), the wisps and falls moving, and whether the crowns over the walk bother anyone (accepted by Ethan from previews).
+- **Saving:** an autosave per step (`--savetime` prints each: on the frame 0.1–0.5 ms on the Mac; off it, 7 ms to encode and 1 ms to write a 900-tile, 152 KB save), judged by the worst frame while walking; and a load (`--loadprofile`: on the Mac, about 0.4 s at 37 tiles and 19 s at 900, mostly ground cover at 13–15 ms a tile).
 - **Combat maps:** `COMBAT PERF` lines on the heaviest, Lawns, gardens, Lanes, Breach and market Street (up to 22,636 triangles and 28 draw calls in a frame on the Mac, including shadow passes; the Mac sits at its 8.3 ms cap, so that says nothing about the phone); the zoom into a fight; tapping raised cells and giants on a real screen; the opening's distance and panning across a map on a real screen, judged by hand; moving lava's cost and look on a real screen (Fissures, Crater; `COMBAT PERF` lines); peaks hiding cells on hills maps (the kit's table); the hidden-cell counts (`COMBAT MAP` lines, measured with the whole map in view, so they stay comparable), judged against what tall pieces hide once panned close.
 - **Covered window, with Ethan at the Mac (not the phone):** cover a `--forestcheck` window and look for `UNDRAWN`, to confirm the stall's cause. Pixel failures after `UNDRAWN` mean rerun, not pass.
 - **Canyon lanes in motion:** judge them moving on a real screen, as the fix for their triangle pattern (one normal to a lane quad) was only judged from stills. Ethan approved it from those on Nov 3.

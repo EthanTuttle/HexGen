@@ -8,6 +8,7 @@ const RACE_C := Color("#2E7A6E")
 const CLASS_C := Color("#B5532F")
 
 var c: Creator
+var _shown := ""                       # the step last built, so a rebuild within it doesn't fade in again
 var _focus := ""                       # "bg:Lore": the proficiency being looked at
 
 
@@ -37,7 +38,12 @@ static func who_card(cr: Creator, hex_w: float, hex_h: float, icon: float, title
 	return v
 
 
+## Rebuilt on every change; it fades in and the list starts at the top only when the step is new, so a tap doesn't flash
+## or jump (Ethan's phone notes, Nov 5, 2026).
 func refresh() -> void:
+	var same := _shown == c.step
+	var y := CUI.scroll_of(self) if same else 0
+	_shown = c.step
 	for ch in get_children():
 		remove_child(ch)
 		ch.queue_free()
@@ -56,7 +62,9 @@ func refresh() -> void:
 		panel.add_child(_scores())
 	else:
 		panel.add_child(_skills())
-	CUI.reveal(h)
+	if not same:
+		CUI.reveal(h)
+	CUI.keep_scroll(self, y)
 
 
 # --- Scores ------------------------------------------------------------------------

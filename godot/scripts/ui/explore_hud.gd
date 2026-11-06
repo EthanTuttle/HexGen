@@ -1,15 +1,13 @@
 class_name ExploreHud
 extends Control
 ## The exploration screen's HUD, built from Explore v8b (mockups/exploration/Explore-v8b-Sleeve.dc.html),
-## in its 844 x 390 layout: party tray, Quests / equipment / nav buttons, prompt banner, toast, day clock,
+## in its 844 x 390 layout: party tray, Quests / menu / equipment buttons, prompt banner, toast, day clock,
 ## the hand in a side column, the encounter pop-up, and markers standing over the board.
 
 var game: Game
 
 var _tray := VBoxContainer.new()
-var _nav_row := HBoxContainer.new()
-var _cam_buttons := HBoxContainer.new()
-var _nav: HexShape
+var _menu: HexShape
 var _banner: PanelContainer
 var _banner_text: Label
 var _banner_cancel: Button
@@ -17,7 +15,6 @@ var _toast: PanelContainer
 var _toast_text: Label
 var _clock_dial := ClockDial.new()
 var _clock_title: Label
-var _clock_sub: Label
 var _hand_count: Label
 var _hand_grid := Control.new()
 var _deck_n: HexShape
@@ -82,6 +79,8 @@ func _refresh_tray() -> void:
 		h.accessibility_name = m.name
 		h.tooltip_text = UI.effects_tip(m.name, m.get("effects", []))   # DOCS: Long-press on HUD controls
 		h.clickable = true
+		if m == game.party[0]:   # the hero's portrait recentres the camera on the party (design/07)
+			h.pressed.connect(game.camera_button.bind("center"))
 		var cc := CenterContainer.new()
 		cc.add_child(h)
 		v.add_child(cc)
@@ -89,50 +88,35 @@ func _refresh_tray() -> void:
 		_tray.add_child(v)
 
 
-# --- Quests, equipment and the nav button (left 22, top 260) -------------------
+# --- Quests, the menu and equipment (left 22, bottom 358) ----------------------
+# A zig-zag of touching hexes, the menu between and above the other two. The nav button is gone: the camera moves by
+# gestures, and tapping the hero's portrait recentres it (Ethan, Nov 5, 2026; design/07 -> Menu replaces the nav button).
+
+const HEX_GAP := 3.0
 
 func _build_buttons() -> void:
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
-	UI.at(col, 22, 260)
-	var quests := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("quests", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-	quests.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	quests.clickable = true
-	quests.accessibility_name = "Quests"
-	quests.pressed.connect(func(): game.toast("Not in the prototype yet", false))
-	col.add_child(quests)
-	_nav_row.add_theme_constant_override("separation", 6)
-	var gear := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("gear", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-	gear.clickable = true
+	var cluster := Control.new()
+	cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.at(cluster, 22, 275)
+	var spots := [Vector2(0, 37), Vector2(20 + HEX_GAP * 0.5, 0), Vector2(40 + HEX_GAP, 37)]   # Quests, menu, equipment
+	var quests := _hex_button("quests", "Quests", func(): game.toast("Not in the prototype yet", false))
+	var menu := _hex_button(SavePopups.MENU_ICON, "Menu", func(): PauseMenu.open(game))
+	var gear := _hex_button("gear", "Character and gear", func(): game.toast("Not in the prototype yet", false))
+	_menu = menu
 	_gear_button = gear
-	gear.accessibility_name = "Character and gear"
-	gear.pressed.connect(func(): game.toast("Not in the prototype yet", false))
-	_nav_row.add_child(gear)
-	_nav = HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("nav", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-	_nav.clickable = true
-	_nav.accessibility_name = "Camera controls"
-	_nav.pressed.connect(_toggle_nav)
-	_nav_row.add_child(_nav)
-	_cam_buttons.add_theme_constant_override("separation", 4)
-	_cam_buttons.visible = false
-	var spacer := Control.new()
-	spacer.custom_minimum_size.x = 0
-	_cam_buttons.add_child(spacer)
-	for b in [["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["rot_l", "Rotate left"], ["rot_r", "Rotate right"], ["center", "Center on the party"]]:
-		var h := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon(b[0], UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-		h.clickable = true
-		h.accessibility_name = b[1]
-		h.pressed.connect(game.camera_button.bind(b[0]))
-		_cam_buttons.add_child(h)
-	_nav_row.add_child(_cam_buttons)
-	col.add_child(_nav_row)
-	add_child(col)
+	for k in 3:
+		var b: HexShape = [quests, menu, gear][k]
+		b.position = spots[k]
+		cluster.add_child(b)
+	add_child(cluster)
 
 
-func _toggle_nav() -> void:
-	_cam_buttons.visible = not _cam_buttons.visible
-	_nav.rim = UI.DARK if _cam_buttons.visible else UI.CREAM
-	_nav.with_icon("nav", UI.CREAM if _cam_buttons.visible else UI.INK, 18, 2.4)
+func _hex_button(icon: String, name: String, on_press: Callable) -> HexShape:
+	var h := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon(icon, UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
+	h.clickable = true
+	h.accessibility_name = name
+	h.pressed.connect(on_press)
+	return h
 
 
 # --- Banner (centred on x 378, top 14) and toast (bottom 16) -------------------
@@ -197,43 +181,41 @@ func hide_toast() -> void:
 	_toast.visible = false
 
 
-# --- Day clock (left 680, top 12, width 152) ------------------------------------
+# --- Day clock, heading the hand's panel -----------------------------------------
+# One tall panel: the dial and "Day 1 · Midday", a divider, then the hand (Ethan, Nov 5, 2026: option B, and no "Nightfall
+# in" line; design/07). Its own panel ran into the hand's on the phone, as its text wrapped to four lines.
 
 func _build_clock() -> void:
-	var p := UI.panel(UI.CREAM, 16, UI.CREAM_EDGE, 4, Vector4(8, 6, 8, 6))
-	p.custom_minimum_size.x = 152
-	UI.at_right(p, 680, 12)
-	_clock_panel = p
 	var h := HBoxContainer.new()
+	_clock_panel = h
 	h.add_theme_constant_override("separation", 8)
 	h.add_child(_clock_dial)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 0)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	_clock_title = UI.label("", "lilita", 15, UI.INK, 0, 1.1)
-	_clock_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_clock_title.custom_minimum_size.x = 82
-	_clock_sub = UI.label("", "n800", 11, UI.INK_SOFT, 0, 1.25)
-	_clock_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_clock_sub.custom_minimum_size.x = 82
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_clock_title = UI.label("", "lilita", 14, UI.INK, 0, 1.1)
 	v.add_child(_clock_title)
-	v.add_child(_clock_sub)
 	h.add_child(v)
-	p.add_child(h)
-	add_child(p)
 
 
-# --- Hand, in a side column (left 680, top 84, 152 x 294) ----------------------
+# --- Clock and hand, in a side column (left 680, top 12, 152 x 366) ---------------
 
 func _build_hand() -> void:
 	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(10, 10, 10, 10))
-	p.custom_minimum_size = Vector2(152, 294)
-	p.size = Vector2(152, 294)
+	p.custom_minimum_size = Vector2(152, 366)
+	p.size = Vector2(152, 366)
 	p.clip_contents = true
-	UI.at_right(p, 680, 84)
+	UI.at_right(p, 680, 12)
 	_hand_panel = p
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
+	v.add_child(_clock_panel)
+	var line := ColorRect.new()
+	line.color = UI.CREAM_EDGE
+	line.custom_minimum_size.y = 1.5
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(line)
 	var head := HBoxContainer.new()
 	head.add_child(UI.label("Hand", "lilita", 16))
 	var sp := Control.new()
@@ -563,16 +545,13 @@ func refresh() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Clock (mockup: Day N · phase; "Nightfall in N min" / "Dawn in N min")
+	# Clock: Day N · phase (the mockup's "Nightfall in N min" line is cut, design/07)
 	var m: float = game.minute
 	var night := m >= Rules.NIGHT_AT
 	_clock_dial.minute = m
 	_clock_dial.night = night
 	_clock_dial.queue_redraw()
-	var left := (Rules.DAY_MINUTES - m) if night else (Rules.NIGHT_AT - m)
 	_clock_title.text = "Day %d · %s" % [game.day, Rules.phase_name(m)]
-	_clock_sub.text = ("Dawn in " if night else "Nightfall in ") + ("under a minute" if left < 1 else "%d min" % ceili(left))
-	_clock_sub.add_theme_color_override("font_color", UI.RED if night or left <= 5 else UI.INK_SOFT)
 	# Banner and toast stay centred on x = 378 (the open area left of the hand column)
 	_banner.position = Vector2(378 - _banner.size.x * 0.5, 14)
 	if _toast.visible:

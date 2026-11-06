@@ -22,6 +22,7 @@ var title: TitleScreen
 var creator: Creator
 var _backdrop := ColorRect.new()
 var _t := 0.0
+var _centre := Vector3(6.0, 0.0, 0.0)   # what the drift circles: the generic world's middle, or the last save's party
 
 
 static func goes_direct() -> bool:
@@ -36,6 +37,7 @@ func _ready() -> void:
 	if goes_direct():
 		for unused: Node in [map, cam, ui, safe, _backdrop]:   # never added to the tree, so nothing else frees them
 			unused.free()
+		set_process(false)   # the drift reads the camera, freed above
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 		return
 	clock = Stage.create(self)
@@ -44,8 +46,18 @@ func _ready() -> void:
 	clock.hour = DUSK_HOUR
 	map.time_of_day = clock
 	add_child(map)
+	if "--check" in OS.get_cmdline_user_args():   # the front check starts as a first launch, whatever saves this machine has
+		Saves.dir = FrontCheck.SAVES_DIR
+		Saves.wipe_check_dir(Saves.dir)
 	var t0 := Time.get_ticks_msec()
-	map.retile(world())
+	var last := SaveGame.latest()
+	if last.is_empty():
+		map.retile(world())
+	else:   # DOCS (Title screen): v1b, your last save
+		_centre = Hex.to3(Hex.tile_position(last.game.party_tile.x, last.game.party_tile.y))
+		cam.fov = FOV
+		add_child(cam)
+		SaveGame.restore_map(map, last.map, last.game.party_tile)
 	print("FRONT world: %d tiles in %d ms" % [map.terrains.size(), Time.get_ticks_msec() - t0])
 	cam.current = true
 	add_child(ui)
@@ -59,6 +71,14 @@ func _ready() -> void:
 	safe.add_child(title)
 	_drift(0.0)
 	title.new_campaign.connect(open_creator)
+	if "--creatortaps" in OS.get_cmdline_user_args():
+		var taps := CreatorTapCheck.new()
+		taps.front = self
+		add_child(taps)
+	if "--titleshots" in OS.get_cmdline_user_args():
+		var shots := TitleShots.new()
+		shots.front = self
+		add_child(shots)
 	if "--check" in OS.get_cmdline_user_args():
 		var check := FrontCheck.new()
 		check.front = self
@@ -77,7 +97,7 @@ func _drift(delta: float) -> void:
 
 
 func _aim(along: float) -> void:
-	var at := DRIFT_METRES * along + Vector3(6.0, 0.0, 0.0)
+	var at := DRIFT_METRES * along + _centre
 	cam.position = at + Vector3(0.0, 28.0, 30.0)
 	cam.look_at(at)
 

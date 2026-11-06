@@ -1757,6 +1757,7 @@ func rest_here() -> void:
 	_advance(Rules.REST_MINUTES)
 	held = -1
 	_refresh()   # no summary toast: the HP bars, the clock and the deck count show it (DOCS: UI -> Screen text)
+	Saves.autosave(self)   # design/06 -> Saving: after every rest
 
 
 # --- Camera buttons (nav) ------------------------------------------------------

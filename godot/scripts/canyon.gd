@@ -1116,12 +1116,15 @@ static func _reach(field: Field, others: Array, p: Vector3, n: Vector2, sign: fl
 
 ## The generated region: {openset, entrances, landmark, turn, pieces: tile -> Piece, triangles, field_ms, mesh_ms}. Safe
 ## off the main thread; turn the pieces into meshes on the main thread. grown: a finished canyon growing, {tiles, openset,
-## entrances} as they were, and the result of grow(): only its rebuild tiles get pieces.
-static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: float, grown := {}) -> Dictionary:
+## entrances} as they were, and the result of grow(): only its rebuild tiles get pieces. maze: a saved {openset, entrances,
+## mesas} to build every tile from instead of working the maze out again (a loaded save's canyon that grew).
+static func generate(tiles: Array, landmark: Vector2i, turn: int, seed_value: float, grown := {}, maze := {}) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	var field: Field
 	var rebuilt: Array = [] if grown.is_empty() else grown.grow.rebuild.duplicate()
-	if grown.is_empty():
+	if grown.is_empty() and not maze.is_empty():
+		field = Field.new(tiles, landmark, turn, true, {openset = maze.openset, entrances = maze.entrances}, null, [], maze.mesas)
+	elif grown.is_empty():
 		field = Field.new(tiles, landmark, turn, true)
 	else:
 		var old := Field.new(grown.tiles, landmark, turn, true, {openset = grown.openset, entrances = grown.entrances}, null, [], grown.mesas)
