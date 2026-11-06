@@ -173,3 +173,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-05 | `art/preview/pose_check_round5_1_v1.png`, `pose_check_wraps_hand_v2.png` | note | Wraps with the new open hand approved (frozen). Brass knuckles: elbow position stays; the forearm should sit level with the upper arm (same height), as in a pulled-back haymaker, not angled up to the ear. Hawk: Ethan gave Combat Art a reference photo for a new pass |
 | 2026-11-05 | `art/preview/beast_hawk_solo_v3.png` | approved | Ally hawk v3 (landing red-tail, from Ethan's reference photo). All four ally beasts approved: export together |
 | 2026-11-05 | `art/preview/pose_check_round5_1_v2.png` | approved | Glaive with the front hand on the haft (frozen). Brass knuckles still to fix (forearm level with the upper arm) |
+| 2026-11-05 | `art/preview/pose_check_round6_1_v1.png` | approved | Brass knuckles (round 6). Every weapon pose is now approved: export the hero kit (v10) |
