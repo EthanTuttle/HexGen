@@ -169,14 +169,13 @@ def bear(col):
     def head_fur(c, n):
         ahead = (c - hc).dot(fwd)
         rise = (c - (hc + fwd * ahead)).z
-        if ahead > 0.184:  # the nose: the end of the muzzle, as on the wolf
-            return "hero_pupil"
-        if ahead > 0.085:
+        if ahead > 0.085:  # the tan muzzle; the nose is a small piece on top of its tip
             return pale
         return back if rise > 0.05 else coat
     em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=8) for y, z, w, d in
                 ((-0.085, 0.0, 0.1, 0.09), (-0.01, 0.012, 0.138, 0.118), (0.055, 0.0, 0.122, 0.1), (0.095, -0.03, 0.078, 0.066),
                  (0.16, -0.04, 0.062, 0.054), (0.19, -0.045, 0.046, 0.038))], head_fur)
+    p.blob(h(0.186, -0.014), 0.022, "hero_pupil", squash=0.62)  # a small nose at the top of the muzzle's tip (bear v3)
     face(p, h, fwd, eye=(0.055, 0.04, 0.066, 0.026, 0.02), brow=((0.072, 0.064, 0.03), (0.056, 0.062, 0.086)), dark=dark,
          mouth=[(0.18, -0.074, 0.014), (0.14, -0.08, 0.04), (0.1, -0.072, 0.056)])
     for x in SIDE:  # round ears, set on the skull, a flat pale inside facing forward
