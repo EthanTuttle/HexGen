@@ -87,6 +87,8 @@ func _fresh(u: Dictionary) -> void:
 func _turn(u: Dictionary) -> void:
 	f.phase = "allies"
 	f.busy = false
+	u.dance_ready = false
+	u.quick_ready = false
 	u.ap = Rules.AP
 	u.bonus = 0
 	u.used = {}
@@ -132,6 +134,26 @@ func _play(u: Dictionary, id: String, at, coins: Array) -> void:
 
 func _run() -> void:
 	await _wait(1.0)
+	if "--minishot" in OS.get_cmdline_user_args():   # the hero kit's mini with the hero's gear, close up in a fight
+		var h := Hero.new()
+		h.race = "Human"
+		h.klass = game.run.klass
+		h.gear = {"main": game.party[0].weapon, "off": game.party[0].off, "armour": game.party[0].armour}
+		h.appearance = {"race": "Human", "build": "Average", "head": 0, "hair": 0}
+		Hero.current = h
+		await _fight("plains_stones")
+		var me: Dictionary = f.units[0]
+		f.select(me)
+		game.rig.ease_to(f.global_position + me.mini.position + Vector3(0, 0.6, 0), 11.0, game.rig.yaw_deg + 150.0)
+		await _wait(1.2)
+		await _shot("mini_%s_%s" % [h.klass, h.gear.main])
+		Hero.current = null
+		get_tree().quit()
+		return
+	if "--panelshots" in OS.get_cmdline_user_args():
+		await _panel_shots()
+		get_tree().quit()
+		return
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--covermap="):
 			await _fight(a.trim_prefix("--covermap="))
@@ -153,7 +175,7 @@ func _run() -> void:
 		return
 
 	# Scores drive play (06): the hero's from the creator (or HERO_DEFAULT), companions' from 03.
-	_check(f.attack_score(hero, Cards.get_card("attack")) == Races.score(hero.member, "STR"), "the hero's attack flips their own STR")
+	_check(f.attack_score(hero, Cards.get_card("attack")) == Races.score(hero.member, Weapons.of(hero.weapon).ab), "the hero's attack flips their own %s (%s)" % [Weapons.of(hero.weapon).ab, hero.weapon])
 	_check(f.attack_score(fluffy, Cards.get_card("firebolt")) == 3 and f.save_coins(fluffy, {}, "DEX") == 2, "Fluffy: INT 3 on Firebolt, DEX 2 on saves")
 	_check(f.attack_score(chelm, Cards.get_card("attack")) == 2 and f.save_coins(chelm, {}, "DEX") == 1, "Chelmsford: STR 2, DEX 1")
 	_check(f.attack_score(mel, Cards.get_card("attack")) == 2 and f.save_coins(mel, {}, "WIS") == 2, "Mel: DEX 2, WIS 2")
@@ -190,7 +212,7 @@ func _run() -> void:
 	_place(fluffy, s)
 	_place(foe, s + dv)
 	foe.hp = foe.max_hp
-	_check(f.attack_coins(fluffy, foe, Cards.get_card("claw_swipe")) == 2, "Claw Swipe flips Fluffy's DEX (2)")
+	_check(f.attack_coins(fluffy, foe, Cards.get_card("claw_swipe")) == 2 - foe.armour, "Claw Swipe flips Fluffy's DEX (2), less the foe's armour (%d)" % foe.armour)
 	var hp: int = foe.hp
 	await _play(fluffy, "claw_swipe", foe.cell, [true, true])
 	_check(hp - foe.hp == Rules.CLAW_DAMAGE and foe.bleed_turns == Rules.DOT_TURNS, "Claw Swipe: %d damage, bleeding %d turns" % [hp - foe.hp, foe.bleed_turns])
@@ -223,6 +245,7 @@ func _run() -> void:
 	fluffy.hp = fluffy.max_hp
 
 	await _card_checks(hero, fluffy, chelm, mel, foe, s, line[1])
+	await _gear_checks(hero, fluffy, foe, s, line[1])
 	await _hero_checks(hero, fluffy, foe, s, line[1], level)
 	await _cover_checks()
 	_done()
@@ -296,6 +319,181 @@ func _card_checks(hero: Dictionary, fluffy: Dictionary, chelm: Dictionary, mel: 
 	_fresh(fluffy)
 
 
+## Gear in play (06 -> Start; 04): armour, ranges and the ranged penalty, the hero's weapon's cards, the Ranger's class
+## cards. Run with `--class=ranger --main=<weapon> --off=<...> --armour=<tier>` to check each weapon.
+func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var w: Dictionary = Weapons.of(hero.weapon)
+	print("RACE gear: %s %s / %s, armour %d, cards %s" % [m.klass, hero.weapon, hero.off, hero.armour, hero.cards])
+	_check(Weapons.foe_armour({mini = "enemy_wolf"}) == 1 and Weapons.foe_armour({role = "soldier"}) == 2 and Weapons.foe_armour({role = "elite"}) == 3 and Weapons.foe_armour({role = "minion"}) == 1, "foe armour: beasts light, soldiers medium, elites heavy, minions light")
+	_check(hero.cards.filter(func(id): return not id in Races.cards(m)) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card)")
+	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
+	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])
+	_clear_round(s, [])
+	_fresh(foe)
+	_place(hero, s)
+	_place(foe, s + dv)
+	f.select(hero)
+	var atk := f.card("attack")
+	var expect: int = maxi(Races.score(m, w.ab) + Races.forge_coin(m, atk) - foe.armour, 0)
+	_check(f.attack_coins(hero, foe, atk) == expect, "armour: the hero's %d coins less the foe's armour %d" % [Races.score(m, w.ab), foe.armour])
+	_check(f.save_coins(hero, {}, "DEX") == Races.score(m, "DEX") - (1 if hero.armour >= 3 else 0), "heavy armour costs a DEX save coin, others don't")
+	if w.get("ranged", false):
+		_check(f.heads_needed(foe, hero, atk) == foe.heads + (0 if w.get("point_blank", false) else Rules.RANGED_ADJACENT), "a ranged shot with a foe next to you needs %d heads (%s)" % [f.heads_needed(foe, hero, atk), "Point Blank" if w.get("point_blank", false) else "+1"])
+		_place(foe, s + dv * 3)
+		_check(f.heads_needed(foe, hero, atk) == foe.heads and f.in_reach(hero, foe, atk), "and none from 3 away, in reach")
+	if m.klass == "ranger":
+		_check("hunters_mark" in hero.cards and "snare" in hero.cards and hero.hot.slice(2, 4) == ["hunters_mark", "snare"] if Races.cards(m).is_empty() else true, "the Ranger starts with Hunter's Mark and Snare on the bar: %s" % [hero.hot])
+		var run := RunSetup.new()
+		run.klass = "ranger"
+		run.background = "noble"
+		_check(run.deck_cards().get("forest", 0) == 6 and run.deck_cards().get("plains", 0) == 6 and run.deck_cards().get("farmland", 0) == 6, "the Ranger's deck: forest 5, plains 5, plus the background's (and one of each)")
+		# Hunter's Mark: any foe in sight, no roll; +1 on every hit on it; moving it off a downed foe is free.
+		_fresh(foe)
+		_place(foe, s + dv * (3 if w.get("ranged", false) else 1))
+		await _play(hero, "hunters_mark", foe.cell, [])
+		_check(hero.mark == foe and hero.ap == Rules.AP - 1, "Hunter's Mark: marked, 1 AP")
+		var hp: int = foe.hp
+		var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+		await _play(hero, "attack", foe.cell, [true, true, true, true, true])
+		_check(hp - foe.hp == plain + Rules.MARK_DAMAGE, "a hit on the marked foe deals %d (%d + %d)" % [hp - foe.hp, plain, Rules.MARK_DAMAGE])
+		foe.down = true
+		_turn(hero)
+		hero.used["hunters_mark"] = true
+		_check(f.ap_cost(hero, f.card("hunters_mark")) == 0 and f.cant_use(hero, f.card("hunters_mark")) == "", "moving the mark off a downed foe is free")
+		_fresh(foe)
+		# Snare: an empty walkable hex up to 3 away; a foe walks in, stops, takes 1 and is snared; allies don't set it off.
+		_clear_round(s, [])
+		_place(hero, s)
+		var trap: Vector2i = s + dv * 2
+		await _play(hero, "snare", trap, [])
+		_check(f.snares.get(hero.name) == trap, "the Snare is set 2 hexes away")
+		_place(fluffy, s + dv * 3)
+		await f._walk(fluffy, [trap, s + dv])
+		_check(f.snares.has(hero.name), "an ally walks over it without setting it off")
+		_place(fluffy, s - dv * 3)
+		_place(foe, s + dv * 4)
+		hp = foe.hp
+		await f._walk(foe, [s + dv * 3, trap, s + dv])
+		_check(foe.cell == trap and hp - foe.hp == Rules.SNARE_DAMAGE and f.move_hexes(foe) == 0 and not f.snares.has(hero.name), "a foe walking through stops on it, takes %d and is snared" % (hp - foe.hp))
+		f.phase_no += 2
+		_check(f.move_hexes(foe) == Rules.MOVE_HEXES - (1 if foe.armour >= 3 else 0), "the snare ends after its next turn")
+	await _weapon_card_checks(hero, fluffy, foe, s, d)
+
+
+## The hero's weapon's own card (04 -> Weapon category cards, Ethan's placeholders).
+func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var w: Dictionary = Weapons.of(hero.weapon)
+	var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+	hero.mark = {}
+	_clear_round(s, [])
+	_fresh(foe)
+	var tough: int = foe.max_hp
+	foe.max_hp = 60   # so big hits don't down it before their riders show
+	foe.hp = 60
+	_place(hero, s)
+	_place(foe, s + dv)
+	var hp: int = foe.hp
+	match String(hero.weapon):
+		"longsword", "spear":
+			if hero.off in ["", "none"]:
+				await _play(hero, "attack", foe.cell, [true, true, true, true, true])
+				_check(hp - foe.hp == Races.score(m, w.ab) + Weapons.VERSATILE_TWO_HANDED, "two-handed %s: +%d damage (%d)" % [hero.weapon, Weapons.VERSATILE_TWO_HANDED, hp - foe.hp])
+			if hero.weapon == "spear":
+				_place(foe, s + dv * 2)
+				_check(f.in_reach(hero, foe, f.card("attack")) and f.card("throw").range == Weapons.THROW_RANGE, "spear: Reach 2, Throw 4")
+		"shortsword":
+			await _play(hero, "attack", foe.cell, [true, true, true, true, true])
+			hp = foe.hp
+			hero.ap = 1
+			f.pick_card("quick_slash")
+			_check(f.ap_cost(hero, f.card()) == 0, "Quick Slash is free right after a shortsword hit")
+			Coins.forced.assign([true, true, true, true, true])
+			await f.press_button()
+			Coins.forced.clear()
+			_check(hp - foe.hp == plain - Rules.QUICK_SLASH_LESS and hero.ap == 1, "and deals %d (1 less), costing nothing" % (hp - foe.hp))
+		"scimitar":
+			_turn(hero)
+			_check(f.cant_use(hero, f.card("dancing_step")) != "", "Dancing Step waits for a scimitar attack")
+			await _play(hero, "attack", foe.cell, [false, false, false, false, false])
+			hero.ap = 1
+			f.pick_card("dancing_step")
+			var spots := f.cell_options(hero, f.card())
+			_check(f.cant_use(hero, f.card()) == "" and spots.all(func(c): return Rules.hex_distance(c, s) <= Rules.DANCE_HEXES), "after any scimitar attack (a miss here), a free move of up to 2")
+			await f.click_cell(spots[0])
+			await f.press_button()
+			_check(hero.cell == spots[0] and hero.ap == 1, "Dancing Step moves for 0 AP")
+		"glaive":
+			var foes: Array = f.units.filter(func(u): return not u.ally)
+			for cell: Vector2i in f.grid:   # a hex with open ground all round, away from the board's edge
+				if Hex.NEIGHBOURS.all(func(n): return f.grid.has(cell + n) and f.grid[cell + n].kind == "open" and f.unit_at(cell + n).is_empty()) and f.grid[cell].kind == "open":
+					_clear_round(cell, [])
+					_place(hero, cell)
+					break
+			var c: Vector2i = hero.cell + Hex.NEIGHBOURS[0]
+			var arc := f.arc_cells(hero, c)
+			var placed := 0
+			for i in mini(arc.size(), foes.size()):
+				_fresh(foes[i])
+				_place(foes[i], arc[i])
+				placed += 1 if f.grid[arc[i]].kind != "blocked" else 0
+			var before: Array = foes.map(func(u): return u.hp)
+			_turn(hero)
+			Coins.forced.assign([true, true, true, true, true, true, true, true, true, true, true, true])
+			f.pick_card("sweeping_arc")
+			await f.click_cell(c)
+			await f.press_button()
+			Coins.forced.clear()
+			var hit := 0
+			for i in foes.size():
+				if foes[i].hp < before[i]:
+					hit += 1
+			_check(arc.size() == 3 and hit == placed, "Sweeping Arc: 3 hexes in front, one flip each (%d of %d foes standing in it hit; arc %d, foes %d)" % [hit, placed, arc.size(), foes.size()])
+		"shortbow":
+			_place(foe, s + dv * 3)
+			await _play(hero, "double_shot", foe.cell, [true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == 2 * plain, "Double Shot: two hits of %d" % plain)
+		"longbow":
+			_place(foe, s + dv * 4)
+			_check(f.card("attack").range == 8 and f.card("aimed_shot").ap == 3, "longbow: range 8, Aimed Shot 3 AP")
+			var n := f.attack_coins(hero, foe, f.card("aimed_shot"))
+			_check(n == Races.score(m, w.ab), "Aimed Shot ignores armour (%d coins)" % n)
+			await _play(hero, "aimed_shot", foe.cell, [true, true, true, true, true])
+			_check(hp - foe.hp == mini(hp, Rules.AIMED_TIMES * plain), "Aimed Shot: %d damage (4x)" % (hp - foe.hp))
+		"crossbow":
+			_place(foe, s + dv * 3)
+			await _play(hero, "pinning_bolt", foe.cell, [true, true, true, true, true])
+			_check(hp - foe.hp == plain and f.move_hexes(foe) == 0, "Pinning Bolt: a hit and the foe is snared")
+		"gauntlets":
+			await _play(hero, "guard_up", null, [])
+			var hhp: int = hero.hp
+			var fhp: int = foe.hp
+			Coins.forced.assign([true, true, true, true, true, true])
+			f.phase = "enemies"
+			await f._attack(foe, hero, Cards.get_card("attack", "spear"))
+			Coins.forced.clear()
+			var hit: int = foe.damage if foe.damage >= 0 else foe.score
+			_check(hhp - hero.hp == maxi(hit - Rules.GUARD_UP_LESS - f.reduction(hero), 0) and fhp - foe.hp == Races.score(m, w.ab), "Guard Up: %d less taken, and a hit back of %d" % [Rules.GUARD_UP_LESS, fhp - foe.hp])
+		"knuckles":
+			var coins: Array = [true]
+			for i in maxi(f.attack_coins(hero, foe, Cards.get_card("haymaker")) - 1, 0):
+				coins.append(false)
+			await _play(hero, "haymaker", foe.cell, coins + [false, false])
+			_check(hp - foe.hp == mini(hp, 2 * plain) and foe.lost_ap == Rules.HAYMAKER_AP, "Haymaker: double damage, and a failed CON save loses 1 AP")
+		"wraps":
+			_place(foe, s + dv * 3)
+			_check(f.in_reach(hero, foe, f.card("step_strike")), "Step and Strike reaches a foe 3 away")
+			await _play(hero, "step_strike", foe.cell, [true, true, true, true, true])
+			_check(f.dist(hero, foe) == 1 and hp - foe.hp == plain, "it steps next to it and hits")
+		"dagger":
+			_check(f.card("throw").range == Weapons.THROW_RANGE, "a thrown dagger reaches 4")
+	foe.max_hp = tough
+	_fresh(foe)
+
+
 func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int, level: int) -> void:
 	var dv: Vector2i = Hex.NEIGHBOURS[d]
 	var m: Dictionary = hero.member
@@ -305,6 +503,8 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_fresh(foe)
 	match String(m.race):
 		"Halfling":
+			hero.armour = 0   # Lucky's cases count coins exactly; armour has its own check
+			foe.armour = 0
 			_check(m.lucky == Rules.LUCKY_CHARGES, "Lucky starts with %d charges" % m.lucky)
 			var hp: int = foe.hp
 			await _play(hero, "attack", foe.cell, [false, false, false, true])   # misses by 1; Lucky reflips a tail to heads
@@ -353,7 +553,7 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 				_check(not foe.lull, "any damage wakes it")
 		"Dwarf":
 			if m.sub == "Forge dwarf":
-				_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1 and f.attack_coins(hero, foe, Cards.get_card("shield_bash")) == Races.score(m, "STR") + 1, "forge dwarf: +1 coin on Attack and weapon cards")
+				_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1 - foe.armour and f.attack_coins(hero, foe, Cards.get_card("shield_bash")) == Races.score(m, "STR") + 1 - foe.armour, "forge dwarf: +1 coin on Attack and weapon cards")
 			else:
 				_check(m.max_hp == Rules.PARTY[0].hp + Rules.SHIELD_DWARF_HP, "shield dwarf: %d max HP at level 1" % m.max_hp)
 				var mhp: int = m.max_hp
@@ -397,7 +597,7 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 					f.phase_no += 2
 					_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the slow ends after the foe's next turn")
 				"Black":
-					_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1, "black acid: attacks on it flip 1 more")
+					_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1 - foe.armour, "black acid: attacks on it flip 1 more")
 				"Green":
 					hp = foe.hp
 					await f._turn_starts(foe)
@@ -409,7 +609,7 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 				"Hayes":
 					_place(foe, s + dv * 4)
 					var hp: int = foe.hp
-					_check(f.attack_coins(hero, foe, Cards.get_card("scorch")) == Races.score(m, "CHA"), "Scorch flips CHA")
+					_check(f.attack_coins(hero, foe, Cards.get_card("scorch")) == maxi(Races.score(m, "CHA") - foe.armour, 0), "Scorch flips CHA, less armour")
 					await _play(hero, "scorch", foe.cell, [true, true, true])
 					_check(hp - foe.hp == Rules.RACIAL_DAMAGE, "Scorch: %d damage at range 4" % (hp - foe.hp))
 				"Conley":
@@ -453,7 +653,7 @@ func _cover_checks() -> void:
 			_place(foe, c)
 			var t := f.cover_between(shooter, foe)
 			if kind == "partial":
-				_check(t == "partial" and f.attack_coins(shooter, foe, Cards.get_card("firebolt")) == 2 and f.save_coins(foe, shooter, "DEX") == Rules.ENEMY_SAVE_COINS + 1, "partial cover (%s): Firebolt flips 2, the foe saves with 3" % f.grid[b].kind)
+				_check(t == "partial" and f.attack_coins(shooter, foe, Cards.get_card("firebolt")) == 2 - foe.armour and f.save_coins(foe, shooter, "DEX") == Rules.ENEMY_SAVE_COINS + 1, "partial cover (%s): Firebolt flips 2, the foe saves with 3" % f.grid[b].kind)
 			else:
 				_check(t == "full" and not f.in_reach(shooter, foe, Cards.get_card("firebolt")), "full cover: can't aim through")
 			found[kind] = true
@@ -575,6 +775,63 @@ func _cover_data_checks() -> void:
 				_check(up != "none" and down == "none", "a terrace curb: %s from below, %s from the top" % [up, down])
 			found[key] = true
 	print("RACE cover data cases: %s" % [found.keys()])
+
+
+## Option B's panel in its fullest new states (design/07): a 3-target Breath Weapon result, and a long shot through cover.
+## `-- --racecheck --panelshots --shots` saves screens/race/panel_*.png.
+func _panel_shots() -> void:
+	await _fight("plains_stones")
+	var chelm := _who("Chelmsford")
+	var mel := _who("Mel")
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	var line := _free_line(5)
+	var s: Vector2i = line[0]
+	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	_clear_round(s, [])
+	_place(chelm, s)
+	for i in mini(3, foes.size()):
+		_fresh(foes[i])
+		_place(foes[i], s + dv * (i + 1))
+	_turn(chelm)
+	f.pick_card("breath")
+	await f.click_cell(s + dv)
+	game.rig.ease_to(f.global_position + chelm.mini.position, game.rig.distance, game.rig.yaw_deg)
+	await _wait(0.6)
+	await _shot("panel_breath_aimed")
+	Coins.forced.assign([false, false, true, false, false, true])
+	await f.press_button()
+	Coins.forced.clear()
+	await _wait(0.3)
+	await _shot("panel_breath_result")
+	_check(f.result.rows.size() == 3, "the breath result lists 3 targets")
+	var box: Control = f.hud._details_panel.get_child(0)
+	_check(box.get_combined_minimum_size().y + 24.0 <= CombatHud.DETAILS_H, "the 3-target breath result fits the panel (%.0f of %.0f)" % [box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H])
+	# A long shot through cover: Mel's Throw at a foe behind brush that needs 2 heads.
+	var foe: Dictionary = foes[0]
+	_fresh(foe)
+	for a: Vector2i in f.grid:
+		for d in Hex.NEIGHBOURS:
+			var b: Vector2i = a + d
+			var c: Vector2i = a + d * 2
+			if f.grid[a].kind == "open" and f.cover.get(b, "") == "partial" and f.grid.has(c) and f.grid[c].kind == "open" and f.grid[c].z == f.grid[a].z and f.unit_at(a).is_empty() and f.unit_at(c).is_empty():
+				_clear_round(a, [])
+				_place(mel, a)
+				_place(foe, c)
+				foe.heads = 2
+				_turn(mel)
+				f.pick_card("throw")
+				await f.click_cell(c)
+				game.rig.ease_to(f.global_position + mel.mini.position, game.rig.distance, game.rig.yaw_deg)
+				await _wait(0.6)
+				await _shot("panel_longshot_aimed")
+				print("RACE coin line: %s" % f.hud.coin_line(mel, foe, f.card()))
+				Coins.forced.assign([true, true, false])
+				await f.press_button()
+				Coins.forced.clear()
+				await _wait(0.3)
+				await _shot("panel_longshot_result")
+				_check(box.get_combined_minimum_size().y + 24.0 <= CombatHud.DETAILS_H, "the long-shot result fits the panel")
+				return
 
 
 func _done() -> void:

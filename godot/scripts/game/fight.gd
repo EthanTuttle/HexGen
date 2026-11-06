@@ -36,10 +36,14 @@ var rocks: Array = []
 var trees: Array = []
 var busy := false
 var hud: CombatHud
+const NO_ARMOUR_ARG := "--noarmour"   # test aid: fights with nobody's armour, for the balance comparison
+static var NO_ARMOUR: bool = NO_ARMOUR_ARG in OS.get_cmdline_user_args()
 var phase_no := 0                # counts phases (allies, enemies, allies ...): riders last until the end of a given one
 var breath_dir := -1             # Breath Weapon's aim: which of Hex.NEIGHBOURS, or -1
 var cell_target = null           # Glimmerstep's empty hex, or null
 var cover := {}                  # cell -> "partial" or "full" (design/03 -> Combat -> Cover); missing: none
+var snares := {}                 # owner's name -> the hidden Snare's cell (03 -> Ranger)
+var _snare_marks := {}           # owner's name -> its marker, which only the party sees (PLACEHOLDER look)
 var edge_cover := {}             # [cell, cell] sorted -> "partial": a low edge between two cells (plot edges, terrace curbs)
 
 var _overlays: Array[Node3D] = []
@@ -328,7 +332,9 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			hot = m.get("hot", []), cards = m.get("cards", []), member = m, damage = m.get("damage", -1), heads = m.get("heads", Rules.HEADS_TO_HIT), role = m.get("role", ""),
 			parry = false, ward = 0, lost_ap = 0, sub = m.get("sub", ""),
 			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
-			facing = _dir_of(facing), backstabbed = false}
+			facing = _dir_of(facing), backstabbed = false,
+			armour = 0 if NO_ARMOUR else (Weapons.ARMOUR.get(m.get("armour", ""), 0) if ally else Weapons.foe_armour(m)), off = m.get("off", ""),
+			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -357,12 +363,25 @@ func spent(u: Dictionary, c: Dictionary) -> bool:
 
 
 ## Why u can't use card c right now, or "" (Combat v14's notes under the button).
+## What a card costs u now: Quick Slash is free right after a shortsword hit, and moving Hunter's Mark off a downed foe is free (04, 03).
+func ap_cost(u: Dictionary, c: Dictionary) -> int:
+	if c.id == "quick_slash" and u.quick_ready:
+		return 0
+	if c.id == "hunters_mark" and not u.mark.is_empty() and u.mark.down:
+		return 0
+	return c.ap
+
+
 func cant_use(u: Dictionary, c: Dictionary) -> String:
 	if c.ap < 0:
 		return "AP cost not set yet"
-	if spent(u, c):
+	if c.id == "hunters_mark" and not u.mark.is_empty() and u.mark.down and not u.used.has(c.id + "_free"):
+		pass   # moving the mark off a downed foe is free, and doesn't count as the turn's use
+	elif spent(u, c):
 		return "Once per fight: already used" if c.limit == "fight" else "Once per turn: already used"
-	if ap_left(u) < c.ap:
+	if c.id == "dancing_step" and not u.dance_ready:
+		return "_scimitar"   # only after a scimitar attack this turn; no note (the card shows it)
+	if ap_left(u) < ap_cost(u, c):
 		return "Not enough AP"
 	if c.get("effect", "") == "item" and game.potions <= 0:
 		return "No consumable equipped"
@@ -370,7 +389,27 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 
 
 func in_reach(u: Dictionary, foe: Dictionary, c: Dictionary) -> bool:
-	return c.kind in ["attack", "save"] and not foe.down and not foe.ally and dist(u, foe) <= c.get("range", 1) and cover_between(u, foe) != "full"
+	if foe.down or foe.ally:
+		return false
+	if c.kind == "mark":   # any foe you can see (03)
+		return cover_between(u, foe) != "full"
+	if c.kind not in ["attack", "save"]:
+		return false
+	if c.has("step") and dist(u, foe) > 1:   # Step and Strike: a free hex next to it within its move
+		return not _step_path(u, foe, c.step).is_empty()
+	return dist(u, foe) <= c.get("range", 1) and (c.get("pierce", false) or cover_between(u, foe) != "full")
+
+
+## The way to a free hex next to foe within `budget` of movement, or [].
+func _step_path(u: Dictionary, foe: Dictionary, budget: int) -> Array:
+	var came := _spread(u, budget, Callable())
+	var best: Array = []
+	for c: Vector2i in came:
+		if c != u.cell and _dist_from(u, c, foe) == 1:
+			var path := _path_to(u, came, c)
+			if best.is_empty() or path.size() < best.size():
+				best = path
+	return best
 
 
 func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
@@ -378,9 +417,16 @@ func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
 
 
 func _pay(u: Dictionary, c: Dictionary) -> void:
-	var from_bonus := mini(u.bonus, c.ap)     # bonus AP is spent first (DOCS)
+	var cost := ap_cost(u, c)
+	var free_mark: bool = c.id == "hunters_mark" and cost == 0
+	if c.id != "quick_slash":
+		u.quick_ready = false   # "right after" a shortsword hit
+	var from_bonus := mini(u.bonus, cost)     # bonus AP is spent first (DOCS)
 	u.bonus -= from_bonus
-	u.ap -= c.ap - from_bonus
+	u.ap -= cost - from_bonus
+	if free_mark:
+		u.used[c.id + "_free"] = true
+		return
 	if c.limit == "turn":
 		u.used[c.id] = true
 	elif c.limit == "fight":
@@ -509,8 +555,11 @@ func path_next_to(u: Dictionary, goal: Dictionary) -> Array:
 func move_hexes(u: Dictionary) -> int:
 	if u.lockdown:
 		return 0
-	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally else 0
-	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) - (u.slow_hexes if on(u, "slowed") else 0), 0)
+	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally and not Rules.old("move") else 0
+	if on(u, "snared"):
+		return 0   # rooted: Snare, Pinning Bolt
+	var heavy: int = 1 if u.armour >= 3 else 0   # heavy armour: 1 hex less per Move (04)
+	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) - heavy - (u.slow_hexes if on(u, "slowed") else 0), 0)
 
 
 ## Which of Hex.NEIGHBOURS points most nearly along a plan direction.
@@ -691,8 +740,16 @@ func _show_overlays() -> void:
 		if breath_dir >= 0:
 			for cell in breath_line(current, breath_dir):
 				_overlay(cell, "target")
+	if c.kind == "arc" and not busy:
+		for cell: Vector2i in grid:
+			var d := Rules.hex_distance(cell, current.cell)
+			if d >= 1 and d <= 2 and not cell in arc_cells(current, cell_target if cell_target != null else Vector2i(1 << 20, 0)):
+				_overlay(cell, "reach")
+		if cell_target != null:
+			for cell in arc_cells(current, cell_target):
+				_overlay(cell, "target")
 	if c.kind == "cell" and not busy:
-		for cell in blink_cells(current):
+		for cell in cell_options(current, c):
 			_overlay(cell, "target" if cell == cell_target else "move")
 	_overlay(current.cell, "active")
 	for u in units:
@@ -781,7 +838,7 @@ func click_cell(c: Vector2i) -> void:
 		self_done = ""
 		refresh()
 		return
-	if k.kind == "cell" and c in blink_cells(current):
+	if (k.kind == "cell" and c in cell_options(current, k)) or (k.kind == "arc" and Rules.hex_distance(c, current.cell) in [1, 2]):
 		cell_target = c
 		self_done = ""
 		refresh()
@@ -853,7 +910,25 @@ func press_button() -> void:
 			if cell_target == null:
 				return
 			_pay(current, k)
-			await _blink(current, cell_target)
+			match k.get("effect", ""):
+				"snare":
+					_set_snare(current, cell_target)
+				"dance":
+					await _dance(current, cell_target)
+				_:
+					await _blink(current, cell_target)
+		"mark":
+			if target.is_empty():
+				return
+			_pay(current, k)
+			current.mark = target   # one mark at a time: marking another moves it (03)
+			self_done = k.id
+			result = {coins = [], title = "Used", good = true, sub = ""}
+		"arc":
+			if cell_target == null:
+				return
+			_pay(current, k)
+			await _arc(current, cell_target)
 	if active:
 		refresh()
 
@@ -872,14 +947,18 @@ func attack_coins(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
 		n += Races.forge_coin(a.member, k)
 	if not t.is_empty():
 		n += (1 if on(t, "glow") else 0) + (1 if on(t, "acid") else 0)
-		if cover_between(a, t) == "partial":
-			n -= Rules.COVER_COINS
+		if not k.get("pierce", false):   # Aimed Shot ignores cover and armour (04)
+			if cover_between(a, t) == "partial":
+				n -= Rules.COVER_COINS
+			n -= t.armour   # armour takes coins off every attack flip on its wearer (04 -> Armour)
 	return maxi(n, 0)
 
 
 ## A save's coins: a foe's set number, an ally's own score in the save's ability, +1 behind cover from whoever aims.
 func save_coins(t: Dictionary, from: Dictionary, ability: String, cover_seen := false) -> int:
 	var n: int = Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
+	if ability == "DEX" and t.armour >= 3:
+		n -= 1   # heavy armour: DEX saves flip 1 fewer coin (04)
 	if cover_seen or (not from.is_empty() and cover_between(from, t) == "partial"):
 		n += Rules.COVER_COINS
 	return n
@@ -925,20 +1004,44 @@ func lucky(who: Dictionary, flipper: Dictionary, coins: Array[bool], need: int) 
 func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	busy = true
 	refresh()
-	var check := flip_check(attack_coins(a, t, k), heads_needed(t))
+	if k.has("step") and dist(a, t) > 1:   # Step and Strike: move first, then strike
+		await _walk(a, _step_path(a, t, k.step))
+	for shot in k.get("shots", 1):   # Double Shot: two flips at normal damage
+		if t.down or a.down:
+			break
+		await _one_attack(a, t, k)
+	busy = false
+	_check_end()
+
+
+func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	busy = true
+	var check := flip_check(attack_coins(a, t, k), heads_needed(t, a, k))
 	a.blessed = false
 	var need: int = check.need
 	var shown: Array[bool] = await hud.flip_coins(a, check.coins, need, Rules.COIN_STEP if a.ally else Rules.COIN_STEP_FOE)
 	var coins: Array[bool] = await lucky(a if a.ally else t, a, check.coins, need)
-	if coins != check.coins:
+	var lucked: bool = coins != check.coins
+	if lucked:
 		shown = coins
 	var hit: bool = Coins.heads(coins) >= need
 	var dmg := 0
 	if hit:
 		dmg = k.dmg if k.has("dmg") else (a.damage if a.damage >= 0 else attack_score(a, k) + k.get("bonus", 0))
+		if a.ally and weapon_attack(k) and Weapons.of(a.weapon).hands == "v" and a.off in ["", "none"]:
+			dmg += Weapons.VERSATILE_TWO_HANDED   # a versatile weapon held two-handed (04)
+		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
+		if k.id == "quick_slash" and a.quick_ready:
+			dmg -= Rules.QUICK_SLASH_LESS
+		if a.ally and not a.mark.is_empty() and a.mark == t:
+			dmg += Rules.MARK_DAMAGE   # Hunter's Mark (03)
+		if t.guard:
+			dmg -= Rules.GUARD_UP_LESS
 		if k.get("effect", "") == "sneak" and _flanked(a, t):
 			dmg += Rules.SNEAK_BONUS
-		if a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):
+		if a.poison_blade and Rules.old("poison"):
+			dmg += 1   # test aid: Poison Blade's old +1 a hit
+		if not Rules.old("backstab") and a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):
 			dmg += Rules.BACKSTAB   # Backstab: the first dagger hit from behind each turn (04)
 			a.backstabbed = true
 		if t.defending:
@@ -952,24 +1055,45 @@ func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		dmg = maxi(dmg - warded, 0)
 		match k.get("rider", ""):
 			"slow":
-				_slow(t, k.slow)
+				if not Rules.old("slows"):
+					_slow(t, k.slow)
+				elif k.id == "frost_ray":
+					t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)   # test aid: Frost Ray's old prone
 			"prone":
 				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 			"bleed":
 				t.bleed_turns = Rules.DOT_TURNS
-		if a.poison_blade:   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
+			"snare":
+				t.snared = _until_next_turn_of(t)   # Pinning Bolt roots (04)
+		if a.poison_blade and not Rules.old("poison"):   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
 			t.poison.append(Rules.DOT_TURNS)
 	if a.ally:
-		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit,
+		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit, lucky = lucked,
 				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
 		hud.refresh()
 	a.facing = _dir_toward(a.cell, t.cell)   # it faces whoever it last attacked
+	if a.ally and a.weapon == "scimitar" and weapon_attack(k):
+		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
+	if hit and a.ally and weapon_attack(k) and a.weapon == "shortsword" and k.id != "quick_slash":
+		a.quick_ready = true
 	await board.attack(a.mini, t.mini, hit)
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
-		if k.get("rider", "") == "push":
+		if k.get("rider", "") == "push" and Rules.old("bash"):
+			t.lost_ap = Rules.AP   # test aid: Shield Bash's old stun
+		elif k.get("rider", "") == "push":
 			await _push(a, t)
+		if k.get("rider", "") == "haymaker" and not t.down:   # a failed CON save: it loses 1 AP next turn (04)
+			var save := flip_check(save_coins(t, a, "CON"), Rules.SAVE_HEADS)
+			await hud.flip_coins(t, save.coins, save.need, Rules.COIN_STEP_FOE)
+			if Coins.heads(save.coins) < save.need:
+				t.lost_ap = maxi(t.lost_ap, Rules.HAYMAKER_AP)
+		if t.guard_counter and not a.down:   # Guard Up: the first foe to hit you takes a normal hit back
+			t.guard_counter = false
+			var back: int = attack_score(t, Cards.get_card("attack", t.weapon))
+			hud.float_text(a, "-%d" % back, true)
+			await _hurt(a, back)
 	busy = false
 	_check_end()
 
@@ -981,9 +1105,19 @@ func reduction(t: Dictionary) -> int:
 	return Races.reduction(t.member, game.level) * (2 if t.lockdown else 1)
 
 
-## What an attack on t needs (DOCS: design/03 -> Hit chance scaling).
-func heads_needed(t: Dictionary) -> int:
-	return t.get("heads", Rules.HEADS_TO_HIT)
+## What an attack on t needs (DOCS: design/03 -> Hit chance scaling), +1 for a ranged attack with a foe next to the attacker
+## (04 -> Ranged), except a crossbow's (Point Blank).
+func heads_needed(t: Dictionary, a := {}, k := {}) -> int:
+	var need: int = t.get("heads", Rules.HEADS_TO_HIT)
+	if not a.is_empty() and not Rules.old("ranged") and k.get("ranged", false) and not (Weapons.of(a.weapon).get("point_blank", false) and (k.id == "attack" or k.src == "weapon")):
+		if foes_of(a).any(func(o): return dist(o, a) == 1):
+			need += Rules.RANGED_ADJACENT
+	return need
+
+
+## Whether a hits with this card's weapon (the basic attack, weapon cards, Sneak Attack).
+static func weapon_attack(k: Dictionary) -> bool:
+	return k.id in ["attack", "sneak_attack"] or k.src == "weapon"
 
 
 func _flanked(a: Dictionary, t: Dictionary) -> bool:
@@ -1087,6 +1221,9 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.ward = Rules.WARD_POINTS
 		"lockdown":
 			a.lockdown = true   # until its next turn
+		"guard":
+			a.guard = true   # Guard Up: 2 less damage until its next turn, and a hit back on the first foe to hit it (04)
+			a.guard_counter = true
 		"guide":
 			pass   # DOCS (06): plays, and reveals nothing until hidden foes and traps exist
 
@@ -1115,6 +1252,7 @@ func _breath(a: Dictionary, d: int) -> void:
 	self_done = "breath"
 	var line := breath_line(a, d)
 	breath_dir = -1
+	result = {coins = [], title = "", good = true, sub = "", rows = []}   # each target's save and damage, for the panel
 	refresh()
 	var partial := false
 	for c: Vector2i in line:
@@ -1138,11 +1276,96 @@ func _breath(a: Dictionary, d: int) -> void:
 						t.acid = _until_next_turn_of(t)
 					"Green":
 						t.poison.append(Rules.DOT_TURNS)
+			result.rows.append({name = t.name, coins = coins, dmg = dmg, lucky = coins != check.coins})
+			hud.refresh()
 			await board.attack(a.mini, t.mini, true)
 			hud.float_text(t, "-%d" % dmg, true)
 			await _hurt(t, dmg)
 		if cover.get(c, "") == "partial":
 			partial = true
+	busy = false
+	refresh()
+	_check_end()
+
+
+## Where a ground card can go: Glimmerstep's landing spots, the Snare's hexes (an empty walkable hex up to 3 away, brush
+## too, never lava: 03), or Dancing Step's (up to 2 hexes of movement).
+func cell_options(u: Dictionary, k: Dictionary) -> Array[Vector2i]:
+	match k.get("effect", ""):
+		"snare":
+			var out: Array[Vector2i] = []
+			for c: Vector2i in grid:
+				if Rules.hex_distance(c, u.cell) <= Rules.SNARE_RANGE and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty() and c != u.cell:
+					out.append(c)
+			return out
+		"dance":
+			var out: Array[Vector2i] = []
+			for c in _spread(u, Rules.DANCE_HEXES, Callable()):
+				if c != u.cell:
+					out.append(c)
+			return out
+	return blink_cells(u)
+
+
+func _set_snare(u: Dictionary, c: Vector2i) -> void:
+	_clear_snare(u.name)   # one at a time: setting another moves it (03)
+	snares[u.name] = c
+	var ring := MeshInstance3D.new()   # PLACEHOLDER look: a dark ring on the hex, which only the party sees
+	var mesh := TorusMesh.new()
+	mesh.inner_radius = 0.22
+	mesh.outer_radius = 0.3
+	ring.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("#4A3A28")
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring.material_override = mat
+	ring.position = cell_point(c) + Vector3(0, Rules.CELL_TOP + 0.03, 0)
+	add_child(ring)
+	_snare_marks[u.name] = ring
+	self_done = "snare"
+	cell_target = null
+
+
+func _clear_snare(owner: String) -> void:
+	snares.erase(owner)
+	if _snare_marks.has(owner):
+		_snare_marks[owner].queue_free()
+		_snare_marks.erase(owner)
+
+
+## Dancing Step: a free short move after a scimitar attack.
+func _dance(u: Dictionary, c: Vector2i) -> void:
+	busy = true
+	self_done = "dancing_step"
+	cell_target = null
+	await _walk(u, _path_to(u, _spread(u, Rules.DANCE_HEXES, Callable()), c))
+	busy = false
+	refresh()
+
+
+## Sweeping Arc's hexes: the aimed one (1 or 2 away) and the two beside it at the same distance (04).
+func arc_cells(u: Dictionary, c: Vector2i) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var d := Rules.hex_distance(c, u.cell)
+	if d < 1 or d > 2:
+		return out
+	out.append(c)
+	for n in Hex.NEIGHBOURS:
+		var e: Vector2i = c + n
+		if Rules.hex_distance(e, u.cell) == d and grid.has(e) and out.size() < 3:
+			out.append(e)
+	return out
+
+
+## Sweeping Arc: one flip for each foe in the arc.
+func _arc(a: Dictionary, c: Vector2i) -> void:
+	busy = true
+	self_done = "sweeping_arc"
+	cell_target = null
+	for cell in arc_cells(a, c):
+		var t := unit_at(cell)
+		if not t.is_empty() and not t.ally and not t.down:
+			await _one_attack(a, t, card("sweeping_arc"))
 	busy = false
 	refresh()
 	_check_end()
@@ -1177,6 +1400,8 @@ func _blink(u: Dictionary, c: Vector2i) -> void:
 ## line along a cell edge is nudged one way. A sheer rise: a cell that stands a sheer rise (0.9 m) above the line between
 ## the two ends. PLACEHOLDER reading of "sheer rises block fully".
 func cover_between(a: Dictionary, t: Dictionary) -> String:
+	if Rules.old("cover"):
+		return "none"   # test aid
 	var to: Vector2i = t.cell
 	for c in cells_of(t):
 		if Rules.hex_distance(a.cell, c) < Rules.hex_distance(a.cell, to):
@@ -1262,6 +1487,28 @@ func _cover_of_map(id: String) -> void:
 
 ## u walks a path, burning on each lava cell it enters (design/03 -> Lava) and stopping there if that downs it.
 func _walk(u: Dictionary, path: Array) -> void:
+	var sprung := ""
+	if not u.ally:   # a foe walks into a hidden Snare as if it weren't there, and its move ends there (03)
+		var stop := -1
+		for i in path.size():
+			for owner: String in snares:
+				if snares[owner] == path[i] and sprung == "":
+					sprung = owner
+					stop = i
+		if stop >= 0:
+			path = path.slice(0, stop + 1)
+	if sprung != "":
+		await _walk_on(u, path)
+		_clear_snare(sprung)
+		if not u.down:
+			u.snared = _until_next_turn_of(u)
+			hud.float_text(u, "-%d" % Rules.SNARE_DAMAGE, true)
+			await _hurt(u, Rules.SNARE_DAMAGE)
+		return
+	await _walk_on(u, path)
+
+
+func _walk_on(u: Dictionary, path: Array) -> void:
 	u.facing = _dir_toward(path[-2] if path.size() > 1 else u.cell, path[-1])   # it faces the way it last moved
 	u.cell = path[-1]
 	refresh()
@@ -1331,6 +1578,10 @@ func _check_end() -> void:
 ## At the start of a unit's turn: poison and bleed tick (1 damage, for 2 turns), and a wood golem's Regrowth heals.
 func _turn_starts(u: Dictionary) -> void:
 	u.backstabbed = false
+	u.guard = false
+	u.guard_counter = false
+	u.quick_ready = false
+	u.dance_ready = false
 	if not u.poison.is_empty() and not u.down:   # each poison ticks: they stack
 		var dmg: int = Rules.DOT_DAMAGE * u.poison.size()
 		u.poison = u.poison.map(func(n): return n - 1).filter(func(n): return n > 0)
@@ -1483,6 +1734,10 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["acid", "Acid-burned", "attacks on it flip 1 extra coin"])
 	if u.lockdown:
 		out.append(["lock", "Lockdown", "damage reduction doubled; can't move"])
+	if not u.ally and allies().any(func(a): return a.mark == u):
+		out.append(["mark", "Marked", "+%d damage from the Ranger's hits" % Rules.MARK_DAMAGE])
+	if on(u, "snared"):
+		out.append(["snare", "Rooted", "can't move until the end of its next turn"])   # Snare and Pinning Bolt alike (Ethan, Nov 5, 2026)
 	return out
 
 
