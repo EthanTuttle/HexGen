@@ -79,6 +79,10 @@ static func for_launch() -> RunSetup:
 			run.off = a.split("=")[1]
 		if a.begins_with("--armour="):
 			run.armour = a.split("=")[1]
+		# Test aid: the hero's scores in place of HERO_DEFAULT's ("--scores=DEX:3,WIS:2").
+		if a.begins_with("--scores="):
+			for pair: String in a.trim_prefix("--scores=").split(","):
+				run.scores[pair.get_slice(":", 0)] = int(pair.get_slice(":", 1))
 	return run
 
 
