@@ -142,7 +142,7 @@ static func _piece(piece: String) -> Dictionary:
 static func build(d: Dictionary) -> ArrayMesh:
 	var swatch: Array[Color] = [Color.WHITE]
 	for z in range(1, 5):
-		swatch.append(Color(d.colours[ZONES[z]]).srgb_to_linear())
+		swatch.append(Color.from_string(d.colours[ZONES[z]], Color.BLACK).srgb_to_linear())   # a race with no hair has no hair colour ("")
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
