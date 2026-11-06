@@ -179,7 +179,7 @@ After the Oct 27, 2026 review every score is boosted by exactly 3 races (plus Hu
   - **Class:** +1 to one of the class's 3 main scores (the player picks; table below).
   - If the class +1 lands on a score the race also boosted, that score starts at 3 (one 3, one 2, four 1s). If not, three scores start at 2 (three 2s, three 1s).
 - **Companions start the same way** (Ethan, Nov 5, 2026; other scores 1): Fluffy INT 3, DEX 2. Chelmsford WIS, STR and CON 2. Mel DEX, WIS and CHA 2.
-- Scores grow at levels 4, 8, 12 and 16 (+1 each, placed by the player, for the hero and for each companion one at a time; no score goes above 6; Ethan, Nov 6, 2026; 4 and 12 added Nov 1, 2026: see [Cards & progression](05 Cards & progression.md) → Levels and milestones), from gear, and from cards/discoveries.
+- Scores grow at levels 4, 8, 12 and 16 (+1 each, placed by the player, for the hero and for each companion one at a time; no score goes above 6; a companion who joins after a score level arrives with those points already on their main score; Ethan, Nov 6, 2026; 4 and 12 added Nov 1, 2026: see [Cards & progression](05 Cards & progression.md) → Levels and milestones), from gear, and from cards/discoveries.
 
 | Class | Main scores (the class +1 picks from these) |
 | --- | --- |
