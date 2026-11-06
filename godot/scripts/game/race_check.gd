@@ -459,6 +459,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	if Fight.dual_wields(hero):
 		await _dual_checks(hero, fluffy, foe, s, d)
 	await _weapon_card_checks(hero, fluffy, foe, s, d)
+	await _ambush_checks(hero, fluffy, foe, s, d)
 
 
 ## The Rogue (06 -> Start, Nov 6, 2026): Sneak Attack and Poison Blade on the bar, Clothes, the swamp and village deck, and
@@ -512,6 +513,71 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 		await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
 		off_hit = hp - foe.hp - (plain * Rules.SNEAK_TIMES + Rules.BACKSTAB)
 		_check(f.behind(hero, foe) and off_hit == _offhand_damage(hero), "flanked and from behind with a dagger: %d (%d doubled, + %d Backstab)" % [hp - foe.hp, plain, Rules.BACKSTAB])
+	foe.max_hp = tough
+	_fresh(foe)
+	_place(fluffy, s - dv * 3)
+
+
+## Ambush and unaware (03 -> Ambush, Unaware; Ethan, Nov 6, 2026): a pass leaves every foe unaware of the whole party, a
+## fail lets the foes go first; a hostile action ends a foe's unawareness of that character only (Hunter's Mark is quiet);
+## foes that started unaware lose 1 AP on their first turn, hit or not; Sneak Attack doubles on an unaware foe.
+func _ambush_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var w: Dictionary = Weapons.of(hero.weapon)
+	var far := 3 if w.get("ranged", false) else 1
+	var tough: int = foe.max_hp
+	var foes := f.units.filter(func(u): return not u.ally)
+	var names := f.allies().map(func(a): return String(a.member.name))
+	_check(Ambush.apply(f.units, false) and foes.all(func(u): return u.unaware.is_empty() and not u.ambushed), "a failed ambush: nobody unaware, and the foes go first")
+	_check(not Ambush.apply(f.units, true) and foes.all(func(u): return u.ambushed and names.all(func(n): return n in u.unaware)), "a passed ambush: every foe unaware of every ally, and the party goes first")
+	_check(Ambush.is_unaware(foe, hero) and not Ambush.is_unaware(hero, foe) and not Ambush.is_unaware(foe, foe), "only foes are unaware, and only of allies")
+	hero.mark = {}
+	_clear_round(s, [])
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	_place(hero, s)
+	_place(foe, s + dv * far)
+	_place(fluffy, s - dv * 3)
+	foe.facing = _facing_from(foe, s)   # facing the hero: no Backstab
+	_turn(hero)
+	var icon: Array = f.status_icons(foe).filter(func(i): return i[1] == "Unaware")
+	_check(icon.size() == 1 and icon[0][2] == "Hasn't noticed %s" % hero.name, "the icon line on the hero's turn: %s" % [icon])
+	if m.klass == "ranger":
+		await _play(hero, "hunters_mark", foe.cell, [])
+		_check(hero.mark == foe and Ambush.is_unaware(foe, hero), "Hunter's Mark is quiet: the foe stays unaware")
+		hero.mark = {}
+	var hp: int = foe.hp
+	var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+	var id := "sneak_attack" if m.klass == "rogue" else "attack"
+	await _play(hero, id, foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+	var off: int = hp - foe.hp - plain * (Rules.SNEAK_TIMES if m.klass == "rogue" else 1)
+	if m.klass == "rogue":
+		_check(off == _offhand_damage(hero), "Sneak Attack on an unaware foe nobody flanks: %d (the weapon's %d doubled)" % [hp - foe.hp, plain])
+	_check(not Ambush.is_unaware(foe, hero) and Ambush.is_unaware(foe, fluffy), "a hit ends its unawareness of the hero only")
+	_turn(fluffy)
+	_check(f.status_icons(foe).any(func(i): return i[1] == "Unaware" and i[2] == "Hasn't noticed %s" % fluffy.name), "on Fluffy's turn it still hasn't noticed Fluffy")
+	# A miss is a hostile action too.
+	foe.unaware = [hero.name]
+	await _play(hero, "attack", foe.cell, [false, false, false, false, false, false, false, false, false, false, false, false])
+	_check(not Ambush.is_unaware(foe, hero), "a miss ends it too")
+	# Its first turn: 1 AP less, though it was already hit; once only.
+	_check(foe.ambushed and Ambush.first_turn_ap(foe) == Ambush.LOST_AP and Ambush.first_turn_ap(foe) == 0, "ambushed foes lose %d AP on their first turn only, hit or not" % Ambush.LOST_AP)
+	if m.klass == "ranger":
+		# The Snare's damage is the Ranger's: it notices the Ranger, not the others.
+		foe.unaware = names.duplicate()
+		_clear_round(s, [])
+		_fresh(foe)
+		_place(hero, s)
+		var trap: Vector2i = s + dv * 2
+		await _play(hero, "snare", trap, [])
+		_place(foe, s + dv * 4)
+		await f._walk(foe, [s + dv * 3, trap, s + dv])
+		_check(not Ambush.is_unaware(foe, hero) and Ambush.is_unaware(foe, fluffy), "springing the Snare notices the Ranger only")
+	for u in foes:
+		u.unaware = []
+		u.ambushed = false
 	foe.max_hp = tough
 	_fresh(foe)
 	_place(fluffy, s - dv * 3)

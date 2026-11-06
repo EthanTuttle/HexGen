@@ -100,7 +100,12 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 	open_distance = view.distance
 	game.rig.limits = _pan_limits()
 	game.rig.frame(view.target, open_distance * Rules.ZOOM_IN_FROM, 52.0)
-	_start_allies()
+	var foes_first: bool = game.ambush >= 0 and Ambush.apply(units, game.ambush == 1)   # 03 -> Ambush
+	game.ambush = -1
+	if foes_first:
+		_enemy_phase()
+	else:
+		_start_allies()
 	game.rig.player_moved = true   # the opening's own: whoever acts first is already in it
 	_arrive_camera(view.target)
 	var won: bool = await finished
@@ -334,7 +339,7 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
 			facing = _dir_of(facing), backstabbed = false,
 			off = m.get("off", ""),
-			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}, disarmed = false}
+			snared = -1, unaware = [], ambushed = false, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}, disarmed = false}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -878,12 +883,17 @@ func _move(u: Dictionary, path: Array) -> void:
 
 
 ## The panel's main button: Flip coins (attacks), Cast (saves and ally spells) or Use (self cards).
+var _acting := {}   # the ally whose card is resolving: whoever it hurts notices them (03 -> Ambush)
+
+
 func press_button() -> void:
 	if busy or current.is_empty():
 		return
 	var k := card()
 	if cant_use(current, k) != "":
 		return
+	_acting = current
+	var aimed := target
 	match k.kind:
 		"attack":
 			if target.is_empty():
@@ -931,6 +941,9 @@ func press_button() -> void:
 				return
 			_pay(current, k)
 			await _arc(current, cell_target)
+	if k.kind in ["attack", "save"]:   # Hunter's Mark is quiet (03 -> Ambush)
+		Ambush.noticed(aimed, _acting)
+	_acting = {}
 	if active:
 		refresh()
 
@@ -1159,9 +1172,9 @@ static func weapon_attack(k: Dictionary) -> bool:
 	return k.id in ["attack", "sneak_attack"] or k.src == "weapon"
 
 
-## Sneak Attack's bonus applies (03): the foe is flanked or unaware. Unaware waits on ambushes: add it here.
+## Sneak Attack's bonus applies (03): the foe is flanked or unaware of the Rogue (03 -> Ambush).
 func sneak_applies(a: Dictionary, t: Dictionary) -> bool:
-	return _flanked(a, t)
+	return _flanked(a, t) or Ambush.is_unaware(t, a)
 
 
 func _flanked(a: Dictionary, t: Dictionary) -> bool:
@@ -1544,6 +1557,9 @@ func _walk(u: Dictionary, path: Array) -> void:
 	if sprung != "":
 		await _walk_on(u, path)
 		_clear_snare(sprung)
+		var setter := allies().filter(func(a): return a.name == sprung)
+		if not setter.is_empty():
+			Ambush.noticed(u, setter[0])   # the Snare's damage is the Ranger's hostile action (03 -> Ambush)
 		if not u.down:
 			u.snared = _until_next_turn_of(u)
 			hud.float_text(u, "-%d" % Rules.SNARE_DAMAGE, true)
@@ -1580,6 +1596,7 @@ func _in_lava(u: Dictionary) -> bool:
 
 
 func _hurt(t: Dictionary, dmg: int) -> void:
+	Ambush.noticed(t, _acting)
 	if dmg > 0:
 		t.lull = false   # any damage wakes it, poison, bleed and lava too (Ethan, Nov 5, 2026)
 	t.hp -= dmg
@@ -1647,6 +1664,7 @@ func _turn_starts(u: Dictionary) -> void:
 ## PLACEHOLDER foe behaviour: each foe walks toward the nearest standing ally and attacks while it has AP.
 func _enemy_phase() -> void:
 	phase = "enemies"
+	_acting = {}   # a card cancelled mid-pick leaves no one acting
 	phase_no += 1
 	busy = true
 	target = {}
@@ -1662,7 +1680,7 @@ func _enemy_phase() -> void:
 		if e.ally or e.down or not active or phase != "enemies":
 			continue
 		e.defending = false
-		e.ap = maxi(Rules.AP - e.lost_ap, 0)   # stunned or prone
+		e.ap = maxi(Rules.AP - e.lost_ap - Ambush.first_turn_ap(e), 0)   # stunned or prone; ambushed, its first turn
 		e.lost_ap = 0
 		e.disarmed = false   # its weapon recovered
 		await _turn_starts(e)
@@ -1783,6 +1801,8 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["mark", "Marked", "+%d damage from the Ranger's hits" % Rules.MARK_DAMAGE])
 	if u.disarmed:
 		out.append([CreatorData.IC.w_rapier, "Disarmed", "loses %d AP next turn" % Rules.DISARM_AP])
+	if Ambush.is_unaware(u, current):
+		out.append(["eye", "Unaware", "Hasn't noticed %s" % current.name])   # PLACEHOLDER icon (03 -> Ambush: text checked)
 	if on(u, "snared"):
 		out.append(["snare", "Rooted", "can't move until the end of its next turn"])   # Snare and Pinning Bolt alike (Ethan, Nov 5, 2026)
 	return out
