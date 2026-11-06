@@ -30,15 +30,15 @@ HANDS = {"backhand": "one hand", "low": "one hand", "high": "two hands", "execut
 # 07's rows in its order: (weapon, 07's grip, 07's pose, the kit's weapon or None, offhand, desc extras, what changed in this pass).
 ALL = "legs and elbows posed"
 ROWS = [
-    ("Greatsword", "two-handed", "Point planted on the base, hands on the pommel", "greatsword", None, {}, f"kept; {ALL}"),
-    ("Longsword", "one-handed", "Point forward, aimed at the foe", "longsword", None, {}, "CHANGED (1): chest high, angled up and across"),
-    ("Longsword", "two-handed", "High guard, blade raised above the head", "longsword", None, {"two": True}, "NEW (2): two-handed high guard"),
-    ("Shortsword", "one-handed", "Backhand slash ready", "shortsword", None, {}, "CHANGED (3): drawn back over the off shoulder"),
-    ("Rapier", "one-handed", "En garde, fencer's stance", "rapier", None, {}, f"kept, with a lunge; {ALL}"),
-    ("Scimitar", "one-handed", "Mid-spin", "scimitar", None, {}, "CHANGED (4): torso twisted, blade sweeping out, clear of the hair"),
-    ("Dagger", "one-handed", "Reverse grip, low crouch", "dagger", None, {}, "CHANGED (5): low crouch, blade clear of the thigh"),
-    ("Battleaxe", "one-handed", "Held low and loose", "battleaxe", None, {}, "CHANGED (6): low at the side, head forward"),
-    ("Battleaxe", "two-handed", "Executioner's raise, axe lifted overhead", "battleaxe", None, {"two": True}, "NEW (7): executioner's raise"),
+    ("Greatsword", "two-handed", "Point planted on the base, hands on the pommel", "greatsword", None, {}, "ROUND 3: turned so the edge faces forward"),
+    ("Longsword", "one-handed", "Point forward, aimed at the foe", "longsword", None, {}, "ROUND 3 (1): chest high, the point forward at the foe"),
+    ("Longsword", "two-handed", "High guard, blade raised above the head", "longsword", None, {"two": True}, "ROUND 3 (2): the edge forward, not the flat"),
+    ("Shortsword", "one-handed", "Backhand slash ready", "shortsword", None, {}, "ROUND 3 (3): laid back over the off shoulder, pointing behind, edge out"),
+    ("Rapier", "one-handed", "En garde, fencer's stance", "rapier", None, {}, "ROUND 3 (4): the back arm out, the forearm leaning forward"),
+    ("Scimitar", "one-handed", "Mid-spin", "scimitar", None, {}, "ROUND 3 (5): the old shortsword pose, curved edge forward"),
+    ("Dagger", "one-handed", "Reverse grip, low crouch", "dagger", None, {}, "ROUND 3 (6): closer in front of the body, edge forward"),
+    ("Battleaxe", "one-handed", "Held low and loose", "battleaxe", None, {}, "ROUND 3: hanging at the side, the edge forward"),
+    ("Battleaxe", "two-handed", "Executioner's raise, axe lifted overhead", "battleaxe", None, {"two": True}, "ROUND 3 (7): drawn back behind the head, edge forward"),
     ("Greataxe", "two-handed", "Carried on the shoulder", "greataxe", None, {}, "CHANGED (8): haft on the shoulder, one hand up, one low"),
     ("Mace", "one-handed", "Raised high (Chelmsford, minis v2a)", "mace", None, {}, f"kept; {ALL}"),
     ("Warhammer", "two-handed", "Head resting on the ground, a resting pose rather than a swing", "warhammer", None, {}, "CHANGED (9): a bigger, heavier head"),
@@ -49,14 +49,14 @@ ROWS = [
     ("Staff", "caster, hand empty", "Staff planted, free hand raised as if casting", "staff", None, {"caster": True}, "NEW (12): casting pose, palm out"),
     ("Staff", "two-handed", "Quarterstaff guard, held across the body", "staff", None, {}, f"kept (martials); {ALL}"),
     ("Wand", "one-handed", "Arm extended, wand pointed at the foe", "wand", None, {}, "CHANGED (13): angled forward and out"),
-    ("Shortbow", "two-handed", "Drawn to the cheek, arrow nocked, body side-on; shared with the longbow", "shortbow", None, {}, "CHANGED (14): drawn, string to the hand, arrow nocked, side-on"),
-    ("Longbow", "two-handed", "The same drawn pose as the shortbow", "longbow", None, {}, "CHANGED (14): the same drawn pose"),
+    ("Shortbow", "two-handed", "Drawn to the cheek, arrow nocked, body side-on; shared with the longbow", "shortbow", None, {}, "ROUND 3 (8): the arrow's line by the drawing cheek, the hand outside the head"),
+    ("Longbow", "two-handed", "The same drawn pose as the shortbow", "longbow", None, {}, "ROUND 3 (8): the same fix"),
     ("Crossbow", "two-handed", "Stock at the shoulder, aiming", "crossbow", None, {}, f"kept; {ALL}"),
     ("Gauntlets", "both hands (fist)", "High guard, fists at the face", "gauntlets", None, {}, "CHANGED (15): fists at the chin, below the eyes"),
-    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "CHANGED (16): torso twisted, elbow behind the fist"),
-    ("Wraps", "both hands (fist)", "Martial-arts stance, palm forward, other hand at the hip", "wraps", None, {}, "CHANGED (17): forward palm open, hip hand a fist"),
-    ("Offhand: shield", "on a longsword", "Held low at the side, facing forward", "longsword", "shield", {}, f"kept; {ALL}"),
-    ("Offhand: second weapon", "a dagger, on a longsword", "Held back, ready, behind the main weapon", "longsword", "dagger", {}, "CHANGED (18): the elbow bends naturally"),
+    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 3 (9): rear fist at the shoulder, elbow back, more twist"),
+    ("Wraps", "both hands (fist)", "Martial-arts stance, palm forward, other hand at the hip", "wraps", None, {}, "ROUND 3 (10): the open palm wrapped too"),
+    ("Offhand: shield", "on a longsword", "Held low at the side, facing forward", "longsword", "shield", {}, "ROUND 3: the longsword's new pose"),
+    ("Offhand: second weapon", "a dagger, on a longsword", "Held back, ready, behind the main weapon", "longsword", "dagger", {}, "ROUND 3: the longsword's new pose, the dagger edge forward"),
 ]
 # Five views: front, three-quarter, side, from above and behind, and from low in front.
 VIEWS = ((0, 10, 3.4), (-45, 10, 3.4), (-90, 10, 3.4), (150, 45, 3.5), (-30, 1, 3.1))  # far enough for weapons held overhead
@@ -142,7 +142,7 @@ def latest(stem):
     return np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)
 
 
-def sheet(stems, n, gap=16):
+def sheet(stems, n, gap=16, out="pose_check"):
     """Panels stacked top to bottom, each its shot over its caption."""
     blocks = []
     for stem in stems:
@@ -159,7 +159,7 @@ def sheet(stems, n, gap=16):
             continue
         pixels[y - b.shape[0]:y] = b
         y -= b.shape[0]
-    out = f"pose_check_{n}"
+    out = f"{out}_{n}"
     im = bpy.data.images.new(out, W, h, alpha=True)
     im.pixels[:] = pixels.ravel().tolist()
     im.filepath_raw = os.path.join(hk.ART, "preview", f"{out}_v{rp.next_n(out)}.png")
@@ -206,6 +206,15 @@ def glaive_closeup(stem="pose_check_glaive_closeup"):
 if __name__ == "__main__":
     if "glaive" in sys.argv:
         glaive_closeup()
+        sys.exit()
+    if "round3" in sys.argv:  # the captions of this round's rows, then sheets of just those panels
+        rows = (1, 2, 3, 4, 5, 6, 7, 8, 9, 20, 21, 24, 25, 26, 27)
+        for i in rows:
+            name, grip, pose, weapon, offhand, extra, change = ROWS[i - 1]
+            text_strip([(f"{i}. {name}, {grip}", 0.62), (f"07: {pose}", 0.5), (kit_text(weapon, offhand, extra), 0.5), (change, 0.5)], f"pose_check_panel_{i:02d}_text")
+        stems = [f"pose_check_panel_{i:02d}" for i in rows]
+        for n in range(math.ceil(len(stems) / 3)):
+            sheet(stems[n * 3:n * 3 + 3], n + 1, out="pose_check_round3")
         sys.exit()
     only = [int(a) for a in sys.argv[sys.argv.index("--") + 1:]] if "--" in sys.argv else None
     stems = []
