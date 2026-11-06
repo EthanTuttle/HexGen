@@ -39,11 +39,11 @@ The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 3
 | Rest the mouse on a hex (or long-press it on touch) | Its details: terrain, region and cluster progress, the variant once finished, any encounter |
 | The **Rest** card along the bottom (shown while the party stands on the camp) | Rest at camp: heal, +8 hours, discard down to 7, reshuffle the discard pile |
 | Nav button (under Quests) | Opens the zoom, rotate and centre buttons |
-| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E and the nav buttons turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; the nav button's centre gives it back |
+| Drag, wheel, right-drag, Q/E, F | Camera (pan, zoom, rotate freely; Q/E turn by a fixed step, 60° as a placeholder; frame). Moving the camera stops it following the party until the next walk; tapping the hero's portrait recentres it and gives it back |
 
 Walking onto a hex with the red swords badge opens the encounter pop-up: **Fight** or **Sneak past** (the hero's Stealth). The dark number badges are cluster goals (hexes still needed). A finished tier 1 region's tiles change to the terrain's region variant (deep forest, highlands, meadows and so on), with no rim, and it gets a landmark pin.
 
-**In a fight** (combat v14): click a portrait in the tray (or an ally on the board) to act with them, pick a card on the hotbar, then tap a target and press **Flip coins** (attacks), **Cast** (spells) or **Use** (self cards). Move lights the hexes you can reach; tap one. **All actions** lists every card. **End** hands the turn to the foes, and asks first if anyone still has AP. The camera buttons are the column beside the tray.
+**In a fight** (combat v14): click a portrait in the tray (or an ally on the board) to act with them, pick a card on the hotbar, then tap a target and press **Flip coins** (attacks), **Cast** (spells) or **Use** (self cards). Move lights the hexes you can reach; tap one. **All actions** lists every card. **End** hands the turn to the foes, and asks first if anyone still has AP. There are no camera buttons: gestures move the camera, and tapping a portrait in the tray recentres on that character (design/07, Nov 5).
 
 **After the fight** (after combat v7): Victory, the party's HP, the cards the win draws, then **Back to map**.
 
@@ -201,10 +201,10 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 | Two fingers turning | Rotate, freely: nothing snaps when the fingers lift (as with a right-drag) |
 | Tap | What a click does: hold a card, place it, pick a hex to walk to, act in combat |
 | Long-press on the board | A map hex's details (as hovering does with a mouse); on a combat token, a foe's name, HP and what it does, or an ally's HP, AP and status |
-| Long-press on a HUD control | Only a **party portrait** opens anything: that character's effects (injuries, buffs, conditions) and what each does, and nothing if they have none. Combat's action cards also keep their details (docs: Action cards). Everything else (hand cards, Quests, equipment, the nav and camera buttons, End hex, the landmark pin, the Rest card, Edit hotbar, the results screen's card hexes) does nothing, and letting go after the hold doesn't press it. Mouse hover follows the same rule |
+| Long-press on a HUD control | Only a **party portrait** opens anything: that character's effects (injuries, buffs, conditions) and what each does, and nothing if they have none. Combat's action cards also keep their details (docs: Action cards). Everything else (hand cards, Quests, the menu, equipment, End hex, the landmark pin, the Rest card, Edit hotbar, the results screen's card hexes) does nothing, and letting go after the hold doesn't press it. Mouse hover follows the same rule |
 | Drag a card out of the hand | It rides just above the finger; let go over a lit slot to place it, anywhere else to put it back |
 
-**Rotation is free** (docs, Oct 30, 2026): twisting and right-dragging turn the view by exactly as much as the fingers or the mouse, with no snap. The nav button's rotate buttons and Q / E turn it by `Rules.ROTATE_STEP` (60°, placeholder).
+**Rotation is free** (docs, Oct 30, 2026): twisting and right-dragging turn the view by exactly as much as the fingers or the mouse, with no snap. Q / E turn it by `Rules.ROTATE_STEP` (60°, placeholder).
 
 **Thresholds** (`scripts/game/rules.gd`, all placeholders): a tap moves less than **8 pt** and lets go within **350 ms**; moving 8 pt or more makes it a drag; a press held still past **350 ms** is a long-press, and it opens the details right then (the docs give one time, so a still press that can no longer be a tap becomes a long-press). A mouse resting still for 350 ms shows the same pop-up. The smallest tap target is **44 pt** (`Rules.FINGER`). The layout's units are about 1 pt on an iPhone (844 × 390 against the iPhone 15 Pro's 852 × 393 pt in landscape).
 
@@ -213,22 +213,21 @@ The rules are in `design/07 Presentation.md` → Camera and controls, and Explor
 - `scripts/gestures.gd` reads `InputEventScreenTouch` / `InputEventScreenDrag` straight, and treats the left mouse button as one more finger. It turns them into tap, drag, long-press, pinch, twist and hover. It lives on the camera rig, which pans, zooms and turns from it; the map (`game.gd`) and combat (`fight.gd`) take the taps and long-presses.
 - **Gestures don't fight:** a second finger cancels any tap, hold or pan in progress, and the finger left behind does nothing until both have lifted, so a pinch never places, walks or acts. A press that moves 8 pt is a drag and can no longer tap, on the board and on every HUD button (`UI.is_tap`).
 - **No double fire:** Godot's mouse-from-touch emulation stays on, because the HUD's buttons need it. The board ignores the emulated mouse events (device −1) and reads the touches only. A long-press on a HUD control swallows the release, so it doesn't also press the control.
-- **The player's camera wins:** any pan, pinch, twist, wheel, right-drag, key or nav zoom/rotate sets `CameraRig.player_moved`. While it's set, the camera doesn't follow the walking party or centre on whoever acts in combat. It clears at the next walk on the map, at the start of each allies' turn in combat, and when the nav button's centre is pressed.
+- **The player's camera wins:** any pan, pinch, twist, wheel, right-drag, key sets `CameraRig.player_moved`. While it's set, the camera doesn't follow the walking party or centre on whoever acts in combat. It clears at the next walk on the map, at the start of each allies' turn in combat, and when a portrait's tap recentres it.
 - **Finger-sized targets:** controls drawn smaller than 44 pt keep their look and get a 44 × 44 hit area (`UI.finger_rect`, used by `HexShape`, `TagButton`, the landmark pin, combat's End hex, hotbar and All actions cards, and the `UI.FingerButton` text buttons). The ones that needed it, from the touch test's audit:
 
   | Control | Drawn | Where |
   | --- | --- | --- |
   | Hand cards | 40 × 46 | Map |
-  | Quests, equipment, nav and its five camera buttons | 40 × 46 | Map |
+  | Quests, the menu and equipment | 40 × 46 | Map |
   | Party portraits | 38 × 44 | Map and combat tray |
-  | Combat's camera buttons | 40 × 46 | Combat |
-  | End phase hex | 38 × 47 | Combat |
+    | End phase hex | 38 × 47 | Combat |
   | Landmark pin | 22 × 24 | Map |
   | Encounter pop-up's Fight button | 40 tall | Map |
 
   The grown areas of neighbouring hand cards and portraits overlap by 2–3 pt; the one drawn on top wins.
 
-**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (39 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex and a foe; long-press on HUD controls: a hand card, Quests, the nav button, End hex and a portrait with no effects open nothing and aren't pressed, a portrait with an effect shows it, on the map and in combat (the test adds a "[Test effect]" or sets Defending for that check, then takes it off); no hover text on any control the docs give none; no visible text under 11 pt on the map, in combat and on the results screen; pinch, a free twist, pan, the nav centre, the Rest card, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines). The Nov 1 run was at 852 × 393 pt (`--resolution 1704x786`) with the Mobile renderer and the phone's shadow settings (`--rendering-method mobile -- --phone`): 0 failed. `screens/touch_03_long_press_portrait.png` and `touch_08_long_press_combat_portrait.png` show the portrait pop-ups; the `loop_*.png` stills were retaken the same way.
+**Testing without a phone:** `--touch` makes the mouse play as one finger (Godot's touch-from-mouse emulation). The scripted test plays a loop by touch alone, injecting one- and two-finger events, and prints `TOUCH OK` / `TOUCH FAIL` for each check (41 checks: drag-to-place, back to the hand, tap-tap placing, long-press on a hex and a foe; long-press on HUD controls: a hand card, Quests, the menu button, End hex and a portrait with no effects open nothing and aren't pressed, a portrait with an effect shows it, on the map and in combat (the test adds a "[Test effect]" or sets Defending for that check, then takes it off); no hover text on any control the docs give none; no visible text under 11 pt on the map, in combat and on the results screen; pinch, a free twist, pan, the hero's portrait recentring (map and combat), the Rest card, the two-tap walk, Fight, a whole fight by taps, Back to map). It also lists every tappable control smaller than 44 pt (`AUDIT` lines). The Nov 1 run was at 852 × 393 pt (`--resolution 1704x786`) with the Mobile renderer and the phone's shadow settings (`--rendering-method mobile -- --phone`): 0 failed. `screens/touch_03_long_press_portrait.png` and `touch_08_long_press_combat_portrait.png` show the portrait pop-ups; the `loop_*.png` stills were retaken the same way.
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path godot --resolution 1704x786 -- --touch           # play with the mouse as a finger, phone-sized
