@@ -136,10 +136,10 @@ func _run() -> void:
 	await _wait(1.0)
 	if "--minishot" in OS.get_cmdline_user_args():   # the hero kit's mini with the hero's gear, close up in a fight
 		var h := Hero.new()
-		h.race = "Human"
+		h.race = game.run.race if game.run.race != "" else "Human"
 		h.klass = game.run.klass
 		h.gear = {"main": game.party[0].weapon, "off": game.party[0].off, "armour": game.party[0].armour}
-		h.appearance = {"race": "Human", "build": "Average", "head": 0, "hair": 0}
+		h.appearance = {"race": h.race, "build": "Average", "head": 0, "hair": 0}
 		Hero.current = h
 		await _fight("plains_stones")
 		var me: Dictionary = f.units[0]

@@ -3,12 +3,14 @@ extends RefCounted
 ## The hero as one merged mesh, built from a description by the steps in art/handoff/hero_kit.md: the kit's pieces placed by
 ## art/export/heroes_placements.json, player colours swapped in where the vertex colours carry a mark. The description, not
 ## the mesh, is what a save or a guest carries later.
-## description: {race, build, head, hair, armour, main, offhand, colours: {skin, hair, eyes, cloth}}, in the kit's words.
+## description: {race, build, head, hair, armour, main, offhand, two, caster, colours: {skin, hair, eyes, cloth}}, in the kit's
+## words (kit v10: every pose moves the whole hero, legs and arms are posed parts).
 
 const GLB := "res://art/heroes.glb"
 const TABLE := "res://art/heroes_placements.json"
 const MARK_BLUE := 253                 # a mark's blue in sRGB bytes. Nothing else in the kit has it
 const ZONES: Array[String] = ["", "skin", "hair", "eyes", "cloth"]
+const CASTERS := ["wizard", "cleric", "bard"]   # DOCS (07 -> Pose library): a staff with an empty hand takes the casting pose
 
 static var _t := {}
 static var _pieces := {}               # piece -> its arrays and marks, read once
@@ -30,10 +32,15 @@ static func description(h: Hero) -> Dictionary:
 	var off: String = h.gear.get("off", "")
 	off = "" if off == "none" else {"knuckles": "brass_knuckles"}.get(off, off)
 	var armour: String = str(h.gear.get("armour", "none")).to_lower()
+	if main == "":
+		main = "longsword"
 	return {
 		"race": h.race.to_lower(), "build": str(a.get("build", "Average")).to_lower(),
 		"head": t.heads[int(a.get("head", 0))], "hair": t.hairstyles[int(a.get("hair", 0))],
-		"armour": armour, "main": main if main != "" else "longsword", "offhand": off,
+		"armour": armour, "main": main, "offhand": off,
+		# 07 -> Pose library: a versatile weapon with the off hand empty is held in both hands (04's two-handed damage);
+		# a caster class's staff with an empty hand casts, a martial's takes the quarterstaff guard.
+		"two": off == "" and main in t.two_grip, "caster": off == "" and main == "staff" and h.klass.to_lower() in CASTERS,
 		"colours": {"skin": a.get("skin", "#F3D2B5"), "hair": a.get("hair_colour", "#2B211C"), "eyes": a.get("eyes", "#4F7A33"), "cloth": a.get("cloth", "#B5532F")},
 	}
 
@@ -59,39 +66,49 @@ static func _matrix(m: Array) -> Transform3D:
 	return Transform3D(Basis(Vector3(m[0], m[1], m[2]), Vector3(m[3], m[4], m[5]), Vector3(m[6], m[7], m[8])), Vector3(m[9], m[10], m[11]))
 
 
-## Which pieces, with which matrix: the hand-off's table. [[piece, matrix or null]...]
+## Which pieces, with which matrix: the hand-off's "What Godot needs" (from_table() in art/scripts/export_hero_kit.py).
+## [[piece, matrix or null]...]
 static func parts(d: Dictionary) -> Array:
 	var t := table()
 	var race: String = d.race
 	var build: String = d.build
-	var row: Dictionary = t.races[race].builds[build]
-	var out: Array = [["hero_base", null], ["hero_body_%s_%s" % [race, build], null]]
-	var armour: String = d.armour
-	if armour != "" and armour != "none":
-		out.append(["hero_armour_%s_%s_%s" % [armour, race, build], null])
-	out.append(["hero_head_%s_%s" % [race, d.head], row.head])
-	if d.hair != "" and not race in t.hairless:
-		out.append(["hero_hair_%s" % d.hair, row.hair])
+	var armour: String = d.armour if d.armour != "" else "none"
 	var main: String = d.main
 	var off: String = d.offhand
-	var is_fist: bool = main in t.fist
-	var hold := "none"
-	if main in t.one_handed and off != "":
-		hold = "shield" if off == "shield" else "second"
-	var pose: Dictionary = row.poses[main][hold]
-	var kind: String = "golem" if race == "golem" else {"medium": "chain", "heavy": "plate"}.get(armour, "bare")
-	var fist := "golem" if race == "golem" else ("gauntlet" if armour == "heavy" else "bare")
-	var arm_pieces := ["hero_arm_upper_" + kind, "hero_arm_fore_" + kind, "hero_hand_" + fist]
-	for side: String in ["right", "left"]:
-		for i in 3:
-			out.append([arm_pieces[i], pose[side][i]])
-	if is_fist:
-		out.append(["hero_" + main, pose.fists[0]])
-		out.append(["hero_" + main, pose.fists[1]])
-	else:
+	var variant := "none"
+	if main == "staff" and d.get("caster", false) and off == "":
+		variant = "cast"
+	elif d.get("two", false) and main in t.two_grip and off == "":
+		variant = "two"
+	elif off != "":
+		variant = "shield" if off == "shield" else "second"
+	var pose: Dictionary = t.races[race].builds[build].poses[main][variant]
+	var golem := race == "golem"
+	var leg := "golem" if golem else ("scaled" if race == "dragonborn" else "cloth")
+	var kind: String = "golem" if golem else {"medium": "chain", "heavy": "plate"}.get(armour, "bare")
+	var fist := "golem" if golem else ("gauntlet" if armour == "heavy" else "bare")
+	var out: Array = [["hero_base", null], ["hero_body_%s_%s" % [race, build], pose.torso]]
+	if armour != "none":
+		out.append(["hero_armour_%s_%s_%s" % [armour, race, build], pose.torso])
+	out.append(["hero_head_%s_%s" % [race, d.head], pose.head])
+	if d.hair != "" and d.hair != "none" and not race in t.hairless:
+		out.append(["hero_hair_%s" % d.hair, pose.hair])
+	for l: Dictionary in pose.legs:
+		out.append(["hero_leg_upper_" + leg, l.upper])
+		out.append(["hero_leg_lower_" + leg, l.lower])
+		if armour == "heavy" and not golem:
+			out.append(["hero_leg_greave", l.greave])
+		out.append(["hero_boot_golem" if golem else "hero_boot_leather", l.boot])
+	for arm: Dictionary in pose.arms:   # right, then left
+		out.append(["hero_arm_upper_" + kind, arm.upper])
+		out.append(["hero_arm_fore_" + kind, arm.fore])
+		out.append(["hero_hand_open_wraps" if arm.hand_piece == "open_wraps" else "hero_hand_" + fist, arm.hand])
+		if arm.has("fist_weapon"):
+			out.append(["hero_" + main, arm.fist_weapon])
+	if pose.has("main"):
 		out.append(["hero_" + main, pose.main])
-		if hold != "none":
-			out.append(["hero_shield" if off == "shield" else "hero_" + off, pose.offhand])
+	if off != "":
+		out.append(["hero_shield" if off == "shield" else "hero_" + off, pose.offhand])
 	return out
 
 
@@ -148,7 +165,7 @@ static func build(d: Dictionary) -> ArrayMesh:
 		else:
 			var t := _matrix(part[1])
 			verts.append_array(t * (p.verts as PackedVector3Array))
-			# Scale isn't uniform on arms and planted weapons: normals by the inverse transpose.
+			# Scale isn't uniform on arms, legs, open palms and planted weapons: normals by the inverse transpose.
 			var n: PackedVector3Array = Transform3D(t.basis.inverse().transposed(), Vector3.ZERO) * (p.normals as PackedVector3Array)
 			for k in n.size():
 				n[k] = n[k].normalized()
@@ -156,6 +173,11 @@ static func build(d: Dictionary) -> ArrayMesh:
 		var src_index: PackedInt32Array = (p.index as PackedInt32Array).duplicate()
 		for k in src_index.size():
 			src_index[k] += at
+		if part[1] != null and _matrix(part[1]).basis.determinant() < 0.0:
+			for k in range(0, src_index.size(), 3):   # a mirrored piece: reverse each face's winding
+				var swap := src_index[k + 1]
+				src_index[k + 1] = src_index[k + 2]
+				src_index[k + 2] = swap
 		index.append_array(src_index)
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)

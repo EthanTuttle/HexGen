@@ -73,7 +73,7 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 | Title's first-launch world | `Front._terrain`: a staged river, woods, farms and a town, real tiles at dusk; only tiles the camera sees are built | The docs ask for "a generic world" |
 | Title's camera | 5.8 m each way over 40 s (the mockup's time) | The mockup's pan is in screen pixels |
 | Locked classes (creator) | Dimmed banner with a lock badge; it opens to read, shows "Locked", and Next stays off | The docs say "show locked" and no mockup does (`Creator.PLAYABLE`) |
-| Hero mini | The kit (`art/handoff/hero_kit.md`), one merged mesh from a description (`scripts/hero_mini.gd`), on Look, Name, the map and fights. `HeroView` lights and frames it on the creator: placeholder light and camera. Companions stay stand-ins | Scripted minis, replaced later (design/06) |
+| Hero mini | The kit v10 (`art/handoff/hero_kit.md`: posed torso, head, hair, legs and arms per pose; a versatile weapon with an empty off hand takes the two-handed pose, a Wizard's, Cleric's or Bard's staff with an empty hand the casting pose), one merged mesh from a description (`scripts/hero_mini.gd`), on Look, Name, the map and fights. `HeroView` lights and frames it on the creator: placeholder light and camera. Companions stay stand-ins | Scripted minis, replaced later (design/06) |
 | Heads and hairstyles | Picked by number, as in the mockup: the kit's four heads and six styles in its order | The kit's shapes are proposals |
 | Hero's banner after Begin | Stays 4 s, then rises away; 96 pt in from the safe edge, clear of the party tray (`SendOff`) | The docs don't say how long, and at the mockup's left it covers the tray |
 | Name step with a keyboard open | The step slides up clear of it | Not mocked; not yet seen on a phone |
@@ -97,6 +97,8 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 **Where the scenes differ from Town v9 and Social v9:** the tray is the game's own, so it isn't redrawn; "Carry on", option cards and bands use 11 pt or more; option words are 12 pt, not 11, as they're read at arm's length.
 
 **Hero kit in Godot (Nov 4, 2026, Mac, Mobile renderer):** 1,722 heroes from the table assemble (every race, build and weapon, each hold, no armour and heavy) at 480-1,282 triangles. A rebuild takes 0.4 ms at the median, 3.8 ms at worst, so each pick on Look rebuilds the merged mesh and the separate-nodes fallback isn't needed. Colours come through import in 8-bit linear as the hand-off warned: zones read right (no mark missed), and shades run 0.38-1.29. Not timed on a phone yet.
+
+**Hero kit v10 (Nov 5, 2026):** 1,890 heroes assemble (every race, build, weapon and variant, no armour and heavy) at 472-1,340 triangles, as the hand-off says. Rebuilds: 0.4 ms median, 2.6 ms worst. Mirrored pieces get their winding flipped, though the current table has none.
 
 **Where the creator differs from Creator v22b:**
 
