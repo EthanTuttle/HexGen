@@ -12,7 +12,7 @@ Proposed swatches are in BEAST_SWATCHES.
 
   beast_wolf        alert, head up, tail out straight, a draped saddle in the ranger's cloth: the enemy wolf stalks low with
                     its jaws open. (Until beast_minis_v8 the approved wolf was beast_wolf_band; Ethan's critical pass reopened it.)
-  beast_bear        broad and heavy on all fours, head up, the same back cloth
+  beast_bear        broad and heavy on all fours, head up, the ranger's scarf
   beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth
   beast_hawk        wings spread on a flight stand, looking down, bands and a cloth tie on its legs in the ranger's cloth, its shadow painted on the base
 """
@@ -138,11 +138,13 @@ def wolf(col):
 
 
 def bear(col):
-    """Broad and heavy on all fours, shoulder hump high, head up and turned a touch to its right, mouth shut: a wall to hide
-    behind. Shorter than a real bear so it keeps to its cell; the back cloth and neckerchief as on the wolf."""
+    """Broad and heavy on all fours, shoulder hump high, head up and straight ahead, mouth shut: a wall to hide behind. Shorter
+    than a real bear so it keeps to its cell. v2 (after Ethan's critical pass): a scarf instead of the saddle, a rounder,
+    broader head on a short thick neck, round ears, shaped legs with claws on the paws, the rump rounded and filled."""
     p = hk.Piece("beast_bear")
     sm.base(p, "ring_ally")
     coat, back, side, pale, dark = zone("skin"), zone("skin", 0.84), zone("skin", 0.92), zone("hair"), zone("skin", 0.6)
+    paws = zone("skin", 0.9)
 
     def at(x, y, z):
         return V((x, y, Z0 + z))
@@ -150,52 +152,59 @@ def bear(col):
     def fur(c, n):
         return back if n.z > 0.6 else side if n.z < -0.3 else coat
 
-    # Body: a high hump over the shoulders, a deep barrel, a round rump a little lower.
-    body = [(0.37, 0.34, 0.07, 0.07), (0.31, 0.37, 0.17, 0.15), (0.13, 0.4, 0.2, 0.18),
-            (-0.06, 0.43, 0.21, 0.2), (-0.18, 0.44, 0.18, 0.18), (-0.25, 0.42, 0.125, 0.125)]
+    # Body: a high hump over the shoulders, a deep barrel, a full round rump that fills down between the thighs.
+    body = [(0.4, 0.3, 0.06, 0.06), (0.36, 0.33, 0.15, 0.17), (0.25, 0.36, 0.2, 0.2), (0.1, 0.39, 0.2, 0.18),
+            (-0.06, 0.43, 0.21, 0.2), (-0.18, 0.44, 0.18, 0.18), (-0.25, 0.43, 0.14, 0.14)]
     em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.15) for y, z, w, h in body], fur)
-    em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.15) for y, z, w, h in ((-0.1, 0.43, 0.222, 0.215), (0.03, 0.418, 0.218, 0.2), (0.16, 0.402, 0.21, 0.188))],
-            lambda c, n: zone("cloth") if n.z > -0.3 else zone("cloth", 0.8))
-    # Neckerchief round the thick neck, its point down the chest.
-    em.loft(p, [em.section(at(0, y, 0.42), w, w, sides=8) for y, w in ((-0.22, 0.152), (-0.26, 0.13))], lambda c, n: zone("cloth"))
-    em.loft(p, [[at(-0.11, -0.28, 0.39), at(0.11, -0.28, 0.39), at(0, -0.31, 0.4)], [at(0, -0.31, 0.25)]], lambda c, n: zone("cloth", 0.88))
+    # A short, thick neck into the head.
+    em.loft(p, [em.section(at(0, y, z), w, h, along=V((0, -1, 0.3)), sides=8) for y, z, w, h in ((-0.22, 0.43, 0.15, 0.15), (-0.3, 0.46, 0.13, 0.13))], fur)
 
-    # Head: broad skull, small round ears, a short blunt muzzle with a pale tip, small eyes.
-    fwd = V((0.16, -1, 0.04)).normalized()
-    hc = at(0.03, -0.33, 0.48)
+    # Head straight ahead: broad and round, small round ears, a short muzzle, tan, the nose part of its tip.
+    fwd = V((0, -1, 0.04)).normalized()
+    hc = at(0.0, -0.36, 0.48)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
 
     def head_fur(c, n):
-        return pale if (c - hc).dot(fwd) > 0.1 else back if n.z > 0.6 else coat
-    em.loft(p, [em.section(h(-0.07, 0.0), 0.09, 0.08, along=fwd, sides=8), em.section(h(0.0, 0.01), 0.125, 0.105, along=fwd, sides=8),
-                em.section(h(0.07, 0.0), 0.11, 0.09, along=fwd, sides=8), em.section(h(0.11, -0.03), 0.07, 0.06, along=fwd, sides=8),
-                em.section(h(0.18, -0.04), 0.058, 0.05, along=fwd, sides=8), em.section(h(0.205, -0.045), 0.04, 0.032, along=fwd, sides=8)], head_fur)
-    p.blob(h(0.21, -0.025), 0.026, "hero_pupil", squash=0.75)  # nose
-    for x in SIDE:
-        em.limb(p, [h(0.205, -0.075, x * 0.01), h(0.15, -0.08, x * 0.045)], [0.006] * 2, ["hero_mouth"], sides=3)
-        look = (fwd + V((x * 0.6, 0, 0.1))).normalized()
-        e = h(0.07, 0.035, x * 0.07) + look * 0.004
-        hb_plate(p, e, look, 0.024, 0.02, zone("eyes"))
-        hb_plate(p, e + look * 0.002, look, 0.011, 0.016, "hero_pupil")
-        em.limb(p, [h(0.08, 0.06, x * 0.04), h(0.065, 0.058, x * 0.09)], [0.012, 0.009], [dark], sides=4)
-        # round ears, pale inside
-        ear = h(-0.03, 0.09, x * 0.09)
-        p.blob(ear, 0.042, back, squash=0.7)
-        p.blob(ear + fwd * 0.02, 0.026, pale, squash=0.6)
+        ahead = (c - hc).dot(fwd)
+        rise = (c - (hc + fwd * ahead)).z
+        if ahead > 0.184:  # the nose: the end of the muzzle, as on the wolf
+            return "hero_pupil"
+        if ahead > 0.085:
+            return pale
+        return back if rise > 0.05 else coat
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=8) for y, z, w, d in
+                ((-0.085, 0.0, 0.1, 0.09), (-0.01, 0.012, 0.138, 0.118), (0.055, 0.0, 0.122, 0.1), (0.095, -0.03, 0.078, 0.066),
+                 (0.16, -0.04, 0.062, 0.054), (0.19, -0.045, 0.046, 0.038))], head_fur)
+    face(p, h, fwd, eye=(0.055, 0.04, 0.066, 0.026, 0.02), brow=((0.072, 0.064, 0.03), (0.056, 0.062, 0.086)), dark=dark,
+         mouth=[(0.18, -0.074, 0.014), (0.14, -0.08, 0.04), (0.1, -0.072, 0.056)])
+    for x in SIDE:  # round ears, set on the skull, a flat pale inside facing forward
+        ear = h(-0.035, 0.095, x * 0.092)
+        p.blob(ear, 0.04, back, squash=0.75)
+        p.blob(ear + fwd * 0.02 + V((0, 0, 0.004)), 0.024, pale, squash=0.6)  # the inside, mostly sunk in the ear
 
-    # Legs: thick pillars set wide, big paws with pale claws.
-    for s, y in ((-1, -0.13), (1, -0.13), (-1, 0.26), (1, 0.26)):
-        x = 0.13 * s
-        top = 0.38 if y < 0 else 0.36
-        knee = V((x * 1.05, y + (0.0 if y < 0 else 0.04), Z0 + 0.2))
-        paw = V((x * 1.08, y - 0.03, Z0 + 0.03))
-        em.limb(p, [V((x, y, Z0 + top)), knee, paw + V((0, 0, 0.05)), paw], [0.105, 0.085, 0.075, 0.08], [coat, coat, dark])
+    # The ranger's scarf round the thick neck, a small knot, one tail down the chest and one along the hump and down the back.
+    scarf(p, at(0, -0.18, 0.43), at(0, -0.34, 0.46), at, knot=(0.05, -0.33, 0.37), chest=(0.06, 0.34, 0.22), t0=0.42,
+          shoulder=[(0.12, -0.21, 0.5), (0.1, -0.11, 0.6), (0.07, 0.0, 0.62), (0.05, 0.1, 0.6), (0.035, 0.2, 0.57), (0.025, 0.29, 0.52)],
+          floor=0.4, w=0.085)
+
+    # Legs: thick and shaped, the shoulders and hips inside the body, an elbow back, a knee forward, big paws with the claws on
+    # their toes, resting on the base.
+    for s_, y, front in ((-1, -0.13, True), (1, -0.13, True), (-1, 0.27, False), (1, 0.27, False)):
+        x = 0.13 * s_
+        if front:
+            pts = [at(x * 0.8, y + 0.01, 0.4), at(x, y + 0.04, 0.22), at(x * 1.03, y - 0.02, 0.08), at(x * 1.03, y - 0.03, 0.05)]
+            radii = [0.11, 0.09, 0.074, 0.07]
+        else:
+            pts = [at(x * 0.8, y, 0.38), at(x * 1.02, y - 0.06, 0.22), at(x * 1.04, y + 0.03, 0.1), at(x * 1.04, y + 0.01, 0.05)]
+            radii = [0.13, 0.1, 0.074, 0.07]
+        foot = V((pts[-1].x, pts[-1].y - 0.02, Z0))
+        leg(p, pts, radii, [coat, coat, coat], foot, 0.075, 0.034, paws)
         for k in (-1, 0, 1):
-            c = paw + V((k * 0.03, -0.07, -0.005))
-            vr.spike(p, c, c + V((0, -0.035, -0.012)), 0.012, "fang", segments=3)
-    p.blob(at(0, 0.39, 0.4), 0.04, coat, squash=0.8)  # stub of a tail
+            root = foot + V((k * 0.03, -0.075 * 0.85 - 0.004, 0.02))
+            vr.spike(p, root, root + V((k * 0.004, -0.032, -0.016)), 0.011, "fang", segments=3)
+    em.loft(p, [em.section(at(0, y, 0.4), w, w, sides=6) for y, w in ((0.4, 0.04), (0.44, 0.028))], lambda c, n: coat)  # a stub of a tail
     return p.finish(col)
 
 
@@ -377,16 +386,17 @@ def saddle(p, axis, y0, y1, rows=7, cols=13):
     drape(p, grid, lambda i, j: zone("cloth", 0.78) if j in (0, cols - 2) else zone("cloth"), lift=0.016)  # clear of the coat's facets
 
 
-def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055):
+def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055, t0=0.12):
     """A knotted scarf in the ranger's cloth, cast onto what's built so far: a thick band round the neck between a and b, a knot
-    at the throat, one tail down the chest and one back over the shoulder. at(x, y, z): the beast's frame. knot (x, y, z);
+    at the throat, one tail down the chest and one back over the shoulder. at(x, y, z): the beast's frame; t0: where along a to b
+    the band starts (later for a short neck, so it sits behind the head and not up the hump). knot (x, y, z);
     chest (x, z from, z to): the front tail; shoulder: points (x, y, z) the back tail runs along, from the knot outward, cast
     toward the body's middle line and kept above floor (a height over the base), so it lies on the back."""
     axis = (b - a).normalized()
     u, v = V((1, 0, 0)), axis.cross(V((1, 0, 0))).normalized()
     band = []
     for k in range(4):
-        c = a.lerp(b, 0.12 + 0.13 * k)
+        c = a.lerp(b, t0 + 0.13 * k)
         band.append([(c + (u * math.cos(2 * math.pi * m / 16) + v * math.sin(2 * math.pi * m / 16)) * 0.4,
                       -(u * math.cos(2 * math.pi * m / 16) + v * math.sin(2 * math.pi * m / 16)), V()) for m in range(17)])
     drape(p, band, lambda i, j: zone("cloth", 0.82) if i in (0, 2) else zone("cloth"), lift=0.022)
