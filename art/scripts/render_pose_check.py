@@ -45,7 +45,7 @@ ROWS = [
     ("Spear", "one-handed", "Upright at attention, like the halberd", "spear", None, {}, f"kept; {ALL}"),
     ("Spear", "two-handed", "Braced pike, point forward", "spear", None, {"two": True}, "NEW (10): braced pike, level, into the next cell"),
     ("Halberd", "two-handed", "Upright at attention", "halberd", None, {}, f"kept; {ALL}"),
-    ("Glaive", "two-handed", "Mid-sweep", "glaive", None, {}, "ROUND 4: the blade rebuilt (single edge, straight back, socket), its edge leading"),
+    ("Glaive", "two-handed", "Mid-sweep", "glaive", None, {}, "ROUND 4 (6): the sweep tightened toward the cell, twist and leading edge kept"),
     ("Staff", "caster, hand empty", "Staff planted, free hand raised as if casting", "staff", None, {"caster": True}, "NEW (12): casting pose, palm out"),
     ("Staff", "two-handed", "Quarterstaff guard, held across the body", "staff", None, {}, f"kept (martials); {ALL}"),
     ("Wand", "one-handed", "Arm extended, wand pointed at the foe", "wand", None, {}, "CHANGED (13): angled forward and out"),

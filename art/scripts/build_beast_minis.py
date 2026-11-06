@@ -255,8 +255,8 @@ def panther(col):
                 ((-0.06, 0.0, 0.07, 0.06), (0.0, 0.006, 0.1, 0.082), (0.055, 0.0, 0.094, 0.07), (0.09, -0.022, 0.064, 0.052),
                  (0.12, -0.03, 0.05, 0.04), (0.138, -0.034, 0.036, 0.03))], head_fur)
     p.blob(h(0.136, -0.012), 0.014, "hero_pupil", squash=0.6)
-    face(p, h, fwd, eye=(0.05, 0.026, 0.042, 0.026, 0.015), brow=((0.06, 0.044, 0.016), (0.048, 0.042, 0.06)), dark=dark,
-         mouth=[(0.134, -0.052, 0.01), (0.11, -0.058, 0.03), (0.08, -0.052, 0.046)], slit=True)
+    face(p, h, fwd, eye=(0.06, 0.026, 0.027, 0.026, 0.015), brow=((0.068, 0.044, 0.012), (0.06, 0.043, 0.044)), dark=dark,
+         mouth=[(0.134, -0.052, 0.01), (0.11, -0.058, 0.03), (0.08, -0.052, 0.046)], slit=True, splay=0.35, lift=0.007)  # the eyes closer together
     for x in SIDE:
         ear = h(-0.03, 0.062, x * 0.062)
         p.blob(ear, 0.028, back, squash=0.7)
@@ -267,7 +267,7 @@ def panther(col):
     scarf(p, at(0, -0.24, 0.36), at(0, -0.34, 0.33), at, knot=(0.04, -0.33, 0.26), chest=(0.05, 0.265, 0.235), t0=0.2,
           shoulder=[(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, z0 + (z1 - z0) * f)  # sampled closely, so it follows the dip behind the shoulders
                     for (x0, y0, z0), (x1, y1, z1) in zip(spine, spine[1:]) for f in (0, 0.34, 0.67)] + [spine[-1]],
-          floor=0.28, w=0.07)
+          floor=0.28, w=0.07, back_lift=0.004)  # flat on the spine
 
     # Legs: heavy fore legs straight under the shoulders; hind legs folded cleanly, the knee forward, the hock back; round paws.
     for s_ in SIDE:
@@ -401,7 +401,7 @@ def saddle(p, axis, y0, y1, rows=7, cols=13):
     drape(p, grid, lambda i, j: zone("cloth", 0.78) if j in (0, cols - 2) else zone("cloth"), lift=0.016)  # clear of the coat's facets
 
 
-def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055, t0=0.12):
+def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055, t0=0.12, back_lift=0.016):
     """A knotted scarf in the ranger's cloth, cast onto what's built so far: a thick band round the neck between a and b, a knot
     at the throat, one tail down the chest and one back over the shoulder. at(x, y, z): the beast's frame; t0: where along a to b
     the band starts (later for a short neck, so it sits behind the head and not up the hump). knot (x, y, z);
@@ -440,7 +440,7 @@ def scarf(p, a, b, at, knot, chest, shoulder, floor, w=0.055, t0=0.12):
             o = q + side_ * (2 * m / 2 - 1) + V((0, 0, 0.5))
             row.append((o, at(0, q.y, floor + 0.02) - o, V()))
         back.append(row)
-    drape(p, back, lambda i, j: zone("cloth"), lift=0.016, floor=at(0, 0, floor).z)
+    drape(p, back, lambda i, j: zone("cloth"), lift=back_lift, floor=at(0, 0, floor).z)
 
 
 def neckerchief(p, a, b, t, front, z0, z1, w):
@@ -479,9 +479,11 @@ def paw(p, at, d, w, h, paint):
                 em.section(at + d * w * 0.85, w * 0.8, h * 0.6, along=d, sides=6)], lambda c, n: paint)
 
 
-def face(p, h, fwd, eye, brow, dark, mouth=None, slit=False):
+def face(p, h, fwd, eye, brow, dark, mouth=None, slit=False, splay=0.75, lift=0.003):
     """Eyes, brows and a mouth line set on the head built so far: eyes cast onto it, brows and mouth sunk into it so only a
-    ridge or a line shows. eye: (ahead, up, out, width, height); brow: two (ahead, up, out) points; mouth: (ahead, up, out)."""
+    ridge or a line shows. eye: (ahead, up, out, width, height); brow: two (ahead, up, out) points; mouth: (ahead, up, out);
+    splay: how far to the side the eyes look (less sets them closer, more to the front); lift: the eye off the surface (more where
+    it sits across a crease, so no corner sinks in)."""
     tree = BVHTree.FromBMesh(p.bm)
 
     def onto(q, d):
@@ -489,10 +491,10 @@ def face(p, h, fwd, eye, brow, dark, mouth=None, slit=False):
         return (hit[0], hit[1]) if hit[0] is not None else None
     for x in SIDE:
         side_ = V((x, 0, 0))
-        look = (fwd + side_ * 0.75 + V((0, 0, 0.1))).normalized()
+        look = (fwd + side_ * splay + V((0, 0, 0.1))).normalized()
         hit = onto(h(eye[0], eye[1], x * eye[2]), look)
         if hit:
-            e, n = hit[0] + hit[1] * 0.003, hit[1]
+            e, n = hit[0] + hit[1] * lift, hit[1]
             hb_plate(p, e, n, eye[3], eye[4], zone("eyes"))
             hb_plate(p, e + n * 0.002, n, eye[4] * (0.35 if slit else 0.55), eye[4] * 0.9, "hero_pupil")
         ends = [onto(h(y, z, x * o), (look + V((0, 0, 0.4))).normalized()) for y, z, o in brow]
