@@ -169,6 +169,31 @@ static func _near_shore(p: Vector2, shores: Array, d: float) -> bool:
 ## The ground cover of one tile: the cells of the world-space pattern whose point lands in it.
 ## Gives the same props as the whole-map scatter, so tiles can be rebuilt one at a time.
 static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i, clear := [], marsh := {}) -> MeshInstance3D:
+	return _build(tile_items(terrains, water_shapes, t, clear, marsh), terrains)
+
+
+## Many tiles' cover at once, across the CPU's cores (Ethan, Nov 5, 2026: pure speed, the same props). jobs: [[t, clear, marsh]...].
+## Everything a tile's cover reads is plain data, so the workers only read; the meshes are made here, on the calling thread.
+static func build_tiles(terrains: Dictionary, water_shapes: Dictionary, jobs: Array) -> Array[MeshInstance3D]:
+	grass_material()   # made once, here, not on a worker
+	var out: Array[MeshInstance3D] = []
+	var held := []
+	for _j in jobs:
+		held.append({})   # one box per job: a worker writes only its own
+	var work := func(i: int) -> void:
+		var job: Array = jobs[i]
+		held[i].arrays = _piece(tile_items(terrains, water_shapes, job[0], job[1], job[2]), terrains).arrays()
+	if jobs.size() > 1:
+		WorkerThreadPool.wait_for_group_task_completion(WorkerThreadPool.add_group_task(work, jobs.size(), -1, true, "ground cover"))
+	elif jobs.size() == 1:
+		work.call(0)
+	for h: Dictionary in held:
+		out.append(_instance(h.arrays))
+	return out
+
+
+## The cells of the world-space pattern whose point lands in tile t, with their props.
+static func tile_items(terrains: Dictionary, water_shapes: Dictionary, t: Vector2i, clear := [], marsh := {}) -> Array:
 	var c := Hex.tile_position(t.x, t.y)
 	var items := []
 	for ix in range(int(floor((c.x - A) / CELL)), int(ceil((c.x + A) / CELL))):
@@ -179,7 +204,7 @@ static func build_tile(terrains: Dictionary, water_shapes: Dictionary, t: Vector
 			var item := _keep(terrains, water_shapes, ix, iy, p, clear, marsh)
 			if not item.is_empty():
 				items.append(item)
-	return _build(items, terrains)
+	return items
 
 
 static func build(terrains: Dictionary, water_shapes: Dictionary) -> MeshInstance3D:
@@ -187,6 +212,23 @@ static func build(terrains: Dictionary, water_shapes: Dictionary) -> MeshInstanc
 
 
 static func _build(items: Array, terrains: Dictionary) -> MeshInstance3D:
+	return _instance(_piece(items, terrains).arrays())
+
+
+## The node for a cover's arrays, as Piece.instance makes it (the same mesh, so threaded tiles look the same).
+static func _instance(arrays: Array) -> MeshInstance3D:
+	var mesh := ArrayMesh.new()
+	if not arrays.is_empty():
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		mesh.surface_set_material(0, Piece.material())
+	var mi := MeshInstance3D.new()
+	mi.name = "ground_cover"
+	mi.mesh = mesh
+	mi.material_override = grass_material()
+	return mi
+
+
+static func _piece(items: Array, terrains: Dictionary) -> Piece:
 	var piece := Piece.new()
 	var rock := Hex.colour("rock")
 	for item in items:
@@ -215,6 +257,4 @@ static func _build(items: Array, terrains: Dictionary) -> MeshInstance3D:
 				piece.box(at, size, Hex.colour(hue), 0.0, rng.uniform(0, 1))
 			_:
 				piece.blob(at, rng.uniform(0.07, 0.12), rock, 0.0, 0.6)
-	var mi := piece.instance("ground_cover")
-	mi.material_override = grass_material()
-	return mi
+	return piece

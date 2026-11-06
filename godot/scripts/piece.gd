@@ -215,6 +215,11 @@ func is_empty() -> bool:
 	return _empty
 
 
+## The surface's arrays without making a mesh: safe on a worker thread (GroundCover.build_tiles). [] when empty.
+func arrays() -> Array:
+	return [] if _empty else _st.commit_to_arrays()
+
+
 func mesh() -> ArrayMesh:
 	var m := _st.commit()
 	if m.get_surface_count() > 0:

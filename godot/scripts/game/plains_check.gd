@@ -156,6 +156,7 @@ func _check_cover(map: MapBoard) -> void:
 	var checked := 0
 	var ok := true
 	var near_points := 0
+	map.finish_cover()   # every tile's cover, not just those in view
 	for t: Vector2i in _region("stormy_plains").tiles:
 		var node := map.tile_node(t)
 		for mi in node.get_children():

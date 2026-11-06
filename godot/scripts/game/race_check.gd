@@ -150,6 +150,42 @@ func _run() -> void:
 		Hero.current = null
 		get_tree().quit()
 		return
+	if "--covercompare" in OS.get_cmdline_user_args():   # test aid: threaded cover gives today's meshes, array for array
+		if "--coverforest" in OS.get_cmdline_user_args():   # the debug map of every forest and farmland region
+			game.spawn_forest_regions()
+			await _wait(1.0)
+		var map: MapBoard = game.map
+		var jobs := []
+		for t: Vector2i in map.terrains:
+			var job := map._cover_job(t)
+			if not job.is_empty():
+				jobs.append(job)
+		var t0 := Time.get_ticks_usec()
+		var old := []
+		for job: Array in jobs:   # today's path: one tile at a time, Piece.mesh()
+			old.append(GroundCover._piece(GroundCover.tile_items(map.terrains, map.water_shapes, job[0], job[1], job[2]), map.terrains).mesh())
+		var t1 := Time.get_ticks_usec()
+		var made := GroundCover.build_tiles(map.terrains, map.water_shapes, jobs)
+		var t2 := Time.get_ticks_usec()
+		var same := 0
+		var verts := 0
+		for k in jobs.size():
+			var a: Mesh = old[k]
+			var b: Mesh = made[k].mesh
+			var ok := a.get_surface_count() == b.get_surface_count()
+			if ok and a.get_surface_count() > 0:
+				var aa := a.surface_get_arrays(0)
+				var bb := b.surface_get_arrays(0)
+				for i in Mesh.ARRAY_MAX:
+					ok = ok and aa[i] == bb[i]
+				ok = ok and a.surface_get_format(0) == b.surface_get_format(0) and a.surface_get_material(0) == b.surface_get_material(0)
+				verts += (aa[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+			same += 1 if ok else 0
+		_check(same == jobs.size(), "cover: %d of %d tiles' threaded meshes match today's exactly (%d vertices)" % [same, jobs.size(), verts])
+		print("RACE cover timing: %d tiles, one at a time %.0f ms, threaded %.0f ms" % [jobs.size(), (t1 - t0) / 1000.0, (t2 - t1) / 1000.0])
+		print("RACE DONE: %d failed" % failed)
+		get_tree().quit()
+		return
 	if "--fallshots" in OS.get_cmdline_user_args():   # test aid: a foe falls, then shrinks away, in frames
 		await _fight("plains_stones")
 		var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]

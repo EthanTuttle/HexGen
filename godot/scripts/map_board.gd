@@ -106,6 +106,9 @@ var marsh_job_ms := 0                  # the last region's wetland, off the main
 var marsh_data_us := 0                 # test aid: time in marsh_of, and in all of _add_marsh
 var marsh_build_us := 0
 var marsh_cover_us := 0
+var cover_queue := {}                  # tiles whose cover comes a few a frame, after the ones in view (Ethan, Nov 5, 2026)
+var cover_view_first := true           # off: every tile's cover at once (the checks that read cover straight after a build)
+const COVER_PER_FRAME := 8             # PLACEHOLDER: tiles a frame from the queue, built across the cores
 var gorge_job_ms := 0                  # the last region's gorges, off the main thread
 var _feywild := {}                     # Feywild tile -> {key, region, tile}: FeyLands' result and what it depended on
 var fey_job_ms := 0                    # the last region's forest, off the main thread
@@ -156,8 +159,7 @@ func build(map := MAP) -> void:
 	_update_badlands()
 	for t: Vector2i in terrains:
 		_build_tile(t)
-	for t: Vector2i in terrains:
-		_add_cover(t)
+	_add_covers(terrains.keys())
 	_build_slots()
 
 
@@ -199,8 +201,7 @@ func retile(changes: Dictionary) -> void:
 		_update_badlands()
 	for t: Vector2i in touched:
 		_build_tile(t)
-	for t: Vector2i in touched:
-		_add_cover(t)
+	_add_covers(touched.keys())
 	_update_smoke()
 	_update_lightning()
 	_build_slots()
@@ -806,8 +807,63 @@ func _has_trail(name) -> bool:
 
 ## The ground cover of tile t, kept off its and its neighbours' pieces' no_cover circles (plans, world space).
 func _add_cover(t: Vector2i) -> void:
-	if raised.has(t) or canyons.has(t):
-		return   # raised ground holds no cover, not even tufts fading in from neighbours; nor does the canyon's floor
+	_add_covers([t], false)
+
+
+## The ground cover of many tiles, built across the cores. With view_first, the tiles in view get theirs now and the rest
+## join cover_queue, a few a frame (a brief pop-in off screen, accepted by Ethan, Nov 5, 2026).
+func _add_covers(tiles: Array, view_first := true) -> void:
+	var now := []
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if view_first and cam != null:   # nearest the camera first, so the queue fills in from the view outwards
+		var eye := Vector2(cam.global_position.x, -cam.global_position.z)
+		tiles = tiles.duplicate()
+		tiles.sort_custom(func(a: Vector2i, b: Vector2i): return Hex.tile_position(a.x, a.y).distance_squared_to(eye) < Hex.tile_position(b.x, b.y).distance_squared_to(eye))
+	for t: Vector2i in tiles:
+		if view_first and cover_view_first and cam != null and not _tile_in_view(cam, t):
+			cover_queue[t] = true
+		else:
+			cover_queue.erase(t)
+			now.append(t)
+	_build_covers(now)
+
+
+func _tile_in_view(cam: Camera3D, t: Vector2i) -> bool:
+	var c := Hex.tile_position(t.x, t.y)
+	var y: float = lift.get(t, 0.0)
+	if cam.is_position_in_frustum(Hex.to3(c, y)):
+		return true
+	for i in 6:
+		if cam.is_position_in_frustum(Hex.to3(c + Water.normal(i) * Water.A, y)):
+			return true
+	return false
+
+
+## Every queued tile's cover now (on leaving a map, or for a check that reads it).
+func finish_cover() -> void:
+	var left := cover_queue.keys()
+	cover_queue.clear()
+	_build_covers(left)
+
+
+func _build_covers(tiles: Array) -> void:
+	var jobs := []
+	for t: Vector2i in tiles:
+		var job := _cover_job(t)
+		if not job.is_empty():
+			jobs.append(job)
+	var t0 := Time.get_ticks_usec()
+	var made := GroundCover.build_tiles(terrains, water_shapes, jobs)
+	for k in jobs.size():
+		tile_node(jobs[k][0]).add_child(made[k])
+	if jobs.any(func(j): return not j[2].is_empty()):
+		marsh_cover_us += Time.get_ticks_usec() - t0   # test aid: the batch holding marsh tiles
+
+
+## What tile t's cover needs, gathered on the main thread from the scene: [t, clear circles, marsh], or [] for none.
+func _cover_job(t: Vector2i) -> Array:
+	if raised.has(t) or canyons.has(t) or tile_node(t) == null:
+		return []   # raised ground holds no cover, not even tufts fading in from neighbours; nor does the canyon's floor
 	var clear := []
 	for c: Vector2i in [t, t + Hex.NEIGHBOURS[0], t + Hex.NEIGHBOURS[1], t + Hex.NEIGHBOURS[2], t + Hex.NEIGHBOURS[3],
 			t + Hex.NEIGHBOURS[4], t + Hex.NEIGHBOURS[5]]:
@@ -822,10 +878,7 @@ func _add_cover(t: Vector2i) -> void:
 	var marsh := {}
 	if SwampLands.LOOKS.has(terrains.get(t)):
 		marsh[t] = marsh_of(t)
-	var t0 := Time.get_ticks_usec()
-	tile_node(t).add_child(GroundCover.build_tile(terrains, water_shapes, t, clear, marsh))
-	if not marsh.is_empty():
-		marsh_cover_us += Time.get_ticks_usec() - t0
+	return [t, clear, marsh]
 
 
 func _update_lightning() -> void:
@@ -2575,6 +2628,11 @@ var _time := 0.0
 
 func _process(delta: float) -> void:
 	_time += delta   # engine time, so movie recordings at a fixed frame rate stay in step
+	if not cover_queue.is_empty():
+		var next := cover_queue.keys().slice(0, COVER_PER_FRAME)
+		for t: Vector2i in next:
+			cover_queue.erase(t)
+		_build_covers(next)
 	if time_of_day and _glow and time_of_day.sun:
 		# Toadstools glow as the light fades (PLACEHOLDER strength): 0 at midday, full at night.
 		var night := clampf((1.18 - time_of_day.sun.light_energy) / (1.18 - 0.35), 0.0, 1.0)
