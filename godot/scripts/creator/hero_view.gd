@@ -10,6 +10,17 @@ var _vp := SubViewport.new()
 var _body := MeshInstance3D.new()
 var _key := ""
 var _anim_left := 0.0
+var _dragging := false
+var yaw: float:                         # how far the mini is turned (the creator check reads it)
+	get: return _body.rotation.y
+
+## A drag across the mini spins it; on letting go it settles on the nearest of the four views (Ethan's phone note, Nov 5,
+## 2026: spin by touch too, not only by the arrows). Only where the step sets spinnable.
+signal turned(view: int)
+var spinnable := false:
+	set(v):
+		spinnable = v
+		mouse_filter = Control.MOUSE_FILTER_STOP if v else Control.MOUSE_FILTER_IGNORE
 
 
 func _init(w: float, h: float) -> void:
@@ -77,6 +88,23 @@ func show_hero(d: Dictionary) -> float:
 	var ms := (Time.get_ticks_usec() - t0) / 1000.0
 	_redraw_for(0.1)
 	return ms
+
+
+func _gui_input(e: InputEvent) -> void:
+	if not spinnable:
+		return
+	if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		if not e.pressed and _dragging:
+			_dragging = false
+			var view := posmod(roundi(_body.rotation.y / (PI * 0.5)), 4)   # VIEW_YAW's order: front, right, back, left
+			turned.emit(view)
+			turn_to(view)
+		accept_event()
+	elif e is InputEventMouseMotion and (e as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+		_dragging = true
+		_body.rotation.y += (e as InputEventMouseMotion).relative.x * 0.012
+		_redraw_for(0.1)
+		accept_event()
 
 
 func turn_to(view: int) -> void:

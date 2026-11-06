@@ -71,6 +71,10 @@ func _ready() -> void:
 	safe.add_child(title)
 	_drift(0.0)
 	title.new_campaign.connect(open_creator)
+	if "--creatortaps" in OS.get_cmdline_user_args():
+		var taps := CreatorTapCheck.new()
+		taps.front = self
+		add_child(taps)
 	if "--titleshots" in OS.get_cmdline_user_args():
 		var shots := TitleShots.new()
 		shots.front = self
