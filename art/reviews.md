@@ -167,3 +167,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-05 | `art/preview/beast_bear_face_before_after_v2.png`, `beast_bear_solo_v3.png` | approved | Ally bear v3 (smaller nose). Frozen; not exported until all four beasts are done |
 | 2026-11-05 | `art/preview/beast_panther_solo_v2.png` | note | Panther v2: lay the scarf's back tail flat on the spine; eyes are too far apart |
 | 2026-11-05 | `art/preview/pose_check_glaive_closeup_v2.png` | note | Glaive blade rebuild approved; tighten the sweep so it stays closer to the cell |
+| 2026-11-05 | `art/preview/pose_check_round4_1_v1.png`, `pose_check_round4_2_v1.png` | note | Pose round 4. Approved (frozen): dagger, battleaxe 1H, both bows. Fix: brass knuckles, drop the rear elbow. Wraps: build a new open hand (flat palm, finger slab, thumb, flat wraps) for the wraps only; the approved caster palm stays. Glaive: sweep still to tighten |
