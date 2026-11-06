@@ -73,7 +73,7 @@ Each class chooses from the most basic weapons and armor in its own categories. 
 - **Ranged:** ranged attacks have a higher coin target when an enemy is adjacent; the crossbow's Point Blank modifier removes that penalty. Placeholder (Ethan, Nov 5, 2026): +1 heads needed, for every ranged attack: bows, crossbows, thrown weapons, Stone Throw and attack spells.
 - **Wand basic attack** (decided Oct 25, 2026): a wand's basic attack is Magic Bolt, a basic ranged spell (1 AP, repeatable, like any basic attack). Wands have no category cards.
 - **Thrown weapons** (any weapon that can be thrown, e.g. daggers, spears and battleaxes) return to the thrower's hand automatically.
-- **Dual-wielding:** any class can dual-wield one-handed weapons. Once per turn, after a main-hand attack, the offhand weapon makes a free attack at full strength (Ethan, Nov 6, 2026: automatic, on the same foe, only after a main-hand hit, set off by any weapon attack including weapon cards and Sneak Attack; Sneak Attack's doubling and Backstab don't carry over, Poison Blade's poison does; its result reads Hit or Miss as usual). A dual-wielder gets both weapons' category cards.
+- **Dual-wielding:** any class can dual-wield one-handed weapons. Once per turn, after a main-hand attack, the offhand weapon makes a free attack at full strength (Ethan, Nov 6, 2026: automatic, on the same foe, only after a main-hand hit and only if the offhand weapon can reach that foe, set off by any weapon attack including weapon cards and Sneak Attack; Sneak Attack's doubling and Backstab don't carry over, Poison Blade's poison does; its result reads Hit or Miss as usual). A dual-wielder gets both weapons' category cards.
 - **Fist weapons** are three separate categories, each with its own category cards and mastery tree. They are worn as a pair, taking both hands and counting as dual-wielding (the free offhand hit once per turn), so no shield. All martials can use them and learn their mastery. Gauntlets and brass knuckles use STR; wraps use DEX.
 
 ## Weapon category cards
@@ -85,7 +85,7 @@ AP costs set Oct 25, 2026; damage and other numbers still to be tuned. Placehold
 | Greatsword | Cleave (1 AP): hit all adjacent enemies |
 | Longsword | Parry (1 AP): block the next melee hit |
 | Shortsword | Quick Slash (1 AP): a cheap extra attack |
-| Rapier | Disarm (1 AP): knock the enemy's weapon away; the foe loses 1 AP on its next turn recovering it (Ethan, Nov 6, 2026, placeholder): an attack flip that deals normal damage and disarms on a hit, no save, only on foes holding a weapon; with Haymaker's lost AP the larger counts |
+| Rapier | Disarm (1 AP): knock the enemy's weapon away; the foe loses 1 AP on its next turn recovering it (Ethan, Nov 6, 2026, placeholder): an attack flip that deals normal damage and disarms on a hit, no save, only on foes holding a weapon (each foe gets an armed or unarmed tag when the roster is designed; until then every foe but beasts counts as armed, Ethan, Nov 6, 2026); with Haymaker's lost AP the larger counts |
 | Scimitar | Dancing Step (0 AP): right after a scimitar attack, take a free short move |
 | Dagger | Throw (1 AP): ranged attack with the dagger. Backstab modifier |
 | Battleaxe | Hack (1 AP): a quick chop; the next hit on the same foe hits harder; Throw (1 AP): ranged attack with the axe |
@@ -309,6 +309,7 @@ Only martials learn shield mastery; Clerics use shields without the tree.
 ## Open questions
 
 - [ ] Gear: specific items, and special weapons with their own extra cards (categories are done)
+- [ ] Armed or unarmed tag for each foe in the roster (Disarm only works on armed foes; placeholder: all but beasts)
 - [ ] Playtest balance: dual-wielding (free full-strength offhand attack plus both card sets) vs two-handed weapons and shields
 - [ ] Cap uncapped reactions: Overwatch, Brace and Perfect Parry capstones, halberd Warden node 1, greataxe free re-sweep
 - [ ] Gold prices: inns, camp kits and shops
