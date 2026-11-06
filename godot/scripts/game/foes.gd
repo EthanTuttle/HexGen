@@ -31,8 +31,9 @@ static var level_heads := {"minion": [0, 0, 0, 0, 0], "soldier": [0, 0, 0, 0, 0]
 ## Foes grow with the hero's level (06 -> Levels, Ethan, Nov 6, 2026): HP and damage times 1 + these per level above 1,
 ## by band (near, mid, far), tuned so a full party loses about 10% of mid fights and 40% of far fights at its level.
 ## --tune's "growhp" and "growdmg" try others.
-static var grow_hp := [0.0, 0.0, 0.0]
-static var grow_damage := [0.0, 0.0, 0.0]
+## Measured Nov 6, 2026 (Fighter and Rangers, levels 3-8): mid 0.32 for both; far 0.25 HP, 0.1 damage. Near doesn't grow.
+static var grow_hp := [0.0, 0.32, 0.25]
+static var grow_damage := [0.0, 0.32, 0.1]
 static var band_count := [[3, 3], [3, 3], [3, 4]]
 static var near_pair_count := [2, 3]         # near, while it's only the hero and Fluffy
 static var attacks_per_turn := 1   # PLACEHOLDER: the rest of its AP goes on moving
