@@ -9,10 +9,12 @@ Scripted hero minis for the first playable (design/06 → Hero minis), replaced 
 - New grips, the two-handed and casting variants (`two`, `caster` in the description), and open palms; the wraps' open hand is its own piece, `hero_hand_open_wraps`.
 - The table: `T.races[race].builds[build].poses[main][variant]`, with `torso`, `head`, `hair`, `legs`, `arms`, `main`, `offhand`. Section "What Godot needs" has the whole recipe.
 
-- **Models:** `art/export/heroes.glb` (from `art/minis/heroes/heroes_v2.blend`, a copy of `hero_kit_v10.blend` named for the export), one shared `kit` material with vertex colours. 163 nodes at the origin, named as below. **Place them only through the assembler:** player colours are marks, which look wrong until swapped.
+**Hair fix (kit v11, from the phone test's note 071357):** the skull no longer shows through the hair at the back, on any head, race or style. The caps cover the widest of the four heads and have one more ring, so each hair piece has 16 more triangles. Elves and tieflings now get full-width hair, so only their `pose.hair` matrices changed. The table's format is the same.
+
+- **Models:** `art/export/heroes.glb` (from `art/minis/heroes/heroes_v3.blend`, a copy of `hero_kit_v11.blend` named for the export), one shared `kit` material with vertex colours. 163 nodes at the origin, named as below. **Place them only through the assembler:** player colours are marks, which look wrong until swapped.
 - **Placements:** `art/export/heroes_placements.json`, 1.5 MB (it was 554 KB: each pose now holds the whole body). Parse once and keep it.
 - **Scripts:** `art/scripts/build_hero_kit.py`, `export_hero_kit.py` (writes the table; `from_table()` is the recipe below in code, the model for Godot's assembler), `render_hero_kit.py`, `render_pose_check.py` (the pose sheets), `render_hero_export.py` (heroes built from the export alone).
-- **Previews (`art/preview/`):** `hero_kit_weapons_v1.png` (all 21 weapons, cycling races, gear and offhands), `hero_kit_dragon_heads_v1.png` (the 4 dragonborn heads from three sides), `hero_kit_dragon_look_v1.png` (5 dragon types at Look size), `hero_kit_look_v2.png`, `hero_kit_look_back_v2.png`, `hero_kit_faces_v2.png`, `hero_kit_builds_v2.png`, `hero_kit_hair_v2.png`. Map sizes, from before the new heads and weapons: `hero_kit_map_58m_v1.png`, `hero_kit_map_30m_v1.png`, `hero_kit_map_18m_v1.png`. **The poses:** the approved panels are in `pose_check_*` and `pose_check_round3_*` to `pose_check_round6_*`; `hero_export_check_v1.png` and `_back_v1.png` show ten heroes built from the glb and table alone, one per pose family.
+- **Previews (`art/preview/`):** `hero_kit_weapons_v1.png` (all 21 weapons, cycling races, gear and offhands), `hero_kit_dragon_heads_v1.png` (the 4 dragonborn heads from three sides), `hero_kit_dragon_look_v1.png` (5 dragon types at Look size), `hero_kit_look_v2.png`, `hero_kit_look_back_v2.png`, `hero_kit_faces_v2.png`, `hero_kit_builds_v2.png`, `hero_kit_hair_v2.png`. Map sizes, from before the new heads and weapons: `hero_kit_map_58m_v1.png`, `hero_kit_map_30m_v1.png`, `hero_kit_map_18m_v1.png`. **The poses:** the approved panels are in `pose_check_*` and `pose_check_round3_*` to `pose_check_round6_*`; `hero_export_check_v1.png` and `_back_v1.png` show ten heroes built from the glb and table alone, one per pose family. **Hair from behind:** `hero_hair_check_<race>_v1.png` (human `_v2`): every style on every head, from behind and three-quarter back. `hero_hair_worst_v1.png` and `_v2.png` show the worst cases before and after the fix.
 
 ## A hero as a description
 
@@ -30,7 +32,7 @@ Sub-types add no shape: they only set `colours.skin` (golem material, dragon typ
 | `hero_body_<race>_<build>` | 21 | 84-190 | Own shape per build, final size, without legs (they're parts). Placed by `pose.torso` |
 | `hero_armour_<light/medium/heavy>_<race>_<build>` | 63 | 80-168 | Over that body, by the same `pose.torso` |
 | `hero_head_<race>_<a-d>` | 28 | 60-402 | Pivot at the head's middle. Horns, beards and faceplates are in the head |
-| `hero_hair_<style>` | 6 | 82-154 | `short`, `long`, `topknot`, `spiky`, `tail`, `crest`. Pivot at the head's middle, scaled to the race |
+| `hero_hair_<style>` | 6 | 100-170 | `short`, `long`, `topknot`, `spiky`, `tail`, `crest`. Pivot at the head's middle, scaled to the race |
 | `hero_arm_upper_<kind>`, `hero_arm_fore_<kind>` | 8 | low | `bare`, `chain`, `plate`, `golem`. Length 1 along +Z, radius 1: scaled to fit |
 | `hero_hand_<kind>` | 3 | 12-20 | `bare`, `gauntlet`, `golem`. An open palm is the same piece, flattened by its matrix |
 | `hero_hand_open_wraps` | 1 | 180 | The wraps' open hand: wrapped palm and wrist, bare finger slab and thumb. Replaces the hand where `hand_piece` is `open_wraps` |
@@ -148,9 +150,9 @@ Godot may hold imported vertex colours in 8 bits, in linear, which loses precisi
 ## Weak spots
 
 - At Look size these are still chunky low-poly, not Chelmsford's sculpted look.
-- Hair is blotchy at the back of some heads, with a sliver of skin on the human's short style.
+- Hair from behind is clean on every head (kit v11). Ears and horns pass through hair by design.
 - Builds now differ, but slim is close to average. Tunics are flat.
 - Small weapons (wand, dagger) barely read below Look size. Gauntlets are bulky on a broad or golem arm, and fists up partly crowd the head.
 - Faces read well close up. At 58 m they're gone: only colour, height, horns and big gear show.
 - The glaive's butt rises behind the off shoulder in its tightened sweep; the open wrapped hand is the heaviest hand at 180 triangles.
-- Not done: anything in Godot, and a phone test for triangle counts. A hero tops out around 1,340.
+- Not done: anything in Godot, and a phone test for triangle counts. A hero tops out around 1,360.
