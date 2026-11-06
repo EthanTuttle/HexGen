@@ -36,7 +36,7 @@ var rocks: Array = []
 var trees: Array = []
 var busy := false
 var hud: CombatHud
-const NO_ARMOUR_ARG := "--noarmour"   # test aid: fights with nobody's armour, for the balance comparison
+const NO_ARMOUR_ARG := "--noarmour"   # test aid: the whole party in Clothes, for the balance comparison
 static var NO_ARMOUR: bool = NO_ARMOUR_ARG in OS.get_cmdline_user_args()
 var phase_no := 0                # counts phases (allies, enemies, allies ...): riders last until the end of a given one
 var breath_dir := -1             # Breath Weapon's aim: which of Hex.NEIGHBOURS, or -1
@@ -329,11 +329,11 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			cell = c, hp = m.hp, max_hp = m.max_hp, score = m.score if m.has("score") else Races.score(m, m.ability), ability = m.ability, ally = ally,
 			down = m.hp <= 0, ap = 0, bonus = 0, defending = false, used = {}, used_fight = {},
 			blessed = false, poison_blade = false, weapon = m.get("weapon", "spear"),
-			hot = m.get("hot", []), cards = m.get("cards", []), member = m, damage = m.get("damage", -1), heads = m.get("heads", Rules.HEADS_TO_HIT), role = m.get("role", ""),
+			hot = m.get("hot", []), cards = m.get("cards", []), member = m, damage = m.get("damage", -1), heads = Weapons.defence_heads(m, NO_ARMOUR) if ally else m.get("heads", Rules.HEADS_TO_HIT), role = m.get("role", ""),
 			parry = false, ward = 0, lost_ap = 0, sub = m.get("sub", ""),
 			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
 			facing = _dir_of(facing), backstabbed = false,
-			armour = 0 if NO_ARMOUR else (Weapons.ARMOUR.get(m.get("armour", ""), 0) if ally else Weapons.foe_armour(m)), off = m.get("off", ""),
+			off = m.get("off", ""),
 			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}}
 	units.append(u)
 	if u.down:
@@ -558,8 +558,7 @@ func move_hexes(u: Dictionary) -> int:
 	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally and not Rules.old("move") else 0
 	if on(u, "snared"):
 		return 0   # rooted: Snare, Pinning Bolt
-	var heavy: int = 1 if u.armour >= 3 else 0   # heavy armour: 1 hex less per Move (04)
-	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) - heavy - (u.slow_hexes if on(u, "slowed") else 0), 0)
+	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) - (u.slow_hexes if on(u, "slowed") else 0), 0)
 
 
 ## Which of Hex.NEIGHBOURS points most nearly along a plan direction.
@@ -592,16 +591,19 @@ func _slow(t: Dictionary, hexes: int) -> void:
 
 ## Shield Bash: the foe goes 1 hex straight away from the attacker. PLACEHOLDER (told to the planner): if that hex is off the
 ## board, blocked, taken, a sheer rise away, or the foe is a giant, it stays put; the hit still lands. Lava burns as walking in does.
-func _push(a: Dictionary, t: Dictionary) -> void:
-	if t.foot.size() > 1 or t.down:
+func _push(a: Dictionary, t: Dictionary, hexes := 1) -> void:
+	if t.foot.size() > 1 or t.down or Rules.hex_distance(a.cell, t.cell) != 1:
 		return
-	var dest: Vector2i = t.cell + (t.cell - a.cell)
-	if Rules.hex_distance(a.cell, t.cell) != 1 or step_cost(t, t.cell, dest) < 0:
-		return
-	t.cell = dest
-	await board.step_along(t.mini, [dest])
-	if grid[dest].kind == "lava":
-		await _burn(t)
+	var way: Vector2i = t.cell - a.cell
+	for _i in hexes:
+		var dest: Vector2i = t.cell + way
+		if step_cost(t, t.cell, dest) < 0:
+			return
+		t.cell = dest
+		await board.step_along(t.mini, [dest])
+		if grid[dest].kind == "lava":
+			await _burn(t)
+			return
 
 
 ## Whether a rider that lasts until the end of a phase is on now.
@@ -940,25 +942,21 @@ func attack_score(a: Dictionary, k: Dictionary) -> int:
 
 
 ## An attack's coins: the score, Bless, the forge dwarf's coin on Attack and weapon cards, a glowing (Faerie Fire) or
-## acid-burned (black breath) target, less cover (design/03 -> Combat -> Cover). May go below the heads needed: the long shot.
+## acid-burned (black breath) target, less cover (design/03 -> Combat -> Cover). Armour takes no coins (04, Nov 5, 2026). May go below the heads needed: the long shot.
 func attack_coins(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
 	var n: int = attack_score(a, k) + (1 if a.blessed else 0)
 	if a.ally:
 		n += Races.forge_coin(a.member, k)
 	if not t.is_empty():
 		n += (1 if on(t, "glow") else 0) + (1 if on(t, "acid") else 0)
-		if not k.get("pierce", false):   # Aimed Shot ignores cover and armour (04)
-			if cover_between(a, t) == "partial":
-				n -= Rules.COVER_COINS
-			n -= t.armour   # armour takes coins off every attack flip on its wearer (04 -> Armour)
+		if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
+			n -= Rules.COVER_COINS
 	return maxi(n, 0)
 
 
 ## A save's coins: a foe's set number, an ally's own score in the save's ability, +1 behind cover from whoever aims.
 func save_coins(t: Dictionary, from: Dictionary, ability: String, cover_seen := false) -> int:
 	var n: int = Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
-	if ability == "DEX" and t.armour >= 3:
-		n -= 1   # heavy armour: DEX saves flip 1 fewer coin (04)
 	if cover_seen or (not from.is_empty() and cover_between(from, t) == "partial"):
 		n += Rules.COVER_COINS
 	return n
@@ -1080,10 +1078,12 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
-		if k.get("rider", "") == "push" and Rules.old("bash"):
+		if k.get("rider", "") == "push" and (Rules.old("bash") or Rules.bash() == "stun"):
 			t.lost_ap = Rules.AP   # test aid: Shield Bash's old stun
 		elif k.get("rider", "") == "push":
-			await _push(a, t)
+			await _push(a, t, 2 if Rules.bash() == "push2" else Rules.PUSH_HEXES)
+			if Rules.bash() == "hold" and not t.down:   # test aid: the push, and the foe loses its next Move
+				t.snared = _until_next_turn_of(t)
 		if k.get("rider", "") == "haymaker" and not t.down:   # a failed CON save: it loses 1 AP next turn (04)
 			var save := flip_check(save_coins(t, a, "CON"), Rules.SAVE_HEADS)
 			await hud.flip_coins(t, save.coins, save.need, Rules.COIN_STEP_FOE)

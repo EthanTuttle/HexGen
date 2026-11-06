@@ -31,4 +31,5 @@ func subtitle(level := 1) -> String:
 static func coins_for(ability: String, proficiency: String) -> int:
 	if current == null:
 		return {"STR": 2, "INT": 1, "CHA": 2}.get(ability, 1)
-	return maxi(1, int(current.scores.get(ability, 1)) + (1 if proficiency in current.proficiencies else 0))
+	var armoured := 1 if proficiency == "Stealth" and Weapons.armoured(current.gear.get("armour", "")) else 0   # 04 -> Armour
+	return maxi(1, int(current.scores.get(ability, 1)) + (1 if proficiency in current.proficiencies else 0) - armoured)

@@ -253,6 +253,10 @@ func _creator() -> void:
 	await tap_on("Turn right")
 	await _wait(0.1)
 	await shot("look_picked")
+	if "--lookshots" in OS.get_cmdline_user_args():   # test aid: the hero kit's poses on the Look step, one hero a shot
+		await _look_shots()
+		get_tree().quit()
+		return
 	await tap_on("Next")
 	await _wait(0.9)
 	check((control("Begin") as TagButton).disabled, "name: Begin waits for a name")
@@ -518,9 +522,10 @@ func _kit_report() -> void:
 		for build: String in t.builds:
 			for main: String in t.races[race].builds[build].poses:
 				for hold: String in t.races[race].builds[build].poses[main]:
-					var off: String = {"none": "", "shield": "shield", "second": "dagger"}[hold]
+					var off: String = {"shield": "shield", "second": "dagger"}.get(hold, "")
 					for armour: String in ["none", "heavy"]:
 						var d := {"race": race, "build": build, "head": "a", "hair": "long", "armour": armour, "main": main, "offhand": off,
+							"two": hold == "two", "caster": hold == "cast",
 							"colours": {"skin": "#C68E64", "hair": "#2B211C", "eyes": "#4F7A33", "cloth": "#3E6F8C"}}
 						for part: Array in HeroMini.parts(d):
 							if not kit.has(part[0]):
@@ -535,7 +540,27 @@ func _kit_report() -> void:
 	check(missing.is_empty(), "kit: every piece the table asks for exists %s" % [missing.keys() if not missing.is_empty() else ""])
 	times.sort()
 	print("FRONT kit: %d heroes, %d to %d triangles; rebuild median %.1f ms, worst %.1f ms" % [built, tris.min(), tris.max(), times[times.size() / 2], times[-1]])
-	check(tris.max() <= 1300, "kit: a hero stays near the hand-off's 1,256 triangles")
+	check(tris.max() <= 1350, "kit: a hero stays near the hand-off's 1,342 triangles")
+
+
+## The Look step's mini for a few heroes, one per pose family (art/handoff/hero_kit.md, kit v10): [name, class, race, sub,
+## main, off, armour].
+func _look_shots() -> void:
+	var c := front.creator
+	var look := c.find_children("*", "CreatorLook", true, false)[0] as CreatorLook
+	await tap_on("Turn left")   # back to the front after the walk's turn
+	for h: Array in [["bow", "Ranger", "Elf", "Wood elf", "shortbow", "", "Light"], ["glaive", "Fighter", "Dragonborn", "Blue", "glaive", "", "Heavy"],
+			["longsword_two", "Fighter", "Human", "", "longsword", "", "Medium"], ["staff_cast", "Wizard", "Halfling", "", "staff", "", ""],
+			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "Light"]]:
+		c.cls = h[1]
+		c.race = h[2]
+		c.sub = h[3]
+		c.main = h[4]
+		c.off = h[5]
+		c.arm = h[6]
+		look._mini.show_hero(HeroMini.description(c.hero()))
+		await _wait(0.4)
+		await shot("look_kit_" + h[0])
 
 
 ## What a screen costs to draw.

@@ -136,10 +136,10 @@ func _run() -> void:
 	await _wait(1.0)
 	if "--minishot" in OS.get_cmdline_user_args():   # the hero kit's mini with the hero's gear, close up in a fight
 		var h := Hero.new()
-		h.race = "Human"
+		h.race = game.run.race if game.run.race != "" else "Human"
 		h.klass = game.run.klass
 		h.gear = {"main": game.party[0].weapon, "off": game.party[0].off, "armour": game.party[0].armour}
-		h.appearance = {"race": "Human", "build": "Average", "head": 0, "hair": 0}
+		h.appearance = {"race": h.race, "build": "Average", "head": 0, "hair": 0}
 		Hero.current = h
 		await _fight("plains_stones")
 		var me: Dictionary = f.units[0]
@@ -212,7 +212,7 @@ func _run() -> void:
 	_place(fluffy, s)
 	_place(foe, s + dv)
 	foe.hp = foe.max_hp
-	_check(f.attack_coins(fluffy, foe, Cards.get_card("claw_swipe")) == 2 - foe.armour, "Claw Swipe flips Fluffy's DEX (2), less the foe's armour (%d)" % foe.armour)
+	_check(f.attack_coins(fluffy, foe, Cards.get_card("claw_swipe")) == 2, "Claw Swipe flips Fluffy's DEX (2)")
 	var hp: int = foe.hp
 	await _play(fluffy, "claw_swipe", foe.cell, [true, true])
 	_check(hp - foe.hp == Rules.CLAW_DAMAGE and foe.bleed_turns == Rules.DOT_TURNS, "Claw Swipe: %d damage, bleeding %d turns" % [hp - foe.hp, foe.bleed_turns])
@@ -325,8 +325,12 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	var dv: Vector2i = Hex.NEIGHBOURS[d]
 	var m: Dictionary = hero.member
 	var w: Dictionary = Weapons.of(hero.weapon)
-	print("RACE gear: %s %s / %s, armour %d, cards %s" % [m.klass, hero.weapon, hero.off, hero.armour, hero.cards])
-	_check(Weapons.foe_armour({mini = "enemy_wolf"}) == 1 and Weapons.foe_armour({role = "soldier"}) == 2 and Weapons.foe_armour({role = "elite"}) == 3 and Weapons.foe_armour({role = "minion"}) == 1, "foe armour: beasts light, soldiers medium, elites heavy, minions light")
+	print("RACE gear: %s %s / %s, armour %s, heads to hit %d, cards %s" % [m.klass, hero.weapon, hero.off, m.armour, hero.heads, hero.cards])
+	var expect_heads: int = (Weapons.SHIELD_HEADS if hero.off == "shield" else Weapons.ARMOURED_HEADS) if Weapons.armoured(m.armour) else maxi(Races.score(m, "DEX"), 1)
+	_check(hero.heads == expect_heads, "armour: foes need %d heads to hit the hero (Armoured 2, with a shield 3, Clothes DEX)" % expect_heads)
+	_check(Weapons.defence_heads({"armour": "none", "scores": {"DEX": 3}}) == 3 and Weapons.defence_heads({"armour": "Medium", "off": "shield"}) == 3
+		and Weapons.defence_heads({"armour": "Light"}) == 2 and Weapons.defence_heads({"armour": "none"}) == 1, "armour: Clothes DEX 3 needs 3, Armoured with a shield 3, Armoured 2, Clothes DEX 1 needs 1")
+	_check(_who("Fluffy").heads == 2 and _who("Chelmsford").heads == 3 and _who("Mel").heads == 2, "companions: Fluffy and Mel in Clothes (DEX 2), Chelmsford Armoured with a shield")
 	_check(hero.cards.filter(func(id): return not id in Races.cards(m)) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card)")
 	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
 	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])
@@ -336,9 +340,9 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_place(foe, s + dv)
 	f.select(hero)
 	var atk := f.card("attack")
-	var expect: int = maxi(Races.score(m, w.ab) + Races.forge_coin(m, atk) - foe.armour, 0)
-	_check(f.attack_coins(hero, foe, atk) == expect, "armour: the hero's %d coins less the foe's armour %d" % [Races.score(m, w.ab), foe.armour])
-	_check(f.save_coins(hero, {}, "DEX") == Races.score(m, "DEX") - (1 if hero.armour >= 3 else 0), "heavy armour costs a DEX save coin, others don't")
+	var expect: int = Races.score(m, w.ab) + Races.forge_coin(m, atk)
+	_check(f.attack_coins(hero, foe, atk) == expect, "armour: foes wear none, so the hero flips all %d coins" % expect)
+	_check(f.save_coins(hero, {}, "DEX") == Races.score(m, "DEX"), "armour costs no save coins")
 	if w.get("ranged", false):
 		_check(f.heads_needed(foe, hero, atk) == foe.heads + (0 if w.get("point_blank", false) else Rules.RANGED_ADJACENT), "a ranged shot with a foe next to you needs %d heads (%s)" % [f.heads_needed(foe, hero, atk), "Point Blank" if w.get("point_blank", false) else "+1"])
 		_place(foe, s + dv * 3)
@@ -378,7 +382,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		await f._walk(foe, [s + dv * 3, trap, s + dv])
 		_check(foe.cell == trap and hp - foe.hp == Rules.SNARE_DAMAGE and f.move_hexes(foe) == 0 and not f.snares.has(hero.name), "a foe walking through stops on it, takes %d and is snared" % (hp - foe.hp))
 		f.phase_no += 2
-		_check(f.move_hexes(foe) == Rules.MOVE_HEXES - (1 if foe.armour >= 3 else 0), "the snare ends after its next turn")
+		_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the snare ends after its next turn")
 	await _weapon_card_checks(hero, fluffy, foe, s, d)
 
 
@@ -503,8 +507,6 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_fresh(foe)
 	match String(m.race):
 		"Halfling":
-			hero.armour = 0   # Lucky's cases count coins exactly; armour has its own check
-			foe.armour = 0
 			_check(m.lucky == Rules.LUCKY_CHARGES, "Lucky starts with %d charges" % m.lucky)
 			var hp: int = foe.hp
 			await _play(hero, "attack", foe.cell, [false, false, false, true])   # misses by 1; Lucky reflips a tail to heads
@@ -553,7 +555,7 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 				_check(not foe.lull, "any damage wakes it")
 		"Dwarf":
 			if m.sub == "Forge dwarf":
-				_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1 - foe.armour and f.attack_coins(hero, foe, Cards.get_card("shield_bash")) == Races.score(m, "STR") + 1 - foe.armour, "forge dwarf: +1 coin on Attack and weapon cards")
+				_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1 and f.attack_coins(hero, foe, Cards.get_card("shield_bash")) == Races.score(m, "STR") + 1, "forge dwarf: +1 coin on Attack and weapon cards")
 			else:
 				_check(m.max_hp == Rules.PARTY[0].hp + Rules.SHIELD_DWARF_HP, "shield dwarf: %d max HP at level 1" % m.max_hp)
 				var mhp: int = m.max_hp
@@ -597,7 +599,7 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 					f.phase_no += 2
 					_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the slow ends after the foe's next turn")
 				"Black":
-					_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1 - foe.armour, "black acid: attacks on it flip 1 more")
+					_check(f.attack_coins(hero, foe, Cards.get_card("attack")) == Races.score(m, "STR") + 1, "black acid: attacks on it flip 1 more")
 				"Green":
 					hp = foe.hp
 					await f._turn_starts(foe)
@@ -609,7 +611,7 @@ func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 				"Hayes":
 					_place(foe, s + dv * 4)
 					var hp: int = foe.hp
-					_check(f.attack_coins(hero, foe, Cards.get_card("scorch")) == maxi(Races.score(m, "CHA") - foe.armour, 0), "Scorch flips CHA, less armour")
+					_check(f.attack_coins(hero, foe, Cards.get_card("scorch")) == Races.score(m, "CHA"), "Scorch flips CHA")
 					await _play(hero, "scorch", foe.cell, [true, true, true])
 					_check(hp - foe.hp == Rules.RACIAL_DAMAGE, "Scorch: %d damage at range 4" % (hp - foe.hp))
 				"Conley":
@@ -653,7 +655,7 @@ func _cover_checks() -> void:
 			_place(foe, c)
 			var t := f.cover_between(shooter, foe)
 			if kind == "partial":
-				_check(t == "partial" and f.attack_coins(shooter, foe, Cards.get_card("firebolt")) == 2 - foe.armour and f.save_coins(foe, shooter, "DEX") == Rules.ENEMY_SAVE_COINS + 1, "partial cover (%s): Firebolt flips 2, the foe saves with 3" % f.grid[b].kind)
+				_check(t == "partial" and f.attack_coins(shooter, foe, Cards.get_card("firebolt")) == 2 and f.save_coins(foe, shooter, "DEX") == Rules.ENEMY_SAVE_COINS + 1, "partial cover (%s): Firebolt flips 2, the foe saves with 3" % f.grid[b].kind)
 			else:
 				_check(t == "full" and not f.in_reach(shooter, foe, Cards.get_card("firebolt")), "full cover: can't aim through")
 			found[kind] = true

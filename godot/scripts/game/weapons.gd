@@ -31,7 +31,8 @@ const CAT := {
 	"knuckles": {"ab": "STR", "hands": "f", "range": 1, "cards": ["haymaker"]},
 	"wraps": {"ab": "DEX", "hands": "f", "range": 1, "cards": ["step_strike"]},
 }
-const ARMOUR := {"": 0, "none": 0, "Light": 1, "Medium": 2, "Heavy": 3}   # DOCS (04 -> Armour): coins off attacks on the wearer
+const ARMOURED_HEADS := 2               # DOCS (04 -> Armour, Nov 5, 2026): heads a foe needs to hit an Armoured hero
+const SHIELD_HEADS := 3                 # DOCS: Armoured with a shield
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
 const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"]}   # DOCS (06 -> Start)
@@ -61,8 +62,13 @@ static func cards_for(klass: String, main: String, off: String) -> Array:
 	return out
 
 
-## A foe's armour tier (06 -> Start, placeholders): beasts light, soldiers medium, elites heavy, other foes light.
-static func foe_armour(m: Dictionary) -> int:
-	if String(m.get("mini", "")).begins_with("enemy_wolf"):
-		return 1
-	return {"soldier": 2, "elite": 3}.get(m.get("role", ""), 1)
+## Armoured or in Clothes (04 -> Armour, reworked Nov 5, 2026): any armour the creator offers counts as Armoured.
+static func armoured(armour: String) -> bool:
+	return armour in ["Light", "Medium", "Heavy", "Armoured"]
+
+
+## The heads a foe needs to hit this hero or companion: Armoured 2, with a shield 3, in Clothes their DEX.
+static func defence_heads(m: Dictionary, clothes := false) -> int:
+	if armoured(m.get("armour", "")) and not clothes:
+		return SHIELD_HEADS if m.get("off", "") == "shield" else ARMOURED_HEADS
+	return maxi(Races.score(m, "DEX"), 1)
