@@ -182,43 +182,44 @@ func hide_toast() -> void:
 	_toast.visible = false
 
 
-# --- Day clock (left 680, top 12, width 152) ------------------------------------
+# --- Day clock, heading the hand's panel -----------------------------------------
+# One tall panel: the clock on one line each, a divider, then the hand (Ethan, Nov 5, 2026: option B; design/07). Its own
+# panel ran into the hand's on the phone, as its text wrapped to four lines.
 
 func _build_clock() -> void:
-	var p := UI.panel(UI.CREAM, 16, UI.CREAM_EDGE, 4, Vector4(8, 6, 8, 6))
-	p.custom_minimum_size.x = 152
-	UI.at_right(p, 680, 12)
-	_clock_panel = p
 	var h := HBoxContainer.new()
+	_clock_panel = h
 	h.add_theme_constant_override("separation", 8)
 	h.add_child(_clock_dial)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 0)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	_clock_title = UI.label("", "lilita", 15, UI.INK, 0, 1.1)
-	_clock_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_clock_title.custom_minimum_size.x = 82
-	_clock_sub = UI.label("", "n800", 11, UI.INK_SOFT, 0, 1.25)
-	_clock_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_clock_sub.custom_minimum_size.x = 82
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_clock_title = UI.label("", "lilita", 14, UI.INK, 0, 1.1)
+	_clock_sub = UI.label("", "n800", 10, UI.INK_SOFT, 0, 1.25)
+	_clock_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # "Dawn in under a minute" takes two lines
 	v.add_child(_clock_title)
 	v.add_child(_clock_sub)
 	h.add_child(v)
-	p.add_child(h)
-	add_child(p)
 
 
-# --- Hand, in a side column (left 680, top 84, 152 x 294) ----------------------
+# --- Clock and hand, in a side column (left 680, top 12, 152 x 366) ---------------
 
 func _build_hand() -> void:
 	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(10, 10, 10, 10))
-	p.custom_minimum_size = Vector2(152, 294)
-	p.size = Vector2(152, 294)
+	p.custom_minimum_size = Vector2(152, 366)
+	p.size = Vector2(152, 366)
 	p.clip_contents = true
-	UI.at_right(p, 680, 84)
+	UI.at_right(p, 680, 12)
 	_hand_panel = p
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
+	v.add_child(_clock_panel)
+	var line := ColorRect.new()
+	line.color = UI.CREAM_EDGE
+	line.custom_minimum_size.y = 1.5
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(line)
 	var head := HBoxContainer.new()
 	head.add_child(UI.label("Hand", "lilita", 16))
 	var sp := Control.new()
