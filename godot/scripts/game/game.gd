@@ -1106,9 +1106,7 @@ func _add_xp(n: int) -> void:
 		level += 1
 		_picks += 1
 		for m in party:   # PLACEHOLDER (06): the level's HP, and a shield dwarf's extra on top; current HP rises the same
-			var more := Races.level_hp(m) + Races.extra_hp(m, level) - Races.extra_hp(m, level - 1)
-			m.max_hp += more
-			m.hp += more
+			Races.refresh_hp(m, level)
 
 
 ## A level's terrain pick (design/06). Three terrains: first what the biggest unfinished cluster is short of, so a run that's nearly there can finish, then two others at random (PLACEHOLDER).
@@ -1136,6 +1134,7 @@ func level_picked(terrain: String, points := {}) -> void:
 	for i: int in points:
 		var m: Dictionary = party[i]
 		m.scores[points[i]] = mini(Races.score(m, points[i]) + 1, LevelPick.CAP)
+		Races.refresh_hp(m, level)   # a CON point recounts every level's HP
 	deck.hand.append(terrain)
 	_picks -= 1
 	level_pick.visible = false

@@ -941,6 +941,8 @@ func _score_step_checks() -> void:
 	fluffy.scores.INT = LevelPick.CAP
 	game.level = 3
 	game.xp = 0
+	for m in game.party:
+		Races.refresh_hp(m, 3)
 	var before := game.party.map(func(m): return [m.max_hp, m.hp])
 	game._add_xp(game.xp_needed())
 	var grew := range(game.party.size()).map(func(i): return game.party[i].max_hp - before[i][0])
@@ -994,6 +996,13 @@ func _score_step_checks() -> void:
 	game._next_pick()
 	await _wait(0.2)
 	_check(lp._members.is_empty(), "level 5: no ability point")
+	var tough := {"klass": "fighter", "scores": {"CON": 2}, "hp": 12, "max_hp": 12}
+	Races.refresh_hp(tough, 4)
+	var at4: int = tough.max_hp
+	tough.hp -= 5
+	tough.scores.CON = 3
+	Races.refresh_hp(tough, 4)
+	_check(at4 == 24 and tough.max_hp == 27 and tough.hp == 22, "CON 2 -> 3 at level 4 recounts levels 2-4: max HP 24 -> %d, HP 19 -> %d" % [tough.max_hp, tough.hp])
 	var late: Dictionary = Rules.PARTY[3].duplicate(true)
 	Races.join(late, 8)
 	_check(Races.score(late, "DEX") == 4 and late.max_hp == Rules.PARTY[3].hp + Races.level_hp(late) * 7,
