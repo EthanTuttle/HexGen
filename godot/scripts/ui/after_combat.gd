@@ -23,14 +23,9 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 		remove_child(c)
 		c.queue_free()
 	_reveal.clear()
-	var dim := ColorRect.new()
-	dim.color = Color(0.141, 0.188, 0.172, 0.28)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(dim)
+	add_child(Scrim.make(Color(0.141, 0.188, 0.172, 0.28)))
 
 	_main = UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(18, 14, 18, 14))
-	UI.at(_main, 90, 14)
 	_main.custom_minimum_size = Vector2(664, 362)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -78,7 +73,7 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 	b.pressed.connect(func(): done.emit())
 	bottom.add_child(b)
 	v.add_child(bottom)
-	add_child(_main)
+	add_child(Scrim.centre(_main))
 	visible = true
 	_play_reveal.call_deferred()
 
@@ -133,11 +128,10 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array, earned: int
 		cards.append_array(dropped)
 	else:
 		cards = dropped.duplicate()
-	var x := 80.0
 	for i in cards.size():
 		var t: String = cards[i]
 		var hx := HexShape.make(60, 69, UI.CREAM_LIGHT, UI.terrain_bg(t), 4).with_icon("t_" + t, UI.terrain_ink(t), 28).with_shadow(UI.HEX_SHADOW)
-		hx.position = Vector2(x + (i % 4) * 72, 48 + (i / 4) * 80)
+		hx.position = Vector2((i % 4) * 72, 48 + (i / 4) * 80)   # centred across the box once it has its size
 		hx.accessibility_name = Rules.NAMES[t] + (" (won back)" if won and i >= drawn.size() else "")
 		if not won:
 			hx.modulate.a = 0.55
@@ -158,7 +152,7 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array, earned: int
 		gl.size_flags_vertical = Control.SIZE_FILL
 		gh.add_child(gl)
 		gold.add_child(gh)
-		UI.at(gold, 10, 137 + (80 if cards.size() > 4 else 0))
+		UI.at(gold, 0, 137 + (80 if cards.size() > 4 else 0))
 		p.add_child(gold)
 		_reveal.append(gold)
 	return p
@@ -167,7 +161,8 @@ func _rewards_panel(won: bool, drawn: Array[String], dropped: Array, earned: int
 ## Each reward pops up big in the middle of the panel, then settles into its place (After combat v7).
 func _play_reveal() -> void:
 	await get_tree().process_frame
-	var centre := Vector2(182, 116)
+	_centre_rewards()
+	var centre := _rewards.size * 0.5
 	var t := 0.5
 	for c in _reveal:
 		var home := c.position
@@ -184,6 +179,15 @@ func _play_reveal() -> void:
 		tw.tween_property(c, "position", home, 0.4).set_trans(Tween.TRANS_SINE)
 		tw.parallel().tween_property(c, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_SINE)
 		t += 0.55
+
+
+## The reward hexes, row by row, and the gold under them, centred across the box (Ethan's phone note, Nov 5, 2026).
+func _centre_rewards() -> void:
+	var rows := {}
+	for c in _reveal:
+		rows[c.position.y] = maxf(rows.get(c.position.y, 0.0), c.position.x + c.size.x)
+	for c in _reveal:
+		c.position.x += roundf((_rewards.size.x - rows[c.position.y]) * 0.5)
 
 
 class _GoldDot extends Control:

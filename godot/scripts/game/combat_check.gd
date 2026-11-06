@@ -433,7 +433,7 @@ func _check_lava(walker: Dictionary) -> void:
 	await fight._walk(u, strip)
 	_check(u.down and u.cell == strip[0], "a burn that downs a walker stops them on that cell")
 	u.down = false
-	u.mini.get_node("body").quaternion = Quaternion.IDENTITY
+	fight.board.stand(u.mini)
 	u.hp = 20
 	u.cell = strip[1]
 	var was_active := fight.active

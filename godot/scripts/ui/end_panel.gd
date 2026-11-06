@@ -19,12 +19,10 @@ func open() -> void:
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
-	var dim := ColorRect.new()
-	dim.color = Color(0.141, 0.188, 0.172, 0.45)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var dim := Scrim.make(Color(0.141, 0.188, 0.172, 0.45))
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 	var box := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(24, 18, 24, 18))
-	UI.at(box, 262, 84)
 	box.custom_minimum_size = Vector2(320, 200)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -45,6 +43,6 @@ func open() -> void:
 		visible = false
 		game.busy = false)
 	v.add_child(on)
-	add_child(box)
+	add_child(Scrim.centre(box))
 	visible = true
 	move_to_front()

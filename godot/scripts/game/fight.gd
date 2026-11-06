@@ -1543,7 +1543,7 @@ func _hurt(t: Dictionary, dmg: int) -> void:
 		t.down = true
 		if t == target:
 			target = {}
-		await board.fall(t.mini)
+		await board.fall(t.mini, not t.ally)
 
 
 func end_phase() -> void:

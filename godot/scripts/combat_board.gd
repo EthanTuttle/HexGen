@@ -28,6 +28,8 @@ const HOP_LEAN := 0.3        # how far the attacker moves toward the target at t
 const HOP_TIME := 0.16       # up; the same down
 const RECOIL_TILT := 16.0    # degrees the target tips away
 const RECOIL_PUSH := 0.12
+const SHRINK_WAIT := 0.35     # PLACEHOLDER: a fallen foe lies there this long, then shrinks away
+const SHRINK_TIME := 0.45
 const RECOIL_TIME := 0.07
 const SETTLE_TIME := 0.35
 
@@ -153,11 +155,29 @@ func step_along(mini: Node3D, path: Array) -> void:
 
 
 ## A downed mini tips over and stays down.
-func fall(mini: Node3D) -> void:
+## A downed mini tips over. A fallen foe then shrinks into nothing and is hidden (Ethan's phone note, Nov 5, 2026), without
+## holding up the turn; a downed ally stays lying there, since it can still be brought back (03 -> Downed).
+func fall(mini: Node3D, vanish := false) -> void:
 	var body := mini.get_node("body") as Node3D
 	var tw := create_tween()
 	tw.tween_property(body, "quaternion", Quaternion(Vector3.RIGHT, deg_to_rad(-80)), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tw.finished
+	if vanish:
+		var gone := create_tween()
+		gone.tween_interval(SHRINK_WAIT)
+		gone.tween_property(mini, "scale", Vector3.ONE * 0.01, SHRINK_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		gone.tween_callback(func(): mini.visible = false)
+		mini.set_meta("vanish", gone)
+
+
+## Back on its feet at full size (test aid: the checks reuse a fallen unit).
+func stand(mini: Node3D) -> void:
+	if mini.has_meta("vanish"):
+		(mini.get_meta("vanish") as Tween).kill()
+		mini.remove_meta("vanish")
+	mini.scale = Vector3.ONE
+	mini.visible = true
+	(mini.get_node("body") as Node3D).quaternion = Quaternion.IDENTITY
 
 
 func _recoil(target: Node3D, tbody: Node3D, dir: Vector3) -> void:

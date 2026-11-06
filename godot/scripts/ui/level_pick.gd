@@ -19,12 +19,10 @@ func open(level: int, options: Array) -> void:
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
-	var dim := ColorRect.new()
-	dim.color = Color(0.141, 0.188, 0.172, 0.45)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var dim := Scrim.make(Color(0.141, 0.188, 0.172, 0.45))
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 	var box := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(24, 16, 24, 16))
-	UI.at(box, 262, 110)
 	box.custom_minimum_size = Vector2(320, 150)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -40,6 +38,6 @@ func open(level: int, options: Array) -> void:
 		hx.accessibility_name = Rules.NAMES[t]
 		hx.pressed.connect(func(): game.level_picked(t))
 		row.add_child(hx)
-	add_child(box)
+	add_child(Scrim.centre(box))
 	visible = true
 	move_to_front()

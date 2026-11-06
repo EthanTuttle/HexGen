@@ -73,7 +73,7 @@ func _fresh(u: Dictionary) -> void:
 	u.hp = u.max_hp
 	u.down = false
 	u.lost_ap = 0
-	(u.mini.get_node("body") as Node3D).quaternion = Quaternion.IDENTITY
+	f.board.stand(u.mini)
 	u.glow = -1
 	u.slowed = -1
 	u.acid = -1
@@ -148,6 +148,30 @@ func _run() -> void:
 		await _wait(1.2)
 		await _shot("mini_%s_%s" % [h.klass, h.gear.main])
 		Hero.current = null
+		get_tree().quit()
+		return
+	if "--fallshots" in OS.get_cmdline_user_args():   # test aid: a foe falls, then shrinks away, in frames
+		await _fight("plains_stones")
+		var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+		game.rig.ease_to(f.global_position + foe.mini.position + Vector3(0, 0.4, 0), 7.0, game.rig.yaw_deg)
+		await _wait(1.0)
+		f._hurt.call_deferred(foe, foe.hp)
+		for i in 16:
+			await _shot("fall_%d" % i)
+			await _wait(0.1)
+		get_tree().quit()
+		return
+	if "--popupshots" in OS.get_cmdline_user_args():   # test aid: Victory, the end panel and the level pick, on the map
+		var drawn: Array[String] = ["plains", "forest", "river", "hills"]
+		game.after.show_result(game, true, {}, drawn, [], 8)
+		await _wait(5.0)   # the rewards' reveal
+		await _shot("popup_victory")
+		game.after.visible = false
+		game.end_panel.open()
+		await _shot("popup_end")
+		game.end_panel.visible = false
+		game.level_pick.open(2, ["plains", "forest", "river"])
+		await _shot("popup_level")
 		get_tree().quit()
 		return
 	if "--panelshots" in OS.get_cmdline_user_args():
