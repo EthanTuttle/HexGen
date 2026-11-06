@@ -123,6 +123,26 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 
 Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt details panel with its sizes (name 17, text 11), and every card fits it (`--cardscheck` shows each one; Breath Weapon, blue, is the tallest at 188 of 276 pt); no label column on the tray. Cut: v3's hints, the drag footer, tiles' source words and slot numbers, the slots' number badges, "always available", the set's name in the list's header (the tab says it), and the Class section's race and class. "Empty" stays in empty slots.
 
+## Saving
+
+`scripts/save/`, from design/06 -> Saving. `SaveGame` turns a running game into plain data and back. `Saves` keeps the files: per hero, a ring of the last 10 autosaves and 3 slots under `user://saves/<hero id>/`, plus `index.json`, which lists every hero for the title and Load. Saves are JSON (`JSON.from_native`, so tiles come back as tiles), written to a `.tmp` file and renamed, so a save is never half written. A save from a newer build, or one that won't read, shows dimmed in Load.
+
+- **When it saves:** every step onto a hex (the party's `entered` signal), after every fight (the results screen's `done`), and after every rest (one line in `Game.rest_here`). Only a campaign with a hero saves: checks and direct starts never write real saves.
+- **Fights:** a fight isn't saved mid-way. The step onto its hex was saved, so loading shows its pop-up again. Owed level picks reopen with the same three options, and a finished run opens on its end panel.
+- **What's kept:** the hero, the run, the RNG's state, the party (each member's whole dictionary), the deck, the clock, encounters (time left), and the map. The map keeps everything that depends on its history: tiles with their looks, regions, trails, water gates, Troll Bridge water, raised regions and canyon mazes. Everything else is rebuilt by one `retile`.
+- **Guard:** `SaveGame.SAVED` and `REBUILT` list every variable of Game, MapBoard and PartyWalker, and `--savecheck` fails on any variable missing from both. Sort a new variable into one list.
+- **Performance:** the capture runs on the frame. Encoding and writing run on a worker thread (`Saves._drain`). Numbers are in the table below.
+- **Title:** Continue opens the latest autosave and shows its hero, level, place and time. Load groups saves by hero, with Delete (it asks first). The backdrop is the latest save's map, around where the party stood.
+- **Check:** `-- --savecheck` plays a real run with PlayCheck's moves. At 4 points it saves to a slot, reads the file back, loads it into a fresh scene and saves again, and every field must match, along with the rebuilt map (gates, streets, cliffs, water, canyon mazes, slots, reach). It does the same for the debug map (every variant) and for a grown canyon and a grown raised region. It also covers the 10-save ring, slots, time stamps, a broken file, a too-new file, two heroes with the same name, and delete. It prints `SAVE OK` / `SAVE FAIL` and timings, then `SAVE DONE`. `--savetime` prints every save's timing in any run.
+
+| Placeholder | Value here | Why |
+| --- | --- | --- |
+| Time stamps | "Today 9:40 pm", then "Yesterday 9:40 pm", then "Nov 3, 9:40 pm" (with the year if it isn't this year) | 07 gives only "Today 9:40 pm"; approved for the plan |
+| Place in a save's row | The finished region's name; on the starting tile the background's place; else the terrain's name | Same |
+| Load on a first launch | Hidden with Continue until a save exists | Title v11 always shows Load; an empty Load has nothing to show |
+| A hero's hex in Load | The hero's tray colour and initial | The mockup numbers them |
+| Canyons on load | Made again from their tiles | A canyon that grew was built in steps; its maze matches, its rock may differ slightly |
+
 ## Test notes
 
 A small flag sits in the top right corner on every screen in test builds (`scripts/test_notes.gd`, debug builds only): on the phone in the strip beyond the safe area, clear of the island and the HUD. Tapping it takes a screenshot, holds the game and opens a box; Save writes the note, Cancel drops it.

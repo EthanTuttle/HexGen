@@ -1,8 +1,9 @@
 class_name TitleScreen
 extends Control
 ## The title screen, from Title v11 (mockups/title-and-icon/Title-v11-CopyCode.dc.html; design/07 -> Title screen).
-## New campaign is the main button on a first launch; Continue and Load stay hidden until an autosave exists, and no
-## save system exists yet. PLACEHOLDER: Multiplayer and Settings say "Not in the prototype yet".
+## New campaign is the main button on a first launch; Continue and Load stay hidden until a save exists (Saves). Behind it
+## stands the latest save's map, or a generic world on a first launch (Front). PLACEHOLDER: Multiplayer and Settings say "Not
+## in the prototype yet".
 
 const SETTINGS_ICON := "M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
 const LEFT := 36.0                     # the mockup's 30 + 6, from the screen's edge
@@ -14,6 +15,8 @@ var front: Front
 var _left: Control
 var _toast: PanelContainer
 var _toast_run := 0
+var _buttons: Array[TagButton] = []
+var _pops: SavePopups
 
 
 func _init(f: Front) -> void:
@@ -32,19 +35,7 @@ func _ready() -> void:
 	_left.add_child(logo)
 	_rise(logo, 0.6, 0.0)
 
-	var main := _button("New campaign", 62, true)
-	UI.at(main, 0, 390 - 22 - 38 - 10 - 62)
-	main.accessibility_name = "New campaign"
-	main.pressed.connect(func(): new_campaign.emit())
-	_left.add_child(main)
-	_rise(main, 0.5, 0.25)
-
-	var mp := _button("Multiplayer", 38, false)
-	UI.at(mp, 0, 390 - 22 - 38)
-	mp.accessibility_name = "Multiplayer"
-	mp.pressed.connect(_not_yet)
-	_left.add_child(mp)
-	_rise(mp, 0.5, 0.35)
+	_build_buttons(true)
 
 	var gear := HexShape.make(46, 52, UI.CREAM_LIGHT, UI.CREAM_LIGHT, 0).with_icon(SETTINGS_ICON, Color("#33403B"), 22).with_shadow(UI.HEX_SHADOW)
 	gear.clickable = true
@@ -54,6 +45,76 @@ func _ready() -> void:
 	add_child(gear)
 	resized.connect(_place_left)   # the safe area moved
 	_place_left()
+
+
+## Title v11's buttons: Continue (the latest autosave, with its hero, level, place and time under it), New campaign, then Load
+## and Multiplayer in a row. With no save, New campaign is the main button and Continue and Load stay hidden (DOCS: first
+## launch). Built again when Load deletes a hero's saves.
+func _build_buttons(rise := false) -> void:
+	for b in _buttons:
+		b.queue_free()
+	_buttons.clear()
+	var heroes := Saves.heroes().filter(func(h): return not h.autos.is_empty() or h.slots.any(func(s): return not s.is_empty()))
+	var latest: Dictionary = heroes[0] if not heroes.is_empty() else {}
+	var last := 390.0 - 22.0 - 38.0
+	if latest.is_empty():
+		_add(_button("New campaign", 62, true), last - 10 - 62, func(): new_campaign.emit(), rise, 0.25)
+		_add(_button("Multiplayer", 38, false), last, _not_yet, rise, 0.35)
+		return
+	if not latest.autos.is_empty():
+		var cont := _button("Continue", 62, true)
+		cont.text = ""
+		var lines := VBoxContainer.new()
+		lines.add_theme_constant_override("separation", -2)
+		lines.alignment = BoxContainer.ALIGNMENT_CENTER
+		lines.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var a: Dictionary = latest.autos[0]
+		for l in [["Continue", "lilita", 20], ["%s · Lv %d" % [latest.name, a.level], "n800", 11], ["%s · %s" % [a.place, a.time], "n800", 11]]:
+			var lab := UI.label(l[0], l[1], l[2], UI.CREAM_LIGHT, 0, 1.1)
+			lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			if l[1] != "lilita":
+				lab.modulate.a = 0.9
+			lines.add_child(lab)
+		cont.add_child(lines)
+		_add(cont, last - 10 - 38 - 10 - 62, func(): _continue(latest), rise, 0.15)
+	_add(_button("New campaign", 38, false), last - 10 - 38, func(): new_campaign.emit(), rise, 0.25)
+	var load := _button("Load", 38, false)
+	load.custom_minimum_size.x = 230 - 10 - 142
+	load.size.x = load.custom_minimum_size.x
+	_add(load, last, _open_load, rise, 0.35)
+	var mp := _button("Multiplayer", 38, false)
+	mp.custom_minimum_size.x = 142
+	mp.size.x = 142
+	_add(mp, last, _not_yet, rise, 0.35)
+	mp.position.x = 230 - 142
+
+
+func _add(b: TagButton, y: float, on_press: Callable, rise: bool, delay: float) -> void:
+	UI.at(b, 0, y)
+	b.accessibility_name = b.text if b.text != "" else "Continue"
+	b.pressed.connect(on_press)
+	_left.add_child(b)
+	_buttons.append(b)
+	if rise:
+		_rise(b, 0.5, delay)
+
+
+## The hero's latest autosave; if it won't read, the newest one that does.
+func _continue(hero: Dictionary) -> void:
+	for a: Dictionary in hero.autos:
+		var data := Saves.read(hero.id, a.file)
+		if not data.is_empty():
+			Saves.play(get_tree(), data)
+			return
+
+
+func _open_load() -> void:
+	if _pops == null:
+		_pops = SavePopups.new()
+		front.ui.add_child(_pops)
+		_pops.deleted.connect(_build_buttons)
+	_pops.show_load()
 
 
 ## The mockup's left edge, or further in where the phone's safe area needs it: this control already starts at the inset.

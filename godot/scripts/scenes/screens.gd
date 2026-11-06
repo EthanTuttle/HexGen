@@ -11,6 +11,23 @@ static func attach(game: Game) -> void:
 		var check := ActionCardsCheck.new()
 		check.game = game
 		game.add_child(check)
+	Saves.watch(game)
+	if not Saves.pending.is_empty():   # Continue or Load: the save goes over the fresh game once its _ready is done
+		var data := Saves.pending
+		Saves.pending = {}
+		(func():
+			SaveGame.apply(game, data)
+			SaveGame.resume(game)).call_deferred()
+	if "--savecheck" in OS.get_cmdline_user_args():
+		SaveCheck.attach(game)
+	if "--layoutmock" in OS.get_cmdline_user_args():
+		var lm := LayoutMock.new()
+		lm.game = game
+		game.add_child(lm)
+	if "--pausemock" in OS.get_cmdline_user_args():
+		var mock := PauseMock.new()
+		mock.game = game
+		game.add_child(mock)
 	game.event_screen = func(t: Vector2i, entry: Dictionary):
 		var scene := SocialScreen.new(game, t, entry)
 		_under_hud(game, scene)

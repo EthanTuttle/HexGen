@@ -5,6 +5,7 @@ extends RefCounted
 
 static var current: Hero
 
+var id := ""                    # the saves' folder (Saves): given at the first save, so two heroes of one name stay apart
 var name := "[Hero name]"
 var klass := "fighter"
 var race := ""                  # "Dwarf"
