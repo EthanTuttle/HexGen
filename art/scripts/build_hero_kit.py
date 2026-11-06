@@ -77,12 +77,12 @@ DRAGON_TYPES = {"red": "#B8463A", "blue": "#4E7FB8", "white": "#DCE3E8", "black"
 # k: height. hip, chest: heights before k. sw, hw: half widths of shoulders and hips. depth: chest's half depth. head: head radius. arm, leg: limb radii. Then the head's own width, for hair.
 RACES = {
     "human": dict(k=1.0, hip=0.56, chest=0.9, sw=0.17, hw=0.135, depth=0.105, head=0.122, arm=0.05, leg=0.066, head_x=1.0),
-    "elf": dict(k=1.0, hip=0.62, chest=0.96, sw=0.145, hw=0.115, depth=0.085, head=0.115, arm=0.04, leg=0.052, head_x=0.9),
+    "elf": dict(k=1.0, hip=0.62, chest=0.96, sw=0.145, hw=0.115, depth=0.085, head=0.115, arm=0.04, leg=0.052, head_x=1.0),
     "dwarf": dict(k=0.84, hip=0.45, chest=0.82, sw=0.225, hw=0.18, depth=0.14, head=0.145, arm=0.07, leg=0.09, head_x=1.12),
     "halfling": dict(k=0.74, hip=0.48, chest=0.82, sw=0.15, hw=0.14, depth=0.115, head=0.16, arm=0.048, leg=0.064, head_x=1.04),
     "golem": dict(k=1.04, hip=0.56, chest=0.94, sw=0.215, hw=0.14, depth=0.125, head=0.1, arm=0.074, leg=0.088, head_x=1.0),
     "dragonborn": dict(k=1.08, hip=0.58, chest=0.96, sw=0.2, hw=0.145, depth=0.13, head=0.128, arm=0.064, leg=0.08, head_x=1.0),
-    "tiefling": dict(k=1.0, hip=0.57, chest=0.91, sw=0.16, hw=0.125, depth=0.098, head=0.118, arm=0.046, leg=0.06, head_x=0.96),
+    "tiefling": dict(k=1.0, hip=0.57, chest=0.91, sw=0.16, hw=0.125, depth=0.098, head=0.118, arm=0.046, leg=0.06, head_x=1.0),
 }
 HAIRLESS = ("golem", "dragonborn")
 # Each build is its own shape, not only wider: slim is long and narrow-waisted, broad heavy through the chest and belly.
@@ -493,15 +493,19 @@ HAIRSTYLES = ("short", "long", "topknot", "spiky", "tail", "crest")
 
 
 def cap(p, paint, dark, low_back=-0.55, hairline=0.42, grow=1.09):
-    """Hair over the skull: high on the forehead, low at the back."""
+    """Hair over the skull: high on the forehead, low at the back. A point that drops to the back sits where the skull is wider,
+    so each point is sized for the widest of the four heads at the height it ends up at, and never narrower than before."""
     s = Skull(HR, FACES["a"]["rows"])
+    widest = lambda zr: max(Skull(HR, f["rows"]).width(zr) for f in FACES.values())  # noqa: E731
     rows = []
-    for t, z in ((0.0, 0.0), (0.3, 0.3), (0.62, 0.6), (0.84, 0.84)):
+    for t, z in ((0.0, 0.0), (0.3, 0.3), (0.62, 0.6), (0.74, 0.72), (0.84, 0.84)):
         ring = []
-        for q in s.ring(max(z, -0.1), s.width(max(z, -0.1)) * grow):
+        for k, q in enumerate(s.ring(max(z, -0.1), 1.0)):
             back = (q.y / HR + 1) / 2  # 0 at the face, 1 at the back
             drop = (hairline * (1 - back) + low_back * back) * (1 - t)
-            ring.append(V((q.x, q.y, (z * (1 - t) ** 0 + drop) * HR)) if t < 0.8 else V((q.x, q.y, (z + 0.04) * HR)))
+            at = z + drop if t < 0.8 else z + 0.04
+            q = s.ring(max(z, -0.1), max(s.width(max(z, -0.1)), widest(at)) * grow)[k]
+            ring.append(V((q.x, q.y, at * HR)))
         rows.append(ring)
     em.loft(p, rows + [[V((0, 0.012, 1.07 * HR))]], lambda c, n: paint if n.z > 0.35 or n.y < 0 else dark)
     p.blob(V((0, 0.42 * HR, (low_back * 0.25 + 0.12) * HR)), 0.86 * HR, dark, squash=1.12)  # closes the back of the head
