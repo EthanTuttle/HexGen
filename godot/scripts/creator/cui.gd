@@ -184,23 +184,6 @@ static func shade(c: Color, f: float) -> Color:
 
 
 ## Fades and rises a step's parts in (CSS: reveal).
-## How far a view's list is scrolled (its first ScrollContainer), to keep across a rebuild.
-static func scroll_of(view: Node) -> int:
-	var found := view.find_children("*", "ScrollContainer", true, false)
-	return (found[0] as ScrollContainer).scroll_vertical if not found.is_empty() else 0
-
-
-## Puts a rebuilt view's list back where it was, once its new rows are laid out (they are by the end of this frame).
-static func keep_scroll(view: Node, y: int) -> void:
-	if y <= 0:
-		return
-	var found := view.find_children("*", "ScrollContainer", true, false)
-	if found.is_empty():
-		return
-	var s: ScrollContainer = found[0]
-	s.set_deferred("scroll_vertical", y)
-
-
 static func reveal(c: Control, seconds := 0.3) -> void:
 	c.modulate.a = 0.0
 	var tw := c.create_tween()

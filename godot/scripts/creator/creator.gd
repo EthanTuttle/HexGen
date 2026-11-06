@@ -96,20 +96,18 @@ func _build_bar() -> void:
 	var title := UI.label("New hero", "lilita", 22)
 	UI.at(title, 58, 12)
 	_bar.add_child(title)
+	var row := CUI.hbox(2 if _bar.size.x < 760.0 else 4)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 150
+	_bar.add_child(row)
 	var reach := STEPS.size() - 1
 	for i in STEPS.size():
 		if not done(STEPS[i][0]):
 			reach = i
 			break
-	# Pips at one pitch, centred in the room right of the title; a long label ("Background") overhangs its slot a little
-	# rather than pushing its neighbours apart (Ethan's phone note, Nov 5, 2026: even spacing).
-	var room := _bar.size.x - 150.0
-	var pitch := minf(66.0 if _bar.size.x >= 760.0 else 60.0, room / STEPS.size())
-	var left := 150.0 + (room - pitch * STEPS.size()) * 0.5
 	for i in STEPS.size():
-		var t := _pip(i, reach)
-		_bar.add_child(t)
-		t.position = Vector2(left + pitch * (i + 0.5) - t.custom_minimum_size.x * 0.5, 0)
+		row.add_child(_pip(i, reach))
 
 
 func _pip(i: int, reach: int) -> Control:
@@ -125,6 +123,9 @@ func _pip(i: int, reach: int) -> Control:
 		hx.with_text(str(i + 1), 13, ink)
 	var lab := UI.label(STEPS[i][1], "n800", 11, Color("#33403B"))
 	var t := CUI.tap_column(STEPS[i][1], [hx, lab])
+	t.custom_minimum_size.x = maxf(t.custom_minimum_size.x, 58.0 if _bar.size.x >= 760.0 else 52.0)
+	t.get_child(0).set_anchors_preset(Control.PRESET_CENTER_TOP)
+	t.get_child(0).grow_horizontal = Control.GROW_DIRECTION_BOTH
 	t.modulate.a = 1.0 if ok else 0.5
 	if ok:
 		t.pressed.connect(func(): go(k))

@@ -7,7 +7,6 @@ const D = preload("res://scripts/creator/creator_data.gd")
 
 var c: Creator
 var slot := "main"
-var _shown_slot := ""                   # the slot whose list was last built
 var _focus := ""
 var _land := ""
 var _hexes := {}                       # item id -> its hex
@@ -43,10 +42,6 @@ func _off_crossed() -> bool:
 	return c.main != "" and c.off_options().is_empty()
 
 
-func _restore_scroll(y: int) -> void:
-	CUI.keep_scroll(self, y)
-
-
 func _order() -> Array[String]:
 	var out: Array[String] = ["main"]
 	if c.main != "" and not _off_crossed():
@@ -58,9 +53,6 @@ func _order() -> Array[String]:
 func refresh() -> void:
 	if slot == "off" and (_off_crossed() or c.main == ""):
 		slot = "main"
-	var y := CUI.scroll_of(self) if _shown_slot == slot else 0   # a tap in the list keeps its place (phone notes, Nov 5)
-	_shown_slot = slot
-	call_deferred("_restore_scroll", y)
 	for ch in get_children():
 		remove_child(ch)
 		ch.queue_free()

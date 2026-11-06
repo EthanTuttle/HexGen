@@ -139,10 +139,6 @@ func _middle(x: float, w: float) -> void:
 	add_child(tile)
 	if _mini == null:
 		_mini = HeroView.new(240, 256)
-		_mini.spinnable = true
-		_mini.turned.connect(func(view: int):
-			turn = view
-			c.render())
 		add_child(_mini)
 	UI.at(_mini, cx - 120.0, size.y - 44 - 256)
 	move_child(_mini, tile.get_index() + 1)
