@@ -2,17 +2,18 @@ class_name Creator
 extends Control
 ## The character creator, from Creator v22b (mockups/character-creator/Creator-v22b-Banners.dc.html; design/07 ->
 ## Character creator screen). Guided steps with hex pips along the top; each step's view lives in its own script here.
-## God and Spells can't be reached while only the Fighter, Ranger and Rogue are playable, so they aren't built. Other classes show locked:
+## God can't be reached while no Cleric is playable, so it isn't built; Spells shows for casters (the Wizard). Other classes show locked:
 ## PLACEHOLDER look, no mockup (a dimmed banner with a lock; it opens to read, and Next stays off).
 
 signal finished(hero: Hero, banners: Array)
 signal cancelled
 
 const D = preload("res://scripts/creator/creator_data.gd")
-const PLAYABLE: Array[String] = ["Fighter", "Ranger", "Rogue"]   # DOCS (06 -> Start: Ranger added Nov 5, Rogue Nov 6, 2026)
+const PLAYABLE: Array[String] = ["Fighter", "Ranger", "Rogue", "Wizard"]   # DOCS (06 -> Start: Ranger added Nov 5, Rogue and Wizard Nov 6, 2026)
 const LOCK_ICON := "M7 11V8a5 5 0 0 1 10 0v3 M6 11h12v9H6z"
 const STEPS := [["class", "Class"], ["race", "Race"], ["bg", "Background"], ["scores", "Scores"], ["skills", "Skills"],
 	["gear", "Gear"], ["look", "Look"], ["name", "Name"]]
+const SPELLS_STEP := ["spells", "Spells"]   # casters only, after Gear (design/07 -> Character creator v1a)
 
 # The picks (the mockup's state).
 var step := "class"
@@ -20,6 +21,7 @@ var cls := ""
 var race := ""
 var sub := ""
 var elf_spell := ""
+var spells: Array = []                # a caster's level-1 picks, as card ids
 var bg := ""
 var rb: Array = []                    # race +1s
 var cb := ""                          # class +1
@@ -68,7 +70,7 @@ func _layout() -> void:
 func render() -> void:
 	_build_bar()
 	var kind: String = {"class": "banners", "race": "banners", "bg": "banners", "scores": "train", "skills": "train",
-		"gear": "gear", "look": "look", "name": "name"}[step]
+		"gear": "gear", "spells": "spells", "look": "look", "name": "name"}[step]
 	if kind != _view_kind:
 		if _view:
 			_view.queue_free()
@@ -77,6 +79,7 @@ func render() -> void:
 			"banners": _view = CreatorBanners.new(self)
 			"train": _view = CreatorTraining.new(self)
 			"gear": _view = CreatorGear.new(self)
+			"spells": _view = CreatorSpells.new(self)
 			"look": _view = CreatorLook.new(self)
 			"name": _view = CreatorName.new(self)
 		_view.size = _body.size
@@ -96,24 +99,25 @@ func _build_bar() -> void:
 	var title := UI.label("New hero", "lilita", 22)
 	UI.at(title, 58, 12)
 	_bar.add_child(title)
-	var reach := STEPS.size() - 1
-	for i in STEPS.size():
-		if not done(STEPS[i][0]):
+	var all := steps()
+	var reach := all.size() - 1
+	for i in all.size():
+		if not done(all[i][0]):
 			reach = i
 			break
 	# Pips at one pitch, centred in the room right of the title; a long label ("Background") overhangs its slot a little
 	# rather than pushing its neighbours apart (Ethan's phone note, Nov 5, 2026: even spacing).
 	var room := _bar.size.x - 150.0
-	var pitch := minf(66.0 if _bar.size.x >= 760.0 else 60.0, room / STEPS.size())
-	var left := 150.0 + (room - pitch * STEPS.size()) * 0.5
-	for i in STEPS.size():
+	var pitch := minf(66.0 if _bar.size.x >= 760.0 else 60.0, room / all.size())
+	var left := 150.0 + (room - pitch * all.size()) * 0.5
+	for i in all.size():
 		var t := _pip(i, reach)
 		_bar.add_child(t)
 		t.position = Vector2(left + pitch * (i + 0.5) - t.custom_minimum_size.x * 0.5, 0)
 
 
 func _pip(i: int, reach: int) -> Control:
-	var k: String = STEPS[i][0]
+	var k: String = steps()[i][0]
 	var cur := k == step
 	var is_done := done(k)
 	var ok := i <= reach or is_done
@@ -123,8 +127,8 @@ func _pip(i: int, reach: int) -> Control:
 	var hx := CUI.hex(28, 32, rim, 3, CUI.TICK if is_done and not cur else "", ink, 14, face, false, 3.2).with_shadow(UI.HEX_SHADOW, 3)
 	if not (is_done and not cur):
 		hx.with_text(str(i + 1), 13, ink)
-	var lab := UI.label(STEPS[i][1], "n800", 11, Color("#33403B"))
-	var t := CUI.tap_column(STEPS[i][1], [hx, lab])
+	var lab := UI.label(steps()[i][1], "n800", 11, Color("#33403B"))
+	var t := CUI.tap_column(steps()[i][1], [hx, lab])
 	t.modulate.a = 1.0 if ok else 0.5
 	if ok:
 		t.pressed.connect(func(): go(k))
@@ -136,21 +140,30 @@ func go(k: String) -> void:
 	render()
 
 
+## The steps for the picked class: Spells only for casters.
+func steps() -> Array:
+	var out := STEPS.duplicate()
+	if cls_data().has("sp"):
+		out.insert(6, SPELLS_STEP)
+	return out
+
+
 func index() -> int:
-	for i in STEPS.size():
-		if STEPS[i][0] == step:
+	var all := steps()
+	for i in all.size():
+		if all[i][0] == step:
 			return i
 	return 0
 
 
 func go_back() -> void:
 	if index() > 0:
-		go(STEPS[index() - 1][0])
+		go(steps()[index() - 1][0])
 
 
 func go_next() -> void:
-	if done(step) and index() < STEPS.size() - 1:
-		go(STEPS[index() + 1][0])
+	if done(step) and index() < steps().size() - 1:
+		go(steps()[index() + 1][0])
 
 
 ## The row every banner and level-up step ends with.
@@ -231,13 +244,14 @@ func done(k: String) -> bool:
 		"scores": return race != "" and cls != "" and rb.size() == 2 and cb != ""
 		"skills": return pb != "" and pc != "" and bg != "" and cls != ""
 		"gear": return main != "" and (off_options().is_empty() or off != "") and arm != ""
+		"spells": return spells.size() == Weapons.SPELL_PICKS
 		"look": return pronouns != ""
 		"name": return hero_name.strip_edges() != ""
 	return false
 
 
 func all_done() -> bool:
-	for s: Array in STEPS:
+	for s: Array in steps():
 		if not done(s[0]):
 			return false
 	return true
@@ -331,6 +345,7 @@ func hero() -> Hero:
 	h.sub = sub
 	h.race_name = race_name()
 	h.elf_spell = elf_spell
+	h.spells = spells.duplicate()
 	h.pronouns = pronouns
 	h.background = bg.to_lower().replace(" ", "_")
 	h.scores = scores()

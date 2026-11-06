@@ -76,37 +76,49 @@ func _refresh_tray() -> void:
 		_portraits.remove_child(c)
 		c.queue_free()
 	for u in fight.allies():
-		var on: bool = u == fight.current
-		var v := VBoxContainer.new()
-		v.add_theme_constant_override("separation", 3)
-		var h := HexShape.make(38, 44, UI.ORANGE if on else UI.RIM, Color(u.color), 4 if on else 3).with_text(u.initial, 16).with_shadow(UI.HEX_SHADOW)
-		h.clickable = true
-		h.accessibility_name = u.name
-		h.tooltip_text = UI.effects_tip(u.name, fight.effects(u))   # DOCS: Long-press on HUD controls
-		h.pressed.connect(func():
-			fight.select(u)
-			_recentre(u))
-		if u.down:
-			h.modulate.a = 0.5
-		var cc := CenterContainer.new()
-		cc.add_child(h)
-		v.add_child(cc)
-		v.add_child(Bar.make(40, 5, Color("#E6DCC8"), UI.GREEN, float(maxi(u.hp, 0)) / u.max_hp, UI.HEX_SHADOW))
-		var pips := HBoxContainer.new()
-		pips.add_theme_constant_override("separation", 2)
-		pips.alignment = BoxContainer.ALIGNMENT_CENTER
-		# Bonus AP display (DOCS, combat v4d): always 3 pips; a blue lightning pip is worth 2, shown first.
-		var t: int = u.ap + u.bonus
-		var bolts := mini(3, maxi(0, t - 3))
-		var golds := mini(3, t) - bolts
-		for i in 3:
-			var col := Color("#3F8FC4") if i < bolts else (UI.GOLD if i < bolts + golds else Color("#6F5A41"))
-			var pip := HexShape.make(10, 11.5, col, col, 0)
-			if i < bolts:
-				pip.with_icon("bolt_fill", Color.WHITE, 8, 2, true)
-			pips.add_child(pip)
-		v.add_child(pips)
-		_portraits.add_child(v)
+		if Fight.is_summon(u):
+			continue
+		_portrait(u, false)
+		var s := fight.summon_of(u)
+		if not s.is_empty():   # a summon's small portrait hex under its caster's (03, Ethan, Nov 6, 2026)
+			_portrait(s, true)
+
+
+## One portrait: hex, HP bar and AP pips; a summon's is smaller, with its 2 AP pips.
+func _portrait(u: Dictionary, small: bool) -> void:
+	var on: bool = u == fight.current
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2 if small else 3)
+	var hw := 26.0 if small else 38.0
+	var h := HexShape.make(hw, hw * 44.0 / 38.0, UI.ORANGE if on else UI.RIM, Color(u.color), (3 if on else 2) if small else (4 if on else 3)).with_text(u.initial, 12 if small else 16).with_shadow(UI.HEX_SHADOW)
+	h.clickable = true
+	h.accessibility_name = u.name
+	h.tooltip_text = UI.effects_tip(u.name, fight.effects(u))   # DOCS: Long-press on HUD controls
+	h.pressed.connect(func():
+		fight.select(u)
+		_recentre(u))
+	if u.down:
+		h.modulate.a = 0.5
+	var cc := CenterContainer.new()
+	cc.add_child(h)
+	v.add_child(cc)
+	v.add_child(Bar.make(28 if small else 40, 4 if small else 5, Color("#E6DCC8"), UI.GREEN, float(maxi(u.hp, 0)) / u.max_hp, UI.HEX_SHADOW))
+	var pips := HBoxContainer.new()
+	pips.add_theme_constant_override("separation", 2)
+	pips.alignment = BoxContainer.ALIGNMENT_CENTER
+	# Bonus AP display (DOCS, combat v4d): always 3 pips; a blue lightning pip is worth 2, shown first. A summon's 2 (03).
+	var t: int = u.ap + u.bonus
+	var width := Rules.SUMMON_AP if small else 3
+	var bolts := mini(width, maxi(0, t - width))
+	var golds := mini(width, t) - bolts
+	for i in width:
+		var col := Color("#3F8FC4") if i < bolts else (UI.GOLD if i < bolts + golds else Color("#6F5A41"))
+		var pip := HexShape.make(10, 11.5, col, col, 0)
+		if i < bolts:
+			pip.with_icon("bolt_fill", Color.WHITE, 8, 2, true)
+		pips.add_child(pip)
+	v.add_child(pips)
+	_portraits.add_child(v)
 
 
 class _EndHex extends Control:
@@ -209,6 +221,10 @@ func _refresh_details() -> void:
 			or (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind == "cell" and fight.cell_target != null) or fight.self_done == k.id
 	if not aimed_any:
 		_details.add_child(_wrap(UI.label(k.desc, "n700", 11, UI.INK_SOFT)))
+	if k.get("hp", 0) > 0 and fight.result.is_empty():
+		_details.add_child(_wrap(UI.label("Also costs %d HP" % k.hp, "n800", 11, UI.RED)))   # the line that explains the heart (07)
+	if k.get("conc", false) and not u.conc.is_empty() and fight.self_done != k.id:
+		_details.add_child(_wrap(UI.label("Ends %s" % Cards.ALL[u.conc.id].n, "n800", 11, UI.RED)))   # stops a mistake (07)
 	var div := ColorRect.new()
 	div.color = Color(UI.HEX_SHADOW, 0.5)
 	div.custom_minimum_size = Vector2(146, 2)
@@ -485,6 +501,9 @@ class _HotCard extends Control:
 			draw_style_box(UI.box(Color("#843E0E"), 8), Rect2(r.position + Vector2(44, 9), Vector2(27, 16)))   # 7.4:1 under the 11 pt "1"
 			draw_string(f, r.position + Vector2(48, 21), "1", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.WHITE_WARM)
 			draw_texture_rect(UI.icon("fight_once", UI.WHITE_WARM, 10, 2.6), Rect2(r.position + Vector2(57, 12), Vector2(10, 10)), false)
+		if k.get("hp", 0) > 0:   # a blood art's HP cost: a small heart with the number, beside the AP hex (Ethan, Nov 6, 2026)
+			draw_texture_rect(UI.icon(HP_HEART, UI.RED, 14, 2.4), Rect2(r.position + Vector2(25, 12), Vector2(14, 14)), false)
+			draw_string(f, r.position + Vector2(40, 24), str(k.hp), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.RED)
 		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
 		var parts := Cards.name_lines(k.n, f, 11, 64)
 		var text_y := 60.0 if parts.size() == 1 else 56.0
@@ -499,6 +518,9 @@ class _HotCard extends Control:
 
 	func _has_point(point: Vector2) -> bool:
 		return UI.finger_rect(size).has_point(point)
+
+
+const HP_HEART := "M12 21s-7.5-4.6-9.5-10A5 5 0 0 1 12 6.5 5 5 0 0 1 21.5 11c-2 5.4-9.5 10-9.5 10z"
 
 
 ## A card in the All actions list (48 tall): AP hex, icon, name and source.
@@ -698,7 +720,12 @@ func _process(_delta: float) -> void:
 		node.visible = not (u.down and not u.ally) and not cam.is_position_behind(world)
 		node.global_position = cam.unproject_position(world) - Vector2(node.size.x * 0.5, node.size.y)  # screen coordinates
 		var bar: Bar = node.get_meta("bar")
-		bar.value = float(maxi(u.hp, 0)) / u.max_hp
+		var shown: Dictionary = u
+		if u.decoy == "mirror":   # a copy looks like you, HP bar too
+			for o in fight.units:
+				if o.name == u.copy_of and o.decoy == "" and not Fight.is_summon(o):
+					shown = o
+		bar.value = float(maxi(shown.hp, 0)) / shown.max_hp
 		var fx: Array = fight.status_icons(u).map(func(e): return e[0])
 		if fx != node.get_meta("fx_key", []):
 			node.set_meta("fx_key", fx)

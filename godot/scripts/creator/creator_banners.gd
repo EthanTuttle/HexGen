@@ -80,6 +80,7 @@ func _pick(id: String) -> void:
 		"class":
 			if c.cls != id:
 				c.cls = id
+				c.spells = []
 				c.cb = ""
 				c.pc = ""
 				c.main = ""

@@ -265,6 +265,16 @@ const GUARD_UP_LESS := 2                 # PLACEHOLDER (04)
 const DISARM_AP := 1                     # PLACEHOLDER (04, Ethan, Nov 6, 2026): Disarm, the AP the foe loses next turn recovering its weapon
 const UNARMED_MINIS := ["enemy_wolf"]    # PLACEHOLDER: foes with no weapon to knock away (beasts), by mini
 const HAYMAKER_AP := 1                   # PLACEHOLDER (04): on a failed CON save the foe loses this much AP next turn
+## Wizard level-1 spells (03 -> Wizard level-1 placeholders, Ethan, Nov 6, 2026): damage is INT plus each card's bonus.
+const SPELL_RANGE := 5                   # PLACEHOLDER (03): spell range, Warding Circle and Phantom Ally's placing too
+const BLOOD_BOLT_HP := 2                 # PLACEHOLDER (03): Blood Bolt's HP cost; it can't take you to 0
+const WARDING_LESS := 1                  # PLACEHOLDER (03): allies inside Warding Circle take 1 less damage a hit
+const SUMMON_AP := 2                     # DOCS (03): summons get 2 AP a turn
+const SUMMONS := {                       # PLACEHOLDER (03): their stats; they hit with the caster's INT coins
+	"animated_blade": {"name": "Animated Blade", "initial": "B", "mini": "summon_blade", "hp": 4, "damage": 2, "weapon": "summon_blade"},
+	"wisp": {"name": "Wisp", "initial": "W", "mini": "summon_wisp", "hp": 2, "damage": 1, "weapon": "summon_wisp", "flies": true},
+}
+const MIRROR_COPIES := 2                 # PLACEHOLDER (03): Mirror Image's copies, next to you
 const RANGED_ADJACENT := 1               # PLACEHOLDER (04): +1 heads for a ranged attack with a foe next to you (not crossbows)
 const MOVE_PER_DEX := 1                  # DOCS (03): a Move is MOVE_HEXES, +1 for every DEX point above 1, plus race
 const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn

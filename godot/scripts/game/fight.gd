@@ -45,6 +45,7 @@ var cover := {}                  # cell -> "partial" or "full" (design/03 -> Com
 var snares := {}                 # owner's name -> the hidden Snare's cell (03 -> Ranger)
 var _snare_marks := {}           # owner's name -> its marker, which only the party sees (PLACEHOLDER look)
 var edge_cover := {}             # [cell, cell] sorted -> "partial": a low edge between two cells (plot edges, terrace curbs)
+var circles := {}                # caster's name -> Warding Circle {cells, node} (03 -> Ritualist)
 
 var _overlays: Array[Node3D] = []
 var _hex_mesh: Mesh
@@ -83,6 +84,10 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 	_wire()
 	active = true
 	units.clear()
+	for z: Dictionary in circles.values():
+		if is_instance_valid(z.node):
+			z.node.queue_free()
+	circles = {}
 	result = {}
 	map_id = id
 	if id == "":
@@ -334,18 +339,25 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
 			facing = _dir_of(facing), backstabbed = false,
 			off = m.get("off", ""),
-			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}, disarmed = false}
+			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}, disarmed = false,
+			summon_of = m.get("summon_of", ""), decoy = m.get("decoy", ""), copy_of = m.get("copy_of", ""), conc = {}}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
 
 
+## The party and its summons; decoys aren't allies (03 -> Deceiver: they don't count for flanking or foes' targets).
 func allies() -> Array:
-	return units.filter(func(u): return u.ally)
+	return units.filter(func(u): return u.ally and u.decoy == "")
 
 
+## Who u can go for: the other side, standing, never a decoy (foes only go for decoys that fool them: _enemy_phase).
 func foes_of(u: Dictionary) -> Array:
-	return units.filter(func(o): return o.ally != u.ally and not o.down)
+	return units.filter(func(o): return o.ally != u.ally and not o.down and o.decoy == "")
+
+
+static func is_summon(u: Dictionary) -> bool:
+	return u.summon_of != ""
 
 
 func card(id := "") -> Dictionary:
@@ -383,6 +395,8 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 		return "_scimitar"   # only after a scimitar attack this turn; no note (the card shows it)
 	if ap_left(u) < ap_cost(u, c):
 		return "Not enough AP"
+	if u.hp <= c.get("hp", 0):   # a blood art can't take you to 0 (03 -> Wizard level-1 placeholders)
+		return "Not enough HP"
 	if c.get("effect", "") == "item" and game.potions <= 0:
 		return "No consumable equipped"
 	return ""
@@ -413,7 +427,7 @@ func _step_path(u: Dictionary, foe: Dictionary, budget: int) -> Array:
 
 
 func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
-	return c.kind == "ally" and a.ally and not a.down and dist(u, a) <= c.get("range", 1)
+	return c.kind == "ally" and a.ally and a.decoy == "" and not a.down and dist(u, a) <= c.get("range", 1)
 
 
 func _pay(u: Dictionary, c: Dictionary) -> void:
@@ -424,6 +438,9 @@ func _pay(u: Dictionary, c: Dictionary) -> void:
 	var from_bonus := mini(u.bonus, cost)     # bonus AP is spent first (DOCS)
 	u.bonus -= from_bonus
 	u.ap -= cost - from_bonus
+	if c.get("hp", 0) > 0:   # Blood Bolt's HP, paid as it's cast (03)
+		u.hp -= c.hp
+		hud.float_text(u, "-%d" % c.hp, true)
 	if free_mark:
 		u.used[c.id + "_free"] = true
 		return
@@ -485,6 +502,8 @@ func step_cost(u: Dictionary, a: Vector2i, b: Vector2i) -> int:
 			if not there.is_empty() and there != u:
 				return -1
 		return 1
+	if u.member.get("flies", false):   # the Wisp flies (03): over lava and rises alike, never through rock or anyone
+		return 1 if _open(b) else -1
 	if not _open(b) or absf(rise) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
 		return -1
 	return 1 + (Rules.UPHILL_COST if rise >= Rules.UPHILL_RISE - Rules.HEIGHT_SLACK else 0)
@@ -751,8 +770,9 @@ func _show_overlays() -> void:
 			for cell in arc_cells(current, cell_target):
 				_overlay(cell, "target")
 	if c.kind == "cell" and not busy:
+		var ring: Array = circle_cells(cell_target) if c.get("effect", "") == "circle" and cell_target != null else []
 		for cell in cell_options(current, c):
-			_overlay(cell, "target" if cell == cell_target else "move")
+			_overlay(cell, "target" if cell == cell_target or cell in ring else "move")
 	_overlay(current.cell, "active")
 	for u in units:
 		if in_reach(current, u, c):
@@ -775,7 +795,7 @@ func _start_allies() -> void:
 	for u in units:
 		if u.ally:
 			u.lockdown = false   # Lockdown lasts until your next turn
-			u.ap = 0 if u.down else Rules.AP
+			u.ap = 0 if u.down or u.decoy != "" else (Rules.SUMMON_AP if is_summon(u) else Rules.AP)
 			u.bonus = 0
 			u.used = {}
 			u.defending = false      # Defend lasts until your next turn
@@ -783,7 +803,7 @@ func _start_allies() -> void:
 			u.ward = 0
 			u.poison_blade = false
 	for u in units.duplicate():
-		if u.ally and not u.down:
+		if u.ally and not u.down and u.decoy == "":
 			await _turn_starts(u)
 	_check_end()
 	if not active or phase != "allies":
@@ -791,7 +811,7 @@ func _start_allies() -> void:
 	current = {}
 	game.rig.player_moved = false   # PLACEHOLDER ("the next action" isn't decided): a new turn centres again
 	for u in units:
-		if u.ally and not u.down:
+		if u.ally and not u.down and u.decoy == "":
 			select(u)
 			break
 	refresh()
@@ -799,7 +819,7 @@ func _start_allies() -> void:
 
 ## Make u the acting character (portrait or token); the camera pans to them (DOCS: Combat screen -> Camera).
 func select(u: Dictionary) -> void:
-	if busy or u.down or not u.ally or phase != "allies":
+	if busy or u.down or not u.ally or u.decoy != "" or phase != "allies":
 		return
 	current = u
 	sel = "attack"
@@ -917,6 +937,12 @@ func press_button() -> void:
 					_set_snare(current, cell_target)
 				"dance":
 					await _dance(current, cell_target)
+				"summon":
+					_summon(current, cell_target, k)
+				"circle":
+					_circle(current, cell_target)
+				"phantom":
+					_phantom(current, cell_target)
 				_:
 					await _blink(current, cell_target)
 		"mark":
@@ -1137,11 +1163,12 @@ func holds_weapon(t: Dictionary) -> bool:
 	return not t.ally and not Rules.UNARMED_MINIS.any(func(p): return mini_id.begins_with(p))
 
 
-## A metal golem's damage reduction on hits and Breath Weapon, doubled under Lockdown (design/03 -> Races).
+## A metal golem's damage reduction on hits and Breath Weapon, doubled under Lockdown (design/03 -> Races), and Warding
+## Circle's for an ally inside one (03 -> Ritualist).
 func reduction(t: Dictionary) -> int:
 	if not t.ally:
 		return 0
-	return Races.reduction(t.member, game.level) * (2 if t.lockdown else 1)
+	return Races.reduction(t.member, game.level) * (2 if t.lockdown else 1) + (Rules.WARDING_LESS if warded(t) else 0)
 
 
 ## What an attack on t needs (DOCS: design/03 -> Hit chance scaling), +1 for a ranged attack with a foe next to the attacker
@@ -1164,9 +1191,10 @@ func sneak_applies(a: Dictionary, t: Dictionary) -> bool:
 	return _flanked(a, t)
 
 
+## Another of a's side next to t: summons count, decoys don't (03 -> Summoner, Ethan, Nov 6, 2026).
 func _flanked(a: Dictionary, t: Dictionary) -> bool:
 	for u in units:
-		if u != a and u.ally == a.ally and not u.down and dist(u, t) == 1:
+		if u != a and u.ally == a.ally and not u.down and u.decoy == "" and dist(u, t) == 1:
 			return true
 	return false
 
@@ -1270,6 +1298,8 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.guard_counter = true
 		"guide":
 			pass   # DOCS (06): plays, and reveals nothing until hidden foes and traps exist
+		"mirror":
+			_mirror(a)
 
 
 # --- Racial cards that aim at the ground --------------------------------------------
@@ -1346,6 +1376,18 @@ func cell_options(u: Dictionary, k: Dictionary) -> Array[Vector2i]:
 			var out: Array[Vector2i] = []
 			for c in _spread(u, Rules.DANCE_HEXES, Callable()):
 				if c != u.cell:
+					out.append(c)
+			return out
+		"summon", "phantom":   # a summon on an empty hex beside you; Phantom Ally on one within 5 (03)
+			var out: Array[Vector2i] = []
+			for c: Vector2i in grid:
+				if Rules.hex_distance(c, u.cell) in range(1, k.range + 1) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty():
+					out.append(c)
+			return out
+		"circle":   # Warding Circle's middle hex, within 5 (03)
+			var out: Array[Vector2i] = []
+			for c: Vector2i in grid:
+				if Rules.hex_distance(c, u.cell) <= k.range and grid[c].kind != "blocked":
 					out.append(c)
 			return out
 	return blink_cells(u)
@@ -1556,7 +1598,7 @@ func _walk_on(u: Dictionary, path: Array) -> void:
 	u.facing = _dir_toward(path[-2] if path.size() > 1 else u.cell, path[-1])   # it faces the way it last moved
 	u.cell = path[-1]
 	refresh()
-	if not path.any(func(c): return grid[c].kind == "lava"):
+	if u.member.get("flies", false) or not path.any(func(c): return grid[c].kind == "lava"):
 		await board.step_along(u.mini, path)
 		return
 	for c: Vector2i in path:
@@ -1576,10 +1618,13 @@ func _burn(u: Dictionary) -> void:
 
 
 func _in_lava(u: Dictionary) -> bool:
-	return not u.down and grid.has(u.cell) and grid[u.cell].kind == "lava"
+	return not u.down and grid.has(u.cell) and grid[u.cell].kind == "lava" and not u.member.get("flies", false)
 
 
 func _hurt(t: Dictionary, dmg: int) -> void:
+	if t.decoy != "":   # any hit pops a decoy, area spells and breath included (03 -> Deceiver)
+		_vanish(t)
+		return
 	if dmg > 0:
 		t.lull = false   # any damage wakes it, poison, bleed and lava too (Ethan, Nov 5, 2026)
 	t.hp -= dmg
@@ -1587,7 +1632,15 @@ func _hurt(t: Dictionary, dmg: int) -> void:
 		t.down = true
 		if t == target:
 			target = {}
+		if is_summon(t):   # a summon is gone once destroyed, and its caster's concentration with it
+			var caster := _caster_of(t)
+			if not caster.is_empty() and caster.conc.get("unit", {}) == t:
+				caster.conc = {}
+			_vanish(t)
+			return
 		await board.fall(t.mini, not t.ally)
+		if not t.conc.is_empty():   # going down breaks concentration (03, Ethan, Nov 6, 2026)
+			_end_conc(t)
 
 
 func end_phase() -> void:
@@ -1608,7 +1661,7 @@ func confirm_end() -> void:
 func _check_end() -> void:
 	if not active:
 		return
-	var allies_up := units.any(func(u): return u.ally and not u.down)
+	var allies_up := units.any(func(u): return u.ally and not u.down and u.decoy == "" and not is_summon(u))
 	var foes_up := units.any(func(u): return not u.ally and not u.down)
 	if not foes_up or not allies_up:
 		busy = true
@@ -1670,12 +1723,15 @@ func _enemy_phase() -> void:
 			_check_end()
 			continue
 		var attacks := 0
+		var lure := await _fooled_by_phantom(e)
 		while e.ap > 0 and not e.down and active and phase == "enemies":
 			var targets := foes_of(e)
 			if targets.is_empty():
 				break
 			targets.sort_custom(func(a, b): return dist(a, e) < dist(b, e))
 			var t: Dictionary = targets[0]
+			if not lure.is_empty() and not lure.down and lure in units:   # fooled: it goes for the phantom instead (03)
+				t = lure
 			if dist(t, e) == 1:
 				if attacks >= Foes.attacks_per_turn:
 					break
@@ -1684,7 +1740,13 @@ func _enemy_phase() -> void:
 				if e.lull:   # Lull: it loses its next attack, and wakes
 					e.lull = false
 					continue
-				await _attack(e, t, Cards.get_card("attack", "spear"))
+				var copy := await _fooled_by_copy(e, t)
+				if not copy.is_empty():   # it hits a copy instead, which pops (03 -> Mirror Image)
+					await board.attack(e.mini, copy.mini, true)
+					hud.float_text(copy, "Hit!", true)
+					_vanish(copy)
+				else:
+					await _attack(e, t, Cards.get_card("attack", "spear"))
 				busy = true
 			else:
 				var path := _one_move(e, path_next_to(e, t))
@@ -1699,6 +1761,168 @@ func _enemy_phase() -> void:
 	busy = false
 	if active and phase == "enemies":
 		_start_allies()
+
+
+# --- Summons, decoys and concentration (03 -> Wizard spells; Wizard level-1 placeholders) ----------------
+
+## The caster a summon or copy belongs to, by name, or {}.
+func _caster_of(u: Dictionary) -> Dictionary:
+	var who: String = u.summon_of if u.summon_of != "" else u.copy_of
+	for o in units:
+		if o.name == who and o.ally and o.decoy == "" and not is_summon(o):
+			return o
+	return {}
+
+
+## The summon u has out, or {}.
+func summon_of(u: Dictionary) -> Dictionary:
+	var s: Dictionary = u.conc.get("unit", {})
+	return s if not s.is_empty() and s in units and not s.down else {}
+
+
+## A new concentration effect ends the old one (03). Both card kinds: a summon and Warding Circle.
+func _concentrate(u: Dictionary, k: Dictionary, what := {}) -> void:
+	if not u.conc.is_empty():
+		_end_conc(u)
+	u.conc = {id = k.id, unit = what}
+
+
+## Ending one: the summon goes, or the circle fades.
+func _end_conc(u: Dictionary) -> void:
+	var s: Dictionary = u.conc.get("unit", {})
+	u.conc = {}
+	if circles.has(u.name):
+		circles[u.name].node.queue_free()
+		circles.erase(u.name)
+	if not s.is_empty() and s in units:
+		_vanish(s)
+
+
+## A summon, copy or phantom leaves the board: it sinks away and is gone from the fight.
+func _vanish(u: Dictionary) -> void:
+	if not u in units:
+		return
+	u.down = true
+	u.hp = 0
+	if u == target:
+		target = {}
+	if u == current:
+		current = {}
+	units.erase(u)
+	var tw: Tween = u.mini.create_tween()
+	tw.tween_property(u.mini, "scale", Vector3(0.05, 0.05, 0.05), 0.3)
+	tw.tween_callback(u.mini.queue_free)
+	refresh()
+
+
+## Animated Blade or Wisp on an empty hex beside the caster: the player's to act with, from this turn (03).
+func _summon(u: Dictionary, c: Vector2i, k: Dictionary) -> void:
+	var s: Dictionary = Rules.SUMMONS[k.id]
+	var m := {name = s.name, initial = s.initial, color = u.color, mini = s.mini, ability = "INT", hp = s.hp, max_hp = s.hp,
+			damage = s.damage, weapon = s.weapon, armour = "none", flies = s.get("flies", false), summon_of = u.name,
+			scores = {"INT": Races.score(u.member, "INT")}, cards = ["move", "attack"], hot = ["move", "attack"]}
+	_concentrate(u, k)
+	_add_unit(m, c, true, s.initial, Hex.cell_position(u.cell.x, u.cell.y) * 2.0 - Hex.cell_position(c.x, c.y))
+	var unit: Dictionary = units[-1]
+	unit.ap = Rules.SUMMON_AP if phase == "allies" else 0
+	u.conc.unit = unit
+	self_done = k.id
+	cell_target = null
+
+
+## Warding Circle: a hex and its 6 neighbours (03).
+func circle_cells(c) -> Array:
+	if c == null:
+		return []
+	var out := [c]
+	for n in Hex.NEIGHBOURS:
+		if grid.has(c + n):
+			out.append(c + n)
+	return out
+
+
+func warded(t: Dictionary) -> bool:
+	return t.decoy == "" and circles.values().any(func(z): return t.cell in z.cells)
+
+
+func _circle(u: Dictionary, c: Vector2i) -> void:
+	_concentrate(u, card("warding_circle"))
+	var node := Node3D.new()   # PLACEHOLDER look: a pale blue glow on its hexes
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("#8EC3F2", 0.5)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var cells := circle_cells(c)
+	for cell: Vector2i in cells:
+		var mi := MeshInstance3D.new()
+		mi.mesh = _lifted_mesh(cell)
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.position = Hex.to3(Hex.cell_position(cell.x, cell.y), grid[cell].z + (Rules.CELL_TOP if map_id != "" else 0.0) + 0.008)
+		node.add_child(mi)
+	board.add_child(node)
+	circles[u.name] = {cells = cells, node = node}
+	self_done = "warding_circle"
+	cell_target = null
+
+
+## A decoy: the caster's own mini, faded (Mirror Image), or a fake party member (Phantom Ally). PLACEHOLDER looks. It pops
+## after one hit, so 1 HP; it never acts.
+func _decoy(u: Dictionary, c: Vector2i, kind: String) -> Dictionary:
+	var m := {name = u.name if kind == "mirror" else "Phantom ally", initial = u.initial if kind == "mirror" else "P",
+			color = u.color if kind == "mirror" else "#9FB8D9", mini = u.member.mini if kind == "mirror" else "standin_small",
+			ability = "INT", hp = 1, max_hp = 1, scores = {}, armour = "none", decoy = kind, copy_of = u.name, cards = []}
+	_add_unit(m, c, true, m.initial)
+	var d: Dictionary = units[-1]
+	(d.mini.get_node("body") as GeometryInstance3D).transparency = 0.35 if kind == "mirror" else 0.5
+	return d
+
+
+## Mirror Image: 2 copies on free hexes beside you; a new cast replaces the old ones (03).
+func _mirror(u: Dictionary) -> void:
+	for o in units.duplicate():
+		if o.decoy == "mirror" and o.copy_of == u.name:
+			_vanish(o)
+	var spots: Array = []
+	for n in Hex.NEIGHBOURS:
+		var c: Vector2i = u.cell + n
+		if grid.has(c) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty() and spots.size() < Rules.MIRROR_COPIES:
+			spots.append(c)
+	for c: Vector2i in spots:
+		_decoy(u, c, "mirror")
+
+
+func _phantom(u: Dictionary, c: Vector2i) -> void:
+	for o in units.duplicate():   # one at a time: a new one replaces it (PLACEHOLDER)
+		if o.decoy == "phantom" and o.copy_of == u.name:
+			_vanish(o)
+	_decoy(u, c, "phantom")
+	self_done = "phantom_ally"
+	cell_target = null
+
+
+## A foe's INT save against an illusion (03): flipped over it; true if it fails and is fooled.
+func _fooled(e: Dictionary) -> bool:
+	var check := flip_check(save_coins(e, {}, "INT"), Rules.SAVE_HEADS)
+	await hud.flip_coins(e, check.coins, check.need, Rules.COIN_STEP_FOE)
+	return Coins.heads(check.coins) < check.need
+
+
+## At a foe's turn start, with a Phantom Ally out: on a failed INT save it goes for the phantom this turn (03).
+func _fooled_by_phantom(e: Dictionary) -> Dictionary:
+	for o in units:
+		if o.decoy == "phantom" and not o.down:
+			return o if await _fooled(e) else {}
+	return {}
+
+
+## A foe attacking someone with Mirror Image copies out: on a failed INT save it hits a copy (03).
+func _fooled_by_copy(e: Dictionary, t: Dictionary) -> Dictionary:
+	for o in units:
+		if o.decoy == "mirror" and o.copy_of == t.name and not o.down:
+			return o if await _fooled(e) else {}
+	return {}
 
 
 # --- Input --------------------------------------------------------------------------
@@ -1756,6 +1980,8 @@ func effects(u: Dictionary) -> Array:
 		fx.append(["Blessed", "+1 coin on their next attack"])
 	if u.poison_blade:
 		fx.append(["Poison Blade", "hits this turn poison"])
+	if is_summon(u):
+		fx.append(["Summoned", "Summoned by %s" % u.summon_of])
 	for s in status_icons(u):
 		fx.append([s[1], s[2]])
 	return fx
@@ -1785,7 +2011,14 @@ func status_icons(u: Dictionary) -> Array:
 		out.append([CreatorData.IC.w_rapier, "Disarmed", "loses %d AP next turn" % Rules.DISARM_AP])
 	if on(u, "snared"):
 		out.append(["snare", "Rooted", "can't move until the end of its next turn"])   # Snare and Pinning Bolt alike (Ethan, Nov 5, 2026)
+	if not u.conc.is_empty():   # PLACEHOLDER icons (Ethan, Nov 6, 2026: the lines)
+		out.append([CONC_ICON, "Concentrating", "Keeping %s going" % Cards.ALL[u.conc.id].n])
+	if u.ally and warded(u):
+		out.append([Cards.ALL.warding_circle.icon, "Warded", "Takes %d less damage" % Rules.WARDING_LESS])
 	return out
+
+
+const CONC_ICON := "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8"
 
 
 ## An enemy's name, HP and what it does; an ally's HP, AP and status.

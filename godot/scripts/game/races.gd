@@ -124,6 +124,9 @@ static func make_hero(m: Dictionary, run: RunSetup) -> void:
 	m.ability = Weapons.of(m.weapon).ab
 	m.klass = run.klass
 	m.cards = Weapons.cards_for(run.klass, m.weapon, m.off)
+	for id: String in run.spells:   # a Wizard's two level-1 picks (03), class cards like the rest
+		if Cards.ALL.has(id) and not id in m.cards:
+			m.cards.append(id)
 	m.hp = Weapons.CLASS_HP.get(run.klass, m.hp)
 	m.race = run.race if run.race != "" else Rules.HERO_DEFAULT.race
 	m.sub = run.sub if run.race != "" else Rules.HERO_DEFAULT.sub

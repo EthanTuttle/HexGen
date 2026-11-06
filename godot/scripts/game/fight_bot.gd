@@ -1,8 +1,9 @@
 class_name FightBot
 extends RefCounted
-## A plain player for the checks: Fluffy's bolts and frost when in reach, the hero's Shield Bash then attacks, Second Wind
-## when hurt, heals on hurt allies, and the racial cards (design/03 -> Races): Breath Weapon down a line with foes and no
-## allies, Faerie Fire then Lull on the nearest foe, Stone Throw, Scorch, Claw Swipe, Ember Mend and Lockdown when hurt.
+## A plain player for the checks: Fluffy's bolts and frost when in reach, the Wizard's summons, circle and decoys, the
+## hero's Shield Bash then attacks, Second Wind when hurt, heals on hurt allies, and the racial cards (design/03 -> Races):
+## Breath Weapon down a line with foes and no allies, Faerie Fire then Lull on the nearest foe, Stone Throw, Scorch, Claw
+## Swipe, Ember Mend and Lockdown when hurt.
 ## A test aid only.
 
 var tree: SceneTree
@@ -20,19 +21,22 @@ func _wait(s: float) -> void:
 
 ## Plays the fight out. Returns {rounds, hp0, hp1, downs, wiped}.
 func play(f: Fight) -> Dictionary:
-	var hp0: int = f.allies().reduce(func(n, u): return n + u.hp, 0)
+	var hp0: int = _party(f).reduce(func(n, u): return n + u.hp, 0)
 	var rounds := 0
 	while f.active and f.phase != "over":
 		if f.phase != "allies" or f.busy:
 			await _wait(0.1)
 			continue
 		rounds += 1
-		for u: Dictionary in f.allies():
-			if not f.active or f.phase != "allies" or u.down:
-				continue
-			f.select(u)
-			await _wait(0.1)
-			await take_turn(f, u)
+		var played := []
+		for _pass in 2:   # a second pass for a summon cast this turn: it acts at once (03)
+			for u: Dictionary in f.allies():
+				if not f.active or f.phase != "allies" or u.down or u in played:
+					continue
+				played.append(u)
+				f.select(u)
+				await _wait(0.1)
+				await take_turn(f, u)
 		if f.active and f.phase == "allies":
 			f.end_phase()
 			await _wait(0.2)
@@ -41,9 +45,14 @@ func play(f: Fight) -> Dictionary:
 		await _wait(0.1)
 		if rounds > 30:
 			break
-	var hp1: int = f.allies().reduce(func(n, u): return n + maxi(u.hp, 0), 0)
-	return {rounds = rounds, hp0 = hp0, hp1 = hp1, downs = f.allies().filter(func(u): return u.down).size(),
-			wiped = f.allies().all(func(u): return u.down)}
+	var hp1: int = _party(f).reduce(func(n, u): return n + maxi(u.hp, 0), 0)
+	return {rounds = rounds, hp0 = hp0, hp1 = hp1, downs = _party(f).filter(func(u): return u.down).size(),
+			wiped = _party(f).all(func(u): return u.down)}
+
+
+## The party in the fight, without summons.
+func _party(f: Fight) -> Array:
+	return f.allies().filter(func(u): return not Fight.is_summon(u))
 
 
 func _ready_card(f: Fight, u: Dictionary, id: String) -> bool:
@@ -109,6 +118,33 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 				used["breath"] = used.get("breath", 0) + 1
 				await _settle(f)
 				continue
+		# The Wizard (03): a summon or the circle while nothing is held, Phantom Ally near the foe, Mirror Image when a foe is close.
+		if u.conc.is_empty() and f.ap_left(u) >= 2:
+			var conc_id := ""
+			for id in ["animated_blade", "wisp", "warding_circle"]:
+				if conc_id == "" and _ready_card(f, u, id):
+					conc_id = id
+			if conc_id != "":
+				var spots := f.cell_options(u, Cards.get_card(conc_id))
+				spots.sort_custom(func(a, b): return Rules.hex_distance(a, foe.cell) < Rules.hex_distance(b, foe.cell))
+				if conc_id == "warding_circle":
+					spots = [u.cell]
+				if not spots.is_empty():
+					await _aim(f, u, conc_id, spots[0])
+					continue
+		if _ready_card(f, u, "phantom_ally") and f.ap_left(u) >= 2 and not f.units.any(func(o): return o.decoy == "phantom"):
+			var spots := f.cell_options(u, Cards.get_card("phantom_ally"))
+			spots.sort_custom(func(a, b): return Rules.hex_distance(a, foe.cell) < Rules.hex_distance(b, foe.cell))
+			if not spots.is_empty():
+				await _aim(f, u, "phantom_ally", spots[0])
+				continue
+		if _ready_card(f, u, "mirror_image") and f.dist(foe, u) <= 3 and not f.units.any(func(o): return o.decoy == "mirror" and o.copy_of == u.name):
+			f.pick_card("mirror_image")
+			await _wait(0.05)
+			await f.press_button()
+			used["mirror_image"] = used.get("mirror_image", 0) + 1
+			await _settle(f)
+			continue
 		# The Ranger: mark the nearest foe, set the Snare on the hex in front of it, sweep an arc that holds foes.
 		if _ready_card(f, u, "hunters_mark") and (u.mark.is_empty() or u.mark.down):
 			f.pick_card("hunters_mark")
@@ -145,7 +181,7 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			picked = "use_item"
 			drunk += 1
 		else:
-			var order: Array = ["faerie_fire", "lull", "firebolt", "frost_ray", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
+			var order: Array = ["faerie_fire", "lull", "firebolt", "frost_ray", "blood_bolt", "shocking_grasp", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
 					"pinning_bolt", "double_shot", "haymaker", "disarm", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
 			if f.ap_left(u) >= 3 and u.ap == Rules.AP:
 				order.push_front("aimed_shot")   # a whole turn's shot, only at the start of a turn

@@ -15,7 +15,7 @@ const BACKGROUNDS := {
 	"folk_hero": {"terrain": "forest", "place": "The Oak & Lantern"},
 	"noble": {"terrain": "farmland", "place": "Weizenhof Estate"},
 }
-const CLASS_TERRAINS := {"fighter": ["plains", "desert"], "ranger": ["forest", "plains"], "rogue": ["swamp", "village"]}   # DOCS (05 -> Starting decks)
+const CLASS_TERRAINS := {"fighter": ["plains", "desert"], "ranger": ["forest", "plains"], "rogue": ["swamp", "village"], "wizard": ["hills", "ruins"]}   # DOCS (05 -> Starting decks)
 const CARDS_EACH := 5
 const ONE_OF_EACH := ["forest", "plains", "farmland", "village", "river", "hills", "swamp", "desert", "ruins"]   # design/06: so all can be built
 
@@ -24,6 +24,7 @@ var klass := "fighter"
 var race := ""                 # "" with no creator: Rules.HERO_DEFAULT
 var sub := ""                  # the race's sub-type: "Wood elf", "Metal", "Blue", "Hayes"
 var elf_spell := ""            # a high elf's pick: "Lull"
+var spells: Array = []         # a Wizard's two level-1 picks, as card ids: ["firebolt", "wisp"]
 var scores := {}               # STR .. CHA from the creator; empty: Rules.HERO_DEFAULT's
 var proficiencies: Array = []
 var main := ""                 # the creator's weapons and armour (CreatorData.W ids; "shield", "none"; "Light" ..); "": HERO_DEFAULT's
@@ -70,6 +71,8 @@ static func for_launch() -> RunSetup:
 			run.sub = a.split("=")[1]
 		if a.begins_with("--spell="):
 			run.elf_spell = a.split("=")[1]
+		if a.begins_with("--spells="):   # test aid: a Wizard's picks ("--spells=firebolt,wisp")
+			run.spells = Array(a.trim_prefix("--spells=").split(","))
 		# Test aid: the hero's class and gear ("--class=ranger --main=shortbow --armour=Light").
 		if a.begins_with("--class="):
 			run.klass = a.split("=")[1]
@@ -93,6 +96,7 @@ static func from_hero(hero: Hero) -> RunSetup:
 	run.race = hero.race
 	run.sub = hero.sub
 	run.elf_spell = hero.elf_spell
+	run.spells = hero.spells.duplicate()
 	run.scores = hero.scores.duplicate()
 	run.proficiencies = hero.proficiencies.duplicate()
 	run.main = hero.gear.get("main", "")

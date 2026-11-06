@@ -23,20 +23,27 @@ const CAT := {
 	"halberd": {"ab": "STR", "hands": "2", "range": 2, "cards": []},
 	"glaive": {"ab": "STR", "hands": "2", "range": 2, "cards": ["sweeping_arc"]},
 	"staff": {"ab": "INT", "hands": "v", "range": 1, "cards": ["trip", "ward"]},
-	"wand": {"ab": "INT", "hands": "1", "range": 1, "cards": []},
+	"wand": {"ab": "INT", "hands": "1", "range": 5, "ranged": true, "cards": []},   # Magic Bolt, the basic attack (04; range PLACEHOLDER)
 	"shortbow": {"ab": "DEX", "hands": "2", "range": 6, "ranged": true, "cards": ["double_shot"]},
 	"longbow": {"ab": "DEX", "hands": "2", "range": 8, "ranged": true, "cards": ["aimed_shot"]},
 	"crossbow": {"ab": "DEX", "hands": "2", "range": 6, "ranged": true, "point_blank": true, "cards": ["pinning_bolt"]},
 	"gauntlets": {"ab": "STR", "hands": "f", "range": 1, "cards": ["guard_up"]},
 	"knuckles": {"ab": "STR", "hands": "f", "range": 1, "cards": ["haymaker"]},
 	"wraps": {"ab": "DEX", "hands": "f", "range": 1, "cards": ["step_strike"]},
+	# A summon's own attack (03 -> Wizard level-1 placeholders): not gear, so the creator never offers them.
+	"summon_blade": {"ab": "INT", "hands": "1", "range": 1, "cards": []},
+	"summon_wisp": {"ab": "INT", "hands": "1", "range": 4, "ranged": true, "cards": []},
 }
+## The Wizard's level-1 spells by school, in the Spells step's columns (03 -> Wizard spells).
+const WIZARD_SPELLS := {"Summoner": ["animated_blade", "wisp"], "Blaster": ["firebolt", "frost_ray", "shocking_grasp"],
+	"Deceiver": ["mirror_image", "phantom_ally"], "Ritualist": ["blood_bolt", "warding_circle"]}
+const SPELL_PICKS := 2                   # DOCS (03): casters pick 2 spells at level 1
 const ARMOURED_HEADS := 1               # DOCS (04 -> Armour, Nov 5, 2026): Armoured needs 1 + half CON rounded up
 const SHIELD_HEADS := 1                 # DOCS: +1 with a shield
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
 const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"], "rogue": ["sneak_attack", "poison_blade"]}   # DOCS (06 -> Start)
-const CLASS_HP := {"fighter": 12, "ranger": 10, "rogue": 8}   # PLACEHOLDER (06 -> Start)
+const CLASS_HP := {"fighter": 12, "ranger": 10, "rogue": 8, "wizard": 6}   # PLACEHOLDER (06 -> Start)
 
 
 static func of(id: String) -> Dictionary:

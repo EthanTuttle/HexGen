@@ -33,8 +33,17 @@ const ALL := {
 	"action_surge": {"n": "Action Surge", "src": "klass", "ap": 1, "kind": "self", "limit": "fight", "icon": "bolt", "effect": "surge", "desc": "Fighter: gain 3 bonus AP this turn (net +2)."},
 	"trip": {"n": "Trip", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "trip", "rider": "prone", "desc": "Staff: knock an enemy prone."},
 	"ward": {"n": "Ward", "src": "weapon", "ap": 1, "kind": "self", "limit": "turn", "icon": "ward", "effect": "ward", "desc": "Staff: a small magic shield."},
-	"firebolt": {"n": "Firebolt", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 5, "ranged": true, "icon": "fire", "bonus": 1, "desc": "Blaster spell: one heavy-hitting shot. Flip to hit."},
-	"frost_ray": {"n": "Frost Ray", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 5, "ranged": true, "icon": "snow", "rider": "slow", "slow": Rules.FROST_SLOW, "desc": "Blaster spell: damage, and the foe is slowed on a hit."},
+	"firebolt": {"n": "Firebolt", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": Rules.SPELL_RANGE, "ranged": true, "ab": "INT", "icon": "fire", "bonus": 1, "desc": "Blaster spell: one heavy-hitting shot. Flip to hit."},
+	"frost_ray": {"n": "Frost Ray", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": Rules.SPELL_RANGE, "ranged": true, "ab": "INT", "icon": "snow", "rider": "slow", "slow": Rules.FROST_SLOW, "desc": "Blaster spell: damage, and the foe is slowed on a hit."},
+	# The Wizard's other level-1 spells (03 -> Wizard spells; numbers: Wizard level-1 placeholders; text: Ethan, Nov 6, 2026).
+	# conc: a concentration spell (03); hp: an HP cost on top of the AP.
+	"shocking_grasp": {"n": "Shocking Grasp", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "ab": "INT", "rider": "push", "icon": "bolt", "desc": "Blaster spell: a melee jolt that pushes the foe 1 hex away."},
+	"animated_blade": {"n": "Animated Blade", "src": "klass", "ap": 2, "kind": "cell", "limit": "turn", "range": 1, "effect": "summon", "conc": true, "icon": "sword", "desc": "Summoner spell: a floating sword appears beside you and fights for you."},
+	"wisp": {"n": "Wisp", "src": "klass", "ap": 2, "kind": "cell", "limit": "turn", "range": 1, "effect": "summon", "conc": true, "icon": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4 0 0 1 4 4", "desc": "Summoner spell: a small bound soul appears beside you; it flies and zaps foes at range."},
+	"mirror_image": {"n": "Mirror Image", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "effect": "mirror", "save": "INT", "icon": "M8 4a3 3 0 1 0 0 6a3 3 0 1 0 0-6 M16 4a3 3 0 1 0 0 6a3 3 0 1 0 0-6 M3 20c0-4 2-7 5-7s5 3 5 7 M11 20c0-4 2-7 5-7s5 3 5 7", "desc": "Deceiver spell: 2 copies of you appear; foes may hit a copy instead. INT save."},
+	"phantom_ally": {"n": "Phantom Ally", "src": "klass", "ap": 2, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "phantom", "save": "INT", "icon": "M6 20V10a6 6 0 0 1 12 0v10l-2-2-2 2-2-2-2 2-2-2z M10 10h.01 M14 10h.01", "desc": "Deceiver spell: a fake party member that foes chase and attack. INT save."},
+	"blood_bolt": {"n": "Blood Bolt", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": Rules.SPELL_RANGE, "ranged": true, "ab": "INT", "bonus": 2, "hp": Rules.BLOOD_BOLT_HP, "icon": "M12 3c3 4 6 8 6 11a6 6 0 0 1-12 0c0-3 3-7 6-11z", "desc": "Ritualist spell: pay 2 HP for a strong hit."},
+	"warding_circle": {"n": "Warding Circle", "src": "klass", "ap": 2, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "circle", "conc": true, "icon": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7l4 7H8z", "desc": "Ritualist spell: a circle of 7 hexes; allies in it take 1 less damage."},
 	"bonebreaker": {"n": "Bonebreaker", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "mace", "rider": "slow", "slow": Rules.BONEBREAKER_SLOW, "desc": "Mace: lower enemy movement."},
 	"sacred_flame": {"n": "Sacred Flame", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": 5, "save": "DEX", "icon": "flame", "desc": "Order of Light: radiant damage. The target makes a DEX save."},
 	"bless": {"n": "Bless", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": 5, "icon": "star", "effect": "bless", "desc": "Order of Good: an ally flips an extra coin on its next check."},
@@ -79,6 +88,9 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 	if id == "attack":
 		c.icon = WEAPON_ICON.get(weapon, "w_" + weapon if CreatorData.IC.has("w_" + weapon) else "sword")   # the creator's weapon icon otherwise
 		c.desc = c.desc % weapon
+		if weapon == "wand":   # a wand's basic attack is Magic Bolt, a basic ranged spell (04)
+			c.n = "Magic Bolt"
+			c.desc = "Wand: a basic ranged spell."
 	if CreatorData.PI.has(c.get("icon", "")) and not Icons.PATHS.has(c.icon):
 		c.icon = CreatorData.PI[c.icon]
 	elif CreatorData.IC.has(c.get("icon", "")) and not Icons.PATHS.has(c.icon):

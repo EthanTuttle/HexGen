@@ -339,10 +339,10 @@ func _play_fight() -> void:
 	if bot == null:
 		bot = FightBot.new(get_tree())
 	if band == 3 and first_far.is_empty():
-		first_far = {fights_before = fights - 1, won_before = game.fights_won, level = game.level, party = f.allies().size(), day = game.day, regions = game.regions.size()}
+		first_far = {fights_before = fights - 1, won_before = game.fights_won, level = game.level, party = f.allies().filter(func(u): return not Fight.is_summon(u)).size(), day = game.day, regions = game.regions.size()}
 	var r := await bot.play(f)
 	drunk = bot.drunk
-	print("PLAY FIGHT party %d band %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().size(), band, roles, r.rounds, r.hp0, r.hp1, r.downs, ", WIPED" if r.wiped else ""])
+	print("PLAY FIGHT party %d band %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().filter(func(u): return not Fight.is_summon(u)).size(), band, roles, r.rounds, r.hp0, r.hp1, r.downs, ", WIPED" if r.wiped else ""])
 	wipes += 1 if r.wiped else 0
 
 

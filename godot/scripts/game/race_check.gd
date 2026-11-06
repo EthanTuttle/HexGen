@@ -401,7 +401,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_check(dh.call("none", "", {"DEX": 1}) == 1 and dh.call("none", "", {"DEX": 2}) == 1 and dh.call("none", "", {"DEX": 3}) == 2 and dh.call("none", "", {"DEX": 6}) == 3,
 		"armour: Clothes DEX 1-2 needs 1, DEX 3 needs 2, DEX 6 needs 3")
 	_check(_who("Fluffy").heads == 1 and _who("Chelmsford").heads == 3 and _who("Mel").heads == 1, "companions: Fluffy and Mel in Clothes (DEX 2: 1 heads), Chelmsford Armoured with a shield (CON 2: 3)")
-	_check(hero.cards.filter(func(id): return not id in Races.cards(m)) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card)")
+	_check(hero.cards.filter(func(id): return not id in Races.cards(m) and not id in game.run.spells) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card and spell picks)")
 	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
 	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])
 	_clear_round(s, [])
@@ -456,6 +456,8 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the snare ends after its next turn")
 	if m.klass == "rogue":
 		await _rogue_checks(hero, fluffy, foe, s, d)
+	if m.klass == "wizard":
+		await _wizard_checks(hero, fluffy, foe, s, d)
 	if Fight.dual_wields(hero):
 		await _dual_checks(hero, fluffy, foe, s, d)
 	await _weapon_card_checks(hero, fluffy, foe, s, d)
@@ -514,6 +516,158 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 		_check(f.behind(hero, foe) and off_hit == _offhand_damage(hero), "flanked and from behind with a dagger: %d (%d doubled, + %d Backstab)" % [hp - foe.hp, plain, Rules.BACKSTAB])
 	foe.max_hp = tough
 	_fresh(foe)
+	_place(fluffy, s - dv * 3)
+
+
+## The Wizard (06 -> Start; 03 -> Wizard spells and Wizard level-1 placeholders, Ethan, Nov 6, 2026): Clothes, 6 HP, the
+## hills and ruins deck, the two picks on the bar; spell damage from INT; summons, concentration, Warding Circle and the
+## decoys, the foes' side played by the real enemy phase.
+func _wizard_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var smart: int = Races.score(m, "INT")
+	var all := [true, true, true, true, true, true, true, true, true, true, true, true]
+	_check(not Weapons.armoured(m.armour) and Weapons.CLASS_HP.wizard == 6, "the Wizard wears Clothes and starts on 6 HP")
+	_check(game.run.spells.size() == 2 and game.run.spells.all(func(id): return id in hero.cards and id in hero.hot), "the Wizard's two picks are on the bar: %s" % [hero.hot])
+	var run := RunSetup.new()
+	run.klass = "wizard"
+	run.background = "noble"
+	_check(run.deck_cards().get("hills", 0) == 6 and run.deck_cards().get("ruins", 0) == 6 and run.deck_cards().get("farmland", 0) == 6, "the Wizard's deck: hills 5, ruins 5, plus the background's (and one of each)")
+	var bolt := Cards.get_card("attack", "wand")
+	_check(bolt.n == "Magic Bolt" and bolt.range == Rules.SPELL_RANGE and bolt.ranged and Weapons.of("wand").ab == "INT", "a wand's basic attack is Magic Bolt: ranged, %d hexes, INT" % bolt.range)
+	var tough: int = foe.max_hp
+	_clear_round(s, [])
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	_place(hero, s)
+	_place(foe, s + dv * 3)
+	# Damage spells: INT plus the card's bonus (Firebolt +1, Blood Bolt +2); Blood Bolt costs 2 HP and can't take you to 0.
+	for row: Array in [["firebolt", 1], ["frost_ray", 0], ["blood_bolt", 2]]:
+		var hp: int = foe.hp
+		var mine: int = hero.hp
+		await _play(hero, row[0], foe.cell, all)
+		_check(hp - foe.hp == smart + row[1], "%s deals INT %d + %d: %d" % [row[0], smart, row[1], hp - foe.hp])
+		if row[0] == "blood_bolt":
+			_check(mine - hero.hp == Rules.BLOOD_BOLT_HP, "Blood Bolt costs %d HP" % (mine - hero.hp))
+		if row[0] == "frost_ray":
+			_check(f.on(foe, "slowed"), "Frost Ray slows on a hit")
+	hero.hp = Rules.BLOOD_BOLT_HP
+	_turn(hero)
+	_check(f.cant_use(hero, f.card("blood_bolt")) == "Not enough HP", "Blood Bolt can't be cast on %d HP" % hero.hp)
+	_fresh(hero)
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	_place(foe, s + dv)
+	var hp0: int = foe.hp
+	await _play(hero, "shocking_grasp", foe.cell, all)
+	_check(hp0 - foe.hp == smart and foe.cell == s + dv * 2, "Shocking Grasp: INT %d damage, and the foe is pushed 1 hex" % (hp0 - foe.hp))
+	# Summons: an empty hex beside you, the player's to act with from this turn, 2 AP; they hit with the caster's INT coins.
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(foe, s + dv * 4)
+	await _play(hero, "animated_blade", s + dv, [])
+	var blade := f.unit_at(s + dv)
+	_check(not blade.is_empty() and Fight.is_summon(blade) and blade.hp == 4 and blade.ap == Rules.SUMMON_AP and hero.conc.get("unit", {}) == blade,
+			"Animated Blade: beside you, 4 HP, 2 AP this turn, held by concentration")
+	_check(f.allies().has(blade) and f.foes_of(foe).has(blade), "a summon is an ally, and foes can pick it as a target")
+	_fresh(foe)
+	_place(foe, s + dv * 2)
+	_check(f.attack_coins(blade, foe, Cards.get_card("attack", blade.weapon)) == smart, "the Blade flips the caster's INT coins (%d)" % smart)
+	hp0 = foe.hp
+	await _play(blade, "attack", foe.cell, all)
+	_check(hp0 - foe.hp == 2, "the Blade hits for 2: %d" % (hp0 - foe.hp))
+	_place(fluffy, s + dv * 3)
+	_check(f._flanked(fluffy, foe), "a summon next to the foe flanks it")
+	_place(fluffy, s - dv * 4)
+	_turn(hero)
+	var spot: Vector2i = f.cell_options(hero, Cards.get_card("wisp"))[0]
+	await _play(hero, "wisp", spot, [])
+	var wisp := f.unit_at(spot)
+	_check(not blade in f.units and not wisp.is_empty() and hero.conc.id == "wisp", "a new summon ends the old one: one at a time")
+	_check(wisp.hp == 2 and wisp.member.flies and Cards.get_card("attack", wisp.weapon).range == 4, "Wisp: 2 HP, flies, zaps at 4 hexes")
+	await f._hurt(hero, hero.hp)
+	_check(hero.down and not wisp in f.units and hero.conc.is_empty(), "the caster going down ends the summon")
+	_fresh(hero)
+	await _play(hero, "animated_blade", s + dv, [])
+	blade = f.unit_at(s + dv)
+	await f._hurt(blade, blade.hp)
+	_check(not blade in f.units and hero.conc.is_empty(), "a destroyed summon is gone, and so is the concentration")
+	# Warding Circle: 7 hexes within 5; allies inside take 1 less a hit; another concentration spell ends it.
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(foe, s + dv)
+	await _play(hero, "warding_circle", s, [])
+	var ring: int = 1 + Hex.NEIGHBOURS.filter(func(n): return f.grid.has(s + n)).size()   # fewer at the map's edge
+	_check(f.circles.has(hero.name) and f.circles[hero.name].cells.size() == ring and f.warded(hero), "Warding Circle: the hex and its neighbours on the map (%d)" % ring)
+	var spear := Cards.get_card("attack", "spear")
+	var mine: int = hero.hp
+	Coins.forced.assign(all)
+	await f._one_attack(foe, hero, spear)
+	var inside: int = mine - hero.hp
+	hero.hp = hero.max_hp
+	_place(hero, s + dv * 3)
+	_place(foe, s + dv * 4)
+	mine = hero.hp
+	Coins.forced.assign(all)
+	await f._one_attack(foe, hero, spear)
+	var outside: int = mine - hero.hp
+	Coins.forced.clear()
+	_check(outside - inside == Rules.WARDING_LESS, "inside the circle a foe's hit does %d less (%d, outside %d)" % [Rules.WARDING_LESS, inside, outside])
+	hero.hp = hero.max_hp
+	_place(hero, s)
+	_turn(hero)
+	await _play(hero, "animated_blade", f.cell_options(hero, Cards.get_card("animated_blade"))[0], [])
+	_check(not f.circles.has(hero.name), "casting a summon ends the circle")
+	f._end_conc(hero)
+	# Decoys, against the real enemy phase with one foe left standing.
+	var others := f.units.filter(func(u): return not u.ally and u != foe and not u.down)
+	for u in others:
+		u.down = true
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(foe, s + dv)
+	_fresh(foe)
+	var room: int = Hex.NEIGHBOURS.filter(func(n): return f.grid.has(s + n) and f.grid[s + n].kind in ["open", "brush"] and f.unit_at(s + n).is_empty()).size()
+	await _play(hero, "mirror_image", null, [])
+	var copies := f.units.filter(func(u): return u.decoy == "mirror")
+	_check(copies.size() == mini(Rules.MIRROR_COPIES, room) and copies.size() > 0 and copies.all(func(c): return Rules.hex_distance(c.cell, s) == 1),
+			"Mirror Image: %d copies on the free hexes next to you (%d free)" % [copies.size(), room])
+	_check(not f.allies().any(func(u): return u.decoy != "") and not f.foes_of(foe).any(func(u): return u.decoy != ""), "decoys aren't allies: no flanking, and foes don't pick them by themselves")
+	mine = hero.hp
+	Coins.forced.assign([false, false])   # the foe's INT save fails
+	await f._enemy_phase()
+	Coins.forced.clear()
+	_check(hero.hp == mine and f.units.filter(func(u): return u.decoy == "mirror").size() == copies.size() - 1, "a foe that fails its INT save hits a copy, which pops")
+	_fresh(foe)
+	Coins.forced.assign([true, true] + all)   # it sees through, and hits
+	await f._enemy_phase()
+	Coins.forced.clear()
+	_check(hero.hp < mine, "a foe that passes it hits you")
+	for u in f.units.duplicate():
+		if u.decoy != "":
+			f._vanish(u)
+	hero.hp = hero.max_hp
+	_fresh(foe)
+	_place(foe, s + dv * 4)
+	await _play(hero, "phantom_ally", s + dv * 2, [])
+	var phantom := f.unit_at(s + dv * 2)
+	_check(not phantom.is_empty() and phantom.decoy == "phantom", "Phantom Ally stands on an empty hex within 5")
+	mine = hero.hp
+	Coins.forced.assign([false, false] + all)   # fooled: it goes for the phantom
+	await f._enemy_phase()
+	Coins.forced.clear()
+	_check(not phantom in f.units and hero.hp == mine, "a fooled foe goes for the phantom, and one hit pops it")
+	await _play(hero, "phantom_ally", s + dv * 2, [])
+	phantom = f.unit_at(s + dv * 2)
+	await f._hurt(phantom, 0)
+	_check(not phantom in f.units, "an area hit pops it too")
+	for u in others:
+		u.down = false
+	foe.max_hp = tough
+	_fresh(foe)
+	_fresh(hero)
 	_place(fluffy, s - dv * 3)
 
 

@@ -20,6 +20,8 @@ static func make(name: String, at_plan: Vector2, facing_plan: Vector2) -> Node3D
 static func _mesh(name: String) -> Mesh:
 	if name == "standin_hero" and Hero.current != null:   # the hero made in the creator
 		return HeroMini.mesh_for(Hero.current)
+	if name.begins_with("summon_"):
+		return _summon_mesh(name)
 	if name.begins_with("standin_"):
 		var standins := Kit.meshes("res://art/standin_minis.glb")
 		Kit.combat_materials(standins)   # their colours are in the vertices too, since the art's facing fix
@@ -33,6 +35,58 @@ static func _mesh(name: String) -> Mesh:
 			return kit[name]
 	push_error("no mini %s" % name)
 	return null
+
+
+## The Wizard's summons (03 -> Summoner), built here until there's art: PLACEHOLDER looks. The Animated Blade floats point
+## down; the Wisp is a glowing orb with a small one trailing.
+static var _summons := {}
+
+
+static func _summon_mesh(name: String) -> Mesh:
+	if _summons.has(name):
+		return _summons[name]
+	var am := ArrayMesh.new()
+	if name == "summon_blade":
+		_part(am, _box(Vector3(0.09, 0.78, 0.025)), Vector3(0, 0.78, 0), Color("#D3D8DF"))   # the blade
+		_part(am, _box(Vector3(0.34, 0.05, 0.07)), Vector3(0, 1.19, 0), Color("#C8A24A"))    # crossguard
+		_part(am, _box(Vector3(0.05, 0.2, 0.05)), Vector3(0, 1.31, 0), Color("#5A3A26"))     # grip
+		_part(am, _ball(0.045), Vector3(0, 1.43, 0), Color("#C8A24A"))                         # pommel
+	else:
+		_part(am, _ball(0.2), Vector3(0, 0.95, 0), Color("#BFE6FF"), true)
+		_part(am, _ball(0.08), Vector3(0.12, 0.66, -0.16), Color("#BFE6FF"), true)
+	_summons[name] = am
+	return am
+
+
+static func _box(s: Vector3) -> PrimitiveMesh:
+	var b := BoxMesh.new()
+	b.size = s
+	return b
+
+
+static func _ball(r: float) -> PrimitiveMesh:
+	var b := SphereMesh.new()
+	b.radius = r
+	b.height = r * 2.0
+	b.radial_segments = 12
+	b.rings = 6
+	return b
+
+
+static func _part(am: ArrayMesh, shape: PrimitiveMesh, at: Vector3, col: Color, glow := false) -> void:
+	var arrays := shape.get_mesh_arrays()
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	for i in verts.size():
+		verts[i] += at
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	if glow:
+		mat.emission_enabled = true
+		mat.emission = col
+		mat.emission_energy_multiplier = 1.2
+	am.surface_set_material(am.get_surface_count() - 1, mat)
 
 
 ## The cells a giant stands on, as offsets from its anchor at turn 0 (art/handoff/combat_forest_kit.md); one cell for anyone else.
