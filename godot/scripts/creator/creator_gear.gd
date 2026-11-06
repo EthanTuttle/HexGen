@@ -23,7 +23,7 @@ func _items() -> Array:
 	match slot:
 		"main": return c.allowed_weapons()
 		"off": return c.off_options()
-	var armour := [{"id": "none", "n": "No armour"}]
+	var armour := [{"id": "none", "n": "Clothes"}]   # an empty armour slot reads Clothes (04, Ethan, Nov 6, 2026)
 	for a: String in (["Light", "Medium", "Heavy"] if c.human() else c.cls_data().a):
 		armour.append({"id": a, "n": a + " armour"})
 	return armour
@@ -101,7 +101,7 @@ func _card() -> Control:
 	row.add_child(_slot_hex("main", "Main hand", mw.get("n", ""), D.IC[mw.i] if not mw.is_empty() else "", false, ""))
 	var empty_hand: bool = not off_item.is_empty() and off_item.id == "none"
 	row.add_child(_slot_hex("off", "Offhand", "Empty hand" if empty_hand else off_item.get("n", ""), off_icon if not off_item.is_empty() else "", c.main == "" or _off_crossed(), off_note))
-	var arm_name := "" if c.arm == "" else ("No armour" if c.arm == "none" else c.arm + " armour")
+	var arm_name := "" if c.arm == "" else ("Clothes" if c.arm == "none" else c.arm + " armour")
 	row.add_child(_slot_hex("arm", "Armour", arm_name, (D.IC.none if c.arm == "none" else D.IC.armour) if c.arm != "" else "", false, ""))
 	v.add_child(row)
 	card.add_child(v)

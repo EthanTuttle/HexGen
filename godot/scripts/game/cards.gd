@@ -63,6 +63,7 @@ const ALL := {
 	"pinning_bolt": {"n": "Pinning Bolt", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 6, "ranged": true, "rider": "snare", "icon": "w_crossbow", "desc": "Crossbow: root an enemy."},
 	"guard_up": {"n": "Guard Up", "src": "weapon", "ap": 1, "kind": "self", "limit": "turn", "effect": "guard", "icon": "w_gauntlets", "desc": "Gauntlets: take less damage until your next turn and counter the first hit."},
 	"haymaker": {"n": "Haymaker", "src": "weapon", "ap": 2, "kind": "attack", "limit": "turn", "range": 1, "times": 2, "rider": "haymaker", "save": "CON", "icon": "w_knuckles", "desc": "Brass knuckles: a big hit that can stun (CON save)."},
+	"disarm": {"n": "Disarm", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "rider": "disarm", "icon": "w_rapier", "desc": "Rapier: knock the enemy's weapon away."},
 	"step_strike": {"n": "Step and Strike", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "step": Rules.STEP_STRIKE_HEXES, "icon": "w_wraps", "desc": "Wraps: move a short way and strike."},
 	"poison_blade": {"n": "Poison Blade", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "drop", "effect": "poison", "desc": "Rogue: every hit for the rest of this turn poisons."},
 }

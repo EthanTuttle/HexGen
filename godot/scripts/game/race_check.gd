@@ -73,6 +73,7 @@ func _fresh(u: Dictionary) -> void:
 	u.hp = u.max_hp
 	u.down = false
 	u.lost_ap = 0
+	u.disarmed = false
 	f.board.stand(u.mini)
 	u.glow = -1
 	u.slowed = -1
@@ -429,8 +430,9 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		_check(hero.mark == foe and hero.ap == Rules.AP - 1, "Hunter's Mark: marked, 1 AP")
 		var hp: int = foe.hp
 		var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
-		await _play(hero, "attack", foe.cell, [true, true, true, true, true])
-		_check(hp - foe.hp == plain + Rules.MARK_DAMAGE, "a hit on the marked foe deals %d (%d + %d)" % [hp - foe.hp, plain, Rules.MARK_DAMAGE])
+		await _play(hero, "attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+		var off_marked: int = _offhand_damage(hero) + Rules.MARK_DAMAGE if Fight.dual_wields(hero) else 0   # the free offhand hit takes the Mark too
+		_check(hp - foe.hp == plain + Rules.MARK_DAMAGE + off_marked, "a hit on the marked foe deals %d (%d + %d, offhand %d)" % [hp - foe.hp, plain, Rules.MARK_DAMAGE, off_marked])
 		foe.down = true
 		_turn(hero)
 		hero.used["hunters_mark"] = true
@@ -454,6 +456,8 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the snare ends after its next turn")
 	if m.klass == "rogue":
 		await _rogue_checks(hero, fluffy, foe, s, d)
+	if Fight.dual_wields(hero):
+		await _dual_checks(hero, fluffy, foe, s, d)
 	await _weapon_card_checks(hero, fluffy, foe, s, d)
 
 
@@ -484,9 +488,9 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 	_place(fluffy, s - dv * 3)
 	foe.facing = _facing_from(foe, s)   # facing the Rogue: no Backstab
 	var hp: int = foe.hp
-	await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true])
+	await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
 	var off_hit: int = hp - foe.hp - plain
-	_check(off_hit == 0 or off_hit == _offhand_damage(hero), "Sneak Attack on a foe nobody flanks: %d (the weapon's %d)" % [hp - foe.hp, plain])
+	_check(off_hit == _offhand_damage(hero), "Sneak Attack on a foe nobody flanks: %d (the weapon's %d)" % [hp - foe.hp, plain])
 	# Flanked: doubled.
 	_fresh(foe)
 	foe.max_hp = 60
@@ -494,9 +498,9 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 	foe.facing = _facing_from(foe, s)
 	_place(fluffy, s + dv * (far + 1))
 	hp = foe.hp
-	await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true])
+	await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
 	off_hit = hp - foe.hp - plain * Rules.SNEAK_TIMES
-	_check(off_hit == 0 or off_hit == _offhand_damage(hero), "Sneak Attack on a flanked foe: %d (the weapon's %d doubled)" % [hp - foe.hp, plain])
+	_check(off_hit == _offhand_damage(hero), "Sneak Attack on a flanked foe: %d (the weapon's %d doubled)" % [hp - foe.hp, plain])
 	if hero.weapon == "dagger":
 		# From behind too: doubled, then Backstab's +2.
 		_fresh(foe)
@@ -505,12 +509,44 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 		foe.facing = (_facing_from(foe, s) + 3) % 6
 		hero.backstabbed = false
 		hp = foe.hp
-		await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true])
+		await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
 		off_hit = hp - foe.hp - (plain * Rules.SNEAK_TIMES + Rules.BACKSTAB)
-		_check(f.behind(hero, foe) and (off_hit == 0 or off_hit == _offhand_damage(hero)), "flanked and from behind with a dagger: %d (%d doubled, + %d Backstab)" % [hp - foe.hp, plain, Rules.BACKSTAB])
+		_check(f.behind(hero, foe) and off_hit == _offhand_damage(hero), "flanked and from behind with a dagger: %d (%d doubled, + %d Backstab)" % [hp - foe.hp, plain, Rules.BACKSTAB])
 	foe.max_hp = tough
 	_fresh(foe)
 	_place(fluffy, s - dv * 3)
+
+
+## Dual-wielding (04; Ethan, Nov 6, 2026): once a turn, right after a main-hand hit, the offhand makes a free attack on the
+## same foe at full strength; nothing after a miss.
+func _dual_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var plain: int = Races.score(m, Weapons.of(hero.weapon).ab)
+	var tough: int = foe.max_hp
+	hero.mark = {}
+	_clear_round(s, [])
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	_place(hero, s)
+	_place(foe, s + dv)
+	foe.facing = _facing_from(foe, s)
+	var hp: int = foe.hp
+	await _play(hero, "attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+	_check(hp - foe.hp == plain + _offhand_damage(hero) and hero.ap == Rules.AP - 1, "dual-wielding: a hit, then the offhand's free hit (%d + %d), for 1 AP" % [plain, _offhand_damage(hero)])
+	hp = foe.hp
+	Coins.forced.assign([true, true, true, true, true, true, true, true, true, true, true, true])
+	f.pick_card("attack")
+	await f.click_cell(foe.cell)
+	await f.press_button()
+	Coins.forced.clear()
+	_check(hp - foe.hp == plain, "the free hit comes once a turn (%d)" % (hp - foe.hp))
+	hp = foe.hp
+	await _play(hero, "attack", foe.cell, [false, false, false, false, false, false, true, true, true, true, true, true])
+	_check(hp - foe.hp == 0, "no free hit after a miss")
+	foe.max_hp = tough
+	_fresh(foe)
 
 
 ## The direction from u toward cell c (for setting a foe's facing).
@@ -521,9 +557,9 @@ func _facing_from(u: Dictionary, c: Vector2i) -> int:
 	return 0
 
 
-## The free offhand hit's damage, if the hero dual-wields (04), else 0.
+## The free offhand hit's damage, if the hero dual-wields (04), else 0: its own weapon's score, with no doubling or Backstab.
 func _offhand_damage(hero: Dictionary) -> int:
-	return 0
+	return Races.score(hero.member, f.offhand_card(hero).ab) if Fight.dual_wields(hero) else 0
 
 
 ## The hero's weapon's own card (04 -> Weapon category cards, Ethan's placeholders).
@@ -559,6 +595,20 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			await f.press_button()
 			Coins.forced.clear()
 			_check(hp - foe.hp == plain - Rules.QUICK_SLASH_LESS and hero.ap == 1, "and deals %d (1 less), costing nothing" % (hp - foe.hp))
+		"rapier":
+			await _play(hero, "disarm", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain + _offhand_damage(hero) and foe.lost_ap == Rules.DISARM_AP and foe.disarmed, "Disarm: a normal hit (%d) and the foe loses %d AP next turn" % [hp - foe.hp, foe.lost_ap])
+			_fresh(foe)
+			foe.lost_ap = 2
+			await _play(hero, "disarm", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(foe.lost_ap == 2, "with a bigger AP loss already on it, the larger counts")
+			_fresh(foe)
+			foe.disarmed = false
+			var look: String = foe.member.mini
+			foe.member.mini = "enemy_wolf"
+			await _play(hero, "disarm", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(foe.lost_ap == 0 and not foe.disarmed, "a wolf holds no weapon: Disarm only hits")
+			foe.member.mini = look
 		"scimitar":
 			_turn(hero)
 			_check(f.cant_use(hero, f.card("dancing_step")) != "", "Dancing Step waits for a scimitar attack")
@@ -625,13 +675,13 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			var coins: Array = [true]
 			for i in maxi(f.attack_coins(hero, foe, Cards.get_card("haymaker")) - 1, 0):
 				coins.append(false)
-			await _play(hero, "haymaker", foe.cell, coins + [false, false])
+			await _play(hero, "haymaker", foe.cell, coins + [false, false, false, false, false, false, false, false])   # the save, then the offhand misses
 			_check(hp - foe.hp == mini(hp, 2 * plain) and foe.lost_ap == Rules.HAYMAKER_AP, "Haymaker: double damage, and a failed CON save loses 1 AP")
 		"wraps":
 			_place(foe, s + dv * 3)
 			_check(f.in_reach(hero, foe, f.card("step_strike")), "Step and Strike reaches a foe 3 away")
-			await _play(hero, "step_strike", foe.cell, [true, true, true, true, true])
-			_check(f.dist(hero, foe) == 1 and hp - foe.hp == plain, "it steps next to it and hits")
+			await _play(hero, "step_strike", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(f.dist(hero, foe) == 1 and hp - foe.hp == plain + _offhand_damage(hero), "it steps next to it and hits (and the pair's free hit)")
 		"dagger":
 			_check(f.card("throw").range == Weapons.THROW_RANGE, "a thrown dagger reaches 4")
 	foe.max_hp = tough

@@ -12,7 +12,7 @@ const CAT := {
 	"greatsword": {"ab": "STR", "hands": "2", "range": 1, "cards": []},
 	"longsword": {"ab": "STR", "hands": "v", "range": 1, "cards": ["parry"]},
 	"shortsword": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["quick_slash"]},
-	"rapier": {"ab": "DEX", "hands": "1", "range": 1, "cards": []},
+	"rapier": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["disarm"]},
 	"scimitar": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["dancing_step"]},
 	"dagger": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["throw"]},
 	"battleaxe": {"ab": "STR", "hands": "v", "range": 1, "cards": ["throw"]},
