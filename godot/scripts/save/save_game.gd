@@ -26,7 +26,7 @@ const REBUILT := {
 		"canyon_stats", "_canyon_meshes", "_canyon_dirty", "_canyon_mat", "_gorge_rock", "_gorge_ground", "_fall_mat",
 		"_gorge_foam_mat", "_dressing_cache", "_surface_cache", "gorge_build_us", "marsh_job_ms", "marsh_data_us", "marsh_build_us",
 		"marsh_cover_us", "gorge_job_ms", "_feywild", "fey_job_ms", "fey_build_us", "_fey_material", "_fey_portal", "_marsh",
-		"_marsh_water", "_prop_arrays", "_marsh_glow", "_features", "_clip_mats", "time_of_day", "_time"],
+		"_marsh_water", "_prop_arrays", "_marsh_glow", "_features", "_clip_mats", "time_of_day", "_time", "cover_queue", "cover_view_first"],
 	"PartyWalker": ["map", "members", "walking", "peeled", "_path", "_len", "_heights", "_s", "_trail", "_s0", "_file_start",
 		"_file_end", "_tail", "speed_factor", "_raft", "_spans", "_span", "_landed", "_ride_t", "_riding", "free_out", "holding",
 		"_on_raft", "_raft_at", "_gaps", "_start_gaps", "_t", "_start_facing", "_end_facing", "_tile", "_idle_in", "_footprints",

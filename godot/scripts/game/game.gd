@@ -369,8 +369,11 @@ func _warm_up() -> void:
 	var heat := DesertFx.shimmer(Hex.to3(at, -3.0))
 	under.add_child(heat)
 	for _f in 3:
+		if not is_inside_tree():
+			break  # the scene was swapped (a load) before the warm-up finished
 		await get_tree().process_frame
-	under.queue_free()
+	if is_instance_valid(under):
+		under.queue_free()
 
 
 func _silhouette_material() -> ShaderMaterial:
