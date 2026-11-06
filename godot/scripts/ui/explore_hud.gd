@@ -15,7 +15,6 @@ var _toast: PanelContainer
 var _toast_text: Label
 var _clock_dial := ClockDial.new()
 var _clock_title: Label
-var _clock_sub: Label
 var _hand_count: Label
 var _hand_grid := Control.new()
 var _deck_n: HexShape
@@ -183,8 +182,8 @@ func hide_toast() -> void:
 
 
 # --- Day clock, heading the hand's panel -----------------------------------------
-# One tall panel: the clock on one line each, a divider, then the hand (Ethan, Nov 5, 2026: option B; design/07). Its own
-# panel ran into the hand's on the phone, as its text wrapped to four lines.
+# One tall panel: the dial and "Day 1 · Midday", a divider, then the hand (Ethan, Nov 5, 2026: option B, and no "Nightfall
+# in" line; design/07). Its own panel ran into the hand's on the phone, as its text wrapped to four lines.
 
 func _build_clock() -> void:
 	var h := HBoxContainer.new()
@@ -196,10 +195,7 @@ func _build_clock() -> void:
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_clock_title = UI.label("", "lilita", 14, UI.INK, 0, 1.1)
-	_clock_sub = UI.label("", "n800", 11, UI.INK_SOFT, 0, 1.25)
-	_clock_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # "Dawn in under a minute" takes two lines
 	v.add_child(_clock_title)
-	v.add_child(_clock_sub)
 	h.add_child(v)
 
 
@@ -549,16 +545,13 @@ func refresh() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Clock (mockup: Day N · phase; "Nightfall in N min" / "Dawn in N min")
+	# Clock: Day N · phase (the mockup's "Nightfall in N min" line is cut, design/07)
 	var m: float = game.minute
 	var night := m >= Rules.NIGHT_AT
 	_clock_dial.minute = m
 	_clock_dial.night = night
 	_clock_dial.queue_redraw()
-	var left := (Rules.DAY_MINUTES - m) if night else (Rules.NIGHT_AT - m)
 	_clock_title.text = "Day %d · %s" % [game.day, Rules.phase_name(m)]
-	_clock_sub.text = ("Dawn in " if night else "Nightfall in ") + ("under a minute" if left < 1 else "%d min" % ceili(left))
-	_clock_sub.add_theme_color_override("font_color", UI.RED if night or left <= 5 else UI.INK_SOFT)
 	# Banner and toast stay centred on x = 378 (the open area left of the hand column)
 	_banner.position = Vector2(378 - _banner.size.x * 0.5, 14)
 	if _toast.visible:
