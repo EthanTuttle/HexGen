@@ -1,15 +1,13 @@
 class_name ExploreHud
 extends Control
 ## The exploration screen's HUD, built from Explore v8b (mockups/exploration/Explore-v8b-Sleeve.dc.html),
-## in its 844 x 390 layout: party tray, Quests / equipment / nav buttons, prompt banner, toast, day clock,
+## in its 844 x 390 layout: party tray, Quests / menu / equipment buttons, prompt banner, toast, day clock,
 ## the hand in a side column, the encounter pop-up, and markers standing over the board.
 
 var game: Game
 
 var _tray := VBoxContainer.new()
-var _nav_row := HBoxContainer.new()
-var _cam_buttons := HBoxContainer.new()
-var _nav: HexShape
+var _menu: HexShape
 var _banner: PanelContainer
 var _banner_text: Label
 var _banner_cancel: Button
@@ -82,6 +80,8 @@ func _refresh_tray() -> void:
 		h.accessibility_name = m.name
 		h.tooltip_text = UI.effects_tip(m.name, m.get("effects", []))   # DOCS: Long-press on HUD controls
 		h.clickable = true
+		if m == game.party[0]:   # the hero's portrait recentres the camera on the party (design/07)
+			h.pressed.connect(game.camera_button.bind("center"))
 		var cc := CenterContainer.new()
 		cc.add_child(h)
 		v.add_child(cc)
@@ -89,50 +89,35 @@ func _refresh_tray() -> void:
 		_tray.add_child(v)
 
 
-# --- Quests, equipment and the nav button (left 22, top 260) -------------------
+# --- Quests, the menu and equipment (left 22, bottom 358) ----------------------
+# A zig-zag of touching hexes, the menu between and above the other two. The nav button is gone: the camera moves by
+# gestures, and tapping the hero's portrait recentres it (Ethan, Nov 5, 2026; design/07 -> Menu replaces the nav button).
+
+const HEX_GAP := 3.0
 
 func _build_buttons() -> void:
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
-	UI.at(col, 22, 260)
-	var quests := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("quests", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-	quests.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	quests.clickable = true
-	quests.accessibility_name = "Quests"
-	quests.pressed.connect(func(): game.toast("Not in the prototype yet", false))
-	col.add_child(quests)
-	_nav_row.add_theme_constant_override("separation", 6)
-	var gear := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("gear", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-	gear.clickable = true
+	var cluster := Control.new()
+	cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.at(cluster, 22, 275)
+	var spots := [Vector2(0, 37), Vector2(20 + HEX_GAP * 0.5, 0), Vector2(40 + HEX_GAP, 37)]   # Quests, menu, equipment
+	var quests := _hex_button("quests", "Quests", func(): game.toast("Not in the prototype yet", false))
+	var menu := _hex_button(SavePopups.MENU_ICON, "Menu", func(): PauseMenu.open(game))
+	var gear := _hex_button("gear", "Character and gear", func(): game.toast("Not in the prototype yet", false))
+	_menu = menu
 	_gear_button = gear
-	gear.accessibility_name = "Character and gear"
-	gear.pressed.connect(func(): game.toast("Not in the prototype yet", false))
-	_nav_row.add_child(gear)
-	_nav = HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon("nav", UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-	_nav.clickable = true
-	_nav.accessibility_name = "Camera controls"
-	_nav.pressed.connect(_toggle_nav)
-	_nav_row.add_child(_nav)
-	_cam_buttons.add_theme_constant_override("separation", 4)
-	_cam_buttons.visible = false
-	var spacer := Control.new()
-	spacer.custom_minimum_size.x = 0
-	_cam_buttons.add_child(spacer)
-	for b in [["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["rot_l", "Rotate left"], ["rot_r", "Rotate right"], ["center", "Center on the party"]]:
-		var h := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon(b[0], UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
-		h.clickable = true
-		h.accessibility_name = b[1]
-		h.pressed.connect(game.camera_button.bind(b[0]))
-		_cam_buttons.add_child(h)
-	_nav_row.add_child(_cam_buttons)
-	col.add_child(_nav_row)
-	add_child(col)
+	for k in 3:
+		var b: HexShape = [quests, menu, gear][k]
+		b.position = spots[k]
+		cluster.add_child(b)
+	add_child(cluster)
 
 
-func _toggle_nav() -> void:
-	_cam_buttons.visible = not _cam_buttons.visible
-	_nav.rim = UI.DARK if _cam_buttons.visible else UI.CREAM
-	_nav.with_icon("nav", UI.CREAM if _cam_buttons.visible else UI.INK, 18, 2.4)
+func _hex_button(icon: String, name: String, on_press: Callable) -> HexShape:
+	var h := HexShape.make(40, 46, UI.CREAM, UI.CREAM, 0).with_icon(icon, UI.INK, 18, 2.4).with_shadow(UI.HEX_SHADOW)
+	h.clickable = true
+	h.accessibility_name = name
+	h.pressed.connect(on_press)
+	return h
 
 
 # --- Banner (centred on x 378, top 14) and toast (bottom 16) -------------------

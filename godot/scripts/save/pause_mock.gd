@@ -36,6 +36,12 @@ func _button(x: float, y: float) -> HexShape:
 
 func _run() -> void:
 	await get_tree().create_timer(2.5).timeout
+	if "--built" in OS.get_cmdline_user_args():   # the HUD's own button, and the menu it opens
+		await _shot("7_built_cluster")
+		game.hud._menu.pressed.emit()
+		await _shot("8_built_menu")
+		get_tree().quit()
+		return
 	var a := _button(22, 214)      # a: on top of the left column, over Quests
 	await _shot("1a_button_left_column")
 	a.queue_free()
