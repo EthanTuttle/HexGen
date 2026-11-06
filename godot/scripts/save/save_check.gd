@@ -4,7 +4,7 @@ extends Node
 ## first-playable run (a creator hero, 2 in the party) is played by PlayCheck's moves; at several points it's saved to a slot,
 ## read back from disk, loaded into a fresh game scene and saved again, and the two must match field by field. The rebuilt map
 ## (gates, streets, cliffs, water, canyon mazes, slots) must match too, which catches state wrongly counted as rebuildable.
-## Then the debug map with every variant, the autosave ring, slots, a broken and a too-new file, two heroes of one name, delete,
+## Then the debug map with every variant, a grown canyon and raised region, the autosave ring, slots, a broken and a too-new file, two heroes of one name, delete,
 ## and every variable of Game, MapBoard and PartyWalker sorted into SaveGame's lists. Prints SAVE OK / SAVE FAIL lines and save
 ## timings, then SAVE DONE. Lives on the root, so it outlives each load. A test aid only.
 
@@ -24,6 +24,22 @@ class Driver extends PlayCheck:
 	func _ready() -> void:
 		game.debug_auto_cross = true
 		game.event_screen = Callable()
+
+
+## A hero as the creator makes one (its defaults, a Human Fighter with a longsword and shield), so the mini builds.
+static func test_hero(hero_name: String) -> Hero:
+	var c := Creator.new()
+	c.race = "Human"
+	c.cls = "Fighter"
+	c.bg = "Soldier"
+	c.hero_name = hero_name
+	c.main = "longsword"
+	c.off = "shield"
+	c.arm = "Medium"
+	var h := c.hero()
+	h.scores = {"STR": 3, "CON": 2, "DEX": 1}
+	c.free()
+	return h
 
 
 static func attach(g: Game) -> void:
@@ -63,13 +79,7 @@ func _run() -> void:
 	Saves.dir = CHECK_DIR
 	Saves.wipe_check_dir(CHECK_DIR)
 	_check_lists()
-	var hero := Hero.new()
-	hero.name = "Check"
-	hero.race = "Human"
-	hero.race_name = "Human"
-	hero.scores = {"STR": 3, "CON": 2, "DEX": 1}
-	hero.gear = {main = "longsword", off = "shield", armour = "Medium"}
-	Hero.current = hero
+	Hero.current = test_hero("Check")
 	get_tree().change_scene_to_file(Saves.GAME_SCENE)
 	await _new_game()
 	_check(game.party.size() == 2 and not game.run.wide_deck, "a real first-playable run: the hero and Fluffy, seed %s" % game.run.seed_text)

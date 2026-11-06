@@ -18,6 +18,8 @@ static func attach(game: Game) -> void:
 		(func():
 			SaveGame.apply(game, data)
 			SaveGame.resume(game)).call_deferred()
+	if "--loadprofile" in OS.get_cmdline_user_args():
+		LoadProfile.attach(game)
 	if "--savecheck" in OS.get_cmdline_user_args():
 		SaveCheck.attach(game)
 	if "--layoutmock" in OS.get_cmdline_user_args():

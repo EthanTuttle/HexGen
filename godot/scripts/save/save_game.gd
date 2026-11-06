@@ -167,6 +167,8 @@ static func apply(g: Game, data: Dictionary) -> void:
 	g.party_node.speed_factor = Rules.WOOD_ELF_WALK if Races.wood_elf_in(g.party) else 1.0
 	g.rig.frame(g.party_node.centre(), 58.0, 50.0)
 	print("LOAD %d tiles in %d ms" % [g.map.terrains.size(), Time.get_ticks_msec() - t0])
+	if LoadProfile.instance != null:
+		LoadProfile.profile.apply_total = float(Time.get_ticks_msec() - t0)
 
 
 static func _apply_map(g: Game, d: Dictionary) -> void:
@@ -191,16 +193,22 @@ static func restore_map(m: MapBoard, d: Dictionary, party_tile: Vector2i) -> voi
 	m.landmark_turns = d.landmark_turns.duplicate()
 	m.water_gates = d.water_gates.duplicate(true)
 	m._troll_water = d.troll_water.duplicate(true)
+	var t0 := Time.get_ticks_usec()
 	for key in d.raised_regions:
 		m.set_raised(key, d.raised_regions[key])
-	for lm: Vector2i in d.canyons:   # PLACEHOLDER: made again from its tiles (the save check compares the mazes)
+	for lm: Vector2i in d.canyons:   # from its saved maze: a canyon that grew can't be worked out again from its tiles
 		var region: Dictionary = d.regions[d.finished[lm]]
-		m.generate_canyon(region.get("canyon_tiles", region.tiles), lm)
+		var c: Dictionary = d.canyons[lm]
+		m._keep_canyon(Canyon.generate(region.get("canyon_tiles", region.tiles), lm, c.turn, GroundCover.hash01(lm.x, lm.y, 80), {}, c))
 	m.party_at = party_tile
 	var all := {}
 	for t: Vector2i in d.terrains:
 		all[t] = d.terrains[t]
-	m.retile(all)
+	if LoadProfile.instance != null:   # the load profile's timed copy of retile
+		LoadProfile.profile.canyons_raised = (Time.get_ticks_usec() - t0) / 1000.0
+		LoadProfile.restore_profiled(m, all)
+	else:
+		m.retile(all)
 
 
 ## The latest save of all heroes, or {} (the title's backdrop and Continue).

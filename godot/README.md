@@ -141,7 +141,7 @@ Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt detail
 | Place in a save's row | The finished region's name; on the starting tile the background's place; else the terrain's name | Same |
 | Load on a first launch | Hidden with Continue until a save exists | Title v11 always shows Load; an empty Load has nothing to show |
 | A hero's hex in Load | The hero's tray colour and initial | The mockup numbers them |
-| Canyons on load | Made again from their tiles | A canyon that grew was built in steps; its maze matches, its rock may differ slightly |
+| Canyons on load | Rebuilt from the saved maze (`Canyon.generate`'s `maze`), so walls and openings match exactly. A canyon that grew was built in steps, so its kept tiles' rock is drawn again from the whole maze and can look slightly different | Known look difference (planner, Nov 5); keeping each step's rock would mean saving the build history |
 
 ## Test notes
 
