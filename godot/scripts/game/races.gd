@@ -63,6 +63,11 @@ static func regrowth(m: Dictionary, level: int) -> int:
 
 
 ## Extra max HP from being a shield dwarf, at this level.
+## Max HP a level adds (06 -> Levels, Ethan, Nov 6, 2026, PLACEHOLDER): the class's amount plus half CON rounded up.
+static func level_hp(m: Dictionary) -> int:
+	return int(Rules.HP_PER_LEVEL.get(m.get("klass", Rules.COMPANION_CLASS.get(m.get("name", ""), "fighter")), 0)) + ceili(score(m, "CON") / 2.0)
+
+
 static func extra_hp(m: Dictionary, level: int) -> int:
 	return Rules.SHIELD_DWARF_HP + Rules.SHIELD_DWARF_HP_LEVEL * (level - 1) if is_sub(m, "Shield dwarf") else 0
 
@@ -102,6 +107,7 @@ static func make_hero(m: Dictionary, run: RunSetup) -> void:
 	m.sub = run.sub if run.race != "" else Rules.HERO_DEFAULT.sub
 	m.spell = run.elf_spell
 	m.scores = run.scores.duplicate() if not run.scores.is_empty() else Rules.HERO_DEFAULT.scores.duplicate()
+	Hero.live = m.scores
 	m.proficiencies = run.proficiencies.duplicate()
 
 
@@ -133,7 +139,10 @@ static func join(m: Dictionary, level: int) -> void:
 		if not id in m.cards:
 			m.cards.append(id)
 	m.hot = starting_bar(m)
-	m.hp += extra_hp(m, level)
+	for l: int in Rules.SCORE_LEVELS:   # joining late: the points already passed, on the main score, capped (03, Ethan, Nov 6, 2026)
+		if l <= level:
+			m.scores[m.ability] = mini(score(m, m.ability) + 1, LevelPick.CAP)
+	m.hp += extra_hp(m, level) + level_hp(m) * (level - 1)   # joining at the party's level, with its levels' HP
 	m.max_hp = m.hp
 	if lucky(m):
 		m.lucky = Rules.LUCKY_CHARGES

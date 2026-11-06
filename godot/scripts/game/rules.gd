@@ -205,6 +205,10 @@ const PARTY := [
 ## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
 ## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.
 const HOTBAR_SLOTS := 7                  # DOCS (design/07 -> Combat screen, Nov 5, 2026); the starting bar: Races.starting_bar
+const HP_PER_LEVEL := {"fighter": 3, "cleric": 3, "ranger": 2, "rogue": 2, "wizard": 1, "bard": 1}   # PLACEHOLDER (06 -> Levels), + half CON up
+const COMPANION_CLASS := {"Fluffy": "wizard", "Chelmsford": "cleric", "Mel": "rogue"}   # for their HP a level (06)
+const SCORE_LEVELS := [4, 8, 12, 16]   # +1 to a score of the player's choice (03 -> Ability scores, 05 -> Levels and milestones)
+
 const HERO_DEFAULT := {"race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2}, "main": "longsword", "off": "shield", "armour": "Medium"}
 ## PLACEHOLDER armour (06: armour applies to everyone; companions' isn't set): Fluffy none (wizards wear none), Chelmsford
 ## medium (a cleric's heaviest), Mel light (a rogue's only); the default hero medium.

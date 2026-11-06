@@ -1105,8 +1105,8 @@ func _add_xp(n: int) -> void:
 		xp -= xp_needed()
 		level += 1
 		_picks += 1
-		for m in party:   # PLACEHOLDER (06): a shield dwarf's extra HP per level, current HP too
-			var more := Races.extra_hp(m, level) - Races.extra_hp(m, level - 1)
+		for m in party:   # PLACEHOLDER (06): the level's HP, and a shield dwarf's extra on top; current HP rises the same
+			var more := Races.level_hp(m) + Races.extra_hp(m, level) - Races.extra_hp(m, level - 1)
 			m.max_hp += more
 			m.hp += more
 
@@ -1126,10 +1126,16 @@ func _next_pick() -> void:
 	while options.size() < 3:
 		options.append(rest.pop_at(rng.randi_range(0, rest.size() - 1)))
 	_pick_options = options
-	level_pick.open(level - _picks + 1, options)
+	var at := level - _picks + 1
+	level_pick.open(at, options, party.duplicate() if at in Rules.SCORE_LEVELS else [])
 
 
-func level_picked(terrain: String) -> void:
+## The level's picks: the terrain card, and at levels 4, 8, 12 and 16 each member's ability point, by party index
+## (03 -> Ability scores; no score above LevelPick.CAP).
+func level_picked(terrain: String, points := {}) -> void:
+	for i: int in points:
+		var m: Dictionary = party[i]
+		m.scores[points[i]] = mini(Races.score(m, points[i]) + 1, LevelPick.CAP)
 	deck.hand.append(terrain)
 	_picks -= 1
 	level_pick.visible = false

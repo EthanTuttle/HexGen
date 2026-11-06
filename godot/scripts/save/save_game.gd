@@ -147,6 +147,7 @@ static func apply(g: Game, data: Dictionary) -> void:
 	g.fights_won = s.fights_won
 	g._encounter_count = s.encounter_count
 	g.party.assign(data.party)
+	Hero.live = g.party[0].scores
 	while g.party_node.members.size() < g.party.size():
 		g.party_node.add_member(g.party[g.party_node.members.size()].mini)
 	g.deck.draw_pile.assign(data.deck.draw)

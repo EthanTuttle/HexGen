@@ -4,6 +4,7 @@ extends RefCounted
 ## Game only needs name, klass, race, background and appearance. DOCS (First playable): race, background and looks are looks and names for now.
 
 static var current: Hero
+static var live := {}           # the run hero's scores now, with level-up points (Game's party[0].scores); checks read these
 
 var id := ""                    # the saves' folder (Saves): given at the first save, so two heroes of one name stay apart
 var name := "[Hero name]"
@@ -32,4 +33,4 @@ static func coins_for(ability: String, proficiency: String) -> int:
 	if current == null:
 		return {"STR": 2, "INT": 1, "CHA": 2}.get(ability, 1)
 	var armoured := 1 if proficiency == "Stealth" and Weapons.armoured(current.gear.get("armour", "")) else 0   # 04 -> Armour
-	return maxi(1, int(current.scores.get(ability, 1)) + (1 if proficiency in current.proficiencies else 0) - armoured)
+	return maxi(1, int((live if not live.is_empty() else current.scores).get(ability, 1)) + (1 if proficiency in current.proficiencies else 0) - armoured)

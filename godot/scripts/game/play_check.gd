@@ -131,7 +131,9 @@ func _check_sneak() -> void:
 	hero.scores = {"DEX": 2}
 	hero.proficiencies = ["Stealth"]
 	var before := Hero.current
+	var live := Hero.live
 	Hero.current = hero
+	Hero.live = hero.scores
 	_check(Hero.coins_for("DEX", "Stealth") == 3, "Sneak past's coins are the hero's DEX and Stealth")
 	hero.proficiencies = []
 	_check(Hero.coins_for("DEX", "Stealth") == 2, "an unskilled hero has DEX alone")
@@ -145,6 +147,7 @@ func _check_sneak() -> void:
 	game.rng.state = kept
 	_check(bad == 0, "the helper's one coin comes only on a miss by exactly 1")
 	Hero.current = before
+	Hero.live = live
 
 
 ## Says so if a tile beside the start can't be stepped to, or the party has no cards and nothing left to walk to (design/06: a run can't stick that way).
@@ -181,7 +184,7 @@ func _watch_start() -> void:
 func _settle() -> void:
 	while game.busy and not game.hud.encounter_open() and not game._ended:
 		if game.level_pick.visible:
-			game.level_picked(game._pick_options[0])
+			game.level_pick.bot_pick()
 		await get_tree().process_frame
 
 
@@ -259,6 +262,9 @@ func _tune() -> void:
 					Foes.level_heads[rv[0]] = Array(rv[1].split(",")).map(func(v): return v.to_int())
 
 
+var band_level := 1
+
+
 func _bands() -> void:
 	game.run.joins_after = []
 	var sizes := [2, 3, 4]
@@ -266,10 +272,23 @@ func _bands() -> void:
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--each="):
 			each = a.split("=")[1].to_int()
+		if a.begins_with("--atlevel="):   # the party at this level, each score increase on the member's main score
+			band_level = a.split("=")[1].to_int()
+	game.level = band_level   # companions join at it, with its HP (Races.join)
+	for m in game.party:   # joined at level 1: their levels' points and HP now (later joiners get both in Races.join)
+		for l: int in Rules.SCORE_LEVELS:
+			if l <= band_level:
+				m.scores[m.ability] = mini(Races.score(m, m.ability) + 1, LevelPick.CAP)
+		m.max_hp += Races.level_hp(m) * (band_level - 1) + Races.extra_hp(m, band_level) - Races.extra_hp(m, 1)
 	for size in sizes:
 		while game.party.size() < size:
 			game._add_member(game.party.size())
 			game.party_node.add_member(game.party[-1].mini)
+		for m in game.party:
+			if not m.has("base_scores"):
+				m.base_scores = m.scores.duplicate()
+				m.base_max_hp = m.max_hp
+		print("PLAY LEVEL %d: %s" % [band_level, ", ".join(game.party.map(func(m): return "%s %s HP %d" % [m.name, m.scores, m.max_hp]))])
 		await _band_fights(each)
 	print("PLAY DONE: %d failed" % failed)
 
@@ -278,7 +297,10 @@ func _band_fights(each: int) -> void:
 	for band in [1, 2, 3]:
 		Foes.debug_band = band
 		for k in each:
+			game.level = band_level
 			for m in game.party:
+				m.scores = m.base_scores.duplicate()   # a level-up inside the run's fights doesn't carry over
+				m.max_hp = m.base_max_hp
 				m.hp = m.max_hp
 			game.encounters.clear()
 			game.busy = false
@@ -296,9 +318,8 @@ func _band_fights(each: int) -> void:
 			game.after.done.emit()
 			while game.busy:
 				if game.level_pick.visible:
-					game.level_picked(game._pick_options[0])
+					game.level_pick.bot_pick()
 				await get_tree().process_frame
-			game.level = 1
 			game.xp = 0
 
 
@@ -341,5 +362,5 @@ func _answer() -> void:
 	while game.busy:
 		if game.level_pick.visible:
 			levels += 1
-			game.level_picked(game._pick_options[0])
+			game.level_pick.bot_pick()
 		await get_tree().process_frame

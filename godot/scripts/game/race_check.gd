@@ -208,6 +208,12 @@ func _run() -> void:
 		game.end_panel.visible = false
 		game.level_pick.open(2, ["plains", "forest", "river"])
 		await _shot("popup_level")
+		game.level_pick.open(4, ["plains", "forest", "river"], game.party.duplicate())
+		await _shot("popup_level4")
+		game.level_pick.place(String(game.party[0].ability))
+		await _shot("popup_level4_placed")
+		game.level_pick.next()
+		await _shot("popup_level4_fluffy")
 		get_tree().quit()
 		return
 	if "--panelshots" in OS.get_cmdline_user_args():
@@ -911,7 +917,7 @@ func _done() -> void:
 	game.after.done.emit()
 	while game.busy:
 		if game.level_pick.visible:
-			game.level_picked(game._pick_options[0])
+			game.level_pick.bot_pick()
 		await get_tree().process_frame
 	for m in game.party:
 		m.hp = m.max_hp
@@ -922,5 +928,74 @@ func _done() -> void:
 	if game.party[0].has("lucky"):
 		game.rest_here()
 		_check(game.party[0].lucky == Rules.LUCKY_CHARGES, "Lucky's charges come back on rest")
+	await _score_step_checks()
 	print("RACE DONE: %d failed" % failed)
 	get_tree().quit()
+
+
+## Score increases (03 -> Ability scores, Ethan, Nov 6, 2026): level 4's pick has each member place a point, one at a time,
+## hero first, none above 6; then the terrain.
+func _score_step_checks() -> void:
+	var hero: Dictionary = game.party[0]
+	var fluffy: Dictionary = game.party[1]
+	fluffy.scores.INT = LevelPick.CAP
+	game.level = 3
+	game.xp = 0
+	var before := game.party.map(func(m): return [m.max_hp, m.hp])
+	game._add_xp(game.xp_needed())
+	var grew := range(game.party.size()).map(func(i): return game.party[i].max_hp - before[i][0])
+	var want := game.party.map(func(m): return Races.level_hp(m) + Races.extra_hp(m, 4) - Races.extra_hp(m, 3))
+	_check(grew == want and range(game.party.size()).all(func(i): return game.party[i].hp - before[i][1] == grew[i]),
+			"level 4: max HP and HP grow by class plus half CON (%s)" % [grew])
+	_check(Races.level_hp({"klass": "fighter", "scores": {"CON": 2}}) * 3 + 12 == 24, "a CON 2 Fighter: 12 at level 1, 24 at level 4")
+	var fl_class := Races.level_hp({"name": "Fluffy", "scores": {"CON": 1}})
+	_check(fl_class == 2, "Fluffy levels as a Wizard (+1, +1 for CON 1)")
+	game._next_pick()
+	await _wait(0.2)
+	var lp := game.level_pick
+	_check(lp.visible and lp.step == 0 and lp._members.size() == game.party.size(), "level 4: each member places a point, hero first (%d)" % lp._members.size())
+	_check(lp.find_children("*", "HexShape", true, false).is_empty(), "level 4: the terrain cards come after the points")
+	lp.next()
+	_check(lp.step == 0, "level 4: Next waits for the point")
+	var dex := Races.score(hero, "DEX")
+	var con := Races.score(hero, "CON")
+	lp.place("CON")
+	lp.place("DEX")   # moved: only the last tile tapped gets it
+	await _shot("level4_hero")
+	lp.next()
+	_check(lp.step == 1, "level 4: on to Fluffy")
+	lp.back()
+	_check(lp.step == 0 and lp.placed.get(0, "") == "DEX", "level 4: Back returns to the hero, the point still placed")
+	lp.place("CON")
+	lp.place("DEX")
+	lp.next()
+	lp.place("INT")
+	_check(not lp.placed.has(1), "level 4: a score at 6 takes no point")
+	var tiles := lp.find_children("*", "Button", true, false).filter(func(x): return x.accessibility_name == "INT")
+	_check(tiles.size() == 1 and tiles[0].disabled, "level 4: Fluffy's INT tile at 6 is dimmed")
+	await _shot("level4_fluffy_capped")
+	var others := {}
+	for i in range(1, game.party.size()):
+		var k: String = "DEX" if i == 1 else String(game.party[i].ability)
+		others[i] = [k, Races.score(game.party[i], k)]
+		lp.place(k)
+		lp.next()
+	var hexes := lp.find_children("*", "HexShape", true, false)
+	_check(hexes.size() == 3 and hexes.all(func(h): return h.clickable), "level 4: then the terrain cards")
+	await _shot("level4_terrain")
+	var hand := game.deck.hand.size()
+	game.level_picked(game._pick_options[0], lp.placed)
+	_check(Races.score(hero, "DEX") == dex + 1 and Races.score(hero, "CON") == con, "level 4: hero DEX %d -> %d, CON unchanged" % [dex, Races.score(hero, "DEX")])
+	_check(others.keys().all(func(i): return Races.score(game.party[i], others[i][0]) == others[i][1] + 1), "level 4: each companion's point lands on its pick")
+	_check(Races.score(fluffy, "INT") == LevelPick.CAP, "level 4: Fluffy's INT stays at 6")
+	_check(game.deck.hand.size() == hand + 1, "level 4: the terrain card still goes into the hand")
+	_check(Hero.live == hero.scores, "checks outside combat read the levelled scores")
+	game._add_xp(game.xp_needed())
+	game._next_pick()
+	await _wait(0.2)
+	_check(lp._members.is_empty(), "level 5: no ability point")
+	var late: Dictionary = Rules.PARTY[3].duplicate(true)
+	Races.join(late, 8)
+	_check(Races.score(late, "DEX") == 4 and late.max_hp == Rules.PARTY[3].hp + Races.level_hp(late) * 7,
+			"Mel joining at level 8: DEX 2 -> 4 from the points passed, HP %d" % late.max_hp)
+	lp.bot_pick()
