@@ -168,3 +168,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-05 | `art/preview/beast_panther_solo_v2.png` | note | Panther v2: lay the scarf's back tail flat on the spine; eyes are too far apart |
 | 2026-11-05 | `art/preview/pose_check_glaive_closeup_v2.png` | note | Glaive blade rebuild approved; tighten the sweep so it stays closer to the cell |
 | 2026-11-05 | `art/preview/pose_check_round4_1_v1.png`, `pose_check_round4_2_v1.png` | note | Pose round 4. Approved (frozen): dagger, battleaxe 1H, both bows. Fix: brass knuckles, drop the rear elbow. Wraps: build a new open hand (flat palm, finger slab, thumb, flat wraps) for the wraps only; the approved caster palm stays. Glaive: sweep still to tighten |
+| 2026-11-05 | `art/preview/beast_panther_solo_v3.png`, `beast_panther_face_before_after_v2.png` | approved | Ally panther v3. Frozen; not exported until the hawk is done |
+| 2026-11-05 | `art/preview/pose_check_round4_1_v2.png` | note | Glaive sweep: keep the dynamic, but the forward hand reaches too far and grips the blade; bring it back onto the haft below the socket |
