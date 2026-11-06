@@ -111,7 +111,7 @@ var _feywild := {}                     # Feywild tile -> {key, region, tile}: Fe
 var fey_job_ms := 0                    # the last region's forest, off the main thread
 var fey_build_us := 0                  # test aid: time in _add_fey
 var _fey_material: StandardMaterial3D
-var _fey_portal: Mesh
+static var _fey_portal: Mesh   # static: the tile kit is shared, and the first map's split already took the portal out of it
 var _marsh := {}                       # swamp tile -> {key, tile}: SwampLands.marsh_tile's result and what it depended on
 var _marsh_water: StandardMaterial3D
 var _prop_arrays := {}                 # [piece, surface] -> its arrays
