@@ -22,10 +22,6 @@ static func attach(game: Game) -> void:
 		LoadProfile.attach(game)
 	if "--savecheck" in OS.get_cmdline_user_args():
 		SaveCheck.attach(game)
-	if "--layoutmock" in OS.get_cmdline_user_args():
-		var lm := LayoutMock.new()
-		lm.game = game
-		game.add_child(lm)
 	if "--pausemock" in OS.get_cmdline_user_args():
 		var mock := PauseMock.new()
 		mock.game = game
