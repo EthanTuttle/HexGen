@@ -217,6 +217,10 @@ func _run() -> void:
 		await _shot("popup_level4_fluffy")
 		get_tree().quit()
 		return
+	if "--wizardshots" in OS.get_cmdline_user_args():   # test aid: a Wizard's fight with a summon, both decoys and the circle
+		await _wizard_shots()
+		get_tree().quit()
+		return
 	if "--panelshots" in OS.get_cmdline_user_args():
 		await _panel_shots()
 		get_tree().quit()
@@ -669,6 +673,62 @@ func _wizard_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Ve
 	_fresh(foe)
 	_fresh(hero)
 	_place(fluffy, s - dv * 3)
+
+
+## Shots for Ethan (screens/race/wizard_*.png): Warding Circle under the party, the Animated Blade beside the Wizard with
+## its small portrait, Mirror Image's copies and a Phantom Ally out front; then a foe's turn against them.
+func _wizard_shots() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.units[0]
+	var open := func(c: Vector2i) -> bool: return f.grid.has(c) and f.grid[c].kind == "open" and not f.cover.has(c)
+	var s := Vector2i.ZERO
+	var d := 0
+	for c: Vector2i in f.grid:   # a spot with all 6 neighbours open and a clear line of 6 ahead, so the whole circle shows
+		for k in 6:
+			if Hex.NEIGHBOURS.all(func(n): return open.call(c + n)) and range(1, 7).all(func(i): return open.call(c + Hex.NEIGHBOURS[k] * i)):
+				s = c
+				d = k
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var foes := f.units.filter(func(u): return not u.ally)
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(_who("Fluffy"), s - dv)
+	for i in foes.size():
+		_place(foes[i], s + dv * (5 + i % 2) + Hex.NEIGHBOURS[(d + 1) % 6] * (i / 2))
+	var mid := f.global_position + f.cell_point(s + dv * 2)
+	await _play(hero, "warding_circle", s, [])
+	await _play(hero, "mirror_image", null, [])
+	await _play(hero, "phantom_ally", s + dv * 3, [])
+	_turn(hero)
+	f.pick_card("move")
+	game.rig.ease_to(mid, 19.0, game.rig.yaw_deg)
+	await _wait(1.2)
+	await _shot("wizard_circle_decoys")
+	game.rig.ease_to(f.global_position + f.cell_point(s), 9.0, game.rig.yaw_deg)
+	await _wait(1.0)
+	await _shot("wizard_copies_close")
+	var spots := f.cell_options(hero, Cards.get_card("animated_blade"))
+	spots.sort_custom(func(a, b): return Rules.hex_distance(a, s + dv * 5) < Rules.hex_distance(b, s + dv * 5))
+	await _play(hero, "animated_blade", spots[0], [])   # the summon ends the circle: one concentration at a time (03)
+	_turn(hero)
+	f.pick_card("move")
+	game.rig.ease_to(mid, 19.0, game.rig.yaw_deg)
+	await _wait(1.2)
+	await _shot("wizard_summon_decoys")
+	f.select(f.summon_of(hero))
+	f.pick_card("attack")
+	game.rig.ease_to(mid, 19.0, game.rig.yaw_deg)
+	await _wait(1.0)
+	await _shot("wizard_summon_turn")
+	_turn(hero)
+	f.pick_card("wisp")
+	await _wait(0.4)
+	await _shot("wizard_ends_prompt")
+	hero.hot[2] = "blood_bolt"
+	_turn(hero)
+	f.pick_card("blood_bolt")
+	await _wait(0.4)
+	await _shot("wizard_blood_bolt")
 
 
 ## Dual-wielding (04; Ethan, Nov 6, 2026): once a turn, right after a main-hand hit, the offhand makes a free attack on the

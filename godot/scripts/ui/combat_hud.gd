@@ -75,22 +75,22 @@ func _refresh_tray() -> void:
 	for c in _portraits.get_children():
 		_portraits.remove_child(c)
 		c.queue_free()
-	for u in fight.allies():
-		if Fight.is_summon(u):
-			continue
-		_portrait(u, false)
+	var party := fight.allies().filter(func(u): return not Fight.is_summon(u))
+	var tight: bool = party.size() >= 4 and party.any(func(u): return not fight.summon_of(u).is_empty())
+	_portraits.add_theme_constant_override("separation", 1 if tight else 4)   # a full party and a summon still fit the phone's height
+	for u in party:
+		_portrait(u, tight)
 		var s := fight.summon_of(u)
 		if not s.is_empty():   # a summon's small portrait hex under its caster's (03, Ethan, Nov 6, 2026)
-			_portrait(s, true)
+			_summon_portrait(s)
 
 
-## One portrait: hex, HP bar and AP pips; a summon's is smaller, with its 2 AP pips.
-func _portrait(u: Dictionary, small: bool) -> void:
+## One portrait: hex, HP bar and AP pips; tight, a little closer together.
+func _portrait(u: Dictionary, tight := false) -> void:
 	var on: bool = u == fight.current
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2 if small else 3)
-	var hw := 26.0 if small else 38.0
-	var h := HexShape.make(hw, hw * 44.0 / 38.0, UI.ORANGE if on else UI.RIM, Color(u.color), (3 if on else 2) if small else (4 if on else 3)).with_text(u.initial, 12 if small else 16).with_shadow(UI.HEX_SHADOW)
+	v.add_theme_constant_override("separation", 2 if tight else 3)
+	var h := HexShape.make(38, 44, UI.ORANGE if on else UI.RIM, Color(u.color), 4 if on else 3).with_text(u.initial, 16).with_shadow(UI.HEX_SHADOW)
 	h.clickable = true
 	h.accessibility_name = u.name
 	h.tooltip_text = UI.effects_tip(u.name, fight.effects(u))   # DOCS: Long-press on HUD controls
@@ -102,16 +102,15 @@ func _portrait(u: Dictionary, small: bool) -> void:
 	var cc := CenterContainer.new()
 	cc.add_child(h)
 	v.add_child(cc)
-	v.add_child(Bar.make(28 if small else 40, 4 if small else 5, Color("#E6DCC8"), UI.GREEN, float(maxi(u.hp, 0)) / u.max_hp, UI.HEX_SHADOW))
+	v.add_child(Bar.make(40, 5, Color("#E6DCC8"), UI.GREEN, float(maxi(u.hp, 0)) / u.max_hp, UI.HEX_SHADOW))
 	var pips := HBoxContainer.new()
 	pips.add_theme_constant_override("separation", 2)
 	pips.alignment = BoxContainer.ALIGNMENT_CENTER
-	# Bonus AP display (DOCS, combat v4d): always 3 pips; a blue lightning pip is worth 2, shown first. A summon's 2 (03).
+	# Bonus AP display (DOCS, combat v4d): always 3 pips; a blue lightning pip is worth 2, shown first.
 	var t: int = u.ap + u.bonus
-	var width := Rules.SUMMON_AP if small else 3
-	var bolts := mini(width, maxi(0, t - width))
-	var golds := mini(width, t) - bolts
-	for i in width:
+	var bolts := mini(3, maxi(0, t - 3))
+	var golds := mini(3, t) - bolts
+	for i in 3:
 		var col := Color("#3F8FC4") if i < bolts else (UI.GOLD if i < bolts + golds else Color("#6F5A41"))
 		var pip := HexShape.make(10, 11.5, col, col, 0)
 		if i < bolts:
@@ -120,6 +119,33 @@ func _portrait(u: Dictionary, small: bool) -> void:
 	v.add_child(pips)
 	_portraits.add_child(v)
 
+
+## A summon's portrait as one short row: its small hex, then its HP bar over its 2 AP pips.
+func _summon_portrait(u: Dictionary) -> void:
+	var on: bool = u == fight.current
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var h := HexShape.make(24, 28, UI.ORANGE if on else UI.RIM, Color(u.color), 3 if on else 2).with_text(u.initial, 12).with_shadow(UI.HEX_SHADOW)
+	h.clickable = true
+	h.accessibility_name = u.name
+	h.tooltip_text = UI.effects_tip(u.name, fight.effects(u))
+	h.pressed.connect(func():
+		fight.select(u)
+		_recentre(u))
+	row.add_child(h)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 3)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(Bar.make(24, 4, Color("#E6DCC8"), UI.GREEN, float(maxi(u.hp, 0)) / u.max_hp, UI.HEX_SHADOW))
+	var pips := HBoxContainer.new()
+	pips.add_theme_constant_override("separation", 2)
+	for i in Rules.SUMMON_AP:
+		var col := UI.GOLD if i < u.ap + u.bonus else Color("#6F5A41")
+		pips.add_child(HexShape.make(10, 11.5, col, col, 0))
+	v.add_child(pips)
+	row.add_child(v)
+	_portraits.add_child(row)
 
 class _EndHex extends Control:
 	signal pressed

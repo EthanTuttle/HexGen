@@ -502,7 +502,7 @@ func step_cost(u: Dictionary, a: Vector2i, b: Vector2i) -> int:
 			if not there.is_empty() and there != u:
 				return -1
 		return 1
-	if u.member.get("flies", false):   # the Wisp flies (03): over lava and rises alike, never through rock or anyone
+	if u.get("member", {}).get("flies", false):   # the Wisp flies (03): over lava and rises alike, never through rock or anyone
 		return 1 if _open(b) else -1
 	if not _open(b) or absf(rise) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
 		return -1
@@ -1598,7 +1598,7 @@ func _walk_on(u: Dictionary, path: Array) -> void:
 	u.facing = _dir_toward(path[-2] if path.size() > 1 else u.cell, path[-1])   # it faces the way it last moved
 	u.cell = path[-1]
 	refresh()
-	if u.member.get("flies", false) or not path.any(func(c): return grid[c].kind == "lava"):
+	if u.get("member", {}).get("flies", false) or not path.any(func(c): return grid[c].kind == "lava"):
 		await board.step_along(u.mini, path)
 		return
 	for c: Vector2i in path:
@@ -1618,7 +1618,7 @@ func _burn(u: Dictionary) -> void:
 
 
 func _in_lava(u: Dictionary) -> bool:
-	return not u.down and grid.has(u.cell) and grid[u.cell].kind == "lava" and not u.member.get("flies", false)
+	return not u.down and grid.has(u.cell) and grid[u.cell].kind == "lava" and not u.get("member", {}).get("flies", false)
 
 
 func _hurt(t: Dictionary, dmg: int) -> void:
@@ -1875,7 +1875,14 @@ func _decoy(u: Dictionary, c: Vector2i, kind: String) -> Dictionary:
 			ability = "INT", hp = 1, max_hp = 1, scores = {}, armour = "none", decoy = kind, copy_of = u.name, cards = []}
 	_add_unit(m, c, true, m.initial)
 	var d: Dictionary = units[-1]
-	(d.mini.get_node("body") as GeometryInstance3D).transparency = 0.35 if kind == "mirror" else 0.5
+	var body: MeshInstance3D = d.mini.get_node("body")
+	for i in body.mesh.get_surface_count():   # see-through, and the phantom pale blue
+		var mat := body.mesh.surface_get_material(i) as BaseMaterial3D
+		if mat:
+			var faded := mat.duplicate() as BaseMaterial3D
+			faded.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			faded.albedo_color = Color(1, 1, 1, 0.55) if kind == "mirror" else Color(0.72, 0.84, 1.0, 0.5)
+			body.set_surface_override_material(i, faded)
 	return d
 
 

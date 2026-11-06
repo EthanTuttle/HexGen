@@ -88,6 +88,8 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 	if id == "attack":
 		c.icon = WEAPON_ICON.get(weapon, "w_" + weapon if CreatorData.IC.has("w_" + weapon) else "sword")   # the creator's weapon icon otherwise
 		c.desc = c.desc % weapon
+		if weapon.begins_with("summon_"):   # a summon's own attack (03), not gear
+			c.desc = "Basic attack."
 		if weapon == "wand":   # a wand's basic attack is Magic Bolt, a basic ranged spell (04)
 			c.n = "Magic Bolt"
 			c.desc = "Wand: a basic ranged spell."
