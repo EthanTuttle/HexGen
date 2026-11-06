@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import build_hero_kit as hb  # noqa: E402
 import hexkit as hk  # noqa: E402
@@ -36,8 +36,8 @@ ROWS = [
     ("Shortsword", "one-handed", "Backhand slash ready", "shortsword", None, {}, "ROUND 3 (3): laid back over the off shoulder, pointing behind, edge out"),
     ("Rapier", "one-handed", "En garde, fencer's stance", "rapier", None, {}, "ROUND 3 (4): the back arm out, the forearm leaning forward"),
     ("Scimitar", "one-handed", "Mid-spin", "scimitar", None, {}, "ROUND 3 (5): the old shortsword pose, curved edge forward"),
-    ("Dagger", "one-handed", "Reverse grip, low crouch", "dagger", None, {}, "ROUND 3 (6): closer in front of the body, edge forward"),
-    ("Battleaxe", "one-handed", "Held low and loose", "battleaxe", None, {}, "ROUND 3: hanging at the side, the edge forward"),
+    ("Dagger", "one-handed", "Reverse grip, low crouch", "dagger", None, {}, "ROUND 4 (1): the blade angled about 45 degrees out from the body"),
+    ("Battleaxe", "one-handed", "Held low and loose", "battleaxe", None, {}, "ROUND 4 (2): same body; the head up, the hand a third down the haft, edge forward"),
     ("Battleaxe", "two-handed", "Executioner's raise, axe lifted overhead", "battleaxe", None, {"two": True}, "ROUND 3 (7): drawn back behind the head, edge forward"),
     ("Greataxe", "two-handed", "Carried on the shoulder", "greataxe", None, {}, "CHANGED (8): haft on the shoulder, one hand up, one low"),
     ("Mace", "one-handed", "Raised high (Chelmsford, minis v2a)", "mace", None, {}, f"kept; {ALL}"),
@@ -49,11 +49,11 @@ ROWS = [
     ("Staff", "caster, hand empty", "Staff planted, free hand raised as if casting", "staff", None, {"caster": True}, "NEW (12): casting pose, palm out"),
     ("Staff", "two-handed", "Quarterstaff guard, held across the body", "staff", None, {}, f"kept (martials); {ALL}"),
     ("Wand", "one-handed", "Arm extended, wand pointed at the foe", "wand", None, {}, "CHANGED (13): angled forward and out"),
-    ("Shortbow", "two-handed", "Drawn to the cheek, arrow nocked, body side-on; shared with the longbow", "shortbow", None, {}, "ROUND 3 (8): the arrow's line by the drawing cheek, the hand outside the head"),
-    ("Longbow", "two-handed", "The same drawn pose as the shortbow", "longbow", None, {}, "ROUND 3 (8): the same fix"),
+    ("Shortbow", "two-handed", "Drawn to the cheek, arrow nocked, body side-on; shared with the longbow", "shortbow", None, {}, "ROUND 4 (3): the drawing forearm straight from the elbow along the arrow, hand at the jaw"),
+    ("Longbow", "two-handed", "The same drawn pose as the shortbow", "longbow", None, {}, "ROUND 4 (3): the same fix"),
     ("Crossbow", "two-handed", "Stock at the shoulder, aiming", "crossbow", None, {}, f"kept; {ALL}"),
     ("Gauntlets", "both hands (fist)", "High guard, fists at the face", "gauntlets", None, {}, "CHANGED (15): fists at the chin, below the eyes"),
-    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 3 (9): rear fist at the shoulder, elbow back, more twist"),
+    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 4 (4): a cocked punch, the rear arm sharply bent, elbow back, fist by the ear"),
     ("Wraps", "both hands (fist)", "Martial-arts stance, palm forward, other hand at the hip", "wraps", None, {}, "ROUND 3 (10): the open palm wrapped too"),
     ("Offhand: shield", "on a longsword", "Held low at the side, facing forward", "longsword", "shield", {}, "ROUND 3: the longsword's new pose"),
     ("Offhand: second weapon", "a dagger, on a longsword", "Held back, ready, behind the main weapon", "longsword", "dagger", {}, "ROUND 3: the longsword's new pose, the dagger edge forward"),
@@ -203,9 +203,63 @@ def glaive_closeup(stem="pose_check_glaive_closeup"):
     print("SHEET", im.filepath_raw)
 
 
+def wraps_hand(stem="pose_check_wraps_hand"):
+    """The wraps hero's open hand, close: front, side, palm (from the foe's side) and back; side by side."""
+    tiles = []
+    desc = rh.hero("human", "average", "a", "short", S["skin"]["human"][1], S["hair"][1], S["eyes"][1], S["cloth"][1], "light", "wraps", None)
+    hand = None
+    for k, (spin, pitch) in enumerate(((0, 8), (-90, 8), (0, 60), (180, 8))):  # palm (toward the foe), side, above, back
+        hk.empty_scene()
+        t = rp.load_templates(rp.latest(os.path.join("minis", "heroes"), "hero_kit"))
+        for o in t.values():
+            o.hide_render = True
+        col = hk.new_collection("line")
+        hk.PALETTE["hero_ground"] = rh.GROUND
+        rh.floor(col)
+        rh.stand(t, col, desc, "h", at=(0, 0, 0), spin=0)
+        if hand is None:  # the open hand: the +x hand of the stance, in the assembler's own layout
+            right, _, _, pose = hb.grip_layout("human", "average", "wraps", None)
+            f = hb.frame("human", "average")
+            hip, drop, twist = f["hip"], pose.get("drop", 0.0), math.radians(pose.get("twist", 0))
+            upper = Matrix.Translation(Vector((0, 0, -drop))) @ Matrix.Translation(hip) @ Matrix.Rotation(twist, 4, "Z") @ Matrix.Translation(-hip)
+            k_ = hb.RACES["human"]["k"]
+            full = Matrix.Translation(Vector((0, 0, hb.Z0))) @ Matrix.Diagonal((k_, k_, k_, 1)) @ Matrix.Translation(Vector((0, 0, -hb.Z0)))
+            hand = full @ (upper @ right)
+        for o in col.objects:
+            if o.type == "MESH" and o.name != "ground":
+                o.rotation_euler.z = math.radians(spin)
+        target = Matrix.Rotation(math.radians(spin), 4, "Z") @ hand
+        view = f"{stem}_view{k}"
+        rh.shot(view, target, 0.42, pitch, (TILE, H_SHOT))
+        tiles.append(latest(view))
+    pixels = np.ones((H_SHOT, TILE * len(tiles), 4), dtype=np.float32)
+    for k, tile in enumerate(tiles):
+        pixels[:, k * TILE:(k + 1) * TILE] = tile
+    im = bpy.data.images.new(stem, TILE * len(tiles), H_SHOT, alpha=True)
+    im.pixels[:] = pixels.ravel().tolist()
+    im.filepath_raw = os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem)}.png")
+    im.file_format = "PNG"
+    im.save()
+    print("SHEET", im.filepath_raw)
+
+
 if __name__ == "__main__":
     if "glaive" in sys.argv:
         glaive_closeup()
+        sys.exit()
+    if "hand" in sys.argv:
+        wraps_hand()
+        sys.exit()
+    if "round4" in sys.argv:  # the changed panels of round 4 and their sheets
+        rows = (7, 8, 16, 20, 21, 24)
+        for i in rows:
+            name, grip, pose, weapon, offhand, extra, change = ROWS[i - 1]
+            if i != 16:  # the glaive panel is already rendered with this kit
+                shot(weapon, offhand, extra, f"pose_check_panel_{i:02d}")
+            text_strip([(f"{i}. {name}, {grip}", 0.62), (f"07: {pose}", 0.5), (kit_text(weapon, offhand, extra), 0.5), (change, 0.5)], f"pose_check_panel_{i:02d}_text")
+        stems = [f"pose_check_panel_{i:02d}" for i in rows]
+        for n in range(math.ceil(len(stems) / 3)):
+            sheet(stems[n * 3:n * 3 + 3], n + 1, out="pose_check_round4")
         sys.exit()
     if "round3" in sys.argv:  # the captions of this round's rows, then sheets of just those panels
         rows = (1, 2, 3, 4, 5, 6, 7, 8, 9, 20, 21, 24, 25, 26, 27)

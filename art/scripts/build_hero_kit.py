@@ -787,7 +787,7 @@ POSES = {
     "bow": dict(feet=((-0.12, -0.02), (0.12, 0.02)), twist=60, hips=55, head=1.0, world=True, poles={1: V((0.3, 1, -0.15)), -1: V((-0.2, 0.3, -1))}),
     "aim": dict(feet=((-0.12, -0.08), (0.12, 0.08)), drop=0.02, poles={1: V((0.7, 0.3, -0.6)), -1: V((-0.6, 0.0, -0.8))}),
     "guard": dict(feet=((-0.12, -0.1), (0.13, 0.1)), drop=0.04, poles={1: V((0.3, 0.1, -1)), -1: V((-0.3, 0.1, -1))}),
-    "haymaker": dict(feet=((-0.13, -0.12), (0.14, 0.12)), drop=0.04, twist=35, head=0.9, poles={1: V((0.3, 1, -0.1)), -1: V((-0.3, 0.2, -1))}),
+    "haymaker": dict(feet=((-0.13, -0.12), (0.14, 0.12)), drop=0.04, twist=35, head=0.9, poles={1: V((0.35, 1, 0.1)), -1: V((-0.3, 0.2, -1))}),
     "stance": dict(feet=((-0.18, -0.07), (0.16, 0.1)), drop=0.07, poles={-1: V((-0.4, 0.8, -0.4))}, palms=(1,)),
 }
 
@@ -845,7 +845,8 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         out.append((f"hero_{weapon}", aimed(right, V((0.12, -0.05, 1)), V((0, -1, 0)))))
     elif grip == "low":  # low and loose at the side, the haft hanging, the head's edge forward
         right = chest + V((w * 1.25, -0.04, -0.28))  # high enough that the head clears the base
-        out.append((f"hero_{weapon}", aimed(right, V((0.05, -0.5, -0.87)), V((0, -1, 0)))))
+        d = V((0.05, -0.45, 0.89)).normalized()  # the head up, the hand a third of the way down the haft from it, the edge forward
+        out.append((f"hero_{weapon}", aimed(right - d * 0.31, d, V((0, -1, 0)))))
     elif grip == "executioner":  # both hands, the axe drawn back behind the head, the edge forward over it, the face clear
         right = chest + V((0.04, 0.1, 0.42))
         d = V((0, 0.75, 0.6)).normalized()
@@ -883,7 +884,7 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
     elif grip == "reverse":  # crouched, the blade low and forward, clear of the thigh
         right = chest + V((w * 1.0, -0.34, -0.18))  # close in front of the body, ahead of the knee, the edge forward
         left = chest + V((-w * 0.9, -0.28, -0.05))
-        out.append((f"hero_{weapon}", aimed(right, V((0.1, -0.35, -0.93)), V((0, -1, 0)))))
+        out.append((f"hero_{weapon}", aimed(right, V((0.68, -0.3, -0.67)), V((0, -1, 0)))))  # the blade angled about 45 degrees out from the body
     elif grip == "sweep":  # mid-sweep: the torso twisted, the blade swung out low and wide on the weapon side
         left = chest + V((-w * 0.2, -0.3, -0.15))
         d = V((0.75, -0.55, -0.25)).normalized()  # out wide and low, the blade clear of the ground
@@ -911,7 +912,7 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         right = chest + V((w * 0.5, -0.27, 0.12))
         left = chest + V((-w * 0.5, -0.24, 0.09))
     elif grip == "haymaker":  # the torso twisted, the rear fist pulled back with its elbow further back, the front hand close in
-        right = chest + V((w * 1.0, 0.1, 0.03))  # the rear fist at shoulder height
+        right = chest + V((w * 0.95, -0.05, 0.16))  # a cocked punch: the rear fist by the ear, the arm sharply bent, the elbow back
         left = chest + V((-w * 0.35, -0.24, -0.04))
     elif grip == "stance":  # the forward hand an open palm, the other a fist at the hip
         right = chest + V((w * 0.6, -0.44, 0.02))
@@ -990,6 +991,8 @@ def layout(desc):
         elif side == -1 and desc.get("offhand") == "shield":
             pole = V((-0.6, 0.1, -0.8))
         elbow = ik(shoulder, hand, reach * 0.73, reach * 0.67, pole if world else turn3 @ pole)
+        if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "bow" and side == 1:
+            elbow = hand + V((0, reach * 0.67, 0))  # the drawing forearm straight back from the jaw along the arrow's line
         pieces.append((f"hero_arm_upper_{kind}", to_full @ limb_matrix(shoulder, elbow + (elbow - shoulder).normalized() * r * 0.5, r)))
         pieces.append((f"hero_arm_fore_{kind}", to_full @ limb_matrix(elbow, hand, r * 0.86)))
         size = r * 0.98
