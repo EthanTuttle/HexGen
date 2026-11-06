@@ -257,17 +257,25 @@ func _tune() -> void:
 				"attacks": Foes.attacks_per_turn = vals[0].to_int()
 				"elite": Foes.elite_heads = vals[0].to_int()
 				"farfrom": Foes.far_from_level = vals[0].to_int()
+				"growhp": Foes.grow_hp = Array(vals).map(func(v): return v.to_float())
+				"growdmg": Foes.grow_damage = Array(vals).map(func(v): return v.to_float())
 				"level":
 					var rv := kv[1].split("=")
 					Foes.level_heads[rv[0]] = Array(rv[1].split(",")).map(func(v): return v.to_int())
 
 
 var band_level := 1
+var only_bands := [1, 2, 3]
 
 
 func _bands() -> void:
 	game.run.joins_after = []
 	var sizes := [2, 3, 4]
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--sizes="):   # test aid: only these party sizes
+			sizes = Array(a.split("=")[1].split(",")).map(func(v): return v.to_int())
+		if a.begins_with("--onlybands="):
+			only_bands = Array(a.split("=")[1].split(",")).map(func(v): return v.to_int())
 	var each := 8
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--each="):
@@ -279,7 +287,7 @@ func _bands() -> void:
 		for l: int in Rules.SCORE_LEVELS:
 			if l <= band_level:
 				m.scores[m.ability] = mini(Races.score(m, m.ability) + 1, LevelPick.CAP)
-		m.max_hp += Races.level_hp(m) * (band_level - 1) + Races.extra_hp(m, band_level) - Races.extra_hp(m, 1)
+		Races.refresh_hp(m, band_level)
 	for size in sizes:
 		while game.party.size() < size:
 			game._add_member(game.party.size())
@@ -294,7 +302,7 @@ func _bands() -> void:
 
 
 func _band_fights(each: int) -> void:
-	for band in [1, 2, 3]:
+	for band in only_bands:
 		Foes.debug_band = band
 		for k in each:
 			game.level = band_level

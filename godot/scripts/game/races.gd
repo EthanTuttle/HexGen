@@ -68,6 +68,28 @@ static func level_hp(m: Dictionary) -> int:
 	return int(Rules.HP_PER_LEVEL.get(m.get("klass", Rules.COMPANION_CLASS.get(m.get("name", ""), "fighter")), 0)) + ceili(score(m, "CON") / 2.0)
 
 
+## Max HP from scratch: the member's level-1 HP, a shield dwarf's extra, and every level's HP at today's CON, so raising
+## CON recounts the levels so far (06 -> Levels, Ethan, Nov 6, 2026). HP moves by the same amount as max HP.
+static func refresh_hp(m: Dictionary, level: int) -> void:
+	var base := _level1_hp(m)
+	m.base_hp = base
+	var want := base + extra_hp(m, level) + level_hp(m) * (level - 1)
+	m.hp = maxi(m.hp + want - int(m.get("max_hp", m.hp)), 0)
+	m.max_hp = want
+
+
+## The member's HP at level 1 before race extras: kept from joining; for saves from before that, the class's or companion's.
+static func _level1_hp(m: Dictionary) -> int:
+	if m.has("base_hp"):
+		return m.base_hp
+	if m.get("klass", "") != "":
+		return Weapons.CLASS_HP.get(m.klass, 12)
+	for p: Dictionary in Rules.PARTY:
+		if p.name == m.get("name", ""):
+			return p.hp
+	return m.max_hp
+
+
 static func extra_hp(m: Dictionary, level: int) -> int:
 	return Rules.SHIELD_DWARF_HP + Rules.SHIELD_DWARF_HP_LEVEL * (level - 1) if is_sub(m, "Shield dwarf") else 0
 
@@ -142,7 +164,8 @@ static func join(m: Dictionary, level: int) -> void:
 	for l: int in Rules.SCORE_LEVELS:   # joining late: the points already passed, on the main score, capped (03, Ethan, Nov 6, 2026)
 		if l <= level:
 			m.scores[m.ability] = mini(score(m, m.ability) + 1, LevelPick.CAP)
-	m.hp += extra_hp(m, level) + level_hp(m) * (level - 1)   # joining at the party's level, with its levels' HP
+	m.base_hp = m.hp
 	m.max_hp = m.hp
+	refresh_hp(m, level)   # joining at the party's level, with its levels' HP
 	if lucky(m):
 		m.lucky = Rules.LUCKY_CHARGES

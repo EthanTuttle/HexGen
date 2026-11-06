@@ -28,6 +28,12 @@ static var elite_heads := 1                  # DOCS (03): elites add +1 (bosses 
 ## "level" tries one, e.g. level:elite=0,0,1,1,2.
 const LEVEL_STEPS := [1, 4, 8, 12, 16]
 static var level_heads := {"minion": [0, 0, 0, 0, 0], "soldier": [0, 0, 0, 0, 0], "elite": [0, 0, 0, 0, 0]}
+## Foes grow with the hero's level (06 -> Levels, Ethan, Nov 6, 2026): HP and damage times 1 + these per level above 1,
+## by band (near, mid, far), tuned so a full party loses about 10% of mid fights and 40% of far fights at its level.
+## --tune's "growhp" and "growdmg" try others.
+## Measured Nov 6, 2026 (Fighter and Rangers, levels 3-8): mid 0.32 for both; far 0.25 HP, 0.1 damage. Near doesn't grow.
+static var grow_hp := [0.0, 0.32, 0.25]
+static var grow_damage := [0.0, 0.32, 0.1]
 static var band_count := [[3, 3], [3, 3], [3, 4]]
 static var near_pair_count := [2, 3]         # near, while it's only the hero and Fluffy
 static var attacks_per_turn := 1   # PLACEHOLDER: the rest of its AP goes on moving
@@ -60,8 +66,9 @@ static func roster(scene: String, roles: Array, at_band: int, level := 1) -> Arr
 	for role: String in roles:
 		var r: Dictionary = ROLES[role]
 		var look: Array = MIX.get(scene, MIX.enc_fight_bandits)[role]
-		var hp: int = roundi(r.hp * band_hp[at_band - 1])
-		out.append({name = look[1], mini = look[0], role = role, ability = "STR", hp = hp, max_hp = hp, score = r.coins + band_coins[at_band - 1], damage = roundi(r.damage * band_damage[at_band - 1]),
+		var hp: int = roundi(r.hp * band_hp[at_band - 1] * (1.0 + grow_hp[at_band - 1] * (level - 1)))
+		var damage: int = roundi(r.damage * band_damage[at_band - 1] * (1.0 + grow_damage[at_band - 1] * (level - 1)))
+		out.append({name = look[1], mini = look[0], role = role, ability = "STR", hp = hp, max_hp = hp, score = r.coins + band_coins[at_band - 1], damage = damage,
 				heads = 1 + (elite_heads if role == "elite" else 0) + (band_heads[at_band - 1] if level >= far_from_level else 0) + level_add(role, level)})
 	return out
 
