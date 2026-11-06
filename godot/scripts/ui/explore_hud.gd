@@ -458,6 +458,9 @@ func show_encounter(where: String, stage: String, coins: Array) -> void:
 		var sneak := _pill_button("Sneak past", "Stealth", UI.SAND, UI.INK)
 		sneak.pressed.connect(game.choose_sneak)
 		_enc_buttons.add_child(sneak)
+		var ambush := _pill_button("Ambush", "Stealth · Deceive", UI.SAND, UI.INK)   # picked in the check pop-up (03 -> Ambush)
+		ambush.pressed.connect(game.choose_ambush)
+		_enc_buttons.add_child(ambush)
 	if stage == "passed":
 		var on := _pill_button("Carry on", "", UI.DARK, UI.CREAM)
 		on.pressed.connect(game.choose_carry_on)
