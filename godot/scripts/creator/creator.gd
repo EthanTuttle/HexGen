@@ -2,14 +2,14 @@ class_name Creator
 extends Control
 ## The character creator, from Creator v22b (mockups/character-creator/Creator-v22b-Banners.dc.html; design/07 ->
 ## Character creator screen). Guided steps with hex pips along the top; each step's view lives in its own script here.
-## God and Spells can't be reached while only the Fighter and Ranger are playable, so they aren't built. Other classes show locked:
+## God and Spells can't be reached while only the Fighter, Ranger and Rogue are playable, so they aren't built. Other classes show locked:
 ## PLACEHOLDER look, no mockup (a dimmed banner with a lock; it opens to read, and Next stays off).
 
 signal finished(hero: Hero, banners: Array)
 signal cancelled
 
 const D = preload("res://scripts/creator/creator_data.gd")
-const PLAYABLE: Array[String] = ["Fighter", "Ranger"]   # DOCS (06 -> Start, Ranger added Nov 5, 2026)
+const PLAYABLE: Array[String] = ["Fighter", "Ranger", "Rogue"]   # DOCS (06 -> Start: Ranger added Nov 5, Rogue Nov 6, 2026)
 const LOCK_ICON := "M7 11V8a5 5 0 0 1 10 0v3 M6 11h12v9H6z"
 const STEPS := [["class", "Class"], ["race", "Race"], ["bg", "Background"], ["scores", "Scores"], ["skills", "Skills"],
 	["gear", "Gear"], ["look", "Look"], ["name", "Name"]]

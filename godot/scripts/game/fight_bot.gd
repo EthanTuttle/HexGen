@@ -146,7 +146,7 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			drunk += 1
 		else:
 			var order: Array = ["faerie_fire", "lull", "firebolt", "frost_ray", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
-					"pinning_bolt", "double_shot", "haymaker", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
+					"pinning_bolt", "double_shot", "haymaker", "disarm", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
 			if f.ap_left(u) >= 3 and u.ap == Rules.AP:
 				order.push_front("aimed_shot")   # a whole turn's shot, only at the start of a turn
 			for id: String in order:

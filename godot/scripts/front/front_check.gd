@@ -135,7 +135,17 @@ func _creator() -> void:
 	c.race = "Human"
 	check(c.allowed_weapons().size() == CreatorData.W.size(), "gear: a Human Ranger gets every weapon (Versatile)")
 	c.race = ""
-	# Every class can be read; Fighter and Ranger go on.
+	# The Rogue (06 -> Start, Nov 6, 2026): playable, its kit shows Sneak Attack and Poison Blade, and gear offers only its own
+	# weapons and no armour (Clothes only, 04).
+	await tap_on("Rogue")
+	await _wait(0.6)
+	check(c.cls == "Rogue" and c.done("class"), "class: the Rogue is playable")
+	check(control("Sneak Attack") != null and control("Poison Blade") != null, "class: the Rogue's kit shows Sneak Attack and Poison Blade")
+	await shot("class_rogue")
+	var rogue_w: Array = c.allowed_weapons().map(func(w): return w.id)
+	check(rogue_w == ["shortsword", "rapier", "scimitar", "dagger", "shortbow", "crossbow", "gauntlets", "knuckles", "wraps"], "gear: a Rogue gets only Rogue weapons: %s" % [rogue_w])
+	check(c.cls_data().a.is_empty(), "gear: a Rogue wears Clothes only")
+	# Every class can be read; Fighter, Ranger and Rogue go on.
 	await tap_on("Wizard")
 	await _wait(0.6)
 	check(c.cls == "Wizard" and not c.done("class"), "class: Wizard opens to read and stays locked")
@@ -551,7 +561,9 @@ func _look_shots() -> void:
 	await tap_on("Turn left")   # back to the front after the walk's turn
 	for h: Array in [["bow", "Ranger", "Elf", "Wood elf", "shortbow", "", "Light"], ["glaive", "Fighter", "Dragonborn", "Blue", "glaive", "", "Heavy"],
 			["longsword_two", "Fighter", "Human", "", "longsword", "", "Medium"], ["staff_cast", "Wizard", "Halfling", "", "staff", "", ""],
-			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "Light"]]:
+			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "Light"], ["rogue_daggers", "Rogue", "Halfling", "", "dagger", "dagger", ""],
+			["rogue_rapier", "Rogue", "Tiefling", "", "rapier", "", ""], ["rogue_rapier_dagger", "Rogue", "Elf", "High elf", "rapier", "dagger", ""],
+			["rogue_scimitars", "Rogue", "Human", "", "scimitar", "scimitar", ""], ["rogue_shortbow", "Rogue", "Elf", "Wood elf", "shortbow", "", ""]]:
 		c.cls = h[1]
 		c.race = h[2]
 		c.sub = h[3]

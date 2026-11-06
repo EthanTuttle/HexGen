@@ -248,7 +248,7 @@ const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's sav
 const SAVE_HEADS := 1                    # PLACEHOLDER (Combat v14): any save, a foe's or an ally's (their own score), needs 1 heads
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
 const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
-const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
+const SNEAK_TIMES := 2                   # PLACEHOLDER (03, Ethan, Nov 6, 2026): Sneak Attack doubles the weapon's damage on a flanked foe
 ## Weapon and class card amounts (Ethan, Nov 5, 2026; placeholders in design/03 and 04 until the balance pass).
 const BACKSTAB := 2                      # PLACEHOLDER (04): the first dagger hit from behind each turn
 const BONEBREAKER_SLOW := 1              # PLACEHOLDER (04, Nov 5, 2026: 1, so a 2-hex foe still moves): hexes off each Move until the foe's next turn ends
@@ -263,6 +263,8 @@ const STEP_STRIKE_HEXES := 2             # PLACEHOLDER (04): Step and Strike
 const AIMED_TIMES := 4                   # PLACEHOLDER (04): Aimed Shot's damage, ignoring cover and armour
 const QUICK_SLASH_LESS := 1              # PLACEHOLDER (04): free Quick Slash right after a shortsword hit, once a turn, -1 damage
 const GUARD_UP_LESS := 2                 # PLACEHOLDER (04)
+const DISARM_AP := 1                     # PLACEHOLDER (04, Ethan, Nov 6, 2026): Disarm, the AP the foe loses next turn recovering its weapon
+const UNARMED_MINIS := ["enemy_wolf"]    # PLACEHOLDER: foes with no weapon to knock away (beasts), by mini
 const HAYMAKER_AP := 1                   # PLACEHOLDER (04): on a failed CON save the foe loses this much AP next turn
 const RANGED_ADJACENT := 1               # PLACEHOLDER (04): +1 heads for a ranged attack with a foe next to you (not crossbows)
 const MOVE_PER_DEX := 1                  # DOCS (03): a Move is MOVE_HEXES, +1 for every DEX point above 1, plus race

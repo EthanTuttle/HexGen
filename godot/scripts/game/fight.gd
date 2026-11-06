@@ -334,7 +334,7 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			glow = -1, slowed = -1, slow_hexes = 0, acid = -1, poison = [], bleed_turns = 0, lull = false, lockdown = false,
 			facing = _dir_of(facing), backstabbed = false,
 			off = m.get("off", ""),
-			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}}
+			snared = -1, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}, disarmed = false}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -997,22 +997,50 @@ func lucky(who: Dictionary, flipper: Dictionary, coins: Array[bool], need: int) 
 
 
 ## Weapon attacks and attack spells flip the attacker's coins to hit (DOCS). Damage: a racial card's set amount, else the
-## score (PLACEHOLDER: +2 for Sneak Attack on a flanked foe; +1 per hit under Poison Blade; -1 if the target defends), less a
+## score (PLACEHOLDER: doubled by Sneak Attack on a flanked foe; -1 if the target defends), less a
 ## metal golem's reduction.
 func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	busy = true
 	refresh()
 	if k.has("step") and dist(a, t) > 1:   # Step and Strike: move first, then strike
 		await _walk(a, _step_path(a, t, k.step))
+	var hit := false
 	for shot in k.get("shots", 1):   # Double Shot: two flips at normal damage
 		if t.down or a.down:
 			break
-		await _one_attack(a, t, k)
+		hit = await _one_attack(a, t, k) or hit
+	if hit and not t.down and not a.down and _offhand_ready(a, k):
+		a.used["offhand_hit"] = true   # once a turn (04 -> Dual-wielding)
+		var off := offhand_card(a)
+		if dist(a, t) <= off.range:
+			await _one_attack(a, t, off)
 	busy = false
 	_check_end()
 
 
-func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+## Whether a dual-wields (04 -> Dual-wielding): a one-handed weapon in each hand, or fist weapons (worn as a pair).
+static func dual_wields(a: Dictionary) -> bool:
+	if Weapons.of(a.weapon).hands == "f":
+		return true
+	return Weapons.CAT.has(a.weapon) and Weapons.of(a.weapon).hands == "1" and Weapons.CAT.has(a.off) and Weapons.of(a.off).hands == "1"
+
+
+## The free offhand hit is due: once a turn, right after a main-hand hit with any weapon attack (04; Ethan, Nov 6, 2026).
+func _offhand_ready(a: Dictionary, k: Dictionary) -> bool:
+	return a.ally and dual_wields(a) and weapon_attack(k) and not k.get("offhand", false) and not a.used.has("offhand_hit")
+
+
+## The offhand's free attack: a basic attack with the offhand weapon (fist weapons: the pair), flipping its own score.
+func offhand_card(a: Dictionary) -> Dictionary:
+	var w: String = a.weapon if Weapons.of(a.weapon).hands == "f" else a.off
+	var k := Cards.get_card("attack", w)
+	k.ab = Weapons.of(w).ab
+	k.offhand = true
+	return k
+
+
+## One attack flip and its damage; whether it hit.
+func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 	busy = true
 	var check := flip_check(attack_coins(a, t, k), heads_needed(t, a, k))
 	a.blessed = false
@@ -1029,17 +1057,17 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		if a.ally and weapon_attack(k) and Weapons.of(a.weapon).hands == "v" and a.off in ["", "none"]:
 			dmg += Weapons.VERSATILE_TWO_HANDED   # a versatile weapon held two-handed (04)
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
+		if k.get("effect", "") == "sneak" and sneak_applies(a, t):   # not on the offhand's free hit (04)
+			dmg *= Rules.SNEAK_TIMES   # Sneak Attack doubles the weapon's damage, before the flat bonuses (Backstab, the Mark) (03)
 		if k.id == "quick_slash" and a.quick_ready:
 			dmg -= Rules.QUICK_SLASH_LESS
 		if a.ally and not a.mark.is_empty() and a.mark == t:
 			dmg += Rules.MARK_DAMAGE   # Hunter's Mark (03)
 		if t.guard:
 			dmg -= Rules.GUARD_UP_LESS
-		if k.get("effect", "") == "sneak" and _flanked(a, t):
-			dmg += Rules.SNEAK_BONUS
 		if a.poison_blade and Rules.old("poison"):
 			dmg += 1   # test aid: Poison Blade's old +1 a hit
-		if not Rules.old("backstab") and a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):
+		if not Rules.old("backstab") and a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not k.get("offhand", false) and not a.backstabbed and behind(a, t):
 			dmg += Rules.BACKSTAB   # Backstab: the first dagger hit from behind each turn (04)
 			a.backstabbed = true
 		if t.defending:
@@ -1063,6 +1091,10 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 				t.bleed_turns = Rules.DOT_TURNS
 			"snare":
 				t.snared = _until_next_turn_of(t)   # Pinning Bolt roots (04)
+			"disarm":
+				if holds_weapon(t):   # Disarm: it loses 1 AP next turn recovering it, the larger with Haymaker's (04)
+					t.lost_ap = maxi(t.lost_ap, Rules.DISARM_AP)
+					t.disarmed = true
 		if a.poison_blade and not Rules.old("poison"):   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
 			t.poison.append(Rules.DOT_TURNS)
 	if a.ally:
@@ -1096,6 +1128,13 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 			await _hurt(a, back)
 	busy = false
 	_check_end()
+	return hit
+
+
+## Whether a foe holds a weapon to knock away (Disarm, 04). PLACEHOLDER: every foe but beasts (wolves).
+func holds_weapon(t: Dictionary) -> bool:
+	var mini_id: String = t.member.get("mini", "")
+	return not t.ally and not Rules.UNARMED_MINIS.any(func(p): return mini_id.begins_with(p))
 
 
 ## A metal golem's damage reduction on hits and Breath Weapon, doubled under Lockdown (design/03 -> Races).
@@ -1118,6 +1157,11 @@ func heads_needed(t: Dictionary, a := {}, k := {}) -> int:
 ## Whether a hits with this card's weapon (the basic attack, weapon cards, Sneak Attack).
 static func weapon_attack(k: Dictionary) -> bool:
 	return k.id in ["attack", "sneak_attack"] or k.src == "weapon"
+
+
+## Sneak Attack's bonus applies (03): the foe is flanked or unaware. Unaware waits on ambushes: add it here.
+func sneak_applies(a: Dictionary, t: Dictionary) -> bool:
+	return _flanked(a, t)
 
 
 func _flanked(a: Dictionary, t: Dictionary) -> bool:
@@ -1620,6 +1664,7 @@ func _enemy_phase() -> void:
 		e.defending = false
 		e.ap = maxi(Rules.AP - e.lost_ap, 0)   # stunned or prone
 		e.lost_ap = 0
+		e.disarmed = false   # its weapon recovered
 		await _turn_starts(e)
 		if e.down:
 			_check_end()
@@ -1736,6 +1781,8 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["lock", "Lockdown", "damage reduction doubled; can't move"])
 	if not u.ally and allies().any(func(a): return a.mark == u):
 		out.append(["mark", "Marked", "+%d damage from the Ranger's hits" % Rules.MARK_DAMAGE])
+	if u.disarmed:
+		out.append([CreatorData.IC.w_rapier, "Disarmed", "loses %d AP next turn" % Rules.DISARM_AP])
 	if on(u, "snared"):
 		out.append(["snare", "Rooted", "can't move until the end of its next turn"])   # Snare and Pinning Bolt alike (Ethan, Nov 5, 2026)
 	return out
