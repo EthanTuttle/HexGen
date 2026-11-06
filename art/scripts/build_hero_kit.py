@@ -166,7 +166,6 @@ def body(race, build):
     f = frame(race, build)
     p = hk.Piece(f"hero_body_{race}_{build}")
     if race == "golem":
-        legs(p, f, zone("skin"), zone("skin", 0.82), zone("skin", 0.62))
         trunk(p, f, zone("skin"), zone("skin", 0.78))
         p.box(V((0, 0, 0)), (f["hw"] * 2.05, f["depth"] * 1.8, 0.035), zone("skin", 0.55), z=f["hip"].z + 0.05)
         for s in SIDE:  # blocks at the shoulders and hips
@@ -175,7 +174,7 @@ def body(race, build):
     else:
         scaled = race == "dragonborn"
         trousers = zone("cloth", 0.55) if scaled else zone("cloth", 0.6)
-        legs(p, f, trousers, "boot", "bandit_leather_dark")
+        _ = trousers  # the legs are posed parts (leg_parts), in this colour
         if scaled:  # the paler belly, on the faces toward the front
             pale, s_, d_ = zone("skin", 1.3), zone("skin"), zone("skin", 0.8)
             trunk(p, f, s_, d_, paint=lambda c, n: pale if n.y < -0.62 else (s_ if n.z > 0.1 or n.y < -0.3 else d_))
@@ -222,13 +221,7 @@ def armour(tier, race, build):
             at = chest + V((s * f["sw"] * 1.05, 0, 0.035))
             size = 0.052 + f["arm"] * 0.75
             p.blob(at, size, "steel" if tier == "heavy" else "bandit_leather", squash=0.72)
-        if tier == "heavy":  # plates on the shins
-            for side, foot in zip(SIDE, feet(f)):
-                top = V((side * f["hw"] * 0.55, hip.y, hip.z))
-                ankle = V((foot[0], foot[1], Z0 + 0.13))
-                knee = top.lerp(ankle, 0.5) + V((side * 0.012, -0.04, 0.0))
-                em.limb(p, [ankle, knee + V((0, -0.008, 0))], [f["leg"] * 0.72, f["leg"] * 0.95], ["steel"], sides=6)
-    finish_scale(p, race)
+    finish_scale(p, race)  # heavy armour's shin plates are posed with the legs (hero_leg_greave)
     return p
 
 
@@ -571,6 +564,25 @@ def arm_parts():
     return made
 
 
+LEG_KINDS = {"cloth": (zone("cloth", 0.6), zone("cloth", 0.5)), "scaled": (zone("cloth", 0.55), zone("cloth", 0.45)), "golem": (zone("skin"), zone("skin", 0.8))}
+
+
+def leg_parts():
+    """Posed legs: a thigh and a shin per kind (unit tubes the assembler scales between hip, knee and ankle), heavy armour's shin
+    plate, and a boot per kind (built at the origin, its heights absolute, scaled across by the leg's radius)."""
+    made = []
+    for kind, (a, b) in LEG_KINDS.items():
+        sides = 4 if kind == "golem" else 6
+        made.append(arm_part(f"hero_leg_upper_{kind}", a, b, 0.8, sides))
+        made.append(arm_part(f"hero_leg_lower_{kind}", a, b, 0.75, sides))
+    made.append(arm_part("hero_leg_greave", "steel", "steel_dark", 1.32, 6))
+    for kind, (paint, sole) in (("leather", ("boot", "bandit_leather_dark")), ("golem", (zone("skin", 0.82), zone("skin", 0.62)))):
+        p = hk.Piece(f"hero_boot_{kind}")
+        boots(p, (0.0, 0.0), 1.0, paint, sole)
+        made.append(p)
+    return made
+
+
 # --- Weapons (the Fighter's main ones) --------------------------------------
 
 def blade_piece(name, length, wide, grip=0.16, guard=0.11, pommel=True):
@@ -666,9 +678,10 @@ def weapon_pieces():
     made.append(p)
     # Warhammer: the same terms, resting on its head.
     p = hk.Piece("hero_warhammer")
-    p.box(V((0, 0, 0)), (0.25, 0.14, 0.15), "steel")
-    p.box(V((0, 0, 0.15)), (0.09, 0.155, 0.04), "hero_iron")
-    em.limb(p, [V((0, 0, 0.15)), V((0, 0, 1.1))], [0.022, 0.02], ["bandit_leather_dark"], sides=4)
+    p.box(V((0, 0, 0)), (0.34, 0.2, 0.2), "steel")  # a big, heavy head (Ethan, Nov 5, 2026)
+    p.box(V((0, 0, 0)), (0.36, 0.215, 0.05), "steel_dark", z=0.03)
+    p.box(V((0, 0, 0.2)), (0.12, 0.21, 0.05), "hero_iron")
+    em.limb(p, [V((0, 0, 0.2)), V((0, 0, 1.1))], [0.024, 0.021], ["bandit_leather_dark"], sides=4)
     made.append(p)
     # Mace, battleaxe: pivot at the hand, +Z along the haft.
     p = hk.Piece("hero_mace")
@@ -697,12 +710,20 @@ def weapon_pieces():
     axe_bit(p, V((0, 0, 1.46)), 1, 0.2, 0.12)
     vr.spike(p, V((0, 0, 1.46)), V((-0.15, 0, 1.44)), 0.03, "steel_dark", segments=4)
     made.append(p)
-    # Bows: pivot at the hand holding them, +Z up, the belly toward -Y.
+    # Bows, drawn (one pose for both, Ethan, Nov 5, 2026): pivot at the grip in the bow hand, +Z up, aimed along -Y. The limbs
+    # flex back toward the archer, the string runs from the tips to the nock DRAW behind the grip, where the drawing hand is, and
+    # an arrow lies from the nock forward past the grip.
     for name, half, bend in (("shortbow", 0.42, 0.14), ("longbow", 0.62, 0.15)):
         p = hk.Piece(f"hero_{name}")
-        pts = [V((0, -bend * (1 - (t * t)), t * half)) for t in (-1, -0.6, -0.2, 0.2, 0.6, 1)]
+        pts = [V((0, bend * 1.4 * t * t, t * half * 0.96)) for t in (-1, -0.6, -0.2, 0.2, 0.6, 1)]
         em.limb(p, pts, [0.012, 0.018, 0.022, 0.022, 0.018, 0.012], ["bow_wood"], sides=4)
-        em.limb(p, [pts[0], pts[-1]], [0.004, 0.004], ["hero_string"], sides=3)
+        nock = V((0, DRAW, 0))
+        em.limb(p, [pts[0], nock, pts[-1]], [0.004, 0.004, 0.004], ["hero_string"], sides=3)
+        em.limb(p, [nock + V((0, 0.01, 0)), V((0, -0.1, 0))], [0.006, 0.006], ["bow_wood"], sides=3)  # the arrow
+        vr.spike(p, V((0, -0.1, 0)), V((0, -0.16, 0)), 0.014, "steel", segments=3)
+        for a in (0, 2.1, 4.2):  # fletching
+            q = V((math.cos(a) * 0.016, DRAW - 0.03, math.sin(a) * 0.016))
+            vr.spike(p, q, q + V((0, -0.06, 0)), 0.012, "hero_string", segments=3)
         made.append(p)
     made += more_weapons()
     # Shield: pivot at the forearm, facing -Y.
@@ -715,10 +736,66 @@ def weapon_pieces():
 
 
 # Which grip each weapon uses (design/07's Pose library, the nearest each can be without crouching or spinning the body).
-GRIP_OF = {"longsword": "forward", "shortsword": "forward", "mace": "raised", "battleaxe": "raised", "greatsword": "planted", "warhammer": "planted", "greataxe": "shoulder", "spear": "upright", "halberd": "upright", "shortbow": "bow", "longbow": "bow",
+DRAW = 0.54  # bow grip to nock: the bow hand at arm's length, the drawing hand at the jaw
+GRIP_OF = {"longsword": "forward", "shortsword": "backhand", "mace": "raised", "battleaxe": "low", "greatsword": "planted", "warhammer": "planted", "greataxe": "shoulder", "spear": "upright", "halberd": "upright", "shortbow": "bow", "longbow": "bow",
            "rapier": "fencer", "scimitar": "slash", "dagger": "reverse", "glaive": "sweep", "staff": "across", "wand": "point", "crossbow": "aim", "gauntlets": "guard", "brass_knuckles": "haymaker", "wraps": "stance"}
 ONE_HANDED = ("longsword", "shortsword", "mace", "battleaxe", "rapier", "scimitar", "dagger", "wand", "spear", "staff")
 FIST = ("gauntlets", "brass_knuckles", "wraps")
+TWO_GRIP = {"longsword": "high", "battleaxe": "executioner", "spear": "pike"}  # versatile weapons held in both hands
+
+
+def grip_of(weapon, offhand=None, two=False, caster=False):
+    """The pose a weapon takes: two-handed for a versatile weapon held in both hands; a staff planted with an offhand, raised in
+    a casting pose for a caster with an empty hand, across the body for anyone else (07 → Pose library)."""
+    if two and weapon in TWO_GRIP and not offhand:
+        return TWO_GRIP[weapon]
+    if weapon == "staff":
+        return "upright" if offhand else "cast" if caster else "across"
+    return GRIP_OF[weapon]
+
+
+# Legs and torso per grip (Ethan, Nov 5, 2026): feet as (x, y) for the -x then the +x leg (x times the build's stance), how far the
+# hips sink (a crouch), the torso's twist and the hips' turn about the vertical (degrees, + turns the +x side back), how far
+# the head turns back toward the foe, whether the hands are given after the twist ('world'), elbow poles per side (+x, -x),
+# and which hands are open palms.
+POSES = {
+    "forward": dict(feet=((-0.14, 0.08), (0.14, -0.1)), drop=0.02),
+    "high": dict(feet=((-0.15, 0.06), (0.15, -0.08)), drop=0.03, poles={1: V((0.9, -0.2, -0.3)), -1: V((-0.9, -0.2, -0.3))}),
+    "backhand": dict(feet=((-0.13, -0.1), (0.15, 0.1)), drop=0.03, twist=-15, head=0.8, poles={1: V((0.5, -0.8, -0.35))}),
+    "fencer": dict(feet=((-0.1, 0.15), (0.12, -0.17)), drop=0.06, poles={-1: V((-0.8, 0.2, -0.5))}),
+    "slash": dict(feet=((-0.15, -0.06), (0.15, 0.08)), drop=0.04, twist=28, head=0.8, poles={1: V((0.2, 0.3, -1)), -1: V((-0.6, 0.3, -0.7))}),
+    "reverse": dict(feet=((-0.17, 0.08), (0.17, -0.08)), drop=0.1),
+    "raised": dict(feet=((-0.13, 0.08), (0.13, -0.06)), drop=0.01, poles={1: V((0.9, 0.1, -0.3))}),
+    "low": dict(feet=((-0.12, 0.05), (0.12, -0.05)), poles={1: V((0.3, 0.4, -1))}),
+    "executioner": dict(feet=((-0.16, 0.04), (0.16, -0.04)), drop=0.02, poles={1: V((0.9, -0.4, 0.1)), -1: V((-0.9, -0.4, 0.1))}),
+    "planted": dict(feet=((-0.14, 0.02), (0.14, 0.02)), poles={1: V((0.8, 0.3, -0.5)), -1: V((-0.8, 0.3, -0.5))}),
+    "shoulder": dict(feet=((-0.12, 0.08), (0.12, -0.06)), poles={1: V((0.4, 0.1, -1)), -1: V((-0.6, 0.3, -0.7))}),
+    "upright": dict(feet=((-0.08, 0.0), (0.08, 0.0)), poles={1: V((0.4, 0.3, -1))}),
+    "pike": dict(feet=((-0.12, -0.14), (0.13, 0.15)), drop=0.07, poles={1: V((0.3, 0.88, 0.48)), -1: V((-0.6, 0.0, -0.8))}),
+    "sweep": dict(feet=((-0.17, 0.06), (0.16, -0.08)), drop=0.06, twist=-30, head=0.7),
+    "across": dict(feet=((-0.14, 0.06), (0.14, -0.06)), drop=0.03, poles={1: V((0.6, 0.3, -0.8)), -1: V((-0.6, 0.3, -0.8))}),
+    "cast": dict(feet=((-0.1, 0.04), (0.1, -0.04)), poles={1: V((0.4, 0.3, -1)), -1: V((-0.6, 0.0, -0.8))}, palms=(-1,)),
+    "point": dict(feet=((-0.12, 0.08), (0.12, -0.08))),
+    "bow": dict(feet=((-0.12, -0.02), (0.12, 0.02)), twist=60, hips=55, head=1.0, world=True, poles={1: V((0.3, 1, -0.15)), -1: V((-0.2, 0.3, -1))}),
+    "aim": dict(feet=((-0.12, -0.08), (0.12, 0.08)), drop=0.02, poles={1: V((0.7, 0.3, -0.6)), -1: V((-0.6, 0.0, -0.8))}),
+    "guard": dict(feet=((-0.12, -0.1), (0.13, 0.1)), drop=0.04, poles={1: V((0.3, 0.1, -1)), -1: V((-0.3, 0.1, -1))}),
+    "haymaker": dict(feet=((-0.13, -0.12), (0.14, 0.12)), drop=0.04, twist=22, head=0.9, poles={1: V((0.4, 1, 0.1)), -1: V((-0.3, 0.2, -1))}),
+    "stance": dict(feet=((-0.18, -0.07), (0.16, 0.1)), drop=0.07, poles={-1: V((-0.4, 0.8, -0.4))}, palms=(1,)),
+}
+
+
+def ik(a, b, l1, l2, pole):
+    """The middle joint of a two-bone limb from a to b, bending toward pole."""
+    d = b - a
+    dist = max(d.length, 1e-5)
+    dn = d / dist
+    reach = min(max(dist, abs(l1 - l2) + 1e-4), l1 + l2 - 1e-4)
+    x = (l1 * l1 - l2 * l2 + reach * reach) / (2 * reach)
+    h = math.sqrt(max(l1 * l1 - x * x, 0.0))
+    p = pole - dn * pole.dot(dn)
+    if p.length < 1e-6:
+        p = dn.orthogonal()
+    return a + dn * x + p.normalized() * h
 
 
 def aimed(at, along, out=V((1, 0, 0))):
@@ -734,21 +811,38 @@ def aimed(at, along, out=V((1, 0, 0))):
     return m
 
 
-def grip_layout(race, build, weapon, offhand):
-    """(right hand, left hand, [(piece, matrix)]), in unscaled body points, with the chest as their home."""
+def grip_layout(race, build, weapon, offhand, two=False, caster=False):
+    """(right hand, left hand, [(piece, matrix)], pose), in unscaled body points with the chest as their home, before the
+    pose's twist and sink (unless the pose says 'world'). 'right' is the +x hand, the weapon hand."""
     f = frame(race, build)
     chest, w = f["chest"], f["sw"]
-    wd = BUILDS[build]["sw"]
-    grip = "upright" if weapon == "staff" and offhand else GRIP_OF[weapon]  # one-handed, planted
+    grip = grip_of(weapon, offhand, two, caster)
+    pose = POSES[grip]
     rest = chest + V((-w * 1.25, -0.06, -0.3))
     out = []
     left = rest
-    if grip == "forward":
-        right = chest + V((w * 1.3, -0.3, -0.12))
-        out.append((f"hero_{weapon}", aimed(right, V((0.06, -1, 0.16)))))
+    if grip == "forward":  # chest high, the blade angled up and across, so it reads from the front and stays in the cell
+        right = chest + V((w * 1.2, -0.15, -0.16))  # the blade crosses the chest well below the chin (seen from the front, a forward
+        out.append((f"hero_{weapon}", aimed(right, V((-0.6, -0.3, 0.35)), V((0, -1, 0)))))  # blade draws higher), its point past the off side
+    elif grip == "high":  # two-handed high guard, the blade above the head
+        right = chest + V((0.04, -0.1, 0.45))
+        d = V((0.05, 0.25, 1)).normalized()
+        left = right - d * 0.085
+        out.append((f"hero_{weapon}", aimed(right, d, V((1, 0, 0)))))
+    elif grip == "backhand":  # the blade drawn back over the off shoulder
+        right = chest + V((-w * 0.55, -0.17, 0.12))
+        out.append((f"hero_{weapon}", aimed(right, V((-0.4, 0.55, 0.75)), V((0, -1, 0)))))
     elif grip == "raised":
         right = chest + V((w * 1.55, -0.04, 0.46))
         out.append((f"hero_{weapon}", aimed(right, V((0.12, -0.05, 1)), V((0, -1, 0)))))
+    elif grip == "low":  # low and loose at the side, the head forward
+        right = chest + V((w * 1.25, -0.04, -0.36))
+        out.append((f"hero_{weapon}", aimed(right, V((0.05, -0.9, -0.3)), V((0, 0, 1)))))
+    elif grip == "executioner":  # both hands, the axe lifted overhead behind the head
+        right = chest + V((0.05, 0.02, 0.5))
+        d = V((0, 0.4, 1)).normalized()
+        left = right - d * 0.12
+        out.append((f"hero_{weapon}", aimed(right, d, V((1, 0, 0)))))
     elif grip == "planted":
         right = chest + V((0.05, -0.31, -0.1))
         left = chest + V((-0.05, -0.31, -0.1))
@@ -756,63 +850,77 @@ def grip_layout(race, build, weapon, offhand):
         fit = (right.z + 0.02 - foot.z) / 0.98
         m = aimed(foot, V((0, 0, 1)))
         out.append((f"hero_{weapon}", m @ Matrix.Diagonal((1, 1, fit, 1))))
-    elif grip == "shoulder":
-        right = chest + V((w * 1.25, -0.3, -0.22))
-        top = chest + V((w * 1.0, 0.42, 0.34))
-        out.append((f"hero_{weapon}", aimed(right, top - right, V((0, 0.4, 1)))))
-        left = rest
+    elif grip == "shoulder":  # the haft resting on the shoulder, one hand up by it, one low on the haft in front
+        low = chest + V((w * 0.15, -0.34, -0.24))
+        top = chest + V((w * 1.0, 0.02, 0.085))
+        d = (top - low).normalized()
+        out.append((f"hero_{weapon}", aimed(low + d * 0.05, d, V((0, 0.4, 1)))))
+        left = low + d * 0.06
+        right = low + d * ((top - low).length * 0.78)
     elif grip == "upright":
         right = chest + V((w * 1.55, -0.14, -0.05))
         out.append((f"hero_{weapon}", aimed(V((right.x, right.y, Z0 + (0.73 if weapon == "staff" else 0.0))), V((0, 0, 1)), V((0, -1, 0)))))
+    elif grip == "pike":  # level, both hands, the point reaching into the next cell
+        right = chest + V((w * 0.9, 0.12, -0.2))
+        d = V((-0.06, -1, 0.02)).normalized()
+        left = right + d * 0.42
+        out.append((f"hero_{weapon}", aimed(right - d * 0.25, d, V((0, 0, 1)))))
     elif grip == "fencer":  # en garde: arm out, the other raised behind
         right = chest + V((w * 1.2, -0.42, -0.02))
         left = chest + V((-w * 1.5, 0.2, 0.16))
         out.append((f"hero_{weapon}", aimed(right, V((0.03, -1, 0.06)))))
-    elif grip == "slash":  # out to the side, the blade swinging round
-        right = chest + V((w * 1.8, -0.14, 0.06))
-        out.append((f"hero_{weapon}", aimed(right, V((0.8, -0.3, 0.55)), V((0.2, -1, 0.2)))))
-    elif grip == "reverse":  # low, the blade down and forward
-        right = chest + V((w * 1.2, -0.22, -0.3))
-        out.append((f"hero_{weapon}", aimed(right, V((0.1, -0.4, -1)))))
-    elif grip == "sweep":  # across the body, the blade out and up
-        right = chest + V((w * 1.15, -0.12, -0.22))
-        left = chest + V((-w * 0.55, -0.34, 0.04))
-        out.append((f"hero_{weapon}", aimed(right, left - right, V((0, -0.5, 1)))))
+    elif grip == "slash":  # mid-spin: the torso twisted into it, the blade sweeping out wide, clear of the hair
+        right = chest + V((w * 2.4, -0.18, -0.02))  # the arm out wide
+        left = chest + V((-w * 1.5, -0.15, -0.05))
+        out.append((f"hero_{weapon}", aimed(right, V((0.5, -0.85, 0.1)), V((0, 0, 1)))))
+    elif grip == "reverse":  # crouched, the blade low and forward, clear of the thigh
+        right = chest + V((w * 1.6, -0.38, -0.22))
+        left = chest + V((-w * 0.9, -0.28, -0.05))
+        out.append((f"hero_{weapon}", aimed(right, V((0.1, -0.35, -0.93)))))
+    elif grip == "sweep":  # mid-sweep: the torso twisted, the blade swung out low and wide on the weapon side
+        left = chest + V((-w * 0.2, -0.3, -0.15))
+        d = V((0.75, -0.55, -0.25)).normalized()  # out wide and low, the blade clear of the ground
+        right = left + d * 0.32
+        out.append((f"hero_{weapon}", aimed(left - d * 0.15, d, V((0, 0, 1)))))
     elif grip == "across":  # a guard, both hands
         mid = chest + V((0, -0.26, -0.1))
         d = V((1, 0, 0.24)).normalized()
         right, left = mid + d * 0.24, mid - d * 0.24
         out.append((f"hero_{weapon}", aimed(mid, d, V((0, -1, 0)))))
-    elif grip == "point":  # arm out, aimed at the foe
-        right = chest + V((w * 1.2, -0.42, 0.04))
-        out.append((f"hero_{weapon}", aimed(right, V((0.05, -1, 0.1)))))
+    elif grip == "cast":  # the staff planted, the free hand raised, palm out
+        right = chest + V((w * 1.55, -0.14, -0.05))
+        out.append((f"hero_{weapon}", aimed(V((right.x, right.y, Z0 + 0.73)), V((0, 0, 1)), V((0, -1, 0)))))
+        left = chest + V((-w * 1.1, -0.38, 0.18))
+    elif grip == "point":  # the arm out, the wand angled forward and a little out, so it reads from the front
+        right = chest + V((w * 1.5, -0.42, 0.06))
+        out.append((f"hero_{weapon}", aimed(right, V((0.35, -0.85, 0.25)))))
     elif grip == "aim":  # the stock at the shoulder
         butt = chest + V((w * 0.68, -0.13, 0.04))
         d = V((-0.08, -1, 0.02)).normalized()
         right = butt + d * 0.2 + V((0.02, 0, -0.045))
         left = butt + d * 0.46 + V((0, 0, -0.045))
         out.append((f"hero_{weapon}", aimed(butt, d)))
-    elif grip == "guard":  # fists at the face
-        right = chest + V((w * 0.68, -0.3, 0.05))
-        left = chest + V((-w * 0.68, -0.25, 0.0))
-    elif grip == "haymaker":  # one fist pulled back
-        right = chest + V((w * 1.15, 0.2, 0.04))
-        left = chest + V((-w * 0.7, -0.34, 0.03))
-    elif grip == "stance":  # palm forward, the other at the hip
-        right = chest + V((w * 0.85, -0.42, 0.06))
-        left = chest + V((-w * 1.12, -0.06, -0.3))
-    else:  # bow: held out to the left, the right hand drawing at the cheek
-        left = chest + V((-w * 1.1, -0.42, 0.06))
-        right = chest + V((w * 0.42, -0.18, 0.14))
+    elif grip == "guard":  # fists up at the chin, below the eyes
+        right = chest + V((w * 0.5, -0.27, 0.12))
+        left = chest + V((-w * 0.5, -0.24, 0.09))
+    elif grip == "haymaker":  # the torso twisted, the rear fist pulled back with its elbow further back, the front hand close in
+        right = chest + V((w * 1.0, 0.06, 0.1))
+        left = chest + V((-w * 0.35, -0.24, -0.04))
+    elif grip == "stance":  # the forward hand an open palm, the other a fist at the hip
+        right = chest + V((w * 0.6, -0.44, 0.02))
+        left = chest + V((-w * 1.05, -0.02, -0.3))
+    else:  # bow: side-on, the bow hand at arm's length ahead, the drawing hand at the jaw on the string (given after the twist)
+        left = chest + V((-0.07, -0.52, 0.12))
+        right = left + V((0, DRAW, 0))
         out.append((f"hero_{weapon}", aimed(left, V((0, 0, 1)), V((1, 0, 0)))))
-    if weapon in ONE_HANDED:
-        if offhand == "shield":
+    if weapon in ONE_HANDED and grip not in ("high", "executioner", "pike", "across", "cast"):
+        if offhand == "shield":  # low at the side, facing forward
             left = chest + V((-w * 1.32, -0.2, -0.13))
             out.append(("hero_shield", aimed(left + V((-0.015, -0.03, 0)), V((0, 0, 1)))))
-        elif offhand in GRIP_OF:
-            left = chest + V((-w * 1.35, 0.1, -0.1))
+        elif offhand in GRIP_OF:  # held back, ready, behind the main weapon
+            left = chest + V((-w * 1.2, 0.16, -0.28))
             out.append((f"hero_{offhand}", aimed(left, V((-0.18, 0.5, 0.75)))))
-    return right, left, out
+    return right, left, out, pose
 
 
 def limb_matrix(a, b, ra):
@@ -822,35 +930,70 @@ def limb_matrix(a, b, ra):
 
 
 def layout(desc):
-    """Every piece of a hero and where it goes: the list Godot would place."""
+    """Every piece of a hero and where it goes: the list Godot would place. Optional desc keys: two (a versatile weapon in both
+    hands), caster (a caster's staff with an empty hand takes the casting pose)."""
     race, build, tier = desc["race"], desc["build"], desc["armour"]
     f = frame(race, build)
     k = RACES[race]["k"]
     to_full = Matrix.Translation(V((0, 0, Z0))) @ Matrix.Diagonal((k, k, k, 1)) @ Matrix.Translation(V((0, 0, -Z0)))
-    pieces = [("hero_base", Matrix.Identity(4)), (f"hero_body_{race}_{build}", Matrix.Identity(4))]
+    right, left, held, pose = grip_layout(race, build, desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False))
+    hip = f["hip"]
+    # The upper body twists about the hips and sinks with them; the head turns part of the way back toward the foe.
+    drop, twist = pose.get("drop", 0.0), math.radians(pose.get("twist", 0))
+    upper = Matrix.Translation(V((0, 0, -drop))) @ Matrix.Translation(hip) @ Matrix.Rotation(twist, 4, "Z") @ Matrix.Translation(-hip)
+    turn = Matrix.Rotation(-twist * pose.get("head", 0.0), 4, "Z")
+    pieces = [("hero_base", Matrix.Identity(4)), (f"hero_body_{race}_{build}", to_full @ upper @ to_full.inverted())]
     if tier != "none":
-        pieces.append((f"hero_armour_{tier}_{race}_{build}", Matrix.Identity(4)))
+        pieces.append((f"hero_armour_{tier}_{race}_{build}", to_full @ upper @ to_full.inverted()))
     head = head_point(race, build)
     hs = BUILDS[build]["head"]
-    pieces.append((f"hero_head_{race}_{desc['head']}", to_full @ Matrix.Translation(head) @ Matrix.Diagonal((hs, hs, hs, 1))))
+    pieces.append((f"hero_head_{race}_{desc['head']}", to_full @ upper @ Matrix.Translation(head) @ turn @ Matrix.Diagonal((hs, hs, hs, 1))))
     if race not in HAIRLESS and desc.get("hair") and desc["hair"] != "none":
         h = f["head"] / HR
-        pieces.append((f"hero_hair_{desc['hair']}", to_full @ Matrix.Translation(head) @ Matrix.Diagonal((h * RACES[race]["head_x"], h, h, 1))))
-    right, left, held = grip_layout(race, build, desc["main"], desc.get("offhand"))
+        pieces.append((f"hero_hair_{desc['hair']}", to_full @ upper @ Matrix.Translation(head) @ turn @ Matrix.Diagonal((h * RACES[race]["head_x"], h, h, 1))))
+    # Legs: from the sunk hips to the feet, the knees bending forward, all turned by the hips' turn.
+    hips = Matrix.Rotation(math.radians(pose.get("hips", 0)), 3, "Z")
+    leg_kind = "golem" if race == "golem" else "scaled" if race == "dragonborn" else "cloth"
+    span = hip.z - (Z0 + 0.13)
+    for side, (fx, fy) in zip(SIDE, pose.get("feet", ((-0.13, 0.05), (0.13, -0.05)))):
+        top = V((hip.x, hip.y, hip.z - drop)) + hips @ V((side * f["hw"] * 0.55, 0, 0))
+        foot = hips @ V((fx * f["stance"], fy, 0))
+        ankle = V((foot.x, foot.y, Z0 + 0.13))
+        knee = ik(top, ankle, span * 0.53, span * 0.53, hips @ V((side * 0.25, -1, 0.1)))
+        r = f["leg"]
+        pieces.append((f"hero_leg_upper_{leg_kind}", to_full @ limb_matrix(top, knee + (knee - top).normalized() * r * 0.4, r)))
+        pieces.append((f"hero_leg_lower_{leg_kind}", to_full @ limb_matrix(knee, ankle, r * 0.8)))
+        if tier == "heavy" and race != "golem":
+            pieces.append(("hero_leg_greave", to_full @ limb_matrix(ankle, knee + (ankle - knee).normalized() * 0.008, r * 0.72)))
+        boot = Matrix.Translation(V((foot.x, foot.y, 0))) @ hips.to_4x4() @ Matrix.Diagonal((r * 0.9, r * 0.9, 1, 1))
+        pieces.append(("hero_boot_golem" if race == "golem" else "hero_boot_leather", to_full @ boot))
+    # Arms: from the twisted shoulders to the hands, the elbows solved to bend as real elbows do, toward each pose's pole.
     kind = "golem" if race == "golem" else {"none": "bare", "light": "bare", "medium": "chain", "heavy": "plate"}[tier]
     fist = "golem" if race == "golem" else "gauntlet" if tier == "heavy" else "bare"
     r = f["arm"]
+    reach = f["chest"].z - hip.z
+    world = pose.get("world", False)
+    turn3 = upper.to_3x3()
     for side, hand in ((1, right), (-1, left)):
-        shoulder = f["chest"] + V((side * f["sw"], 0, 0.02))
-        elbow = shoulder.lerp(hand, 0.5) + V((side * 0.09 * f["stance"], 0.06, -0.06))
+        shoulder = upper @ (f["chest"] + V((side * f["sw"], 0, 0.02)))
+        hand = hand if world else upper @ hand
+        pole = pose.get("poles", {}).get(side, V((side * 0.5, 0.6, -0.7)))
+        if side == -1 and desc.get("offhand") in GRIP_OF:  # a second weapon held back: the elbow down and behind
+            pole = V((-0.3, 0.6, -1))
+        elif side == -1 and desc.get("offhand") == "shield":
+            pole = V((-0.6, 0.1, -0.8))
+        elbow = ik(shoulder, hand, reach * 0.73, reach * 0.67, pole if world else turn3 @ pole)
         pieces.append((f"hero_arm_upper_{kind}", to_full @ limb_matrix(shoulder, elbow + (elbow - shoulder).normalized() * r * 0.5, r)))
         pieces.append((f"hero_arm_fore_{kind}", to_full @ limb_matrix(elbow, hand, r * 0.86)))
         size = r * 0.98
-        pieces.append((f"hero_hand_{fist}", to_full @ Matrix.Translation(hand) @ Matrix.Diagonal((size, size, size, 1))))
-        if desc["main"] in FIST:
+        if side in pose.get("palms", ()):  # an open hand, flat toward the foe
+            pieces.append((f"hero_hand_{fist}", to_full @ Matrix.Translation(hand) @ turn3.to_4x4() @ Matrix.Diagonal((size * 1.05, size * 0.45, size * 1.2, 1))))
+        else:
+            pieces.append((f"hero_hand_{fist}", to_full @ Matrix.Translation(hand) @ Matrix.Diagonal((size, size, size, 1))))
+        if desc["main"] in FIST and side not in pose.get("palms", ()):
             pieces.append((f"hero_{desc['main']}", to_full @ aimed(hand, hand - elbow, V((0, 1, 0))) @ Matrix.Diagonal((size, size, size, 1))))
     for name, m in held:
-        pieces.append((name, to_full @ m))
+        pieces.append((name, to_full @ (m if world else upper @ m)))
     return pieces
 
 
@@ -912,6 +1055,7 @@ def pieces():
         made += [head_piece(race, h) for h in HEADS]
     made += [hair_piece(s) for s in HAIRSTYLES]
     made += arm_parts()
+    made += leg_parts()
     made += weapon_pieces()
     return made
 
