@@ -672,6 +672,22 @@ def more_weapons():
         em.limb(p, [V((0, 0, z)), V((0, 0, z + 0.32))], [1.1, 1.06], [tone], sides=8)
     em.limb(p, [V((0, 0, -0.95)), V((0, 0, -0.45))], [0.95, 1.0], ["hero_wrap"], sides=8)
     made.append(p)
+    # The wraps' open hand (round 5, wraps only; the caster's palm keeps the plain hand): a flat palm wrapped from the wrist to
+    # the knuckles in flat bands that hug it, the four fingers as one slab and the thumb out toward the body's middle, both bare.
+    # Size 1 for the hand's radius, +Z toward the fingertips, the palm facing -Y (the foe), the thumb on -X.
+    p = hk.Piece("hero_hand_open_wraps")
+
+    def ring(z, hw, ht, y=0.0):
+        return [V((x * hw, y + q * ht, z)) for x, q in ((-1, -0.5), (-0.8, -1), (0.8, -1), (1, -0.5), (1, 0.5), (0.8, 1), (-0.8, 1), (-1, 0.5))]
+
+    def wrapped(c, n):
+        if c.z < -0.55:
+            return "hero_wrap"
+        return "hero_wrap_shade" if int((c.z + 0.55) / 0.26) % 2 else "hero_wrap"
+    em.loft(p, [ring(-1.0, 0.62, 0.55), ring(-0.55, 0.7, 0.5), ring(-0.1, 0.88, 0.42), ring(0.45, 0.9, 0.38)], wrapped)
+    em.loft(p, [ring(0.4, 0.84, 0.3), ring(1.0, 0.78, 0.24), ring(1.4, 0.6, 0.18), ring(1.55, 0.3, 0.12)], lambda c, n: zone("skin") if n.y < 0.3 else zone("skin", 0.86))
+    em.limb(p, [V((-0.7, -0.1, -0.3)), V((-1.05, -0.24, 0.1)), V((-1.2, -0.3, 0.5))], [0.3, 0.24, 0.17], [zone("skin"), zone("skin")], sides=6)
+    made.append(p)
     return made
 
 
@@ -787,7 +803,7 @@ POSES = {
     "bow": dict(feet=((-0.12, -0.02), (0.12, 0.02)), twist=60, hips=55, head=1.0, world=True, poles={1: V((0.3, 1, -0.15)), -1: V((-0.2, 0.3, -1))}),
     "aim": dict(feet=((-0.12, -0.08), (0.12, 0.08)), drop=0.02, poles={1: V((0.7, 0.3, -0.6)), -1: V((-0.6, 0.0, -0.8))}),
     "guard": dict(feet=((-0.12, -0.1), (0.13, 0.1)), drop=0.04, poles={1: V((0.3, 0.1, -1)), -1: V((-0.3, 0.1, -1))}),
-    "haymaker": dict(feet=((-0.13, -0.12), (0.14, 0.12)), drop=0.04, twist=35, head=0.9, poles={1: V((0.35, 1, 0.1)), -1: V((-0.3, 0.2, -1))}),
+    "haymaker": dict(feet=((-0.13, -0.12), (0.14, 0.12)), drop=0.04, twist=35, head=0.9, poles={1: V((0.66, 0.76, -0.4)), -1: V((-0.3, 0.2, -1))}),
     "stance": dict(feet=((-0.18, -0.07), (0.16, 0.1)), drop=0.07, poles={-1: V((-0.4, 0.8, -0.4))}, palms=(1,)),
 }
 
@@ -912,7 +928,7 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         right = chest + V((w * 0.5, -0.27, 0.12))
         left = chest + V((-w * 0.5, -0.24, 0.09))
     elif grip == "haymaker":  # the torso twisted, the rear fist pulled back with its elbow further back, the front hand close in
-        right = chest + V((w * 0.95, -0.05, 0.16))  # a cocked punch: the rear fist by the ear, the arm sharply bent, the elbow back
+        right = chest + V((w * 1.1, 0.06, 0.16))  # a cocked punch: the rear fist by the ear, the arm sharply bent, the elbow behind and below it
         left = chest + V((-w * 0.35, -0.24, -0.04))
     elif grip == "stance":  # the forward hand an open palm, the other a fist at the hip
         right = chest + V((w * 0.6, -0.44, 0.02))
@@ -996,14 +1012,14 @@ def layout(desc):
         pieces.append((f"hero_arm_upper_{kind}", to_full @ limb_matrix(shoulder, elbow + (elbow - shoulder).normalized() * r * 0.5, r)))
         pieces.append((f"hero_arm_fore_{kind}", to_full @ limb_matrix(elbow, hand, r * 0.86)))
         size = r * 0.98
-        if side in pose.get("palms", ()):  # an open hand, flat toward the foe
+        if side in pose.get("palms", ()) and desc["main"] == "wraps":  # the wraps' own open hand, wrapped palm and bare fingers
+            pieces.append(("hero_hand_open_wraps", to_full @ Matrix.Translation(hand) @ turn3.to_4x4() @ Matrix.Diagonal((size, size, size, 1))))
+        elif side in pose.get("palms", ()):  # an open hand, flat toward the foe
             pieces.append((f"hero_hand_{fist}", to_full @ Matrix.Translation(hand) @ turn3.to_4x4() @ Matrix.Diagonal((size * 1.05, size * 0.45, size * 1.2, 1))))
         else:
             pieces.append((f"hero_hand_{fist}", to_full @ Matrix.Translation(hand) @ Matrix.Diagonal((size, size, size, 1))))
         if desc["main"] in FIST and side not in pose.get("palms", ()):
             pieces.append((f"hero_{desc['main']}", to_full @ aimed(hand, hand - elbow, V((0, 1, 0))) @ Matrix.Diagonal((size, size, size, 1))))
-        elif desc["main"] == "wraps":  # wrapped round the open palm too
-            pieces.append(("hero_wraps_open", to_full @ Matrix.Translation(hand) @ turn3.to_4x4() @ Matrix.Diagonal((size * 1.05, size * 0.45, size * 1.2, 1))))
     for name, m in held:
         pieces.append((name, to_full @ (m if world else upper @ m)))
     return pieces

@@ -53,8 +53,8 @@ ROWS = [
     ("Longbow", "two-handed", "The same drawn pose as the shortbow", "longbow", None, {}, "ROUND 4 (3): the same fix"),
     ("Crossbow", "two-handed", "Stock at the shoulder, aiming", "crossbow", None, {}, f"kept; {ALL}"),
     ("Gauntlets", "both hands (fist)", "High guard, fists at the face", "gauntlets", None, {}, "CHANGED (15): fists at the chin, below the eyes"),
-    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 4 (4): a cocked punch, the rear arm sharply bent, elbow back, fist by the ear"),
-    ("Wraps", "both hands (fist)", "Martial-arts stance, palm forward, other hand at the hip", "wraps", None, {}, "ROUND 3 (10): the open palm wrapped too"),
+    ("Brass knuckles", "both hands (fist)", "Haymaker wind-up, one fist pulled back", "brass_knuckles", None, {}, "ROUND 5: the rear elbow dropped behind and below the fist, cocked punch and twist kept"),
+    ("Wraps", "both hands (fist)", "Martial-arts stance, palm forward, other hand at the hip", "wraps", None, {}, "ROUND 5: a new open hand, wrapped palm and wrist, bare fingers and thumb"),
     ("Offhand: shield", "on a longsword", "Held low at the side, facing forward", "longsword", "shield", {}, "ROUND 3: the longsword's new pose"),
     ("Offhand: second weapon", "a dagger, on a longsword", "Held back, ready, behind the main weapon", "longsword", "dagger", {}, "ROUND 3: the longsword's new pose, the dagger edge forward"),
 ]
@@ -249,6 +249,15 @@ if __name__ == "__main__":
         sys.exit()
     if "hand" in sys.argv:
         wraps_hand()
+        sys.exit()
+    if "round5" in sys.argv:  # the changed panels of round 5 and their sheet
+        rows = (16, 24, 25)
+        for i in rows:
+            name, grip, pose, weapon, offhand, extra, change = ROWS[i - 1]
+            if i != 16:  # the glaive panel is already rendered with this kit
+                shot(weapon, offhand, extra, f"pose_check_panel_{i:02d}")
+            text_strip([(f"{i}. {name}, {grip}", 0.62), (f"07: {pose}", 0.5), (kit_text(weapon, offhand, extra), 0.5), (change, 0.5)], f"pose_check_panel_{i:02d}_text")
+        sheet([f"pose_check_panel_{i:02d}" for i in rows], 1, out="pose_check_round5")
         sys.exit()
     if "round4" in sys.argv:  # the changed panels of round 4 and their sheets
         rows = (7, 8, 16, 20, 21, 24)
