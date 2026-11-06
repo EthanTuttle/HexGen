@@ -618,13 +618,15 @@ def more_weapons():
     p.blob(V((0, 0, -0.145)), 0.024, "hero_gold")
     made.append(p)
     made.append(blade_piece("dagger", 0.3, 0.036, grip=0.1, guard=0.065))
-    # Glaive: pivot at the back hand, a long haft and one long curved blade.
+    # Glaive: pivot at the back hand, a long haft ending inside an iron socket, and a single-edged blade about 0.45 long: a straight,
+    # thick back in line with the haft, a curved edge on +X sweeping up to the point, wedge-shaped (thick at the back, thin at the edge).
     p = hk.Piece("hero_glaive")
-    em.limb(p, [V((0, 0, -0.32)), V((0, 0, 1.0))], [0.018, 0.016], ["bow_wood"], sides=4)
-    bend = ((0.92, 0.0, 0.03), (1.08, 0.015, 0.058), (1.24, 0.06, 0.056))
-    rows = [[V((x - w, -0.012, z)), V((x - w, 0.012, z)), V((x + w, 0.012, z)), V((x + w, -0.012, z))] for z, x, w in bend]
-    em.loft(p, rows + [[V((0.14, 0, 1.42))]], lambda c, n: "steel" if n.x > 0 else "steel_dark")
-    p.cylinder(V((0, 0, 0)), 0.026, 0.03, "hero_iron", segments=5, z=0.9)
+    em.limb(p, [V((0, 0, -0.32)), V((0, 0, 0.94))], [0.018, 0.016], ["bow_wood"], sides=4)
+    p.cylinder(V((0, 0, 0)), 0.024, 0.08, "hero_iron", segments=5, z=0.88)
+    back = -0.014
+    rows = [[V((back, -t, z)), V((back, t, z)), V((edge, 0.0015, z)), V((edge, -0.0015, z))]
+            for z, edge, t in ((0.95, 0.03, 0.012), (1.03, 0.066, 0.012), (1.13, 0.076, 0.011), (1.23, 0.064, 0.009), (1.32, 0.036, 0.007))]
+    em.loft(p, rows + [[V((back + 0.004, 0, 1.4))]], lambda c, n: "steel" if n.x > 0.2 else "steel_dark")
     made.append(p)
     # Staff: pivot at its middle, iron at both ends.
     p = hk.Piece("hero_staff")
@@ -854,7 +856,7 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         left = chest + V((-0.05, -0.31, -0.1))
         foot = V((0, right.y - 0.03, Z0 + 0.005))
         fit = (right.z + 0.02 - foot.z) / 0.98
-        m = aimed(foot, V((0, 0, 1)), V((0, -1, 0)) if weapon == "greatsword" else V((1, 0, 0)))  # a sword's edge forward
+        m = aimed(foot, V((0, 0, 1)))  # the greatsword's flat forward: approved in round 2, the exception to the edge rule
         out.append((f"hero_{weapon}", m @ Matrix.Diagonal((1, 1, fit, 1))))
     elif grip == "shoulder":  # the haft resting on the shoulder, one hand up by it, one low on the haft in front
         low = chest + V((w * 0.15, -0.34, -0.24))
@@ -886,7 +888,7 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         left = chest + V((-w * 0.2, -0.3, -0.15))
         d = V((0.75, -0.55, -0.25)).normalized()  # out wide and low, the blade clear of the ground
         right = left + d * 0.32
-        out.append((f"hero_{weapon}", aimed(left - d * 0.15, d, V((0, 0, 1)))))
+        out.append((f"hero_{weapon}", aimed(left - d * 0.15, d, V((0, -1, 0)))))  # the edge leading, toward the foe
     elif grip == "across":  # a guard, both hands
         mid = chest + V((0, -0.26, -0.1))
         d = V((1, 0, 0.24)).normalized()
@@ -924,7 +926,7 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
             out.append(("hero_shield", aimed(left + V((-0.015, -0.03, 0)), V((0, 0, 1)))))
         elif offhand in GRIP_OF:  # held back, ready, behind the main weapon
             left = chest + V((-w * 1.2, 0.16, -0.28))
-            out.append((f"hero_{offhand}", aimed(left, V((-0.18, 0.5, 0.75)), V((0, -1, 0)))))  # its edge forward
+            out.append((f"hero_{offhand}", aimed(left, V((-0.18, 0.5, 0.75)))))  # as approved in round 2
     return right, left, out, pose
 
 
