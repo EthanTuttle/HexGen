@@ -196,7 +196,7 @@ func _build_clock() -> void:
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_clock_title = UI.label("", "lilita", 14, UI.INK, 0, 1.1)
-	_clock_sub = UI.label("", "n800", 10, UI.INK_SOFT, 0, 1.25)
+	_clock_sub = UI.label("", "n800", 11, UI.INK_SOFT, 0, 1.25)
 	_clock_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # "Dawn in under a minute" takes two lines
 	v.add_child(_clock_title)
 	v.add_child(_clock_sub)
