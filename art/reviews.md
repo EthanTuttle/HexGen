@@ -175,3 +175,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-05 | `art/preview/pose_check_round5_1_v2.png` | approved | Glaive with the front hand on the haft (frozen). Brass knuckles still to fix (forearm level with the upper arm) |
 | 2026-11-05 | `art/preview/pose_check_round6_1_v1.png` | approved | Brass knuckles (round 6). Every weapon pose is now approved: export the hero kit (v10) |
 | 2026-11-05 | `art/export/beasts.glb` | approved | The four approved ally beasts exported (wolf v7, bear v3, panther v3, hawk v3), merged to main |
+| 2026-11-05 | `art/export/heroes.glb`, `heroes_placements.json` | approved | Hero kit v10 with every approved weapon pose (posed legs, IK arms, new grips), exported and merged to main. Godot's assembler must be updated to the new table before it reads it |

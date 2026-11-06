@@ -85,6 +85,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Teleportation rune vs "no fast travel"~~ (settled Oct 23: "the party walks" rule dropped)
 
 **Classes & combat**
+- [ ] New (Nov 5, 2026): armour reworked to Armoured (2 heads, 3 with a shield) or Clothes (heads = DEX). Redo to fit it: Plate Master and Nimble, Rare armour's extra coin, Sunder, Fortress, armour-skipping cards, each class's armour list (light, medium, heavy), and the hit chance tables in 03
 - [ ] New (Nov 5, 2026): Companion ranger's beast in the prototype: stats (HP, damage, Move), how it levels, and the level-5 subclass pick; four ally beast minis are being drafted
 - [ ] New (Nov 5, 2026): check the combat details panel fits everything it can show at its shorter height (7 slots, shorter panel and starting hotbar chosen Nov 5, 2026: see Presentation → Combat screen and Action cards screen)
 - [ ] New (Nov 5, 2026): cover: do crops and brush hide anyone? (Below 1 coin: the long shot, settled Nov 5, 2026.) Combat map art needs per-cell data for fences and walls

@@ -31,7 +31,7 @@ Each piece includes the standard hex base with the green ally ring (`#7FBF7A`), 
 
 ## Colours
 
-Beasts use the hero kit's marks and the same swap: see `art/handoff/hero_kit.md` → What Godot needs → 2. The colours. Run that step over a beast's vertex colours once per beast and per change. For a beast the four zones mean:
+Beasts use the hero kit's marks and the same swap: see `art/handoff/hero_kit.md` → What Godot needs → 3. The colours. Run that step over a beast's vertex colours once per beast and per change. For a beast the four zones mean:
 
 | Zone | Mark (red ÷ 20) | On a beast |
 |---|---:|---|
