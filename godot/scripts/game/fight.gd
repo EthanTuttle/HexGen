@@ -1057,7 +1057,7 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 		if a.ally and weapon_attack(k) and Weapons.of(a.weapon).hands == "v" and a.off in ["", "none"]:
 			dmg += Weapons.VERSATILE_TWO_HANDED   # a versatile weapon held two-handed (04)
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
-		if k.get("effect", "") == "sneak" and _flanked(a, t):   # not on the offhand's free hit (04)
+		if k.get("effect", "") == "sneak" and sneak_applies(a, t):   # not on the offhand's free hit (04)
 			dmg *= Rules.SNEAK_TIMES   # Sneak Attack doubles the weapon's damage, before the flat bonuses (Backstab, the Mark) (03)
 		if k.id == "quick_slash" and a.quick_ready:
 			dmg -= Rules.QUICK_SLASH_LESS
@@ -1157,6 +1157,11 @@ func heads_needed(t: Dictionary, a := {}, k := {}) -> int:
 ## Whether a hits with this card's weapon (the basic attack, weapon cards, Sneak Attack).
 static func weapon_attack(k: Dictionary) -> bool:
 	return k.id in ["attack", "sneak_attack"] or k.src == "weapon"
+
+
+## Sneak Attack's bonus applies (03): the foe is flanked or unaware. Unaware waits on ambushes: add it here.
+func sneak_applies(a: Dictionary, t: Dictionary) -> bool:
+	return _flanked(a, t)
 
 
 func _flanked(a: Dictionary, t: Dictionary) -> bool:
