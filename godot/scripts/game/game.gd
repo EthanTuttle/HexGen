@@ -1620,7 +1620,7 @@ func start_fight(t: Vector2i) -> void:
 	var distance := Rules.hex_distance(t, Rules.START_TILE)
 	var foes := mini(Rules.ENEMIES_BASE + distance / Rules.ENEMIES_PER_DISTANCE, Rules.ENEMIES_MAX)
 	var roles: Array = encounters[t].roles if encounters.has(t) else []
-	fight.roster = Foes.roster(encounters[t].entry.scene, roles, Foes.band(t)) if not roles.is_empty() else []
+	fight.roster = Foes.roster(encounters[t].entry.scene, roles, Foes.band(t), level) if not roles.is_empty() else []
 	_fade_to(0.0, Rules.ZOOM_FADE)
 	var won: bool = await fight.run(self, land(t), t, foes, id)
 	var downed := {}

@@ -226,7 +226,8 @@ func _go_to_a_fight() -> void:
 
 
 ## How fights go at each band for a fresh party at a given level's HP (design/06's numbers), for the balance report.
-## Foes' numbers to compare: --tune=hp:1,1.5,2;damage:1,1,2;coins:0,1,2;heads:0,0,1;count:2-3,3-3,3-4;attacks:1
+## Foes' numbers to compare: --tune=hp:1,1.5,2;damage:1,1,2;coins:0,1,2;heads:0,0,1;elite:1;count:2-3,3-3,3-4;attacks:1;
+## level:elite=0,0,1,1,2
 func _tune() -> void:
 	for a: String in OS.get_cmdline_user_args():
 		if not a.begins_with("--tune="):
@@ -241,6 +242,10 @@ func _tune() -> void:
 				"heads": Foes.band_heads = Array(vals).map(func(v): return v.to_int())
 				"count": Foes.band_count = Array(vals).map(func(v): return [v.split("-")[0].to_int(), v.split("-")[1].to_int()])
 				"attacks": Foes.attacks_per_turn = vals[0].to_int()
+				"elite": Foes.elite_heads = vals[0].to_int()
+				"level":
+					var rv := kv[1].split("=")
+					Foes.level_heads[rv[0]] = Array(rv[1].split(",")).map(func(v): return v.to_int())
 
 
 func _bands() -> void:

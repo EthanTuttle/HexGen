@@ -186,7 +186,8 @@ const XP_MORE_EACH := 10
 ## weapon's (or a caster's) score for attacks. Scores drive attacks, spells, saves and checks (DOCS: design/06 -> First
 ## playable -> Races); unlisted scores are 1. Companions' scores: DOCS (design/03 -> Ability scores -> Starting scores);
 ## races: DOCS (design/01: Chelmsford a blue dragonborn, Mel a wood elf; design/03: Fluffy's cat race).
-## The hero's come from the creator; with no creator behind the run, HERO_DEFAULT. PLACEHOLDER: HP.
+## The hero's come from the creator; with no creator behind the run, HERO_DEFAULT. PLACEHOLDER: HP, and the companions'
+## armour (04 -> Armour, Nov 5, 2026): Fluffy and Mel in Clothes, Chelmsford Armoured with his shield.
 const PARTY := [
 	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
 		"weapon": "longsword",
@@ -194,10 +195,10 @@ const PARTY := [
 	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "armour": "none", "scores": {"INT": 3, "DEX": 2},
 		"weapon": "staff",
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
-	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "armour": "Medium", "scores": {"WIS": 2, "STR": 2, "CON": 2},
+	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "armour": "Armoured", "off": "shield", "scores": {"WIS": 2, "STR": 2, "CON": 2},
 		"weapon": "mace",
 		"cards": ["move", "attack", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
-	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "armour": "Light", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
+	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "armour": "none", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
 		"weapon": "dagger",
 		"cards": ["move", "attack", "defend", "use_item", "throw", "sneak_attack", "poison_blade"]},
 ]
@@ -214,6 +215,15 @@ const CHIME_LINES := {"Chelmsford": {"Athletics": ["As he heaves alongside", "\"
 ## design/characters: each companion's chime-in per proficiency, and their fallback line at the bar.
 const COMPANION_CHIMES := {"Fluffy": {"Persuade": "\"Agree, and I shall permit you to sit near me, briefly.\"", "Lore": "\"Why, I'll be. Has nobody here read anything at all?\""}}
 const BAR_LINES := {"Fluffy": "\"Innkeeper, another saucer, for I am celebrating being magnificent.\""}
+
+
+## Test aid for the balance comparison: `-- --bash=hold|push2|stun` tries Shield Bash as the push and the foe loses its next
+## Move, a 2-hex push, or the old full stun (not a game option). "" is the game's rule: push 1 hex.
+static func bash() -> String:
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--bash="):
+			return a.trim_prefix("--bash=")
+	return ""
 
 
 ## Test aid for the balance comparison: `-- --old=scores,move,...` turns each named change back to how it was before the
