@@ -175,7 +175,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
 | Rapier | One-handed | En garde, fencer's stance |
 | Scimitar | One-handed | Hand at the off shoulder, blade raised beside the head, ready to cut (changed Nov 5, 2026 by Ethan from mid-spin: it took the shortsword's first backhand draft) |
 | Dagger | One-handed | Reverse grip, low crouch |
-| Battleaxe | One-handed | Held low and loose |
+| Battleaxe | One-handed | Held low and loose, head at the top, gripped about a third of the way down the haft from the head (Ethan, Nov 5, 2026) |
 | Battleaxe | Two-handed | Executioner's raise, axe lifted overhead |
 | Greataxe | Two-handed | Carried on the shoulder |
 | Mace | One-handed | Raised high (Chelmsford, minis v2a) |
@@ -200,7 +200,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
 | Second weapon | Held back, ready, behind the main weapon |
 | Empty hand | No variant: the base pose's free hand is used |
 
-**Legs and anatomy** (Ethan, Nov 5, 2026): each weapon pose sets the legs too (a lunge, crouch or wide stance, staying inside the cell), not only the arms, and every pose must bend the way real elbows, shoulders and torsos do (a wind-up twists the torso, the elbow trails the fist). Every blade's cutting edge faces the way the mini faces, not its flat (Ethan, Nov 5, 2026). **Staff casting pose** (Ethan, Nov 5, 2026): a caster class (Wizard, Cleric, Bard) holding a staff with an empty off hand shows the planted staff and raised casting hand, and still counts as two-handed for damage ([Weapons & gear](04 Weapons & gear.md) → Weapon rules); martials show the quarterstaff guard.
+**Legs and anatomy** (Ethan, Nov 5, 2026): each weapon pose sets the legs too (a lunge, crouch or wide stance, staying inside the cell), not only the arms, and every pose must bend the way real elbows, shoulders and torsos do (a wind-up twists the torso, the elbow trails the fist). Every blade's cutting edge faces the way the mini faces, not its flat, except the planted greatsword, which shows its flat (Ethan, Nov 5, 2026). **Staff casting pose** (Ethan, Nov 5, 2026): a caster class (Wizard, Cleric, Bard) holding a staff with an empty off hand shows the planted staff and raised casting hand, and still counts as two-handed for damage ([Weapons & gear](04 Weapons & gear.md) → Weapon rules); martials show the quarterstaff guard.
 
 Two-handed grips and fist weapons use no offhand variant. A shield or second weapon replaces the base pose's free hand, so a staff held one-handed with a shield loses its raised casting hand.
 
