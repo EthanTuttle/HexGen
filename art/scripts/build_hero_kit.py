@@ -902,10 +902,10 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         left = chest + V((-w * 0.9, -0.28, -0.05))
         out.append((f"hero_{weapon}", aimed(right, V((0.68, -0.3, -0.67)), V((0, -1, 0)))))  # the blade angled about 45 degrees out from the body
     elif grip == "sweep":  # mid-sweep: the torso twisted, the blade swung out low and wide on the weapon side
-        left = chest + V((-w * 0.2, -0.3, -0.15))
         d = V((0.55, -0.5, -0.6)).normalized()  # swung out and down, steeper and choked up, so it stays near the cell, the blade clear of the ground
-        right = left + d * 0.32
-        out.append((f"hero_{weapon}", aimed(left - d * 0.7, d, V((0, -1, 0)))))  # the edge leading, toward the foe
+        butt = chest + V((-w * 0.2, -0.3, -0.15)) - d * 0.7  # the haft's pivot (its foot at -0.32, the socket from 0.88)
+        left, right = butt + d * 0.42, butt + d * 0.78  # both hands on the haft, the front one below the socket, its arm bent
+        out.append((f"hero_{weapon}", aimed(butt, d, V((0, -1, 0)))))  # the edge leading, toward the foe
     elif grip == "across":  # a guard, both hands
         mid = chest + V((0, -0.26, -0.1))
         d = V((1, 0, 0.24)).normalized()

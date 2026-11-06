@@ -45,7 +45,7 @@ ROWS = [
     ("Spear", "one-handed", "Upright at attention, like the halberd", "spear", None, {}, f"kept; {ALL}"),
     ("Spear", "two-handed", "Braced pike, point forward", "spear", None, {"two": True}, "NEW (10): braced pike, level, into the next cell"),
     ("Halberd", "two-handed", "Upright at attention", "halberd", None, {}, f"kept; {ALL}"),
-    ("Glaive", "two-handed", "Mid-sweep", "glaive", None, {}, "ROUND 4 (6): the sweep tightened toward the cell, twist and leading edge kept"),
+    ("Glaive", "two-handed", "Mid-sweep", "glaive", None, {}, "ROUND 5: the front hand back on the haft below the socket, its arm bent; sweep kept"),
     ("Staff", "caster, hand empty", "Staff planted, free hand raised as if casting", "staff", None, {"caster": True}, "NEW (12): casting pose, palm out"),
     ("Staff", "two-handed", "Quarterstaff guard, held across the body", "staff", None, {}, f"kept (martials); {ALL}"),
     ("Wand", "one-handed", "Arm extended, wand pointed at the foe", "wand", None, {}, "CHANGED (13): angled forward and out"),
@@ -254,8 +254,7 @@ if __name__ == "__main__":
         rows = (16, 24, 25)
         for i in rows:
             name, grip, pose, weapon, offhand, extra, change = ROWS[i - 1]
-            if i != 16:  # the glaive panel is already rendered with this kit
-                shot(weapon, offhand, extra, f"pose_check_panel_{i:02d}")
+            shot(weapon, offhand, extra, f"pose_check_panel_{i:02d}")
             text_strip([(f"{i}. {name}, {grip}", 0.62), (f"07: {pose}", 0.5), (kit_text(weapon, offhand, extra), 0.5), (change, 0.5)], f"pose_check_panel_{i:02d}_text")
         sheet([f"pose_check_panel_{i:02d}" for i in rows], 1, out="pose_check_round5")
         sys.exit()
