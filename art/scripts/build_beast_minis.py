@@ -303,9 +303,12 @@ def hex_patch(p, at, facing, r, paint):
 
 
 def hawk(col):
-    """Gliding on a flight stand, wings spread and raised a little, head turned down to look for what hides, talons ready:
+    """Gliding on a flight stand, broad wings spread and raised a little, head turned down to look for what hides, talons ready:
     a thick dark rod from a stump with a twig, so it reads from the combat camera. Its shadow is painted on the base, so the
-    cell reads wherever the light falls. The ranger's cloth is a band on each leg."""
+    cell reads wherever the light falls. The ranger's cloth is a slim band on each leg and a short tie from the right one.
+    v2 (after Ethan's critical pass): broad wings wide at the shoulder tapering to fingered tips, cambered so the underside isn't
+    a plank; a sleeker body with a deep chest; a fanned tail with depth, so it reads side-on; a smaller head; eyes cast onto it
+    and brows set in; slim snug bands; the tie a third as long and lighter."""
     p = hk.Piece("beast_hawk")
     coat, back, pale, dark = zone("skin"), zone("skin", 0.82), zone("hair"), zone("skin", 0.58)
     lift = 0.78  # the body's height over the base
@@ -313,72 +316,78 @@ def hawk(col):
     def at(x, y, z):
         return V((x, y, Z0 + z))
 
-    # The stand: a stump with a twig, and a thick rod up to the belly.
+    # The stand: a stump with a twig, and a thick rod up to the belly (unchanged).
     p.blob(at(0, 0.02, 0.03), 0.075, "stand_wood", squash=0.7)
     vr.spike(p, at(0.04, 0.04, 0.05), at(0.14, 0.1, 0.11), 0.018, "stand_wood", segments=3)
     em.limb(p, [at(0, 0.02, 0.05), at(0, 0.02, lift - 0.06)], [0.03, 0.026], ["stand_wood"], sides=6)
-    # Its shadow on the base, a bird's silhouette (not a cross, which read as a target marker): swept wings with fingered
-    # tips, body, head and fanned tail, each a flat convex shape just over the base, a hair apart so they don't flicker.
+    # Its shadow on the base, the bird seen from above: broad wings with fingered tips, body, small head and fanned tail, each a
+    # flat convex shape just over the base, a hair apart so they don't flicker.
     def flat(points, dz):
         c = sum(points, V((0, 0))) / len(points)
         ring = sorted(points, key=lambda q: math.atan2(q.y - c.y, q.x - c.x))  # anticlockwise, as prism wants
         p.prism([V((q.x, q.y, 0)) for q in ring], Z0, Z0 + dz, "hawk_shadow")
     for x in SIDE:
-        flat([V((x * 0.03, -0.035)), V((x * 0.2, -0.03)), V((x * 0.2, 0.075)), V((x * 0.03, 0.07))], 0.0025)
-        flat([V((x * 0.2, -0.03)), V((x * 0.33, -0.005)), V((x * 0.33, 0.06)), V((x * 0.2, 0.075))], 0.0025)
-        for k in range(3):
-            y0 = -0.003 + k * 0.022
-            flat([V((x * 0.33, y0)), V((x * 0.42, y0 + 0.012)), V((x * 0.33, y0 + 0.02))], 0.0025)
-    flat([V((0.05 * math.cos(a), 0.02 + 0.13 * math.sin(a))) for a in [k * math.pi / 4 for k in range(8)]], 0.0032)
-    flat([V((0.035 * math.cos(a), -0.13 + 0.035 * math.sin(a))) for a in [k * math.pi / 3 for k in range(6)]], 0.0032)
-    flat([V((-0.025, 0.12)), V((0.025, 0.12)), V((0.075, 0.27)), V((-0.075, 0.27))], 0.0028)
+        flat([V((x * 0.04, -0.09)), V((x * 0.17, -0.08)), V((x * 0.17, 0.09)), V((x * 0.04, 0.1))], 0.0025)
+        flat([V((x * 0.17, -0.08)), V((x * 0.3, -0.06)), V((x * 0.3, 0.06)), V((x * 0.17, 0.09))], 0.0025)
+        for k in range(5):
+            y0 = -0.055 + k * 0.024
+            flat([V((x * 0.3, y0)), V((x * (0.43 - k * 0.014), y0 + 0.01 + k * 0.006)), V((x * 0.3, y0 + 0.02))], 0.0025)
+    flat([V((0.055 * math.cos(a), 0.0 + 0.12 * math.sin(a))) for a in [k * math.pi / 4 for k in range(8)]], 0.0032)
+    flat([V((0.03 * math.cos(a), -0.15 + 0.03 * math.sin(a))) for a in [k * math.pi / 3 for k in range(6)]], 0.0032)
+    flat([V((-0.025, 0.12)), V((0.025, 0.12)), V((0.085, 0.3)), V((-0.085, 0.3))], 0.0028)
 
-    # Body: a deep breast tapering to the tail.
+    # Body: sleek, a deep chest tapering to the tail.
     def plumage(c, n):
         return back if n.z > 0.4 else pale
     em.loft(p, [em.section(at(0, y, lift + z), w, h, sides=8) for y, z, w, h in
-                ((0.12, 0.0, 0.035, 0.028), (0.06, -0.005, 0.065, 0.06), (-0.03, 0.0, 0.075, 0.075), (-0.1, 0.02, 0.055, 0.055))], plumage)
-    # Head turned down and a little to its right, looking for what hides.
+                ((0.14, 0.012, 0.022, 0.02), (0.08, 0.0, 0.045, 0.048), (0.0, -0.008, 0.058, 0.074), (-0.07, 0.008, 0.05, 0.06),
+                 (-0.11, 0.03, 0.034, 0.036))], plumage)
+    # Head, smaller, turned down and a little to its right, looking for what hides.
     fwd = V((0.25, -1, -0.55)).normalized()
-    hc = at(0.0, -0.12, lift + 0.05)
+    hc = at(0.0, -0.14, lift + 0.055)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
-    em.loft(p, [em.section(h(-0.04, 0.0), 0.045, 0.045, along=fwd, sides=8), em.section(h(0.0, 0.01), 0.058, 0.058, along=fwd, sides=8),
-                em.section(h(0.045, 0.0), 0.045, 0.042, along=fwd, sides=8), em.section(h(0.07, -0.005), 0.026, 0.024, along=fwd, sides=8)],
+    em.loft(p, [em.section(h(-0.03, 0.0), 0.034, 0.034, along=fwd, sides=8), em.section(h(0.0, 0.008), 0.043, 0.043, along=fwd, sides=8),
+                em.section(h(0.034, 0.0), 0.034, 0.032, along=fwd, sides=8), em.section(h(0.054, -0.004), 0.02, 0.018, along=fwd, sides=8)],
             lambda c, n: back if n.z > 0.5 else coat)
-    em.limb(p, [h(0.06, 0.005), h(0.09, -0.004), h(0.105, -0.03)], [0.02, 0.012, 0.0], ["cere", "beak", "beak"], sides=5)  # hooked beak
-    for x in SIDE:
-        look = (fwd + V((x * 0.9, 0, 0.2))).normalized()
-        hit = on_surface(p, h(0.02, 0.012, x * 0.04) + look * 0.2, -look)
-        e, n = (hit[0] + hit[1] * 0.004, hit[1]) if hit else (h(0.02, 0.012, x * 0.04), look)
-        hb_plate(p, e, n, 0.024, 0.02, zone("eyes"))
-        hb_plate(p, e + n * 0.002, n, 0.011, 0.012, "hero_pupil")
-        em.limb(p, [h(0.035, 0.035, x * 0.012), h(0.005, 0.034, x * 0.045)], [0.009, 0.006], [dark], sides=4)  # a stern brow
+    em.limb(p, [h(0.046, 0.004), h(0.07, -0.003), h(0.082, -0.024)], [0.015, 0.009, 0.0], ["cere", "beak", "beak"], sides=5)  # hooked beak
+    face(p, h, fwd, eye=(0.014, 0.01, 0.03, 0.019, 0.016), brow=((0.03, 0.027, 0.01), (0.006, 0.027, 0.033)), dark=dark, splay=0.9)
 
-        # Wings spread and raised a little, pale underneath, the tips fingered.
-        root, elbow, wrist = at(x * 0.05, -0.04, lift + 0.03), at(x * 0.2, -0.03, lift + 0.08), at(x * 0.33, 0.0, lift + 0.12)
+    for x in SIDE:
+        # Wings: broad at the shoulder, tapering to the hand, raised a little; each station a cambered section, thick at the
+        # leading edge, thin at the trailing edge, the underside hollowed, so from below it reads as a wing and not a plank.
         def wing(c, n):
             return coat if n.z > 0 else pale
-        segs = ((root, 0.085), (elbow, 0.08), (wrist, 0.06))
-        em.loft(p, [em.section(q + V((0, 0.03, 0)), c, 0.014, along=V((x, 0, 0.25)), sides=4) for q, c in segs], wing)
-        for k in range(4):  # primaries
-            base_ = wrist + V((0, -0.03 + k * 0.03, 0))
-            vr.spike(p, base_, base_ + V((x * (0.11 - k * 0.012), 0.02 + k * 0.012, 0.03)), 0.02, back, segments=3)
+        rings = []
+        for q, chord in ((at(x * 0.045, -0.01, lift + 0.03), 0.18), (at(x * 0.17, -0.005, lift + 0.07), 0.165), (at(x * 0.3, 0.0, lift + 0.11), 0.12)):
+            lead, mid, trail = q.y - chord * 0.4, q.y - chord * 0.1, q.y + chord * 0.6
+            ring = [V((q.x, lead, q.z - 0.007)), V((q.x, lead, q.z + 0.01)), V((q.x, mid, q.z + 0.014)), V((q.x, trail, q.z + 0.002)), V((q.x, mid, q.z + 0.004))]
+            rings.append(ring if x > 0 else ring[::-1])
+        em.loft(p, rings, wing)
+        wrist = at(x * 0.3, 0.0, lift + 0.11)
+        for k in range(5):  # primaries: flat fingered feathers fanning from the hand, the leading one longest
+            base_ = wrist + V((0, -0.045 + k * 0.026, 0.004))
+            tip = base_ + V((x * (0.13 - k * 0.014), 0.012 + k * 0.007, 0.028 - k * 0.003))
+            mid = base_.lerp(tip, 0.5)
+            rows = [[c + V((0, -hw, t)), c + V((0, hw, t)), c + V((0, hw, -t)), c + V((0, -hw, -t))] for c, hw, t in ((base_, 0.013, 0.004), (mid, 0.011, 0.0035))]
+            em.loft(p, rows + [[tip]], lambda c, n: back if n.z > 0 else pale)
 
-        # Legs down and forward, talons open; the ranger's band on each.
-        hip, ankle = at(x * 0.03, -0.01, lift - 0.05), at(x * 0.035, -0.07, lift - 0.13)
-        em.limb(p, [hip, ankle], [0.022, 0.012], [pale], sides=5)
-        em.loft(p, [em.section(hip.lerp(ankle, t), r, r, along=ankle - hip, sides=6) for t, r in ((0.45, 0.022), (0.8, 0.019))], lambda c, n: zone("cloth"))
+        # Legs down and forward, talons open; a slim band of the ranger's cloth snug on each, closed, so no gap shows.
+        hip, ankle = at(x * 0.03, -0.01, lift - 0.06), at(x * 0.035, -0.06, lift - 0.13)
+        em.limb(p, [hip, ankle], [0.02, 0.012], [pale], sides=5)
+        b0, b1 = hip.lerp(ankle, 0.5), hip.lerp(ankle, 0.66)
+        em.limb(p, [b0, b1], [0.0185, 0.0172], [zone("cloth")], sides=6)
         for d in (-0.02, 0.0, 0.02):
             vr.spike(p, ankle, ankle + V((x * 0.01 + d, -0.04, -0.025)), 0.008, "cere", segments=3)
-        if x > 0:  # a cloth tie streaming from the right leg, out in front where the combat camera sees it
-            tie = [ankle.lerp(hip, 0.35), at(0.07, -0.1, lift - 0.21), at(0.1, -0.1, lift - 0.3), at(0.14, -0.07, lift - 0.38)]
-            em.loft(p, [em.section(q, w, 0.006, along=(tie[min(i + 1, 3)] - tie[max(i - 1, 0)]), sides=4) for i, (q, w) in enumerate(zip(tie, (0.022, 0.034, 0.034, 0.026)))],
+        if x > 0:  # a short, light cloth tie from the right band, out in front where the combat camera sees it
+            tie = [b1, b1 + V((0.02, -0.02, -0.045)), b1 + V((0.035, -0.02, -0.09)), b1 + V((0.055, -0.01, -0.125))]
+            em.loft(p, [em.section(q, w, 0.004, along=(tie[min(i + 1, 3)] - tie[max(i - 1, 0)]), sides=4) for i, (q, w) in enumerate(zip(tie, (0.016, 0.02, 0.019, 0.014)))],
                     lambda c, n: zone("cloth") if n.z > -0.2 else zone("cloth", 0.85))
 
-    # Tail fanned behind.
-    em.loft(p, [em.section(at(0, y, lift + z), w, 0.01, sides=4) for y, z, w in ((0.1, 0.0, 0.035), (0.2, -0.02, 0.06), (0.27, -0.035, 0.075))],
+    # Tail fanned behind and tipped down a little, its outer feathers curling up, so the fan shows depth side-on as well as from above.
+    em.loft(p, [[at(-w, y, lift + z + e), at(0, y, lift + z + t), at(w, y, lift + z + e), at(0, y, lift + z - t)]
+                for y, z, w, t, e in ((0.12, 0.006, 0.026, 0.016, 0.0), (0.2, -0.02, 0.056, 0.013, 0.012), (0.3, -0.058, 0.09, 0.011, 0.03))],
             lambda c, n: coat if n.z > 0 else pale)
     sm.base(p, "ring_ally")
     return p.finish(col)
