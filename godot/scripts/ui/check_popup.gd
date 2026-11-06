@@ -63,6 +63,26 @@ func ask(view: Dictionary, stay_label: String, on_stay: Callable, on_go: Callabl
 	visible = true
 
 
+## A choice of checks before anything is flipped (Ambush: Stealth or Deceive). choices: [name, coins, on_pick] each, one
+## pill a check with its coin count; then a Back pill.
+func choose(view: Dictionary, choices: Array, back_label: String, on_back: Callable) -> void:
+	_run += 1
+	_clear()
+	_head(view)
+	var buttons := _buttons()
+	for c: Array in choices:
+		var label := "%s · %d coin%s" % [c[0], c[1], "" if c[1] == 1 else "s"]
+		var b := _pill(label, UI.SAND, UI.INK)
+		b.accessibility_name = c[0]
+		b.pressed.connect(c[2])
+		buttons.add_child(b)
+	var back := _pill(back_label, UI.DARK, UI.CREAM)
+	back.accessibility_name = back_label
+	back.pressed.connect(on_back)
+	_buttons().add_child(back)
+	visible = true
+
+
 ## Flips: the same head, the coins landing in turn, then the helper (if any) and the result. flips: the hero's coins;
 ## helper: {} or initial, face, name, note, line; helper_heads: their coin; passed: the result. Emits continued.
 ## lucky: Lucky's reflip (design/03 -> Races -> Halfling), {at, heads}: that coin spins again under the clover, before any chime-in.

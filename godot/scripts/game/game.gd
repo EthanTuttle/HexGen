@@ -1604,6 +1604,50 @@ func choose_fight() -> void:
 	start_fight(_encounter_tile)
 
 
+# --- Ambush (design/03 -> Combat -> Ambush) ----------------------------------------------
+
+var ambush := -1   # the next fight's ambush: 1 passed, 0 failed, -1 none
+
+const AMBUSH_CHECKS := [["Stealth", "DEX"], ["Deceive", "CHA"]]
+
+
+## The check pop-up's first step: Stealth or Deceive, each with the hero's coins; Back returns to the encounter pop-up.
+func choose_ambush() -> void:
+	hud.hide_encounter()
+	var hero := party[0]
+	var choices := AMBUSH_CHECKS.map(func(c): return [c[0], Hero.coins_for(c[1], c[0]), ambush_with.bind(c[0])])
+	hud.check.choose({tag = "Ambush", tag_bg = Color("#5B4A7A"), text = "Ambush them?", initial = hero.initial, face = hero.color,
+			line = hero.name}, choices, "Back", func():
+				hud.check.visible = false
+				hud.show_encounter(Rules.NAMES[land(_encounter_tile)], "ask", []))
+
+
+## The hero's flip against the group's highest role, as Sneak past; Lucky, then a chime-in on a miss by exactly 1.
+func ambush_with(proficiency: String) -> void:
+	var ab: String = AMBUSH_CHECKS.filter(func(c): return c[0] == proficiency)[0][1]
+	var need := sneak_heads()
+	var hero := party[0]
+	var n := Hero.coins_for(ab, proficiency)
+	var flips: Array[bool] = Coins.flip(rng, n)
+	var first := flips.duplicate()
+	var luck := lucky_check(flips, need)
+	var heads := Coins.heads(flips)
+	var helper := {}
+	var helper_heads := false
+	var m := _chime_helper(proficiency)
+	if heads == need - 1 and not m.is_empty():
+		var say: Array = Rules.CHIME_LINES.get(m.name, {}).get(proficiency, ["", ""])
+		helper = {initial = m.initial, face = m.color, name = m.name, note = say[0], line = say[1]}
+		helper_heads = rng.randf() < 0.5
+	var passed := heads + (1 if helper_heads else 0) >= need
+	var view := {tag = "%s · %s" % [proficiency, ab], tag_bg = Color("#5B4A7A"), text = "Ambush", initial = hero.initial,
+			face = hero.color, line = "%s · %d coin%s · %s · needs %d heads" % [hero.name, n, "" if n == 1 else "s", ab, need]}
+	hud.check.play(view, first, helper, helper_heads, passed, luck)
+	await hud.check.continued
+	ambush = 1 if passed else 0
+	start_fight(_encounter_tile)
+
+
 # --- Fights ------------------------------------------------------------------
 
 var force_map := ""

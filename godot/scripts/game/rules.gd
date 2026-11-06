@@ -215,7 +215,8 @@ const HERO_DEFAULT := {"race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2
 ## DOCS: design/01 -> Companion proficiencies. PLACEHOLDER: the hero has none yet (they come from the background).
 const PROFICIENCIES := {"Fluffy": ["Persuade", "Lore"], "Chelmsford": ["Persuade", "Athletics"], "Mel": ["Deceive", "Thievery"]}
 ## Written chime-ins (design/characters/<name>.md): the stage note, then the line. Only what the prototype's checks use.
-const CHIME_LINES := {"Chelmsford": {"Athletics": ["As he heaves alongside", "\"Right then, mind your fingers!\""]}}
+const CHIME_LINES := {"Chelmsford": {"Athletics": ["As he heaves alongside", "\"Right then, mind your fingers!\""]},
+		"Mel": {"Deceive": ["", "\"It's true, I saw it, everyone saw it, there were loads of us.\""]}}   # Mel's has no stage note (Ethan, Nov 6, 2026)
 ## design/characters: each companion's chime-in per proficiency, and their fallback line at the bar.
 const COMPANION_CHIMES := {"Fluffy": {"Persuade": "\"Agree, and I shall permit you to sit near me, briefly.\"", "Lore": "\"Why, I'll be. Has nobody here read anything at all?\""}}
 const BAR_LINES := {"Fluffy": "\"Innkeeper, another saucer, for I am celebrating being magnificent.\""}

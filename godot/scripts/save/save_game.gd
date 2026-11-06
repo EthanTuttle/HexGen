@@ -18,7 +18,7 @@ const REBUILT := {
 	"Game": ["map", "rig", "clock", "party_node", "debug_fail_crossing", "debug_near_miss", "debug_auto_cross", "held", "busy",
 		"_encounter_views", "walk_limited", "level_pick", "end_panel", "enter_town_screen", "event_screen", "fight", "real_time",
 		"ui", "safe", "hud", "after", "_encounter_tile", "_open_pin", "_reveal_pin", "_reveal_until", "_slot_mats", "_shown_minute",
-		"_slot_marks", "popup", "picked", "_path_marks", "_debug_fill", "force_map", "_fade", "_debug_map"],
+		"_slot_marks", "popup", "picked", "_path_marks", "_debug_fill", "force_map", "_fade", "_debug_map", "ambush"],
 	"MapBoard": ["water_shapes", "boats", "slot_nodes", "_kit", "_ground", "_ground_img", "_ground_tex", "_tile_nodes", "_water_node",
 		"_water_cache", "_water_mats", "_port_boats", "_still_mists", "_slots_node", "_slot_mesh", "_slot_mat", "_still_water", "_glow",
 		"_lamp", "_st_glow", "_mist_mat", "_fey", "_window", "_web", "gates", "party_walks", "lightning", "_faint", "_graphs", "raised",
