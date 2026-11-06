@@ -14,6 +14,8 @@ var levels := 0
 var wipes := 0
 var drunk := 0
 var bot: FightBot
+var to_far := "--tofar" in OS.get_cmdline_user_args()   # test aid: play on past the goal until the first far fight, for level pacing
+var first_far := {}
 var _shut := {}
 var _locked := false
 var _water_gates := {}
@@ -51,8 +53,11 @@ func _run() -> void:
 	game.potions = 2
 	_check_sneak()
 	var steps := 0
-	while not game._ended and steps < MAX_STEPS:
+	while (to_far or not game._ended) and steps < (MAX_STEPS * 3 if to_far else MAX_STEPS) and first_far.is_empty():
 		steps += 1
+		if to_far and game.end_panel.visible:   # Keep exploring
+			game.end_panel.visible = false
+			game.busy = false
 		StallWatch.beat("step %d: %d regions, %d in hand" % [steps, game.regions.size(), game.deck.hand.size()])
 		if steps % 25 == 0:
 			print("PLAY step %d: %d regions, hand %s, deck %d, %d encounters, day %d minute %.0f" % [steps, game.regions.size(), game.deck.hand, game.deck.draw_pile.size(), game.encounters.size(), game.day, game.minute])
@@ -69,6 +74,11 @@ func _run() -> void:
 		if await _place_one():
 			continue
 		await _go_to_a_fight()
+	if to_far:
+		print("PLAY FIRST FAR: %s" % (JSON.stringify(first_far) if not first_far.is_empty() else "none in %d steps (%d fights, level %d, party %d)" % [steps, fights, game.level, game.party.size()]))
+		print("PLAY DONE: %d failed" % failed)
+		get_tree().quit()
+		return
 	for t: Vector2i in game.encounters:
 		print("PLAY left on the map: %s %s at %s, %d steps away, party at %s" % [game.encounters[t].entry.kind, game.encounters[t].entry.scene, t, game.path_to(t).size(), game.party_tile])
 	if failed > 0 or not game._ended:
@@ -243,6 +253,7 @@ func _tune() -> void:
 				"count": Foes.band_count = Array(vals).map(func(v): return [v.split("-")[0].to_int(), v.split("-")[1].to_int()])
 				"attacks": Foes.attacks_per_turn = vals[0].to_int()
 				"elite": Foes.elite_heads = vals[0].to_int()
+				"farfrom": Foes.far_from_level = vals[0].to_int()
 				"level":
 					var rv := kv[1].split("=")
 					Foes.level_heads[rv[0]] = Array(rv[1].split(",")).map(func(v): return v.to_int())
@@ -298,6 +309,8 @@ func _play_fight() -> void:
 	var roles: Array = f.units.filter(func(u): return not u.ally).map(func(u): return u.role)
 	if bot == null:
 		bot = FightBot.new(get_tree())
+	if band == 3 and first_far.is_empty():
+		first_far = {fights_before = fights - 1, won_before = game.fights_won, level = game.level, party = f.allies().size(), day = game.day, regions = game.regions.size()}
 	var r := await bot.play(f)
 	drunk = bot.drunk
 	print("PLAY FIGHT party %d band %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().size(), band, roles, r.rounds, r.hp0, r.hp1, r.downs, ", WIPED" if r.wiped else ""])

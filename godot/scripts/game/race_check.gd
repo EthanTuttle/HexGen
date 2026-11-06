@@ -386,11 +386,14 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	var m: Dictionary = hero.member
 	var w: Dictionary = Weapons.of(hero.weapon)
 	print("RACE gear: %s %s / %s, armour %s, heads to hit %d, cards %s" % [m.klass, hero.weapon, hero.off, m.armour, hero.heads, hero.cards])
-	var expect_heads: int = (Weapons.SHIELD_HEADS if hero.off == "shield" else Weapons.ARMOURED_HEADS) if Weapons.armoured(m.armour) else maxi(Races.score(m, "DEX"), 1)
-	_check(hero.heads == expect_heads, "armour: foes need %d heads to hit the hero (Armoured 2, with a shield 3, Clothes DEX)" % expect_heads)
-	_check(Weapons.defence_heads({"armour": "none", "scores": {"DEX": 3}}) == 3 and Weapons.defence_heads({"armour": "Medium", "off": "shield"}) == 3
-		and Weapons.defence_heads({"armour": "Light"}) == 2 and Weapons.defence_heads({"armour": "none"}) == 1, "armour: Clothes DEX 3 needs 3, Armoured with a shield 3, Armoured 2, Clothes DEX 1 needs 1")
-	_check(_who("Fluffy").heads == 2 and _who("Chelmsford").heads == 3 and _who("Mel").heads == 2, "companions: Fluffy and Mel in Clothes (DEX 2), Chelmsford Armoured with a shield")
+	var expect_heads: int = (1 + ceili(Races.score(m, "CON") / 2.0) + (1 if hero.off == "shield" else 0)) if Weapons.armoured(m.armour) else maxi(ceili(Races.score(m, "DEX") / 2.0), 1)
+	_check(hero.heads == expect_heads, "armour: foes need %d heads to hit the hero (Armoured 1 + half CON up, +1 shield; Clothes half DEX up)" % expect_heads)
+	var dh := func(armour: String, off: String, scores: Dictionary) -> int: return Weapons.defence_heads({"armour": armour, "off": off, "scores": scores})
+	_check(dh.call("Light", "", {"CON": 1}) == 2 and dh.call("Light", "", {"CON": 2}) == 2 and dh.call("Medium", "", {"CON": 3}) == 3 and dh.call("Heavy", "", {"CON": 5}) == 4
+		and dh.call("Medium", "shield", {"CON": 2}) == 3, "armour: Armoured CON 1-2 needs 2, CON 3 needs 3, CON 5 needs 4, a shield adds 1")
+	_check(dh.call("none", "", {"DEX": 1}) == 1 and dh.call("none", "", {"DEX": 2}) == 1 and dh.call("none", "", {"DEX": 3}) == 2 and dh.call("none", "", {"DEX": 6}) == 3,
+		"armour: Clothes DEX 1-2 needs 1, DEX 3 needs 2, DEX 6 needs 3")
+	_check(_who("Fluffy").heads == 1 and _who("Chelmsford").heads == 3 and _who("Mel").heads == 1, "companions: Fluffy and Mel in Clothes (DEX 2: 1 heads), Chelmsford Armoured with a shield (CON 2: 3)")
 	_check(hero.cards.filter(func(id): return not id in Races.cards(m)) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card)")
 	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
 	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])

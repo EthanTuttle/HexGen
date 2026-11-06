@@ -21,6 +21,7 @@ static var band_hp := [1.5, 2.0, 2.5]        # role HP times this
 static var band_damage := [1.5, 1.5, 2.0]    # role damage times this, rounded
 static var band_coins := [0, 1, 2]           # added to the role's coins
 static var band_heads := [0, 0, 1]           # added to the heads it takes to hit: DOCS (03 -> Hit chance scaling) far +1
+static var far_from_level := 1               # the far +1 counts from this hero level (Ethan is weighing a later one; --tune farfrom:N)
 static var elite_heads := 1                  # DOCS (03): elites add +1 (bosses too, when there are any)
 ## The level curve (03 -> Hit chance scaling: a direction to test, Nov 5, 2026): heads added to each role's target from the
 ## hero's level, at the score steps (levels 1, 4, 8, 12, 16). PLACEHOLDER: no steps until Ethan sets them; --tune's
@@ -61,7 +62,7 @@ static func roster(scene: String, roles: Array, at_band: int, level := 1) -> Arr
 		var look: Array = MIX.get(scene, MIX.enc_fight_bandits)[role]
 		var hp: int = roundi(r.hp * band_hp[at_band - 1])
 		out.append({name = look[1], mini = look[0], role = role, ability = "STR", hp = hp, max_hp = hp, score = r.coins + band_coins[at_band - 1], damage = roundi(r.damage * band_damage[at_band - 1]),
-				heads = 1 + (elite_heads if role == "elite" else 0) + band_heads[at_band - 1] + level_add(role, level)})
+				heads = 1 + (elite_heads if role == "elite" else 0) + (band_heads[at_band - 1] if level >= far_from_level else 0) + level_add(role, level)})
 	return out
 
 

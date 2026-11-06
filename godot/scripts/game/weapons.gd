@@ -31,8 +31,8 @@ const CAT := {
 	"knuckles": {"ab": "STR", "hands": "f", "range": 1, "cards": ["haymaker"]},
 	"wraps": {"ab": "DEX", "hands": "f", "range": 1, "cards": ["step_strike"]},
 }
-const ARMOURED_HEADS := 2               # DOCS (04 -> Armour, Nov 5, 2026): heads a foe needs to hit an Armoured hero
-const SHIELD_HEADS := 3                 # DOCS: Armoured with a shield
+const ARMOURED_HEADS := 1               # DOCS (04 -> Armour, Nov 5, 2026): Armoured needs 1 + half CON rounded up
+const SHIELD_HEADS := 1                 # DOCS: +1 with a shield
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
 const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"]}   # DOCS (06 -> Start)
@@ -67,8 +67,9 @@ static func armoured(armour: String) -> bool:
 	return armour in ["Light", "Medium", "Heavy", "Armoured"]
 
 
-## The heads a foe needs to hit this hero or companion: Armoured 2, with a shield 3, in Clothes their DEX.
+## The heads a foe needs to hit this hero or companion (04): Armoured 1 + half CON rounded up, +1 with a shield; in Clothes
+## half DEX rounded up.
 static func defence_heads(m: Dictionary, clothes := false) -> int:
 	if armoured(m.get("armour", "")) and not clothes:
-		return SHIELD_HEADS if m.get("off", "") == "shield" else ARMOURED_HEADS
-	return maxi(Races.score(m, "DEX"), 1)
+		return ARMOURED_HEADS + ceili(Races.score(m, "CON") / 2.0) + (SHIELD_HEADS if m.get("off", "") == "shield" else 0)
+	return maxi(ceili(Races.score(m, "DEX") / 2.0), 1)
