@@ -79,7 +79,7 @@ func _open(title: String, w: float) -> VBoxContainer:
 
 ## items: [[label, callable], ...]
 func open_menu(items: Array) -> void:
-	var body := _open("Paused", 270)
+	var body := _open("Menu", 270)
 	body.add_theme_constant_override("separation", 10)
 	for it: Array in items:
 		var b := TagButton.make(it[0], 234, 40, 16)
