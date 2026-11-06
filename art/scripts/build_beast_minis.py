@@ -13,7 +13,7 @@ Proposed swatches are in BEAST_SWATCHES.
   beast_wolf        alert, head up, tail out straight, a draped saddle in the ranger's cloth: the enemy wolf stalks low with
                     its jaws open. (Until beast_minis_v8 the approved wolf was beast_wolf_band; Ethan's critical pass reopened it.)
   beast_bear        broad and heavy on all fours, head up, the ranger's scarf
-  beast_panther     long and low, head level and watchful, tail curling up at the tip, rosettes, the same back cloth
+  beast_panther     a big cat, long and low, heavy shoulders, head level and watchful, tail curling to one side, rosettes, the scarf
   beast_hawk        wings spread on a flight stand, looking down, bands and a cloth tie on its legs in the ranger's cloth, its shadow painted on the base
 """
 import math
@@ -208,8 +208,9 @@ def bear(col):
 
 
 def panther(col):
-    """Long and low, weight back on its haunches as if about to slip away, head level and turned to watch you, mouth shut,
-    the long tail down and curling up at the tip. Rosettes in a dark shade of the coat; the back cloth as on the wolf."""
+    """A big cat, long, low and heavy in the shoulder, weight back on its folded haunches as if about to slip away, the broad head
+    level and straight ahead, mouth shut, the tail down and curling gently to one side. v2 (after Ethan's critical pass): big-cat
+    proportions, small round ears, small slit eyes, a mouth, clean hind legs, a smooth tail, rosettes flush, the ranger's scarf."""
     p = hk.Piece("beast_panther")
     coat, back, side, pale, dark, spot = zone("skin"), zone("skin", 0.84), zone("skin", 0.92), zone("hair"), zone("skin", 0.55), zone("skin", 0.62)
 
@@ -219,71 +220,86 @@ def panther(col):
     def fur(c, n):
         return back if n.z > 0.6 else pale if n.z < -0.35 else coat
 
-    # Body: deep chest, slim waist, strong haunches.
-    body = [(0.33, 0.32, 0.05, 0.05), (0.27, 0.33, 0.11, 0.11), (0.08, 0.32, 0.098, 0.1),
-            (-0.1, 0.35, 0.12, 0.13), (-0.2, 0.37, 0.11, 0.12)]
+    # Body: long and low, heavy shoulders, a slim waist, strong haunches.
+    body = [(0.37, 0.29, 0.06, 0.06), (0.3, 0.31, 0.12, 0.12), (0.18, 0.3, 0.105, 0.105), (0.02, 0.29, 0.098, 0.1),
+            (-0.12, 0.3, 0.13, 0.14), (-0.22, 0.32, 0.13, 0.14), (-0.29, 0.33, 0.1, 0.1)]  # the shoulders low and heavy
     em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.05) for y, z, w, h in body], fur)
-    # Rosettes on the flanks and haunches, cast onto the body so they sit on it; the cloth covers the middle of the back.
+    # Rosettes on the flanks and haunches, flush with the coat: small six-sided patches cast onto it, a hair off the surface.
     rng = hk.seeded("beast_panther_rosettes")
-    for y in (-0.17, -0.12, 0.17, 0.22, 0.28):
+    tree = BVHTree.FromBMesh(p.bm)
+    for y in (-0.18, -0.1, 0.12, 0.2, 0.27):
         for side_ in SIDE:
             for a in (rng.uniform(50, 70), rng.uniform(90, 110)):
                 t = math.radians(a)
                 out = V((side_ * math.sin(t), 0, math.cos(t)))
-                hit = on_surface(p, at(0, y + rng.uniform(-0.02, 0.02), 0.34) + out * 0.4, -out)
-                if hit:
-                    hb_plate(p, hit[0] + hit[1] * 0.003, hit[1], 0.032, 0.026, spot)
-    em.loft(p, [em.section(at(0, y, z), w, h, ridge=1.05) for y, z, w, h in ((-0.12, 0.352, 0.132, 0.143), (0.0, 0.341, 0.121, 0.126), (0.12, 0.334, 0.11, 0.112))],
-            lambda c, n: zone("cloth") if n.z > -0.3 else zone("cloth", 0.8))
-    # Neck forward to a head held level, turned to its right, watching.
-    turn = 0.06
-    fwd = V((0.3, -1, -0.04)).normalized()
-    hc = at(turn, -0.31, 0.43)
-    em.loft(p, [em.section(at(0, -0.17, 0.37), 0.1, 0.11, along=V((0, -1, 0.5))), em.section(at(0.03, -0.27, 0.42), 0.075, 0.08, along=V((0.3, -1, 0.5)))], fur)
-    em.loft(p, [em.section(at(0.01, y, 0.395 + dz), w, w, along=V((0.1, -1, 0.5)), sides=8) for y, dz, w in ((-0.2, 0.0, 0.104), (-0.235, 0.015, 0.092))], lambda c, n: zone("cloth"))
-    em.loft(p, [[at(-0.07, -0.25, 0.39), at(0.09, -0.25, 0.39), at(0.01, -0.27, 0.4)], [at(0.01, -0.28, 0.28)]], lambda c, n: zone("cloth", 0.88))
+                hit = tree.ray_cast(at(0, y + rng.uniform(-0.02, 0.02), 0.31) + out * 0.4, -out, 0.6)
+                if hit[0] is not None:
+                    hex_patch(p, hit[0] + hit[1] * 0.0015, hit[1], 0.017, spot)
+    # The neck, short and thick, into the head.
+    em.loft(p, [em.section(at(0, y, z), w, h, along=V((0, -1, 0.3)), sides=8) for y, z, w, h in ((-0.26, 0.32, 0.11, 0.11), (-0.33, 0.35, 0.085, 0.085))], fur)
+
+    # Head: broad and round, a short muzzle, small round ears, pale under the muzzle, a small nose on top of its tip.
+    fwd = V((0, -1, -0.05)).normalized()
+    hc = at(0, -0.39, 0.37)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
 
     def head_fur(c, n):
-        return pale if n.z < -0.3 or (c - hc).dot(fwd) > 0.09 and n.z < 0.2 else back if n.z > 0.6 else coat
-    em.loft(p, [em.section(h(-0.06, 0.0), 0.06, 0.055, along=fwd, sides=8), em.section(h(0.0, 0.005), 0.085, 0.072, along=fwd, sides=8),
-                em.section(h(0.055, 0.0), 0.08, 0.064, along=fwd, sides=8), em.section(h(0.095, -0.02), 0.055, 0.042, along=fwd, sides=8),
-                em.section(h(0.13, -0.025), 0.04, 0.03, along=fwd, sides=8)], head_fur)
-    p.blob(h(0.13, -0.005), 0.016, "hero_pupil", squash=0.7)  # nose
+        ahead = (c - hc).dot(fwd)
+        rise = (c - (hc + fwd * ahead)).z
+        if rise < -0.022 and ahead > 0.05:
+            return pale
+        return back if rise > 0.04 else coat
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=8) for y, z, w, d in
+                ((-0.06, 0.0, 0.07, 0.06), (0.0, 0.006, 0.1, 0.082), (0.055, 0.0, 0.094, 0.07), (0.09, -0.022, 0.064, 0.052),
+                 (0.12, -0.03, 0.05, 0.04), (0.138, -0.034, 0.036, 0.03))], head_fur)
+    p.blob(h(0.136, -0.012), 0.014, "hero_pupil", squash=0.6)
+    face(p, h, fwd, eye=(0.05, 0.026, 0.042, 0.026, 0.015), brow=((0.06, 0.044, 0.016), (0.048, 0.042, 0.06)), dark=dark,
+         mouth=[(0.134, -0.052, 0.01), (0.11, -0.058, 0.03), (0.08, -0.052, 0.046)], slit=True)
     for x in SIDE:
-        em.limb(p, [h(0.13, -0.04, x * 0.004), h(0.115, -0.046, x * 0.022), h(0.09, -0.04, x * 0.04)], [0.004] * 3, ["hero_mouth"], sides=3)
-        # cat's eyes: almond, set to the front, a slit pupil
-        look = (fwd + V((x * 0.35, 0, 0.12))).normalized()
-        hit = on_surface(p, h(0.062, 0.022, x * 0.036) + look * 0.2, -look)
-        e, n = (hit[0] + hit[1] * 0.004, hit[1]) if hit else (h(0.062, 0.022, x * 0.036), look)
-        hb_plate(p, e, n, 0.034, 0.021, zone("eyes"))
-        hb_plate(p, e + n * 0.002, n, 0.007, 0.019, "hero_pupil")
-        em.limb(p, [h(0.07, 0.042, x * 0.014), h(0.055, 0.04, x * 0.058)], [0.007, 0.005], [dark], sides=4)
-        # short round ears set wide
-        root = h(-0.02, 0.05, x * 0.055)
-        vr.spike(p, root, root + V((x * 0.03, 0.01, 0.055)), 0.032, back, segments=3)
+        ear = h(-0.03, 0.062, x * 0.062)
+        p.blob(ear, 0.028, back, squash=0.7)
+        p.blob(ear + fwd * 0.012 + V((0, 0, 0.003)), 0.016, pale, squash=0.55)
 
-    # Legs: fore legs straight under the chest, hind legs folded, weight back.
-    for s_, y_paw in ((-1, -0.22), (1, -0.18)):
-        x = 0.075 * s_
-        paw = V((x * 1.1, y_paw, Z0 + 0.025))
-        em.limb(p, [V((x, -0.14, Z0 + 0.31)), V((x * 1.06, -0.17, Z0 + 0.17)), paw + V((0, 0.01, 0.045)), paw], [0.055, 0.04, 0.032, 0.04], [coat, coat, coat])
-    for s_, y_paw in ((-1, 0.2), (1, 0.24)):
-        x = 0.085 * s_
-        paw = V((x * 1.1, y_paw, Z0 + 0.025))
-        em.limb(p, [V((x, 0.26, Z0 + 0.3)), V((x * 1.1, 0.17, Z0 + 0.2)), V((x * 1.12, 0.31, Z0 + 0.09)), paw + V((0, 0.02, 0.03)), paw],
-                [0.08, 0.06, 0.04, 0.034, 0.04], [coat, coat, coat, coat])
+    # The ranger's scarf, a tail down the chest and one along the back.
+    spine = [(0.035, -0.17, 0.44), (0.03, -0.11, 0.44), (0.025, -0.02, 0.41), (0.02, 0.08, 0.41), (0.02, 0.18, 0.42), (0.015, 0.25, 0.42)]
+    scarf(p, at(0, -0.24, 0.36), at(0, -0.34, 0.33), at, knot=(0.04, -0.33, 0.26), chest=(0.05, 0.265, 0.235), t0=0.2,
+          shoulder=[(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, z0 + (z1 - z0) * f)  # sampled closely, so it follows the dip behind the shoulders
+                    for (x0, y0, z0), (x1, y1, z1) in zip(spine, spine[1:]) for f in (0, 0.34, 0.67)] + [spine[-1]],
+          floor=0.28, w=0.07)
 
-    # Tail: long, down behind and curling up at the tip, inside the cell.
-    em.limb(p, [at(0, 0.33, 0.32), at(0.04, 0.4, 0.24), at(0.1, 0.42, 0.12), at(0.18, 0.39, 0.07), at(0.25, 0.33, 0.11), at(0.27, 0.28, 0.18)],
-            [0.032, 0.03, 0.028, 0.027, 0.025, 0.0], [coat, coat, coat, coat, dark])
+    # Legs: heavy fore legs straight under the shoulders; hind legs folded cleanly, the knee forward, the hock back; round paws.
+    for s_ in SIDE:
+        x = 0.09 * s_
+        leg(p, [at(x * 0.8, -0.2, 0.31), at(x, -0.16, 0.18), at(x * 1.03, -0.24, 0.06), at(x * 1.03, -0.25, 0.04)],
+            [0.075, 0.055, 0.04, 0.036], [coat, coat, coat], at(x * 1.03, -0.27, 0.0), 0.05, 0.025, coat)
+        x = 0.095 * s_
+        leg(p, [at(x * 0.8, 0.27, 0.3), at(x * 1.02, 0.18, 0.18), at(x * 1.04, 0.33, 0.08), at(x * 1.04, 0.3, 0.04)],
+            [0.095, 0.06, 0.04, 0.034], [coat, coat, coat], at(x * 1.04, 0.28, 0.0), 0.05, 0.025, coat)
+
+    # Tail: smooth, down behind and curling gently out to one side, its end rounded, inside the cell.
+    tail = [at(0, 0.36, 0.3), at(0.03, 0.43, 0.22), at(0.07, 0.46, 0.13), at(0.12, 0.45, 0.075), at(0.17, 0.4, 0.07), at(0.2, 0.35, 0.1)]
+    em.limb(p, tail, [0.03, 0.028, 0.026, 0.024, 0.022, 0.018], [coat, coat, coat, coat, dark], sides=6)
+    p.blob(tail[-1], 0.018, dark, squash=1.0)
     # A touch bigger, to stand about the wolf's size, before the base goes under it.
     for v in p.bm.verts:
         v.co = V((v.co.x * 1.08, v.co.y * 1.08, Z0 + (v.co.z - Z0) * 1.08))
     sm.base(p, "ring_ally")
     return p.finish(col)
+
+
+def hex_patch(p, at, facing, r, paint):
+    """A small six-sided patch square to facing, for markings flush on a coat."""
+    right = facing.cross(V((0, 0, 1)))
+    right = right.normalized() if right.length > 1e-4 else V((1, 0, 0))
+    upn = right.cross(facing).normalized()
+    vs = [p.bm.verts.new(at + right * (math.cos(k * math.pi / 3) * r) + upn * (math.sin(k * math.pi / 3) * r)) for k in range(6)]
+    f = p.bm.faces.new(vs)
+    f.normal_update()
+    if f.normal.dot(facing) < 0:
+        f.normal_flip()
+    f.material_index = p._slot(paint)
 
 
 def hawk(col):
