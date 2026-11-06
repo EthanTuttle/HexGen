@@ -168,7 +168,45 @@ def sheet(stems, n, gap=16):
     print("SHEET", im.filepath_raw)
 
 
+def glaive_closeup(stem="pose_check_glaive_closeup"):
+    """The glaive alone, close on its blade: flat on, edge on and from above, then in the hero's hands; side by side."""
+    tiles = []
+    for k, (spin, pitch, hand) in enumerate(((0, 4, False), (90, 4, False), (0, 80, False), (-45, 18, True))):
+        hk.empty_scene()
+        t = rp.load_templates(rp.latest(os.path.join("minis", "heroes"), "hero_kit"))
+        for o in t.values():
+            o.hide_render = True
+        col = hk.new_collection("line")
+        hk.PALETTE["hero_ground"] = rh.GROUND
+        rh.floor(col)
+        if hand:
+            desc = rh.hero("human", "average", "a", "short", S["skin"]["human"][1], S["hair"][1], S["eyes"][1], S["cloth"][1], "light", "glaive", None)
+            rh.stand(t, col, desc, "h", at=(0, 0, 0), spin=spin)
+            target, dist = Vector((0, 0, 0.6)), 3.4
+        else:
+            ob = t["hero_glaive"].copy()
+            ob.hide_render = False
+            col.objects.link(ob)
+            ob.location, ob.rotation_euler.z = Vector((0, 0, 0.1)), math.radians(spin)
+            target, dist = Vector((0, 0, 1.25)), 1.1
+        view = f"{stem}_view{k}"
+        rh.shot(view, target, dist, pitch, (TILE, H_SHOT))
+        tiles.append(latest(view))
+    pixels = np.ones((H_SHOT, TILE * len(tiles), 4), dtype=np.float32)
+    for k, tile in enumerate(tiles):
+        pixels[:, k * TILE:(k + 1) * TILE] = tile
+    im = bpy.data.images.new(stem, TILE * len(tiles), H_SHOT, alpha=True)
+    im.pixels[:] = pixels.ravel().tolist()
+    im.filepath_raw = os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem)}.png")
+    im.file_format = "PNG"
+    im.save()
+    print("SHEET", im.filepath_raw)
+
+
 if __name__ == "__main__":
+    if "glaive" in sys.argv:
+        glaive_closeup()
+        sys.exit()
     only = [int(a) for a in sys.argv[sys.argv.index("--") + 1:]] if "--" in sys.argv else None
     stems = []
     for i, (name, grip, pose, weapon, offhand, extra, change) in enumerate(ROWS):
