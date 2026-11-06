@@ -16,6 +16,7 @@ var _banners: Array[Banner] = []
 var _row := Control.new()
 var _pop_key := ""
 var _step := ""
+var _hang_shown := ""                  # step:pick whose cards last faded in
 
 
 func _init(creator: Creator) -> void:
@@ -256,9 +257,11 @@ func _buildhang() -> void:
 	var w := hang.get_combined_minimum_size().x
 	# The mockup hangs them from the banner's tip, 50 pt below the row, between Back and Next.
 	hang.position = Vector2(cx - w * 0.5, size.y - 82 - 4)
-	hang.modulate.a = 0.0
-	var tw := hang.create_tween()
-	tw.tween_property(hang, "modulate:a", 1.0, 0.25).set_delay(0.2)
+	if _hang_shown != c.step + ":" + picked:   # a new pick's cards fade in; a tap on one (its pop-up) doesn't flash them
+		_hang_shown = c.step + ":" + picked
+		hang.modulate.a = 0.0
+		var tw := hang.create_tween()
+		tw.tween_property(hang, "modulate:a", 1.0, 0.25).set_delay(0.2)
 	if label != "":
 		var chip := UI.panel(UI.DARK, 10, Color(0, 0, 0, 0), 0, Vector4(9, 0, 9, 0))
 		chip.custom_minimum_size.y = 20
@@ -398,6 +401,7 @@ class Banner extends Control:
 	var edge := Color.WHITE
 	var dim := 1.0
 	var _content: Control
+	var _shown := ""                    # the pick last faded in: a rebuild for anything else doesn't fade it again
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
@@ -447,8 +451,11 @@ class Banner extends Control:
 			v.position = Vector2(10, 0)
 			v.size = Vector2(w - 20, 0)
 			_content.add_child(v)
-			CUI.reveal(v, 0.45)
+			if _shown != picked:   # only a new pick fades in, so a tap on its cards doesn't flash (phone notes, Nov 5)
+				CUI.reveal(v, 0.45)
+			_shown = picked
 		else:
+			_shown = ""
 			_content.add_child(_folded(it, picked != "", w, ink))
 
 	func _folded(it: Dictionary, narrow: bool, w: float, ink: Color) -> Control:
