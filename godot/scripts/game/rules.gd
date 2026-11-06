@@ -247,7 +247,7 @@ const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's sav
 const SAVE_HEADS := 1                    # PLACEHOLDER (Combat v14): any save, a foe's or an ally's (their own score), needs 1 heads
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
 const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
-const SNEAK_BONUS := 2                   # PLACEHOLDER: Sneak Attack's bonus when another ally flanks the foe
+const SNEAK_TIMES := 2                   # PLACEHOLDER (03, Ethan, Nov 6, 2026): Sneak Attack doubles the weapon's damage on a flanked foe
 ## Weapon and class card amounts (Ethan, Nov 5, 2026; placeholders in design/03 and 04 until the balance pass).
 const BACKSTAB := 2                      # PLACEHOLDER (04): the first dagger hit from behind each turn
 const BONEBREAKER_SLOW := 1              # PLACEHOLDER (04, Nov 5, 2026: 1, so a 2-hex foe still moves): hexes off each Move until the foe's next turn ends

@@ -35,8 +35,8 @@ const ARMOURED_HEADS := 1               # DOCS (04 -> Armour, Nov 5, 2026): Armo
 const SHIELD_HEADS := 1                 # DOCS: +1 with a shield
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
-const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"]}   # DOCS (06 -> Start)
-const CLASS_HP := {"fighter": 12, "ranger": 10}   # PLACEHOLDER (06 -> Start)
+const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"], "rogue": ["sneak_attack", "poison_blade"]}   # DOCS (06 -> Start)
+const CLASS_HP := {"fighter": 12, "ranger": 10, "rogue": 8}   # PLACEHOLDER (06 -> Start)
 
 
 static func of(id: String) -> Dictionary:

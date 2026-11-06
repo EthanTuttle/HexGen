@@ -997,7 +997,7 @@ func lucky(who: Dictionary, flipper: Dictionary, coins: Array[bool], need: int) 
 
 
 ## Weapon attacks and attack spells flip the attacker's coins to hit (DOCS). Damage: a racial card's set amount, else the
-## score (PLACEHOLDER: +2 for Sneak Attack on a flanked foe; +1 per hit under Poison Blade; -1 if the target defends), less a
+## score (PLACEHOLDER: doubled by Sneak Attack on a flanked foe; -1 if the target defends), less a
 ## metal golem's reduction.
 func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	busy = true
@@ -1029,14 +1029,14 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		if a.ally and weapon_attack(k) and Weapons.of(a.weapon).hands == "v" and a.off in ["", "none"]:
 			dmg += Weapons.VERSATILE_TWO_HANDED   # a versatile weapon held two-handed (04)
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
+		if k.get("effect", "") == "sneak" and _flanked(a, t):
+			dmg *= Rules.SNEAK_TIMES   # Sneak Attack doubles the weapon's damage, before the flat bonuses (Backstab, the Mark) (03)
 		if k.id == "quick_slash" and a.quick_ready:
 			dmg -= Rules.QUICK_SLASH_LESS
 		if a.ally and not a.mark.is_empty() and a.mark == t:
 			dmg += Rules.MARK_DAMAGE   # Hunter's Mark (03)
 		if t.guard:
 			dmg -= Rules.GUARD_UP_LESS
-		if k.get("effect", "") == "sneak" and _flanked(a, t):
-			dmg += Rules.SNEAK_BONUS
 		if a.poison_blade and Rules.old("poison"):
 			dmg += 1   # test aid: Poison Blade's old +1 a hit
 		if not Rules.old("backstab") and a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not a.backstabbed and behind(a, t):

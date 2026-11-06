@@ -82,7 +82,7 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 		c.icon = CreatorData.PI[c.icon]
 	elif CreatorData.IC.has(c.get("icon", "")) and not Icons.PATHS.has(c.icon):
 		c.icon = CreatorData.IC[c.icon]
-	if id == "attack":   # the basic attack's reach and ranged-ness follow the weapon (04)
+	if id == "attack" or (id == "sneak_attack" and weapon != ""):   # a weapon attack's reach and ranged-ness follow the weapon (04, 03)
 		c.range = Weapons.of(weapon).range
 		c.ranged = Weapons.ranged(weapon)
 	if id == "throw":

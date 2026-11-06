@@ -452,7 +452,78 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		_check(foe.cell == trap and hp - foe.hp == Rules.SNARE_DAMAGE and f.move_hexes(foe) == 0 and not f.snares.has(hero.name), "a foe walking through stops on it, takes %d and is snared" % (hp - foe.hp))
 		f.phase_no += 2
 		_check(f.move_hexes(foe) == Rules.MOVE_HEXES, "the snare ends after its next turn")
+	if m.klass == "rogue":
+		await _rogue_checks(hero, fluffy, foe, s, d)
 	await _weapon_card_checks(hero, fluffy, foe, s, d)
+
+
+## The Rogue (06 -> Start, Nov 6, 2026): Sneak Attack and Poison Blade on the bar, Clothes, the swamp and village deck, and
+## Sneak Attack doubling the weapon's damage on a flanked foe, before Backstab's +2 (03).
+func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var w: Dictionary = Weapons.of(hero.weapon)
+	_check(not Weapons.armoured(m.armour), "the Rogue wears Clothes")
+	_check("sneak_attack" in hero.cards and "poison_blade" in hero.cards and hero.hot.slice(2, 4) == ["sneak_attack", "poison_blade"] if Races.cards(m).is_empty() else true, "the Rogue starts with Sneak Attack and Poison Blade on the bar: %s" % [hero.hot])
+	var run := RunSetup.new()
+	run.klass = "rogue"
+	run.background = "noble"
+	_check(run.deck_cards().get("swamp", 0) == 6 and run.deck_cards().get("village", 0) == 6 and run.deck_cards().get("farmland", 0) == 6, "the Rogue's deck: swamp 5, village 5, plus the background's (and one of each)")
+	var plain: int = Races.score(m, w.ab)
+	var far := 3 if w.get("ranged", false) else 1
+	var tough: int = foe.max_hp
+	_check(f.card("sneak_attack").range == w.range, "Sneak Attack reaches as far as the %s (%d)" % [hero.weapon, w.range])
+	# Not flanked: the plain damage.
+	hero.mark = {}
+	_clear_round(s, [])
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	_place(hero, s)
+	_place(foe, s + dv * far)
+	_place(fluffy, s - dv * 3)
+	foe.facing = _facing_from(foe, s)   # facing the Rogue: no Backstab
+	var hp: int = foe.hp
+	await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true])
+	var off_hit: int = hp - foe.hp - plain
+	_check(off_hit == 0 or off_hit == _offhand_damage(hero), "Sneak Attack on a foe nobody flanks: %d (the weapon's %d)" % [hp - foe.hp, plain])
+	# Flanked: doubled.
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	foe.facing = _facing_from(foe, s)
+	_place(fluffy, s + dv * (far + 1))
+	hp = foe.hp
+	await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true])
+	off_hit = hp - foe.hp - plain * Rules.SNEAK_TIMES
+	_check(off_hit == 0 or off_hit == _offhand_damage(hero), "Sneak Attack on a flanked foe: %d (the weapon's %d doubled)" % [hp - foe.hp, plain])
+	if hero.weapon == "dagger":
+		# From behind too: doubled, then Backstab's +2.
+		_fresh(foe)
+		foe.max_hp = 60
+		foe.hp = 60
+		foe.facing = (_facing_from(foe, s) + 3) % 6
+		hero.backstabbed = false
+		hp = foe.hp
+		await _play(hero, "sneak_attack", foe.cell, [true, true, true, true, true, true])
+		off_hit = hp - foe.hp - (plain * Rules.SNEAK_TIMES + Rules.BACKSTAB)
+		_check(f.behind(hero, foe) and (off_hit == 0 or off_hit == _offhand_damage(hero)), "flanked and from behind with a dagger: %d (%d doubled, + %d Backstab)" % [hp - foe.hp, plain, Rules.BACKSTAB])
+	foe.max_hp = tough
+	_fresh(foe)
+	_place(fluffy, s - dv * 3)
+
+
+## The direction from u toward cell c (for setting a foe's facing).
+func _facing_from(u: Dictionary, c: Vector2i) -> int:
+	for k in Hex.NEIGHBOURS.size():
+		if Rules.hex_distance(u.cell + Hex.NEIGHBOURS[k], c) < Rules.hex_distance(u.cell, c):
+			return k
+	return 0
+
+
+## The free offhand hit's damage, if the hero dual-wields (04), else 0.
+func _offhand_damage(hero: Dictionary) -> int:
+	return 0
 
 
 ## The hero's weapon's own card (04 -> Weapon category cards, Ethan's placeholders).
