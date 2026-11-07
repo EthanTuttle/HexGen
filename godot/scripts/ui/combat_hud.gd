@@ -755,14 +755,7 @@ func _process(_delta: float) -> void:
 		var fx: Array = fight.status_icons(u).map(func(e): return e[0])
 		if fx != node.get_meta("fx_key", []):
 			node.set_meta("fx_key", fx)
-			var row: HBoxContainer = node.get_meta("fx")
-			for c in row.get_children():
-				c.queue_free()
-			for icon: String in fx:
-				var r := TextureRect.new()
-				r.texture = UI.icon(status_path(icon), Color(STATUS_INK.get(icon, "#33403B")), 13, 2.4)
-				r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				row.add_child(r)
+			fill_status(node.get_meta("fx"), fx)
 	for key in _bar_nodes.keys():
 		if not fight.units.any(func(u): return u.mini.get_instance_id() == key):
 			_bar_nodes[key].queue_free()
@@ -782,14 +775,30 @@ func _make_bar(u: Dictionary) -> Control:
 	var bar := Bar.make(24, 4, UI.DARK, UI.GREEN if u.ally else Color("#C4542A"))
 	v.add_child(bar)
 	v.set_meta("bar", bar)
-	var fx := HBoxContainer.new()   # status icons under the bar
-	fx.add_theme_constant_override("separation", 1)
-	fx.alignment = BoxContainer.ALIGNMENT_CENTER
+	var fx := HBoxContainer.new()   # status chips beside the hex, level with it, outside the marker's box so the hex stays centred over the mini
+	fx.add_theme_constant_override("separation", 2)
+	fx.position = Vector2(plate.size.x + 2, (plate.size.y - STATUS_CHIP) * 0.5)
+	plate.add_child(fx)
 	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(fx)
 	v.set_meta("fx", fx)
 	v.reset_size()
 	return v
+
+
+## A status chip's size across. PLACEHOLDER size.
+const STATUS_CHIP := 12.0
+const STATUS_CHIPS_SHOWN := 3   # then "+N" (07 -> Combat)
+
+
+## A marker's status icons (`fx`: status_icons names) as chips: up to 3, then "+N" (07 -> Combat; Ethan, Nov 7, 2026).
+func fill_status(holder: Control, fx: Array) -> void:
+	for c in holder.get_children():
+		holder.remove_child(c)
+		c.queue_free()
+	for k in mini(fx.size(), STATUS_CHIPS_SHOWN):
+		holder.add_child(StatusChip.make(STATUS_CHIP, fx[k], Color(STATUS_INK.get(fx[k], "#33403B"))))
+	if fx.size() > STATUS_CHIPS_SHOWN:
+		holder.add_child(StatusChip.make(STATUS_CHIP, "", UI.INK, fx.size() - STATUS_CHIPS_SHOWN))
 
 
 ## An attack's coins over who's flipping, one at a time (design/07): stops at the heads it needs, then holds so the result can be read. Returns the coins shown.

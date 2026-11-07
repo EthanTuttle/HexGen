@@ -221,6 +221,10 @@ func _run() -> void:
 		await _wizard_shots()
 		get_tree().quit()
 		return
+	if "--statusshots" in OS.get_cmdline_user_args():   # test aid: the status chips on the markers
+		await _status_shots()
+		get_tree().quit()
+		return
 	if "--panelshots" in OS.get_cmdline_user_args():
 		await _panel_shots()
 		get_tree().quit()
@@ -1250,6 +1254,60 @@ func _cover_data_checks() -> void:
 
 
 ## Option B's panel in its fullest new states (design/07): a 3-target Breath Weapon result, and a long shot through cover.
+## `-- --racecheck --statusshots --shots` saves screens/race/status_scene.png and status_close.png: a foe
+## with 4 statuses (Unaware, Slowed, Poisoned, Marked) and an ally with 1 (Bleeding), on the hero's turn (07 -> Combat -> Rethink).
+func _status_shots() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.allies()[0]
+	var fluffy := _who("Fluffy")
+	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+	var mid := Vector2.ZERO
+	for c: Vector2i in f.grid:
+		mid += Vector2(c) / f.grid.size()
+	var line := []   # the free line nearest the board's middle
+	for c: Vector2i in f.grid:
+		if f.grid[c].kind == "open" and not f.cover.has(c) and (line.is_empty() or Vector2(c).distance_to(mid) < Vector2(line[0]).distance_to(mid)):
+			for d in 6:
+				var ok := true
+				for i in range(1, 3):
+					var n: Vector2i = c + Hex.NEIGHBOURS[d] * i
+					ok = ok and f.grid.has(n) and f.grid[n].kind == "open" and not f.cover.has(n) and f.grid[n].z == f.grid[c].z
+				if ok:
+					line = [c, d]
+					break
+	var s: Vector2i = line[0]
+	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(foe, s + dv * 2)
+	_place(fluffy, s + Hex.NEIGHBOURS[(line[1] + 1) % 6])
+	_fresh(foe)
+	foe.unaware = [String(hero.member.name)]
+	foe.slowed = f.phase_no + 2
+	foe.poison = [2]
+	hero.mark = foe
+	fluffy.bleed_turns = 2
+	_turn(hero)
+	game.rig.ease_to(f.global_position + (hero.mini.position + foe.mini.position) * 0.5, game.rig.distance, game.rig.yaw_deg)
+	await _wait(0.8)
+	await _shot("status_scene")
+	# The close-up: the markers' corner of that same frame, at 2x with no smoothing, so its pixels show as drawn.
+	var cam := game.rig.camera
+	var pts := [hero, foe, fluffy].map(func(u): return cam.unproject_position(u.mini.global_position + Vector3(0, 1.75, 0)))
+	var box := Rect2(pts[0], Vector2.ZERO)
+	for p: Vector2 in pts:
+		box = box.expand(p)
+	box = box.grow_individual(40, 40, 70, 20)   # room for the hex and chips above each point, and chips beside
+	var img := game.get_viewport().get_texture().get_image()
+	var k: float = img.get_width() / game.get_viewport().get_visible_rect().size.x
+	var px := Rect2i(Vector2i(box.position * k), Vector2i(box.size * k)).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	var crop := img.get_region(px)
+	crop.resize(px.size.x * 2, px.size.y * 2, Image.INTERPOLATE_NEAREST)
+	if "--shots" in OS.get_cmdline_user_args():
+		crop.save_png(ProjectSettings.globalize_path("res://screens/race/status_close.png"))
+	print("RACE status chips: foe %s, ally %s, screen scale %.2f" % [f.status_icons(foe).map(func(e): return e[1]), f.status_icons(fluffy).map(func(e): return e[1]), StatusChip._screen_scale()])
+
+
 ## `-- --racecheck --panelshots --shots` saves screens/race/panel_*.png.
 func _panel_shots() -> void:
 	await _fight("plains_stones")
