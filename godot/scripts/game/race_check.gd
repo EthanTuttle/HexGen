@@ -1451,8 +1451,9 @@ func _arc_shot() -> void:
 	await _fight("plains_stones")
 	var hero: Dictionary = f.units[0]
 	var foes: Array = f.units.filter(func(u): return not u.ally)
-	for cell: Vector2i in f.grid:   # a hex with open ground all round, away from the board's edge
-		if Hex.NEIGHBOURS.all(func(n): return f.grid.has(cell + n) and f.grid[cell + n].kind == "open" and not f.cover.has(cell + n)) and f.grid[cell].kind == "open":
+	for cell: Vector2i in f.grid:   # a hex with open, level ground 2 hexes round, so nothing hides the spin
+		var near_cells: Array = f.grid.keys().filter(func(e): return Rules.hex_distance(e, cell) <= 2)
+		if near_cells.size() == 19 and near_cells.all(func(e): return f.grid[e].kind == "open" and not f.cover.has(e) and f.grid[e].z == f.grid[cell].z):
 			_clear_round(cell, [])
 			_place(hero, cell)
 			break
@@ -1462,16 +1463,24 @@ func _arc_shot() -> void:
 		_fresh(foes[i])
 		foes[i].hp = 99   # nobody falls, so the clip shows the reactions only
 		_place(foes[i], arc[i])
-	foes[1].heads = 99   # the middle foe is missed
 	var at := f.global_position + f.cell_point(hero.cell)
 	var near := game.rig.camera.global_position - at
 	near.y = 0.0
-	game.rig.ease_to(at - near.normalized() * 0.7, 11.0, game.rig.yaw_deg)
+	game.rig.ease_to(at - near.normalized() * 0.8, 13.0, game.rig.yaw_deg)
 	_turn(hero)
 	await _wait(0.8)
-	Coins.forced.assign([true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true])
+	var k := Cards.get_card("sweeping_arc", hero.weapon)
+	var forced: Array[bool] = []
+	for i in mini(arc.size(), foes.size()):   # heads for the outer foes, tails for the middle one, so it is missed
+		for j in f.attack_coins(hero, foes[i], k):
+			forced.append(i != 1)
+	Coins.forced.assign(forced)
 	print("RACE arc start")
-	await f._arc(hero, c)
+	f.pick_card("sweeping_arc")
+	await _wait(0.6)
+	await f.click_cell(c)
+	await _wait(0.6)
+	await f.press_button()
 	Coins.forced.clear()
 	await _wait(1.2)
 	print("RACE arc done")
