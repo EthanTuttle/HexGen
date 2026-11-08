@@ -114,8 +114,8 @@ Decided Oct 27, 2026. Feats are perks any class can pick at set levels.
 | Expert | Raise one proficiency a rank | Level 12 |
 | Dragon Fear | Breath weapon also frightens foes it hits (WIS save) | Level 12, Dragonborn |
 | Rock Volley | Stone throw also hits a foe adjacent to the target | Level 12, stone golem |
-| Plate Master | While you wear heavy armour, attacks against you flip 1 more coin fewer (4 fewer in all; armour: [Weapons & gear](04 Weapons & gear.md) → Armour). Added Nov 1, 2026 | Level 12, CON 3+ |
-| Nimble | While you wear no armour, attacks against you flip 1 fewer coin (as hard to hit as light armour). Added Nov 1, 2026 | Level 12, DEX 3+ |
+| Plate Master | While you're Armoured, your defence is 1 higher ([Weapons & gear](04 Weapons & gear.md) → Armour). Added Nov 1, 2026; changed Nov 7, 2026 to flat defence | Level 12, CON 3+ |
+| Nimble | While you're in Clothes, your defence is 1 higher. Added Nov 1, 2026; changed Nov 7, 2026 to flat defence | Level 12, DEX 3+ |
 
 Flags (accepted for now, recheck in the balance pass): Tough stacked with the shield dwarf's health makes a very tanky dwarf; Opening Strike stacks with unaware openers (Sneak Attack, Assassinate); Heavy Hitter stacks with the greatsword's Executioner node 1; Surveyor bends the "no draw order" rule on purpose; Rallying Presence is close to Heroic Tale (Narrator) and Rallying Strike (Leader); Hard to Kill is close to the Order of Good's miracle role. Plate Master stacks with Rare armour's extra −1 (−5 in all, no cap), and only Fighters and Humans can wear heavy armour, so it does nothing for everyone else (no feat grants armour access); Nimble only matches light armour, so for light-armour classes it's a way to drop armour, not a gain (Nov 1, 2026).
 
