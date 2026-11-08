@@ -1174,8 +1174,51 @@ def k_miss(T, E, scene):
     return panes
 
 
+def k_cone(T, E, scene):
+    """Cone v2 (Ethan, Nov 7): C's rolling puffs with D's hexes lighting as they're hit. A lights the hexes first and the puffs roll over
+    them; B lights each hex as the puffs reach it."""
+    panes = []
+    specs = [("A  Hexes light, then puffs roll over", "first"), ("B  Hexes light as the puffs reach them", "together")]
+    for i, (label, kind) in enumerate(specs):
+        p = Pane(scene, i * 40, label, 3.0, centre=(1.8, 0, 0))
+        h = p.add(hero(T, p.col, "dragonborn", "broad", "a", None, "greatsword", tier="medium", cloth=4), (0, 0, 0), 90)
+        cells = [c for c in [(1, 0), (2, 0), (2, -1), (1, 1), (3, 0), (3, -1), (2, 1)] if abs(math.degrees(math.atan2(cell(*c).y, cell(*c).x))) <= 31]
+        fa = [(p.add(place(E, nm, p.col), cell(q, r), 270), cell(q, r)) for (q, r), nm in zip([(1, 0), (3, 0), (2, -1)], ("enemy_bandit_melee", "enemy_wolf", "enemy_skeleton"))]
+        plates = [(p.fxo(hex_plate(p.col, glow("#FF9A3C"))), cell(*c)) for c in cells]
+        puffs = [p.fxo(ico(p.col, 1.0, glow("#FF9A3C" if k % 3 else "#FFD27A"), sub=1, name="puff")) for k in range(14)]
+
+        def up(s, h=h, fa=fa, kind=kind, plates=plates, puffs=puffs, p=p):
+            k = out(seg(s, 0, 0.1)) if s < 0.45 else 1 - smooth(seg(s, 0.45, 0.6))
+            h.lean(8 * k, 0)
+            h.move((0, 0, 0.06 * k))
+            lag = 0.12 if kind == "first" else 0.0  # puffs start this much after the hexes
+            for j, pf in enumerate(puffs):
+                st = 0.06 + lag + 0.025 * j
+                u = seg(s, st, st + 0.32)
+                if 0 < u < 1:
+                    ang = math.radians(((j * 37) % 11 - 5) * 5.5)
+                    dist = 0.45 + 2.6 * out(u)
+                    pf.show(p.at((math.cos(ang) * dist, math.sin(ang) * dist, 0.55 - 0.25 * u)), 0.08 + 0.22 * u, alpha=0.9 * (1 - u ** 2))
+                else:
+                    pf.hide()
+            for pl, c in plates:
+                reach = (c.length - 0.45) / 2.6  # 0 at the mouth, 1 at the far edge
+                if kind == "first":
+                    on = 0.06 + 0.12 * reach  # a quick sweep outward, ahead of the puffs
+                else:
+                    on = 0.06 + 0.32 * (1 - (1 - reach) ** 0.5)  # when the first puffs get there (out() eased, inverted)
+                w = seg(s, on, on + 0.5)
+                pl.show(p.at(c) + V((0, 0, 0.012)), 1.0, alpha=0.85 * (out(seg(s, on, on + 0.06)) * (1 - seg(s, on + 0.3, on + 0.5))) if 0 < w < 1 else 0)
+            for a_, c in fa:
+                reach = (c.length - 0.45) / 2.6
+                recoil(a_, s, 0.06 + lag + 0.32 * (1 - (1 - reach) ** 0.5), 0, tilt=14)
+        p.update = up
+        panes.append(p)
+    return panes
+
+
 KINDS = {"melee": k_melee, "sweep": k_sweep, "thrust": k_thrust, "heavy": k_heavy, "shot": k_shot, "thrown": k_thrown, "bolt": k_bolt,
-         "touch": k_touch, "area": k_area, "buff": k_buff, "summon": k_summon, "hit": k_hit, "miss": k_miss}
+         "touch": k_touch, "area": k_area, "buff": k_buff, "summon": k_summon, "hit": k_hit, "miss": k_miss, "cone": k_cone}
 
 
 # --- Rendering ----------------------------------------------------------------
