@@ -114,9 +114,6 @@ class Actor:
 		edge = 0.0
 		spin = 0.0
 		scale = 1.0
-		if mini.get_meta("doze", false):   # Lull's nod held while it sleeps: 16° forward on its centre, sunk 0.03
-			lean(16.0, AttackMotions.flat(mini.global_basis.z), 0.0)
-			off = -UP * 0.03
 
 	func move(d: Vector3) -> void:
 		off += d
@@ -822,8 +819,7 @@ func sweep(am: Node3D, targets: Array, hits: Array) -> void:
 
 ## A single-target save spell (A, bloom on the target): spell is "flame" (Sacred Flame), "glow" (Faerie Fire) or "lull"
 ## (Lull); passed: the foe made its save. The charge, a ring closing in round the foe's feet, the landing at 0.24, then the
-## spell's own look. A failed Faerie Fire starts the lasting glow (CombatBoard.glow); a failed Lull ends drooped, and the
-## board holds that pose while it sleeps (CombatBoard.set_doze).
+## spell's own look. A failed Faerie Fire starts the lasting glow (CombatBoard.glow).
 func bloom(am: Node3D, tm: Node3D, spell: String, passed: bool) -> void:
 	var a := actor(am)
 	var t := actor(tm)
@@ -882,7 +878,6 @@ func bloom(am: Node3D, tm: Node3D, spell: String, passed: bool) -> void:
 					recoil(t, s, land, away, 5.0, 0.03)
 		"lull":
 			var hd := c + UP * head_height(tm)
-			var fwd := flat(tm.global_basis.z)   # it nods forward, the way it faces
 			var zs := []
 			for n in 3:
 				zs.append(fx(zee(), cols[2]))
@@ -899,10 +894,7 @@ func bloom(am: Node3D, tm: Node3D, spell: String, passed: bool) -> void:
 				if passed:
 					shake(t, s, land + 0.12)
 					return
-				var k := smooth(seg(s, land + 0.15, land + 0.55))
-				t.lean(16.0 * k, fwd, 0.0)
-				t.move(-UP * 0.03 * k)
-				for n in 3:   # PLACEHOLDER: one rise of z's; whether they keep coming while it sleeps is open (handoff)
+				for n in 3:   # the z's rise once; it doesn't droop, and the sleep chip shows it sleeping (07, Ethan, Nov 8)
 					var w := seg(s, land + 0.3 + 0.25 * n, land + 1.0 + 0.25 * n)
 					if w > 0.0 and w < 1.0:
 						(zs[n] as Fx).show(hd + away * (0.1 + 0.2 * w) + UP * (0.12 + 0.45 * w) + front(c), 1.0 + 0.6 * w,

@@ -226,15 +226,6 @@ func hull_alpha(h: MeshInstance3D, a: float) -> void:
 	h.visible = a > 0.003
 
 
-## Lull's sleep: holds the mini nodded off (AttackMotions.Actor's rest pose), or stands it straight. PLACEHOLDER: it
-## straightens at once on waking; how it wakes is open (handoff).
-func set_doze(mini: Node3D, on: bool) -> void:
-	mini.set_meta("doze", on)
-	var a := AttackMotions.Actor.new(mini)
-	a.reset()
-	a.apply()
-
-
 ## Bless and heals: the rising ring on the ally (AttackMotions.buff).
 func buff(caster: Node3D, ally: Node3D) -> void:
 	await AttackMotions.new(self).buff(caster, ally)

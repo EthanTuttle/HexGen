@@ -789,8 +789,8 @@ func _show_overlays() -> void:
 			_overlay(u.cell, "ally_target" if u == ally_target else "ally", true)
 
 
-## Lasting looks follow the units' states: Faerie Fire's glow while it glows, Lull's nod while it sleeps (CombatBoard).
-## Only changes are passed on, so a motion that starts a look itself isn't undone.
+## Faerie Fire's lasting glow follows the units' state (CombatBoard.glow). Only changes are passed on, so the motion that
+## starts it isn't undone.
 var _looks := {}
 
 
@@ -801,13 +801,9 @@ func _process(_delta: float) -> void:
 		if not is_instance_valid(u.mini):
 			continue
 		var g: bool = on(u, "glow") and not u.down
-		var z: bool = u.lull and not u.down
-		var was: Array = _looks.get(u.mini, [false, false])
-		if g != was[0]:
+		if g != _looks.get(u.mini, false):
 			board.glow(u.mini, g)
-		if z != was[1]:
-			board.set_doze(u.mini, z)
-		_looks[u.mini] = [g, z]
+		_looks[u.mini] = g
 
 
 func refresh() -> void:
