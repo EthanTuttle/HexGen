@@ -234,7 +234,7 @@ func _layout_details() -> void:
 	var hug := layout == "a"
 	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL if layout == "" else Control.SIZE_FILL
 	_gaps[0].size_flags_vertical = Control.SIZE_EXPAND_FILL if layout in ["b", "c"] else Control.SIZE_FILL
-	_gaps[1].size_flags_vertical = Control.SIZE_EXPAND_FILL if layout == "c" else Control.SIZE_FILL
+	_gaps[1].size_flags_vertical = Control.SIZE_EXPAND_FILL if layout in ["c", "v2"] else Control.SIZE_FILL
 	_check_box.visible = _check_box.get_child_count() > 0
 	_details_panel.custom_minimum_size.y = 0.0 if hug else DETAILS_H
 	if hug:
@@ -289,7 +289,7 @@ func _fill_details() -> void:
 	var src: Dictionary = Cards.SRC[k.src]
 	var lim: String = {"turn": " · once per turn", "fight": " · once per fight"}.get(k.limit, "")
 	var head_text := ("%s · %s%s" % [src.label, "AP not set" if k.ap < 0 else "%d AP" % k.ap, lim]).to_upper()
-	if layout == "b":   # the AP moves into a hex by the name, as on the hotbar card
+	if layout in ["b", "v2"]:   # the AP moves into a hex by the name, as on the hotbar card
 		head_text = (src.label + lim).to_upper()
 	var head_ls := 0 if layout != "" else 1   # the trial layouts drop the letter spacing so more fits a line
 	if k.limit == "":
@@ -302,7 +302,7 @@ func _fill_details() -> void:
 		_details.add_child(_dot_label(head_text, "n900", 11, Color(src.ink), head_ls))
 	# Sizes for the short panel (design/07: everything must fit; text stays at 11 pt or more): name 17, text 11.
 	var name := _wrap(UI.label(k.n, "lilita", 17))
-	if layout == "b":
+	if layout in ["b", "v2"]:
 		var name_row := HBoxContainer.new()
 		name_row.add_theme_constant_override("separation", 6)
 		var hex := HexShape.make(20, 23, UI.DARK, UI.DARK, 0).with_text(Cards.ap_text(k), 11, UI.CREAM, "n900")
@@ -333,7 +333,7 @@ func _fill_details() -> void:
 	var aimed: bool = (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind in ["cell", "arc"] and fight.cell_target != null)
 	# Screen text (DOCS: UI -> Screen text): no Move rule sentence and no "pick a target" prompts; the lit
 	# hexes, gold rings and AP pips show them. A check shows only the coin line.
-	var into: VBoxContainer = _details if layout in ["", "a"] else _check_box   # "b" and "c" set the check apart
+	var into: VBoxContainer = _details if layout in ["", "a", "v2"] else _check_box   # "b" and "c" set the check apart
 	if targeting and not fight.result.is_empty():
 		var coins := HFlowContainer.new()   # 22 pt coins that wrap, so 6 or more stay inside the panel
 		coins.add_theme_constant_override("h_separation", 3)
@@ -357,12 +357,15 @@ func _fill_details() -> void:
 		if k.kind in ["ally", "mark"]:
 			into.add_child(_wrap(UI.label("No roll", "n800", 13)))
 		elif k.kind == "attack":
-			into.add_child(_check_line(coin_line(u, fight.target, k)))
+			into.add_child(_check_line(target_line(u, fight.target, k) if layout == "v2" else coin_line(u, fight.target, k)))
 			var mods := fight.attack_mods(u, fight.target, k)
 			for m: Dictionary in mods:   # every modifier, chip and words (07 -> Modifier coins)
 				into.add_child(_mod_row(m))
 		else:
-			into.add_child(_check_line("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, k.save), k.save, Rules.SAVE_HEADS]))
+			if layout == "v2":   # PROPOSAL (strings to the planner): the foe flips, so only what it needs shows
+				into.add_child(_check_line(save_line(k.save)))
+			else:
+				into.add_child(_check_line("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, k.save), k.save, Rules.SAVE_HEADS]))
 	elif k.kind == "breath" and (aimed or fight.result.has("rows")):
 		_breath_rows(u, k, into)
 	elif k.kind == "cell" and aimed:
@@ -380,7 +383,7 @@ func _fill_details() -> void:
 		elif k.kind == "mark":
 			label = "Use"
 		else:
-			label = "Flip again" if not fight.result.is_empty() else "Flip coins"
+			label = "Flip again" if not fight.result.is_empty() else ("Flip %d" % flip_count(u, fight.target, k) if layout == "v2" else "Flip coins")
 	elif k.kind == "self":
 		label = "Use"
 	elif aimed:   # spells cast; Sweeping Arc flips; the Snare and Dancing Step are used
@@ -416,6 +419,28 @@ func coin_line(u: Dictionary, t: Dictionary, k: Dictionary) -> String:
 	if n < need:   # the long shot: 1 coin, heads in a row
 		return "Long shot · %s · %d heads in a row" % [ab, need + (need - n)]
 	return "%d coins · %s · needs %d heads" % [n, ab, need]
+
+
+## The layout pass (07 -> Modifier coins -> Layout pass, Ethan, Nov 8, 2026): the check line names only the heads
+## to get, "Target: 3 heads" or a long shot's "Target: 3 heads in a row"; the coins move to the button ("Flip 3").
+func target_line(u: Dictionary, t: Dictionary, k: Dictionary) -> String:
+	var n: int = fight.attack_coins(u, t, k)
+	var need: int = fight.heads_needed(t, u, k) if not t.is_empty() else Rules.HEADS_TO_HIT
+	if n < need:
+		return "Target: %d heads in a row" % (need + (need - n))
+	return "Target: %d %s" % [need, "head" if need == 1 else "heads"]
+
+
+## The coins the button flips: the attack's coins, or 1 on a long shot (1 coin, heads in a row).
+func flip_count(u: Dictionary, t: Dictionary, k: Dictionary) -> int:
+	var n: int = fight.attack_coins(u, t, k)
+	var need: int = fight.heads_needed(t, u, k) if not t.is_empty() else Rules.HEADS_TO_HIT
+	return 1 if n < need else n
+
+
+## PROPOSAL for saves under the same idea (not approved): the target's save and the heads it needs, "DEX save: 1 head".
+func save_line(ab: String) -> String:
+	return "%s save: %d %s" % [ab, Rules.SAVE_HEADS, "head" if Rules.SAVE_HEADS == 1 else "heads"]
 
 
 ## What each modifier is called on its row (07 -> Modifier coins). Strings go through the Screen text check.
@@ -459,7 +484,7 @@ func _target_row(t: Dictionary) -> Control:
 			row.add_child(top)
 			var bar := Bar.make(146, 4, UI.DARK, col, v)
 			row.add_child(bar)
-		"b", "c":
+		"b", "c", "v2":
 			var top := HBoxContainer.new()
 			top.add_theme_constant_override("separation", 6)
 			var name := UI.label(t.name, "lilita", 14)
@@ -487,6 +512,8 @@ func _target_row(t: Dictionary) -> Control:
 ## The coin line (or save line). "c" shows its first part as a big figure ("3 coins", "Long shot", "Save: 2 coins")
 ## with the rest under it; the others break it only at the dots.
 func _check_line(text: String) -> Control:
+	if layout == "v2" and text.ends_with(" in a row") and UI.font("n800").get_string_size(text, 0, -1, 13).x > 146.0:
+		return _wrap(UI.label(text.trim_suffix(" in a row") + "\nin a row", "n800", 13))   # breaks before the phrase, not inside it
 	if layout != "c":
 		return _dot_label(text, "n800", 13)
 	var parts := text.split(" · ")
@@ -507,7 +534,7 @@ func _breath_rows(u: Dictionary, k: Dictionary, into: VBoxContainer = null) -> v
 		for c: Vector2i in fight.breath_line(u, fight.breath_dir):
 			var t := fight.unit_at(c)
 			if not t.is_empty() and not t.down and t != u:
-				rows.append({name = t.name, line = "Save: %d coins · DEX" % fight.save_coins(t, "DEX")})
+				rows.append({name = t.name, line = save_line("DEX") if layout == "v2" else "Save: %d coins · DEX" % fight.save_coins(t, "DEX")})
 	for r: Dictionary in rows:
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 1)

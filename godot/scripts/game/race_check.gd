@@ -237,7 +237,7 @@ func _run() -> void:
 		await _status_shots()
 		get_tree().quit()
 		return
-	if "--panellayouts" in OS.get_cmdline_user_args():   # test aid: the details panel's trial layouts, side by side
+	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--panellayouts")):   # test aid: the details panel's trial layouts, side by side
 		await _panel_layout_shots()
 		get_tree().quit()
 		return
@@ -1590,7 +1590,7 @@ func _flip_shots() -> void:
 
 
 ## `-- --racecheck --panellayouts --shots` saves screens/race/layout_<state>_<layout>.png: the details panel in each
-## trial layout (CombatHud.layout: "" as it was, then a, b, c) in the same states. Prints each state's fit.
+## trial layout (CombatHud.layout: "" as it was, then a, b, c; or --panellayouts=old,b,v2) in the same states. Prints each state's fit.
 func _panel_layout_shots() -> void:
 	await _fight("plains_stones")
 	var fluffy := _who("Fluffy")
@@ -1616,6 +1616,10 @@ func _panel_layout_shots() -> void:
 	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
 	var d0: float = game.rig.distance
 	var states := ["plain", "cover_night", "bless_glow", "long", "breath", "second_wind"]
+	var lays := ["", "a", "b", "c"]
+	for a: String in OS.get_cmdline_user_args():   # --panellayouts=old,b,v2 picks the layouts
+		if a.begins_with("--panellayouts="):
+			lays.assign(Array(a.trim_prefix("--panellayouts=").split(",")).map(func(l): return "" if l == "old" else l))
 	for state: String in states:
 		_clear_round(s, [])
 		for e in foes:
@@ -1662,7 +1666,7 @@ func _panel_layout_shots() -> void:
 				await f.press_button()
 		game.rig.ease_to(f.global_position + who.mini.position, d0 * 0.8, game.rig.yaw_deg)
 		await _wait(0.6)
-		for lay: String in ["", "a", "b", "c"]:
+		for lay: String in lays:
 			CombatHud.layout = lay
 			f.hud.refresh()
 			await get_tree().process_frame
