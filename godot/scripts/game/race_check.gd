@@ -255,9 +255,9 @@ func _run() -> void:
 
 	# Scores drive play (06): the hero's from the creator (or HERO_DEFAULT), companions' from 03.
 	_check(f.attack_score(hero, Cards.get_card("attack")) == Races.score(hero.member, Weapons.of(hero.weapon).ab), "the hero's attack flips their own %s (%s)" % [Weapons.of(hero.weapon).ab, hero.weapon])
-	_check(f.attack_score(fluffy, Cards.get_card("firebolt")) == 3 and f.save_coins(fluffy, {}, "DEX") == 2, "Fluffy: INT 3 on Firebolt, DEX 2 on saves")
-	_check(f.attack_score(chelm, Cards.get_card("attack")) == 2 and f.save_coins(chelm, {}, "DEX") == 1, "Chelmsford: STR 2, DEX 1")
-	_check(f.attack_score(mel, Cards.get_card("attack")) == 2 and f.save_coins(mel, {}, "WIS") == 2, "Mel: DEX 2, WIS 2")
+	_check(f.attack_score(fluffy, Cards.get_card("firebolt")) == 3 and f.save_coins(fluffy, "DEX") == 2, "Fluffy: INT 3 on Firebolt, DEX 2 on saves")
+	_check(f.attack_score(chelm, Cards.get_card("attack")) == 2 and f.save_coins(chelm, "DEX") == 1, "Chelmsford: STR 2, DEX 1")
+	_check(f.attack_score(mel, Cards.get_card("attack")) == 2 and f.save_coins(mel, "WIS") == 2, "Mel: DEX 2, WIS 2")
 	var f9 := UI.font("n900")
 	var too_wide := []
 	for id: String in Cards.ALL:
@@ -437,7 +437,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	var expect: int = Races.score(m, w.ab) + Races.forge_coin(m, atk)
 	var close: int = Rules.RANGED_ADJACENT if f.close_shot(hero, atk) else 0
 	_check(f.attack_coins(hero, foe, atk) == expect - close, "armour: foes wear none, so the hero flips all %d coins (less %d for a close shot)" % [expect, close])
-	_check(f.save_coins(hero, {}, "DEX") == Races.score(m, "DEX"), "armour costs no save coins")
+	_check(f.save_coins(hero, "DEX") == Races.score(m, "DEX"), "armour costs no save coins")
 	if w.get("ranged", false):
 		var far: int = f.attack_coins(hero, foe, atk)
 		var pb: bool = w.get("point_blank", false)
@@ -1155,7 +1155,7 @@ func _cover_checks() -> void:
 			_place(foe, c)
 			var t := f.cover_between(shooter, foe)
 			if kind == "partial":
-				_check(t == "partial" and f.attack_coins(shooter, foe, Cards.get_card("firebolt")) == 2 and f.save_coins(foe, shooter, "DEX") == Rules.ENEMY_SAVE_COINS + 1, "partial cover (%s): Firebolt flips 2, the foe saves with 3" % f.grid[b].kind)
+				_check(t == "partial" and f.attack_coins(shooter, foe, Cards.get_card("firebolt")) == 2 and f.save_coins(foe, "DEX") == Rules.ENEMY_SAVE_COINS, "partial cover (%s): Firebolt flips 2, the foe's save ignores it (2)" % f.grid[b].kind)
 			else:
 				_check(t == "full" and not f.in_reach(shooter, foe, Cards.get_card("firebolt")), "full cover: can't aim through")
 			found[kind] = true
@@ -1196,7 +1196,7 @@ func _panel_fit() -> void:
 					u.used[id] = true
 					u.used_fight[id] = true
 				if state == "result":
-					var n: int = f.attack_coins(u, foe, k) if k.kind == "attack" else (f.save_coins(foe, u, k.get("save", "DEX")) if k.kind == "save" else 0)
+					var n: int = f.attack_coins(u, foe, k) if k.kind == "attack" else (f.save_coins(foe, k.get("save", "DEX")) if k.kind == "save" else 0)
 					var miss: Array[bool] = []
 					for i in n:
 						miss.append(false)
@@ -1404,20 +1404,6 @@ func _flip_shots() -> void:
 		print("RACE flip %s: %d coins, needs %d, mods %s%s" % [case[0], n, need, f.attack_mods(fluffy, foe, bolt).map(func(m): return "%s %+d" % [m.why, m.n]), ", long shot" if long else ""])
 		await _wait(2.0)
 	f.night = false
-	# A save: Chelmsford's Sacred Flame at the foe behind cover, which saves with 1 more coin.
-	var chelm := _who("Chelmsford")
-	_clear_round(spot[0], [])
-	_place(chelm, spot[0])
-	_place(foe, spot[1])
-	_fresh(foe)
-	_turn(chelm)
-	f.pick_card("sacred_flame")
-	f.target = foe
-	f.hud.refresh()
-	game.rig.ease_to(f.global_position + chelm.mini.position * 0.7 + foe.mini.position * 0.3, d0 * 0.8, game.rig.yaw_deg)
-	await _wait(0.8)
-	await _shot("flip_v3_save_cover_before")
-	print("RACE flip save_cover: %d coins, mods %s" % [f.save_coins(foe, chelm, "DEX"), f.save_mods(foe, chelm).map(func(m): return "%s %+d" % [m.why, m.n])])
 
 
 ## `-- --racecheck --panelshots --shots` saves screens/race/panel_*.png.

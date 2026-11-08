@@ -302,9 +302,7 @@ func _refresh_details() -> void:
 			for m: Dictionary in fight.attack_mods(u, fight.target, k):   # every modifier, chip and words (07 -> Modifier coins)
 				_details.add_child(_mod_row(m))
 		else:
-			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS], "n800", 13)))
-			for m: Dictionary in fight.save_mods(fight.target, u):   # the saver's modifiers, as for attacks
-				_details.add_child(_mod_row(m))
+			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, k.save), k.save, Rules.SAVE_HEADS], "n800", 13)))
 	elif k.kind == "breath" and (aimed or fight.result.has("rows")):
 		_breath_rows(u, k)
 	elif k.kind == "cell" and aimed:
@@ -381,13 +379,10 @@ func _mod_row(m: Dictionary) -> Control:
 func _breath_rows(u: Dictionary, k: Dictionary) -> void:
 	var rows: Array = fight.result.get("rows", [])
 	if rows.is_empty():
-		var partial := false
 		for c: Vector2i in fight.breath_line(u, fight.breath_dir):
 			var t := fight.unit_at(c)
 			if not t.is_empty() and not t.down and t != u:
-				rows.append({name = t.name, line = "Save: %d coins · DEX" % fight.save_coins(t, {}, "DEX", partial)})
-			if fight.cover.get(c, "") == "partial":
-				partial = true
+				rows.append({name = t.name, line = "Save: %d coins · DEX" % fight.save_coins(t, "DEX")})
 	for r: Dictionary in rows:
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 1)

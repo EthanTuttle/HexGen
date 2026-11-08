@@ -1025,19 +1025,10 @@ func close_shot(a: Dictionary, k: Dictionary) -> bool:
 	return foes_of(a).any(func(o): return dist(o, a) == 1)
 
 
-## A save's coins: a foe's set number, an ally's own score in the save's ability, plus its modifiers (save_mods).
-func save_coins(t: Dictionary, from: Dictionary, ability: String, cover_seen := false) -> int:
-	var n: int = Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
-	for m: Dictionary in save_mods(t, from, cover_seen):
-		n += m.n
-	return n
-
-
-## A save's modifiers, as coins for whoever saves (03 -> Coin checks -> Readable flips): +1 behind cover from whoever aims.
-func save_mods(t: Dictionary, from: Dictionary, cover_seen := false) -> Array:
-	if cover_seen or (not from.is_empty() and cover_between(from, t) == "partial"):
-		return [{n = Rules.COVER_COINS, icon = "cover", why = "cover"}]
-	return []
+## A save's coins: a foe's set number, or an ally's own score in the save's ability. Saves ignore cover (03 -> Cover,
+## Ethan, Nov 7, 2026).
+func save_coins(t: Dictionary, ability: String) -> int:
+	return Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
 
 
 ## A flip of n coins needing `need` heads, as coins and the heads they need. Fewer coins than heads: the long shot (DOCS:
@@ -1198,7 +1189,7 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 			if Rules.bash() == "hold" and not t.down:   # test aid: the push, and the foe loses its next Move
 				t.snared = _until_next_turn_of(t)
 		if k.get("rider", "") == "haymaker" and not t.down:   # a failed CON save: it loses 1 AP next turn (04)
-			var save := flip_check(save_coins(t, a, "CON"), Rules.SAVE_HEADS)
+			var save := flip_check(save_coins(t, "CON"), Rules.SAVE_HEADS)
 			await hud.flip_coins(t, save.coins, save.need, Rules.COIN_STEP_FOE)
 			if Coins.heads(save.coins) < save.need:
 				t.lost_ap = maxi(t.lost_ap, Rules.HAYMAKER_AP)
@@ -1260,8 +1251,8 @@ func _until_next_turn_of(t: Dictionary) -> int:
 func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	busy = true
 	refresh()
-	var check := flip_check(save_coins(t, a, k.save), Rules.SAVE_HEADS)
-	var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE, save_mods(t, a))
+	var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
+	var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
 	var saved: bool = Coins.heads(check.coins) >= check.need
 	match k.get("effect", ""):
 		"glow", "lull":
@@ -1379,11 +1370,10 @@ func _breath(a: Dictionary, d: int) -> void:
 	breath_dir = -1
 	result = {coins = [], title = "", good = true, sub = "", rows = []}   # each target's save and damage, for the panel
 	refresh()
-	var partial := false
 	for c: Vector2i in line:
 		var t := unit_at(c)
 		if not t.is_empty() and not t.down and t != a:
-			var check := flip_check(save_coins(t, {}, "DEX", partial), Rules.SAVE_HEADS)
+			var check := flip_check(save_coins(t, "DEX"), Rules.SAVE_HEADS)
 			await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
 			var coins: Array[bool] = await lucky(t, t, check.coins, check.need)
 			var saved: bool = Coins.heads(coins) >= check.need
@@ -1406,8 +1396,6 @@ func _breath(a: Dictionary, d: int) -> void:
 			await board.attack(a.mini, t.mini, true)
 			hud.float_text(t, "-%d" % dmg, true)
 			await _hurt(t, dmg)
-		if cover.get(c, "") == "partial":
-			partial = true
 	busy = false
 	refresh()
 	_check_end()
@@ -1967,7 +1955,7 @@ func _phantom(u: Dictionary, c: Vector2i) -> void:
 
 ## A foe's INT save against an illusion (03): flipped over it; true if it fails and is fooled.
 func _fooled(e: Dictionary) -> bool:
-	var check := flip_check(save_coins(e, {}, "INT"), Rules.SAVE_HEADS)
+	var check := flip_check(save_coins(e, "INT"), Rules.SAVE_HEADS)
 	await hud.flip_coins(e, check.coins, check.need, Rules.COIN_STEP_FOE)
 	return Coins.heads(check.coins) < check.need
 
