@@ -7,11 +7,13 @@ extends Control
 var glyph: Texture2D
 var glyph_size := 9.0
 var more := ""      # "+N" in place of a glyph
+var ring := UI.DARK  # a modifier's chip: green for a buff, red for a penalty (07 -> Modifier coins)
 
 
 ## A chip `d` across showing `icon` (a status_icons name) in `ink`, or "+extra" when extra > 0.
-static func make(d: float, icon: String, ink: Color, extra := 0) -> StatusChip:
+static func make(d: float, icon: String, ink: Color, extra := 0, ring_col := UI.DARK) -> StatusChip:
 	var c := StatusChip.new()
+	c.ring = ring_col
 	c.custom_minimum_size = Vector2(d, d)
 	c.size = Vector2(d, d)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -32,8 +34,8 @@ static func _screen_scale() -> float:
 
 
 func _draw() -> void:
-	draw_circle(size * 0.5, size.x * 0.5, UI.DARK, true, -1.0, true)
-	draw_circle(size * 0.5, size.x * 0.5 - 1.0, UI.CREAM, true, -1.0, true)
+	draw_circle(size * 0.5, size.x * 0.5, ring, true, -1.0, true)
+	draw_circle(size * 0.5, size.x * 0.5 - (1.0 if ring == UI.DARK else 1.6), UI.CREAM, true, -1.0, true)   # a modifier's coloured ring a touch wider
 	if more != "":
 		var f := UI.font("n900")
 		var fs := int(size.x * 0.62)

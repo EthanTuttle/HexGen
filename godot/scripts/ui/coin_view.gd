@@ -8,9 +8,8 @@ var diameter := 34.0
 var is_blank := false
 var ring := Color(0, 0, 0, 0)
 var is_lost := false   # a coin a modifier took: greyed, never flipped
-var outline := Color(0, 0, 0, 0)   # a modifier's coin: green for a buff, red for a penalty (Ethan, Nov 7, 2026)
-const BUFF_OUTLINE := Color("#2E9A3E")    # PLACEHOLDER shades
-const PENALTY_OUTLINE := Color("#C62E24")
+const BUFF_RING := Color("#2E9A3E")     # a modifier chip's ring (07 -> Modifier coins); PLACEHOLDER shades
+const PENALTY_RING := Color("#C62E24")
 
 
 ## The ink of each modifier's icon on a coin (Fight.attack_mods). PLACEHOLDER icons and inks.
@@ -40,14 +39,18 @@ static func blank(d := 34.0) -> CoinView:
 static func lost(d: float, mod: String) -> CoinView:
 	var c := make(false, d)
 	c.is_lost = true
-	c.outline = PENALTY_OUTLINE
-	c.add_badge(mod)
+	c.add_badge(mod, false)
 	return c
 
 
-## The modifier's icon in a small chip on the coin's top right corner.
-func add_badge(mod: String) -> void:
-	var chip := StatusChip.make(roundf(diameter * 0.5), MOD_ICON.get(mod, mod), Color(MOD_INK.get(mod, "#33403B")))
+## A modifier's chip, `d` across, its ring green for a buff and red for a penalty (07 -> Modifier coins).
+static func mod_chip(d: float, mod: String, buff: bool) -> StatusChip:
+	return StatusChip.make(d, MOD_ICON.get(mod, mod), Color(MOD_INK.get(mod, "#33403B")), 0, BUFF_RING if buff else PENALTY_RING)
+
+
+## The modifier's chip on the coin's top right corner.
+func add_badge(mod: String, buff := true) -> void:
+	var chip := mod_chip(roundf(diameter * 0.5), mod, buff)
 	chip.position = Vector2(diameter - chip.size.x * 0.7, -chip.size.y * 0.3)
 	add_child(chip)
 
@@ -60,15 +63,12 @@ func _draw() -> void:
 	var bg := Color("#EFE6D3") if is_blank else (UI.GOLD if heads else Color("#CFC2A8"))
 	var edge := UI.CREAM_EDGE if is_blank else (UI.GOLD_EDGE if heads else Color("#8A7D66"))
 	var ink := Color("#5A3A05") if heads else Color("#4A4034")
-	if is_lost:   # PLACEHOLDER look: a flat pale grey coin, no letter, in its red outline
+	if is_lost:   # PLACEHOLDER look: a flat pale grey coin, no letter
 		draw_circle(ctr, r, Color("#B3AB9C"))
 		draw_circle(ctr, r - 1.5, Color("#E2DDD3"))
-		draw_arc(ctr, r + 1.0, 0, TAU, 40, outline, 2.5, true)
 		return
 	draw_circle(ctr, r, edge)
 	draw_circle(ctr - Vector2(0, 1.5), r - 1.5, bg)
-	if outline.a > 0:
-		draw_arc(ctr, r + 1.0, 0, TAU, 40, outline, 2.5, true)
 	if is_blank:
 		return
 	var f := UI.font("lilita")

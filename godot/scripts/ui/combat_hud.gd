@@ -299,6 +299,8 @@ func _refresh_details() -> void:
 			_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
 		elif k.kind == "attack":
 			_details.add_child(_wrap(UI.label(coin_line(u, fight.target, k), "n800", 13)))
+			for m: Dictionary in fight.attack_mods(u, fight.target, k):   # every modifier, chip and words (07 -> Modifier coins)
+				_details.add_child(_mod_row(m))
 		else:
 			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads%s" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS,
 					" · +1 cover" if fight.cover_between(u, fight.target) == "partial" else ""], "n800", 13)))
@@ -346,20 +348,32 @@ func _icon(path: String, col: Color, px: float) -> TextureRect:
 	return r
 
 
-## The attack's coin line with what changed the coins: Bless, cover, and the long shot when there are fewer coins than
-## heads needed (design/03 -> Coin checks, Combat -> Cover). Forge, glow and acid coins are in the count.
+## The attack's coin line, and the long shot when there are fewer coins than heads needed (design/03 -> Coin checks).
+## What changed the coins is listed under it, one row each (_mod_row).
 func coin_line(u: Dictionary, t: Dictionary, k: Dictionary) -> String:
 	var n: int = fight.attack_coins(u, t, k)
 	var need: int = fight.heads_needed(t, u, k) if not t.is_empty() else Rules.HEADS_TO_HIT
 	var ab: String = k.get("ab", u.ability)
-	var mods := ""
-	if u.blessed:
-		mods += " · +1 Bless"
-	if not t.is_empty() and fight.cover_between(u, t) == "partial" and not k.get("pierce", false):
-		mods += " · −%d cover" % Rules.COVER_COINS
 	if n < need:   # the long shot: 1 coin, heads in a row
-		return "Long shot · %s · %d heads in a row%s" % [ab, need + (need - n), mods]
-	return "%d coins · %s · needs %d heads%s" % [n, ab, need, mods]
+		return "Long shot · %s · %d heads in a row" % [ab, need + (need - n)]
+	return "%d coins · %s · needs %d heads" % [n, ab, need]
+
+
+## What each modifier is called on its row (07 -> Modifier coins). Strings go through the Screen text check.
+const MOD_WORDS := {"bless": "Bless", "forge": "Forge dwarf", "glow": "Faerie Fire", "acid": "Acid", "cover": "cover",
+	"night": "night", "close": "foe next to you"}
+
+
+## One modifier under the coin line: its chip, then "+1 Bless" or "−1 cover".
+func _mod_row(m: Dictionary) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	row.add_child(CoinView.mod_chip(14, m.icon, m.n > 0))
+	var sign := "+" if m.n > 0 else "−"
+	var l := UI.label("%s%d %s" % [sign, absi(m.n), MOD_WORDS.get(m.why, m.why)], "n800", 12)
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(l)
+	return row
 
 
 ## Breath Weapon: each one in the line, with their save; after the cast, their coins and what they took.
@@ -835,7 +849,6 @@ func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float, mods 
 		var coin := CoinView.make(h, size_)
 		if flipped.size() < badges.size():
 			coin.add_badge(badges[flipped.size()])
-			coin.outline = CoinView.BUFF_OUTLINE
 		flipped.append(coin)
 		coin.pivot_offset = Vector2(size_, size_) * 0.5
 		coin.scale = Vector2(0.05, 1.0)
