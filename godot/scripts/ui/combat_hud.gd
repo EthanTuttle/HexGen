@@ -248,7 +248,7 @@ func _refresh_details() -> void:
 	var k := fight.card()
 	var src: Dictionary = Cards.SRC[k.src]
 	var lim: String = {"turn": " · once per turn", "fight": " · once per fight"}.get(k.limit, "")
-	var head_text := (src.label + lim).to_upper()   # the AP is in the hex by the name
+	var head_text: String = (src.label + lim).to_upper()   # the AP is in the hex by the name
 	if k.limit == "":
 		var head := HBoxContainer.new()
 		head.add_theme_constant_override("separation", 4)
