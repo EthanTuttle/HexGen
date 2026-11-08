@@ -1168,7 +1168,7 @@ func open_event(t: Vector2i) -> void:
 ## A Social or Discovery encounter's fight, when its event turns into one (Screens). Rolls foes if it had none.
 func event_start_fight(t: Vector2i) -> void:
 	if encounters[t].roles.is_empty():
-		encounters[t].roles = Foes.roll_roles(Foes.band(t), rng, party.size())
+		encounters[t].roles = Foes.roll_roles(Foes.tier(self, t), rng, party.size())
 	start_fight(t)
 
 
@@ -1203,7 +1203,7 @@ func add_encounter(t: Vector2i, persistent: bool, dropped: Array = [], entry := 
 	if entry.is_empty():
 		entry = {kind = "fight", scene = "enc_fight_bandits" if GroundCover.hash01(t.x, t.y, 97) < 0.5 else "enc_fight_wolves", roams = false}
 	_encounter_count += 1
-	var roles: Array = Foes.roll_roles(Foes.band(t), rng, party.size()) if entry.kind == "fight" and not run.wide_deck else []
+	var roles: Array = Foes.roll_roles(Foes.tier(self, t), rng, party.size()) if entry.kind == "fight" and not run.wide_deck else []
 	encounters[t] = {expires = real_time + Rules.ENCOUNTER_LIFETIME, persistent = persistent, dropped = dropped, entry = entry, id = _encounter_count, roles = roles,
 			roam_at = _now_minutes() + Rules.ROAM_MINUTES}
 
@@ -1672,7 +1672,7 @@ func start_fight(t: Vector2i) -> void:
 	var distance := Rules.hex_distance(t, Rules.START_TILE)
 	var foes := mini(Rules.ENEMIES_BASE + distance / Rules.ENEMIES_PER_DISTANCE, Rules.ENEMIES_MAX)
 	var roles: Array = encounters[t].roles if encounters.has(t) else []
-	fight.roster = Foes.roster(encounters[t].entry.scene, roles, Foes.band(t), level) if not roles.is_empty() else []
+	fight.roster = Foes.roster(encounters[t].entry.scene, roles, Foes.tier(self, t)) if not roles.is_empty() else []
 	_fade_to(0.0, Rules.ZOOM_FADE)
 	var won: bool = await fight.run(self, land(t), t, foes, id)
 	var downed := {}
@@ -1683,7 +1683,7 @@ func start_fight(t: Vector2i) -> void:
 	var earned := 0
 	if won:
 		fights_won += 1
-		earned = Foes.reward(roles, Foes.band(t))
+		earned = Foes.reward(roles, Foes.tier(self, t))
 		gold += earned
 		_add_xp(earned)
 		var back: Array = encounters[t].dropped

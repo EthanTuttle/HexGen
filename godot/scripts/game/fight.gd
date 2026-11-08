@@ -46,6 +46,7 @@ var snares := {}                 # owner's name -> the hidden Snare's cell (03 -
 var _snare_marks := {}           # owner's name -> its marker, which only the party sees (PLACEHOLDER look)
 var edge_cover := {}             # [cell, cell] sorted -> "partial": a low edge between two cells (plot edges, terrace curbs)
 var circles := {}                # caster's name -> Warding Circle {cells, node} (03 -> Ritualist)
+var night := false               # a night fight: natural night, 1 fewer coin on every attack (03 -> Darkness); no light gear yet
 
 var _overlays: Array[Node3D] = []
 var _hex_mesh: Mesh
@@ -89,6 +90,7 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 			z.node.queue_free()
 	circles = {}
 	result = {}
+	night = Rules.is_night(g.minute)
 	map_id = id
 	if id == "":
 		_setup_board(terrain, tile, foes)
@@ -980,17 +982,47 @@ func attack_score(a: Dictionary, k: Dictionary) -> int:
 	return Races.score(a.member, k.get("ab", a.ability)) if a.ally else a.score
 
 
-## An attack's coins: the score, Bless, the forge dwarf's coin on Attack and weapon cards, a glowing (Faerie Fire) or
-## acid-burned (black breath) target, less cover (design/03 -> Combat -> Cover). Armour takes no coins (04, Nov 5, 2026). May go below the heads needed: the long shot.
+## An attack's coins: the score plus its modifiers (attack_mods). Armour takes no coins (04, Nov 5, 2026). May go below
+## the heads needed: the long shot.
 func attack_coins(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
-	var n: int = attack_score(a, k) + (1 if a.blessed else 0)
-	if a.ally:
-		n += Races.forge_coin(a.member, k)
-	if not t.is_empty():
-		n += (1 if on(t, "glow") else 0) + (1 if on(t, "acid") else 0)
-		if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
-			n -= Rules.COVER_COINS
+	var n: int = attack_score(a, k)
+	for m: Dictionary in attack_mods(a, t, k):
+		n += m.n
 	return maxi(n, 0)
+
+
+## Every situational modifier on an attack, as coins (DOCS: 03 -> Coin checks -> Readable flips, Ethan, Nov 7, 2026: they
+## change coins, never heads), each {n, icon, why}: Bless, the forge dwarf's coin on Attack and weapon cards, a glowing
+## (Faerie Fire) or acid-burned (black breath) target, less cover (03 -> Combat -> Cover), a ranged attack with a foe next
+## to the attacker, except a crossbow's (Point Blank; 04 -> Ranged), and natural night (03 -> Darkness).
+func attack_mods(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
+	var out := []
+	if a.blessed:
+		out.append({n = 1, icon = "bless", why = "bless"})
+	if a.ally and Races.forge_coin(a.member, k) > 0:
+		out.append({n = Races.forge_coin(a.member, k), icon = "forge", why = "forge"})
+	if t.is_empty():
+		return out
+	if on(t, "glow"):
+		out.append({n = 1, icon = "glow", why = "glow"})
+	if on(t, "acid"):
+		out.append({n = 1, icon = "acid", why = "acid"})
+	if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
+		out.append({n = -Rules.COVER_COINS, icon = "cover", why = "cover"})
+	if close_shot(a, k):
+		out.append({n = -Rules.RANGED_ADJACENT, icon = "close", why = "close"})
+	if night:
+		out.append({n = -Rules.NIGHT_COINS, icon = "night", why = "night"})
+	return out
+
+
+## A ranged attack with a foe next to the attacker (04 -> Ranged), except a crossbow's own attacks (Point Blank).
+func close_shot(a: Dictionary, k: Dictionary) -> bool:
+	if a.is_empty() or Rules.old("ranged") or not k.get("ranged", false):
+		return false
+	if Weapons.of(a.weapon).get("point_blank", false) and (k.id == "attack" or k.src == "weapon"):
+		return false
+	return foes_of(a).any(func(o): return dist(o, a) == 1)
 
 
 ## A save's coins: a foe's set number, an ally's own score in the save's ability, +1 behind cover from whoever aims.
@@ -1184,14 +1216,10 @@ func reduction(t: Dictionary) -> int:
 	return Races.reduction(t.member, game.level) * (2 if t.lockdown else 1) + (Rules.WARDING_LESS if warded(t) else 0)
 
 
-## What an attack on t needs (DOCS: design/03 -> Hit chance scaling), +1 for a ranged attack with a foe next to the attacker
-## (04 -> Ranged), except a crossbow's (Point Blank).
-func heads_needed(t: Dictionary, a := {}, k := {}) -> int:
-	var need: int = t.get("heads", Rules.HEADS_TO_HIT)
-	if not a.is_empty() and not Rules.old("ranged") and k.get("ranged", false) and not (Weapons.of(a.weapon).get("point_blank", false) and (k.id == "attack" or k.src == "weapon")):
-		if foes_of(a).any(func(o): return dist(o, a) == 1):
-			need += Rules.RANGED_ADJACENT
-	return need
+## What an attack on t needs: its defence (DOCS: 03 -> Hit chance scaling; heroes 04 -> Armour). Modifiers change coins,
+## not heads (attack_mods).
+func heads_needed(t: Dictionary, _a := {}, _k := {}) -> int:
+	return t.get("heads", Rules.HEADS_TO_HIT)
 
 
 ## Whether a hits with this card's weapon (the basic attack, weapon cards, Sneak Attack).

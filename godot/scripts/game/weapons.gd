@@ -38,8 +38,9 @@ const CAT := {
 const WIZARD_SPELLS := {"Summoner": ["animated_blade", "wisp"], "Blaster": ["firebolt", "frost_ray", "shocking_grasp"],
 	"Deceiver": ["mirror_image", "phantom_ally"], "Ritualist": ["blood_bolt", "warding_circle"]}
 const SPELL_PICKS := 2                   # DOCS (03): casters pick 2 spells at level 1
-const ARMOURED_HEADS := 1               # DOCS (04 -> Armour, Nov 5, 2026): Armoured needs 1 + half CON rounded up
-const SHIELD_HEADS := 1                 # DOCS: +1 with a shield
+const CLOTHES_HEADS := 1                # DOCS (04 -> Armour, flat since Nov 7, 2026): Clothes 1, Armoured 2, +1 with a shield
+const ARMOURED_HEADS := 2
+const SHIELD_HEADS := 1
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
 const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"], "rogue": ["sneak_attack", "poison_blade"]}   # DOCS (06 -> Start)
@@ -74,9 +75,8 @@ static func armoured(armour: String) -> bool:
 	return armour in ["Light", "Medium", "Heavy", "Armoured"]
 
 
-## The heads a foe needs to hit this hero or companion (04): Armoured 1 + half CON rounded up, +1 with a shield; in Clothes
-## half DEX rounded up.
+## The heads a foe needs to hit this hero or companion, flat so players never work out halves (04 -> Armour, Ethan,
+## Nov 7, 2026): Clothes 1, Armoured 2, +1 with a shield.
 static func defence_heads(m: Dictionary, clothes := false) -> int:
-	if armoured(m.get("armour", "")) and not clothes:
-		return ARMOURED_HEADS + ceili(Races.score(m, "CON") / 2.0) + (SHIELD_HEADS if m.get("off", "") == "shield" else 0)
-	return maxi(ceili(Races.score(m, "DEX") / 2.0), 1)
+	var base := ARMOURED_HEADS if armoured(m.get("armour", "")) and not clothes else CLOTHES_HEADS
+	return base + (SHIELD_HEADS if m.get("off", "") == "shield" else 0)

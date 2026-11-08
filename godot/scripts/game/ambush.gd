@@ -1,7 +1,7 @@
 class_name Ambush
 extends RefCounted
 ## Ambush and unaware (design/03 -> Combat -> Ambush, Unaware; Ethan, Nov 6, 2026). Before a fight the hero flips alone,
-## Stealth (DEX) or Deceive (CHA), needing the heads of the group's highest role (as Sneak past: Foes.sneak_heads). On a
+## Stealth (DEX) or Deceive (CHA), needing the toughest foe's defence in heads (as Sneak past: Foes.sneak_heads). On a
 ## pass every foe starts unaware of the whole party; on a fail the foes go first. Foes that started unaware act on their
 ## first turn with 1 AP less. Unaware ends per character: any hostile action a character aims at a foe (not Hunter's
 ## Mark) ends its unawareness of that character only. Hidden characters are unaware-of too, once hiding exists.

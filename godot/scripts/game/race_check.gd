@@ -401,14 +401,26 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	var m: Dictionary = hero.member
 	var w: Dictionary = Weapons.of(hero.weapon)
 	print("RACE gear: %s %s / %s, armour %s, heads to hit %d, cards %s" % [m.klass, hero.weapon, hero.off, m.armour, hero.heads, hero.cards])
-	var expect_heads: int = (1 + ceili(Races.score(m, "CON") / 2.0) + (1 if hero.off == "shield" else 0)) if Weapons.armoured(m.armour) else maxi(ceili(Races.score(m, "DEX") / 2.0), 1)
-	_check(hero.heads == expect_heads, "armour: foes need %d heads to hit the hero (Armoured 1 + half CON up, +1 shield; Clothes half DEX up)" % expect_heads)
+	var expect_heads: int = (2 if Weapons.armoured(m.armour) else 1) + (1 if hero.off == "shield" else 0)
+	_check(hero.heads == expect_heads, "armour: foes need %d heads to hit the hero (flat: Clothes 1, Armoured 2, +1 shield)" % expect_heads)
 	var dh := func(armour: String, off: String, scores: Dictionary) -> int: return Weapons.defence_heads({"armour": armour, "off": off, "scores": scores})
-	_check(dh.call("Light", "", {"CON": 1}) == 2 and dh.call("Light", "", {"CON": 2}) == 2 and dh.call("Medium", "", {"CON": 3}) == 3 and dh.call("Heavy", "", {"CON": 5}) == 4
-		and dh.call("Medium", "shield", {"CON": 2}) == 3, "armour: Armoured CON 1-2 needs 2, CON 3 needs 3, CON 5 needs 4, a shield adds 1")
-	_check(dh.call("none", "", {"DEX": 1}) == 1 and dh.call("none", "", {"DEX": 2}) == 1 and dh.call("none", "", {"DEX": 3}) == 2 and dh.call("none", "", {"DEX": 6}) == 3,
-		"armour: Clothes DEX 1-2 needs 1, DEX 3 needs 2, DEX 6 needs 3")
-	_check(_who("Fluffy").heads == 1 and _who("Chelmsford").heads == 3 and _who("Mel").heads == 1, "companions: Fluffy and Mel in Clothes (DEX 2: 1 heads), Chelmsford Armoured with a shield (CON 2: 3)")
+	_check(dh.call("Light", "", {"CON": 1}) == 2 and dh.call("Heavy", "", {"CON": 5}) == 2 and dh.call("Medium", "shield", {"CON": 2}) == 3,
+		"armour: Armoured needs 2 whatever the CON, a shield adds 1")
+	_check(dh.call("none", "", {"DEX": 1}) == 1 and dh.call("none", "", {"DEX": 6}) == 1 and dh.call("none", "shield", {"DEX": 3}) == 2,
+		"armour: Clothes needs 1 whatever the DEX, a shield adds 1")
+	_check(_who("Fluffy").heads == 1 and _who("Chelmsford").heads == 3 and _who("Mel").heads == 1, "companions: Fluffy and Mel in Clothes (1 heads), Chelmsford Armoured with a shield (3)")
+	_check(Foes.roster("enc_fight_bandits", ["minion", "soldier", "elite"], 3).map(func(u): return u.heads) == [1, 1, 2] and Foes.ROLES.boss.defence == 3,
+		"foes' defence by role, at any tier: minion and soldier 1, elite 2, boss 3")
+	_check(Foes.sneak_heads(["minion", "soldier"]) == 1 and Foes.sneak_heads(["soldier", "elite"]) == 2 and Foes.sneak_heads(["boss"]) == 3,
+		"Sneak past and Ambush need the toughest foe's defence")
+	_check(Foes.reward(["minion", "soldier"], 1) < Foes.reward(["minion", "soldier"], 2) and Foes.reward(["soldier"], 1) < Foes.reward(["elite"], 1),
+		"XP grows with the region tier and the foe's role")
+	_check(Foes.tier(game, Vector2i(99, 99)) == 1, "a tile outside any finished region counts as tier 1")
+	var hp1: int = Foes.roster("enc_fight_bandits", ["soldier"], 1)[0].hp
+	var lv: int = game.level
+	game.level = 9
+	_check(Foes.roster("enc_fight_bandits", ["soldier"], 1)[0].hp == hp1, "foes don't grow with the hero's level")
+	game.level = lv
 	_check(hero.cards.filter(func(id): return not id in Races.cards(m) and not id in game.run.spells) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card and spell picks)")
 	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
 	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])
@@ -419,12 +431,22 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	f.select(hero)
 	var atk := f.card("attack")
 	var expect: int = Races.score(m, w.ab) + Races.forge_coin(m, atk)
-	_check(f.attack_coins(hero, foe, atk) == expect, "armour: foes wear none, so the hero flips all %d coins" % expect)
+	var close: int = Rules.RANGED_ADJACENT if f.close_shot(hero, atk) else 0
+	_check(f.attack_coins(hero, foe, atk) == expect - close, "armour: foes wear none, so the hero flips all %d coins (less %d for a close shot)" % [expect, close])
 	_check(f.save_coins(hero, {}, "DEX") == Races.score(m, "DEX"), "armour costs no save coins")
 	if w.get("ranged", false):
-		_check(f.heads_needed(foe, hero, atk) == foe.heads + (0 if w.get("point_blank", false) else Rules.RANGED_ADJACENT), "a ranged shot with a foe next to you needs %d heads (%s)" % [f.heads_needed(foe, hero, atk), "Point Blank" if w.get("point_blank", false) else "+1"])
+		var far: int = f.attack_coins(hero, foe, atk)
+		var pb: bool = w.get("point_blank", false)
+		_check(f.heads_needed(foe, hero, atk) == foe.heads and f.attack_coins(hero, foe, atk) == maxi(expect - (0 if pb else Rules.RANGED_ADJACENT), 0),
+			"a ranged shot with a foe next to you flips %s, needing the same heads" % ("all its coins (Point Blank)" if pb else "1 fewer coin"))
 		_place(foe, s + dv * 3)
-		_check(f.heads_needed(foe, hero, atk) == foe.heads and f.in_reach(hero, foe, atk), "and none from 3 away, in reach")
+		far = f.attack_coins(hero, foe, atk)
+		_check(far == expect and f.heads_needed(foe, hero, atk) == foe.heads and f.in_reach(hero, foe, atk), "and none from 3 away, in reach")
+		_place(foe, s + dv)
+	f.night = true
+	_check(f.attack_coins(hero, foe, atk) == maxi(expect - Rules.NIGHT_COINS - (Rules.RANGED_ADJACENT if f.close_shot(hero, atk) else 0), 0)
+		and f.attack_mods(hero, foe, atk).any(func(x): return x.icon == "night"), "a night fight: attacks flip 1 fewer coin")
+	f.night = false
 	if m.klass == "ranger":
 		_check("hunters_mark" in hero.cards and "snare" in hero.cards and hero.hot.slice(2, 4) == ["hunters_mark", "snare"] if Races.cards(m).is_empty() else true, "the Ranger starts with Hunter's Mark and Snare on the bar: %s" % [hero.hot])
 		var run := RunSetup.new()

@@ -238,9 +238,8 @@ func _go_to_a_fight() -> void:
 	await _wait(0.1)
 
 
-## How fights go at each band for a fresh party at a given level's HP (design/06's numbers), for the balance report.
-## Foes' numbers to compare: --tune=hp:1,1.5,2;damage:1,1,2;coins:0,1,2;heads:0,0,1;elite:1;count:2-3,3-3,3-4;attacks:1;
-## level:elite=0,0,1,1,2
+## How fights go at each region tier for a fresh party at a given level's HP (design/06's numbers), for the balance report.
+## Foes' numbers to compare, by tier: --tune=hp:1,1.5,2;damage:1,1,2;coins:0,1,2;count:2-3,3-3,3-4;attacks:1
 func _tune() -> void:
 	for a: String in OS.get_cmdline_user_args():
 		if not a.begins_with("--tune="):
@@ -249,19 +248,11 @@ func _tune() -> void:
 			var kv := part.split(":")
 			var vals := kv[1].split(",")
 			match kv[0]:
-				"hp": Foes.band_hp = Array(vals).map(func(v): return v.to_float())
-				"damage": Foes.band_damage = Array(vals).map(func(v): return v.to_float())
-				"coins": Foes.band_coins = Array(vals).map(func(v): return v.to_int())
-				"heads": Foes.band_heads = Array(vals).map(func(v): return v.to_int())
-				"count": Foes.band_count = Array(vals).map(func(v): return [v.split("-")[0].to_int(), v.split("-")[1].to_int()])
+				"hp": Foes.tier_hp = Array(vals).map(func(v): return v.to_float())
+				"damage": Foes.tier_damage = Array(vals).map(func(v): return v.to_float())
+				"coins": Foes.tier_coins = Array(vals).map(func(v): return v.to_int())
+				"count": Foes.tier_count = Array(vals).map(func(v): return [v.split("-")[0].to_int(), v.split("-")[1].to_int()])
 				"attacks": Foes.attacks_per_turn = vals[0].to_int()
-				"elite": Foes.elite_heads = vals[0].to_int()
-				"farfrom": Foes.far_from_level = vals[0].to_int()
-				"growhp": Foes.grow_hp = Array(vals).map(func(v): return v.to_float())
-				"growdmg": Foes.grow_damage = Array(vals).map(func(v): return v.to_float())
-				"level":
-					var rv := kv[1].split("=")
-					Foes.level_heads[rv[0]] = Array(rv[1].split(",")).map(func(v): return v.to_int())
 
 
 var band_level := 1
@@ -303,7 +294,7 @@ func _bands() -> void:
 
 func _band_fights(each: int) -> void:
 	for band in only_bands:
-		Foes.debug_band = band
+		Foes.debug_tier = band
 		for k in each:
 			game.level = band_level
 			for m in game.party:
@@ -334,7 +325,7 @@ func _band_fights(each: int) -> void:
 ## The fight bot (FightBot) plays it out; notes how each fight went, for the balance report.
 func _play_fight() -> void:
 	var f := game.fight
-	var band := Foes.band(game.party_tile)
+	var band := Foes.tier(game, game.party_tile)
 	var roles: Array = f.units.filter(func(u): return not u.ally).map(func(u): return u.role)
 	if bot == null:
 		bot = FightBot.new(get_tree())
@@ -342,7 +333,7 @@ func _play_fight() -> void:
 		first_far = {fights_before = fights - 1, won_before = game.fights_won, level = game.level, party = f.allies().filter(func(u): return not Fight.is_summon(u)).size(), day = game.day, regions = game.regions.size()}
 	var r := await bot.play(f)
 	drunk = bot.drunk
-	print("PLAY FIGHT party %d band %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().filter(func(u): return not Fight.is_summon(u)).size(), band, roles, r.rounds, r.hp0, r.hp1, r.downs, ", WIPED" if r.wiped else ""])
+	print("PLAY FIGHT party %d tier %d, %s: %d rounds, party HP %d to %d, %d down%s" % [f.allies().filter(func(u): return not Fight.is_summon(u)).size(), band, roles, r.rounds, r.hp0, r.hp1, r.downs, ", WIPED" if r.wiped else ""])
 	wipes += 1 if r.wiped else 0
 
 

@@ -177,7 +177,7 @@ const COIN_HOLD := 0.22                  # PLACEHOLDER: the result held before t
 const POTION_HEAL := 6                   # PLACEHOLDER (design/06): a health potion, drunk with Use item at its 1 AP
 const PRONE_AP := 1                      # PLACEHOLDER: what prone costs a foe next turn (Trip, Frost Ray)
 const WARD_POINTS := 2                   # PLACEHOLDER: Ward's small shield, until the next turn
-const XP_FIRST_LEVEL := 20               # design/06: XP per level, 20 then 10 more each level
+const XP_FIRST_LEVEL := 20               # PLACEHOLDER (05 -> XP: each level needs more than the last): 20, then 10 more each level
 const XP_MORE_EACH := 10
 
 ## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
@@ -276,7 +276,8 @@ const SUMMONS := {                       # PLACEHOLDER (03): their stats; they h
 	"wisp": {"name": "Wisp", "initial": "W", "mini": "summon_wisp", "hp": 2, "damage": 1, "weapon": "summon_wisp", "flies": true},
 }
 const MIRROR_COPIES := 2                 # PLACEHOLDER (03): Mirror Image's copies, next to you
-const RANGED_ADJACENT := 1               # PLACEHOLDER (04): +1 heads for a ranged attack with a foe next to you (not crossbows)
+const RANGED_ADJACENT := 1               # PLACEHOLDER (04, Nov 7, 2026): 1 fewer coin for a ranged attack with a foe next to you (not crossbows)
+const NIGHT_COINS := 1                   # DOCS (03 -> Darkness): attacks in natural night flip 1 fewer coin
 const MOVE_PER_DEX := 1                  # DOCS (03): a Move is MOVE_HEXES, +1 for every DEX point above 1, plus race
 const AP_CAP := 6                        # DOCS: no more than 6 AP in a turn
 ## Races in play (rules: design/03 -> Races and Racial spells). Amounts are PLACEHOLDER, all from design/06 -> First playable ->
