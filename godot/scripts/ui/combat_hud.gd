@@ -802,7 +802,10 @@ func fill_status(holder: Control, fx: Array) -> void:
 
 
 ## An attack's coins over who's flipping, one at a time (design/07): stops at the heads it needs, then holds so the result can be read. Returns the coins shown.
-func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float) -> Array[bool]:
+var coin_hold := Rules.COIN_HOLD   # a test aid can hold the flip longer, for shots
+
+
+func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float, mods := [], long := false) -> Array[bool]:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -812,13 +815,31 @@ func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float) -> Ar
 	var heads := 0
 	var size_ := 24.0
 	var at := cam.unproject_position(u.mini.global_position + Vector3(0, 2.4, 0))
-	var count := coins.size()
+	# Modifiers as coins (03 -> Coin checks -> Readable flips): each coin a buff adds carries its icon, first so it always
+	# shows; each coin a penalty takes stays in the row, greyed and unflipped, with its icon. A long shot's coins aren't
+	# the score's, so only the penalties show there.
+	var badges: Array = []
+	var lost: Array = []
+	for m: Dictionary in mods:
+		for i in absi(m.n):
+			(lost if m.n < 0 else badges).append(m.icon)
+	if long:
+		badges = []
+	var count := coins.size() + lost.size()
 	row.global_position = at - Vector2((size_ + 3.0) * count * 0.5, size_)
+	var flipped: Array[CoinView] = []
+	for icon: String in lost:
+		var gone := CoinView.lost(size_, icon)
+		row.add_child(gone)
 	for h: bool in coins:
 		var coin := CoinView.make(h, size_)
+		if flipped.size() < badges.size():
+			coin.add_badge(badges[flipped.size()])
+		flipped.append(coin)
 		coin.pivot_offset = Vector2(size_, size_) * 0.5
 		coin.scale = Vector2(0.05, 1.0)
 		row.add_child(coin)
+		row.move_child(coin, flipped.size() - 1)   # flipped coins first, the lost ones after
 		var tw := create_tween()
 		tw.tween_property(coin, "scale:x", 1.0, step * 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		await get_tree().create_timer(step).timeout
@@ -826,7 +847,7 @@ func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float) -> Ar
 		heads += 1 if h else 0
 		if heads >= need:
 			break
-	await get_tree().create_timer(Rules.COIN_HOLD).timeout
+	await get_tree().create_timer(coin_hold).timeout
 	row.queue_free()
 	return shown
 

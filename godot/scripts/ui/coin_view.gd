@@ -7,6 +7,14 @@ var heads := true
 var diameter := 34.0
 var is_blank := false
 var ring := Color(0, 0, 0, 0)
+var is_lost := false   # a coin a modifier took: greyed, never flipped
+
+
+## The ink of each modifier's icon on a coin (Fight.attack_mods). PLACEHOLDER icons and inks.
+const MOD_INK := {"bless": "#B07A12", "forge": "#5A4528", "glow": "#B07A12", "acid": "#4F7A12", "cover": "#2E6B32",
+	"close": "#B3261E", "night": "#3E5A70"}
+const MOD_ICON := {"bless": "star", "forge": "mace", "glow": "spark", "acid": "acid", "cover": "tree_fill", "close": "swords",
+	"night": "moon"}
 
 
 static func make(h: bool, d := 34.0) -> CoinView:
@@ -25,6 +33,21 @@ static func blank(d := 34.0) -> CoinView:
 	return c
 
 
+## A coin a penalty took (03 -> Coin checks -> Readable flips): greyed in the row, with the penalty's icon.
+static func lost(d: float, mod: String) -> CoinView:
+	var c := make(false, d)
+	c.is_lost = true
+	c.add_badge(mod)
+	return c
+
+
+## The modifier's icon in a small chip on the coin's top right corner.
+func add_badge(mod: String) -> void:
+	var chip := StatusChip.make(roundf(diameter * 0.5), MOD_ICON.get(mod, mod), Color(MOD_INK.get(mod, "#33403B")))
+	chip.position = Vector2(diameter - chip.size.x * 0.7, -chip.size.y * 0.3)
+	add_child(chip)
+
+
 func _draw() -> void:
 	var r := diameter * 0.5
 	var ctr := Vector2(r, r)
@@ -33,6 +56,10 @@ func _draw() -> void:
 	var bg := Color("#EFE6D3") if is_blank else (UI.GOLD if heads else Color("#CFC2A8"))
 	var edge := UI.CREAM_EDGE if is_blank else (UI.GOLD_EDGE if heads else Color("#8A7D66"))
 	var ink := Color("#5A3A05") if heads else Color("#4A4034")
+	if is_lost:   # PLACEHOLDER look: a flat pale grey coin, no letter
+		draw_circle(ctr, r, Color("#B3AB9C"))
+		draw_circle(ctr, r - 1.5, Color("#E2DDD3"))
+		return
 	draw_circle(ctr, r, edge)
 	draw_circle(ctr - Vector2(0, 1.5), r - 1.5, bg)
 	if is_blank:

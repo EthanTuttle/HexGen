@@ -1114,9 +1114,12 @@ func offhand_card(a: Dictionary) -> Dictionary:
 func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 	busy = true
 	var check := flip_check(attack_coins(a, t, k), heads_needed(t, a, k))
+	var mods := attack_mods(a, t, k)   # shown as coins in the flip
+	var long_shot: bool = attack_coins(a, t, k) < heads_needed(t, a, k)
 	a.blessed = false
 	var need: int = check.need
-	var shown: Array[bool] = await hud.flip_coins(a, check.coins, need, Rules.COIN_STEP if a.ally else Rules.COIN_STEP_FOE)
+	var shown: Array[bool] = await hud.flip_coins(a, check.coins, need, Rules.COIN_STEP if a.ally else Rules.COIN_STEP_FOE,
+			mods, long_shot)
 	var coins: Array[bool] = await lucky(a if a.ally else t, a, check.coins, need)
 	var lucked: bool = coins != check.coins
 	if lucked:

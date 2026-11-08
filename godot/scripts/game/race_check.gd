@@ -221,6 +221,10 @@ func _run() -> void:
 		await _wizard_shots()
 		get_tree().quit()
 		return
+	if "--flipshots" in OS.get_cmdline_user_args():   # test aid: modifiers as coins in the flip
+		await _flip_shots()
+		get_tree().quit()
+		return
 	if "--statusshots" in OS.get_cmdline_user_args():   # test aid: the status chips on the markers
 		await _status_shots()
 		get_tree().quit()
@@ -1328,6 +1332,75 @@ func _status_shots() -> void:
 	if "--shots" in OS.get_cmdline_user_args():
 		crop.save_png(ProjectSettings.globalize_path("res://screens/race/status_close.png"))
 	print("RACE status chips: foe %s, ally %s, screen scale %.2f" % [f.status_icons(foe).map(func(e): return e[1]), f.status_icons(fluffy).map(func(e): return e[1]), StatusChip._screen_scale()])
+
+
+## `-- --racecheck --flipshots --shots` saves screens/race/flip_*.png: Fluffy's Firebolt flips with their modifiers shown
+## as coins (03 -> Coin checks -> Readable flips): cover, night, Bless and Faerie Fire, and a long shot at an elite.
+func _flip_shots() -> void:
+	await _fight("plains_stones")
+	var fluffy := _who("Fluffy")
+	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+	var bolt := Cards.get_card("firebolt")
+	var spot := []   # Fluffy's cell and the foe's, with partial cover between, nearest the board's middle
+	var mid := Vector2.ZERO
+	for c: Vector2i in f.grid:
+		mid += Vector2(c) / f.grid.size()
+	var cells: Array = f.grid.keys()
+	cells.sort_custom(func(a, b): return Vector2(a).distance_to(mid) < Vector2(b).distance_to(mid))
+	var d0: float = game.rig.distance
+	for c: Vector2i in cells:
+		if not spot.is_empty():
+			break
+		if f.grid[c].kind != "open" or f.cover.has(c):
+			continue
+		for d: Vector2i in f.grid:
+			if f.grid[d].kind == "open" and not f.cover.has(d) and Rules.hex_distance(c, d) in [3, 4]:
+				_place(fluffy, c)
+				_place(foe, d)
+				if f.cover_between(fluffy, foe) == "partial":
+					spot = [c, d]
+					break
+	var line := _free_line(3)
+	f.hud.coin_hold = 2.0
+	var cases := [["cover", spot, false, false, 1], ["night", [], true, false, 1], ["bless_glow", [], false, true, 1], ["long", spot, true, false, 2]]
+	for case: Array in cases:
+		var at: Array = case[1] if not case[1].is_empty() else [line[0], line[0] + Hex.NEIGHBOURS[line[1]] * 3]
+		_clear_round(at[0], [])
+		_place(fluffy, at[0])
+		_place(foe, at[1])
+		_fresh(foe)
+		foe.heads = case[4]
+		f.night = case[2]
+		fluffy.blessed = case[3]
+		if case[3]:
+			foe.glow = f.phase_no + 1
+		_turn(fluffy)
+		var n: int = f.attack_coins(fluffy, foe, bolt)
+		var need: int = f.heads_needed(foe, fluffy, bolt)
+		var long := n < need
+		var count := need + (need - n) if long else n
+		var coins: Array[bool] = []
+		for i in count:   # every coin shows: tails until the last, which makes the heads
+			coins.append(long or i >= count - need)
+		f.pick_card("firebolt")
+		game.rig.ease_to(f.global_position + fluffy.mini.position * 0.7 + foe.mini.position * 0.3, d0 * 0.8, game.rig.yaw_deg)
+		await _wait(0.8)
+		f.hud.flip_coins(fluffy, coins, count if long else need, 0.05, f.attack_mods(fluffy, foe, bolt), long)
+		await _wait(0.05 * count + 0.6)
+		await _shot("flip_" + case[0])
+		# The close-up: the coins over Fluffy at 2x with no smoothing.
+		var p := game.rig.camera.unproject_position(fluffy.mini.global_position + Vector3(0, 2.4, 0))
+		var box := Rect2(p - Vector2(90, 45), Vector2(180, 75))
+		var img := game.get_viewport().get_texture().get_image()
+		var k: float = img.get_width() / game.get_viewport().get_visible_rect().size.x
+		var px := Rect2i(Vector2i(box.position * k), Vector2i(box.size * k)).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+		var crop := img.get_region(px)
+		crop.resize(px.size.x * 2, px.size.y * 2, Image.INTERPOLATE_NEAREST)
+		if "--shots" in OS.get_cmdline_user_args():
+			crop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_%s_close.png" % case[0]))
+		print("RACE flip %s: %d coins, needs %d, mods %s%s" % [case[0], n, need, f.attack_mods(fluffy, foe, bolt).map(func(m): return "%s %+d" % [m.why, m.n]), ", long shot" if long else ""])
+		await _wait(2.0)
+	f.night = false
 
 
 ## `-- --racecheck --panelshots --shots` saves screens/race/panel_*.png.
