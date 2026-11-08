@@ -1178,7 +1178,7 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
 	if hit and a.ally and weapon_attack(k) and a.weapon == "shortsword" and k.id != "quick_slash":
 		a.quick_ready = true
-	await board.attack(a.mini, t.mini, hit)
+	await board.attack(a.mini, t.mini, hit, motion_kind(a, t, k))
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
@@ -1221,6 +1221,37 @@ func reduction(t: Dictionary) -> int:
 ## not heads (attack_mods).
 func heads_needed(t: Dictionary, _a := {}, _k := {}) -> int:
 	return t.get("heads", Rules.HEADS_TO_HIT)
+
+
+## Which attack motion a's attack on t plays (art/handoff/attack_motions.md). The hand-off names the kinds; PLACEHOLDER:
+## which cards play which (Scorch the orb, Blood Bolt and wand hits the darts, Haymaker and Bonebreaker the heavy blow),
+## and foes hop next to a hero and jab from 2 away.
+func motion_kind(a: Dictionary, t: Dictionary, k: Dictionary) -> String:
+	match k.id:
+		"sweeping_arc":
+			return "sweep"
+		"firebolt", "scorch":
+			return "orb"
+		"frost_ray":
+			return "ray"
+		"blood_bolt":
+			return "darts"
+		"shocking_grasp":
+			return "touch"
+		"throw", "stone_throw":
+			return "thrown"
+		"haymaker", "bonebreaker":
+			return "heavy"
+	if not a.ally:
+		return "thrust" if dist(a, t) >= 2 else "melee"
+	var w := Weapons.of(a.weapon)
+	if k.get("ranged", false) or (weapon_attack(k) and w.get("ranged", false)):
+		return "darts" if a.weapon in ["wand", "summon_wisp"] else "shot"
+	if weapon_attack(k) and a.weapon in ["spear", "halberd", "glaive"]:
+		return "thrust"
+	if weapon_attack(k) and a.weapon in ["greatsword", "greataxe", "warhammer"]:
+		return "heavy"
+	return "melee"
 
 
 ## Whether a hits with this card's weapon (the basic attack, weapon cards, Sneak Attack).
@@ -1276,6 +1307,8 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 
 
 func _ally_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	if k.effect != "swap":
+		board.buff(a.mini, t.mini)   # the rising ring; the result shows meanwhile
 	match k.effect:
 		"heal", "mend":
 			var before: int = t.hp
@@ -1370,6 +1403,7 @@ func _breath(a: Dictionary, d: int) -> void:
 	breath_dir = -1
 	result = {coins = [], title = "", good = true, sub = "", rows = []}   # each target's save and damage, for the panel
 	refresh()
+	var took := []   # [unit, damage]: everyone flips first, then the cone plays and the damage lands (07 -> Combat flips come first)
 	for c: Vector2i in line:
 		var t := unit_at(c)
 		if not t.is_empty() and not t.down and t != a:
@@ -1393,9 +1427,13 @@ func _breath(a: Dictionary, d: int) -> void:
 						t.poison.append(Rules.DOT_TURNS)
 			result.rows.append({name = t.name, coins = coins, dmg = dmg, lucky = coins != check.coins})
 			hud.refresh()
-			await board.attack(a.mini, t.mini, true)
-			hud.float_text(t, "-%d" % dmg, true)
-			await _hurt(t, dmg)
+			took.append([t, dmg])
+	var toward := Hex.to3(Hex.cell_position(line[-1].x, line[-1].y) - Hex.cell_position(a.cell.x, a.cell.y)) if not line.is_empty() else Vector3.FORWARD
+	await board.cone(a.mini, toward, line.map(func(c): return board.global_transform * cell_point(c)),
+			took.filter(func(e): return e[1] > 0).map(func(e): return e[0].mini))
+	for e: Array in took:
+		hud.float_text(e[0], "-%d" % e[1], true)
+		await _hurt(e[0], e[1])
 	busy = false
 	refresh()
 	_check_end()
@@ -1868,6 +1906,7 @@ func _summon(u: Dictionary, c: Vector2i, k: Dictionary) -> void:
 	_concentrate(u, k)
 	_add_unit(m, c, true, s.initial, Hex.cell_position(u.cell.x, u.cell.y) * 2.0 - Hex.cell_position(c.x, c.y))
 	var unit: Dictionary = units[-1]
+	board.summon(u.mini, unit.mini)   # it drops onto its cell
 	unit.ap = Rules.SUMMON_AP if phase == "allies" else 0
 	u.conc.unit = unit
 	self_done = k.id

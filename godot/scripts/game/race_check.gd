@@ -221,6 +221,10 @@ func _run() -> void:
 		await _wizard_shots()
 		get_tree().quit()
 		return
+	if "--motionshots" in OS.get_cmdline_user_args():   # test aid: the attack motions, for a clip (--write-movie)
+		await _motion_shots()
+		get_tree().quit()
+		return
 	if "--flipshots" in OS.get_cmdline_user_args():   # test aid: modifiers as coins in the flip
 		await _flip_shots()
 		get_tree().quit()
@@ -1334,6 +1338,109 @@ func _status_shots() -> void:
 	print("RACE status chips: foe %s, ally %s, screen scale %.2f" % [f.status_icons(foe).map(func(e): return e[1]), f.status_icons(fluffy).map(func(e): return e[1]), StatusChip._screen_scale()])
 
 
+## `-- --racecheck --motionshots` plays the attack motions one after another on a free line, for a clip: run it with
+## `--write-movie <dir>/f.png --fixed-fps 30`. Firebolt, Frost Ray, a bow shot, a thrown dagger, the spin sweep, a jab, the
+## heavy slam, a hop that hits and one that misses, Shocking Grasp, Bless, a summon dropping in, and Breath Weapon's cone.
+## Prints RACE motion lines as each starts (and --shots stills at each one's hit).
+func _motion_shots() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.units[0]
+	var fluffy := _who("Fluffy")
+	var chelm := _who("Chelmsford")
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	var mid := Vector2.ZERO
+	for c: Vector2i in f.grid:
+		mid += Vector2(c) / f.grid.size()
+	var line := []   # the free line of 4 nearest the board's middle, level, with no cover
+	for c: Vector2i in f.grid:
+		if f.grid[c].kind != "open" or f.cover.has(c) or (not line.is_empty() and Vector2(c).distance_to(mid) >= Vector2(line[0]).distance_to(mid)):
+			continue
+		for k in 6:
+			var ok := true
+			for i in range(1, 5):
+				var n: Vector2i = c + Hex.NEIGHBOURS[k] * i
+				ok = ok and f.grid.has(n) and f.grid[n].kind == "open" and not f.cover.has(n) and f.grid[n].z == f.grid[c].z
+			if ok:
+				line = [c, k]
+				break
+	var s: Vector2i = line[0]
+	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	var side: Vector2i = Hex.NEIGHBOURS[(line[1] + 2) % 6]
+	_clear_round(s, [])
+	for u in f.units:
+		u.mini.visible = false
+	f.hud.visible = false   # the clip shows the board only
+	var b := f.board
+	var frame := func(c: Vector2i, dist := 11.0) -> void:   # the frame sits low on screen, so aim a little past the cell
+		var at := f.global_position + f.cell_point(c)
+		var near := game.rig.camera.global_position - at
+		near.y = 0.0
+		game.rig.ease_to(at - near.normalized() * dist * 0.06, dist, game.rig.yaw_deg)
+	var show := func(us: Array) -> void:
+		for u in f.units:
+			u.mini.visible = u in us
+	var cases := [["firebolt", fluffy, 3, "orb"], ["frost_ray", fluffy, 3, "ray"], ["bow_shot", hero, 4, "shot"], ["thrown_dagger", hero, 3, "thrown"],
+		["spin_sweep", hero, 1, "sweep"], ["jab", hero, 2, "thrust"], ["heavy_slam", hero, 1, "heavy"], ["hop_hit", hero, 1, "melee"],
+		["hop_miss", hero, 1, "melee"], ["shocking_grasp", fluffy, 1, "touch"]]
+	var foe: Dictionary = foes[0]
+	_fresh(foe)
+	for c: Array in cases:
+		var who: Dictionary = c[1]
+		_place(who, s)
+		_place(foe, s + dv * c[2])
+		show.call([who, foe])
+		frame.call(s + dv * (c[2] / 2), 11.0 + c[2] * 1.5)
+		await _wait(0.7)
+		print("RACE motion %s" % c[0])
+		b.attack(who.mini, foe.mini, c[0] != "hop_miss", c[3])
+		await _wait(0.12 + 0.3)
+		await _shot("motion_" + c[0])
+		await _wait(1.0)
+	# Bless on an ally.
+	_place(chelm, s)
+	_place(hero, s + dv)
+	show.call([chelm, hero])
+	frame.call(s, 11.0)
+	await _wait(0.7)
+	print("RACE motion bless")
+	b.buff(chelm.mini, hero.mini)
+	await _wait(0.4)
+	await _shot("motion_bless")
+	await _wait(1.0)
+	# A summon drops in, through the real card.
+	_place(fluffy, s)
+	show.call([fluffy])
+	frame.call(s + dv, 11.0)
+	await _wait(0.7)
+	print("RACE motion summon")
+	_turn(fluffy)
+	f._summon(fluffy, s + dv, Cards.get_card("animated_blade"))
+	await _wait(0.3)
+	await _shot("motion_summon")
+	await _wait(1.2)
+	# Breath Weapon's cone down the line, with two foes in it.
+	var foe2: Dictionary = foes[1]
+	_fresh(foe2)
+	_place(chelm, s)
+	_place(foe, s + dv)
+	_place(foe2, s + dv * 3)
+	show.call([chelm, foe, foe2] + f.units.filter(func(u): return f.is_summon(u)))
+	for u in f.units.filter(func(u): return f.is_summon(u)):
+		_place(u, s + side * 2)
+	frame.call(s + dv * 2, 14.0)
+	await _wait(0.7)
+	print("RACE motion breath")
+	var cells: Array = [1, 2, 3].map(func(i): return b.global_transform * f.cell_point(s + dv * i))
+	b.cone(chelm.mini, Hex.to3(Hex.cell_position(dv.x, dv.y)), cells, [foe.mini, foe2.mini])
+	await _wait(0.3)
+	await _shot("motion_breath")
+	await _wait(1.4)
+	for u in f.units:
+		u.mini.visible = true
+	f.hud.visible = true
+	print("RACE motions done")
+
+
 ## `-- --racecheck --flipshots --shots` saves screens/race/flip_v3_*.png (the details panel before the flip, then the flip): Fluffy's Firebolt flips with their modifiers shown
 ## as coins (03 -> Coin checks -> Readable flips): cover, night, Bless and Faerie Fire, and a long shot at an elite.
 func _flip_shots() -> void:
@@ -1403,6 +1510,33 @@ func _flip_shots() -> void:
 			crop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_v3_%s_close.png" % case[0]))
 		print("RACE flip %s: %d coins, needs %d, mods %s%s" % [case[0], n, need, f.attack_mods(fluffy, foe, bolt).map(func(m): return "%s %+d" % [m.why, m.n]), ", long shot" if long else ""])
 		await _wait(2.0)
+	# A foe's attack at night: its lost coin rings green, since it helps the party (07 -> Modifier coins).
+	_clear_round(line[0], [])
+	_place(foe, line[0])
+	_place(fluffy, line[0] + Hex.NEIGHBOURS[line[1]])
+	_fresh(foe)
+	fluffy.blessed = false
+	f.night = true
+	var atk := Cards.get_card("attack", foe.weapon)
+	var fn: int = f.attack_coins(foe, fluffy, atk)
+	var fcoins: Array[bool] = []
+	for i in fn:
+		fcoins.append(i == fn - 1)
+	game.rig.ease_to(f.global_position + foe.mini.position, d0 * 0.8, game.rig.yaw_deg)
+	await _wait(0.8)
+	f.hud.flip_coins(foe, fcoins, fluffy.heads, 0.05, f.attack_mods(foe, fluffy, atk))
+	await _wait(0.05 * fn + 0.6)
+	await _shot("flip_v4_foe_night_flip")
+	var fp := game.rig.camera.unproject_position(foe.mini.global_position + Vector3(0, 2.4, 0))
+	var fimg := game.get_viewport().get_texture().get_image()
+	var fk: float = fimg.get_width() / game.get_viewport().get_visible_rect().size.x
+	var fpx := Rect2i(Vector2i((fp - Vector2(90, 45)) * fk), Vector2i(Vector2(180, 75) * fk)).intersection(Rect2i(Vector2i.ZERO, fimg.get_size()))
+	var fcrop := fimg.get_region(fpx)
+	fcrop.resize(fpx.size.x * 2, fpx.size.y * 2, Image.INTERPOLATE_NEAREST)
+	if "--shots" in OS.get_cmdline_user_args():
+		fcrop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_v4_foe_night_close.png"))
+	print("RACE flip foe_night: %d coins, mods %s" % [fn, f.attack_mods(foe, fluffy, atk).map(func(m): return "%s %+d" % [m.why, m.n])])
+	await _wait(2.0)
 	f.night = false
 
 

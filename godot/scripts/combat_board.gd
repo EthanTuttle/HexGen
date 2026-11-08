@@ -1,7 +1,7 @@
 class_name CombatBoard
 extends Node3D
 ## The radius-4 combat board (61 flat-top cells; art/scripts/render_preview.py build_board) with
-## stand-in minis, and the attack hop and recoil as tweens (look test 3). Space plays an attack;
+## stand-in minis, and the attack motions (AttackMotions; look test 3). Space plays an attack;
 ## attacks also play by themselves every few seconds.
 
 const RADIUS := 4
@@ -23,15 +23,8 @@ const LINEUP := [
 const BOUTS := [[0, 5], [5, 2], [1, 6], [4, 0]]
 
 # Tween timings and sizes (no values in the docs yet; tuned by eye).
-const HOP_HEIGHT := 0.35
-const HOP_LEAN := 0.3        # how far the attacker moves toward the target at the top of the hop
-const HOP_TIME := 0.16       # up; the same down
-const RECOIL_TILT := 16.0    # degrees the target tips away
-const RECOIL_PUSH := 0.12
 const SHRINK_WAIT := 0.35     # PLACEHOLDER: a fallen foe lies there this long, then shrinks away
 const SHRINK_TIME := 0.45
-const RECOIL_TIME := 0.07
-const SETTLE_TIME := 0.35
 
 var minis: Array[Node3D] = []
 var auto_play := false
@@ -112,33 +105,38 @@ func play_next() -> void:
 	attack(minis[b[0]], minis[b[1]])
 
 
-## The attacker hops toward the target; on landing the target recoils (tips away and slides back), then settles.
-## hit = false: the target doesn't recoil (a miss). Can be awaited.
-func attack(attacker: Node3D, target: Node3D, hit := true) -> void:
+## An attack's motion (art/handoff/attack_motions.md, AttackMotions): the attacker turns to face the target first, then plays
+## its kind's motion; hit = false plays the miss (the target sidesteps). Can be awaited.
+func attack(attacker: Node3D, target: Node3D, hit := true, kind := "melee") -> void:
 	_busy = true
-	var body := attacker.get_node("body") as Node3D
-	var tbody := target.get_node("body") as Node3D
 	var to_target := target.position - attacker.position
 	to_target.y = 0
 	to_target = to_target.normalized()
-	# The attacker turns to face the target first.
 	var face := snappedf(atan2(to_target.x, to_target.z), PI / 3.0)   # a base stays lined up with its cell (art/handoff/combat_forest_kit.md)
 	var tw := create_tween()
 	if attacker.has_meta("pivot"):
 		tw.tween_interval(0.12)   # PLACEHOLDER: a giant's facing stays fixed (design/03: turning is open)
 	else:
 		tw.tween_property(attacker, "rotation:y", attacker.rotation.y + wrapf(face - attacker.rotation.y, -PI, PI), 0.12)
-	# Hop: up and forward, then down and back. The lean is in the body's local space (forward = +Z).
-	var lean := Vector3(0, HOP_HEIGHT, HOP_LEAN)
-	tw.tween_property(body, "position", lean, HOP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(body, "position", Vector3.ZERO, HOP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	if hit:
-		tw.tween_callback(func(): _recoil(target, tbody, to_target))
-	tw.tween_interval(SETTLE_TIME + 0.15)
-	tw.tween_callback(func():
-		_busy = false
-		_timer = 1.2)
 	await tw.finished
+	await AttackMotions.new(self).attack(kind, attacker, target, hit)
+	_busy = false
+	_timer = 1.2
+
+
+## Bless and heals: the rising ring on the ally (AttackMotions.buff).
+func buff(caster: Node3D, ally: Node3D) -> void:
+	await AttackMotions.new(self).buff(caster, ally)
+
+
+## A summon drops onto its cell (AttackMotions.summon).
+func summon(caster: Node3D, it: Node3D) -> void:
+	await AttackMotions.new(self).summon(caster, it)
+
+
+## Breath Weapon's cone (AttackMotions.cone), toward a direction, over the line's cell points; `hit` minis recoil.
+func cone(breather: Node3D, toward: Vector3, cells: Array, hit: Array) -> void:
+	await AttackMotions.new(self).cone(breather, toward, cells, hit)
 
 
 ## Slides a mini hex by hex along a path of cells, turning to face each step.
@@ -178,14 +176,3 @@ func stand(mini: Node3D) -> void:
 	mini.scale = Vector3.ONE
 	mini.visible = true
 	(mini.get_node("body") as Node3D).quaternion = Quaternion.IDENTITY
-
-
-func _recoil(target: Node3D, tbody: Node3D, dir: Vector3) -> void:
-	# Push and tilt in the target's local space: the hit comes along dir (world).
-	var local_dir := (target.basis.inverse() * dir).normalized()
-	var axis := Vector3.UP.cross(local_dir).normalized()
-	var tw := create_tween().set_parallel()
-	tw.tween_property(tbody, "position", local_dir * RECOIL_PUSH, RECOIL_TIME).set_ease(Tween.EASE_OUT)
-	tw.tween_property(tbody, "quaternion", Quaternion(axis, deg_to_rad(RECOIL_TILT)), RECOIL_TIME).set_ease(Tween.EASE_OUT)
-	tw.chain().tween_property(tbody, "position", Vector3.ZERO, SETTLE_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(tbody, "quaternion", Quaternion.IDENTITY, SETTLE_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
