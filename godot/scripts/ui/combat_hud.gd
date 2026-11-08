@@ -362,7 +362,7 @@ func _fill_details() -> void:
 			for m: Dictionary in mods:   # every modifier, chip and words (07 -> Modifier coins)
 				into.add_child(_mod_row(m))
 		else:
-			if layout == "v2":   # PROPOSAL (strings to the planner): the foe flips, so only what it needs shows
+			if layout == "v2":   # the foe flips, so only what it needs shows (07)
 				into.add_child(_check_line(save_line(k.save)))
 			else:
 				into.add_child(_check_line("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, k.save), k.save, Rules.SAVE_HEADS]))
@@ -383,7 +383,10 @@ func _fill_details() -> void:
 		elif k.kind == "mark":
 			label = "Use"
 		else:
-			label = "Flip again" if not fight.result.is_empty() else ("Flip %d" % flip_count(u, fight.target, k) if layout == "v2" else "Flip coins")
+			if layout == "v2" and not fight.target.is_empty():   # the count on the button, before and after a flip (07)
+				label = ("Flip %d again" if not fight.result.is_empty() else "Flip %d") % flip_count(u, fight.target, k)
+			else:
+				label = "Flip again" if not fight.result.is_empty() else "Flip coins"
 	elif k.kind == "self":
 		label = "Use"
 	elif aimed:   # spells cast; Sweeping Arc flips; the Snare and Dancing Step are used
@@ -438,7 +441,7 @@ func flip_count(u: Dictionary, t: Dictionary, k: Dictionary) -> int:
 	return 1 if n < need else n
 
 
-## PROPOSAL for saves under the same idea (not approved): the target's save and the heads it needs, "DEX save: 1 head".
+## Saves under the same idea (07, Ethan, Nov 8, 2026; the foe's coins stay hidden): the target's save and the heads it needs, "DEX save: 1 head".
 func save_line(ab: String) -> String:
 	return "%s save: %d %s" % [ab, Rules.SAVE_HEADS, "head" if Rules.SAVE_HEADS == 1 else "heads"]
 

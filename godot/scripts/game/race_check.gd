@@ -1615,7 +1615,7 @@ func _panel_layout_shots() -> void:
 	var s: Vector2i = line[0]
 	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
 	var d0: float = game.rig.distance
-	var states := ["plain", "cover_night", "bless_glow", "long", "breath", "second_wind"]
+	var states := ["plain", "cover_night", "bless_glow", "long", "breath", "second_wind", "after_flip"]
 	var lays := ["", "a", "b", "c"]
 	for a: String in OS.get_cmdline_user_args():   # --panellayouts=old,b,v2 picks the layouts
 		if a.begins_with("--panellayouts="):
@@ -1629,13 +1629,15 @@ func _panel_layout_shots() -> void:
 		foe.heads = 2 if state == "long" else 1
 		var who := fluffy
 		match state:
-			"plain":
+			"plain", "after_flip":
 				who = chelm
 				_place(chelm, s)
 				_place(foe, s + dv)
 				_turn(chelm)
 				f.pick_card("attack")
 				f.target = foe
+				if state == "after_flip":   # a missed flip, so the button offers another (07: "Flip 2 again")
+					f.result = {coins = [false, false], title = "Miss", good = false, sub = ""}
 			"cover_night", "long":
 				_place(fluffy, spot[0])
 				_place(foe, spot[1])
@@ -1672,10 +1674,12 @@ func _panel_layout_shots() -> void:
 			await get_tree().process_frame
 			await get_tree().process_frame
 			var box: Control = f.hud._details_panel.get_child(0)
-			print("LAYOUT %s %s: content %.0f of %.0f, panel %s" % [state, lay if lay != "" else "old", box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H, f.hud._details_panel.size])
+			var btn: String = f.hud._button_box.get_child(0).text if f.hud._button_box.get_child_count() > 0 else ""
+			print("LAYOUT %s %s: content %.0f of %.0f, panel %s, button \"%s\"" % [state, lay if lay != "" else "old", box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H, f.hud._details_panel.size, btn])
 			await _shot("layout_%s_%s" % [state, lay if lay != "" else "old"])
 		CombatHud.layout = ""
 		foe.glow = -1
+		f.result = {}
 	f.night = false
 
 
