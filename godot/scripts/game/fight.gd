@@ -789,6 +789,23 @@ func _show_overlays() -> void:
 			_overlay(u.cell, "ally_target" if u == ally_target else "ally", true)
 
 
+## Faerie Fire's lasting glow follows the units' state (CombatBoard.glow). Only changes are passed on, so the motion that
+## starts it isn't undone.
+var _looks := {}
+
+
+func _process(_delta: float) -> void:
+	if not active or board == null:
+		return
+	for u in units:
+		if not is_instance_valid(u.mini):
+			continue
+		var g: bool = on(u, "glow") and not u.down
+		if g != _looks.get(u.mini, false):
+			board.glow(u.mini, g)
+		_looks[u.mini] = g
+
+
 func refresh() -> void:
 	_show_overlays()
 	hud.refresh()
@@ -1298,19 +1315,19 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	var saved: bool = Coins.heads(check.coins) >= check.need
 	match k.get("effect", ""):
 		"glow", "lull":
+			result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
+			hud.refresh()
+			await board.bloom(a.mini, t.mini, k.effect, saved)
 			if not saved and k.effect == "glow":
 				t.glow = phase_no + 1   # until the caster's next turn
 			elif not saved:
 				t.lull = true
-			result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
-			hud.refresh()
-			await board.attack(a.mini, t.mini, not saved)
 		_:
 			var dmg: int = Rules.SPELL_DAMAGE / 2 if saved else Rules.SPELL_DAMAGE
 			result = {coins = coins, title = "Saved: half damage" if saved else "Failed save!", good = not saved,
 					sub = "Damage: %d [placeholder]" % dmg}   # the coins show the heads
 			hud.refresh()
-			await board.attack(a.mini, t.mini, true)
+			await board.bloom(a.mini, t.mini, "flame", saved)
 			hud.float_text(t, "-%d" % dmg, true)
 			await _hurt(t, dmg)
 	busy = false

@@ -37,6 +37,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: Buried city: storm timing, quests when the library is buried, walking on the changing sand (see Map & exploration)
+- [ ] New (Nov 8): ruins rethought as dungeon terrain: every landmark a dungeon, Fight and Discovery encounters only; variants now Overrun outpost → Warren, Haunted ruins → Crypt, basilisk ruins → Basilisk Nest, trapped vault → Vault (see Map & exploration → Region variants). Still open: each dungeon's rooms, the ruins encounter entries, looks for the three new variants and landmarks (see Presentation)
 - [ ] New: ruins are hex-column land (Ethan, Nov 4): round 2 paused while he thinks more (claude/art-ruins-2, not merged); who built them (left open), how Dunfaire Tower sits on it (with the starting tiles, now part of the first playable)
 - [x] ~~Path pass so hexes don't show~~ (cancelled Nov 3: the game is about hexes, so hexes showing in paths is fine; fix single things as they bother Ethan)
 - [x] ~~Recheck Scholars' Town tiles against its combat maps~~ (done Nov 3: see Presentation → Region variant looks)

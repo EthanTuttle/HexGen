@@ -351,6 +351,88 @@ static func dagger(back := 0.0) -> ArrayMesh:
 	return _mesh(tris, cols)
 
 
+## Flame tongues (save spells): n upright four-sided spikes on a circle of radius r plus a taller middle one, 1.0 tall at
+## most; the tips lean outward by a quarter of their offset.
+static func tongues(n: int, r: float) -> ArrayMesh:
+	var tris := []
+	for k in n + 1:
+		var c := Vector3(cos(TAU * k / n) * r, sin(TAU * k / n) * r, 0) if k < n else Vector3.ZERO
+		var h := 0.7 + 0.3 * ((k * 5) % 3) / 2.0 if k < n else 1.0
+		var w := 0.075 if k < n else 0.11
+		var vs := [c + Vector3(w, 0, 0), c + Vector3(0, w, 0), c + Vector3(-w, 0, 0), c + Vector3(0, -w, 0)]
+		var tip := c + Vector3(0, 0, h) + c * 0.25
+		for i in 4:
+			tris.append_array([_p(vs[i]), _p(vs[(i + 1) % 4]), _p(tip)])
+	return _mesh(tris)
+
+
+## A lower-case z, 0.22 tall and slightly thick, in the XY plane (shown facing the camera).
+static func zee() -> ArrayMesh:
+	var tris := []
+	var w := 0.075
+	var t := 0.022
+	_box_xy(tris, Vector2(-w, 0.11 - t), Vector2(w, 0.11), 0.006)
+	_box_xy(tris, Vector2(-w, -0.11), Vector2(w, -0.11 + t), 0.006)
+	var a := Vector2(w, 0.11 - t)
+	var b := Vector2(-w, -0.11 + t)
+	var side := (a - b).orthogonal().normalized() * t * 0.6
+	for q in [[b - side, a - side, a + side, b + side]]:
+		for z in [0.006, -0.006]:
+			var v: Array = q.map(func(p): return Vector3(p.x, p.y, z))
+			_quad(tris, v[0], v[1], v[2], v[3])
+	return _mesh(tris)
+
+
+static func _box_xy(tris: Array, lo: Vector2, hi: Vector2, d: float) -> void:
+	var c := []
+	for i in 8:
+		c.append(Vector3(hi.x if i & 1 else lo.x, hi.y if i & 2 else lo.y, d if i & 4 else -d))
+	for q in [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]:
+		_quad(tris, c[q[0]], c[q[1]], c[q[2]], c[q[3]])
+
+
+## A glow outline's mesh (inverted hull): the mini's mesh with each vertex pushed out along its normal, averaged where
+## faces meet so the shell has no gaps. Drawn with front faces culled, so only a rim shows round the mini.
+static var _hulls := {}
+
+
+static func hull_mesh(m: Mesh, push := 0.03) -> ArrayMesh:
+	if _hulls.has(m):
+		return _hulls[m]
+	var out_mesh := ArrayMesh.new()
+	for si in m.get_surface_count():
+		var arr := m.surface_get_arrays(si)
+		var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var norms: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		var sum := {}
+		for i in verts.size():
+			var key := verts[i].snapped(Vector3.ONE * 1e-4)
+			sum[key] = sum.get(key, Vector3.ZERO) + (norms[i] if i < norms.size() else Vector3.ZERO)
+		var grown := PackedVector3Array()
+		grown.resize(verts.size())
+		for i in verts.size():
+			var n: Vector3 = sum[verts[i].snapped(Vector3.ONE * 1e-4)]
+			grown[i] = verts[i] + (n.normalized() * push if n.length() > 1e-6 else Vector3.ZERO)
+		var a := []
+		a.resize(Mesh.ARRAY_MAX)
+		a[Mesh.ARRAY_VERTEX] = grown
+		a[Mesh.ARRAY_INDEX] = arr[Mesh.ARRAY_INDEX]
+		out_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, a)
+	_hulls[m] = out_mesh
+	return out_mesh
+
+
+## A save spell's three colours: main, core, and the deep one for rings and letters (art/handoff/attack_motions.md).
+const SAVE_COLS := {"flame": ["#FFE7A0", "#FFFBEA", "#FFC93A"], "glow": ["#7CF0B8", "#D8FFEC", "#2FCB8A"],
+	"lull": ["#9FA8FF", "#E2E5FF", "#6C78F0"]}
+
+
+## Where a mini's head is: 0.7 up on a 1.3-tall humanoid, scaled by the mini's height (a wolf's comes to about 0.5).
+static func head_height(m: Node3D) -> float:
+	var body := m.get_node_or_null("body") as MeshInstance3D
+	return body.mesh.get_aabb().end.y * 0.7 / 1.3 if body and body.mesh else 0.7
+
+
 # --- The player -------------------------------------------------------------
 
 var board: Node3D
@@ -425,6 +507,13 @@ func recoil(a: Actor, s: float, t0: float, toward: Vector3, tilt := 16.0, push :
 	a.lean(tilt * k, toward)
 
 
+## Shaking a spell off: the mini twists side to side on the spot, dying away.
+func shake(a: Actor, s: float, t0: float, dur := 0.32, deg := 12.0) -> void:
+	var u := seg(s, t0, t0 + dur)
+	if u > 0.0 and u < 1.0:
+		a.spin += deg * sin(TAU * 3.0 * u) * (1.0 - u)
+
+
 ## A ring of puffs pushing out to a spread, rising a little, shrinking to 40% and fading.
 func puff(list: Array, s: float, t0: float, at: Vector3, dur := 0.3, spread := 0.22, size := 0.07, up := 0.12) -> void:
 	var u := seg(s, t0, t0 + dur)
@@ -484,8 +573,8 @@ func miss(t: Actor, s: float, hit: float, toward: Vector3, whiff: Fx, puffs: Arr
 
 # --- The picked motions -----------------------------------------------------
 
-## One attack of `kind` from a onto t: melee, sweep, thrust, heavy, shot, thrown, orb, ray, darts, touch, or a save
-## spell's ("save": the old hop, PLACEHOLDER until a motion is picked for it). hit = false plays the miss.
+## One attack of `kind` from a onto t: melee, sweep, thrust, heavy, shot, thrown, orb, ray, darts or touch (save spells:
+## bloom). hit = false plays the miss.
 func attack(kind: String, am: Node3D, tm: Node3D, hit := true) -> void:
 	var a := actor(am)
 	var t := actor(tm)
@@ -686,7 +775,7 @@ func attack(kind: String, am: Node3D, tm: Node3D, hit := true) -> void:
 					var u := s - hit_at
 					if u < 0.25:   # a buzz: the hit mini shivers side to side
 						t.move(left * 0.025 * sin(u * 140.0) * (1.0 - u / 0.25))
-		_:   # melee (A, hop), and save spells until they get their own
+		_:   # melee (A, hop)
 			upd = func(s: float) -> void:
 				hop(a, s, 0, d)
 				if hit:
@@ -726,6 +815,107 @@ func sweep(am: Node3D, targets: Array, hits: Array) -> void:
 				recoil(f[0], s, f[2], f[1])
 			else:
 				miss(f[0], s, f[2], f[1], f[4], f[5]))
+
+
+## A single-target save spell (A, bloom on the target): spell is "flame" (Sacred Flame), "glow" (Faerie Fire) or "lull"
+## (Lull); passed: the foe made its save. The charge, a ring closing in round the foe's feet, the landing at 0.24, then the
+## spell's own look. A failed Faerie Fire starts the lasting glow (CombatBoard.glow).
+func bloom(am: Node3D, tm: Node3D, spell: String, passed: bool) -> void:
+	var a := actor(am)
+	var t := actor(tm)
+	var cols: Array = SAVE_COLS[spell]
+	var c := tm.global_position
+	var away := flat(c - am.global_position)
+	var rg := fx(ring(1.0, 0.07), cols[2])
+	var conv := fx(ring(1.0, 0.08), cols[2])
+	var flare := fx(ring(1.0, 0.09), cols[2])
+	var land := 0.24
+	var dur := 1.0
+	var upd: Callable
+	var motes := []
+	for n in 8:
+		motes.append(fx(ico(0.055, 0), cols[1] if n % 2 else cols[2]))
+	var hull: MeshInstance3D = null
+	match spell:
+		"flame":
+			var fl := fx(tongues(7, 0.22), cols[0])
+			var fl2 := fx(tongues(5, 0.1), cols[1])
+			var star := fx(spikes(9, 0.3, 0.045, 0.3), cols[1])
+			var size := 0.55 if passed else 1.0   # a pass: half damage, half the look
+			upd = func(s: float) -> void:
+				var v := seg(s, land, land + 0.42)
+				if v > 0.0 and v < 1.0:
+					var grow := out(seg(s, land, land + 0.1))
+					var al := 1.0 - pow(seg(s, land + 0.16, land + 0.42), 1.5)
+					fl.show(c + front(c) * 0.6, Vector3(size, size, 0.95 * size * grow * (1.0 + 0.08 * sin(s * 70.0))), Basis.IDENTITY, 0.9 * al)
+					fl2.show(c + front(c) * 0.7, Vector3(size, size, 1.1 * size * grow), Basis.IDENTITY, al)
+				else:
+					fl.hide()
+					fl2.hide()
+				flash(star, s, land, c + UP * 0.5 * size, 0.2, size)
+				recoil(t, s, land, away, 8.0 if passed else 16.0, 0.06 if passed else 0.12)
+		"glow":
+			if passed:
+				hull = board.hull(tm, cols[0])
+				upd = func(s: float) -> void:
+					var v := seg(s, land, land + 0.18)
+					board.hull_alpha(hull, 0.8 * (1.0 - v) * (0.6 + 0.4 * sin(s * 120.0)) if v > 0.0 and v < 1.0 else 0.0)
+					var u := seg(s, land + 0.08, land + 0.4)
+					for n in 8:
+						if u > 0.0 and u < 1.0:
+							(motes[n] as Fx).show(c + dir_at(n * 45.0) * (0.25 + 0.45 * out(u)) + UP * (0.25 + 0.07 * n + 0.1 * u) + front(c) * 0.3,
+									1.0 - 0.5 * u, Basis.IDENTITY, 1.0 - u)
+						else:
+							(motes[n] as Fx).hide()
+					shake(t, s, land + 0.06)
+			else:
+				var started := [false]
+				dur = 0.8
+				upd = func(s: float) -> void:
+					if s >= land and not started[0]:
+						started[0] = true
+						board.glow(tm, true)   # the outline and its motes stay while it glows
+					recoil(t, s, land, away, 5.0, 0.03)
+		"lull":
+			var hd := c + UP * head_height(tm)
+			var zs := []
+			for n in 3:
+				zs.append(fx(zee(), cols[2]))
+			dur = 2.0 if not passed else 0.8
+			upd = func(s: float) -> void:
+				var u := seg(s, land - 0.04, land + 0.3)
+				for n in 8:
+					if u > 0.0 and u < 1.0:
+						var r := 0.45 - 0.3 * out(u) if not passed else 0.45 - 0.25 * out(minf(1.0, 2.0 * u)) + maxf(0.0, u - 0.5)
+						var z := 0.25 - 0.2 * u if not passed else 0.25 - 0.1 * u
+						(motes[n] as Fx).show(hd + dir_at(n * 45.0 + 300.0 * u) * r + UP * z + front(c) * 0.3, 1.0, Basis.IDENTITY, 1.0 - u * u)
+					else:
+						(motes[n] as Fx).hide()
+				if passed:
+					shake(t, s, land + 0.12)
+					return
+				for n in 3:   # the z's rise once; it doesn't droop, and the sleep chip shows it sleeping (07, Ethan, Nov 8)
+					var w := seg(s, land + 0.3 + 0.25 * n, land + 1.0 + 0.25 * n)
+					if w > 0.0 and w < 1.0:
+						(zs[n] as Fx).show(hd + away * (0.1 + 0.2 * w) + UP * (0.12 + 0.45 * w) + front(c), 1.0 + 0.6 * w,
+								camera.global_basis.orthonormalized() if camera else Basis.IDENTITY, minf(1.0, 5.0 * w) * (1.0 - w * w))
+					else:
+						(zs[n] as Fx).hide()
+	await run(dur, func(s: float) -> void:
+		charge(a, s, rg, am.global_position)
+		var u := seg(s, 0.14, land)
+		if u > 0.0 and u < 1.0:
+			conv.show(c + UP * 0.02, 0.75 - 0.4 * out(u), Basis.IDENTITY, minf(1.0, 4.0 * u))
+		else:
+			conv.hide()
+		var v := seg(s, land, land + 0.22)
+		if v > 0.0 and v < 1.0:
+			flare.show(c + UP * 0.02, 0.35 + 0.15 * out(v), Basis.IDENTITY, 1.0 - v)
+		else:
+			flare.hide()
+		upd.call(s))
+	if hull:
+		hull.queue_free()
 
 
 ## Bless and heals (A, rising ring): the caster bobs, a gold tube rises round the ally with motes, and the ally hops.

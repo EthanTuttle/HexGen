@@ -85,6 +85,8 @@ func add_mini(name: String, c: Vector2i, facing: Vector2) -> Node3D:
 
 
 func _process(delta: float) -> void:
+	_clock += delta
+	_draw_glows()
 	if not auto_play or _busy:
 		return
 	_timer -= delta
@@ -137,6 +139,91 @@ func _face(attacker: Node3D, target: Node3D) -> void:
 	else:
 		tw.tween_property(attacker, "rotation:y", attacker.rotation.y + wrapf(face - attacker.rotation.y, -PI, PI), 0.12)
 	await tw.finished
+
+
+## A single-target save spell (AttackMotions.bloom): spell "flame", "glow" or "lull"; passed: the foe saved.
+func bloom(caster: Node3D, foe: Node3D, spell: String, passed: bool) -> void:
+	_busy = true
+	await _face(caster, foe)
+	await AttackMotions.new(self).bloom(caster, foe, spell, passed)
+	_busy = false
+	_timer = 1.2
+
+
+# Faerie Fire's lasting look: a glow outline round the mini, pulsing, with eight motes circling it and twinkling, for as long
+# as it glows (art/handoff/attack_motions.md -> Single-target save spells). PLACEHOLDER: the motes stay as long as the
+# outline; the handoff gives them no end.
+var _clock := 0.0   # frame time, so a fixed-rate capture plays at real speed
+var _glows := {}    # mini -> [hull, motes (AttackMotions.Fx), started]
+
+
+## Turns a mini's glow on (from now) or off.
+func glow(mini: Node3D, on: bool) -> void:
+	if on and not _glows.has(mini):
+		var cols: Array = AttackMotions.SAVE_COLS["glow"]
+		var motes := []
+		for n in 8:
+			motes.append(AttackMotions.Fx.new(self, AttackMotions.ico(0.055, 0), Color(cols[1] if n % 2 else cols[2])))
+		_glows[mini] = [hull(mini, cols[0]), motes, _clock]
+	elif not on and _glows.has(mini):
+		_drop_glow(mini)
+
+
+func _drop_glow(mini: Node3D) -> void:
+	var g: Array = _glows[mini]
+	if is_instance_valid(g[0]):
+		g[0].queue_free()
+	for f: AttackMotions.Fx in g[1]:
+		f.node.queue_free()
+	_glows.erase(mini)
+
+
+func _draw_glows() -> void:
+	for mini: Node3D in _glows.keys():
+		if not is_instance_valid(mini) or not mini.is_inside_tree():
+			_drop_glow(mini)
+			continue
+		var g: Array = _glows[mini]
+		var t: float = _clock - g[2]
+		hull_alpha(g[0], AttackMotions.out(AttackMotions.seg(t, 0.0, 0.12)) * (0.75 + 0.2 * sin(TAU * 2.2 * t)))
+		var c := mini.global_position
+		var cam := get_viewport().get_camera_3d()
+		var toward := AttackMotions.flat(cam.global_position - c) * AttackMotions.FRONT if cam else Vector3.ZERO
+		for n in 8:
+			var f: AttackMotions.Fx = g[1][n]
+			var ph := t - 0.05 * n
+			if ph > 0.0 and mini.visible:
+				var tw := AttackMotions.bump(fmod(ph * 1.6, 1.0))
+				f.show(c + AttackMotions.dir_at(n * 45.0 + 40.0 * ph) * 0.32 + Vector3.UP * (0.2 + 0.09 * n) + toward * 0.3, 0.6 + 0.6 * tw, Basis.IDENTITY, tw)
+			else:
+				f.hide()
+
+
+## A glow outline (inverted hull) of the mini's mesh in `col`, on its body so it follows every move; hidden until
+## hull_alpha shows it.
+func hull(mini: Node3D, col: String) -> MeshInstance3D:
+	var body := mini.get_node("body") as MeshInstance3D
+	var h := MeshInstance3D.new()
+	h.name = "glow_hull"
+	h.mesh = AttackMotions.hull_mesh(body.mesh)
+	h.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.cull_mode = BaseMaterial3D.CULL_FRONT
+	m.albedo_color = Color(col, 0.0)
+	h.material_override = m
+	h.visible = false
+	body.add_child(h)
+	return h
+
+
+func hull_alpha(h: MeshInstance3D, a: float) -> void:
+	if not is_instance_valid(h):
+		return
+	var m := h.material_override as StandardMaterial3D
+	m.albedo_color.a = clampf(a, 0.0, 1.0)
+	h.visible = a > 0.003
 
 
 ## Bless and heals: the rising ring on the ally (AttackMotions.buff).
