@@ -839,12 +839,12 @@ func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float, mods 
 	row.global_position = at - Vector2((size_ + 3.0) * count * 0.5, size_)
 	var flipped: Array[CoinView] = []
 	for icon: String in lost:
-		var gone := CoinView.lost(size_, icon)
+		var gone := CoinView.lost(size_, icon, not u.ally)   # a coin a foe loses helps the party
 		row.add_child(gone)
 	for h: bool in coins:
 		var coin := CoinView.make(h, size_)
 		if flipped.size() < badges.size():
-			coin.add_badge(badges[flipped.size()])
+			coin.add_badge(badges[flipped.size()], u.ally)
 		flipped.append(coin)
 		coin.pivot_offset = Vector2(size_, size_) * 0.5
 		coin.scale = Vector2(0.05, 1.0)

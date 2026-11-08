@@ -1403,6 +1403,33 @@ func _flip_shots() -> void:
 			crop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_v3_%s_close.png" % case[0]))
 		print("RACE flip %s: %d coins, needs %d, mods %s%s" % [case[0], n, need, f.attack_mods(fluffy, foe, bolt).map(func(m): return "%s %+d" % [m.why, m.n]), ", long shot" if long else ""])
 		await _wait(2.0)
+	# A foe's attack at night: its lost coin rings green, since it helps the party (07 -> Modifier coins).
+	_clear_round(line[0], [])
+	_place(foe, line[0])
+	_place(fluffy, line[0] + Hex.NEIGHBOURS[line[1]])
+	_fresh(foe)
+	fluffy.blessed = false
+	f.night = true
+	var atk := Cards.get_card("attack", foe.weapon)
+	var fn: int = f.attack_coins(foe, fluffy, atk)
+	var fcoins: Array[bool] = []
+	for i in fn:
+		fcoins.append(i == fn - 1)
+	game.rig.ease_to(f.global_position + foe.mini.position, d0 * 0.8, game.rig.yaw_deg)
+	await _wait(0.8)
+	f.hud.flip_coins(foe, fcoins, fluffy.heads, 0.05, f.attack_mods(foe, fluffy, atk))
+	await _wait(0.05 * fn + 0.6)
+	await _shot("flip_v4_foe_night_flip")
+	var fp := game.rig.camera.unproject_position(foe.mini.global_position + Vector3(0, 2.4, 0))
+	var fimg := game.get_viewport().get_texture().get_image()
+	var fk: float = fimg.get_width() / game.get_viewport().get_visible_rect().size.x
+	var fpx := Rect2i(Vector2i((fp - Vector2(90, 45)) * fk), Vector2i(Vector2(180, 75) * fk)).intersection(Rect2i(Vector2i.ZERO, fimg.get_size()))
+	var fcrop := fimg.get_region(fpx)
+	fcrop.resize(fpx.size.x * 2, fpx.size.y * 2, Image.INTERPOLATE_NEAREST)
+	if "--shots" in OS.get_cmdline_user_args():
+		fcrop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_v4_foe_night_close.png"))
+	print("RACE flip foe_night: %d coins, mods %s" % [fn, f.attack_mods(foe, fluffy, atk).map(func(m): return "%s %+d" % [m.why, m.n])])
+	await _wait(2.0)
 	f.night = false
 
 

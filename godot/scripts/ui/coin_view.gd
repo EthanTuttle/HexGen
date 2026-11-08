@@ -36,21 +36,22 @@ static func blank(d := 34.0) -> CoinView:
 
 
 ## A coin a penalty took (03 -> Coin checks -> Readable flips): greyed in the row, with the penalty's icon.
-static func lost(d: float, mod: String) -> CoinView:
+static func lost(d: float, mod: String, good := false) -> CoinView:
 	var c := make(false, d)
 	c.is_lost = true
-	c.add_badge(mod, false)
+	c.add_badge(mod, good)
 	return c
 
 
-## A modifier's chip, `d` across, its ring green for a buff and red for a penalty (07 -> Modifier coins).
-static func mod_chip(d: float, mod: String, buff: bool) -> StatusChip:
-	return StatusChip.make(d, MOD_ICON.get(mod, mod), Color(MOD_INK.get(mod, "#33403B")), 0, BUFF_RING if buff else PENALTY_RING)
+## A modifier's chip, `d` across. Its ring is from the party's side, whoever flips (07 -> Modifier coins): green when it
+## helps the party, red when it hurts it.
+static func mod_chip(d: float, mod: String, good: bool) -> StatusChip:
+	return StatusChip.make(d, MOD_ICON.get(mod, mod), Color(MOD_INK.get(mod, "#33403B")), 0, BUFF_RING if good else PENALTY_RING)
 
 
 ## The modifier's chip on the coin's top right corner.
-func add_badge(mod: String, buff := true) -> void:
-	var chip := mod_chip(roundf(diameter * 0.5), mod, buff)
+func add_badge(mod: String, good := true) -> void:
+	var chip := mod_chip(roundf(diameter * 0.5), mod, good)
 	chip.position = Vector2(diameter - chip.size.x * 0.7, -chip.size.y * 0.3)
 	add_child(chip)
 
