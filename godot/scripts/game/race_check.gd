@@ -229,6 +229,10 @@ func _run() -> void:
 		await _status_shots()
 		get_tree().quit()
 		return
+	if "--panellayouts" in OS.get_cmdline_user_args():   # test aid: the details panel's trial layouts, side by side
+		await _panel_layout_shots()
+		get_tree().quit()
+		return
 	if "--panelshots" in OS.get_cmdline_user_args():
 		await _panel_shots()
 		get_tree().quit()
@@ -1430,6 +1434,92 @@ func _flip_shots() -> void:
 		fcrop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_v4_foe_night_close.png"))
 	print("RACE flip foe_night: %d coins, mods %s" % [fn, f.attack_mods(foe, fluffy, atk).map(func(m): return "%s %+d" % [m.why, m.n])])
 	await _wait(2.0)
+	f.night = false
+
+
+## `-- --racecheck --panellayouts --shots` saves screens/race/layout_<state>_<layout>.png: the details panel in each
+## trial layout (CombatHud.layout: "" as it was, then a, b, c) in the same states. Prints each state's fit.
+func _panel_layout_shots() -> void:
+	await _fight("plains_stones")
+	var fluffy := _who("Fluffy")
+	var chelm := _who("Chelmsford")
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	var foe: Dictionary = foes[0]
+	foe.name = "[Bandit archer A]"   # the longest foe name in Foes.MIX
+	var spot := []   # Fluffy's cell and the foe's, with partial cover between
+	for c: Vector2i in f.grid:
+		if not spot.is_empty():
+			break
+		if f.grid[c].kind != "open" or f.cover.has(c):
+			continue
+		for d: Vector2i in f.grid:
+			if f.grid[d].kind == "open" and not f.cover.has(d) and Rules.hex_distance(c, d) in [3, 4]:
+				_place(fluffy, c)
+				_place(foe, d)
+				if f.cover_between(fluffy, foe) == "partial":
+					spot = [c, d]
+					break
+	var line := _free_line(5)
+	var s: Vector2i = line[0]
+	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	var d0: float = game.rig.distance
+	var states := ["plain", "cover_night", "bless_glow", "long", "breath", "second_wind"]
+	for state: String in states:
+		_clear_round(s, [])
+		for e in foes:
+			_fresh(e)
+		f.night = state in ["cover_night", "long"]
+		fluffy.blessed = state == "bless_glow"
+		foe.heads = 2 if state == "long" else 1
+		var who := fluffy
+		match state:
+			"plain":
+				who = chelm
+				_place(chelm, s)
+				_place(foe, s + dv)
+				_turn(chelm)
+				f.pick_card("attack")
+				f.target = foe
+			"cover_night", "long":
+				_place(fluffy, spot[0])
+				_place(foe, spot[1])
+				_turn(fluffy)
+				f.pick_card("firebolt")
+				f.target = foe
+			"bless_glow":
+				_place(fluffy, s)
+				_place(foe, s + dv * 3)
+				foe.glow = f.phase_no + 1
+				_turn(fluffy)
+				f.pick_card("firebolt")
+				f.target = foe
+			"breath":
+				who = chelm
+				_place(chelm, s)
+				for i in mini(3, foes.size()):
+					_place(foes[i], s + dv * (i + 1))
+				_turn(chelm)
+				f.pick_card("breath")
+				await f.click_cell(s + dv)
+			"second_wind":
+				who = f.allies().filter(func(u): return "second_wind" in u.cards)[0]
+				_place(who, s)
+				_turn(who)
+				who.hp = maxi(1, who.max_hp - 3)
+				f.pick_card("second_wind")
+				await f.press_button()
+		game.rig.ease_to(f.global_position + who.mini.position, d0 * 0.8, game.rig.yaw_deg)
+		await _wait(0.6)
+		for lay: String in ["", "a", "b", "c"]:
+			CombatHud.layout = lay
+			f.hud.refresh()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var box: Control = f.hud._details_panel.get_child(0)
+			print("LAYOUT %s %s: content %.0f of %.0f, panel %s" % [state, lay if lay != "" else "old", box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H, f.hud._details_panel.size])
+			await _shot("layout_%s_%s" % [state, lay if lay != "" else "old"])
+		CombatHud.layout = ""
+		foe.glow = -1
 	f.night = false
 
 
