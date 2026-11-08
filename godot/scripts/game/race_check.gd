@@ -225,6 +225,10 @@ func _run() -> void:
 		await _motion_shots()
 		get_tree().quit()
 		return
+	if "--saveshot" in OS.get_cmdline_user_args():   # test aid: the save spells' bloom, each failed then passed (--write-movie)
+		await _save_shot()
+		get_tree().quit()
+		return
 	if "--arcshot" in OS.get_cmdline_user_args():   # test aid: Sweeping Arc's one spin over three foes, for a clip (--write-movie)
 		await _arc_shot()
 		get_tree().quit()
@@ -1484,6 +1488,51 @@ func _arc_shot() -> void:
 	Coins.forced.clear()
 	await _wait(1.2)
 	print("RACE arc done")
+
+
+## `-- --racecheck --saveshot` casts Sacred Flame, Faerie Fire and Lull through the real card on a foe 2 hexes away, each
+## failed and then passed (07 -> Combat flips come first; the bloom from art/handoff/attack_motions.md). Run with
+## `--write-movie <dir>/f.png --fixed-fps 30`. Prints RACE save lines as each starts.
+func _save_shot() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.units[0]
+	var fluffy := _who("Fluffy")
+	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+	var at_cell := Vector2i.ZERO
+	for cell: Vector2i in f.grid:   # a hex with open, level ground 2 hexes round, so nothing hides the spell
+		var near_cells: Array = f.grid.keys().filter(func(e): return Rules.hex_distance(e, cell) <= 2)
+		if near_cells.size() == 19 and near_cells.all(func(e): return f.grid[e].kind == "open" and not f.cover.has(e) and f.grid[e].z == f.grid[cell].z):
+			at_cell = cell
+			break
+	_clear_round(at_cell, [])
+	var spot: Vector2i = at_cell + Hex.NEIGHBOURS[0] * 2
+	var at := f.global_position + f.cell_point(at_cell + Hex.NEIGHBOURS[0])
+	var near := game.rig.camera.global_position - at
+	near.y = 0.0
+	game.rig.ease_to(at - near.normalized() * 0.5, 7.5, game.rig.yaw_deg)
+	for c: Array in [["sacred_flame", hero], ["faerie_fire", fluffy], ["lull", fluffy]]:
+		var who: Dictionary = c[1]
+		for passed in [false, true]:
+			_place(who, at_cell)
+			_fresh(foe)
+			foe.hp = 99
+			_place(foe, spot)
+			_turn(who)
+			await _wait(0.8)
+			Coins.forced.clear()
+			for i in 12:
+				Coins.forced.append(passed)
+			f.sel = c[0]   # the panel shows the spell's card
+			f.refresh()
+			print("RACE save %s %s" % [c[0], "passed" if passed else "failed"])
+			await f._save_spell(who, foe, Cards.get_card(c[0]))
+			Coins.forced.clear()
+			await _wait(1.6)
+			foe.glow = -1
+			foe.lull = false
+			_place(who, f.grid.keys().filter(func(e): return Rules.hex_distance(e, at_cell) > 6)[0])
+	await _wait(0.5)
+	print("RACE save done")
 
 
 ## `-- --racecheck --flipshots --shots` saves screens/race/flip_v3_*.png (the details panel before the flip, then the flip): Fluffy's Firebolt flips with their modifiers shown
