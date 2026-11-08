@@ -1111,6 +1111,16 @@ func offhand_card(a: Dictionary) -> Dictionary:
 ## One attack flip and its damage; whether it hit.
 func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 	busy = true
+	var r := await _attack_flip(a, t, k)
+	await board.attack(a.mini, t.mini, r.hit, motion_kind(a, t, k))
+	await _attack_land(a, t, k, r.hit, r.dmg)
+	busy = false
+	_check_end()
+	return r.hit
+
+
+## An attack's flip and its damage and riders, before any motion plays: {hit, dmg}.
+func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 	var check := flip_check(attack_coins(a, t, k), heads_needed(t, a, k))
 	var mods := attack_mods(a, t, k)   # shown as coins in the flip
 	var long_shot: bool = attack_coins(a, t, k) < heads_needed(t, a, k)
@@ -1178,7 +1188,11 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
 	if hit and a.ally and weapon_attack(k) and a.weapon == "shortsword" and k.id != "quick_slash":
 		a.quick_ready = true
-	await board.attack(a.mini, t.mini, hit, motion_kind(a, t, k))
+	return {hit = hit, dmg = dmg}
+
+
+## After the motion: the damage lands, then the push, Haymaker's save and Guard Up's hit back.
+func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: int) -> void:
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
@@ -1198,9 +1212,6 @@ func _one_attack(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
 			var back: int = attack_score(t, Cards.get_card("attack", t.weapon))
 			hud.float_text(a, "-%d" % back, true)
 			await _hurt(a, back)
-	busy = false
-	_check_end()
-	return hit
 
 
 ## Whether a foe holds a weapon to knock away (Disarm, 04). PLACEHOLDER: every foe but beasts (wolves).
@@ -1520,15 +1531,24 @@ func arc_cells(u: Dictionary, c: Vector2i) -> Array[Vector2i]:
 	return out
 
 
-## Sweeping Arc: one flip for each foe in the arc.
+## Sweeping Arc: one flip for each foe in the arc, all first; then one spin, each foe reacting as the trail passes it, and
+## the damage lands (Ethan, Nov 8).
 func _arc(a: Dictionary, c: Vector2i) -> void:
 	busy = true
 	self_done = "sweeping_arc"
 	cell_target = null
+	var k := card("sweeping_arc")
+	var flips := []   # [foe, {hit, dmg}]
 	for cell in arc_cells(a, c):
 		var t := unit_at(cell)
 		if not t.is_empty() and not t.ally and not t.down:
-			await _one_attack(a, t, card("sweeping_arc"))
+			flips.append([t, await _attack_flip(a, t, k)])
+	if not flips.is_empty():
+		a.facing = _dir_toward(a.cell, flips[0][0].cell)
+		await board.sweep(a.mini, flips.map(func(f): return f[0].mini), flips.map(func(f): return f[1].hit))
+	for f: Array in flips:
+		if not f[0].down:
+			await _attack_land(a, f[0], k, f[1].hit, f[1].dmg)
 	busy = false
 	refresh()
 	_check_end()

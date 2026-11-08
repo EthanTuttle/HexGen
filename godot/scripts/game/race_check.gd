@@ -225,6 +225,10 @@ func _run() -> void:
 		await _motion_shots()
 		get_tree().quit()
 		return
+	if "--arcshot" in OS.get_cmdline_user_args():   # test aid: Sweeping Arc's one spin over three foes, for a clip (--write-movie)
+		await _arc_shot()
+		get_tree().quit()
+		return
 	if "--flipshots" in OS.get_cmdline_user_args():   # test aid: modifiers as coins in the flip
 		await _flip_shots()
 		get_tree().quit()
@@ -1439,6 +1443,38 @@ func _motion_shots() -> void:
 		u.mini.visible = true
 	f.hud.visible = true
 	print("RACE motions done")
+
+
+## `-- --racecheck --arcshot --main=glaive --off=none` plays the real Sweeping Arc on three foes, the middle one missed: all
+## three flip, then one spin with each foe reacting as the trail passes it, then the damage. Run with `--write-movie`.
+func _arc_shot() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.units[0]
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	for cell: Vector2i in f.grid:   # a hex with open ground all round, away from the board's edge
+		if Hex.NEIGHBOURS.all(func(n): return f.grid.has(cell + n) and f.grid[cell + n].kind == "open" and not f.cover.has(cell + n)) and f.grid[cell].kind == "open":
+			_clear_round(cell, [])
+			_place(hero, cell)
+			break
+	var c: Vector2i = hero.cell + Hex.NEIGHBOURS[0]
+	var arc := f.arc_cells(hero, c)
+	for i in mini(arc.size(), foes.size()):
+		_fresh(foes[i])
+		foes[i].hp = 99   # nobody falls, so the clip shows the reactions only
+		_place(foes[i], arc[i])
+	foes[1].heads = 99   # the middle foe is missed
+	var at := f.global_position + f.cell_point(hero.cell)
+	var near := game.rig.camera.global_position - at
+	near.y = 0.0
+	game.rig.ease_to(at - near.normalized() * 0.7, 11.0, game.rig.yaw_deg)
+	_turn(hero)
+	await _wait(0.8)
+	Coins.forced.assign([true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true])
+	print("RACE arc start")
+	await f._arc(hero, c)
+	Coins.forced.clear()
+	await _wait(1.2)
+	print("RACE arc done")
 
 
 ## `-- --racecheck --flipshots --shots` saves screens/race/flip_v3_*.png (the details panel before the flip, then the flip): Fluffy's Firebolt flips with their modifiers shown

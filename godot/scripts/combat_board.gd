@@ -109,6 +109,24 @@ func play_next() -> void:
 ## its kind's motion; hit = false plays the miss (the target sidesteps). Can be awaited.
 func attack(attacker: Node3D, target: Node3D, hit := true, kind := "melee") -> void:
 	_busy = true
+	await _face(attacker, target)
+	await AttackMotions.new(self).attack(kind, attacker, target, hit)
+	_busy = false
+	_timer = 1.2
+
+
+## Sweeping Arc's one spin over all its foes (AttackMotions.sweep), after turning to face the first. Can be awaited.
+func sweep(attacker: Node3D, targets: Array, hits: Array) -> void:
+	_busy = true
+	if not targets.is_empty():
+		await _face(attacker, targets[0])
+	await AttackMotions.new(self).sweep(attacker, targets, hits)
+	_busy = false
+	_timer = 1.2
+
+
+## Turns an attacker to face its target, snapped to a cell side.
+func _face(attacker: Node3D, target: Node3D) -> void:
 	var to_target := target.position - attacker.position
 	to_target.y = 0
 	to_target = to_target.normalized()
@@ -119,9 +137,6 @@ func attack(attacker: Node3D, target: Node3D, hit := true, kind := "melee") -> v
 	else:
 		tw.tween_property(attacker, "rotation:y", attacker.rotation.y + wrapf(face - attacker.rotation.y, -PI, PI), 0.12)
 	await tw.finished
-	await AttackMotions.new(self).attack(kind, attacker, target, hit)
-	_busy = false
-	_timer = 1.2
 
 
 ## Bless and heals: the rising ring on the ally (AttackMotions.buff).

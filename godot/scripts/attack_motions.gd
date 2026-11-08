@@ -498,20 +498,9 @@ func attack(kind: String, am: Node3D, tm: Node3D, hit := true) -> void:
 	var dur := 0.95
 	var upd: Callable
 	match kind:
-		"sweep":   # A, spin: one full turn clockwise; the blade starts on the mini's left and the foe recoils as it passes
-			var trail := fx(arc(0.5, 0.78, 150, 0, 18), "#FFFFFF")
-			var start := angle_of(d) + 90.0
-			hit_at = 0.45 * smooth_inv(fmod(fmod(start - angle_of(d), 360.0) + 360.0, 360.0) / 360.0)
-			upd = func(s: float) -> void:
-				var u := seg(s, 0, 0.45)
-				a.spin = -360.0 * smooth(u)
-				a.move(UP * 0.08 * bump(u))
-				if u > 0.0 and u < 1.0:
-					trail.show(a0 + UP * 0.45, 1.0, Basis(UP, deg_to_rad(start - 360.0 * smooth(u))), minf(1.0, 4.0 * u) * (1.0 - u * u * u))
-				else:
-					trail.hide()
-				if hit:
-					recoil(t, s, hit_at, d)
+		"sweep":   # A, spin (sweep below)
+			await sweep(am, [tm], [hit])
+			return
 		"thrust":   # B, pivot jab
 			var streak := fx(beam(), "#FFFFFF")
 			var star := fx(spikes(7, 0.26, 0.035, 0.1), "#FFF4C8")
@@ -708,6 +697,35 @@ func attack(kind: String, am: Node3D, tm: Node3D, hit := true) -> void:
 			main.call(s)
 			miss(t, s, hit_at, d, whiff, miss_dust)
 	await run(dur, upd)
+
+
+## The spin sweep (A, spin): one full turn clockwise, the blade starting on the mini's left; each foe in `targets` reacts as
+## the trail passes it, recoiling when its `hits` entry is true and sidestepping when false. Sweeping Arc plays it once for
+## all its foes (Ethan, Nov 8).
+func sweep(am: Node3D, targets: Array, hits: Array) -> void:
+	var a := actor(am)
+	var a0 := am.global_position
+	var d := flat(targets[0].global_position - a0) if not targets.is_empty() else flat(am.global_transform.basis.z)
+	var trail := fx(arc(0.5, 0.78, 150, 0, 18), "#FFFFFF")
+	var start := angle_of(d) + 90.0
+	var foes := []   # [actor, way to it, hit time, hit, whiff, dust]
+	for i in targets.size():
+		var dt := flat((targets[i] as Node3D).global_position - a0)
+		var at := 0.45 * smooth_inv(fmod(fmod(start - angle_of(dt), 360.0) + 360.0, 360.0) / 360.0)
+		foes.append([actor(targets[i]), dt, at, hits[i], fx(arc(0.16, 0.22, -60, 60), "#FFFFFF"), dust(5, "#E8E0CC")])
+	await run(0.95, func(s: float) -> void:
+		var u := seg(s, 0, 0.45)
+		a.spin = -360.0 * smooth(u)
+		a.move(UP * 0.08 * bump(u))
+		if u > 0.0 and u < 1.0:
+			trail.show(a0 + UP * 0.45, 1.0, Basis(UP, deg_to_rad(start - 360.0 * smooth(u))), minf(1.0, 4.0 * u) * (1.0 - u * u * u))
+		else:
+			trail.hide()
+		for f: Array in foes:
+			if f[3]:
+				recoil(f[0], s, f[2], f[1])
+			else:
+				miss(f[0], s, f[2], f[1], f[4], f[5]))
 
 
 ## Bless and heals (A, rising ring): the caster bobs, a gold tube rises round the ally with motes, and the ally hops.
