@@ -91,4 +91,4 @@ Picked Nov 8, 2026. The source is `k_savespell`, kind `bloom`. A save has no pro
 - **Glow outline:** a copy of the foe's mesh with every vertex pushed out 0.03 along its normal and the faces turned inside out, with back-face culling on, so only a rim shows round the mini. Unlit and blended, and parented to the mini so it follows every move. In Godot this is the usual inverted-hull outline (cull front, grow along normals).
 - **z:** a lower-case "z", 0.22 tall, slightly extruded, deep colour, stood up to face the combat camera.
 
-**Open:** the preview shows one set of three z's. Whether they keep drifting up while the foe sleeps, until damage wakes it (03 → Lull), isn't decided. When it wakes, the foe straightens back up.
+**Open:** the preview shows one set of three z's. Whether they keep drifting up while the foe sleeps, until damage wakes it (03 → Lull), isn't decided, and nor is how it wakes (the preview doesn't show it; straightening back up with `smooth` would be the obvious pick).
