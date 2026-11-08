@@ -237,8 +237,8 @@ func _run() -> void:
 		await _status_shots()
 		get_tree().quit()
 		return
-	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--panellayouts")):   # test aid: the details panel's trial layouts, side by side
-		await _panel_layout_shots()
+	if "--panelstates" in OS.get_cmdline_user_args():   # test aid: the details panel in the layout pass's seven states
+		await _panel_state_shots()
 		get_tree().quit()
 		return
 	if "--panelshots" in OS.get_cmdline_user_args():
@@ -1589,9 +1589,9 @@ func _flip_shots() -> void:
 	f.night = false
 
 
-## `-- --racecheck --panellayouts --shots` saves screens/race/layout_<state>_<layout>.png: the details panel in each
-## trial layout (CombatHud.layout: "" as it was, then a, b, c; or --panellayouts=old,b,v2) in the same states. Prints each state's fit.
-func _panel_layout_shots() -> void:
+## `-- --racecheck --panelstates --shots` saves screens/race/panel_state_<state>.png: the details panel in the layout
+## pass's states (07 -> Modifier coins -> Layout pass). Prints each state's fit and button.
+func _panel_state_shots() -> void:
 	await _fight("plains_stones")
 	var fluffy := _who("Fluffy")
 	var chelm := _who("Chelmsford")
@@ -1616,10 +1616,6 @@ func _panel_layout_shots() -> void:
 	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
 	var d0: float = game.rig.distance
 	var states := ["plain", "cover_night", "bless_glow", "long", "breath", "second_wind", "after_flip"]
-	var lays := ["", "a", "b", "c"]
-	for a: String in OS.get_cmdline_user_args():   # --panellayouts=old,b,v2 picks the layouts
-		if a.begins_with("--panellayouts="):
-			lays.assign(Array(a.trim_prefix("--panellayouts=").split(",")).map(func(l): return "" if l == "old" else l))
 	for state: String in states:
 		_clear_round(s, [])
 		for e in foes:
@@ -1668,16 +1664,13 @@ func _panel_layout_shots() -> void:
 				await f.press_button()
 		game.rig.ease_to(f.global_position + who.mini.position, d0 * 0.8, game.rig.yaw_deg)
 		await _wait(0.6)
-		for lay: String in lays:
-			CombatHud.layout = lay
-			f.hud.refresh()
-			await get_tree().process_frame
-			await get_tree().process_frame
-			var box: Control = f.hud._details_panel.get_child(0)
-			var btn: String = f.hud._button_box.get_child(0).text if f.hud._button_box.get_child_count() > 0 else ""
-			print("LAYOUT %s %s: content %.0f of %.0f, panel %s, button \"%s\"" % [state, lay if lay != "" else "old", box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H, f.hud._details_panel.size, btn])
-			await _shot("layout_%s_%s" % [state, lay if lay != "" else "old"])
-		CombatHud.layout = ""
+		f.hud.refresh()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var box: Control = f.hud._details_panel.get_child(0)
+		var btn: String = f.hud._button_box.get_child(0).text if f.hud._button_box.get_child_count() > 0 else ""
+		print("PANEL %s: content %.0f of %.0f, button \"%s\"" % [state, box.get_combined_minimum_size().y + 24.0, CombatHud.DETAILS_H, btn])
+		await _shot("panel_state_%s" % state)
 		foe.glow = -1
 		f.result = {}
 	f.night = false
@@ -1729,7 +1722,7 @@ func _panel_shots() -> void:
 				game.rig.ease_to(f.global_position + mel.mini.position, game.rig.distance, game.rig.yaw_deg)
 				await _wait(0.6)
 				await _shot("panel_longshot_aimed")
-				print("RACE coin line: %s" % f.hud.coin_line(mel, foe, f.card()))
+				print("RACE check line: %s, button Flip %d" % [f.hud.target_line(mel, foe, f.card()), f.hud.flip_count(mel, foe, f.card())])
 				Coins.forced.assign([true, true, false])
 				await f.press_button()
 				Coins.forced.clear()
