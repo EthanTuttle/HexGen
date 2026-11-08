@@ -1404,6 +1404,20 @@ func _flip_shots() -> void:
 		print("RACE flip %s: %d coins, needs %d, mods %s%s" % [case[0], n, need, f.attack_mods(fluffy, foe, bolt).map(func(m): return "%s %+d" % [m.why, m.n]), ", long shot" if long else ""])
 		await _wait(2.0)
 	f.night = false
+	# A save: Chelmsford's Sacred Flame at the foe behind cover, which saves with 1 more coin.
+	var chelm := _who("Chelmsford")
+	_clear_round(spot[0], [])
+	_place(chelm, spot[0])
+	_place(foe, spot[1])
+	_fresh(foe)
+	_turn(chelm)
+	f.pick_card("sacred_flame")
+	f.target = foe
+	f.hud.refresh()
+	game.rig.ease_to(f.global_position + chelm.mini.position * 0.7 + foe.mini.position * 0.3, d0 * 0.8, game.rig.yaw_deg)
+	await _wait(0.8)
+	await _shot("flip_v3_save_cover_before")
+	print("RACE flip save_cover: %d coins, mods %s" % [f.save_coins(foe, chelm, "DEX"), f.save_mods(foe, chelm).map(func(m): return "%s %+d" % [m.why, m.n])])
 
 
 ## `-- --racecheck --panelshots --shots` saves screens/race/panel_*.png.

@@ -1025,12 +1025,19 @@ func close_shot(a: Dictionary, k: Dictionary) -> bool:
 	return foes_of(a).any(func(o): return dist(o, a) == 1)
 
 
-## A save's coins: a foe's set number, an ally's own score in the save's ability, +1 behind cover from whoever aims.
+## A save's coins: a foe's set number, an ally's own score in the save's ability, plus its modifiers (save_mods).
 func save_coins(t: Dictionary, from: Dictionary, ability: String, cover_seen := false) -> int:
 	var n: int = Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
-	if cover_seen or (not from.is_empty() and cover_between(from, t) == "partial"):
-		n += Rules.COVER_COINS
+	for m: Dictionary in save_mods(t, from, cover_seen):
+		n += m.n
 	return n
+
+
+## A save's modifiers, as coins for whoever saves (03 -> Coin checks -> Readable flips): +1 behind cover from whoever aims.
+func save_mods(t: Dictionary, from: Dictionary, cover_seen := false) -> Array:
+	if cover_seen or (not from.is_empty() and cover_between(from, t) == "partial"):
+		return [{n = Rules.COVER_COINS, icon = "cover", why = "cover"}]
+	return []
 
 
 ## A flip of n coins needing `need` heads, as coins and the heads they need. Fewer coins than heads: the long shot (DOCS:
@@ -1254,7 +1261,7 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	busy = true
 	refresh()
 	var check := flip_check(save_coins(t, a, k.save), Rules.SAVE_HEADS)
-	var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
+	var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE, save_mods(t, a))
 	var saved: bool = Coins.heads(check.coins) >= check.need
 	match k.get("effect", ""):
 		"glow", "lull":

@@ -302,8 +302,9 @@ func _refresh_details() -> void:
 			for m: Dictionary in fight.attack_mods(u, fight.target, k):   # every modifier, chip and words (07 -> Modifier coins)
 				_details.add_child(_mod_row(m))
 		else:
-			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads%s" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS,
-					" · +1 cover" if fight.cover_between(u, fight.target) == "partial" else ""], "n800", 13)))
+			_details.add_child(_wrap(UI.label("Save: %d coins · %s · needs %d heads" % [fight.save_coins(fight.target, u, k.save), k.save, Rules.SAVE_HEADS], "n800", 13)))
+			for m: Dictionary in fight.save_mods(fight.target, u):   # the saver's modifiers, as for attacks
+				_details.add_child(_mod_row(m))
 	elif k.kind == "breath" and (aimed or fight.result.has("rows")):
 		_breath_rows(u, k)
 	elif k.kind == "cell" and aimed:
