@@ -265,6 +265,10 @@ Region locations per variant: see [Map & exploration](02 Map & exploration.md) �
 
 All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](02 Map & exploration.md) → Tier 3 variants.
 
+## XP
+
+- **XP by foe toughness** (Ethan, Nov 7, 2026): tougher enemy types and higher region tiers give more XP per fight, so fighting easy land levels you slowly. Each level needs more XP than the one before. Amounts: balance pass.
+
 ## Open questions
 
 - [x] ~~Rarity rethink~~ (settled Oct 23–24, 2026: see Card types, Deck and hand, Starting decks and Class locations)

@@ -314,7 +314,7 @@ Decided Nov 1, 2026. **Bounded hit chances:** hit chances stay in about the same
 - **Heroes attacking enemies** (Ethan, Nov 7, 2026, replacing elite +1, far +1 and the level curve): each foe has a printed defence by role: minion and soldier 1, elite 2, boss 3. Sneak past and Ambush use the same numbers (the toughest foe's defence).
 - **Hero coins:** main scores grow 3 → 4 → 5 → 6 at levels 4, 8 and 12 (see Ability scores), so the same defence gets easier to beat as heroes level.
 - **Enemies attacking heroes:** the hero's defence is flat (Ethan, Nov 7, 2026): Clothes 1, Armoured 2, +1 with a shield ([Weapons & gear](04 Weapons & gear.md) → Armour).
-- **Enemy coins:** set by role (minion 2, soldier 3, elite 4, boss 5), plus a step for how tough the area is. **What drives enemy toughness is being rethought** (Ethan, Nov 7, 2026): distance bands (near +0, mid +2, far +4 coins) may give way to region tier or enemy type. Enemy rules don't have to follow the players' rules and can be as complex as balance needs.
+- **Enemy coins:** set by role (minion 2, soldier 3, elite 4, boss 5), plus steps by region tier and enemy type ([Map & exploration](02 Map & exploration.md) → Encounters; Ethan, Nov 7, 2026, replacing the distance bands near +0, mid +2, far +4). Enemy rules don't have to follow the players' rules and can be as complex as balance needs.
 - **Heroes growing harder to hit:** better armour (Rare +1 defence) and feats (Plate Master, Nimble: +1 defence), plus damage reduction from gear.
 
 Balance flags: enemy balance waits for the enemy pass, after the player mechanics are done (06 → First playable → Levels). The old hit chance table and flags (Nov 1, 2026) assumed armour taking coins and are retired.

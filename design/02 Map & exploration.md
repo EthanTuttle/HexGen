@@ -46,7 +46,7 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 - **Encounter rolls** (decided Nov 1, 2026): spawning rolls every 8 in-game hours (about 10 real minutes), so a full day has three rolls, each on random already-placed tiles. Encounters are temporary (fights, passing merchants and the like).
 - Spawned encounters disappear after about 15 minutes (12 in-game hours, half a day cycle) if not dealt with (exception: see Defeat).
 - Each terrain type has its own encounter table.
-- Enemies scale with distance from the starting point: more HP and damage, more foes and more elites per fight, and more or nastier cards. Their attack coins also step up by distance band (near, mid, far; decided Nov 1, 2026; being rethought Nov 7, 2026, toward region tier or enemy type): see [Classes & combat](03 Classes & combat.md) → Hit chance scaling. Staying near the start to play it safe is the player's choice, and so is building a long corridor out to a Story card or far from the start: the hero still has to walk it and fight through spawns.
+- **Enemy toughness comes from region tier and enemy type** (Ethan, Nov 7, 2026, replacing distance from the start and growth with the hero's level): tier 1 regions hold the base foes, tier 2 tougher ones, tier 3 Legendary the toughest, and each enemy type has its own strength. Tiles in a region that isn't finished yet count as tier 1. Players outgrow easy land and go looking for harder fights, since tougher foes give more XP ([Cards & progression](05 Cards & progression.md) → XP). Enemy rules can be as complex as balance needs; players only see the coin line. The old rule (Nov 1, 2026): enemies scaled with distance, with coins and heads stepping up by distance band (near, mid, far).
 - **Hex events** (decided Oct 22, 2026; changed Nov 4, 2026): short text events with 2–3 choices, each resolved by a check. On plain land they now come as Social and Discovery encounters, visible on the map rather than stepped on unseen; they're guaranteed at landmarks. Event list: in progress.
 - **Dungeons** (decided Oct 22, 2026): a short chain of rooms, mixing fights with event rooms resolved by checks (traps, locked doors, secrets), with a boss at the end. Some traps also appear on the tactical grid during fights. Room counts and the trap list: in progress.
 - Scouting checks (spotting encounters, ambushes) and avoiding fights: see [Classes & combat](03 Classes & combat.md) → Checks outside combat.
@@ -177,7 +177,7 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 
 ## Open questions
 
-- [ ] Playtest tuning: terrain crossing speeds, enemy scaling by distance
+- [ ] Playtest tuning: terrain crossing speeds, enemy scaling by region tier and enemy type
 - [ ] **New (mockup placeholder "Sight range 2 → [wider]"):** how much each level milestone widens sight range
 - [ ] **New (mockup placeholder):** how much day-clock time placing a card costs ("a little real time"; the exploration mockups use half a minute per placement and a minute per hex walked)
 - [ ] Clustered regions: when the cluster badge first appears (targets set Oct 24, 2026: 5+ tier 1, 7+ tier 2), and the specific encounters/loot for each region variant; water travel for great-lake islands
