@@ -835,6 +835,7 @@ func flip_coins(u: Dictionary, coins: Array[bool], need: int, step: float, mods 
 		var coin := CoinView.make(h, size_)
 		if flipped.size() < badges.size():
 			coin.add_badge(badges[flipped.size()])
+			coin.outline = CoinView.BUFF_OUTLINE
 		flipped.append(coin)
 		coin.pivot_offset = Vector2(size_, size_) * 0.5
 		coin.scale = Vector2(0.05, 1.0)

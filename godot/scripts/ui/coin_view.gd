@@ -8,6 +8,9 @@ var diameter := 34.0
 var is_blank := false
 var ring := Color(0, 0, 0, 0)
 var is_lost := false   # a coin a modifier took: greyed, never flipped
+var outline := Color(0, 0, 0, 0)   # a modifier's coin: green for a buff, red for a penalty (Ethan, Nov 7, 2026)
+const BUFF_OUTLINE := Color("#2E9A3E")    # PLACEHOLDER shades
+const PENALTY_OUTLINE := Color("#C62E24")
 
 
 ## The ink of each modifier's icon on a coin (Fight.attack_mods). PLACEHOLDER icons and inks.
@@ -37,6 +40,7 @@ static func blank(d := 34.0) -> CoinView:
 static func lost(d: float, mod: String) -> CoinView:
 	var c := make(false, d)
 	c.is_lost = true
+	c.outline = PENALTY_OUTLINE
 	c.add_badge(mod)
 	return c
 
@@ -56,12 +60,15 @@ func _draw() -> void:
 	var bg := Color("#EFE6D3") if is_blank else (UI.GOLD if heads else Color("#CFC2A8"))
 	var edge := UI.CREAM_EDGE if is_blank else (UI.GOLD_EDGE if heads else Color("#8A7D66"))
 	var ink := Color("#5A3A05") if heads else Color("#4A4034")
-	if is_lost:   # PLACEHOLDER look: a flat pale grey coin, no letter
+	if is_lost:   # PLACEHOLDER look: a flat pale grey coin, no letter, in its red outline
 		draw_circle(ctr, r, Color("#B3AB9C"))
 		draw_circle(ctr, r - 1.5, Color("#E2DDD3"))
+		draw_arc(ctr, r + 1.0, 0, TAU, 40, outline, 2.5, true)
 		return
 	draw_circle(ctr, r, edge)
 	draw_circle(ctr - Vector2(0, 1.5), r - 1.5, bg)
+	if outline.a > 0:
+		draw_arc(ctr, r + 1.0, 0, TAU, 40, outline, 2.5, true)
 	if is_blank:
 		return
 	var f := UI.font("lilita")

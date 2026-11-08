@@ -1334,7 +1334,7 @@ func _status_shots() -> void:
 	print("RACE status chips: foe %s, ally %s, screen scale %.2f" % [f.status_icons(foe).map(func(e): return e[1]), f.status_icons(fluffy).map(func(e): return e[1]), StatusChip._screen_scale()])
 
 
-## `-- --racecheck --flipshots --shots` saves screens/race/flip_*.png: Fluffy's Firebolt flips with their modifiers shown
+## `-- --racecheck --flipshots --shots` saves screens/race/flip_v2_*.png (the details panel before the flip, then the flip): Fluffy's Firebolt flips with their modifiers shown
 ## as coins (03 -> Coin checks -> Readable flips): cover, night, Bless and Faerie Fire, and a long shot at an elite.
 func _flip_shots() -> void:
 	await _fight("plains_stones")
@@ -1383,11 +1383,14 @@ func _flip_shots() -> void:
 		for i in count:   # every coin shows: tails until the last, which makes the heads
 			coins.append(long or i >= count - need)
 		f.pick_card("firebolt")
+		f.target = foe
+		f.hud.refresh()
 		game.rig.ease_to(f.global_position + fluffy.mini.position * 0.7 + foe.mini.position * 0.3, d0 * 0.8, game.rig.yaw_deg)
 		await _wait(0.8)
+		await _shot("flip_v2_%s_before" % case[0])
 		f.hud.flip_coins(fluffy, coins, count if long else need, 0.05, f.attack_mods(fluffy, foe, bolt), long)
 		await _wait(0.05 * count + 0.6)
-		await _shot("flip_" + case[0])
+		await _shot("flip_v2_%s_flip" % case[0])
 		# The close-up: the coins over Fluffy at 2x with no smoothing.
 		var p := game.rig.camera.unproject_position(fluffy.mini.global_position + Vector3(0, 2.4, 0))
 		var box := Rect2(p - Vector2(90, 45), Vector2(180, 75))
@@ -1397,7 +1400,7 @@ func _flip_shots() -> void:
 		var crop := img.get_region(px)
 		crop.resize(px.size.x * 2, px.size.y * 2, Image.INTERPOLATE_NEAREST)
 		if "--shots" in OS.get_cmdline_user_args():
-			crop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_%s_close.png" % case[0]))
+			crop.save_png(ProjectSettings.globalize_path("res://screens/race/flip_v2_%s_close.png" % case[0]))
 		print("RACE flip %s: %d coins, needs %d, mods %s%s" % [case[0], n, need, f.attack_mods(fluffy, foe, bolt).map(func(m): return "%s %+d" % [m.why, m.n]), ", long shot" if long else ""])
 		await _wait(2.0)
 	f.night = false
