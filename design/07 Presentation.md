@@ -59,7 +59,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | River/lake | River delta | The river splits into braided channels round low sandy islands; more boats, small jetties and cargo crates along the banks |
   | Swamp/marsh | Bog/fen | Darker water, low mist, crooked dead trees and toadstools that glow at night; clusters of bright purple and yellow flowers and spiky plants |
   | Desert | Dunes/wasteland | Sandstone columns, broken statues and wall tops poking out of the sand; lower swells between cracked flats, bleached bones and dead trees |
-  | Ruins | Excavation | Trenches and scaffolding cut into the hex columns (see Ruins land below), with some columns pulled up and tagged; ladders and spoil heaps; canvas tents, tables of sorted finds, crates and lanterns (reworked Nov 4, 2026) |
+  | Ruins | ~~Excavation~~ (variant replaced by the Overrun outpost, Nov 8, 2026; its look is to be chosen) | Trenches and scaffolding cut into the hex columns (see Ruins land below), with some columns pulled up and tagged; ladders and spoil heaps; canvas tents, tables of sorted finds, crates and lanterns (reworked Nov 4, 2026) |
 
   **Tier 2 and class variant looks** (chosen Oct 31, 2026; class variants marked *class*):
 
@@ -90,7 +90,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Farmland | Bandit-raided farms | Scorched plots with a few small fires and rising smoke; charred barns and farmhouses beside intact ones; trampled crop paths with spilled sacks and broken crates |
   | Farmland | Cider orchards | Rows of round fruit trees with red apples fill the whole tile instead of sitting in plots like wheat, spread out enough not to look busy, with ladders, baskets and fallen fruit; tracks still run between tiles, with fences and gates as on other farms (chosen Nov 1, 2026) |
   | Ruins | Haunted ruins | The hex columns are the tombs: hollow sockets glow pale blue-green with spirit wisps rising from them, stronger at night; thin mist pools in the low ground and drifts between the columns (reworked Nov 4, 2026). A ghost city at night, foundations by day, is to be reworked and tried later, with softer shapes and after a phone measure |
-  | Ruins | Golem-guarded ruins | Big dormant golems built of the same hex stone, half risen from the ground, with amber seams as runes and eyes faintly lit; stairs and walls made of the columns (reworked Nov 4, 2026) |
+  | Ruins | ~~Golem-guarded ruins~~ (variant dropped, Nov 8, 2026; basilisk ruins and the trapped vault need looks) | Big dormant golems built of the same hex stone, half risen from the ground, with amber seams as runes and eyes faintly lit; stairs and walls made of the columns (reworked Nov 4, 2026) |
 
 - **Landmark tiles** (chosen Nov 1, 2026): each variant's core location (its landmark; rule: [Map & exploration](02 Map & exploration.md) → Landmarks) is a tile with its own look, built from the variant's look, on the random tile the region picks when it finishes. **The variant's other tiles play up or flow into the landmark** (Ethan, Nov 1, 2026), so the region leads the eye to it; how each variant does it is being tried in the art kits. **Not every terrain needs paths** (Ethan, Nov 1, 2026): open terrain such as the plains variants has no drawn trails, and leads the eye by what thickens toward the landmark instead.
 
@@ -126,9 +126,9 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Will-o'-wisp marsh | Wisp Hollow | A ring of pale wisps swirling over a still, glowing pool in a hollow of reeds, with a half-sunk treasure chest just visible (chosen Nov 3, 2026) |
   | Rot swamp | Plague Pit | A wide round sinkhole dug into the ground, with glowing yellow-green ooze below, pale fungus on its walls and a broken ramp leading down (chosen Nov 3, 2026) |
   | Smugglers' bayou | Thieves Guild | A large two-storey house on stilts with a covered dock, boats underneath, a crooked sign and lanterns: a shady tavern at the hub of the walkways (chosen Nov 3, 2026) |
-  | Excavation | Dig Site | A big stepped trench dug into the ground, revealing a half-buried stone facade, with scaffolding, a wooden crane and a large tent with a table of finds (chosen Nov 3, 2026) |
+  | ~~Excavation~~ | ~~Dig Site~~ (dropped Nov 8, 2026; Warren needs a look) | A big stepped trench dug into the ground, revealing a half-buried stone facade, with scaffolding, a wooden crane and a large tent with a table of finds (chosen Nov 3, 2026) |
   | Haunted ruins | Crypt | A large mausoleum with a cracked dome and heavy doors ajar, pale light spilling from wide stairs going down, flanked by mourning statues (chosen Nov 3, 2026) |
-  | Golem-guarded ruins | Sentinel Hall | Two looks (chosen Nov 3, 2026): a hall of hex columns up wide column stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
+  | ~~Golem-guarded ruins~~ | ~~Sentinel Hall~~ (dropped Nov 8, 2026; Basilisk Nest and Vault need looks) | Two looks (chosen Nov 3, 2026): a hall of hex columns up wide column stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
 
@@ -607,6 +607,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** the next exploration version (planned as v9; v9 went to the button cluster on Nov 1, 2026): the party as a cluster of true-scale minis instead of one token; combat v15: flat-top cells (both chosen Oct 29, 2026)
 - [x] ~~Region variant art: what a variant changes~~ (settled Oct 30, 2026: whatever makes it look best, while still blending in; tier 1 looks chosen, see Art direction → Region variant looks)
 - [x] ~~Tier 2 and class variant looks~~ (settled Oct 31, 2026: see Art direction → Region variant looks)
+- [ ] **New (Nov 8, 2026):** looks for the new ruins variants: Overrun outpost → Warren (tier 1), basilisk ruins → Basilisk Nest and trapped vault → Vault (tier 2)
 - [ ] **New:** desert's Dunes/wasteland look shows buried ruins; check it stays distinct from the ruins terrain and from the Buried city (desert tier 3)
 - [ ] **New:** terrain variants with other farm and village borders: stacked flat-stone walls and block stone walls were tried (Oct 29, 2026) and kept for later variants; wooden fences are the default
 - [ ] **New:** terrain motion pass (later, in Godot, once the terrains are done; added Oct 30, 2026): give the other terrains motion the way the water has it, e.g. trees swaying and sand drifting. What moves on each terrain, and how much: open
