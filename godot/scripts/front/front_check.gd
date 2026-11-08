@@ -472,6 +472,23 @@ func _game_run() -> void:
 	await _social(g)
 
 
+## Taps the scene's text (to finish or turn the page) until `what` shows, so a slow page can't make the check miss it.
+func _tap_until(what: String) -> void:
+	for i in 10:
+		if control(what) != null:
+			return
+		await tap(Vector2(420, 180))
+		await _wait(0.4)
+
+
+## Waits up to secs for `what` to show (the flip's coins land before Continue).
+func _wait_for(what: String, secs: float) -> void:
+	var t := 0.0
+	while control(what) == null and t < secs:
+		await _wait(0.1)
+		t += 0.1
+
+
 func _social(g: Game) -> void:
 	var t: Vector2i = Rules.START_TILE
 	g.add_encounter(t, true, [], {"kind": "social", "scene": "enc_social_trader", "name": "[Trader]", "roams": false})
@@ -484,8 +501,7 @@ func _social(g: Game) -> void:
 	check(not scene.is_empty(), "social: walking onto the event opens the scene")
 	await shot("social_line")
 	text_sizes("social", g.safe)
-	await tap(Vector2(420, 180))
-	await _wait(0.5)
+	await _tap_until("Swear you are true")
 	check(control("Swear you are true") != null and control("Leave") != null, "social: the cards deal on the last page")
 	await shot("social_cards")
 	await tap_on("Swear you are true")
@@ -496,14 +512,13 @@ func _social(g: Game) -> void:
 	await tap_on("Swear you are true")
 	await _wait(0.2)
 	await tap_on("Flip coins")
-	await _wait(3.2)
+	await _wait_for("Continue", 8.0)
 	await shot("social_chime")
 	await tap_on("Continue")
 	await _wait(0.6)
 	await shot("social_blessing")
 	await _wait(1.8)
-	await tap(Vector2(420, 180))
-	await _wait(0.5)
+	await _tap_until("Leave")
 	await tap_on("Leave")
 	await _wait(0.4)
 	check(not g.busy and not g.encounters.has(t), "social: Leave hands the map back and the event is gone")
@@ -515,17 +530,19 @@ func _social(g: Game) -> void:
 	while g.party_tile != t2 or g.party_node.walking:
 		await get_tree().process_frame
 	await _wait(1.2)
-	await tap(Vector2(420, 180))
-	await _wait(0.4)
+	await _tap_until("Draw your weapon")
 	await tap_on("Draw your weapon")
 	await _wait(0.2)
 	await tap_on("Flip coins")
-	await _wait(2.0)
+	await _wait_for("Continue", 8.0)
 	await tap_on("Continue")
 	await _wait(0.5)
 	await shot("social_fight_line")
 	await tap(Vector2(420, 180))
-	await _wait(3.0)
+	for i in 60:   # up to 6 s for the zoom into the fight
+		if g.fight.active:
+			break
+		await _wait(0.1)
 	check(g.fight.active, "social: a failed threat starts the fight")
 	await _note("fight")
 	await shot("social_fight")
