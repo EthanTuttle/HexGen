@@ -221,6 +221,14 @@ func _run() -> void:
 		await _wizard_shots()
 		get_tree().quit()
 		return
+	if "--motionshots" in OS.get_cmdline_user_args():   # test aid: the attack motions, for a clip (--write-movie)
+		await _motion_shots()
+		get_tree().quit()
+		return
+	if "--arcshot" in OS.get_cmdline_user_args():   # test aid: Sweeping Arc's one spin over three foes, for a clip (--write-movie)
+		await _arc_shot()
+		get_tree().quit()
+		return
 	if "--flipshots" in OS.get_cmdline_user_args():   # test aid: modifiers as coins in the flip
 		await _flip_shots()
 		get_tree().quit()
@@ -1336,6 +1344,150 @@ func _status_shots() -> void:
 	if "--shots" in OS.get_cmdline_user_args():
 		crop.save_png(ProjectSettings.globalize_path("res://screens/race/status_close.png"))
 	print("RACE status chips: foe %s, ally %s, screen scale %.2f" % [f.status_icons(foe).map(func(e): return e[1]), f.status_icons(fluffy).map(func(e): return e[1]), StatusChip._screen_scale()])
+
+
+## `-- --racecheck --motionshots` plays the attack motions one after another on a free line, for a clip: run it with
+## `--write-movie <dir>/f.png --fixed-fps 30`. Firebolt, Frost Ray, a bow shot, a thrown dagger, the spin sweep, a jab, the
+## heavy slam, a hop that hits and one that misses, Shocking Grasp, Bless, a summon dropping in, and Breath Weapon's cone.
+## Prints RACE motion lines as each starts (and --shots stills at each one's hit).
+func _motion_shots() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.units[0]
+	var fluffy := _who("Fluffy")
+	var chelm := _who("Chelmsford")
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	var mid := Vector2.ZERO
+	for c: Vector2i in f.grid:
+		mid += Vector2(c) / f.grid.size()
+	var line := []   # the free line of 4 nearest the board's middle, level, with no cover
+	for c: Vector2i in f.grid:
+		if f.grid[c].kind != "open" or f.cover.has(c) or (not line.is_empty() and Vector2(c).distance_to(mid) >= Vector2(line[0]).distance_to(mid)):
+			continue
+		for k in 6:
+			var ok := true
+			for i in range(1, 5):
+				var n: Vector2i = c + Hex.NEIGHBOURS[k] * i
+				ok = ok and f.grid.has(n) and f.grid[n].kind == "open" and not f.cover.has(n) and f.grid[n].z == f.grid[c].z
+			if ok:
+				line = [c, k]
+				break
+	var s: Vector2i = line[0]
+	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	var side: Vector2i = Hex.NEIGHBOURS[(line[1] + 2) % 6]
+	_clear_round(s, [])
+	for u in f.units:
+		u.mini.visible = false
+	f.hud.visible = false   # the clip shows the board only
+	var b := f.board
+	var frame := func(c: Vector2i, dist := 11.0) -> void:   # the frame sits low on screen, so aim a little past the cell
+		var at := f.global_position + f.cell_point(c)
+		var near := game.rig.camera.global_position - at
+		near.y = 0.0
+		game.rig.ease_to(at - near.normalized() * dist * 0.06, dist, game.rig.yaw_deg)
+	var show := func(us: Array) -> void:
+		for u in f.units:
+			u.mini.visible = u in us
+	var cases := [["firebolt", fluffy, 3, "orb"], ["frost_ray", fluffy, 3, "ray"], ["bow_shot", hero, 4, "shot"], ["thrown_dagger", hero, 3, "thrown"],
+		["spin_sweep", hero, 1, "sweep"], ["jab", hero, 2, "thrust"], ["heavy_slam", hero, 1, "heavy"], ["hop_hit", hero, 1, "melee"],
+		["hop_miss", hero, 1, "melee"], ["shocking_grasp", fluffy, 1, "touch"]]
+	var foe: Dictionary = foes[0]
+	_fresh(foe)
+	for c: Array in cases:
+		var who: Dictionary = c[1]
+		_place(who, s)
+		_place(foe, s + dv * c[2])
+		show.call([who, foe])
+		frame.call(s + dv * (c[2] / 2), 11.0 + c[2] * 1.5)
+		await _wait(0.7)
+		print("RACE motion %s" % c[0])
+		b.attack(who.mini, foe.mini, c[0] != "hop_miss", c[3])
+		await _wait(0.12 + 0.3)
+		await _shot("motion_" + c[0])
+		await _wait(1.0)
+	# Bless on an ally.
+	_place(chelm, s)
+	_place(hero, s + dv)
+	show.call([chelm, hero])
+	frame.call(s, 11.0)
+	await _wait(0.7)
+	print("RACE motion bless")
+	b.buff(chelm.mini, hero.mini)
+	await _wait(0.4)
+	await _shot("motion_bless")
+	await _wait(1.0)
+	# A summon drops in, through the real card.
+	_place(fluffy, s)
+	show.call([fluffy])
+	frame.call(s + dv, 11.0)
+	await _wait(0.7)
+	print("RACE motion summon")
+	_turn(fluffy)
+	f._summon(fluffy, s + dv, Cards.get_card("animated_blade"))
+	await _wait(0.3)
+	await _shot("motion_summon")
+	await _wait(1.2)
+	# Breath Weapon's cone down the line, with two foes in it.
+	var foe2: Dictionary = foes[1]
+	_fresh(foe2)
+	_place(chelm, s)
+	_place(foe, s + dv)
+	_place(foe2, s + dv * 3)
+	show.call([chelm, foe, foe2] + f.units.filter(func(u): return f.is_summon(u)))
+	for u in f.units.filter(func(u): return f.is_summon(u)):
+		_place(u, s + side * 2)
+	frame.call(s + dv * 2, 14.0)
+	await _wait(0.7)
+	print("RACE motion breath")
+	var cells: Array = [1, 2, 3].map(func(i): return b.global_transform * f.cell_point(s + dv * i))
+	b.cone(chelm.mini, Hex.to3(Hex.cell_position(dv.x, dv.y)), cells, [foe.mini, foe2.mini])
+	await _wait(0.3)
+	await _shot("motion_breath")
+	await _wait(1.4)
+	for u in f.units:
+		u.mini.visible = true
+	f.hud.visible = true
+	print("RACE motions done")
+
+
+## `-- --racecheck --arcshot --main=glaive --off=none` plays the real Sweeping Arc on three foes, the middle one missed: all
+## three flip, then one spin with each foe reacting as the trail passes it, then the damage. Run with `--write-movie`.
+func _arc_shot() -> void:
+	await _fight("plains_stones")
+	var hero: Dictionary = f.units[0]
+	var foes: Array = f.units.filter(func(u): return not u.ally)
+	for cell: Vector2i in f.grid:   # a hex with open, level ground 2 hexes round, so nothing hides the spin
+		var near_cells: Array = f.grid.keys().filter(func(e): return Rules.hex_distance(e, cell) <= 2)
+		if near_cells.size() == 19 and near_cells.all(func(e): return f.grid[e].kind == "open" and not f.cover.has(e) and f.grid[e].z == f.grid[cell].z):
+			_clear_round(cell, [])
+			_place(hero, cell)
+			break
+	var c: Vector2i = hero.cell + Hex.NEIGHBOURS[0]
+	var arc := f.arc_cells(hero, c)
+	for i in mini(arc.size(), foes.size()):
+		_fresh(foes[i])
+		foes[i].hp = 99   # nobody falls, so the clip shows the reactions only
+		_place(foes[i], arc[i])
+	var at := f.global_position + f.cell_point(hero.cell)
+	var near := game.rig.camera.global_position - at
+	near.y = 0.0
+	game.rig.ease_to(at - near.normalized() * 0.8, 13.0, game.rig.yaw_deg)
+	_turn(hero)
+	await _wait(0.8)
+	var k := Cards.get_card("sweeping_arc", hero.weapon)
+	var forced: Array[bool] = []
+	for i in mini(arc.size(), foes.size()):   # heads for the outer foes, tails for the middle one, so it is missed
+		for j in f.attack_coins(hero, foes[i], k):
+			forced.append(i != 1)
+	Coins.forced.assign(forced)
+	print("RACE arc start")
+	f.pick_card("sweeping_arc")
+	await _wait(0.6)
+	await f.click_cell(c)
+	await _wait(0.6)
+	await f.press_button()
+	Coins.forced.clear()
+	await _wait(1.2)
+	print("RACE arc done")
 
 
 ## `-- --racecheck --flipshots --shots` saves screens/race/flip_v3_*.png (the details panel before the flip, then the flip): Fluffy's Firebolt flips with their modifiers shown

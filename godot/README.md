@@ -985,7 +985,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 | Water shader | `shaders/water.gdshader` | `render_animation.py`'s material: two-phase flow-map ripples, sparkle cells, breathing foam rim, depth colour; depth and flow per vertex as in `water_mesh()` |
 | Camera | `scripts/camera_rig.gd` | Tilted camera (50° by default, the preview framings in screenshots), zoom, 60° rotation steps, pan |
 | Backdrop and light by time of day | `scripts/time_of_day.gd` | Look test 2 |
-| Stand-ins and attacks | `scripts/minis.gd`, `scripts/combat_board.gd` | Look test 3: the party as a cluster on a map tile; the radius-4 board; hop and recoil as tweens |
+| Stand-ins and attacks | `scripts/minis.gd`, `scripts/combat_board.gd`, `scripts/attack_motions.gd` | Look test 3: the party as a cluster on a map tile; the radius-4 board. Attack motions as Ethan picked them (Nov 7, 2026; `art/handoff/attack_motions.md`): whole-mini moves and flat unlit effects worked out per frame from the Blender script's curves: hop, spin sweep, pivot jab, big hop slam, straight shot, snap throw, Firebolt's orb, Frost Ray, darts, Shocking Grasp's charge and tap, the rising ring (Bless, heals), the summon dropping in, Breath Weapon's cone (v2 B), being hit (tip back) and the miss (sidestep). Everyone flips before Breath Weapon's cone plays; Sweeping Arc flips every foe first, then plays one spin, each foe reacting as the trail passes it (Ethan, Nov 8). PLACEHOLDER (approved by Ethan as placeholders, logged in 07): which cards play which (`Fight.motion_kind`: Scorch the orb, Blood Bolt and wand hits the darts, Haymaker and Bonebreaker the slam; foes hop, or jab from 2 away), and save spells keep the hop until they get a motion. `-- --racecheck --motionshots` plays them all for a clip (`--write-movie <dir>/f.png --fixed-fps 30`); `--arcshot --main=glaive --off=none` plays Sweeping Arc on three foes |
 
 ## Screens
 
@@ -1021,7 +1021,7 @@ Other arguments after `--`: `--map=test|terrains|variants`, `--view=map|water|wa
 - **Water tuning by eye:** with Blender's numbers the ripples barely showed and the shore glared white. The bump is raised from 0.7 to 2.0, and the reflectance is halved (Blender lights reflections with the backdrop at half strength, Godot at full).
 - **Water triangles:** Godot has no constrained Delaunay, so the water mesh triangulates all points and drops triangles whose centre falls outside the shore.
 - **Time of day:** the sun colour, strength and height, the ambient light and the loop's backdrops are the chosen look (Oct 30, 2026, revisit in playtesting): `design/07 Presentation.md` → Art direction → Time of day. Midday is the previews' `#CFE4F2` with the previews' sun. The look tests keep their own backdrop colours; the loop uses `Game.SKY`.
-- **Hop and recoil numbers** (0.35 m hop, 16° tilt, timings) and the attack order are placeholders; the docs only say the attacker hops and the target recoils.
+- **Attack motions** follow `art/handoff/attack_motions.md` (Ethan, Nov 7, 2026); the look test's attack order is a placeholder.
 - **Look test 4** is now covered by the loop's screens (see Screens next to the mockups). Look tests 1–3 run at their old 1600 × 1000 framing with `--resolution 1600x1000`.
 
 ## What was hard in Godot

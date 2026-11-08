@@ -4,6 +4,8 @@ Whole-mini moves plus effects, one per kind of action (07 → Characters are tab
 
 **Cone:** Ethan picked cone v2 B, together (Nov 7, 2026): see the last section.
 
+**Single-target save spells** (Sacred Flame, Faerie Fire, Lull): Ethan picked A, bloom on the target, with the pass looks as shown (Nov 8, 2026; preview `attack_savespell_v1.mp4`): see the section after the cone.
+
 ## Ground rules
 
 - **Units:** a cell is 1.0 across its flats, and a mini stands about 1.3 tall. Times are seconds from the move's start, which is once the coins have finished flipping (07 → Combat flips come first).
@@ -59,3 +61,34 @@ Whole-mini moves plus effects, one per kind of action (07 → Characters are tab
 The breather leans 8° forward and rises 0.06: in by 0.10 (`out`), held to 0.45, back by 0.60. Fourteen puffs (icospheres, `#FF9A3C`, every third one `#FFD27A`) roll out across the cone's ±30°, each over 0.32 s, starting 0.025 s apart. They travel from 0.45 to 3.05 out (`out`), grow from 0.08 to 0.30, sink from height 0.55 to 0.30 and fade as `0.9·(1 - u²)`. The cone's cells light as hex plates `#FF9A3C`, alpha 0.85: on in 0.06 s, held, then off from +0.3 to +0.5. Each foe recoils 14° when the first puffs reach it.
 
 **Picked, B (together):** the puffs start at 0.06, and each cell lights as the first puffs reach it, at about `0.06 + 0.32 · (1 - √(1 - r))`, where r is how far out the cell is (0 at the mouth, 1 at the far edge). Not picked: A, which lit the cells first in a 0.12 s sweep, with the puffs starting 0.12 s later.
+
+## Single-target save spells (Sacred Flame, Faerie Fire, Lull): A, bloom on the target
+
+Picked Nov 8, 2026. The source is `k_savespell`, kind `bloom`. A save has no projectile to hit or miss: the spell always arrives, and the save only changes what it does. Each spell has three colours: main, core, and a deep one for rings and letters (the pale ones wash out on the grass).
+
+| Spell | Main | Core | Deep |
+|---|---|---|---|
+| Sacred Flame | `#FFE7A0` | `#FFFBEA` | `#FFC93A` |
+| Faerie Fire | `#7CF0B8` | `#D8FFEC` | `#2FCB8A` |
+| Lull | `#9FA8FF` | `#E2E5FF` | `#6C78F0` |
+
+**Lead-in and arrival (all three):**
+- The caster does the charge (0.14 s, ring in the deep colour).
+- From 0.14 to 0.24, a ring (width 0.08, deep) round the foe's feet closes in from radius 0.75 to 0.35 (`out`), with alpha `min(1, 4u)`.
+- The spell lands at 0.24. A ring (width 0.09, deep) flares at the foe's feet, from radius 0.35 to 0.5 (`out`), alpha `1 - u` over 0.22 s.
+- Everything below is timed from the landing.
+
+**Shake** (a passed save shrugging the spell off): the foe twists on the spot, `12° · sin(2π · 3u) · (1 - u)` round its upright axis over 0.32 s.
+
+| Spell | Failed save | Passed save |
+|---|---|---|
+| Sacred Flame | **Flame tongues** (piece below) grow to full height in 0.1 s (`out`), flickering ±8% (`sin(70t)`). They fade from +0.16 to +0.42 as `1 - u^1.5`. The outer set is main at alpha 0.9, 0.95 tall; the inner set is core, 1.1 tall. They sit 0.13 toward the camera. A star of 9 spikes, 0.3 long, core, flashes at height 0.5 over 0.2 s. Recoil 16°, push 0.12 | Half damage (2, or 1 on a save). Everything at 0.55 size (tongues on all axes, star, its height). Recoil 8°, push 0.06 |
+| Faerie Fire | **Glow outline** (piece below) in main. It fades in over 0.12 s (`out`), then pulses at `0.75 + 0.2 · sin(2π · 2.2t)`, and stays for as long as the effect lasts (until the caster's next turn). Eight **motes** (icospheres radius 0.055, 0 subdivisions, core and deep by turns) circle the foe at radius 0.32. Mote n sits at height `0.2 + 0.09n`, starts `0.05n` after the landing, and turns at 40°/s from `45n`. Each twinkles with `tw = bump((1.6t) mod 1)`: size `0.6 + 0.6tw`, alpha `tw`. They sit 0.07 toward the camera. A small flinch: recoil 5°, push 0.03 | No effect. The outline flickers for 0.18 s at alpha `0.8 · (1 - u) · (0.6 + 0.4 · sin(120t))`. From +0.08, the motes burst outward over 0.32 s: radius 0.25 to 0.7 (`out`), heights `0.25 + 0.07n`, rising 0.1, shrinking to half, alpha `1 - u`. Shake from +0.06 |
+| Lull | From −0.04, over 0.34 s, the eight motes spiral in onto the head: angle `45n + 300u`°, radius `0.45 - 0.3 · out(u)`, height above the head `0.25 - 0.2u`, alpha `1 - u²`. The head is 0.7 up on a humanoid, 0.5 on a wolf (the mini's head height). The foe nods off from +0.15 to +0.55 (`smooth`): it leans 16° forward (head down) on its base's centre and sinks 0.03, and holds there while asleep. Three **z's** (piece below), the first from +0.3 and then every 0.25 s, each over 0.7 s. Each rises from the head: sideways 0.1 to 0.3 away from the caster, up 0.12 to 0.57, 0.22 toward the camera. It grows from 1.0 to 1.6 and fades as `min(1, 5u) · (1 - u²)` | No effect. The motes spiral in to radius 0.2 over the first half, then fly back out to 0.7, height `0.25 - 0.1u`, alpha `1 - u²`. Shake from +0.12 |
+
+**Pieces:**
+- **Flame tongues:** seven upright four-sided spikes on a circle of radius 0.22 round the foe, each 0.075 from centre to corner and 0.7 to 1.0 tall, plus a middle one (0.11, 1.0 tall). Their tips lean outward by a quarter of their offset. The inner set is five spikes on a circle of radius 0.1.
+- **Glow outline:** a copy of the foe's mesh with every vertex pushed out 0.03 along its normal and the faces turned inside out, with back-face culling on, so only a rim shows round the mini. Unlit and blended, and parented to the mini so it follows every move. In Godot this is the usual inverted-hull outline (cull front, grow along normals).
+- **z:** a lower-case "z", 0.22 tall, slightly extruded, deep colour, stood up to face the combat camera.
+
+**Open:** the preview shows one set of three z's. Whether they keep drifting up while the foe sleeps, until damage wakes it (03 → Lull), isn't decided, and nor is how it wakes (the preview doesn't show it; straightening back up with `smooth` would be the obvious pick).

@@ -1217,8 +1217,228 @@ def k_cone(T, E, scene):
     return panes
 
 
+# --- Single-target save spells (preview, Nov 8) ----------------------------------
+# Saves, so nothing flies that can hit or miss: the effect always arrives. Every option uses the same lead-in (the bolt charge in the
+# spell's colour), then delivers it a different way. Each pane plays a failed save, then a passed one: Sacred Flame on a pass is half
+# damage (03 → a passed save against a damage spell takes half damage), so the flame comes at about half size with half the recoil;
+# Faerie Fire and Lull on a pass do nothing, so the effect reaches the foe and breaks apart while it shakes it off.
+
+SAVE_SPELLS = (  # name, main colour, core colour, deep colour (rings, pulses and letters, to read on the grass), caster, target, its head height
+    ("Sacred Flame", "#FFE7A0", "#FFFBEA", "#FFC93A", "cleric", "enemy_skeleton", 0.7),
+    ("Faerie Fire", "#7CF0B8", "#D8FFEC", "#2FCB8A", "elf", "enemy_bandit_melee", 0.7),
+    ("Lull", "#9FA8FF", "#E2E5FF", "#6C78F0", "elf", "enemy_wolf", 0.5),
+)
+
+
+def tongues(col, mat, n=7, r=0.22, name="tongues"):
+    """Flame tongues: upright four-sided spikes on a circle round the origin plus a taller one in the middle; 1.0 tall, scaled per frame."""
+    bm = bmesh.new()
+    for k in range(n + 1):
+        if k < n:
+            a = 2 * math.pi * k / n
+            c, h, w = V((math.cos(a) * r, math.sin(a) * r, 0)), 0.7 + 0.3 * ((k * 5) % 3) / 2, 0.075
+        else:
+            c, h, w = V((0, 0, 0)), 1.0, 0.11
+        vs = [bm.verts.new(c + V(d) * w) for d in ((1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0))]
+        tip = bm.verts.new(c + V((0, 0, h)) + c * 0.25)
+        for i in range(4):
+            bm.faces.new((vs[i], vs[(i + 1) % 4], tip))
+    return mesh_ob(name, bm, [mat], col)
+
+
+def hull(col, target, hexcol, push=0.03):
+    """A glow outline round a mini: its mesh pushed out along the normals and turned inside out, with back faces culled, so only a rim
+    shows round the edge. Parented to the mini so it follows every move."""
+    bm = bmesh.new()
+    bm.from_mesh(target.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * push
+    bmesh.ops.reverse_faces(bm, faces=bm.faces)
+    m = glow(hexcol, f"hull{hexcol}")
+    m.use_backface_culling = True
+    ob = mesh_ob("hull", bm, [m], col)
+    ob.parent = target
+    return ob
+
+
+def zee(col, mat):
+    t = bpy.data.curves.new("zee", "FONT")
+    t.body = "z"
+    t.size = 0.22
+    t.align_x, t.align_y = "CENTER", "CENTER"
+    t.extrude = 0.006
+    ob = bpy.data.objects.new("zee", t)
+    ob.data.materials.append(mat)
+    ob.visible_shadow = False
+    col.objects.link(ob)
+    return ob
+
+
+def tag(p, text):
+    """A caption in the pane's lower left, shown or hidden per frame."""
+    c = bpy.data.curves.new(f"tag_{text}", "FONT")
+    c.body = text
+    c.size = 0.05
+    ob = bpy.data.objects.new(f"tag_{text}", c)
+    ob.data.materials.append(glow("#3A3532", f"tagmat_{text}"))
+    ob.parent = p.cam
+    ob.location = (-0.69, -0.45, -2.0)
+    ob.visible_shadow = False
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def shake(a, s, t0, dur=0.32, deg=12.0):
+    """Shaking a spell off: the mini twists side to side on the spot, dying away."""
+    u = seg(s, t0, t0 + dur)
+    if 0 < u < 1:
+        a.spin += deg * math.sin(2 * math.pi * 3 * u) * (1 - u)
+
+
+def k_savespell(T, E, scene):
+    panes = []
+    specs = [("A  Bloom on the target", "bloom"), ("B  Falls from above", "fall"), ("C  Pulse along the ground", "pulse")]
+    for i, (label, kind) in enumerate(specs):
+        for j, (spell, c1, c2, c0, who, foe, hh) in enumerate(SAVE_SPELLS):
+            p = Pane(scene, (i * 3 + j) * 40, f"{label}  ·  {spell}", 3.0)
+            if who == "cleric":
+                hob = hero(T, p.col, "human", "broad", "b", "long", "mace", "shield", tier="heavy", skin=0, hairc=3, cloth=4)
+            else:
+                hob = hero(T, p.col, "elf", "average", "c", "long", "staff", tier="none", skin=1, hairc=3, cloth=3, caster=True)
+            h = p.add(hob, (0, 0, 0), 90)
+            f = p.add(place(E, foe, p.col), (3, 0, 0), 270)
+            rg = p.fxo(ring(p.col, 1.0, 0.07, glow(c0)))
+            orb = p.fxo(ico(p.col, 0.1, glow(c2)))
+            trail = [p.fxo(ico(p.col, 0.085, glow(c1))) for _ in range(4)]
+            conv = p.fxo(ring(p.col, 1.0, 0.08, glow(c0)))
+            flare = p.fxo(ring(p.col, 1.0, 0.09, glow(c0)))
+            waves = [p.fxo(ring(p.col, 1.0, 0.09, glow(c0))) for k in range(3)]
+            fl = p.fxo(tongues(p.col, glow(c1)))
+            fl2 = p.fxo(tongues(p.col, glow(c2), n=5, r=0.1, name="tongues_core"))
+            star = p.fxo(spikes(p.col, 9, 0.3, 0.045, glow(c2), up=0.3))
+            hl = p.fxo(hull(p.col, f.ob, c1))
+            motes = [p.fxo(ico(p.col, 0.055, glow(c2 if k % 2 else c0), sub=0, name="mote")) for k in range(8)]
+            zs = [p.fxo(zee(p.col, glow(c0))) for _ in range(3)]
+            tags = [tag(p, "Failed save"), tag(p, "Passed save: half damage" if spell == "Sacred Flame" else "Passed save: no effect")]
+            p.tags = tags
+
+            def up(s, k=0, h=h, f=f, kind=kind, spell=spell, rg=rg, orb=orb, trail=trail, conv=conv, flare=flare, waves=waves, fl=fl, fl2=fl2,
+                   star=star, hl=hl, motes=motes, zs=zs, tags=tags, hh=hh, p=p):
+                for n_, tg in enumerate(tags):
+                    tg.hide_render = n_ != k
+                passed = k == 1
+                charge(h, s, rg, p, dur=0.14)
+                c = f.home
+                rel = 0.14
+                # Delivery: when and how the spell reaches the foe.
+                if kind == "bloom":
+                    land = 0.24
+                    u = seg(s, rel, land)
+                    if 0 < u < 1:
+                        conv.show(c + V((0, 0, 0.02)), 0.75 - 0.4 * out(u), alpha=min(1, 4 * u))
+                    else:
+                        conv.hide()
+                elif kind == "fall":
+                    land = 0.30
+                    u = seg(s, rel, land)
+                    top, bot = c + V((0, 0, 2.2)), c + V((0, 0, 0.75 if spell != "Sacred Flame" else 0.3))
+                    if 0 < u < 1:
+                        orb.show(top.lerp(bot, inn(u)) + FRONT * 0.5, 1.0)
+                        for n_, tl in enumerate(trail):
+                            uu = max(0.0, u - 0.07 * (n_ + 1))
+                            tl.show(top.lerp(bot, inn(uu)) + FRONT * 0.5, 0.85 - 0.15 * n_, alpha=0.85 if u > 0.07 * (n_ + 1) else 0)
+                    else:
+                        orb.hide()
+                        for tl in trail:
+                            tl.hide()
+                else:
+                    land = 0.36
+                    a0, b0 = h.home + V((0.35, 0, 0.02)), c + V((-0.1, 0, 0.02))
+                    for n_, w in enumerate(waves):
+                        u = seg(s, rel + 0.03 * n_, land + 0.03 * n_)
+                        if 0 < u < 1:
+                            w.show(a0.lerp(b0, smooth(u)), 0.28 - 0.06 * n_, alpha=(1.0 - 0.3 * n_) * min(1, 5 * u))
+                        else:
+                            w.hide()
+                v = seg(s, land, land + 0.22)  # a ring flares at the foe's feet as it lands
+                if 0 < v < 1:
+                    flare.show(c + V((0, 0, 0.02)), (0.35 + 0.15 * out(v)) if kind == "bloom" else (0.25 + 0.3 * out(v)), alpha=1 - v)
+                else:
+                    flare.hide()
+                # The effect on the foe.
+                if spell == "Sacred Flame":
+                    size = 0.55 if passed else 1.0
+                    v = seg(s, land, land + 0.42)
+                    if 0 < v < 1:
+                        grow = out(seg(s, land, land + 0.1))
+                        a = 1 - seg(s, land + 0.16, land + 0.42) ** 1.5
+                        fl.show(c + FRONT * 0.6, (size, size, 0.95 * size * grow * (1 + 0.08 * math.sin(s * 70))), alpha=0.9 * a)
+                        fl2.show(c + FRONT * 0.7, (size, size, 1.1 * size * grow), alpha=a)
+                    else:
+                        fl.hide()
+                        fl2.hide()
+                    flash(star, s, land, c + V((0, 0, 0.5 * size)), size=size, dur=0.2)
+                    recoil(f, s, land, 0, tilt=8 if passed else 16, push=0.06 if passed else 0.12)
+                elif spell == "Faerie Fire":
+                    if not passed:
+                        if s >= land:
+                            a = out(seg(s, land, land + 0.12)) * (0.75 + 0.2 * math.sin(2 * math.pi * 2.2 * (s - land)))
+                            hl.ob.hide_render = False
+                            set_alpha(hl.ob, a)
+                        for n_, m in enumerate(motes):
+                            ph = s - land - 0.05 * n_
+                            if ph > 0:
+                                ang = math.radians(n_ * 45 + 40 * ph)
+                                tw = bump((ph * 1.6) % 1.0)
+                                m.show(c + V((math.cos(ang) * 0.32, math.sin(ang) * 0.32, 0.2 + 0.09 * n_)) + FRONT * 0.3, 0.6 + 0.6 * tw, alpha=tw)
+                        recoil(f, s, land, 0, tilt=5, push=0.03)
+                    else:
+                        v = seg(s, land, land + 0.18)
+                        if 0 < v < 1:
+                            hl.ob.hide_render = False
+                            set_alpha(hl.ob, 0.8 * (1 - v) * (0.6 + 0.4 * math.sin(s * 120)))
+                        for n_, m in enumerate(motes):
+                            u = seg(s, land + 0.08, land + 0.4)
+                            if 0 < u < 1:
+                                ang = math.radians(n_ * 45)
+                                r = 0.25 + 0.45 * out(u)
+                                m.show(c + V((math.cos(ang) * r, math.sin(ang) * r, 0.25 + 0.07 * n_ + 0.1 * u)) + FRONT * 0.3, 1.0 - 0.5 * u, alpha=1 - u)
+                        shake(f, s, land + 0.06)
+                else:  # Lull
+                    head = c + V((0, 0, hh))
+                    for n_, m in enumerate(motes):
+                        u = seg(s, land - 0.04, land + 0.3)
+                        if 0 < u < 1:
+                            ang = math.radians(n_ * 45 + 300 * u)
+                            if not passed:
+                                r, z, a = 0.45 - 0.3 * out(u), 0.25 - 0.2 * u, 1 - u ** 2
+                            else:
+                                r, z, a = 0.45 - 0.25 * out(min(1, 2 * u)) + 0.5 * max(0.0, u - 0.5) * 2, 0.25 - 0.1 * u, 1 - u ** 2
+                            m.show(head + V((math.cos(ang) * r, math.sin(ang) * r, z)) + FRONT * 0.3, 1.0, alpha=a)
+                    if not passed:
+                        k_ = smooth(seg(s, land + 0.15, land + 0.55))
+                        f.lean(16 * k_, 180, edge=0)  # nods off, its head drooping
+                        f.move((0, 0, -0.03 * k_))
+                        for n_, z in enumerate(zs):
+                            u = seg(s, land + 0.3 + 0.25 * n_, land + 1.0 + 0.25 * n_)
+                            if 0 < u < 1:
+                                z.show(head + V((0.1 + 0.2 * u, 0, 0.12 + 0.45 * u)) + FRONT, 1.0 + 0.6 * u, rot=Matrix.Rotation(math.radians(52), 4, "X"), alpha=min(1, 5 * u) * (1 - u ** 2))
+                    else:
+                        shake(f, s, land + 0.12)
+            p.update = up
+            panes.append(p)
+    return panes
+
+
+k_savespell.passes = 2  # each pane plays a failed save, then a passed one
+k_savespell.cols = 3
+
+
 KINDS = {"melee": k_melee, "sweep": k_sweep, "thrust": k_thrust, "heavy": k_heavy, "shot": k_shot, "thrown": k_thrown, "bolt": k_bolt,
-         "touch": k_touch, "area": k_area, "buff": k_buff, "summon": k_summon, "hit": k_hit, "miss": k_miss, "cone": k_cone}
+         "touch": k_touch, "area": k_area, "buff": k_buff, "summon": k_summon, "hit": k_hit, "miss": k_miss, "cone": k_cone,
+         "savespell": k_savespell}
 
 
 # --- Rendering ----------------------------------------------------------------
@@ -1245,21 +1465,24 @@ def render_kind(kind, out_dir):
     T, E, scene = setup()
     panes = KINDS[kind](T, E, scene)
     tmp = tempfile.mkdtemp(prefix=f"atk_{kind}_")
-    n = int(round(CYCLE * FPS))
-    grid_cols = 2 if len(panes) == 4 else len(panes)
+    passes = getattr(KINDS[kind], "passes", 1)
+    n = int(round(CYCLE * FPS * passes))
+    grid_cols = getattr(KINDS[kind], "cols", 2 if len(panes) == 4 else len(panes))
     grid_rows = (len(panes) + grid_cols - 1) // grid_cols
     W, H = PANE
     frames = []
     land = {}
     for fi in range(n):
-        s = fi / FPS - LEAD
+        k = min(passes - 1, int(fi / FPS // CYCLE))
+        s = fi / FPS - k * CYCLE - LEAD
         tiles = []
         for p in panes:
             for a in p.actors:
                 a.reset()
             for f in p.fx:
                 f.hide()
-            p.update(max(s, -1.0) if s >= 0 else -1.0)
+            s_ = max(s, -1.0) if s >= 0 else -1.0
+            p.update(s_, k) if passes > 1 else p.update(s_)
             for a in p.actors:
                 a.apply()
             scene.camera = p.cam
@@ -1277,16 +1500,17 @@ def render_kind(kind, out_dir):
         fp = os.path.join(tmp, f"f{fi:04d}.png")
         save_png(g, fp)
         frames.append(fp)
-        if abs(s - 0.22) < 0.5 / FPS:
+        if k == 0 and abs(s - 0.22) < 0.5 / FPS:
             land["still"] = fp
     if CHECK:
-        strip = []
-        for t in CHECK_TIMES:
-            im = bpy.data.images.load(frames[min(len(frames) - 1, int(round((t + LEAD) * FPS)))])
-            w, h = im.size
-            strip.append(np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::2, ::2])
-            bpy.data.images.remove(im)
-        save_png(np.concatenate(strip[::-1], axis=0), os.path.join(CHECK, f"check_{kind}.png"))
+        for k in range(passes):
+            strip = []
+            for t in CHECK_TIMES:
+                im = bpy.data.images.load(frames[min(len(frames) - 1, int(round((t + LEAD + k * CYCLE) * FPS)))])
+                w, h = im.size
+                strip.append(np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::2, ::2])
+                bpy.data.images.remove(im)
+            save_png(np.concatenate(strip[::-1], axis=0), os.path.join(CHECK, f"check_{kind}{'_' + str(k) if k else ''}.png"))
     # Twice at real speed (every other frame), then once at half speed (every frame), played at 30.
     seq = frames[::2] + frames[::2] + frames
     stem = f"attack_{kind}"
