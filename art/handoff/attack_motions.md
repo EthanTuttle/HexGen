@@ -2,7 +2,7 @@
 
 Whole-mini moves plus effects, one per kind of action (07 → Characters are tabletop-style minis). Ethan picked these on Nov 7, 2026 (verdicts in `art/reviews.md`). This is the recipe for rebuilding them in Godot as tweens. The source is `art/scripts/render_attack_motions.py`: each `k_<kind>` function holds the exact curves, and the picked option is the branch named below. The previews are in the shared notes folder under `attack-motions/` (`attack_<kind>_v1.mp4`, `attack_cone_v2.mp4`).
 
-**Cone: open.** Ethan is choosing between cone v2's A and B (below). The cone section gets filled in once he picks.
+**Cone:** Ethan picked cone v2 B, together (Nov 7, 2026): see the last section.
 
 ## Ground rules
 
@@ -54,9 +54,8 @@ Whole-mini moves plus effects, one per kind of action (07 → Characters are tab
 | Being hit | A, tip back | The recoil above | None |
 | Miss | A, sidestep | The target slides 0.3 sideways (across the attack, toward the camera's side) and 0.04 away, leaning 6° that way on its centre. Out by 0.18 from 0.08 (`out`), holds to 0.32, back by 0.55 (`smooth`) | A white whiff crescent (radius 0.16–0.22, spanning 120°) sweeps through where the target stood from 0.14 to 0.30, alpha `0.7·(1 - u)`. A little dust where the target lands: 5 puffs `#E8E0CC`, 0.25 s, spread 0.18, size 0.03 |
 
-## Cone (Breath Weapon): open, two versions
+## Cone (Breath Weapon): v2 B, together
 
-Both versions start the same way. The breather leans 8° forward and rises 0.06: in by 0.10 (`out`), held to 0.45, back by 0.60. Fourteen puffs (icospheres, `#FF9A3C`, every third one `#FFD27A`) roll out across the cone's ±30°, each over 0.32 s, starting 0.025 s apart. They travel from 0.45 to 3.05 out (`out`), grow from 0.08 to 0.30, sink from height 0.55 to 0.30 and fade as `0.9·(1 - u²)`. The cone's cells light as hex plates `#FF9A3C`, alpha 0.85: on in 0.06 s, held, then off from +0.3 to +0.5. Each foe recoils 14° when the first puffs reach it.
+The breather leans 8° forward and rises 0.06: in by 0.10 (`out`), held to 0.45, back by 0.60. Fourteen puffs (icospheres, `#FF9A3C`, every third one `#FFD27A`) roll out across the cone's ±30°, each over 0.32 s, starting 0.025 s apart. They travel from 0.45 to 3.05 out (`out`), grow from 0.08 to 0.30, sink from height 0.55 to 0.30 and fade as `0.9·(1 - u²)`. The cone's cells light as hex plates `#FF9A3C`, alpha 0.85: on in 0.06 s, held, then off from +0.3 to +0.5. Each foe recoils 14° when the first puffs reach it.
 
-- **A, hexes first:** the cells light in a quick sweep outward from 0.06, in 0.12 s from nearest to farthest. The puffs start 0.12 s later and roll over the lit cells.
-- **B, together:** the puffs start at 0.06, and each cell lights as the first puffs reach it, at about `0.06 + 0.32 · (1 - √(1 - r))`, where r is how far out the cell is (0 at the mouth, 1 at the far edge).
+**Picked, B (together):** the puffs start at 0.06, and each cell lights as the first puffs reach it, at about `0.06 + 0.32 · (1 - √(1 - r))`, where r is how far out the cell is (0 at the mouth, 1 at the far edge). Not picked: A, which lit the cells first in a 0.12 s sweep, with the puffs starting 0.12 s later.
