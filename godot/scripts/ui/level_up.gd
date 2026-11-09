@@ -505,9 +505,8 @@ func _tile(i: int, m: Dictionary, k: String) -> Control:
 	var coins := CUI.hbox(-6 if n > 6 else 3)   # past what fits they overlap a little (07 -> coins stay on one line)
 	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	for c in n:
-		var cv := CoinView.blank(18)
-		if mine and c == n - 1:
-			cv.ring = UI.GREEN
+		var cv := _Coin.new()
+		cv.ring = mine and c == n - 1
 		coins.add_child(cv)
 	h.add_child(coins)
 	b.add_child(h)
@@ -1089,6 +1088,19 @@ static func text_of(k: Dictionary) -> String:
 		t = t.substr(t.find(": ") + 2)
 		t = t[0].to_upper() + t.substr(1)
 	return t
+
+
+## A score's coin on the ability tiles (07 v8d): gold with its rim, the placed one ringed green.
+class _Coin extends Control:
+	var ring := false
+	func _init() -> void:
+		custom_minimum_size = Vector2(18, 18)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	func _draw() -> void:
+		if ring:
+			draw_circle(Vector2(9, 9), 11, Color("#2E7A3E"))
+		draw_circle(Vector2(9, 9), 9, UI.GOLD_EDGE)
+		draw_circle(Vector2(9, 8), 8, UI.GOLD)
 
 
 ## The Party chip: a tag shape with "Party" (07 v8c).
