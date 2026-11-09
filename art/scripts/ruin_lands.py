@@ -59,15 +59,20 @@ PALETTE = {
     "goblin_eye": "#F4E04D",    # its own material: the engine lights it at night
     "goblin_rag_red": "#B9362B",     # the Warren's rag banners
     "goblin_rag_yellow": "#DDB23C",
+    # haunted ruins and the Crypt
+    "haunt_glow": "#9EEBD3",    # the glowing cracks: its own material, brighter at night
+    "haunt_wisp": "#C4F8E6",    # spirit wisps: its own material, brighter at night
+    "haunt_light": "#C9F7E8",   # the light spilling from the Crypt's stairs
+    "crypt_dark": "#1E2427",
 }
-OWN = {"goblin_eye"}
+OWN = {"goblin_eye", "haunt_glow", "haunt_wisp", "haunt_light"}
 SLABS = ["ruin_slab_a", "ruin_slab_b", "ruin_slab_c", "ruin_slab_d"]
 STONES = ["ruin_grey", "ruin_marble", "ruin_warm", "ruin_slab_d"]   # walls mix these
 STATUE_STONES = ["ruin_marble", "ruin_bronze", "ruin_basalt", "ruin_warm"]
 OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_rubble", cover=0.08), "c": dict(ground="ruin_ground", cover=0.05)}
 KINDS = ("centre", "same", "same_b", "other", "other_b")
 PICKED_GROWTH = "medium"
-LOOKS = {"ruins", "overrun_outpost"}   # tiles that stand remains in their corner gaps (tile_remains)
+LOOKS = {"ruins", "overrun_outpost", "haunted_ruins"}   # tiles that stand remains in their corner gaps (tile_remains)
 BURROWED = {"overrun_outpost"}          # and burrows and goblin junk instead (outpost_layout)
 BURROW_TWO = 0.5      # share of outpost tiles with two burrows; the rest have one
 JUNK_FILL = 0.85      # share of remains (and of bare gaps left over) with goblin junk beside them
@@ -81,6 +86,10 @@ FOOT = {"ruin_arch": (0.0, 0.82), "ruin_arch_pointed": (0.0, 0.82), "ruin_arch_b
         "outpost_burrow_timber": (-0.2, 0.7), "outpost_burrow_scrap": (-0.2, 0.7),
         "outpost_banner": (0.0, 0.27), "outpost_bones": (0.0, 0.7), "outpost_crates": (0.0, 0.61), "outpost_totem": (0.0, 0.23)}
 MOUTH = (0.85, 0.42)
+HAUNTED = {"haunted_ruins"}              # and tombs, wisps and mist (haunted_layout)
+TOMBS = ("toppled", "graves", "slab")
+TOMB_THREE = 0.4      # share of haunted tiles with three tombs; the rest have two
+WISP_FILL = 0.7       # share of tombs with wisps rising over them
 JUNK = ("banner", "banner", "bones", "crates", "totem")   # banners twice as often: they carry the colour
 # Overgrowth amounts: moss on upward faces (share), ivy on side faces (share at the foot, thinning to none at ivy_top),
 # leafy clumps round a remains' foot, green patches under the paving per piece (centre, wedge), ground cover density.
@@ -465,6 +474,8 @@ def tile_props(name, q, r):
     if name in BURROWED:
         remains, burrows, junk = outpost_layout(q, r)
         return remains + burrows + junk
+    if name in HAUNTED:
+        return haunted_layout(q, r)
     return [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
 
 
@@ -891,3 +902,273 @@ def ruins(p, rng, kind, option="a", growth=None):
     GROUNDS[option](p, rng, kind)
     if growth:
         crack_green(p, kind, growth)
+
+
+# --- Haunted ruins: tombs, glowing cracks, spirit wisps, low mist ---------------
+# The plain ground and remains, with pale blue-green cracks glowing across the paving, toppled tombs and grave slabs
+# among the remains, spirit wisps rising over the tombs (brighter at night) and thin low mist (design/07 -> Region variants).
+# Tombs are placed like the outpost's junk: bare corner gaps first, then beside a remains, always clear of everything.
+
+def haunted_layout(q, r):
+    """A haunted tile's props, tile-local (piece, x, y, spin): its remains, two or three tombs where they fit (a tile with room
+    for none gives up one remains for a tomb), wisps over most tombs, one or two mists."""
+    remains = [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)]
+    slot_of = lambda x, y: round((math.degrees(math.atan2(y, x)) % 360 - 30) / 60) % 6  # noqa: E731
+    held = {slot_of(x, y): pc for pc, x, y, _ in remains}
+    taken = [circle(*t) for t in remains]
+    spots = sorted((c for c in range(6) if c not in held), key=lambda c: gc.hash01(q * 6 + c, r, 51))
+    spots += sorted(held, key=lambda c: gc.hash01(q * 6 + c, r, 51))
+    want = 3 if gc.hash01(q, r, 52) < TOMB_THREE else 2
+    tombs = []
+    for c in spots:
+        if len(tombs) == want:
+            break
+        which = f"haunt_{TOMBS[int(gc.hash01(q * 6 + c, r, 53) * len(TOMBS))]}"
+        rt = FOOT[which][1]
+        a = math.radians(30 + 60 * c)
+        if c in held:
+            rr = FOOT[held[c]][1]
+            options = [(SLOT_R + d * (rr + rt + GAP), da) for d in (1, -1) for da in (0.0, 0.12, -0.12)]
+        else:
+            options = [(SLOT_R, 0.0), (SLOT_R - 0.2, 0.0)]
+        for d, da in options:
+            x, y = d * math.cos(a + da), d * math.sin(a + da)
+            if clear((x, y, rt), taken):
+                tombs.append((which, x, y, a + math.pi + 1.2 * (gc.hash01(q * 6 + c, r, 54) - 0.5)))
+                taken.append((x, y, rt))
+                break
+    if not tombs:  # no room anywhere: one tomb takes a remains' place, as an outpost's burrow does
+        c = min(held, key=lambda c: gc.hash01(q * 6 + c, r, 51))
+        remains = [t for t in remains if slot_of(t[1], t[2]) != c]
+        a = math.radians(30 + 60 * c)
+        which = f"haunt_{TOMBS[int(gc.hash01(q * 6 + c, r, 53) * len(TOMBS))]}"
+        tombs.append((which, SLOT_R * math.cos(a), SLOT_R * math.sin(a), a + math.pi + 1.2 * (gc.hash01(q * 6 + c, r, 54) - 0.5)))
+    wisps = [("haunt_wisps", x, y, 6.283 * gc.hash01(k, q * 7 + r, 55)) for k, (_, x, y, _) in enumerate(tombs) if gc.hash01(q * 6 + k, r, 56) < WISP_FILL]
+    mists = []
+    for k in range(2 if gc.hash01(q, r, 57) < 0.5 else 1):
+        a = 6.283 * gc.hash01(q * 2 + k, r, 58)
+        d = 1.4 + 1.0 * gc.hash01(q * 2 + k, r, 59)
+        mists.append(("haunt_mist", d * math.cos(a), d * math.sin(a), a))
+    return remains + tombs + wisps + mists
+
+
+def fissure(p, rng, start, heading, length, mat="haunt_glow", z=SLAB_Z + 0.006):
+    """A jagged glowing crack across the paving: thin quads along a wandering line, tapering to nothing at its ends."""
+    pts, at, h = [], start.copy(), heading
+    n = max(3, round(length / 0.22))
+    for k in range(n + 1):
+        pts.append(at.copy())
+        h += rng.uniform(-0.55, 0.55)
+        at += Vector((math.cos(h), math.sin(h), 0)) * (length / n)
+    for k in range(n):
+        a, b = pts[k], pts[k + 1]
+        d = (b - a).normalized()
+        side = Vector((-d.y, d.x, 0))
+        wa = 0.055 * math.sin(math.pi * k / n) + 0.008
+        wb = 0.055 * math.sin(math.pi * (k + 1) / n) + 0.008
+        plate(p, [a - side * wa, a + side * wa, b + side * wb, b - side * wb], z, mat)
+
+
+def haunted_ground(p, rng, kind):
+    """The plain ground, slab for slab, with glowing cracks across it on their own seed."""
+    plain_ground(p, rng, kind)
+    crng = hk.seeded(p.name + "fissures")
+    if kind.replace("edge_", "") == "centre":
+        for _ in range(2):
+            fissure(p, crng, Vector((crng.uniform(-0.6, 0.6), crng.uniform(-0.6, 0.6), 0)), crng.uniform(0, 6.28), crng.uniform(0.7, 1.1))
+    else:
+        for _ in range(crng.choice((1, 2))):
+            x = crng.uniform(X0 + 0.3, X1 - 0.6)
+            y = crng.uniform(-0.35, 0.35) * x * TAN30 * 2
+            fissure(p, crng, Vector((x, y, 0)), crng.uniform(0, 6.28), crng.uniform(0.8, 1.4))
+
+
+def sarcophagus(p, rng, at, spin, mat):
+    """A stone coffin knocked onto its side, its lid slid off beside it, the dark inside showing a glow."""
+    rot = Matrix.Rotation(spin, 3, "Z")
+    tip = rot @ Matrix.Rotation(1.25, 3, "X")
+    c = at + rot @ Vector((0, 0, 0.25))
+    p.box_rot(c + rot @ Vector((0, -0.18, 0)), (0.92, 0.42, 0.48), mat, tip)                     # the coffin, on its side
+    p.box_rot(c + rot @ Vector((0, 0.09, 0.0)), (0.82, 0.03, 0.38), "crypt_dark", tip)           # its open top, dark
+    p.box_rot(c + rot @ Vector((0, 0.11, -0.02)), (0.6, 0.02, 0.17), "haunt_glow", tip)          # the glow inside
+    p.box_rot(at + rot @ Vector((0.0, 0.42, 0.06)), (0.95, 0.46, 0.1), mat, rot @ Matrix.Rotation(0.12, 3, "Y"))   # the lid on the ground
+    p.box(at + rot @ Vector((0.5, 0.0, 0)), (0.18, 0.15, 0.11), mat, spin=spin + 0.5)           # a chip off it
+
+
+def headstone(p, at, spin, mat, h, lean):
+    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(lean, 3, "X")
+    p.box_rot(at + rot @ Vector((0, 0, h / 2)), (0.36, 0.09, h), mat, rot)
+    m = Matrix.Translation(at + rot @ Vector((0, 0, h))) @ rot.to_4x4() @ Matrix.Rotation(math.pi / 2, 4, "X")
+    r = __import__("bmesh").ops.create_cone(p.bm, cap_ends=True, cap_tris=False, segments=8, radius1=0.18, radius2=0.18, depth=0.09, matrix=m)
+    p._paint(r["verts"], mat)
+
+
+def haunt_piece(which):
+    def build(p, rng):
+        mat = rng.choice(STONES)
+        if which == "toppled":
+            sarcophagus(p, rng, Vector((0, 0, 0)), 0.0, mat)
+            fissure(p, rng, Vector((0.5, -0.35, 0)), -0.4, 0.6, z=0.012)
+        elif which == "graves":  # a little row of grave slabs, leaning, one fallen flat
+            for k, (y, h, lean) in enumerate(((-0.45, 0.62, 0.12), (0.0, 0.75, -0.2), (0.45, 0.55, 0.3))):
+                headstone(p, Vector((0.0, y, 0)), math.pi / 2 + rng.uniform(-0.15, 0.15), rng.choice(STONES), h, lean)
+            p.box(Vector((-0.42, 0.1, 0)), (0.32, 0.68, 0.08), mat, spin=rng.uniform(-0.2, 0.2))
+            fissure(p, rng, Vector((0.25, -0.5, 0)), 1.4, 0.9, z=0.012)
+        else:  # a big grave slab cracked in two, one half heaved up, the crack glowing
+            p.box(Vector((-0.22, 0, 0)), (0.5, 0.7, 0.14), mat)
+            p.box_rot(Vector((0.3, 0.02, 0.15)), (0.5, 0.7, 0.14), mat, Matrix.Rotation(0.35, 3, "Y"))
+            p.box(Vector((0.04, 0, 0)), (0.08, 0.6, 0.02), "haunt_glow", z=0.02)
+            p.box(Vector((-0.58, 0, 0)), (0.2, 0.78, 0.3), mat)   # the headstone end
+            fissure(p, rng, Vector((0.1, 0.45, 0)), 1.3, 0.6, z=0.012)
+        overgrow_faces(p, hk.seeded(p.name + "growth"), [f for f in p.bm.faces if p.mats[f.material_index] in STONES])
+    return build
+
+
+def wisps(p, rng):
+    """Spirit wisps rising: small pale lights in a loose column over a tomb, smaller as they rise. The engine drifts them up and brightens them at night."""
+    for k in range(3):
+        at = Vector((rng.uniform(-0.25, 0.25), rng.uniform(-0.25, 0.25), 0))
+        z = 0.7 + 0.5 * k + rng.uniform(-0.1, 0.1)
+        rad = 0.11 - 0.025 * k
+        p.blob(at, rad, "haunt_wisp", z=z, squash=1.5)
+        p.blob(at, rad * 0.55, "haunt_wisp", z=z - rad * 1.9, squash=1.3)   # its tail
+        p.effects.append(("wisp", at + Vector((0, 0, z))))
+
+
+def mist(p, rng, big=1.0, z=0.18):
+    """Thin low mist with no edge: thickest in its middle and fading to nothing (alpha in the vertex colours). A party walks through it."""
+    idx = p._slot("mist_low")
+    n = 12
+
+    def ring(f, alpha):
+        out = []
+        for j in range(n):
+            a = 2 * math.pi * j / n
+            m = 1 + 0.18 * math.sin(a * 3 + rng.uniform(0, 1))
+            q = (round(math.cos(a) * m * f * 1.6 * big, 4), round(math.sin(a) * m * f * 1.0 * big, 4))
+            p.alpha[q] = alpha
+            out.append(p.bm.verts.new((*q, z)))
+        return out
+    mid, outer = ring(0.5, 0.28), ring(1.0, 0.0)
+    p.alpha[(0.0, 0.0)] = 0.4
+    hub = p.bm.verts.new((0.0, 0.0, z))
+    for j in range(n):
+        k = (j + 1) % n
+        for f in (p.bm.faces.new((hub, mid[j], mid[k])), p.bm.faces.new((mid[j], outer[j], outer[k], mid[k]))):
+            f.material_index = idx
+            p.surface.add(f)
+
+
+FOOT.update({"haunt_toppled": (0.0, 0.82), "haunt_graves": (0.0, 0.8), "haunt_slab": (0.0, 0.8)})
+PROP_PIECES.update({f"haunt_{k}": haunt_piece(k) for k in TOMBS})
+PROP_PIECES.update({"haunt_wisps": wisps, "haunt_mist": lambda p, rng: mist(p, rng)})
+VARIANTS["haunted_ruins"] = ("ruins", haunted_ground, "ruin_ground", ("edge_same_b", "edge_other_b"))
+
+
+# --- Landmark: the Crypt (haunted ruins) ------------------------------------------
+# A large mausoleum with a cracked dome and heavy doors ajar, pale light spilling from wide stairs going down inside,
+# flanked by mourning statues (design/07 -> Landmark tiles). A centre-only landmark like the Warren, built facing +X,
+# with the same ring and approach paths; the party stops at the foot of its steps.
+CRYPT_MOUTH = 1.95
+
+
+def mourner(p, rng, at, spin):
+    """A mourning statue on a plinth: a robed figure, head bowed, a hand raised to its face."""
+    mat = "ruin_marble"
+    rot = Matrix.Rotation(spin, 3, "Z")
+    p.box(at, (0.52, 0.52, 0.5), "ruin_grey", spin=spin)
+    frustum(p, at, 0.27, 0.17, 1.15, mat, z=0.5)
+    p.box(at, (0.5, 0.26, 0.18), mat, z=1.62, spin=spin)
+    p.blob(at + rot @ Vector((0.08, 0, 0)), 0.14, mat, z=1.88)            # the bowed head, forward
+    p.box(at + rot @ Vector((0.16, 0.0, 0.0)), (0.3, 0.42, 0.06), mat, z=1.84, spin=spin)   # a hood falling forward
+    p.box_rot(at + rot @ Vector((0.18, 0.1, 1.65)), (0.1, 0.1, 0.42), mat, rot @ Matrix.Rotation(0.6, 3, "Y"))  # the raised arm
+
+
+def dome(p, rng, at, radius, z, mat, crack_mat):
+    """A dome, half a sphere, with a jagged crack down one side: the cracked faces glow, a few are gone."""
+    bm = p.bm
+    m = Matrix.Translation(at + Vector((0, 0, z)))
+    made = __import__("bmesh").ops.create_uvsphere(bm, u_segments=12, v_segments=8, radius=radius, matrix=m)["verts"]
+    low = [v for v in made if v.co.z < z - 1e-4]
+    __import__("bmesh").ops.delete(bm, geom=low, context="VERTS")
+    faces = {f for v in made if v.is_valid for f in v.link_faces}
+    p._paint([v for v in made if v.is_valid], mat)
+    p.bm.normal_update()
+    crack, gone = [], []
+    for f in faces:
+        c = f.calc_center_median() - (at + Vector((0, 0, z)))
+        ang = math.atan2(c.y, c.x)
+        wob = 0.18 * math.sin(c.z * 9.0)
+        if abs(ang - (0.55 + wob)) < 0.2:
+            (gone if c.z > radius * 0.55 and abs(ang - (0.55 + wob)) < 0.1 else crack).append(f)
+    for f in crack:
+        f.material_index = p._slot(crack_mat)
+    __import__("bmesh").ops.delete(bm, geom=gone, context="FACES_ONLY")
+
+
+def crypt(p, rng, kind):
+    """The Crypt's centre: the plain ruins centre's paving and glowing cracks, and on it the mausoleum."""
+    haunted_ground(p, hk.seeded("ruins_centrea"), "centre")
+    k_ = 1.15   # half the walls' width
+    front, back = 1.05, -1.32
+    # the plinth and its front steps down to the paving
+    p.box(Vector(((front + back) / 2, 0, 0)), (front - back + 0.3, 2 * k_ + 0.3, 0.36), "ruin_grey")
+    for j, (x, h) in enumerate(((front + 0.32, 0.24), (front + 0.56, 0.12))):
+        p.box(Vector((x, 0, 0)), (0.26, 1.3, h), "ruin_slab_a")
+    # walls, a doorway in the front
+    z0, h = 0.36, 2.4
+    for y in (-k_, k_):
+        p.box(Vector(((front + back) / 2, y, 0)), (front - back, 0.26, h), "ruin_marble", z=z0)
+    p.box(Vector((back, 0, 0)), (0.26, 2 * k_, h), "ruin_marble", z=z0)
+    door_w, door_h = 1.05, 1.7
+    for sd in (-1, 1):
+        p.box(Vector((front, sd * (door_w / 2 + (k_ - door_w / 2) / 2), 0)), (0.26, k_ - door_w / 2, h), "ruin_marble", z=z0)
+        p.box(Vector((front + 0.16, sd * (k_ - 0.08), 0)), (0.22, 0.22, h), "ruin_grey", z=z0)   # pilasters at the corners
+    p.box(Vector((front, 0, 0)), (0.26, door_w, h - door_h), "ruin_marble", z=z0 + door_h)
+    p.box(Vector(((front + back) / 2 + 0.02, 0, 0)), (front - back + 0.24, 2 * k_ + 0.24, 0.16), "ruin_grey", z=z0 + h)   # cornice
+    p.box(Vector((front + 0.22, 0, 0)), (0.2, door_w + 0.4, 0.14), "ruin_grey", z=z0 + door_h)   # lintel
+    # the dark inside, and wide stairs going down into it, lit from below
+    p.box(Vector(((front + back) / 2, 0, 0)), (front - back - 0.26, 2 * k_ - 0.26, 0.02), "crypt_dark", z=z0 + 0.001)
+    p.box(Vector((back + 0.14, 0, 0)), (0.02, 2 * k_ - 0.3, h - 0.05), "crypt_dark", z=z0)
+    for side in (-1, 1):
+        p.box(Vector(((front + back) / 2, side * (k_ - 0.14), 0)), (front - back - 0.3, 0.02, h - 0.05), "crypt_dark", z=z0)
+    for j in range(5):  # steps going down: each lower and further in, lit edges
+        x = front - 0.28 - 0.22 * j
+        top = z0 - 0.07 * (j + 1)
+        p.box(Vector((x, 0, 0)), (0.22, door_w - 0.05, 0.02), "crypt_dark", z=top + 0.07 * 0 + 0.0)
+        p.box(Vector((x + 0.1, 0, 0)), (0.03, door_w - 0.1, 0.02), "haunt_light", z=top + 0.022)
+    # the heavy doors, ajar: bronze leaves swung in
+    for sd, a in ((-1, 0.95), (1, 0.4)):
+        hinge = Vector((front - 0.1, sd * door_w / 2, 0))
+        rot = Matrix.Rotation(-sd * a, 3, "Z")
+        p.box_rot(hinge + rot @ Vector((0, -sd * door_w / 4, 0)) + Vector((0, 0, z0 + door_h / 2)), (0.07, door_w / 2 - 0.02, door_h - 0.04), "ruin_bronze", rot)
+    # light spilling out: a pale fan over the steps and onto the paving, fading
+    for j, (x0, x1, w0, w1, z) in enumerate(((front + 0.13, front + 0.44, 0.42, 0.56, 0.365), (front + 0.44, front + 0.69, 0.56, 0.66, 0.245), (front + 0.69, front + 0.95, 0.66, 0.74, 0.125), (front + 0.95, front + 1.45, 0.74, 0.86, 0.022))):
+        plate(p, [Vector((x0, -w0, 0)), Vector((x1, -w1, 0)), Vector((x1, w1, 0)), Vector((x0, w0, 0))], z, "haunt_light")
+    # the drum and the cracked dome, wisps rising from the crack
+    c = Vector(((front + back) / 2, 0, 0))
+    p.cylinder(c, 1.12, 0.4, "ruin_grey", segments=12, z=z0 + h + 0.16)
+    dome(p, rng, c, 1.08, z0 + h + 0.56, "ruin_marble", "haunt_glow")
+    p.blob(c, 0.14, "ruin_grey", z=z0 + h + 1.68)                  # the finial
+    for j in range(3):
+        a = 0.55 + rng.uniform(-0.1, 0.1)
+        at = c + Vector((math.cos(a), math.sin(a), 0)) * 0.7
+        zz = z0 + h + 1.5 + 0.45 * j
+        p.blob(at, 0.1 - 0.02 * j, "haunt_wisp", z=zz, squash=1.5)
+        p.effects.append(("wisp", at + Vector((0, 0, zz))))
+    # fallen pieces of dome on the roof's ledge and the ground
+    for x, y, zz in ((back + 0.2, -1.05, z0 + h + 0.16), (0.55, 1.45, 0.0), (-1.6, 0.45, 0.0)):
+        p.box(Vector((x, y, 0)), (0.3, 0.24, 0.18), "ruin_marble", z=zz, spin=rng.uniform(0, 3))
+    overgrow_faces(p, hk.seeded(p.name + "growth"), [f for f in p.bm.faces if p.mats[f.material_index] in ("ruin_marble", "ruin_grey") and f.calc_center_median().z > 0.05])
+    # mourning statues either side of the steps, facing the approach
+    mourner(p, rng, Vector((1.3, -0.9, 0)), math.pi / 2 + 0.25)
+    mourner(p, rng, Vector((1.3, 0.9, 0)), -math.pi / 2 - 0.25)
+    p.paths.append([Vector((WARREN_RING, 0, 0)), Vector((CRYPT_MOUTH, 0, 0))])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * WARREN_RING for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    for i, q in enumerate(ring):
+        p.spokes[i] = [q / WARREN_RING * X1, q]
+
+
+LANDMARK_CENTRES["crypt"] = crypt
+LANDMARKS["crypt"] = "haunted_ruins"
