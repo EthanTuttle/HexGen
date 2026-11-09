@@ -412,7 +412,7 @@ def remains_piece(which, growth=PICKED_GROWTH):
 REMAINS_PIECES = {f"ruin_{k}": remains_piece(k) for k in REMAINS}
 
 
-# --- Overrun outpost: framed burrows, goblin junk (the pieces are under the Warren, which shares their parts) ---
+# --- Overrun outpost: framed burrows dug into mounds, goblin junk (the pieces are under the Warren, which shares their parts) ---
 
 
 def plain_ground(p, rng, kind):
@@ -612,39 +612,46 @@ LANDMARK_CENTRES = {"warren": warren}
 
 
 def burrow(p, rng, scrap):
-    """A hole dug down through the paving, its mouth facing +X: a dark pit with a low lip of spilled earth and tipped
-    slabs, and a frame at its back, timber posts and a lintel or bent tin sheets, round a dark face with eyes in it."""
-    # the pit: dark ground, a lip of earth round it, low enough to stay off the walks' view of the frame
-    pit = [Vector((0.05 + math.cos(t) * 0.42, math.sin(t) * 0.36, 0)) for t in [6.283 * k / 9 for k in range(9)]]
-    lip = [Vector((0.05 + math.cos(t) * 0.6, math.sin(t) * 0.52, 0)) for t in [6.283 * k / 9 for k in range(9)]]
-    plate(p, lip, 0.03, "burrow_earth")
-    plate(p, pit, 0.04, "burrow_dark")
-    # the mouth's face, upright at the pit's back
-    w, h, x0 = 0.3, 0.5, -0.3
+    """A burrow dug into a mound, its one mouth facing +X: a heap of earth and broken stone with a flat dug face, the dark
+    mouth in it with eyes, and a frame round the mouth, timber posts and a lintel with a skull, or bent tin sheets."""
+    x0, w, h = 0.1, 0.25, 0.42
+    # the mound: a dome of earth, its front cut flat where it was dug
+    before = set(p.bm.verts)
+    p.blob(Vector((-0.25, 0, 0)), 0.6, "burrow_earth", z=-0.05, squash=1.15)
+    for v in set(p.bm.verts) - before:
+        v.co.x = min(v.co.x, x0)
+        v.co.z = max(v.co.z, 0.0)
+    # broken stone heaped on it and against its sides
+    for k in range(6):
+        a = rng.uniform(1.4, 4.9) if k < 4 else (1.25 if k == 4 else -1.25)
+        d = rng.uniform(0.3, 0.5) if k < 4 else 0.42
+        c = Vector((-0.25 + math.cos(a) * d * 0.8, math.sin(a) * d, 0))
+        top = max(0.05, 0.62 * (1 - (c - Vector((-0.25, 0, 0))).length ** 2 / 0.36)) - 0.08
+        rot = Matrix.Rotation(rng.uniform(0, 3), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.4, 0.4), 3, "X")
+        p.box_rot(c + Vector((0, 0, top)), (rng.uniform(0.2, 0.32), rng.uniform(0.16, 0.24), rng.uniform(0.14, 0.2)), rng.choice(STONES), rot)
+    # spilled earth just in front of the mouth, low on the paving
+    plate(p, [Vector((x0 + 0.05 + math.cos(t) * 0.32 * (1.0 if math.cos(t) > 0 else 0.2), math.sin(t) * 0.36, 0)) for t in [6.283 * k / 8 for k in range(8)]], 0.025, "burrow_earth")
+    # the mouth: dark, just proud of the dug face
     pts = [(-w, 0.0), (w, 0.0), (w, h * 0.7), (w * 0.55, h), (-w * 0.55, h), (-w, h * 0.7)]
-    f = p.bm.faces.new([p.bm.verts.new((x0, y, z + 0.04)) for y, z in pts])
+    f = p.bm.faces.new([p.bm.verts.new((x0 + 0.01, y, z + 0.02)) for y, z in pts])
     f.material_index = p._slot("burrow_dark")
     p.surface.add(f)
     p.bm.normal_update()
     if f.normal.x < 0:
         f.normal_flip()
-    p.blob(Vector((x0 - 0.18, 0, 0)), 0.42, "burrow_earth_dark", z=-0.12, squash=0.75)   # the earth the face is dug into
-    if scrap:  # bent tin sheets either side and over the top
-        for y in (-w - 0.04, w + 0.04):
-            p.box_rot(Vector((x0 + 0.04, y, h / 2 + 0.06)), (0.05, 0.16, h + 0.12), rng.choice(("rust", "roof_tin")), Matrix.Rotation(0.1 * (1 if y > 0 else -1), 3, "X"))
-        p.box_rot(Vector((x0 + 0.06, 0, h + 0.14)), (0.26, 2 * w + 0.28, 0.04), "rust", Matrix.Rotation(-0.25, 3, "Y"))
+    if scrap:  # bent tin sheets either side and a sagging one over the top
+        for y in (-w - 0.05, w + 0.05):
+            p.box_rot(Vector((x0 + 0.03, y, h / 2 + 0.04)), (0.04, 0.14, h + 0.1), rng.choice(("rust", "roof_tin")), Matrix.Rotation(0.12 * (1 if y > 0 else -1), 3, "X"))
+        for j, mat in enumerate(("roof_tin", "rust")):
+            p.box_rot(Vector((x0 + 0.02 - 0.08 * j, 0.04 * j, h + 0.1 + 0.03 * j)), (0.24, 2 * w + 0.26, 0.03), mat, Matrix.Rotation(-0.3 + 0.12 * j, 3, "Y"))
     else:  # timber posts and a lintel, a skull on it
         for y in (-w - 0.06, w + 0.06):
-            p.box(Vector((x0 + 0.04, y, 0)), (0.11, 0.11, h + 0.12), "plank_dark", spin=rng.uniform(-0.06, 0.06))
-        p.box(Vector((x0 + 0.05, 0, 0)), (0.13, 2 * w + 0.3, 0.1), "plank", z=h + 0.1)
-        p.blob(Vector((x0 + 0.1, rng.uniform(-0.15, 0.15), 0)), 0.08, "bone", z=h + 0.25, squash=0.85)
-    for y, zf in ((0.0, 0.55), (rng.choice((-0.15, 0.15)), 0.28)):  # eyes in the dark
-        for dy in (-0.045, 0.045):
-            p.box(Vector((x0 + 0.012, y + dy, 0)), (0.014, 0.042, 0.032), "goblin_eye", z=h * zf + 0.04)
-    for k in range(2):  # paving slabs tipped up at the pit's edge
-        a = rng.uniform(-1.0, 1.0) + (math.pi / 2 if k else -math.pi / 2)
-        c = Vector((0.05 + math.cos(a) * 0.55, math.sin(a) * 0.5, 0))
-        p.box_rot(c + Vector((0, 0, 0.09)), (0.3, 0.26, 0.05), rng.choice(SLABS), Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(rng.uniform(0.35, 0.6), 3, "Y"))
+            p.box(Vector((x0 + 0.04, y, 0)), (0.1, 0.1, h + 0.1), "plank_dark", spin=rng.uniform(-0.06, 0.06))
+        p.box(Vector((x0 + 0.05, 0, 0)), (0.12, 2 * w + 0.28, 0.09), "plank", z=h + 0.08)
+        p.blob(Vector((x0 + 0.09, rng.uniform(-0.12, 0.12), 0)), 0.075, "bone", z=h + 0.22, squash=0.85)
+    for y, zf in ((0.0, 0.55), (rng.choice((-0.12, 0.12)), 0.26)):  # eyes in the dark
+        for dy in (-0.04, 0.04):
+            p.box(Vector((x0 + 0.022, y + dy, 0)), (0.014, 0.04, 0.03), "goblin_eye", z=h * zf + 0.02)
 
 
 def totem(p, rng):

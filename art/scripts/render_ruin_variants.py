@@ -1,7 +1,7 @@
 """Ruins variant previews (ruin_lands.py): a variant's region among the plain ruins tiles and plains, by day and at night, built live over the latest kit.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_ruin_variants.py -- overrun_outpost
-A landmark (-- warren) stands at the region's middle, among its variant's tiles.
+Add map_day (-- overrun_outpost map_day) for just the region map by day. A landmark (-- warren) stands at the region's middle, among its variant's tiles.
 Writes art/preview/ruins_<variant>_<map|close>_<day|night>_vN.png and the sheet ruins_<variant>_sheet_vN.png.
 Prints triangles per tile and any prop taller than 0.25 on a walk or past the tile's edge.
 """
@@ -174,6 +174,9 @@ if __name__ == "__main__":
         at = hk.tile_position(*near)
         party = tuple(at + Vector((2.2, 0.0, 0.02)))
         close = (at + Vector((0.4, 0.6, 0.5)), 24, 42)
+    if "map_day" in args:  # just the region map by day
+        shot(variant, f"ruins_{variant}_map_day", title, "Its region among plain ruins and plains, by day", hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, False)
+        sys.exit(0)
     rows = []
     for dark in (False, True):
         when = "night" if dark else "day"
