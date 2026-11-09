@@ -26,12 +26,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - Fey have an overwhelming sense of self and draw their magic from themselves.
 - The cast-out god is growing strong again because the cultists' faith feeds it.
 
-**Ages** (Ethan, Nov 8, 2026)
-
-- The world has had several ages, each a civilization now long past. One god rose in each age, as that age's great being; the gods' order is the ages' order.
-- Egan's age is the most recent.
-- Their ruins lie in layers, deeper is older (how ruins show it: [Presentation](07 Presentation.md) → Ruins land).
-- Still open: the order of the other eight gods' ages, what each civilization was like, and where Azelheim and Titan's grave sit.
+**Ruins** (Ethan, Nov 9, 2026): the ruins are of vague, long-lost civilizations, deeper is older (how ruins show it: [Presentation](07 Presentation.md) → Ruins land). Who they were is left vague for now; linking each age to a god (one god rising per age, Egan's age the newest) was floated on Nov 8 and set aside.
 
 ## Pantheon
 
@@ -395,7 +390,6 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 - [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
-- [ ] **New (Nov 8, 2026):** Ages: the order of the eight gods' ages, each civilization, where Azelheim and Titan's grave sit
 - [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)
 - [ ] Enemy roster and bosses (including the named Hayes rivals)
 - [ ] **New (Oct 27, 2026):** a player Hayes: how NPCs and the Hayes rivals react, and why this Hayes turned from the cult
