@@ -29,6 +29,7 @@ func _ready() -> void:
 	var close := func(): visible = false
 	for row: Array in [
 			["Close", close],
+			["Level up now", _level_up],
 			["Spawn all regions (a long pause)", _spawn],
 			["Feywild: go to the Fey Gate", _go_to.bind("feywild_crossing", true)],
 			["Feywild: go in the forest", _go_to.bind("feywild_crossing", false)],
@@ -57,6 +58,12 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenTouch and event.pressed and event.index == 2:
 		visible = not visible
 		move_to_front()
+
+
+func _level_up() -> void:
+	visible = false
+	if Rules.TEST_LEVEL_UP:
+		game.level_up_now()
 
 
 func _spawn() -> void:

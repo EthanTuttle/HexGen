@@ -60,7 +60,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Swamp/marsh | Bog/fen | Darker water, low mist, crooked dead trees and toadstools that glow at night; clusters of bright purple and yellow flowers and spiky plants |
   | Desert | Dunes/wasteland | Sandstone columns, broken statues and wall tops poking out of the sand; lower swells between cracked flats, bleached bones and dead trees |
   | Ruins | ~~Excavation~~ (variant replaced by the Overrun outpost, Nov 8, 2026; its look is to be chosen) | Trenches and scaffolding cut into the hex columns (see Ruins land below), with some columns pulled up and tagged; ladders and spoil heaps; canvas tents, tables of sorted finds, crates and lanterns (reworked Nov 4, 2026) |
-  | Ruins | Overrun outpost | Burrows dug under the remains everywhere, with goblin eyes glinting in them at night (chosen Nov 9, 2026) |
+  | Ruins | Overrun outpost | One or two burrows a tile, their mouths framed in timber or scrap so they read as holes, with goblin eyes glinting in them at night; goblin junk on the remains (rag banners, bone piles, stolen crates, little totems) (chosen Nov 9, 2026; reworked the same day after round 1 read as a field of brown mounds) |
 
   **Tier 2 and class variant looks** (chosen Oct 31, 2026; class variants marked *class*):
 
@@ -130,7 +130,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Rot swamp | Plague Pit | A wide round sinkhole dug into the ground, with glowing yellow-green ooze below, pale fungus on its walls and a broken ramp leading down (chosen Nov 3, 2026) |
   | Smugglers' bayou | Thieves Guild | A large two-storey house on stilts with a covered dock, boats underneath, a crooked sign and lanterns: a shady tavern at the hub of the walkways (chosen Nov 3, 2026) |
   | ~~Excavation~~ | ~~Dig Site~~ (dropped Nov 8, 2026; Warren needs a look) | A big stepped trench dug into the ground, revealing a half-buried stone facade, with scaffolding, a wooden crane and a large tent with a table of finds (chosen Nov 3, 2026) |
-  | Overrun outpost | Warren | One big ruin patched with goblin scrap walls, a burrow entrance dug in at its base (chosen Nov 9, 2026) |
+  | Overrun outpost | Warren | One big ruin patched with goblin scrap walls, a burrow entrance dug in at its base, red and yellow rag banners on poles and on top (chosen Nov 9, 2026) |
   | Haunted ruins | Crypt | A large mausoleum with a cracked dome and heavy doors ajar, pale light spilling from wide stairs going down, flanked by mourning statues (chosen Nov 3, 2026) |
   | ~~Golem-guarded ruins~~ | ~~Sentinel Hall~~ (dropped Nov 8, 2026; Basilisk Nest and Vault need looks) | Two looks (chosen Nov 3, 2026): a hall of hex columns up wide column stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
   | Basilisk ruins | Basilisk Nest | A whole petrified garden of grey stone trees and statues around a cracked dome (chosen Nov 9, 2026) |

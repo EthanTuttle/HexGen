@@ -107,6 +107,9 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 	open_distance = view.distance
 	game.rig.limits = _pan_limits()
 	game.rig.frame(view.target, open_distance * Rules.ZOOM_IN_FROM, 52.0)
+	if game.party.any(func(m): return Progression.feat(m) == "rallying_presence"):
+		for u in allies():   # Rallying Presence: a little temporary HP for every ally (05)
+			u.temp = Rules.RALLY_WARD
 	var foes_first: bool = game.ambush >= 0 and Ambush.apply(units, game.ambush == 1)   # 03 -> Ambush
 	game.ambush = -1
 	if foes_first:
@@ -347,7 +350,12 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			facing = _dir_of(facing), backstabbed = false,
 			off = m.get("off", ""),
 			snared = -1, unaware = [], ambushed = false, guard = false, guard_counter = false, quick_ready = false, dance_ready = false, mark = {}, disarmed = false,
-			summon_of = m.get("summon_of", ""), decoy = m.get("decoy", ""), copy_of = m.get("copy_of", ""), conc = {}}
+			summon_of = m.get("summon_of", ""), decoy = m.get("decoy", ""), copy_of = m.get("copy_of", ""), conc = {},
+			# levels 2-5 (Progression): Rage, Sidestep, Arcane Shield, Bring It, Raise the Stakes, Flowing Strike, Opening
+			# Strike; on foes: taunted by, Holy Brand, Curse of Frailty and of Ruin, drowsy, Exposing Disarm, Marrowbreaker
+			rage = -1, sidestep = -1, arcane_shield = false, bring_it = false, stakes = false, flowing = false, opened = false,
+			taunt = {}, taunt_until = -1, branded = false, frail = -1, ruin = -1, drowsy = -1, exposed = false, marrow = false,
+			taunts = m.get("taunt", false), temp = 0, riposte = false}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -368,7 +376,7 @@ static func is_summon(u: Dictionary) -> bool:
 
 
 func card(id := "") -> Dictionary:
-	return Cards.get_card(sel if id == "" else id, current.get("weapon", ""), current.get("sub", ""))
+	return Progression.card_for(current.get("member", {}), Cards.get_card(sel if id == "" else id, current.get("weapon", ""), current.get("sub", "")))
 
 
 # --- Rules for using a card --------------------------------------------------------
@@ -378,7 +386,8 @@ func ap_left(u: Dictionary) -> int:
 
 
 func spent(u: Dictionary, c: Dictionary) -> bool:
-	return (c.limit == "turn" and u.used.has(c.id)) or (c.limit == "fight" and u.used_fight.has(c.id))
+	var uses: int = Progression.card_for(u.get("member", {}), c.duplicate()).get("uses", 1) if u.ally else 1   # Second Wind+ (03)
+	return (c.limit == "turn" and u.used.has(c.id)) or (c.limit == "fight" and int(u.used_fight.get(c.id, 0)) >= uses)
 
 
 ## Why u can't use card c right now, or "" (Combat v14's notes under the button).
@@ -388,12 +397,20 @@ func ap_cost(u: Dictionary, c: Dictionary) -> int:
 		return 0
 	if c.id == "hunters_mark" and not u.mark.is_empty() and u.mark.down:
 		return 0
+	if u.flowing and c.src == "weapon" and Weapons.of(u.weapon).hands == "f":
+		return maxi(c.ap - Rules.FLOWING_LESS, 0)   # Flowing Strike (04)
 	return c.ap
 
 
 func cant_use(u: Dictionary, c: Dictionary) -> String:
 	if c.ap < 0:
 		return "AP cost not set yet"
+	if not c.get("built", true):
+		return "Not built yet"   # PLACEHOLDER (Progression: the docs define it, the prototype doesn't have its rule yet)
+	if c.get("two_handed", false) and not u.get("off", "") in ["", "none"]:
+		return "_two_handed"   # Blademaster cards work only two-handed (04); no note, the card dims
+	if c.get("effect", "") == "unbind" and u.conc.get("unit", {}).is_empty():
+		return "_no_summon"
 	if c.id == "hunters_mark" and not u.mark.is_empty() and u.mark.down and not u.used.has(c.id + "_free"):
 		pass   # moving the mark off a downed foe is free, and doesn't count as the turn's use
 	elif spent(u, c):
@@ -416,6 +433,8 @@ func in_reach(u: Dictionary, foe: Dictionary, c: Dictionary) -> bool:
 		return cover_between(u, foe) != "full"
 	if c.kind not in ["attack", "save"]:
 		return false
+	if c.get("effect", "") == "killing" and (u.get("mark", {}) != foe or foe.hp * 2 >= foe.max_hp):
+		return false   # Killing Shot: a marked foe below half HP (03)
 	if c.has("step") and dist(u, foe) > 1:   # Step and Strike: a free hex next to it within its move
 		return not _step_path(u, foe, c.step).is_empty()
 	return dist(u, foe) <= c.get("range", 1) and (c.get("pierce", false) or cover_between(u, foe) != "full")
@@ -434,7 +453,9 @@ func _step_path(u: Dictionary, foe: Dictionary, budget: int) -> Array:
 
 
 func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
-	return c.kind == "ally" and a.ally and a.decoy == "" and not a.down and dist(u, a) <= c.get("range", 1)
+	if c.get("summons_only", false) and a.get("summon_of", "") != u.name:
+		return false   # Soul Swap: one of your summons (03)
+	return c.kind == "ally" and a.ally and a.decoy == "" and not a.down and dist(u, a) <= c.get("range", 1) and (a != u or c.kind != "ally" or c.get("effect", "") != "swap")
 
 
 func _pay(u: Dictionary, c: Dictionary) -> void:
@@ -454,7 +475,9 @@ func _pay(u: Dictionary, c: Dictionary) -> void:
 	if c.limit == "turn":
 		u.used[c.id] = true
 	elif c.limit == "fight":
-		u.used_fight[c.id] = true
+		u.used_fight[c.id] = int(u.used_fight.get(c.id, 0)) + 1   # Second Wind+ twice (03)
+	if u.flowing and c.src == "weapon" and Weapons.of(u.weapon).hands == "f" and c.id != "step_strike":
+		u.flowing = false   # Flowing Strike's cheaper card is spent
 
 
 # --- Board helpers -----------------------------------------------------------------
@@ -584,7 +607,7 @@ func move_hexes(u: Dictionary) -> int:
 	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally and not Rules.old("move") else 0
 	if on(u, "snared"):
 		return 0   # rooted: Snare, Pinning Bolt
-	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) - (u.slow_hexes if on(u, "slowed") else 0), 0)
+	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) + (Progression.move_bonus(u.member) if u.ally else 0) - (u.slow_hexes if on(u, "slowed") else 0), 0)
 
 
 ## Which of Hex.NEIGHBOURS points most nearly along a plan direction.
@@ -771,7 +794,7 @@ func _show_overlays() -> void:
 	if c.kind == "arc" and not busy:
 		for cell: Vector2i in grid:
 			var d := Rules.hex_distance(cell, current.cell)
-			if d >= 1 and d <= 2 and not cell in arc_cells(current, cell_target if cell_target != null else Vector2i(1 << 20, 0)):
+			if d >= 1 and d <= c.range and not cell in arc_cells(current, cell_target if cell_target != null else Vector2i(1 << 20, 0)):
 				_overlay(cell, "reach")
 		if cell_target != null:
 			for cell in arc_cells(current, cell_target):
@@ -884,7 +907,7 @@ func click_cell(c: Vector2i) -> void:
 		self_done = ""
 		refresh()
 		return
-	if (k.kind == "cell" and c in cell_options(current, k)) or (k.kind == "arc" and Rules.hex_distance(c, current.cell) in [1, 2]):
+	if (k.kind == "cell" and c in cell_options(current, k)) or (k.kind == "arc" and Rules.hex_distance(c, current.cell) in range(1, k.range + 1)):
 		cell_target = c
 		self_done = ""
 		refresh()
@@ -951,7 +974,7 @@ func press_button() -> void:
 			_ally_spell(current, ally_target, k)
 		"self":
 			_pay(current, k)
-			_use_self(current, k)
+			await _use_self(current, k)
 		"breath":
 			if breath_dir < 0:
 				return
@@ -986,7 +1009,7 @@ func press_button() -> void:
 				return
 			_pay(current, k)
 			await _arc(current, cell_target)
-	if k.kind in ["attack", "save"]:   # Hunter's Mark is quiet (03 -> Ambush)
+	if k.kind in ["attack", "save"] and k.get("effect", "") != "surrender":   # Hunter's Mark is quiet (03 -> Ambush); Fake Surrender is the point
 		Ambush.noticed(aimed, _acting)
 	_acting = {}
 	if active:
@@ -1018,12 +1041,20 @@ func attack_mods(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
 		out.append({n = 1, icon = "bless", why = "bless"})
 	if a.ally and Races.forge_coin(a.member, k) > 0:
 		out.append({n = Races.forge_coin(a.member, k), icon = "forge", why = "forge"})
+	if a.ally and not a.opened and Progression.feat(a.member) == "opening_strike":
+		out.append({n = Rules.OPENING_COINS, icon = "opening", why = "opening"})   # the first attack each fight (05)
+	if on(a, "drowsy"):
+		out.append({n = -1, icon = "drowsy", why = "drowsy"})   # Sleeping Draught (03)
 	if t.is_empty():
 		return out
 	if on(t, "glow"):
 		out.append({n = 1, icon = "glow", why = "glow"})
 	if on(t, "acid"):
 		out.append({n = 1, icon = "acid", why = "acid"})
+	if on(t, "frail"):
+		out.append({n = Rules.FRAILTY_COINS, icon = "frail", why = "frail"})   # Curse of Frailty (03)
+	if t.disarmed and t.exposed:
+		out.append({n = Rules.EXPOSED_COINS, icon = "exposed", why = "exposed"})   # Exposing Disarm (04)
 	if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
 		out.append({n = -Rules.COVER_COINS, icon = "cover", why = "cover"})
 	if close_shot(a, k):
@@ -1156,10 +1187,13 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		if a.ally and weapon_attack(k) and Weapons.of(a.weapon).hands == "v" and a.off in ["", "none"]:
 			dmg += Weapons.VERSATILE_TWO_HANDED   # a versatile weapon held two-handed (04)
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
+		if a.stakes:
+			dmg *= Rules.STAKES_TIMES   # Raise the Stakes (03)
 		if k.get("effect", "") == "sneak" and sneak_applies(a, t):   # not on the offhand's free hit (04)
 			dmg *= Rules.SNEAK_TIMES   # Sneak Attack doubles the weapon's damage, before the flat bonuses (Backstab, the Mark) (03)
 		if k.id == "quick_slash" and a.quick_ready:
 			dmg -= Rules.QUICK_SLASH_LESS
+		dmg += _level_damage(a, t, k)
 		if a.ally and not a.mark.is_empty() and a.mark == t:
 			dmg += Rules.MARK_DAMAGE   # Hunter's Mark (03)
 		if t.guard:
@@ -1167,19 +1201,28 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		if a.poison_blade and Rules.old("poison"):
 			dmg += 1   # test aid: Poison Blade's old +1 a hit
 		if not Rules.old("backstab") and a.ally and a.weapon == "dagger" and (k.id in ["attack", "sneak_attack"] or k.src == "weapon") and not k.get("offhand", false) and not a.backstabbed and behind(a, t):
-			dmg += Rules.BACKSTAB   # Backstab: the first dagger hit from behind each turn (04)
+			dmg += Rules.BACKSTAB + (Rules.BACKSTAB_PLUS if Progression.trained(a.member, "backstab_plus") else 0)   # Backstab (04), Backstab+
 			a.backstabbed = true
 		if t.defending:
 			dmg -= Rules.DEFEND_REDUCTION
 		dmg -= reduction(t)
+		dmg -= _level_reduction(a, t)
 		if t.parry and k.get("range", 1) <= 1:   # the next melee hit (DOCS: design/04 -> Longsword)
 			t.parry = false
 			dmg = 0
+			if t.ally and Progression.trained(t.member, "riposte"):
+				t.riposte = true   # Riposte: a free counterattack (04), after the motion
 		var warded := mini(t.ward, maxi(dmg, 0))
 		t.ward -= warded
 		dmg = maxi(dmg - warded, 0)
+		var held := mini(t.temp, dmg)   # Rallying Presence's temporary HP
+		t.temp -= held
+		dmg -= held
 		match k.get("rider", ""):
 			"slow":
+				if k.id == "bonebreaker" and a.ally and Progression.trained(a.member, "marrowbreaker") and not t.marrow:
+					t.marrow = true   # Marrowbreaker: STR lowered for the fight (04); a foe's one score
+					t.score = maxi(t.score - Rules.MARROW_STR, 0)
 				if not Rules.old("slows"):
 					_slow(t, k.slow)
 				elif k.id == "frost_ray":
@@ -1194,12 +1237,18 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 				if holds_weapon(t):   # Disarm: it loses 1 AP next turn recovering it, the larger with Haymaker's (04)
 					t.lost_ap = maxi(t.lost_ap, Rules.DISARM_AP)
 					t.disarmed = true
+					t.exposed = a.ally and Progression.trained(a.member, "exposing_disarm")
 		if a.poison_blade and not Rules.old("poison"):   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
-			t.poison.append(Rules.DOT_TURNS)
+			_blade_hit(a, t)
 	if a.ally:
 		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit, lucky = lucked,
 				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
 		hud.refresh()
+	if a.ally and k.kind != "save":
+		a.opened = true   # Opening Strike: only the fight's first attack
+		a.stakes = false   # Raise the Stakes: the next attack, hit or miss
+	if hit and a.ally and k.id == "step_strike" and Progression.trained(a.member, "flowing_strike"):
+		a.flowing = true
 	a.facing = _dir_toward(a.cell, t.cell)   # it faces whoever it last attacked
 	if a.ally and a.weapon == "scimitar" and weapon_attack(k):
 		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
@@ -1219,16 +1268,91 @@ func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: i
 			await _push(a, t, 2 if Rules.bash() == "push2" else Rules.PUSH_HEXES)
 			if Rules.bash() == "hold" and not t.down:   # test aid: the push, and the foe loses its next Move
 				t.snared = _until_next_turn_of(t)
+		if k.get("rider", "") == "rend" and not t.down:   # Rend: a failed CON save and it bleeds (04)
+			var rend := flip_check(save_coins(t, "CON"), Rules.SAVE_HEADS)
+			await hud.flip_coins(t, rend.coins, rend.need, Rules.COIN_STEP_FOE)
+			if Coins.heads(rend.coins) < rend.need:
+				t.bleed_turns = Rules.DOT_TURNS
 		if k.get("rider", "") == "haymaker" and not t.down:   # a failed CON save: it loses 1 AP next turn (04)
-			var save := flip_check(save_coins(t, "CON"), Rules.SAVE_HEADS)
+			var harder := 1 if a.ally and Progression.trained(a.member, "haymaker_stun") else 0   # Haymaker+ (Bruiser)
+			var save := flip_check(save_coins(t, "CON"), Rules.SAVE_HEADS + harder)
 			await hud.flip_coins(t, save.coins, save.need, Rules.COIN_STEP_FOE)
 			if Coins.heads(save.coins) < save.need:
 				t.lost_ap = maxi(t.lost_ap, Rules.HAYMAKER_AP)
-		if t.guard_counter and not a.down:   # Guard Up: the first foe to hit you takes a normal hit back
+	var counter: bool = t.guard_counter and (hit or (t.ally and Progression.trained(t.member, "guard_up_plus")))   # Guard Up+ on a miss too (04)
+	if (counter or t.get("riposte", false)) and not a.down and not t.down:   # Guard Up: the first foe to hit you takes a normal hit back; Riposte
+		if counter:
 			t.guard_counter = false
-			var back: int = attack_score(t, Cards.get_card("attack", t.weapon))
-			hud.float_text(a, "-%d" % back, true)
-			await _hurt(a, back)
+		t.riposte = false
+		var back: int = attack_score(t, Cards.get_card("attack", t.weapon))
+		hud.float_text(a, "-%d" % back, true)
+		await _hurt(a, back)
+
+
+## Levels 2-5 (Progression): extra damage on a hit from mastery passives and upgrades, feats, Rage, Raise the Stakes,
+## Holy Brand, Curse of Ruin and Trophy Mark. Amounts: Rules (PLACEHOLDER).
+func _level_damage(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
+	var n := 0
+	if a.ally:
+		var m: Dictionary = a.member
+		var two_handed: bool = a.off in ["", "none"]
+		if k.id == "attack" and a.weapon == "greatsword" and Progression.trained(m, "heavy_blade"):
+			n += Rules.HEAVY_BLADE
+		if k.id == "throw" and a.weapon in ["spear", "battleaxe"] and Progression.trained(m, "throw_plus"):
+			n += Rules.THROW_PLUS_DAMAGE
+		if k.id == "quick_slash" and Progression.trained(m, "quick_slash_plus"):
+			n += Rules.QUICK_SLASH_PLUS
+		if a.weapon == "battleaxe" and two_handed and weapon_attack(k) and t.hp < t.max_hp and Progression.trained(m, "headhunter"):
+			n += Rules.HEADHUNTER
+		if k.id == "haymaker" and Progression.trained(m, "haymaker_damage"):
+			n += Rules.HAYMAKER_PLUS
+		if k.id == "attack" and Weapons.of(a.weapon).ab == "STR" and Progression.feat(m) == "heavy_hitter":
+			n += Rules.HEAVY_HITTER
+		if not a.mark.is_empty() and a.mark == t and Progression.sub(m) == "Hunter" and String(t.member.get("mini", "")).begins_with("giant_"):
+			n += Rules.TROPHY_MORE   # Trophy Mark: more against large foes (03)
+	if on(a, "rage"):
+		n += Rules.RAGE_MORE
+	if on(t, "rage"):
+		n += Rules.RAGE_MORE   # a raging hero takes more too (04)
+	if t.branded:
+		n += Rules.BRAND_DAMAGE
+	if on(t, "ruin"):
+		n += Rules.RUIN_MORE
+	return n
+
+
+## Raise the Stakes doubles a hit, after the flat bonuses; less damage taken: Arcane Shield, Bring It against a taunted foe,
+## and Drilled (an adjacent ally defending).
+func _level_reduction(a: Dictionary, t: Dictionary) -> int:
+	var n := 0
+	if t.arcane_shield:
+		n += Rules.ARCANE_SHIELD_LESS
+	if t.bring_it and a.get("taunt", {}) == t:
+		n += Rules.BRING_IT_LESS
+	if t.ally and allies().any(func(o): return o != t and o.defending and dist(o, t) == 1 and Progression.feat(o.member) == "drilled"):
+		n += Rules.DRILLED_LESS
+	return n
+
+
+## A hit under Poison Blade, as the Rogue's subclass has it (03): poison (Poison Blade+ deadlier), drowsy (Sleeping Draught),
+## or a random status (Wild Card: poison, bleed or slow; blind isn't built, PLACEHOLDER).
+func _blade_hit(a: Dictionary, t: Dictionary) -> void:
+	match Progression.sub(a.member):
+		"Con Artist":
+			t.drowsy = _until_next_turn_of(t)
+		"Gambler":
+			match rng.randi_range(0, 2):
+				0:
+					t.poison.append(Rules.DOT_TURNS)
+				1:
+					t.bleed_turns = Rules.DOT_TURNS
+				2:
+					_slow(t, Rules.FROST_SLOW)
+		"Assassin":
+			for i in Rules.POISON_PLUS:   # each entry ticks DOT_DAMAGE, so this many is the deadlier poison
+				t.poison.append(Rules.DOT_TURNS)
+		_:
+			t.poison.append(Rules.DOT_TURNS)
 
 
 ## Whether a foe holds a weapon to knock away (Disarm, 04). PLACEHOLDER: every foe but beasts (wolves).
@@ -1247,8 +1371,13 @@ func reduction(t: Dictionary) -> int:
 
 ## What an attack on t needs: its defence (DOCS: 03 -> Hit chance scaling; heroes 04 -> Armour). Modifiers change coins,
 ## not heads (attack_mods).
-func heads_needed(t: Dictionary, _a := {}, _k := {}) -> int:
-	return t.get("heads", Rules.HEADS_TO_HIT)
+func heads_needed(t: Dictionary, a := {}, _k := {}) -> int:
+	var n: int = t.get("heads", Rules.HEADS_TO_HIT)
+	if on(t, "sidestep"):
+		n += Rules.SIDESTEP_HEADS   # Sidestep (04)
+	if not a.is_empty() and a.get("stakes", false):
+		n += 1   # Raise the Stakes: one more heads (03)
+	return n
 
 
 ## Which attack motion a's attack on t plays (art/handoff/attack_motions.md). The hand-off names the kinds; PLACEHOLDER:
@@ -1308,6 +1437,9 @@ func _until_next_turn_of(t: Dictionary) -> int:
 ## Save spells: the foe flips to save. Sacred Flame: a save halves the damage and ignores riders (DOCS). Faerie Fire and
 ## Lull: a save means no effect.
 func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	if k.get("effect", "") in ["burst", "chain"]:
+		await _save_area(a, _spell_targets(a, t, k), k)
+		return
 	busy = true
 	refresh()
 	var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
@@ -1322,15 +1454,111 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 				t.glow = phase_no + 1   # until the caster's next turn
 			elif not saved:
 				t.lull = true
+		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str":
+			result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
+			hud.refresh()
+			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look: the save curses and riders have no motion of their own yet
+			if not saved:
+				_save_rider(a, t, k)
 		_:
-			var dmg: int = Rules.SPELL_DAMAGE / 2 if saved else Rules.SPELL_DAMAGE
+			var full := _spell_damage(a, t, k)
+			var dmg: int = full / 2 if saved else full
 			result = {coins = coins, title = "Saved: half damage" if saved else "Failed save!", good = not saved,
 					sub = "Damage: %d [placeholder]" % dmg}   # the coins show the heads
 			hud.refresh()
 			await board.bloom(a.mini, t.mini, "flame", saved)
 			hud.float_text(t, "-%d" % dmg, true)
 			await _hurt(t, dmg)
+			if k.get("effect", "") == "siphon" and not a.down:   # Soul Siphon heals the caster what it drains (03)
+				var before: int = a.hp
+				a.hp = mini(a.max_hp, a.hp + dmg)
+				hud.float_text(a, "+%d" % (a.hp - before), false, true)
 	busy = false
+	_check_end()
+
+
+## A save spell's full damage (half on a save): the INT spells (PLACEHOLDER, as the level-1 wizard spells: INT plus the
+## card's bonus), Psychic Spike more on a foe unaware of you, Toll the Dead more on a hurt foe; the rest Sacred Flame's.
+func _spell_damage(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
+	var n: int = Rules.SPELL_DAMAGE
+	if k.get("ab", "") == "INT":
+		n = Races.score(a.member, "INT") + k.get("bonus", 0) + Rules.SPELL3_DAMAGE
+	match k.get("effect", ""):
+		"psychic":
+			if not t.is_empty() and a.name in t.unaware:
+				n += Rules.PSYCHIC_UNAWARE
+		"toll":
+			if not t.is_empty() and t.hp < t.max_hp:
+				n += Rules.TOLL_HURT
+	return n
+
+
+## What a failed save leaves on the foe (03): Hemorrhage bleeds, Holy Brand marks it for the fight, the curses last until
+## the end of its next turn, Fake Surrender makes it unaware of you, Mage Hand disarms it, Siphon Strength takes STR.
+func _save_rider(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	match k.effect:
+		"bleed":
+			t.bleed_turns = Rules.DOT_TURNS
+		"brand":
+			t.branded = true
+		"frailty":
+			t.frail = _until_next_turn_of(t)
+		"ruin":
+			t.ruin = _until_next_turn_of(t)
+		"surrender":
+			if not a.name in t.unaware:
+				t.unaware.append(a.name)
+		"mage_hand":
+			if holds_weapon(t):
+				t.lost_ap = maxi(t.lost_ap, Rules.DISARM_AP)
+				t.disarmed = true
+		"siphon_str":   # PLACEHOLDER: only the foe's loss; the ally's gain isn't built
+			t.score = maxi(t.score - Rules.SIPHON_STR, 0)
+
+
+## Who an area or chain spell reaches (03): Flame Burst and Fireball everyone within their radius of the target, allies
+## too; Chain Spark and Chain Lightning the target, then the nearest other foe within CHAIN_RANGE of the last, foes only.
+func _spell_targets(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
+	if k.effect == "burst":
+		return units.filter(func(o): return not o.down and Rules.hex_distance(o.cell, t.cell) <= k.radius)
+	var out := [t]
+	for i in k.jumps:
+		var last: Dictionary = out[-1]
+		var next := foes_of(a).filter(func(o): return not o in out and dist(o, last) <= Rules.CHAIN_RANGE)
+		if next.is_empty():
+			break
+		next.sort_custom(func(x, y): return dist(x, last) < dist(y, last))
+		out.append(next[0])
+	return out
+
+
+## Several targets each flip their save, then the effect lands on each (Ground Pound, Dawn Pulse, Unbind, Flame Burst,
+## Fireball, the chains): damage halved on a save, or knocked prone on a fail (Ground Pound). Chain Lightning weakens by 1
+## a jump.
+func _save_area(a: Dictionary, targets: Array, k: Dictionary) -> void:
+	busy = true
+	refresh()
+	for i in targets.size():
+		var t: Dictionary = targets[i]
+		if t.down:
+			continue
+		var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
+		await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
+		var saved: bool = Coins.heads(check.coins) >= check.need
+		if k.get("effect", "") == "pound":
+			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look
+			if not saved:
+				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
+			continue
+		var full: int = maxi(_spell_damage(a, t, k) - k.get("weaken", 0) * i, 0)
+		var dmg: int = full / 2 if saved else full
+		await board.bloom(a.mini, t.mini, "flame", saved)
+		hud.float_text(t, "-%d" % dmg, true)
+		await _hurt(t, dmg)
+	if a.ally:
+		result = {coins = [], title = "Used", good = true, sub = ""}
+	busy = false
+	refresh()
 	_check_end()
 
 
@@ -1348,6 +1576,12 @@ func _ally_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 			hud.float_text(t, "+%d" % (t.hp - before), false, true)
 		"swap":
 			await _swap(a, t)
+		"blood_ward":   # a new one replaces the old (03)
+			t.ward = Rules.BLOOD_WARD
+			result = {coins = [], title = "Used", good = true, sub = ""}
+		"stone_skin":
+			t.defending = true   # PLACEHOLDER (03: "less damage this turn"): as Defend
+			result = {coins = [], title = "Used", good = true, sub = ""}
 		_:
 			t.blessed = true
 			result = {coins = [], title = "Blessed", good = true, sub = "%s flips an extra coin on their next check." % t.name}
@@ -1377,10 +1611,23 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 		"surge":
 			# +3 bonus AP, but never more than 6 AP in a turn; the rest is lost (DOCS).
 			a.bonus += maxi(0, mini(3, Rules.AP_CAP - ap_left(a)))
+			if a.ally and Progression.sub(a.member) == "Tactician":
+				for o in allies():   # Battle Surge: every ally +1 bonus AP (03)
+					if o != a and not o.down:
+						o.bonus += maxi(0, mini(1, Rules.AP_CAP - ap_left(o)))
 		"heal":
 			var before: int = a.hp
 			a.hp = mini(a.max_hp, a.hp + Rules.HEAL)
 			hud.float_text(a, "+%d" % (a.hp - before), false, true)
+			match Progression.sub(a.member) if a.ally and k.id == "second_wind" else "":
+				"Holy Defender":   # Blessed Wind: adjacent allies heal too (03)
+					for o in allies():
+						if o != a and not o.down and dist(o, a) == 1:
+							var was: int = o.hp
+							o.hp = mini(o.max_hp, o.hp + Rules.HEAL)
+							hud.float_text(o, "+%d" % (o.hp - was), false, true)
+				"Arcane Knight":   # Second Ward: and a ward (03)
+					a.ward = maxi(a.ward, Rules.SECOND_WARD)
 		"poison":
 			a.poison_blade = true
 		"defend":
@@ -1403,6 +1650,49 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			pass   # DOCS (06): plays, and reveals nothing until hidden foes and traps exist
 		"mirror":
 			_mirror(a)
+		"sidestep":
+			a.sidestep = _until_next_turn_of(a)
+		"rage":
+			a.rage = _until_next_turn_of(a)
+		"arcane_shield":
+			a.arcane_shield = true
+		"stakes":
+			a.stakes = true
+		"bring_it":   # adjacent foes must attack you until their next turn ends (03)
+			a.bring_it = true
+			for e in foes_of(a):
+				if dist(e, a) == 1:
+					e.taunt = a
+					e.taunt_until = _until_next_turn_of(e)
+		"vanish":   # hidden: every foe loses track of you (PLACEHOLDER: hidden is unaware, 03 -> Ambush)
+			for e in foes_of(a):
+				if not a.name in e.unaware:
+					e.unaware.append(a.name)
+		"life_tap":
+			a.bonus += maxi(0, mini(2, Rules.AP_CAP - ap_left(a)))
+		"pound":
+			await _save_area(a, foes_of(a).filter(func(e): return dist(e, a) == 1), k)
+		"pulse":
+			await _save_area(a, foes_of(a).filter(func(e): return dist(e, a) <= Rules.PULSE_RANGE), k)
+		"unbind":
+			var s: Dictionary = a.conc.get("unit", {})
+			var around := units.filter(func(o): return o != s and o != a and not o.down and o.decoy == "" and dist(o, s) == 1)
+			_vanish(s)
+			_end_conc(a)
+			await _save_area(a, around, k)
+		"mass_heal", "plenty":
+			for o in allies():
+				if not o.down and (k.effect == "plenty" or dist(o, a) <= Rules.MASS_HEAL_RANGE):
+					var before: int = o.hp
+					o.hp = mini(o.max_hp, o.hp + (Rules.HEAL if k.effect == "mass_heal" else Rules.PLENTY_HEAL))
+					hud.float_text(o, "+%d" % (o.hp - before), false, true)
+		"purify":
+			for o in allies():
+				o.poison = []
+				o.bleed_turns = 0
+				o.slowed = -1
+				o.snared = -1
+				o.drowsy = -1
 
 
 # --- Racial cards that aim at the ground --------------------------------------------
@@ -1537,8 +1827,14 @@ func _dance(u: Dictionary, c: Vector2i) -> void:
 ## Sweeping Arc's hexes: the aimed one (1 or 2 away) and the two beside it at the same distance (04).
 func arc_cells(u: Dictionary, c: Vector2i) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
+	var k := card(sel if not current.is_empty() and Cards.ALL.get(sel, {}).get("kind", "") == "arc" else "sweeping_arc")
 	var d := Rules.hex_distance(c, u.cell)
-	if d < 1 or d > 2:
+	if d < 1 or d > k.range:
+		return out
+	if k.id == "sweeping_arc" and Progression.trained(u.member, "sweeping_circle"):   # Sweeping Circle: every hex at that distance (04)
+		for e: Vector2i in grid:
+			if Rules.hex_distance(e, u.cell) == d:
+				out.append(e)
 		return out
 	out.append(c)
 	for n in Hex.NEIGHBOURS:
@@ -1552,13 +1848,14 @@ func arc_cells(u: Dictionary, c: Vector2i) -> Array[Vector2i]:
 ## the damage lands (Ethan, Nov 8).
 func _arc(a: Dictionary, c: Vector2i) -> void:
 	busy = true
-	self_done = "sweeping_arc"
+	var k := card(sel if Cards.ALL.get(sel, {}).get("kind", "") == "arc" else "sweeping_arc")
+	self_done = k.id
+	var cells := arc_cells(a, c)
 	cell_target = null
-	var k := card("sweeping_arc")
 	var flips := []   # [foe, {hit, dmg}]
-	for cell in arc_cells(a, c):
+	for cell in cells:
 		var t := unit_at(cell)
-		if not t.is_empty() and not t.ally and not t.down:
+		if not t.is_empty() and not t.ally and not t.down and not flips.any(func(f): return f[0] == t):
 			flips.append([t, await _attack_flip(a, t, k)])
 	if not flips.is_empty():
 		a.facing = _dir_toward(a.cell, flips[0][0].cell)
@@ -1793,6 +2090,9 @@ func _check_end() -> void:
 ## At the start of a unit's turn: poison and bleed tick (1 damage, for 2 turns), and a wood golem's Regrowth heals.
 func _turn_starts(u: Dictionary) -> void:
 	u.backstabbed = false
+	u.arcane_shield = false   # Arcane Shield and Bring It last until your next turn (03)
+	u.bring_it = false
+	u.flowing = false
 	u.guard = false
 	u.guard_counter = false
 	u.quick_ready = false
@@ -1851,6 +2151,9 @@ func _enemy_phase() -> void:
 			var t: Dictionary = targets[0]
 			if not lure.is_empty() and not lure.down and lure in units:   # fooled: it goes for the phantom instead (03)
 				t = lure
+			var taunter := _taunter(e)
+			if not taunter.is_empty():   # Bring It and Stone Sentinel: it must attack them (03)
+				t = taunter
 			if dist(t, e) == 1:
 				if attacks >= Foes.attacks_per_turn:
 					break
@@ -1883,6 +2186,17 @@ func _enemy_phase() -> void:
 
 
 # --- Summons, decoys and concentration (03 -> Wizard spells; Wizard level-1 placeholders) ----------------
+
+## Who a foe must attack: whoever taunted it with Bring It, until its turn ends, or a Stone Sentinel near it (03; PLACEHOLDER:
+## "nearby" is within 2 hexes), or {}.
+func _taunter(e: Dictionary) -> Dictionary:
+	if not e.taunt.is_empty() and not e.taunt.down and e.taunt in units and e.taunt_until >= phase_no:
+		return e.taunt
+	for o in units:
+		if o.ally and o.taunts and not o.down and dist(o, e) <= 2:
+			return o
+	return {}
+
 
 ## The caster a summon or copy belongs to, by name, or {}.
 func _caster_of(u: Dictionary) -> Dictionary:
@@ -1938,7 +2252,7 @@ func _vanish(u: Dictionary) -> void:
 func _summon(u: Dictionary, c: Vector2i, k: Dictionary) -> void:
 	var s: Dictionary = Rules.SUMMONS[k.id]
 	var m := {name = s.name, initial = s.initial, color = u.color, mini = s.mini, ability = "INT", hp = s.hp, max_hp = s.hp,
-			damage = s.damage, weapon = s.weapon, armour = "none", flies = s.get("flies", false), summon_of = u.name,
+			damage = s.damage, weapon = s.weapon, armour = "none", flies = s.get("flies", false), summon_of = u.name, taunt = s.get("taunt", false),
 			scores = {"INT": Races.score(u.member, "INT")}, cards = ["move", "attack"], hot = ["move", "attack"]}
 	_concentrate(u, k)
 	_add_unit(m, c, true, s.initial, Hex.cell_position(u.cell.x, u.cell.y) * 2.0 - Hex.cell_position(c.x, c.y))
@@ -2144,6 +2458,25 @@ func status_icons(u: Dictionary) -> Array:
 		out.append([CONC_ICON, "Concentrating", "Keeping %s going" % Cards.ALL[u.conc.id].n])
 	if u.ally and warded(u):
 		out.append([Cards.ALL.warding_circle.icon, "Warded", "Takes %d less damage" % Rules.WARDING_LESS])
+	# Levels 2-5 (PLACEHOLDER icons; names and lines to the Screen text check)
+	if on(u, "rage"):
+		out.append(["flame", "Raging", "Deals and takes %d more damage" % Rules.RAGE_MORE])
+	if on(u, "sidestep"):
+		out.append([CreatorData.IC.w_rapier, "Sidestepping", "Harder to hit"])
+	if u.arcane_shield:
+		out.append(["ward", "Arcane Shield", "Takes %d less damage" % Rules.ARCANE_SHIELD_LESS])
+	if u.stakes:
+		out.append(["fight_once", "Raised stakes", "Next attack: 1 more heads, %dx damage" % Rules.STAKES_TIMES])
+	if not u.ally and not _taunter(u).is_empty():
+		out.append(["swords", "Taunted", "Must attack %s" % _taunter(u).name])
+	if u.branded:
+		out.append(["star", "Branded", "Takes %d more damage from each hit" % Rules.BRAND_DAMAGE])
+	if on(u, "frail"):
+		out.append(["drop", "Frail", "Attacks on it flip %d extra coin" % Rules.FRAILTY_COINS])
+	if on(u, "ruin"):
+		out.append(["drop", "Ruined", "Takes %d more damage from each hit" % Rules.RUIN_MORE])
+	if on(u, "drowsy"):
+		out.append(["moon", "Drowsy", "Flips 1 fewer coin"])
 	return out
 
 

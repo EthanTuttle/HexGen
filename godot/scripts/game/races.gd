@@ -73,7 +73,7 @@ static func level_hp(m: Dictionary) -> int:
 static func refresh_hp(m: Dictionary, level: int) -> void:
 	var base := _level1_hp(m)
 	m.base_hp = base
-	var want := base + extra_hp(m, level) + level_hp(m) * (level - 1)
+	var want := base + extra_hp(m, level) + Progression.extra_hp(m, level) + level_hp(m) * (level - 1)
 	m.hp = maxi(m.hp + want - int(m.get("max_hp", m.hp)), 0)
 	m.max_hp = want
 
@@ -105,7 +105,7 @@ static func breath_damage(m: Dictionary, level: int) -> int:
 
 
 static func breath_reach(m: Dictionary) -> int:
-	return Rules.BREATH_LINE + (Rules.BREATH_BLUE if is_sub(m, "Blue") else 0)
+	return Rules.BREATH_LINE + (Rules.BREATH_BLUE if is_sub(m, "Blue") else 0) + (Rules.BREATH_DEEP if Progression.feat(m) == "deep_breath" else 0)
 
 
 ## Any wood elf in the party (Mel too) makes it walk faster and spend less clock per hex.
@@ -123,6 +123,7 @@ static func make_hero(m: Dictionary, run: RunSetup) -> void:
 	m.armour = run.armour if run.main != "" else Rules.HERO_DEFAULT.armour
 	m.ability = Weapons.of(m.weapon).ab
 	m.klass = run.klass
+	m.background = run.background
 	m.cards = Weapons.cards_for(run.klass, m.weapon, m.off)
 	for id: String in run.spells:   # a Wizard's two level-1 picks (03), class cards like the rest
 		if Cards.ALL.has(id) and not id in m.cards:
