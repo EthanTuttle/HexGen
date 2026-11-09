@@ -122,12 +122,12 @@ func _creator() -> void:
 	await shot("class_none")
 	text_sizes("class", c)
 	await _cost("creator class")
-	# The Ranger (06 -> Start, Nov 5, 2026): playable, its kit shows Hunter's Mark and Snare, and gear offers only its own
+	# The Ranger (06 -> Start, Nov 5, 2026): playable, its kit shows Hunter's Mark (Snare comes at level 3, Nov 9), and gear offers only its own
 	# weapons and light or medium armour, unless the hero is Human (Versatile).
 	await tap_on("Ranger")
 	await _wait(0.6)
 	check(c.cls == "Ranger" and c.done("class"), "class: the Ranger is playable")
-	check(control("Hunter's Mark") != null and control("Snare") != null, "class: the Ranger's kit shows Hunter's Mark and Snare")
+	check(control("Hunter's Mark") != null and control("Snare") == null, "class: the Ranger's kit shows Hunter's Mark, not Snare")
 	await shot("class_ranger")
 	var ranger_w: Array = c.allowed_weapons().map(func(w): return w.id)
 	check(ranger_w == ["longsword", "shortsword", "scimitar", "dagger", "spear", "glaive", "shortbow", "longbow", "crossbow", "gauntlets", "knuckles", "wraps"], "gear: a Ranger gets only Ranger weapons: %s" % [ranger_w])
@@ -135,12 +135,12 @@ func _creator() -> void:
 	c.race = "Human"
 	check(c.allowed_weapons().size() == CreatorData.W.size(), "gear: a Human Ranger gets every weapon (Versatile)")
 	c.race = ""
-	# The Rogue (06 -> Start, Nov 6, 2026): playable, its kit shows Sneak Attack and Poison Blade, and gear offers only its own
+	# The Rogue (06 -> Start, Nov 6, 2026): playable, its kit shows Sneak Attack (Poison Blade comes at level 3, Nov 9), and gear offers only its own
 	# weapons and no armour (Clothes only, 04).
 	await tap_on("Rogue")
 	await _wait(0.6)
 	check(c.cls == "Rogue" and c.done("class"), "class: the Rogue is playable")
-	check(control("Sneak Attack") != null and control("Poison Blade") != null, "class: the Rogue's kit shows Sneak Attack and Poison Blade")
+	check(control("Sneak Attack") != null and control("Poison Blade") == null, "class: the Rogue's kit shows Sneak Attack, not Poison Blade")
 	await shot("class_rogue")
 	var rogue_w: Array = c.allowed_weapons().map(func(w): return w.id)
 	check(rogue_w == ["shortsword", "rapier", "scimitar", "dagger", "shortbow", "crossbow", "gauntlets", "knuckles", "wraps"], "gear: a Rogue gets only Rogue weapons: %s" % [rogue_w])
