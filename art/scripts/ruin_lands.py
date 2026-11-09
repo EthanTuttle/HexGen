@@ -52,15 +52,36 @@ PALETTE = {
     "ruin_moss_b": "#86A75C",   # overgrowth: moss on tops
     "ruin_ivy": "#527F3B",      # ivy on faces and leafy clumps
     "ruin_crack": "#7FA552",    # green in the paving's cracks
+    # overrun outpost
+    "burrow_earth": "#8B6B4C",
+    "burrow_earth_dark": "#6E5239",
+    "burrow_dark": "#2B241E",
+    "goblin_eye": "#F4E04D",    # its own material: the engine lights it at night
+    "goblin_rag_red": "#B9362B",     # the Warren's rag banners
+    "goblin_rag_yellow": "#DDB23C",
 }
-OWN = set()
+OWN = {"goblin_eye"}
 SLABS = ["ruin_slab_a", "ruin_slab_b", "ruin_slab_c", "ruin_slab_d"]
 STONES = ["ruin_grey", "ruin_marble", "ruin_warm", "ruin_slab_d"]   # walls mix these
 STATUE_STONES = ["ruin_marble", "ruin_bronze", "ruin_basalt", "ruin_warm"]
 OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_rubble", cover=0.08), "c": dict(ground="ruin_ground", cover=0.05)}
 KINDS = ("centre", "same", "same_b", "other", "other_b")
 PICKED_GROWTH = "medium"
-LOOKS = {"ruins"}   # tiles that stand remains in their corner gaps (tile_remains)
+LOOKS = {"ruins", "overrun_outpost"}   # tiles that stand remains in their corner gaps (tile_remains)
+BURROWED = {"overrun_outpost"}          # and burrows and goblin junk instead (outpost_layout)
+BURROW_TWO = 0.5      # share of outpost tiles with two burrows; the rest have one
+JUNK_FILL = 0.85      # share of remains (and of bare gaps left over) with goblin junk beside them
+GAP = 0.15            # clear ground kept between any two of an outpost tile's props
+# Each prop's footprint as a circle, tile-local before turning: (x of its centre, radius). Measured from the pieces
+# (render_ruin_variants.py checks they still hold). A burrow's circle sits back over its mound; MOUTH is the ground
+# in front of its mouth, which must stay open.
+FOOT = {"ruin_arch": (0.0, 0.82), "ruin_arch_pointed": (0.0, 0.82), "ruin_arch_broken": (0.0, 1.07), "ruin_colonnade": (0.0, 0.78),
+        "ruin_column": (0.0, 0.79), "ruin_toppled": (0.0, 0.71), "ruin_robed": (0.0, 0.54), "ruin_beast": (0.0, 0.6), "ruin_head": (0.0, 0.71),
+        "ruin_torso": (0.0, 0.48), "ruin_obelisk": (0.0, 0.69), "ruin_corner": (0.0, 0.86), "ruin_wall": (0.0, 0.81), "ruin_heap": (0.0, 0.57),
+        "outpost_burrow_timber": (-0.2, 0.7), "outpost_burrow_scrap": (-0.2, 0.7),
+        "outpost_banner": (0.0, 0.27), "outpost_bones": (0.0, 0.7), "outpost_crates": (0.0, 0.61), "outpost_totem": (0.0, 0.23)}
+MOUTH = (0.85, 0.42)
+JUNK = ("banner", "banner", "bones", "crates", "totem")   # banners twice as often: they carry the colour
 # Overgrowth amounts: moss on upward faces (share), ivy on side faces (share at the foot, thinning to none at ivy_top),
 # leafy clumps round a remains' foot, green patches under the paving per piece (centre, wedge), ground cover density.
 GROWTH = {
@@ -354,6 +375,99 @@ def overgrow(p, rng, growth):
         p.cone(at, rng.uniform(0.14, 0.22), rng.uniform(0.12, 0.2), rng.choice(("ruin_ivy", "ruin_moss_b")), segments=5, spin=rng.uniform(0, 6))
 
 
+def walk_gap(x, y):
+    """Distance from tile-local (x, y) to the nearest walk: the six lines from the middle to the edges' middles."""
+    best = 99.0
+    for k in range(6):
+        a = math.radians(60 * k)
+        u, w = x * math.cos(a) + y * math.sin(a), -x * math.sin(a) + y * math.cos(a)
+        best = min(best, abs(w) if 0 <= u <= X1 else math.hypot(x, y) if u < 0 else 99.0)
+    return best
+
+
+def circle(piece, x, y, spin):
+    """A placed prop's footprint circle: (cx, cy, radius)."""
+    cx, rad = FOOT[piece]
+    return (x + cx * math.cos(spin), y + cx * math.sin(spin), rad)
+
+
+def clear(c, taken, gap=GAP):
+    """Whether circle c keeps `gap` from every circle taken, stays inside the tile and keeps a mini's width off the walks."""
+    x, y, rad = c
+    if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) + rad > X1 - 0.05:
+        return False
+    if walk_gap(x, y) < WALK_HALF + rad:
+        return False
+    return all(math.hypot(x - tx, y - ty) >= rad + tr + gap for tx, ty, tr in taken)
+
+
+def outpost_layout(q, r):
+    """An overrun outpost tile's props, tile-local (piece, x, y, spin): its remains, one or two burrows, goblin junk.
+    Burrows take bare corner gaps (a tile with none gives up one remains for its burrow), turning until the ground in
+    front of the mouth is open. Junk goes just in front of or behind a remains, or in a bare gap left over, wherever it
+    keeps GAP from everything else and off the walks; where it can't, there's none."""
+    remains = [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)]
+    slot_of = lambda x, y: round((math.degrees(math.atan2(y, x)) % 360 - 30) / 60) % 6  # noqa: E731
+    held = {slot_of(x, y): pc for pc, x, y, _ in remains}
+    bare = sorted((c for c in range(6) if c not in held), key=lambda c: gc.hash01(q * 6 + c, r, 39))
+    want = 2 if gc.hash01(q, r, 38) < BURROW_TWO else 1
+    slots = bare[:want]
+    if not slots:  # no bare gap: the burrow takes one remains' place
+        slots = [min(held, key=lambda c: gc.hash01(q * 6 + c, r, 39))]
+        remains = [t for t in remains if slot_of(t[1], t[2]) != slots[0]]
+    taken = [circle(*t) for t in remains]
+    burrows, mouths = [], []
+    for c in slots:
+        a = math.radians(30 + 60 * c)
+        x, y = SLOT_R * math.cos(a), SLOT_R * math.sin(a)
+        kind = "outpost_burrow_timber" if gc.hash01(q * 6 + c, r, 40) < 0.6 else "outpost_burrow_scrap"
+        base = a + math.pi
+        for turn in (1.0 * (gc.hash01(q * 6 + c, r, 36) - 0.5), 0.0, 0.5, -0.5, 0.9, -0.9):
+            face = base + turn
+            body = circle(kind, x, y, face)
+            mouth = (x + MOUTH[0] * math.cos(face), y + MOUTH[0] * math.sin(face), MOUTH[1])
+            if clear(body, taken + mouths) and all(math.hypot(mouth[0] - tx, mouth[1] - ty) >= mouth[2] + tr for tx, ty, tr in taken):
+                burrows.append((kind, x, y, face))
+                taken.append(body)
+                mouths.append(mouth)
+                break
+    junk = []
+    spots = [(pc, slot_of(x, y)) for pc, x, y, _ in remains] + [(None, c) for c in bare if c not in slots]
+    for pc, c in spots:
+        if gc.hash01(q * 6 + c, r, 41) >= JUNK_FILL:
+            continue
+        first = JUNK[int(gc.hash01(q * 6 + c, r, 42) * len(JUNK))]
+        a = math.radians(30 + 60 * c)
+        done = False
+        for which in [f"outpost_{k}" for k in [first] + [k for k in ("banner", "totem") if k != first]]:  # the slimmer ones where the first won't fit, the banner first for its colour
+            rj = FOOT[which][1]
+            if pc is None:
+                options = [(SLOT_R, 0.0)]
+            else:
+                rr = FOOT[pc][1]
+                options = [(SLOT_R + d * (rr + rj + GAP), da) for d in (1, -1) for da in (0.0, 0.12, -0.12)]
+                if gc.hash01(q * 6 + c, r, 44) < 0.5:
+                    options = options[3:] + options[:3]
+            for d, da in options:
+                x, y = d * math.cos(a + da), d * math.sin(a + da)
+                if clear((x, y, rj), taken + mouths):
+                    junk.append((which, x, y, 6.283 * gc.hash01(q * 6 + c, r, 43)))
+                    taken.append((x, y, rj))
+                    done = True
+                    break
+            if done:
+                break
+    return remains, burrows, junk
+
+
+def tile_props(name, q, r):
+    """Every prop a ruins tile of this look stands: (piece, x, y, spin), tile-local."""
+    if name in BURROWED:
+        remains, burrows, junk = outpost_layout(q, r)
+        return remains + burrows + junk
+    return [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
+
+
 def remains_piece(which, growth=PICKED_GROWTH):
     """A prop piece for one kind of remains, centred on its slot, for REMAINS_PIECES."""
     def build(p, rng):
@@ -363,6 +477,287 @@ def remains_piece(which, growth=PICKED_GROWTH):
 
 
 REMAINS_PIECES = {f"ruin_{k}": remains_piece(k) for k in REMAINS}
+
+
+# --- Overrun outpost: framed burrows dug into mounds, goblin junk (the pieces are under the Warren, which shares their parts) ---
+
+
+def plain_ground(p, rng, kind):
+    """A ruins variant's ground: the plain tiles' own pieces, slab for slab (they're frozen), seeded by the plain piece's name."""
+    kind = kind.replace("edge_", "")
+    plain = "ruins_centre" if kind == "centre" else f"ruins_edge_{kind}"
+    ruins(p, hk.seeded(plain + "a"), kind, "a", PICKED_GROWTH)
+
+
+VARIANTS = {"overrun_outpost": ("ruins", plain_ground, "ruin_ground", ("edge_same_b", "edge_other_b"))}
+
+
+# --- Landmark: the Warren (overrun outpost) --------------------------------------
+# One big ruin, a roofless keep with a broken tower, patched with goblin scrap walls, a burrow dug in at its base and
+# red and yellow rag banners on poles and on top (design/07 -> Landmark tiles). A centre-only landmark: the tile keeps
+# the outpost's wedges. Built facing +X: the burrow's mouth faces edge 0. The ruin fills about half the tile, so the
+# tile's own walks can't cross its middle. Routes: each edge's walk runs in from the edge's middle to a ring round
+# the ruin, and the approach runs along edge 0's line from the ring to the mouth.
+WARREN_RING = 3.0       # the ring path's corners, on the walks' lines; its sides are WARREN_RING * cos 30 from the middle
+WARREN_MOUTH = 1.45     # where the approach ends, in front of the mouth
+KEEP = [Vector((0.95, -1.15, 0)), Vector((0.95, 1.15, 0)), Vector((-0.75, 1.55, 0)), Vector((-1.55, 0.5, 0)), Vector((-1.55, -0.5, 0)), Vector((-0.75, -1.55, 0))]
+TOWER = (Vector((-0.8, 0.62, 0)), 0.68)
+
+
+def keep_wall(p, rng, a, b, tops, mat, thick=0.42, skip=()):
+    """Big stone blocks from a to b, the top following `tops` (heights at the start and end, with any between), ragged.
+    skip: (t0, t1) stretches along it left open, as shares of its length."""
+    d = b - a
+    length, ang = d.length, math.atan2(d.y, d.x)
+    t = 0.0
+    while t < length - 1e-3:
+        w = min(rng.uniform(0.55, 0.75), length - t)
+        u = (t + w / 2) / length
+        if any(s0 <= u <= s1 for s0, s1 in skip):
+            t += w
+            continue
+        seg = u * (len(tops) - 1)
+        i = min(int(seg), len(tops) - 2)
+        top = tops[i] + (tops[i + 1] - tops[i]) * (seg - i) + rng.uniform(-0.3, 0.25)
+        z = 0.0
+        while z < top - 0.1:
+            h = min(rng.uniform(0.42, 0.56), top - z)
+            p.box(a + d * u, (w - 0.04, thick, h - 0.02), mat, z=z, spin=ang + rng.uniform(-0.03, 0.03))
+            z += h
+        t += w
+
+
+def tin_sheet(p, rng, at, size, spin, tilt=0.0, lean=0.0):
+    """A rusty sheet nailed over a gap or laid as roofing."""
+    rot = Matrix.Rotation(spin, 3, "Z") @ Matrix.Rotation(tilt, 3, "X") @ Matrix.Rotation(lean, 3, "Y")
+    p.box_rot(at, size, rng.choice(("rust", "roof_tin", "rust")), rot)
+
+
+def plank_patch(p, rng, a, b, z0, h, out=0.0):
+    """Upright planks of mixed lengths across a gap from a to b, with rails across them; `out` sets them proud of the wall."""
+    d = b - a
+    length, ang = d.length, math.atan2(d.y, d.x)
+    n = max(2, round(length / 0.26))
+    norm = Vector((math.sin(ang), -math.cos(ang), 0)) * out
+    for k in range(n):
+        c = a + d * ((k + 0.5) / n) + norm
+        hk_ = h * rng.uniform(0.85, 1.1)
+        p.box_rot(c + Vector((0, 0, z0 + hk_ / 2)), (length / n - 0.025, 0.07, hk_), rng.choice(("plank", "plank_dark", "plank")), Matrix.Rotation(ang, 3, "Z") @ Matrix.Rotation(rng.uniform(-0.07, 0.07), 3, "Y"))
+    for zr in (z0 + h * 0.22, z0 + h * 0.72):
+        p.box((a + b) / 2 + norm * 1.5, (length + 0.1, 0.06, 0.1), "plank_dark", z=zr, spin=ang + rng.uniform(-0.05, 0.05))
+
+
+def rag_banner(p, rng, at, h, z=0.0, spin=0.0, strips=4):
+    """A pole with a cross-bar and torn strips hanging from it, red and yellow by turns."""
+    p.box(at, (0.09, 0.09, h), "deadwood", z=z)
+    rot = Matrix.Rotation(spin, 3, "Z")
+    p.box(at + rot @ Vector((0.28, 0, 0)), (0.7, 0.06, 0.06), "deadwood", z=z + h - 0.12, spin=spin)
+    for k in range(strips):
+        y, l = 0.08 + 0.15 * k, rng.uniform(0.5, 0.95)
+        c = at + rot @ Vector((y, 0, 0))
+        p.box_rot(c + Vector((0, 0, z + h - 0.15 - l / 2)), (0.15, 0.025, l), ("goblin_rag_red", "goblin_rag_yellow")[k % 2], rot @ Matrix.Rotation(rng.uniform(-0.1, 0.1), 3, "Y"))
+
+
+def crate(p, rng, at, s, z=0.0, spin=0.0):
+    """A stolen crate: a box with a darker band of slats."""
+    p.box(at, (s, s, s), "crate", z=z, spin=spin)
+    p.box(at, (s + 0.02, s * 0.25, s + 0.02), "plank_dark", z=z - 0.01, spin=spin)
+
+
+def bone_pile(p, rng, at, n=5):
+    for _ in range(n):
+        q = at + Vector((rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), 0))
+        p.log(q, 0.035, rng.uniform(0.25, 0.4), "bone", spin=rng.uniform(0, 3), z=0.04, segments=4)
+    p.blob(at + Vector((0.1, 0.05, 0)), 0.1, "bone", z=0.08, squash=0.8)
+
+
+def warren_mouth(p, rng, x0):
+    """The burrow dug in under the front wall at x0: a dark hole, a timber frame round it, a skull on the lintel,
+    eyes in the dark, a little earth spilled out."""
+    w, h = 0.5, 0.85
+    plate(p, [Vector((x0 + 0.15 + math.cos(t) * 0.5 * (1.2 if math.cos(t) > 0 else 0.3), math.sin(t) * 0.75, 0)) for t in [6.283 * k / 10 for k in range(10)]], 0.03, "burrow_earth")
+    pts = [(-w, 0.0), (w, 0.0), (w, h * 0.7), (w * 0.6, h), (-w * 0.6, h), (-w, h * 0.7)]
+    f = p.bm.faces.new([p.bm.verts.new((x0, y, z + 0.02)) for y, z in pts])
+    f.material_index = p._slot("burrow_dark")
+    p.surface.add(f)
+    p.bm.normal_update()
+    if f.normal.x < 0:
+        f.normal_flip()
+    plate(p, [Vector((x0 + 0.02, -w, 0)), Vector((x0 + 0.02, w, 0)), Vector((x0 - 0.5, w, 0)), Vector((x0 - 0.5, -w, 0))], 0.04, "burrow_dark")
+    for y in (-w - 0.08, w + 0.08):  # the frame: two posts and a lintel
+        p.box(Vector((x0 + 0.05, y, 0)), (0.16, 0.16, h + 0.16), "plank_dark", spin=rng.uniform(-0.05, 0.05))
+    p.box(Vector((x0 + 0.06, 0, 0)), (0.18, 2 * w + 0.5, 0.16), "plank", z=h + 0.12)
+    p.blob(Vector((x0 + 0.16, 0, 0)), 0.13, "bone", z=h + 0.36, squash=0.85)
+    for y, zf in ((0.0, 0.58), (-0.24, 0.3), (0.26, 0.36)):
+        for dy in (-0.06, 0.06):
+            p.box(Vector((x0 + 0.012, y + dy, 0)), (0.016, 0.055, 0.04), "goblin_eye", z=h * zf + 0.02)
+
+
+def warren_paths(p):
+    p.paths.append([Vector((WARREN_RING, 0, 0)), Vector((WARREN_MOUTH, 0, 0))])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * WARREN_RING for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    for i, q in enumerate(ring):  # spokes: each edge's walk, from its middle to the ring
+        p.spokes[i] = [q / WARREN_RING * X1, q]
+
+
+def warren(p, rng, kind):
+    """The Warren's centre: the plain ruins centre's paving, slab for slab, and on it the patched keep."""
+    ruins(p, hk.seeded("ruins_centrea"), "centre", "a", PICKED_GROWTH)
+    before = set(p.bm.faces)
+    stone = "ruin_grey"
+    k = KEEP
+    # the keep's walls: tall at the back, the front broken down over the burrow, a side wall fallen in
+    keep_wall(p, rng, k[0], k[1], (2.3, 0.8, 0.7, 2.0), stone, skip=((0.33, 0.67),))
+    keep_wall(p, rng, k[1], k[2], (2.0, 1.4, 3.0), stone, skip=((0.3, 0.6),))
+    keep_wall(p, rng, k[2], k[3], (3.2, 3.6), stone)
+    keep_wall(p, rng, k[3], k[4], (3.6, 3.3), stone)
+    keep_wall(p, rng, k[4], k[5], (3.3, 2.7), stone)
+    keep_wall(p, rng, k[5], k[0], (2.6, 1.5, 2.1), stone)
+    # the tower in the back corner, its top broken off
+    c, r = TOWER
+    z, h = 0.0, 4.3
+    while z < h - 0.05:
+        seg = min(0.54, h - z)
+        p.cylinder(c, r, seg - 0.02, ("ruin_grey", "ruin_warm")[round(z / 0.54) % 2], segments=8, z=z)
+        z += seg
+    for a in range(5):  # broken battlements on one side
+        t = math.radians(150 + 40 * a)
+        p.box(c + Vector((math.cos(t), math.sin(t), 0)) * (r - 0.12), (0.32, 0.26, rng.uniform(0.3, 0.6)), "ruin_grey", z=h, spin=t)
+    for _ in range(4):  # fallen blocks round the back, outside the walls
+        a = rng.uniform(2.2, 4.1)
+        p.box(Vector((math.cos(a), math.sin(a), 0)) * rng.uniform(1.75, 1.9), (0.36, 0.3, 0.22), stone, spin=rng.uniform(0, 3))
+    overgrow_faces(p, hk.seeded(p.name + "growth"), [f for f in p.bm.faces if f not in before])
+    # goblin scrap: plank walls over the gaps, tin sheets, a tin roof, stakes along the tops
+    plank_patch(p, rng, k[0].lerp(k[1], 0.31), k[0].lerp(k[1], 0.69), 0.95, 1.2, out=0.16)   # over the burrow
+    plank_patch(p, rng, k[1].lerp(k[2], 0.28), k[1].lerp(k[2], 0.62), 0.0, 1.9, out=0.0)       # the fallen-in stretch
+    tin_sheet(p, rng, k[0].lerp(k[1], 0.16) + Vector((0.24, 0, 1.4)), (0.06, 0.62, 0.8), 0.0, lean=0.06)
+    tin_sheet(p, rng, k[0].lerp(k[1], 0.84) + Vector((0.24, 0, 1.0)), (0.06, 0.55, 0.7), 0.0, lean=-0.05)
+    side = math.atan2(*(k[0] - k[5]).yx)
+    tin_sheet(p, rng, k[5].lerp(k[0], 0.55) + Vector((0.07, -0.24, 1.1)), (0.75, 0.06, 0.8), side, tilt=0.06)
+    tin_sheet(p, rng, k[1].lerp(k[2], 0.8) + Vector((0.05, 0.24, 2.2)), (0.6, 0.06, 0.6), math.atan2(*(k[2] - k[1]).yx), tilt=-0.1)
+    for j in range(5):  # a tin roof over the front left, inside the walls
+        tin_sheet(p, rng, Vector((0.25 - 0.03 * j, -1.0 + 0.42 * j, 1.95 - 0.04 * j)), (1.3, 0.44, 0.05), rng.uniform(-0.05, 0.05), lean=0.3)
+    back = math.atan2(*(k[4] - k[5]).yx)
+    for j in range(6):  # sharpened stakes along the left wall's top
+        q = k[5].lerp(k[4], 0.08 + 0.17 * j)
+        rot = Matrix.Rotation(back, 3, "Z") @ Matrix.Rotation(-0.35, 3, "X")
+        p.box_rot(q + Vector((0, 0, 3.1)), (0.07, 0.07, 0.75), "deadwood", rot)
+    p.cylinder(k[1].lerp(k[2], 0.45) + Vector((0.2, 0.12, 0)), 0.22, 0.05, "shield_wood", segments=7, z=0.9)   # stolen shields nailed up
+    p.cylinder(k[0].lerp(k[1], 0.88) + Vector((0.27, 0, 0)), 0.22, 0.05, "patch_red", segments=7, z=1.35)
+    warren_mouth(p, rng, k[0].x + 0.2)
+    # rag banners: on the tower, on the walls' tops, on poles either side of the approach
+    rag_banner(p, rng, c, 2.0, z=h + 0.1, spin=math.radians(-20), strips=5)
+    rag_banner(p, rng, k[0] + Vector((-0.15, 0.1, 0)), 1.6, z=2.2, spin=math.radians(-70))
+    rag_banner(p, rng, k[1] + Vector((-0.15, -0.1, 0)), 1.5, z=1.9, spin=math.radians(70))
+    rag_banner(p, rng, k[3] + Vector((0.2, 0, 0)), 1.5, z=3.5, spin=math.radians(120))
+    rag_banner(p, rng, Vector((1.6, -0.85, 0)), 2.6, spin=math.pi, strips=3)
+    rag_banner(p, rng, Vector((1.6, 0.85, 0)), 2.6, spin=math.pi, strips=3)
+    # loot and bones by the walls
+    crate(p, rng, Vector((0.7, -1.55, 0)), 0.38, spin=0.3)
+    crate(p, rng, Vector((0.7, -1.55, 0)), 0.28, z=0.38, spin=0.9)
+    crate(p, rng, Vector((0.25, 1.62, 0)), 0.36, spin=-0.4)
+    bone_pile(p, rng, Vector((1.35, 0.75, 0)))
+    bone_pile(p, rng, Vector((-0.2, -1.75, 0)), 4)
+    warren_paths(p)
+
+
+def overgrow_faces(p, rng, faces, growth=PICKED_GROWTH):
+    """overgrow's moss and ivy on these faces only (the stone, not the paving under it or the scrap on it)."""
+    g = GROWTH[growth]
+    p.bm.normal_update()
+    moss, ivy = p._slot("ruin_moss_b"), p._slot("ruin_ivy")
+    for f in faces:
+        z = f.calc_center_median().z
+        if f.normal.z > 0.7 and z > 0.1 and rng.random() < g["moss"]:
+            f.material_index = moss
+        elif abs(f.normal.z) < 0.4 and rng.random() < g["ivy"] * max(0.0, 1 - z / g["ivy_top"]):
+            f.material_index = ivy
+
+
+LANDMARK_CENTRES = {"warren": warren}
+
+
+def burrow(p, rng, scrap):
+    """A burrow dug into a mound, its one mouth facing +X: a heap of earth and broken stone with a flat dug face, the dark
+    mouth in it with eyes, and a frame round the mouth, timber posts and a lintel with a skull, or bent tin sheets."""
+    x0, w, h = 0.1, 0.25, 0.42
+    # the mound: a dome of earth, its front cut flat where it was dug
+    m = Matrix.Translation((-0.25, 0, -0.05)) @ Matrix.Diagonal((1, 1, 1.15, 1))
+    made = __import__("bmesh").ops.create_icosphere(p.bm, subdivisions=2, radius=0.6, matrix=m)["verts"]   # finer than blob's, so its top is round
+    p._paint(made, "burrow_earth")
+    for v in made:
+        v.co.x = min(v.co.x, x0)
+        v.co.z = max(v.co.z, 0.0)
+    # broken stone heaped on it and against its sides
+    for k in range(6):
+        a = rng.uniform(1.4, 4.9) if k < 4 else (1.25 if k == 4 else -1.25)
+        d = rng.uniform(0.3, 0.5) if k < 4 else 0.42
+        c = Vector((-0.25 + math.cos(a) * d * 0.8, math.sin(a) * d, 0))
+        top = max(0.05, 0.62 * (1 - (c - Vector((-0.25, 0, 0))).length ** 2 / 0.36)) - 0.08
+        rot = Matrix.Rotation(rng.uniform(0, 3), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.4, 0.4), 3, "X")
+        p.box_rot(c + Vector((0, 0, top)), (rng.uniform(0.2, 0.32), rng.uniform(0.16, 0.24), rng.uniform(0.14, 0.2)), rng.choice(STONES), rot)
+    # spilled earth just in front of the mouth, low on the paving
+    plate(p, [Vector((x0 + 0.05 + math.cos(t) * 0.32 * (1.0 if math.cos(t) > 0 else 0.2), math.sin(t) * 0.36, 0)) for t in [6.283 * k / 8 for k in range(8)]], 0.025, "burrow_earth")
+    # the mouth: dark, just proud of the dug face
+    pts = [(-w, 0.0), (w, 0.0), (w, h * 0.7), (w * 0.55, h), (-w * 0.55, h), (-w, h * 0.7)]
+    f = p.bm.faces.new([p.bm.verts.new((x0 + 0.01, y, z + 0.02)) for y, z in pts])
+    f.material_index = p._slot("burrow_dark")
+    p.surface.add(f)
+    p.bm.normal_update()
+    if f.normal.x < 0:
+        f.normal_flip()
+    if scrap:  # bent tin sheets either side and a sagging one over the top
+        for y in (-w - 0.05, w + 0.05):
+            p.box_rot(Vector((x0 + 0.03, y, h / 2 + 0.04)), (0.04, 0.14, h + 0.1), rng.choice(("rust", "roof_tin")), Matrix.Rotation(0.12 * (1 if y > 0 else -1), 3, "X"))
+        for j, mat in enumerate(("roof_tin", "rust")):
+            p.box_rot(Vector((x0 + 0.02 - 0.08 * j, 0.04 * j, h + 0.1 + 0.03 * j)), (0.24, 2 * w + 0.26, 0.03), mat, Matrix.Rotation(-0.3 + 0.12 * j, 3, "Y"))
+    else:  # timber posts and a lintel, a skull on it
+        for y in (-w - 0.06, w + 0.06):
+            p.box(Vector((x0 + 0.04, y, 0)), (0.1, 0.1, h + 0.1), "plank_dark", spin=rng.uniform(-0.06, 0.06))
+        p.box(Vector((x0 + 0.05, 0, 0)), (0.12, 2 * w + 0.28, 0.09), "plank", z=h + 0.08)
+        p.blob(Vector((x0 + 0.09, rng.uniform(-0.12, 0.12), 0)), 0.075, "bone", z=h + 0.22, squash=0.85)
+    for y, zf in ((0.0, 0.55), (rng.choice((-0.12, 0.12)), 0.26)):  # eyes in the dark
+        for dy in (-0.04, 0.04):
+            p.box(Vector((x0 + 0.022, y + dy, 0)), (0.014, 0.04, 0.03), "goblin_eye", z=h * zf + 0.02)
+
+
+def totem(p, rng):
+    """A little goblin totem: a stake with a cross-bar of bones, a skull on top and a red rag tied on."""
+    p.box(Vector((0, 0, 0)), (0.07, 0.07, 1.25), "deadwood")
+    p.box(Vector((0, 0, 0)), (0.42, 0.05, 0.05), "bone", z=0.9, spin=rng.uniform(-0.2, 0.2))
+    p.blob(Vector((0, 0, 0)), 0.11, "bone", z=1.33, squash=0.85)
+    p.box(Vector((0.02, 0.06, 0)), (0.1, 0.02, 0.36), "goblin_rag_red", z=0.62)
+    p.box(Vector((-0.02, -0.06, 0)), (0.08, 0.02, 0.26), "goblin_rag_yellow", z=0.7)
+    for k in range(3):  # stones heaped round its foot
+        a = 2.1 * k + rng.uniform(0, 0.5)
+        p.box(Vector((math.cos(a) * 0.14, math.sin(a) * 0.14, 0)), (0.14, 0.12, 0.1), rng.choice(STONES), spin=a)
+
+
+def pole_banner(p, rng):
+    """A rag banner for the outpost's tiles: the Warren's red and yellow strips on a short cross-bar, close to the pole, so it fits beside a remains."""
+    p.box(Vector((0, 0, 0)), (0.09, 0.09, 2.6), "deadwood")
+    p.box(Vector((0.1, 0, 0)), (0.24, 0.06, 0.06), "deadwood", z=2.48)
+    for k in range(3):
+        l = rng.uniform(0.6, 0.95)
+        p.box_rot(Vector((0.07 + 0.07 * k, 0, 2.45 - l / 2)), (0.08, 0.025, l), ("goblin_rag_red", "goblin_rag_yellow")[k % 2], Matrix.Rotation(rng.uniform(-0.06, 0.06), 3, "Y"))
+
+
+def crate_stack(p, rng):
+    crate(p, rng, Vector((0, 0, 0)), 0.36, spin=0.2)
+    crate(p, rng, Vector((0.34, 0.18, 0)), 0.3, spin=-0.3)
+    crate(p, rng, Vector((0.05, 0.02, 0)), 0.26, z=0.36, spin=0.8)
+    p.blob(Vector((-0.3, 0.25, 0)), 0.15, "rag", z=0.08, squash=0.7)   # a split sack
+
+
+PROP_PIECES = {**REMAINS_PIECES,
+               "outpost_burrow_timber": lambda p, rng: burrow(p, rng, False),
+               "outpost_burrow_scrap": lambda p, rng: burrow(p, rng, True),
+               "outpost_banner": lambda p, rng: pole_banner(p, rng),
+               "outpost_bones": lambda p, rng: (bone_pile(p, rng, Vector((0, 0, 0)), 6), bone_pile(p, rng, Vector((0.3, 0.2, 0)), 3)),
+               "outpost_crates": crate_stack,
+               "outpost_totem": totem}
+LANDMARKS = {"warren": "overrun_outpost"}
 
 
 # --- Ground per option -------------------------------------------------------
