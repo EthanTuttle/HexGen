@@ -163,6 +163,10 @@ func _ready() -> void:
 		var dc := DesertCheck.new()
 		dc.game = self
 		add_child(dc)
+	elif "--levelcheck" in OS.get_cmdline_user_args():
+		var lc := LevelCheck.new()
+		lc.game = self
+		add_child(lc)
 	elif "--racecheck" in OS.get_cmdline_user_args():
 		var rc := RaceCheck.new()
 		rc.game = self
@@ -1124,17 +1128,25 @@ func _next_pick() -> void:
 	while options.size() < 3:
 		options.append(rest.pop_at(rng.randi_range(0, rest.size() - 1)))
 	_pick_options = options
+	open_pick()
+
+
+## The owed level's pick screen, with the three terrain cards already rolled (a save reopens the same three).
+func open_pick() -> void:
 	var at := level - _picks + 1
-	level_pick.open(at, options, party.duplicate() if at in Rules.SCORE_LEVELS else [])
+	level_pick.open(at, _pick_options, party.duplicate() if at in Rules.SCORE_LEVELS else [])
 
 
 ## The level's picks: the terrain card, and at levels 4, 8, 12 and 16 each member's ability point, by party index
 ## (03 -> Ability scores; no score above LevelPick.CAP).
-func level_picked(terrain: String, points := {}) -> void:
+func level_picked(terrain: String, points := {}, picks := {}) -> void:
+	var at := level - _picks + 1
 	for i: int in points:
 		var m: Dictionary = party[i]
 		m.scores[points[i]] = mini(Races.score(m, points[i]) + 1, LevelPick.CAP)
 		Races.refresh_hp(m, level)   # a CON point recounts every level's HP
+	for i in party.size():   # levels 2-5 (Progression): what each member picked, or the bots' pick for what it left
+		_apply_level(party[i], at, picks.get(i, {}))
 	deck.hand.append(terrain)
 	_picks -= 1
 	level_pick.visible = false
@@ -1143,6 +1155,43 @@ func level_picked(terrain: String, points := {}) -> void:
 		return
 	busy = false
 	_refresh()
+
+
+## A member's picks for level `at` (LevelPick's picks[i]); anything not picked is made as the bots make it, so a level is
+## never left half done.
+func _apply_level(m: Dictionary, at: int, p: Dictionary) -> void:
+	if int(m.get("levelled", 1)) >= at:
+		return
+	for s: String in Progression.sections(m, at, run.background):
+		match s:
+			"mastery":
+				var o: Dictionary = Progression.bot_mastery(m)
+				if not p.get("mastery", []).is_empty():
+					for n: Dictionary in Progression.MASTERY[p.mastery[0]]:
+						if n.id == p.mastery[1]:
+							o = {"cat": p.mastery[0], "node": n}
+				Progression.apply_mastery(m, o.cat, o.node)
+			"class_cards", "spells":
+				Progression.apply_level3(m, p.spells if not p.get("spells", []).is_empty() else Progression.bot_spells(m))
+			"feat":
+				var f: String = p.feat if p.get("feat", "") != "" else Progression.bot_feat(m, run.background)
+				var follow: String = p.follow if p.get("feat", "") != "" else Progression.bot_follow(m, Progression.feat_of(f))
+				Progression.apply_feat(m, f, follow)
+			"subclass":
+				var name: String = p.subclass if p.get("subclass", "") != "" else Progression.bot_subclass(m)
+				var follow: String = p.sub_follow if p.get("sub_follow", "") != "" else Progression.bot_follow_sub(m, name)
+				var spell: String = p.tier1 if p.get("tier1", "") != "" else Progression.bot_tier1(m, name)
+				Progression.apply_subclass(m, name, follow, spell)
+	m.levelled = at
+	Races.refresh_hp(m, level)   # Tough
+
+
+## Test aid (06: a test-only Level up now button, in the debug menu): XP to the next level on the spot, so its picks open.
+func level_up_now() -> void:
+	if busy:
+		return
+	_add_xp(xp_needed() - xp)
+	_next_pick()
 
 
 func sneak_heads() -> int:
@@ -1213,7 +1262,7 @@ func _now_minutes() -> float:
 
 
 func sees(t: Vector2i) -> bool:
-	return Rules.hex_distance(t, party_tile) <= Rules.sight_now(minute)
+	return Rules.hex_distance(t, party_tile) <= Rules.sight_now(minute) + Progression.sight_bonus(party)
 
 
 ## Encounters as the map shows them: figures and a badge within sight (DOCS: design/02 -> What you see), and a few moving on the clock.
@@ -1305,7 +1354,7 @@ func _roam_to(t: Vector2i) -> Vector2i:
 
 ## As much of a path as one tap walks (DOCS: design/02 -> one tap moves the party at most its sight range).
 func _in_reach(path: Array[Vector2i]) -> Array[Vector2i]:
-	return path.slice(0, Rules.sight_now(minute)) if walk_limited else path
+	return path.slice(0, Rules.sight_now(minute) + Progression.sight_bonus(party)) if walk_limited else path
 
 
 # --- Walking -----------------------------------------------------------------
@@ -1578,7 +1627,8 @@ func choose_sneak() -> void:
 
 ## The hero's coins, then a proficient companion's 1 on a miss by exactly 1 (DOCS: 03 -> Companion chime-in). No companion has Stealth yet, and no line is written for it.
 func sneak_flip(proficiency := "Stealth") -> Array[bool]:
-	var coins: Array[bool] = Coins.flip(rng, Hero.coins_for("DEX", "Stealth"))
+	var step := Rules.LIGHT_STEP_COINS if Progression.feat(party[0]) == "light_step" else 0   # Light Step (05)
+	var coins: Array[bool] = Coins.flip(rng, Hero.coins_for("DEX", "Stealth") + step)
 	lucky_check(coins, sneak_heads())   # PLACEHOLDER look: the encounter pop-up shows the reflipped coin as it landed
 	if Coins.heads(coins) == sneak_heads() - 1 and not _chime_helper(proficiency).is_empty():
 		coins.append_array(Coins.flip(rng, 1))
@@ -1731,6 +1781,9 @@ func _add_member(k: int) -> void:
 	else:
 		member.proficiencies = Rules.PROFICIENCIES.get(member.name, [])
 	Races.join(member, level)
+	Progression.catch_up(member, level - _picks, run.background)   # joining late: the levels already passed, as the bots pick (Progression)
+	if Progression.feat(member) == "tough":
+		Races.refresh_hp(member, level)
 	party.append(member)
 
 

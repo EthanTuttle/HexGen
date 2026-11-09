@@ -406,6 +406,66 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 | Cover: trees, fences, hedges, crops and brush cost the attacker 1 coin; saves ignore cover (Nov 7, 2026); rocks, walls and sheer rises block | 03 → Combat → Cover | Ranged attacks and attack spells |
 | The long shot: fewer coins than heads needed flips 1 coin needing heads in a row (target plus coins short) | 03 → Coin checks | Shown as that many coins that all need heads |
 
+## Levels 2 to 5 (Nov 9, 2026)
+
+Scope: 06 → First playable → Levels. Rules: 05 → Levels and milestones, General feats; 03 → Class action cards, Subclasses, spell sections; 04 → Weapon mastery. Data and picks: `scripts/game/progression.gd`; the screen: `scripts/ui/level_pick.gd`; cards: `cards.gd`; amounts: `rules.gd` (all PLACEHOLDER); effects: `fight.gd`.
+
+- **Pick screen:** one member at a time, hero first, one step per choice, then the three terrain cards. Rows open a pop-up with Choose, as in the creator's Spells step.
+  - Level 2: Weapon mastery, for martials. It offers the first node of every branch of each weapon they hold.
+  - Level 3: Your class cards, for martials. Casters get Pick 2 spells, from every level-3 spell.
+  - Level 4: Pick a feat (with Show all), then Place 1 ability point.
+  - Level 5: Pick a subclass, then the form, beast or god if it has one, then You gain (martials) or Pick a spell (casters, from their school's or order's tier 1).
+  - A pick a member doesn't make is made as the bots make it, so a level is never left half done.
+- **Who picks what:**
+  - Bots, late joiners and saves from before this change all use Progression's bot picks: built options first.
+  - Companions keep their default subclass: Fluffy Blaster, Mel Con Artist, Chelmsford Order of Good, of Aurora (01).
+  - Everything picked is kept on the party member (`mastery`, `feat`, `subclass`, `form`, `beast`, `god`, `renames`, `levelled`), so saves keep it.
+- **Level 3's class card:** 06 → Start already gives the Fighter, Ranger and Rogue their level-3 card at level 1. Until that changes, level 3 shows the kit with nothing new (`Progression.LEVEL3_AT_START`).
+- **Level up now:** in the debug menu (three fingers, or F8), debug builds only (`Rules.TEST_LEVEL_UP`). It grants the next level on the spot.
+- **Check:**
+  - `-- --levelcheck` levels the party from 2 to 5 through the screen, checks each gain, plays every new built card once with set coins, then lets the fight bot play a fight.
+  - `--shots` saves each new step and one pop-up to `screens/levels/`.
+  - `--class=` and gear try other heroes.
+
+**Built:**
+
+- Mastery: Heavy Blade, Riposte, Sweep, Overhand Cut (two-handed only), Backstab+, Throw+ (dagger range; spear and axe damage), Reach+, Triple Shot, Exposing Disarm, Sidestep, Rend, Quick Slash+, Headhunter, Rage, Wide Chop, Marrowbreaker, Smite, Ground Pound, Sweeping Circle, Guard Up+, both Haymaker+, Flowing Strike, Step and Strike+, Heavy Bolt, Bolas Bolt and Shield Charge.
+- Level-3 spells: Stone Sentinel (taunts foes within 2), Soul Swap, Flame Burst, Chain Spark, Blood Ward, Hemorrhage, Holy Brand, Dawn Pulse and Curse of Frailty.
+- Feats: Tough, Opening Strike, Speedy, Heavy Hitter, Keen Eye (anyone in the party), Skilled (proficiency), Rallying Presence, Light Step, Born Lucky, Deep Breath and Drilled.
+- Subclass cards: Bring It, Divine Smite, Reposition (the swap), Arcane Shield, Fake Surrender, Vanish (hidden counts as unaware), Raise the Stakes, Mage Hand and Killing Shot (a marked foe below half HP).
+- Upgrades: Second Wind+, Blessed Wind, Battle Surge, Second Ward, Sleeping Draught, Poison Blade+, Wild Card and Trophy Mark.
+- Tier 1: Fireball, Chain Lightning, Unbind, Psychic Spike, Soul Siphon, Life Tap, Mass Heal, Miracle of Plenty (the heal), Purify, Siphon Strength (the foe's loss), Curse of Ruin.
+- God spells: Stone Skin (as Defend) and Toll the Dead.
+
+**Not built yet:** the docs define these, but the rule each needs isn't in the prototype.
+
+- Each can be picked. A card shows its text and can't be used ("Not built yet"); a passive or upgrade does nothing.
+- **Mastery:** Cleave+ (no Cleave), Brace, High Ground, Piercing Shot (Aimed Shot already pierces), Volley, Phantom Step, Throw Dirt (blind), Relentless Hack (no Hack), Sunder (no Shatter), Gaffing Hook (no Hook), Sentinel, Grappling Guard and Steady Block. Vault walks to its spot rather than leaping.
+- **Level-3 spells:** Ice Wall, Mirror Burst, Whisper, Darkness, Shadow Cloak, Sanctuary and Life Transfer.
+- **Feats:** Weapon Training (no gear changes in play), Forager, Surveyor, Silver Tongue, Quick Study, Unmovable (no foe pushes yet), Unsettling, Forest Rest, Devout, Fence, Tower Ties, Local Hero and Merchant Ties.
+- **Subclasses:**
+  - Shifter: Shift, the forms and Pounce.
+  - Companion ranger: Command Beast, the beast and Pack Mark. The beast can't be named yet.
+  - Elementalist: Infuse and Primal Snare.
+  - Arcane Trickster: Magical Blade (no damage types).
+  - Holy Defender god spells other than Stone Skin and Toll the Dead.
+- **Tier 1:** Blizzard, Animate Armor, Soul Jar, Now You See Me, Nightmare, Blood Bond, Burning Halo, Sunlit Ground, Lance of Dawn, Terror, Nightmare Shroud, Snuff the Light and Vampiric Aura. Miracle of Plenty has no free consumable yet, and Siphon Strength gives the ally nothing yet.
+
+**Placeholders** (`rules.gd`, after `XP_MORE_EACH`): every amount the docs leave as "more" or "a little":
+
+- **Mastery:**
+  - Heavy Blade +1, Backstab+ +1, Throw+ +2 range (dagger) or +1 damage, Quick Slash+ +1, Headhunter +1 on a hurt foe.
+  - Overhand Cut +2, Smite +1 (no undead or fiends yet), Rage ±1, Sidestep +1 heads, Exposing Disarm +1 coin, Marrowbreaker −1 STR once.
+  - Heavy Bolt ×2, Shield Charge 3 hexes, Haymaker+ +1 damage or +1 heads on its save.
+- **Feats:** Tough +1 HP a level, Heavy Hitter +1, Rallying Presence 1 temporary HP, Drilled −1.
+- **Spells:**
+  - The INT spells deal INT, Fireball INT+1 within 2 hexes. Blood Ward costs 2 HP for a 3-point barrier.
+  - Holy Brand +1 a hit, Dawn Pulse 1 hex, Frailty +1 coin and Ruin +1 until the foe's next turn ends.
+  - Psychic Spike +2 on a foe unaware of you, Life Tap 3 HP, Mass Heal within 2, Plenty 1, Toll +2, Siphon −1 STR.
+- **Subclass cards:** Divine Smite +3, Bring It −1, Arcane Shield −2, Second Ward 2, Reposition within 3, Raise the Stakes ×2, Killing Shot ×3, Poison Blade+ 2 a tick, Trophy Mark +1.
+- **Stone Sentinel:** 8 HP, 1 damage, the blade's stand-in.
+- **Card name breaks:** Hemor/rhage, Re/position, Night/mare.
+
 ## Placeholders
 
 Every placeholder is marked `PLACEHOLDER` in `scripts/game/rules.gd` (or where it's used). None of them is a design decision. Where a mockup shows a bracketed placeholder, the game shows the same one: [Hero name], [Enemy group], [Enemy A], +[gold], +[XP] XP, [Tier 2 … variant], [landmark].

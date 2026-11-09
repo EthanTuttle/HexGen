@@ -169,7 +169,7 @@ func glow(mini: Node3D, on: bool) -> void:
 		_drop_glow(mini)
 
 
-func _drop_glow(mini: Node3D) -> void:
+func _drop_glow(mini) -> void:   # untyped: the mini may be freed already (a fight that ended)
 	var g: Array = _glows[mini]
 	if is_instance_valid(g[0]):
 		g[0].queue_free()
@@ -179,10 +179,11 @@ func _drop_glow(mini: Node3D) -> void:
 
 
 func _draw_glows() -> void:
-	for mini: Node3D in _glows.keys():
-		if not is_instance_valid(mini) or not mini.is_inside_tree():
-			_drop_glow(mini)
+	for key in _glows.keys():
+		if not is_instance_valid(key) or not key.is_inside_tree():
+			_drop_glow(key)
 			continue
+		var mini: Node3D = key
 		var g: Array = _glows[mini]
 		var t: float = _clock - g[2]
 		hull_alpha(g[0], AttackMotions.out(AttackMotions.seg(t, 0.0, 0.12)) * (0.75 + 0.2 * sin(TAU * 2.2 * t)))

@@ -179,6 +179,59 @@ const PRONE_AP := 1                      # PLACEHOLDER: what prone costs a foe n
 const WARD_POINTS := 2                   # PLACEHOLDER: Ward's small shield, until the next turn
 const XP_FIRST_LEVEL := 20               # PLACEHOLDER (05 -> XP: each level needs more than the last): 20, then 10 more each level
 const XP_MORE_EACH := 10
+## Levels 2 to 5 (design/06 -> First playable -> Levels, Nov 9, 2026; picks: Progression). The docs name each effect but not
+## its amount ("more damage", "harder to hit"), so every number here is a PLACEHOLDER for Ethan, listed in godot/README.md.
+const TEST_LEVEL_UP := true              # PLACEHOLDER: the test-only Level up now button shows (06: test builds only)
+const HEAVY_BLADE := 1                   # PLACEHOLDER (04): greatsword basic attacks
+const BACKSTAB_PLUS := 1                 # PLACEHOLDER (04): Backstab+
+const THROW_PLUS_RANGE := 2              # PLACEHOLDER (04): dagger Throw+
+const THROW_PLUS_DAMAGE := 1             # PLACEHOLDER (04): spear and battleaxe Throw+
+const QUICK_SLASH_PLUS := 1              # PLACEHOLDER (04): Quick Slash+
+const HEADHUNTER := 1                    # PLACEHOLDER (04): two-handed battleaxe hits on a hurt foe (below its max HP)
+const OVERHAND_BONUS := 2                # PLACEHOLDER (04): Overhand Cut
+const SMITE_BONUS := 1                   # PLACEHOLDER (04): Smite (undead and fiends aren't marked yet, so no extra)
+const RAGE_MORE := 1                     # PLACEHOLDER (04): Rage, damage dealt and taken until your next turn
+const SIDESTEP_HEADS := 1                # PLACEHOLDER (04): Sidestep, foes need this many more heads until your next turn
+const EXPOSED_COINS := 1                 # PLACEHOLDER (04): Exposing Disarm, attacks on the disarmed foe
+const MARROW_STR := 1                    # PLACEHOLDER (04): Marrowbreaker, STR lost for the fight
+const VAULT_HEXES := 3                   # DOCS (04); PLACEHOLDER: it walks there, not over foes or obstacles yet
+const HEAVY_BOLT_TIMES := 2              # PLACEHOLDER (04): Heavy Bolt's damage
+const CHARGE_HEXES := 3                  # PLACEHOLDER (04): Shield Charge's rush
+const HAYMAKER_PLUS := 1                 # PLACEHOLDER (04): Haymaker+ (Slugger) damage; Haymaker+ (Bruiser): the save needs 1 more heads
+const FLOWING_LESS := 1                  # DOCS (04): Flowing Strike
+const TOUGH_HP := 1                      # PLACEHOLDER (05): Tough, max HP a level
+const SPEEDY_HEXES := 1                  # DOCS (05)
+const HEAVY_HITTER := 1                  # PLACEHOLDER (05): STR weapon basic attacks
+const KEEN_EYE := 1                      # DOCS (05)
+const OPENING_COINS := 1                 # DOCS (05): Opening Strike
+const RALLY_WARD := 1                    # PLACEHOLDER (05): Rallying Presence, each ally starts each fight with this much ward
+const DRILLED_LESS := 1                  # PLACEHOLDER (05): Drilled, an ally next to a defending one takes this much less a hit
+const LIGHT_STEP_COINS := 1              # DOCS (05)
+const BREATH_DEEP := 1                   # DOCS (05): Deep Breath
+const SPELL3_DAMAGE := 0                 # PLACEHOLDER (03): Flame Burst, Chain Spark and the other INT spells deal INT plus this
+const FIREBALL_BONUS := 1                # PLACEHOLDER (03): Fireball, INT plus this, 2 hexes round the target
+const CHAIN_RANGE := 3                   # DOCS (03): Chain Lightning's jumps (Chain Spark the same: PLACEHOLDER)
+const BLOOD_WARD_HP := 2                 # PLACEHOLDER (03)
+const BLOOD_WARD := 3                    # PLACEHOLDER (03): the barrier's points
+const BRAND_DAMAGE := 1                  # PLACEHOLDER (03): Holy Brand, on each hit, for the fight
+const PULSE_RANGE := 1                   # PLACEHOLDER (03): Dawn Pulse, foes next to you
+const FRAILTY_COINS := 1                 # PLACEHOLDER (03): Curse of Frailty, until the end of the foe's next turn
+const RUIN_MORE := 1                     # PLACEHOLDER (03): Curse of Ruin, each hit until the end of the foe's next turn
+const SIPHON_STR := 1                    # PLACEHOLDER (03): Siphon Strength, STR the foe loses for the fight; the caster gains it
+const PSYCHIC_UNAWARE := 2               # PLACEHOLDER (03): Psychic Spike on a foe unaware of you
+const LIFE_TAP_HP := 3                   # PLACEHOLDER (03)
+const MASS_HEAL_RANGE := 2               # PLACEHOLDER (03): Mass Heal reaches allies this near, healing HEAL
+const PLENTY_HEAL := 1                   # PLACEHOLDER (03): Miracle of Plenty, every ally
+const TOLL_HURT := 2                     # PLACEHOLDER (03): Toll the Dead on a hurt foe
+const DIVINE_SMITE_BONUS := 3            # PLACEHOLDER (03)
+const BRING_IT_LESS := 1                 # PLACEHOLDER (03): Bring It, damage off each hit from a taunted foe
+const ARCANE_SHIELD_LESS := 2            # PLACEHOLDER (03): Arcane Shield, until your next turn
+const SECOND_WARD := 2                   # PLACEHOLDER (03): Second Ward's ward
+const REPOSITION_RANGE := 3              # PLACEHOLDER (03): Reposition swaps with an ally this near (the 2-hex move isn't built)
+const STAKES_TIMES := 2                  # PLACEHOLDER (03): Raise the Stakes, the next attack's damage
+const KILLING_TIMES := 3                 # PLACEHOLDER (03): Killing Shot
+const POISON_PLUS := 2                   # PLACEHOLDER (03): Poison Blade+, each poison's damage a tick
+const TROPHY_MORE := 1                   # PLACEHOLDER (03): Trophy Mark, more against giants
 
 ## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
 ## place (04 -> Shields), and Backstab is a dagger modifier, not a card (04 -> Weapon rules): [Hero name] the Fighter (longsword and
@@ -272,6 +325,7 @@ const BLOOD_BOLT_HP := 2                 # PLACEHOLDER (03): Blood Bolt's HP cos
 const WARDING_LESS := 1                  # PLACEHOLDER (03): allies inside Warding Circle take 1 less damage a hit
 const SUMMON_AP := 2                     # DOCS (03): summons get 2 AP a turn
 const SUMMONS := {                       # PLACEHOLDER (03): their stats; they hit with the caster's INT coins
+	"stone_sentinel": {"name": "Stone Sentinel", "initial": "S", "mini": "summon_blade", "hp": 8, "damage": 1, "weapon": "summon_blade", "taunt": true},   # PLACEHOLDER (03): stats, the blade's stand-in
 	"animated_blade": {"name": "Animated Blade", "initial": "B", "mini": "summon_blade", "hp": 4, "damage": 2, "weapon": "summon_blade"},
 	"wisp": {"name": "Wisp", "initial": "W", "mini": "summon_wisp", "hp": 2, "damage": 1, "weapon": "summon_wisp", "flies": true},
 }

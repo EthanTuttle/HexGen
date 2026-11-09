@@ -147,6 +147,9 @@ static func apply(g: Game, data: Dictionary) -> void:
 	g.fights_won = s.fights_won
 	g._encounter_count = s.encounter_count
 	g.party.assign(data.party)
+	for m in g.party:   # a save from before levels 2-5 (Progression): the levels it passed, picked as the bots pick
+		if not m.has("levelled"):
+			Progression.catch_up(m, g.level - g._picks, g.run.background)
 	Hero.live = g.party[0].scores
 	while g.party_node.members.size() < g.party.size():
 		g.party_node.add_member(g.party[g.party_node.members.size()].mini)
@@ -233,4 +236,4 @@ static func resume(g: Game) -> void:
 			g.open_event(g.party_tile)
 	elif g._picks > 0 and not g._pick_options.is_empty():   # the same three, not rolled again
 		g.busy = true
-		g.level_pick.open(g.level - g._picks + 1, g._pick_options)
+		g.open_pick()

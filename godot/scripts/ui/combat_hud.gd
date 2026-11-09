@@ -387,7 +387,8 @@ func save_line(ab: String) -> String:
 
 ## What each modifier is called on its row (07 -> Modifier coins). Strings go through the Screen text check.
 const MOD_WORDS := {"bless": "Bless", "forge": "Forge dwarf", "glow": "Faerie Fire", "acid": "Acid", "cover": "cover",
-	"night": "night", "close": "foe next to you"}
+	"night": "night", "close": "foe next to you", "opening": "Opening Strike", "frail": "Curse of Frailty",
+	"exposed": "Exposing Disarm", "drowsy": "drowsy"}
 
 
 ## One modifier under the check line: its chip, then "+1 Bless" or "−1 cover".
@@ -500,7 +501,7 @@ func _build_hotbar() -> void:
 
 func _card_button(id: String, big: bool) -> Control:
 	var u := fight.current
-	var k := Cards.get_card(id, u.weapon)
+	var k := Progression.card_for(u.get("member", {}), Cards.get_card(id, u.weapon))   # upgrades show their new names (03)
 	var src: Dictionary = Cards.SRC[k.src]
 	var on: bool = id == fight.sel
 	var dim := fight.spent(u, k)
