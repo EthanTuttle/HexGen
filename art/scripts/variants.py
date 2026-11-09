@@ -5210,13 +5210,16 @@ hk.PALETTE.update(fl.PALETTE)
 hk.PALETTE.update(bl.PALETTE)
 hk.PALETTE.update(st.PALETTE)
 hk.PALETTE.update(rl.PALETTE)
-PROP_PIECES.update(rl.REMAINS_PIECES)
+PROP_PIECES.update(rl.PROP_PIECES)
+VARIANTS.update(rl.VARIANTS)
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | rl.OWN
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG
 LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(fl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(bl.LANDMARK_CENTRES)
+LANDMARK_CENTRES.update(rl.LANDMARK_CENTRES)
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
 # (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
@@ -5232,6 +5235,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
 LANDMARKS.update(sl.LANDMARKS)
 LANDMARKS.update(fl.LANDMARKS)
 LANDMARKS.update(bl.LANDMARKS)
+LANDMARKS.update(rl.LANDMARKS)
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

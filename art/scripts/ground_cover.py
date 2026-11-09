@@ -25,7 +25,7 @@ DENSITY = {"plains": 0.5, "river": 0.3, "forest": 0.18, "farmland": 0.0, "villag
            "hills": 0.0, "swamp": 0.22, "desert": 0.0, "ruins": 0.1,  # hills and swamp pieces hold their own
            # tier 1 region variants
            "deep_forest": 0.08, "meadows": 0.85, "highlands": 0.0, "windmill_country": 0.0, "market_town": 0.0, "tradinghouse": 0.0, "riverport": 0.3, "fortified_town": 0.0, "keep": 0.0, "slums": 0.0, "blackmarket": 0.0, "scholars_town": 0.0, "college": 0.0,
-           "delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.16, "wasteland": 0.0, "sandstonesphinx": 0.0, "badlands": 0.0, "raiderstronghold": 0.0, "oasis": 0.0, "oasisbazaar": 0.0, "oasispool": 0.0, "canyon": 0.0, "echocave": 0.0, "excavation": 0.3,
+           "delta": 0.3, "great_lake": 0.3, "rapids": 0.3, "still_waters": 0.3, "serpentlair": 0.3, "trollbridge": 0.3, "meditationrock": 0.3, "bog": 0.16, "wasteland": 0.0, "sandstonesphinx": 0.0, "badlands": 0.0, "raiderstronghold": 0.0, "oasis": 0.0, "oasisbazaar": 0.0, "oasispool": 0.0, "canyon": 0.0, "echocave": 0.0, "excavation": 0.3, "overrun_outpost": 0.1, "warren": 0.1,
            # tier 2 and class variants
            "fey_wood": 0.18, "dark_wood": 0.05, "heartwood": 0.12,
            "wisp_marsh": 0.1, "rot_swamp": 0.14, "smugglers_bayou": 0.14, "witchhut": 0.16, "wisphollow": 0.1, "plaguepit": 0.08, "thievesguild": 0.14,
