@@ -50,7 +50,7 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
   | Overrun outpost | Goblin war band (a bigger group with a boss; stays put); trap-setters (goblins who fight on a grid full of their own traps) | Caged prisoner (free a captive for a reward; a fail wakes the guards); goblin totem (smash or deface it for a short boost against goblins in the region) |
   | Haunted ruins | Skeleton patrol (old soldiers walking their rounds; they roam); wraiths (night only) | Grave goods (valuables left with the dead; a fail rouses wraiths); restless spirit (lay it to rest with Religion for a blessing) |
   | Basilisk ruins | Young basilisks (a weaker gaze); giant lizards | Petrified explorer (a stone adventurer whose pack can still be searched); basilisk eggs (a big reward; a fail brings a basilisk) |
-  | Trapped vault | Mimics; treasure hunters (a rival crew trying to crack the vault first) | Open: waits on the variant's look (Presentation → Region variant looks) |
+  | Trapped vault | Mimics; treasure hunters (a rival crew trying to crack the vault first; they roam) | Sealed stairway (a stair down to a sealed door: force it, pick it or find the trick for a small cache; a fail wakes a mimic) |
 
 - **Encounters on water** (decided Nov 4, 2026): encounters stand on chosen clear land spots. Water tiles with no land spot get water-borne encounters later (boats, water spirits and so on); until then, nothing spawns on them. On rapids, an encounter stands only where a party can walk to it: on the near bank or by a bridge, never needing a crossing (for now).
 - **Encounter rolls** (decided Nov 1, 2026): spawning rolls every 8 in-game hours (about 10 real minutes), so a full day has three rolls, each on random already-placed tiles. Encounters are temporary (fights, passing merchants and the like).
@@ -203,9 +203,8 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [x] ~~What "reverts to plain terrain" means~~ (settled Oct 23, 2026: plains/grassland)
 - [x] ~~One tile joining two finished regions~~ (settled Oct 23, 2026: they stay separate; the tile joins the newer region)
 - [ ] **New:** Militia Barn mixes a repeatable quest with fights: service or quest site? (Sentinel Hall's golem lore question dropped with the variant, Nov 8, 2026)
-- [ ] **New:** farmland and ruins: encounter tables, crossing speed, which obstacles they get, and whether they get cluster goals (ruins settled Nov 8, 2026: Fight and Discovery only, tables in Hex contents and encounters, the trapped vault's Discoveries still open)
+- [ ] **New:** farmland and ruins: encounter tables, crossing speed, which obstacles they get, and whether they get cluster goals (ruins settled Nov 8, 2026: Fight and Discovery only, tables in Hex contents and encounters, all set Nov 9, 2026)
 - [ ] **New (Nov 8, 2026):** the ruins dungeons' rooms: Warren, Crypt, Basilisk Nest and Vault (rooms, traps, bosses), with the dungeon room counts, in the general landmark pass. Room ideas for the Vault (Ethan liked them as rooms, not map encounters): a pressure-plate hall, a puzzle lock, a too-good chest that's a mimic, a hidden lever to a side room
-- [ ] **New (Nov 8, 2026):** trapped vault's Discovery encounters, after its look is chosen
 - [x] ~~Rare cards on the map~~ (settled Oct 24, 2026: Rare cards are no longer map cards; they are landmarks in region pools)
 - [ ] **New (placement review, Oct 23):** does a terrain card placed next to a Story card still check terrain pairing against it?
 - [ ] **New:** tier 3 variants: each god's holy-land aura (set with the temple rewards); the Mad King's decree list; shortcut quests (start and steps) for every tier 3 that lacks one
