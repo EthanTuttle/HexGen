@@ -26,7 +26,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - Fey have an overwhelming sense of self and draw their magic from themselves.
 - The cast-out god is growing strong again because the cultists' faith feeds it.
 
-**Ruins** (Ethan, Nov 9, 2026): the ruins are of vague, long-lost civilizations, deeper is older (how ruins show it: [Presentation](07 Presentation.md) → Ruins land). Who they were is left vague for now; linking each age to a god (one god rising per age, Egan's age the newest) was floated on Nov 8 and set aside.
+**Ruins** (Ethan, Nov 9, 2026): the ruins are of vague, long-lost civilizations (how ruins look: [Presentation](07 Presentation.md) → Ruins land). Who they were is left vague for now; linking each age to a god (one god rising per age, Egan's age the newest) and "deeper is older" were floated on Nov 8 and set aside.
 
 ## Pantheon
 
