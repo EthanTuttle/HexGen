@@ -119,18 +119,19 @@ def shot(option, stem, sub, target, dist, el, size=(1600, 1000), mini=None):
 
 
 if __name__ == "__main__":
+    # Round 2: the picked plaza ground (a) with the bigger, fewer remains.
     hk.empty_scene()
     remains = build_remains()
-    for option in rl.OPTIONS:
-        print("OPTION", option)
-        check(build_option(option), remains)
-    rows = []
+    reach = max(math.hypot(v.co.x, v.co.y) for o in remains.values() for v in o.data.vertices)
+    print(f"REACH widest remains {reach:.2f} of slot room {rl.SLOT_ROOM}")
+    check(build_option("a"), remains)
+    counts = [len(rl.tile_remains(q, r)) for q in range(-20, 20) for r in range(-20, 20)]
+    print(f"PER TILE one: {counts.count(1)}, two: {counts.count(2)}")
     centre = hk.tile_position(0, 0)
-    for option in rl.OPTIONS:
-        walk = centre + Vector((2.2, 0.0, 0.02))
-        rows.append([
-            shot(option, f"ruins_t0_{option}_map", SUBS[option], hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, (1000, 625)),
-            shot(option, f"ruins_t0_{option}_close", "Close: one tile, a mini for scale", centre + Vector((0.6, 0.2, 0.4)), 22, 46, (1000, 625), [tuple(walk)]),
-        ])
-    rst.SHEET_STEM = "ruins_t0_sheet"
+    walk = centre + Vector((2.2, 0.0, 0.02))
+    sub = "Picked plaza ground; one or two big remains a tile"
+    TITLES["a"] = "Ruins: bigger remains"
+    rows = [[shot("a", "ruins_t0_remains_map", sub, hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, (1000, 625)),
+             shot("a", "ruins_t0_remains_close", "Close: one tile, a party for scale", centre + Vector((0.6, 0.2, 0.6)), 24, 46, (1000, 625), [tuple(walk)])]]
+    rst.SHEET_STEM = "ruins_t0_remains_sheet"
     rst.sheet(rows)

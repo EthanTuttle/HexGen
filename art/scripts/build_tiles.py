@@ -18,7 +18,10 @@ import bmesh  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
+import ruin_lands as rl  # noqa: E402
 import water as wt  # noqa: E402
+
+hk.PALETTE.update(rl.PALETTE)
 
 TAN30 = math.tan(math.radians(30))
 X0 = hk.INNER * hk.TILE_APOTHEM
@@ -37,7 +40,7 @@ def centre_outline(scale=1.0):
 
 
 # Ground colour under each terrain's props; water sits on grass so its banks show.
-GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "plains"}
+GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "ruin_ground"}
 
 
 def base(terrain, col, ground=None):
@@ -907,27 +910,8 @@ def paving(p, rng, centres, missing=0.25):
 
 
 def ruins(p, rng, kind):
-    """Crumbled stone on grass: a paved square with column stumps; streets lined with broken walls run on
-    into joined ruins; rubble where ruins meet other terrain."""
-    if kind == "centre":
-        paving(p, rng, [Vector((x * 0.5, y * 0.5, 0)) for x in range(-3, 4) for y in range(-3, 4)
-                        if math.hypot(x, y) * 0.5 < 1.3])
-        for k in range(4):
-            ang = math.radians(45 + 90 * k)
-            at = Vector((math.cos(ang), math.sin(ang), 0)) * 1.3
-            p.box(at, (0.42, 0.42, 0.12), "ruins")
-            p.cylinder(at, 0.16, rng.choice([0.35, 0.6, 1.0, 1.5]), "rock_light", segments=8, z=0.12)
-        p.log(Vector((-0.2, -1.55, 0)), 0.15, 1.1, "rock_light", spin=0.3)
-        return
-    if kind == "same":
-        paving(p, rng, [Vector((X1 - 0.25 - 0.5 * k, y, 0)) for k in range(5) for y in (-0.25, 0.25)])
-        for y in (-1.0, 1.0):
-            if rng.random() < 0.8:
-                broken_wall(p, rng, Vector((X0 + 0.35, y, 0)), Vector((X1 - 0.05, y, 0)))
-        return
-    broken_wall(p, rng, Vector((X0 + 1.1, -0.9, 0)), Vector((X0 + 1.1, 0.5, 0)))
-    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 3, 0.6, hk.WEDGE_BOUNDS):
-        p.box(at, (0.28, 0.22, 0.18), rng.choice(RUIN_STONES), spin=rng.uniform(0, 1))
+    """Tier 0: ruin_lands.py, the plaza ground (Ethan's pick, Nov 9, 2026), seeded as in the study he picked from. The remains are props (ruin_lands.REMAINS_PIECES)."""
+    rl.ruins(p, hk.seeded(p.name + "a"), kind.replace("edge_", ""), "a")
 
 
 # Terrains with a corner piece, placed where both neighbours at a corner share the terrain.
@@ -947,6 +931,7 @@ def build():
         kinds += ("centre_b", "edge_side", "edge_block") if terrain == "village" else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += ("centre_b",) if terrain == "plains" else ()
+        kinds += ("edge_same_b", "edge_other_b") if terrain == "ruins" else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "swamp" else ()
         kinds += ("centre_b", "edge_same_b", "edge_other_b") if terrain == "hills" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
