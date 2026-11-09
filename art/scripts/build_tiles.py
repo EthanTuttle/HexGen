@@ -18,7 +18,10 @@ import bmesh  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
+import ruin_lands as rl  # noqa: E402
 import water as wt  # noqa: E402
+
+hk.PALETTE.update(rl.PALETTE)
 
 TAN30 = math.tan(math.radians(30))
 X0 = hk.INNER * hk.TILE_APOTHEM
@@ -37,7 +40,7 @@ def centre_outline(scale=1.0):
 
 
 # Ground colour under each terrain's props; water sits on grass so its banks show.
-GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "plains"}
+GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "ruin_ground"}
 
 
 def base(terrain, col, ground=None):
@@ -907,7 +910,12 @@ def paving(p, rng, centres, missing=0.25):
 
 
 def ruins(p, rng, kind):
-    """Crumbled stone on grass: a paved square with column stumps; streets lined with broken walls run on
+    """Tier 0: ruin_lands.py, the plaza ground with medium overgrowth (Ethan's picks, Nov 9, 2026), seeded as in the study he picked from. The remains are props (ruin_lands.REMAINS_PIECES), placed per tile by ruin_lands.tile_remains."""
+    rl.ruins(p, hk.seeded(p.name + "a"), kind.replace("edge_", ""), "a", rl.PICKED_GROWTH)
+
+
+def ruins_v5(p, rng, kind):
+    """The tiles_v5 ruins, kept only for the dropped excavation variant's dig, which builds on them. Crumbled stone on grass: a paved square with column stumps; streets lined with broken walls run on
     into joined ruins; rubble where ruins meet other terrain."""
     if kind == "centre":
         paving(p, rng, [Vector((x * 0.5, y * 0.5, 0)) for x in range(-3, 4) for y in range(-3, 4)
@@ -947,6 +955,7 @@ def build():
         kinds += ("centre_b", "edge_side", "edge_block") if terrain == "village" else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "farmland" else ()
         kinds += ("centre_b",) if terrain == "plains" else ()
+        kinds += ("edge_same_b", "edge_other_b") if terrain == "ruins" else ()
         kinds += ("centre_b", "edge_same_b") if terrain == "swamp" else ()
         kinds += ("centre_b", "edge_same_b", "edge_other_b") if terrain == "hills" else ()
         kinds += tuple(MOUNTAINS) + RIDGE_KINDS if terrain == "hills" else ()
