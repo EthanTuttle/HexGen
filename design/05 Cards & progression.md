@@ -49,7 +49,7 @@ Instead of plain deck thinning (a smaller deck runs dry sooner and loses buildin
 - **General feats** at levels 4 and 12 (decided Oct 27, 2026): see General feats below.
 - Level milestones also widen sight range (see [Map & exploration](02 Map & exploration.md) → Day and night).
 - Class card unlocks by level (class action cards, spells): see [Classes & combat](03 Classes & combat.md) → Class action cards. New combat cards come only from level-ups (exceptions: [Classes & combat](03 Classes & combat.md) → Class action cards); class locations upgrade them and teach skills (decided Oct 22, 2026; see Class locations).
-- **Weapon mastery trainings by level 15** (decided Oct 22, 2026): Fighters 6 (enough to finish a whole tree), Rogues and Rangers 3 (one full branch). Which levels they unlock at: progression pass. Leader bards keep their 3 at levels 10, 15 and 20 (see [Weapons & gear](04 Weapons & gear.md) → Weapon mastery). Feat levels 4 and 12 leave 2, 6, 7, 9, 11, 13 and 14 free before level 15, enough for the Fighter's 6.
+- **Weapon mastery trainings by level 15** (decided Oct 22, 2026): Fighters 6 (enough to finish a whole tree), Rogues and Rangers 3 (one full branch). **Levels** (Ethan, Nov 9, 2026; placeholders for the level condense): every martial trains at level 2; Fighters then at 6, 7, 9, 11 and 13; Rogues and Rangers at 7 and 13. Leader bards keep their 3 at levels 10, 15 and 20 (see [Weapons & gear](04 Weapons & gear.md) → Weapon mastery). Feat levels 4 and 12 leave 2, 6, 7, 9, 11, 13 and 14 free before level 15, enough for the Fighter's 6.
 
 ### General feats
 
@@ -282,7 +282,7 @@ All tier 3 variants, their uniqueness and shortcut quests: [Map & exploration](0
 - [ ] **New:** Traveling merchant: keep it as a landmark, or make it per-region roll content (passing merchants)? (The Noble's Merchant Ties feat assumes a merchant that leaves after a time.)
 - [ ] More terrain cards with footprints, landmarks and tier 3 variants
 - [ ] Number of Legendaries (tier 3 variants) at launch
-- [ ] Full progression system, levels 1–100: what every level grants (including levels between milestones), ability score and HP growth, and card unlocks beyond level 15, and at which levels martials' weapon mastery trainings unlock (counts by level 15 are set: see Levels and milestones; general feats at 4 and 12 are set: see General feats)
+- [ ] Full progression system, levels 1–100: what every level grants (including levels between milestones), ability score and HP growth, and card unlocks beyond level 15, (martials' mastery training levels set Nov 9, 2026, and general feats at 4 and 12: see Levels and milestones and General feats)
 - [x] ~~Ability points per level-up~~ (settled Oct 27, 2026: no per-level points; +1 at levels 8 and 16, placed by the player: see Levels and milestones)
 - [ ] **New:** ability score increases after level 16: which levels
 - [x] ~~Rethink when ability score increases come, together with enemy attacks, defences and saves~~ (settled Nov 1, 2026: +1 at 4, 8, 12 and 16; enemy scaling in [Classes & combat](03 Classes & combat.md) → Hit chance scaling). Saves outside combat: still open there
