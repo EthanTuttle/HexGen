@@ -183,8 +183,8 @@ func _watch_start() -> void:
 ## Until the game's free or an encounter asks something; takes the first terrain at a level's pick.
 func _settle() -> void:
 	while game.busy and not game.hud.encounter_open() and not game._ended:
-		if game.level_pick.visible:
-			game.level_pick.bot_pick()
+		if game.level_up.visible:
+			game.level_up.bot_pick()
 		await get_tree().process_frame
 
 
@@ -277,7 +277,7 @@ func _bands() -> void:
 	for m in game.party:   # joined at level 1: their levels' points and HP now (later joiners get both in Races.join)
 		for l: int in Rules.SCORE_LEVELS:
 			if l <= band_level:
-				m.scores[m.ability] = mini(Races.score(m, m.ability) + 1, LevelPick.CAP)
+				m.scores[m.ability] = mini(Races.score(m, m.ability) + 1, LevelUp.CAP)
 		Races.refresh_hp(m, band_level)
 	for size in sizes:
 		while game.party.size() < size:
@@ -316,8 +316,8 @@ func _band_fights(each: int) -> void:
 			await _wait(0.1)
 			game.after.done.emit()
 			while game.busy:
-				if game.level_pick.visible:
-					game.level_pick.bot_pick()
+				if game.level_up.visible:
+					game.level_up.bot_pick()
 				await get_tree().process_frame
 			game.xp = 0
 
@@ -359,7 +359,7 @@ func _answer() -> void:
 	await _wait(0.1)
 	game.after.done.emit()
 	while game.busy:
-		if game.level_pick.visible:
+		if game.level_up.visible:
 			levels += 1
-			game.level_pick.bot_pick()
+			game.level_up.bot_pick()
 		await get_tree().process_frame

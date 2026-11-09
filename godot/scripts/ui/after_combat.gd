@@ -8,6 +8,10 @@ extends Control
 
 signal done
 
+var later := false     # the player pressed Later (the level's choices wait behind the map's banner), not Level up now
+var _level_label: Label
+var _level_text := ""
+
 var _main: PanelContainer
 var _rewards: Control
 var _reveal: Array[Control] = []
@@ -23,6 +27,8 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 		remove_child(c)
 		c.queue_free()
 	_reveal.clear()
+	later = false
+	_level_text = ""
 	add_child(Scrim.make(Color(0.141, 0.188, 0.172, 0.28)))
 
 	_main = UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(18, 14, 18, 14))
@@ -60,18 +66,38 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 		var sp := Control.new()
 		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		xr.add_child(sp)
-		var lv := UI.label("Party level %d" % game.level, "n800", 11, UI.INK_SOFT)
+		var levelled: bool = game._picks > 0
+		var lv := UI.label("Party level %d" % (game.level - game._picks if levelled else game.level), "n800", 11, UI.INK_SOFT)
 		lv.size_flags_vertical = Control.SIZE_SHRINK_END
 		xr.add_child(lv)
+		_level_label = lv
+		if levelled:   # the label turns into "Level N!" in place once the rewards are in (07 -> After-combat screen, v4, v7)
+			_level_text = "Level %d!" % (game.level - game._picks + 1)
 		xp.add_child(xr)
 		xp.add_child(Bar.make(330, 14, Color("#E6DCC8"), UI.GOLD, float(game.xp) / game.xp_needed(), UI.HEX_SHADOW))
 		bottom.add_child(xp)
 	var sp2 := Control.new()
 	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(sp2)
-	var b := TagButton.make("Back to map" if won else "Back to camp", 170, 44, 16)
-	b.pressed.connect(func(): done.emit())
-	bottom.add_child(b)
+	if won and game._picks > 0:   # Level up now opens the Level-up screen; Later returns to the map, where the banner waits
+		var f := UI.font("lilita")
+		var l := TagButton.make("Later", f.get_string_size("Later", HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x + 48, 44, 16)
+		l.bg = UI.CREAM_LIGHT
+		l.ink = Color("#33403B")
+		l.shadow = UI.HEX_SHADOW
+		l.accessibility_name = "Later"
+		l.pressed.connect(func():
+			later = true
+			done.emit())
+		bottom.add_child(l)
+		var up := TagButton.make("Level up now", f.get_string_size("Level up now", HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x + 52, 44, 16)
+		up.accessibility_name = "Level up now"
+		up.pressed.connect(func(): done.emit())
+		bottom.add_child(up)
+	else:
+		var b := TagButton.make("Back to map" if won else "Back to camp", 170, 44, 16)
+		b.pressed.connect(func(): done.emit())
+		bottom.add_child(b)
 	v.add_child(bottom)
 	add_child(Scrim.centre(_main))
 	visible = true
@@ -179,6 +205,14 @@ func _play_reveal() -> void:
 		tw.tween_property(c, "position", home, 0.4).set_trans(Tween.TRANS_SINE)
 		tw.parallel().tween_property(c, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_SINE)
 		t += 0.55
+	if _level_text != "":
+		var tw := create_tween()
+		tw.tween_interval(t + 0.4)
+		tw.tween_callback(func():
+			_level_label.text = _level_text
+			_level_label.add_theme_font_override("font", UI.font("lilita"))
+			_level_label.add_theme_font_size_override("font_size", 15)
+			_level_label.add_theme_color_override("font_color", Color("#2E6B3A")))
 
 
 ## The reward hexes, row by row, and the gold under them, centred across the box (Ethan's phone note, Nov 5, 2026).

@@ -16,7 +16,7 @@ const SAVED := {
 }
 const REBUILT := {
 	"Game": ["map", "rig", "clock", "party_node", "debug_fail_crossing", "debug_near_miss", "debug_auto_cross", "held", "busy",
-		"_encounter_views", "walk_limited", "level_pick", "end_panel", "enter_town_screen", "event_screen", "fight", "real_time",
+		"_encounter_views", "walk_limited", "level_up", "end_panel", "enter_town_screen", "event_screen", "fight", "real_time",
 		"ui", "safe", "hud", "after", "_encounter_tile", "_open_pin", "_reveal_pin", "_reveal_until", "_slot_mats", "_shown_minute",
 		"_slot_marks", "popup", "picked", "_path_marks", "_debug_fill", "force_map", "_fade", "_debug_map", "ambush"],
 	"MapBoard": ["water_shapes", "boats", "slot_nodes", "_kit", "_ground", "_ground_img", "_ground_tex", "_tile_nodes", "_water_node",
@@ -234,6 +234,6 @@ static func resume(g: Game) -> void:
 			g.hud.show_encounter(Rules.NAMES[g.land(g.party_tile)], "ask", [])
 		else:
 			g.open_event(g.party_tile)
-	elif g._picks > 0 and not g._pick_options.is_empty():   # the same three, not rolled again
-		g.busy = true
-		g.open_pick()
+	elif g._picks > 0 and not g._pick_options.is_empty():   # the same three, not rolled again: the banner waits (07 -> Level-up)
+		g.busy = false
+		g._refresh()

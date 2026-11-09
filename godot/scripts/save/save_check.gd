@@ -145,7 +145,7 @@ func _round_trip(what: String) -> void:
 	var eb: Array = b.encounters.map(func(e): return e.expires_in)
 	_check(ea.size() == eb.size() and range(ea.size()).all(func(i): return absf(ea[i] - eb[i]) < 5.0), "%s: encounters keep their time left" % what)
 	_check(game.hud.encounter_open() == game.encounters.has(game.party_tile), "%s: an encounter's pop-up shows again on its hex" % what)
-	_check(game.level_pick.visible == (game._picks > 0), "%s: owed level picks open again" % what)
+	_check(not game.level_up.visible and game.hud.level_banner_shown() == (game._picks > 0), "%s: owed level picks wait behind the banner" % what)
 	var done: bool = game.run.goal_regions > 0 and game.regions.size() >= game.run.goal_regions
 	_check(game.end_panel.visible == done, "%s: a finished run opens on its end panel%s" % [what, "" if done else " (not finished)"])
 	Engine.time_scale = 4.0
@@ -251,7 +251,7 @@ func _debug_map() -> void:
 	game.run.goal_regions = 0   # past the prototype's goal: the end panel would stop placing
 	game.end_panel.visible = false
 	game.hud.hide_encounter()
-	game.level_pick.visible = false
+	game.level_up.visible = false
 	game._picks = 0
 	game.busy = false
 	game.spawn_forest_regions()

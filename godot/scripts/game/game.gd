@@ -40,7 +40,7 @@ var xp := 0
 var level := 1
 var _picks := 0
 var _pick_options := []
-var level_pick: LevelPick
+var level_up: LevelUp
 var end_panel: EndPanel
 var _spent_minutes := 0.0
 var _next_roll := 0.0                 # the day clock's minutes, from the run's start, of the next spawn roll
@@ -130,7 +130,10 @@ func _ready() -> void:
 	DebugMenu.attach(self)
 	Screens.attach(self)
 	end_panel = EndPanel.attach(self)
-	level_pick = LevelPick.attach(self)
+	level_up = LevelUp.attach(self)
+	level_up.left.connect(func():   # Back to map: the choices wait, the banner shows (07 -> Level-up)
+		busy = false
+		_refresh())
 	_next_roll = Rules.ROLL_FIRST
 	_refresh()
 	if "--forest" in OS.get_cmdline_user_args():
@@ -1113,9 +1116,14 @@ func _add_xp(n: int) -> void:
 			Races.refresh_hp(m, level)
 
 
-## A level's terrain pick (design/06). Three terrains: first what the biggest unfinished cluster is short of, so a run that's nearly there can finish, then two others at random (PLACEHOLDER).
+## The owed level's screen, its terrain cards rolled first (Level up now, and the next owed level after Done).
 func _next_pick() -> void:
-	busy = true
+	_roll_pick()
+	open_pick()
+
+
+## A level's terrain pick (design/06). Three terrains: first what the biggest unfinished cluster is short of, so a run that's nearly there can finish, then two others at random (PLACEHOLDER).
+func _roll_pick() -> void:
 	var options := []
 	var biggest := 0
 	for t: Vector2i in map.terrains:
@@ -1128,28 +1136,38 @@ func _next_pick() -> void:
 	while options.size() < 3:
 		options.append(rest.pop_at(rng.randi_range(0, rest.size() - 1)))
 	_pick_options = options
-	open_pick()
 
 
-## The owed level's pick screen, with the three terrain cards already rolled (a save reopens the same three).
+## The owed level's Level-up screen, with the three terrain cards already rolled (a save reopens the same three); from the
+## banner it opens on the choices already made.
 func open_pick() -> void:
+	busy = true
 	var at := level - _picks + 1
-	level_pick.open(at, _pick_options, party.duplicate() if at in Rules.SCORE_LEVELS else [])
+	if level_up._level == at and level_up._options == _pick_options:
+		level_up.show_again()
+	else:
+		level_up.open(at, _pick_options, party.duplicate() if at in Rules.SCORE_LEVELS else [])
+
+
+## A level's choices wait on the map: the "Level up!" banner and the portraits' badges (07 -> Level-up).
+func level_owed() -> bool:
+	return _picks > 0 and not _pick_options.is_empty()
 
 
 ## The level's picks: the terrain card, and at levels 4, 8, 12 and 16 each member's ability point, by party index
-## (03 -> Ability scores; no score above LevelPick.CAP).
+## (03 -> Ability scores; no score above LevelUp.CAP).
 func level_picked(terrain: String, points := {}, picks := {}) -> void:
 	var at := level - _picks + 1
 	for i: int in points:
 		var m: Dictionary = party[i]
-		m.scores[points[i]] = mini(Races.score(m, points[i]) + 1, LevelPick.CAP)
+		m.scores[points[i]] = mini(Races.score(m, points[i]) + 1, LevelUp.CAP)
 		Races.refresh_hp(m, level)   # a CON point recounts every level's HP
 	for i in party.size():   # levels 2-5 (Progression): what each member picked, or the bots' pick for what it left
 		_apply_level(party[i], at, picks.get(i, {}))
 	deck.hand.append(terrain)
 	_picks -= 1
-	level_pick.visible = false
+	level_up.visible = false
+	level_up._level = 0
 	if _picks > 0:
 		_next_pick()
 		return
@@ -1157,7 +1175,7 @@ func level_picked(terrain: String, points := {}, picks := {}) -> void:
 	_refresh()
 
 
-## A member's picks for level `at` (LevelPick's picks[i]); anything not picked is made as the bots make it, so a level is
+## A member's picks for level `at` (LevelUp's picks[i]); anything not picked is made as the bots make it, so a level is
 ## never left half done.
 func _apply_level(m: Dictionary, at: int, p: Dictionary) -> void:
 	if int(m.get("levelled", 1)) >= at:
@@ -1767,6 +1785,11 @@ func start_fight(t: Vector2i) -> void:
 	hud.visible = true
 	rig.frame(party_node.centre(), 58.0, 50.0)
 	if _picks > 0:
+		if after.later:   # Later: back to the map, where the banner waits (07 -> After-combat screen)
+			_roll_pick()
+			busy = false
+			_refresh()
+			return
 		_next_pick()
 		return
 	busy = false   # no defeat toast: the results screen already showed the dropped cards (DOCS: UI -> Screen text)

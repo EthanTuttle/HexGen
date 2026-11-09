@@ -31,6 +31,7 @@ var shop := ShopCounter.new()           # the shopkeeper's counter (the River Po
 var _clock_panel: Control
 var _hand_panel: Control
 var _gear_button: Control
+var _level_banner: _LevelBanner
 
 
 func _init(g: Game) -> void:
@@ -51,6 +52,10 @@ func _ready() -> void:
 	_build_hand()
 	_build_rest()
 	_build_encounter()
+	_level_banner = _LevelBanner.new()
+	_level_banner.visible = false
+	_level_banner.pressed.connect(func(): game.open_pick())
+	add_child(_level_banner)
 	add_child(shop)
 	add_child(check)
 
@@ -79,7 +84,13 @@ func _refresh_tray() -> void:
 		h.accessibility_name = m.name
 		h.tooltip_text = UI.effects_tip(m.name, m.get("effects", []))   # DOCS: Long-press on HUD controls
 		h.clickable = true
-		if m == game.party[0]:   # the hero's portrait recentres the camera on the party (design/07)
+		if game.level_owed():   # a level's choices wait: a glowing badge, and the portraits open the Level-up screen (07)
+			h.pressed.connect(func(): game.open_pick())
+			h.accessibility_name = "%s: level up waiting, tap to open" % m.name
+			var badge := _Badge.new()
+			UI.at(badge, 26, -4)
+			h.add_child(badge)
+		elif m == game.party[0]:   # the hero's portrait recentres the camera on the party (design/07)
 			h.pressed.connect(game.camera_button.bind("center"))
 		var cc := CenterContainer.new()
 		cc.add_child(h)
@@ -545,6 +556,60 @@ func refresh() -> void:
 	if held != "":
 		_banner_text.text = "Place %s" % Rules.NAMES[held]
 	_banner.reset_size()
+	# The level-up banner waits while a level's choices are owed (07 -> Level-up; Ref-Explore-LevelBanner).
+	_level_banner.visible = game.level_owed() and not game.level_up.visible and not _in_scene
+	if _level_banner.visible:
+		_level_banner.text = "Level up! Party level %d" % (game.level - game._picks + 1)
+		_level_banner.fit()
+		UI.at(_level_banner, 378 - _level_banner.size.x * 0.5, 60)   # under the prompt banner, on the map's centre
+
+
+func level_banner_shown() -> bool:
+	return _level_banner.visible
+
+
+## "Level up! Party level 5" with Open, orange (Ref-Explore-LevelBanner); tapping it opens the Level-up screen.
+class _LevelBanner extends Control:
+	signal pressed
+	var text := ""
+	func _ready() -> void:
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	func fit() -> void:
+		var f := UI.font("lilita")
+		var w := 14 + 16 + 10 + f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x + 10 + UI.font("n900").get_string_size("Open", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 24 + 6
+		custom_minimum_size = Vector2(w, 44)
+		size = custom_minimum_size
+		accessibility_name = text
+		queue_redraw()
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, Vector2(size.x, 40))
+		draw_style_box(UI.box(UI.ORANGE_EDGE, 20), Rect2(Vector2(0, 4), r.size))
+		draw_style_box(UI.box(UI.ORANGE, 20), r)
+		draw_texture_rect(UI.icon("M12 19V5 M6 11l6-6 6 6", UI.WHITE_WARM, 16, 3.0), Rect2(Vector2(14, 12), Vector2(16, 16)), false)
+		var f := UI.font("lilita")
+		draw_string(f, Vector2(40, 26), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UI.WHITE_WARM)
+		var ow := UI.font("n900").get_string_size("Open", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 24
+		var pill := Rect2(Vector2(size.x - 6 - ow, 5), Vector2(ow, 30))
+		draw_style_box(UI.box(UI.CREAM_LIGHT, 15), pill)
+		draw_string(UI.font("n900"), pill.position + Vector2(12, 20), "Open", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UI.ORANGE_EDGE)
+	func _gui_input(e: InputEvent) -> void:
+		if UI.is_tap(self, e):
+			pressed.emit()
+
+
+## The portraits' level-up badge: a gold dot with an arrow, glowing (Ref-Explore-LevelBanner).
+class _Badge extends Control:
+	func _init() -> void:
+		custom_minimum_size = Vector2(18, 18)
+		size = custom_minimum_size
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	func _draw() -> void:
+		var c := size * 0.5
+		for k in 4:
+			draw_circle(c, 9.0 + 2.0 + k * 2.0, Color(0.949, 0.757, 0.306, 0.18))
+		draw_circle(c, 11, UI.CREAM_LIGHT)
+		draw_circle(c, 9, UI.GOLD)
+		draw_texture_rect(UI.icon("M12 19V5 M6 11l6-6 6 6", Color("#5A3A05"), 11, 3.4), Rect2(c - Vector2(5.5, 5.5), Vector2(11, 11)), false)
 
 
 func _process(_delta: float) -> void:

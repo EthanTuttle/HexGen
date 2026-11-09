@@ -40,7 +40,7 @@ func _snap(name: String) -> void:
 
 func _levels() -> void:
 	await _wait(1.0)
-	var lp := game.level_pick
+	var lp := game.level_up
 	var names := game.party.map(func(m): return "%s (%s)" % [m.name, Progression.klass(m)])
 	print("LEVEL party: %s" % [names])
 	for level in range(2, 6):
@@ -52,16 +52,32 @@ func _levels() -> void:
 		while lp.visible and guard < 60:
 			guard += 1
 			var sec := _lp_section(lp)
-			if sec == "terrain":
-				game.level_picked(game._pick_options[0], lp.placed, lp.picks)
+			if sec == "terrain":   # the Party step: the terrain card, then Done
+				if not _shot_seen.has("level%d_party" % level):
+					_shot_seen["level%d_party" % level] = true
+					await _snap("level%d_party" % level)
+					lp.terrain = game._pick_options[0]
+					lp._build()
+					await _snap("level%d_party_picked" % level)
+				lp.terrain = game._pick_options[0]
+				lp.finish()
 				break
 			var who: Dictionary = game.party[lp._who()]
 			var shot := "level%d_%s_%s" % [level, sec, Progression.klass(who)]
 			if not _shot_seen.has(shot):
 				_shot_seen[shot] = true
 				await _snap(shot)
+				if sec == "mastery":   # the Weapon mastery screen in train mode, from the step (07 v5c)
+					lp._train(lp._who(), String(who.weapon) if Progression.MASTERY.has(who.weapon) else String(who.off))
+					await _wait(0.3)
+					await _snap(shot + "_screen")
+					var ms := game.ui.get_children().filter(func(c): return c is MasteryScreen)
+					_check(ms.size() == 1, "level 2: the mastery step opens the Weapon mastery screen")
+					for c in ms:
+						c.queue_free()
+					await _wait(0.1)
 			if sec == "points":
-				lp.place(String(who.ability) if Races.score(who, who.ability) < LevelPick.CAP else "CON")
+				lp.place(String(who.ability) if Races.score(who, who.ability) < LevelUp.CAP else "CON")
 			else:
 				if not _shot_seen.has(shot + "_pop"):   # one pop-up per kind of step, before the pick so Choose shows
 					_shot_seen[shot + "_pop"] = true
@@ -73,7 +89,7 @@ func _levels() -> void:
 						lp._focus = ""
 						lp._build()
 				_lp_auto(lp)
-				if sec in ["spells", "feat", "subclass", "gain"]:
+				if sec in ["spells", "feat", "subclass", "follow", "mastery"]:
 					await _snap(shot + "_picked")
 			lp.next()
 		await _wait(0.2)
@@ -119,7 +135,48 @@ func _levels() -> void:
 	await _smoke()
 	await _feat_numbers()
 	await _bot_fight()
+	await _waiting_checks()
 	print("LEVEL DONE: %d failed" % failed)
+
+
+## A level from a fight waits (07 -> Level-up): After combat offers Level up now and Later; Later leaves the banner and the
+## portraits' badges on the map; the banner opens the screen; Back to map keeps the choices waiting; Done applies them.
+func _waiting_checks() -> void:
+	var lp := game.level_up
+	var guard := 0
+	while game.busy and guard < 2000:   # the bot fight's own results, then back on the map
+		guard += 1
+		if game.after.visible:
+			game.after.done.emit()
+		elif lp.visible:
+			lp.bot_pick()
+		await get_tree().process_frame
+	game._add_xp(game.xp_needed() - game.xp)
+	var drawn: Array[String] = ["plains", "forest"]
+	game.after.show_result(game, true, {}, drawn, [], 8)
+	await _wait(4.5)
+	var names := game.after.find_children("*", "TagButton", true, false).map(func(b): return b.text)
+	_check("Level up now" in names and "Later" in names, "after combat: Level up now and Later (%s)" % [names])
+	await _snap("after_combat_level_up")
+	game.after.visible = false
+	game._roll_pick()   # Later, as Game.encounter does after the panel
+	game.busy = false
+	game._refresh()
+	_check(game.hud.level_banner_shown() and not lp.visible, "Later: the banner waits on the map")
+	await _snap("map_banner")
+	game.open_pick()
+	await _wait(0.2)
+	_check(lp.visible and game.busy, "the banner opens the Level-up screen")
+	lp.leave()
+	await _wait(0.1)
+	_check(not lp.visible and not game.busy and game.hud.level_banner_shown(), "Back to map: the banner still waits")
+	var level := game.level
+	game.open_pick()
+	await _wait(0.2)
+	await _snap("level%d_party_only" % level)
+	lp.bot_pick()
+	await _wait(0.1)
+	_check(not lp.visible and not game.hud.level_banner_shown() and game._picks == 0, "Done: the level's choices go in and the banner goes")
 	get_tree().quit()
 
 
@@ -239,8 +296,8 @@ func _bot_fight() -> void:
 		await get_tree().process_frame
 	game.after.done.emit()
 	while game.busy:
-		if game.level_pick.visible:
-			game.level_pick.bot_pick()
+		if game.level_up.visible:
+			game.level_up.bot_pick()
 		await get_tree().process_frame
 	for m in game.party:
 		m.hp = m.max_hp

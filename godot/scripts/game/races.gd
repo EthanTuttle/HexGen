@@ -167,7 +167,7 @@ static func join(m: Dictionary, level: int) -> void:
 	m.hot = starting_bar(m)
 	for l: int in Rules.SCORE_LEVELS:   # joining late: the points already passed, on the main score, capped (03, Ethan, Nov 6, 2026)
 		if l <= level:
-			m.scores[m.ability] = mini(score(m, m.ability) + 1, LevelPick.CAP)
+			m.scores[m.ability] = mini(score(m, m.ability) + 1, LevelUp.CAP)
 	m.base_hp = m.hp
 	m.max_hp = m.hp
 	refresh_hp(m, level)   # joining at the party's level, with its levels' HP

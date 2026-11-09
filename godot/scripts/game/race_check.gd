@@ -211,13 +211,13 @@ func _run() -> void:
 		game.end_panel.open()
 		await _shot("popup_end")
 		game.end_panel.visible = false
-		game.level_pick.open(2, ["plains", "forest", "river"])
+		game.level_up.open(2, ["plains", "forest", "river"])
 		await _shot("popup_level")
-		game.level_pick.open(4, ["plains", "forest", "river"], game.party.duplicate())
+		game.level_up.open(4, ["plains", "forest", "river"], game.party.duplicate())
 		await _shot("popup_level4")
-		game.level_pick.place(String(game.party[0].ability))
+		game.level_up.place(String(game.party[0].ability))
 		await _shot("popup_level4_placed")
-		game.level_pick.next()
+		game.level_up.next()
 		await _shot("popup_level4_fluffy")
 		get_tree().quit()
 		return
@@ -1796,8 +1796,8 @@ func _done() -> void:
 		await get_tree().process_frame
 	game.after.done.emit()
 	while game.busy:
-		if game.level_pick.visible:
-			game.level_pick.bot_pick()
+		if game.level_up.visible:
+			game.level_up.bot_pick()
 		await get_tree().process_frame
 	for m in game.party:
 		m.hp = m.max_hp
@@ -1813,13 +1813,19 @@ func _done() -> void:
 	get_tree().quit()
 
 
-func _lp_section(lp: LevelPick) -> String:
+## The Party step's terrain hexes on the Level-up screen.
+func _terrain_hexes(lp: LevelUp) -> Array:
+	var names := Rules.NAMES.values()
+	return lp.find_children("*", "HexShape", true, false).filter(func(h): return h.clickable and String(h.accessibility_name).get_slice(",", 0) in names)
+
+
+func _lp_section(lp: LevelUp) -> String:
 	var st := lp._steps()
 	return st[lp.step][1] if lp.step < st.size() else "terrain"
 
 
 ## Makes the open step's choice as the bots do (Progression), so a check can walk past it.
-func _lp_auto(lp: LevelPick) -> void:
+func _lp_auto(lp: LevelUp) -> void:
 	var i := lp._who()
 	var m: Dictionary = game.party[i]
 	match _lp_section(lp):
@@ -1831,12 +1837,11 @@ func _lp_auto(lp: LevelPick) -> void:
 		"feat":
 			lp.picks[i].feat = Progression.bot_feat(m, game.run.background)
 			lp.picks[i].follow = Progression.bot_follow(m, Progression.feat_of(lp.picks[i].feat))
-		"subclass":
+		"subclass":   # the subclass and, on the same page, a caster's tier-1 spell (07 v8c)
 			lp.picks[i].subclass = Progression.bot_subclass(m)
+			lp.picks[i].tier1 = Progression.bot_tier1(m, lp.picks[i].subclass)
 		"follow":
 			lp.picks[i].sub_follow = Progression.bot_follow_sub(m, lp.picks[i].subclass)
-		"gain":
-			lp.picks[i].tier1 = Progression.bot_tier1(m, lp.picks[i].subclass)
 	lp._build()
 
 
@@ -1845,7 +1850,7 @@ func _lp_auto(lp: LevelPick) -> void:
 func _score_step_checks() -> void:
 	var hero: Dictionary = game.party[0]
 	var fluffy: Dictionary = game.party[1]
-	fluffy.scores.INT = LevelPick.CAP
+	fluffy.scores.INT = LevelUp.CAP
 	game.level = 3
 	game.xp = 0
 	for m in game.party:
@@ -1861,10 +1866,10 @@ func _score_step_checks() -> void:
 	_check(fl_class == 2, "Fluffy levels as a Wizard (+1, +1 for CON 1)")
 	game._next_pick()
 	await _wait(0.2)
-	var lp := game.level_pick
+	var lp := game.level_up
 	_check(lp.visible and lp.step == 0 and lp._members.size() == game.party.size() and _lp_section(lp) == "feat",
 			"level 4: one member at a time, hero first, the feat then the point (%d)" % lp._members.size())
-	_check(lp.find_children("*", "HexShape", true, false).filter(func(h): return h.clickable).is_empty(), "level 4: the terrain cards come after the picks")
+	_check(_terrain_hexes(lp).is_empty(), "level 4: the terrain cards come after the picks")
 	_lp_auto(lp)
 	lp.next()
 	_check(_lp_section(lp) == "points" and lp._who() == 0, "level 4: then the hero's point")
@@ -1898,14 +1903,14 @@ func _score_step_checks() -> void:
 		elif _lp_section(lp) != "points":
 			_lp_auto(lp)
 		lp.next()
-	var hexes := lp.find_children("*", "HexShape", true, false).filter(func(h): return h.clickable)
+	var hexes := _terrain_hexes(lp)
 	_check(hexes.size() == 3, "level 4: then the terrain cards")
 	await _shot("level4_terrain")
 	var hand := game.deck.hand.size()
 	game.level_picked(game._pick_options[0], lp.placed, lp.picks)
 	_check(Races.score(hero, "DEX") == dex + 1 and Races.score(hero, "CON") == con, "level 4: hero DEX %d -> %d, CON unchanged" % [dex, Races.score(hero, "DEX")])
 	_check(others.keys().all(func(i): return Races.score(game.party[i], others[i][0]) == others[i][1] + 1), "level 4: each companion's point lands on its pick")
-	_check(Races.score(fluffy, "INT") == LevelPick.CAP, "level 4: Fluffy's INT stays at 6")
+	_check(Races.score(fluffy, "INT") == LevelUp.CAP, "level 4: Fluffy's INT stays at 6")
 	_check(game.deck.hand.size() == hand + 1, "level 4: the terrain card still goes into the hand")
 	_check(Hero.live == hero.scores, "checks outside combat read the levelled scores")
 	game._add_xp(game.xp_needed())
