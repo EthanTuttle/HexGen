@@ -97,6 +97,7 @@ func _run() -> void:
 	var hud := f.hud
 	var hero: Dictionary = f.current
 	var m: Dictionary = hero.member
+	m.hot.erase("use_item")   # off the bar, as on a full one: a level-1 Fighter's bar has room since the level-3 cards moved (Nov 9, 2026)
 	var before: Array = m.hot.duplicate()
 	print("CARDS bar at the start: %s" % [before])
 

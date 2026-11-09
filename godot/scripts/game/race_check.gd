@@ -110,8 +110,10 @@ func _shot(name: String) -> void:
 
 ## Plays card id for u at a cell, with these coins next. With --shots: the aimed card before, the board after.
 func _play(u: Dictionary, id: String, at, coins: Array) -> void:
-	if not id in u.cards:   # a level-3 card (Snare, Poison Blade), as at level 3 (06 -> Start, Nov 9, 2026)
+	if not id in u.cards and id in Progression.LEVEL3_CARD.values():   # a level-3 card (Snare, Poison Blade), as at level 3 (06 -> Start, Nov 9, 2026)
 		u.cards.append(id)
+		if u.hot.size() < Rules.HOTBAR_SLOTS:
+			u.hot.append(id)
 	_turn(u)
 	Coins.forced.assign(coins)
 	f.pick_card(id)
@@ -443,7 +445,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	game.level = 9
 	_check(Foes.roster("enc_fight_bandits", ["soldier"], 1)[0].hp == hp1, "foes don't grow with the hero's level")
 	game.level = lv
-	_check(hero.cards.filter(func(id): return not id in Races.cards(m) and not id in game.run.spells) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card and spell picks)")
+	_check(hero.cards.filter(func(id): return not id in Races.cards(m) and not id in game.run.spells and id != Progression.LEVEL3_CARD.get(m.klass, "")) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card and spell picks): %s vs %s" % [hero.cards, Weapons.cards_for(m.klass, hero.weapon, hero.off)])
 	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
 	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])
 	_clear_round(s, [])
