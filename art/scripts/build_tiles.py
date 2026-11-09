@@ -910,8 +910,32 @@ def paving(p, rng, centres, missing=0.25):
 
 
 def ruins(p, rng, kind):
-    """Tier 0: ruin_lands.py, the plaza ground (Ethan's pick, Nov 9, 2026), seeded as in the study he picked from. The remains are props (ruin_lands.REMAINS_PIECES)."""
-    rl.ruins(p, hk.seeded(p.name + "a"), kind.replace("edge_", ""), "a")
+    """Tier 0: ruin_lands.py, the plaza ground with medium overgrowth (Ethan's picks, Nov 9, 2026), seeded as in the study he picked from. The remains are props (ruin_lands.REMAINS_PIECES), placed per tile by ruin_lands.tile_remains."""
+    rl.ruins(p, hk.seeded(p.name + "a"), kind.replace("edge_", ""), "a", rl.PICKED_GROWTH)
+
+
+def ruins_v5(p, rng, kind):
+    """The tiles_v5 ruins, kept only for the dropped excavation variant's dig, which builds on them. Crumbled stone on grass: a paved square with column stumps; streets lined with broken walls run on
+    into joined ruins; rubble where ruins meet other terrain."""
+    if kind == "centre":
+        paving(p, rng, [Vector((x * 0.5, y * 0.5, 0)) for x in range(-3, 4) for y in range(-3, 4)
+                        if math.hypot(x, y) * 0.5 < 1.3])
+        for k in range(4):
+            ang = math.radians(45 + 90 * k)
+            at = Vector((math.cos(ang), math.sin(ang), 0)) * 1.3
+            p.box(at, (0.42, 0.42, 0.12), "ruins")
+            p.cylinder(at, 0.16, rng.choice([0.35, 0.6, 1.0, 1.5]), "rock_light", segments=8, z=0.12)
+        p.log(Vector((-0.2, -1.55, 0)), 0.15, 1.1, "rock_light", spin=0.3)
+        return
+    if kind == "same":
+        paving(p, rng, [Vector((X1 - 0.25 - 0.5 * k, y, 0)) for k in range(5) for y in (-0.25, 0.25)])
+        for y in (-1.0, 1.0):
+            if rng.random() < 0.8:
+                broken_wall(p, rng, Vector((X0 + 0.35, y, 0)), Vector((X1 - 0.05, y, 0)))
+        return
+    broken_wall(p, rng, Vector((X0 + 1.1, -0.9, 0)), Vector((X0 + 1.1, 0.5, 0)))
+    for at in hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.3), 3, 0.6, hk.WEDGE_BOUNDS):
+        p.box(at, (0.28, 0.22, 0.18), rng.choice(RUIN_STONES), spin=rng.uniform(0, 1))
 
 
 # Terrains with a corner piece, placed where both neighbours at a corner share the terrain.

@@ -5,7 +5,7 @@ Tier 0 study, three ways to lay the ground (OPTIONS), each with the same mixed r
   b  rubble: gravel and broken stone, with patches of paving left
   c  streets: paved streets along the six walks, raised foundations between them
 Ethan picked a (Nov 9, 2026), now frozen: build_tiles.ruins builds it with the study's seeds. b and c stay for reference.
-Round 1's remains are back (the bigger, fewer set was rejected Nov 9, 2026); colour comes from overgrowth (GROWTH): moss on tops,
+Round 1's remains are back (the bigger, fewer set was rejected Nov 9, 2026); colour comes from overgrowth (GROWTH, medium picked Nov 9, 2026): moss on tops,
 ivy creeping up faces, green under the paving that shows in its cracks and holes, and small plants round the remains' feet.
 Pieces are the plain kit: <terrain>_centre, _edge_same, _edge_same_b, _edge_other, _edge_other_b, edge pieces facing +X.
 Every walk between two edges runs through an edge's middle and the tile's middle, so remains keep WALK_HALF off those lines.
@@ -59,6 +59,8 @@ STONES = ["ruin_grey", "ruin_marble", "ruin_warm", "ruin_slab_d"]   # walls mix 
 STATUE_STONES = ["ruin_marble", "ruin_bronze", "ruin_basalt", "ruin_warm"]
 OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_rubble", cover=0.08), "c": dict(ground="ruin_ground", cover=0.05)}
 KINDS = ("centre", "same", "same_b", "other", "other_b")
+PICKED_GROWTH = "medium"
+LOOKS = {"ruins"}   # tiles that stand remains in their corner gaps (tile_remains)
 # Overgrowth amounts: moss on upward faces (share), ivy on side faces (share at the foot, thinning to none at ivy_top),
 # leafy clumps round a remains' foot, green patches under the paving per piece (centre, wedge), ground cover density.
 GROWTH = {
@@ -352,7 +354,7 @@ def overgrow(p, rng, growth):
         p.cone(at, rng.uniform(0.14, 0.22), rng.uniform(0.12, 0.2), rng.choice(("ruin_ivy", "ruin_moss_b")), segments=5, spin=rng.uniform(0, 6))
 
 
-def remains_piece(which, growth="medium"):
+def remains_piece(which, growth=PICKED_GROWTH):
     """A prop piece for one kind of remains, centred on its slot, for REMAINS_PIECES."""
     def build(p, rng):
         remains(p, rng, Vector((0, 0, 0)), 0.0, which, SLOT_ROOM)

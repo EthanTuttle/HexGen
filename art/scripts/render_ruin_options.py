@@ -106,7 +106,6 @@ def shot(option, stem, sub, target, dist, el, size=(1600, 1000), mini=None, grow
     templates["base_ruins"].data.materials[0] = hk.material(rl.OPTIONS[option]["ground"])
     gc.DENSITY["ruins"] = rl.GROWTH[growth]["cover"]
     rp.build_map(templates, tiles=WORLD)
-    place_remains(templates, option)
     if mini:
         minis = rp.load_templates(rp.latest(os.path.join("minis", "standins"), "standin_minis"))
         ct._mini_spots(bpy.data.collections["map"], minis, [(m, math.radians(180)) for m in mini])
