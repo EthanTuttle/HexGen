@@ -1387,7 +1387,7 @@ def scaffold(p, rng, a, b):
 
 def excavation(p, rng, kind):
     """Open pits with ladders, scaffolding and spoil heaps; canvas tents, tables of finds, crates, lanterns."""
-    bt.ruins(p, rng, kind)
+    bt.ruins_v5(p, rng, kind)
     if kind == "centre":
         dig_pit(p, rng, Vector((0.35, 0.4, 0)))
         pit_frame(p, Vector((0.35, 0.4, 0)))
@@ -5154,6 +5154,7 @@ import swamp_lands as sl  # noqa: E402
 import fey_lands as fl  # noqa: E402
 import buried_lands as bl  # noqa: E402
 import start_tiles as st  # noqa: E402
+import ruin_lands as rl  # noqa: E402
 
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -5208,6 +5209,8 @@ VARIANTS.update(st.VARIANTS)
 hk.PALETTE.update(fl.PALETTE)
 hk.PALETTE.update(bl.PALETTE)
 hk.PALETTE.update(st.PALETTE)
+hk.PALETTE.update(rl.PALETTE)
+PROP_PIECES.update(rl.REMAINS_PIECES)
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG
