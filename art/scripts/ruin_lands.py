@@ -68,10 +68,19 @@ OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_r
 KINDS = ("centre", "same", "same_b", "other", "other_b")
 PICKED_GROWTH = "medium"
 LOOKS = {"ruins", "overrun_outpost"}   # tiles that stand remains in their corner gaps (tile_remains)
-BURROWED = {"overrun_outpost"}          # and burrows and goblin junk (tile_burrows, tile_junk)
+BURROWED = {"overrun_outpost"}          # and burrows and goblin junk instead (outpost_layout)
 BURROW_TWO = 0.5      # share of outpost tiles with two burrows; the rest have one
-BEHIND_R = 3.5        # how far out a burrow or junk sits behind a remains, in the corner past it
-JUNK_FILL = 0.85      # share of remains with goblin junk behind them
+JUNK_FILL = 0.85      # share of remains (and of bare gaps left over) with goblin junk beside them
+GAP = 0.15            # clear ground kept between any two of an outpost tile's props
+# Each prop's footprint as a circle, tile-local before turning: (x of its centre, radius). Measured from the pieces
+# (render_ruin_variants.py checks they still hold). A burrow's circle sits back over its mound; MOUTH is the ground
+# in front of its mouth, which must stay open.
+FOOT = {"ruin_arch": (0.0, 0.82), "ruin_arch_pointed": (0.0, 0.82), "ruin_arch_broken": (0.0, 1.07), "ruin_colonnade": (0.0, 0.78),
+        "ruin_column": (0.0, 0.79), "ruin_toppled": (0.0, 0.71), "ruin_robed": (0.0, 0.54), "ruin_beast": (0.0, 0.6), "ruin_head": (0.0, 0.71),
+        "ruin_torso": (0.0, 0.48), "ruin_obelisk": (0.0, 0.69), "ruin_corner": (0.0, 0.86), "ruin_wall": (0.0, 0.81), "ruin_heap": (0.0, 0.57),
+        "outpost_burrow_timber": (-0.2, 0.7), "outpost_burrow_scrap": (-0.2, 0.7),
+        "outpost_banner": (0.0, 0.27), "outpost_bones": (0.0, 0.7), "outpost_crates": (0.0, 0.61), "outpost_totem": (0.0, 0.23)}
+MOUTH = (0.85, 0.42)
 JUNK = ("banner", "banner", "bones", "crates", "totem")   # banners twice as often: they carry the colour
 # Overgrowth amounts: moss on upward faces (share), ivy on side faces (share at the foot, thinning to none at ivy_top),
 # leafy clumps round a remains' foot, green patches under the paving per piece (centre, wedge), ground cover density.
@@ -366,39 +375,97 @@ def overgrow(p, rng, growth):
         p.cone(at, rng.uniform(0.14, 0.22), rng.uniform(0.12, 0.2), rng.choice(("ruin_ivy", "ruin_moss_b")), segments=5, spin=rng.uniform(0, 6))
 
 
-def tile_burrows(q, r):
-    """(piece, x, y, spin) of an overrun outpost tile's burrows, tile-local: one or two, in bare corner gaps first, else
-    behind a remains, out in its corner. The frame stands at the hole's back, so the mouth faces the tile's middle, give or take."""
-    held = {round(math.degrees(math.atan2(y, x))) % 360 for _, x, y, _ in tile_remains(q, r)}
-    order = sorted(range(6), key=lambda c: ((30 + 60 * c) in held, gc.hash01(q * 6 + c, r, 39)))
-    out = []
-    for c in order[:2 if gc.hash01(q, r, 38) < BURROW_TWO else 1]:
-        deg = 30 + 60 * c
-        a = math.radians(deg)
-        d = BEHIND_R if deg in held else SLOT_R
+def walk_gap(x, y):
+    """Distance from tile-local (x, y) to the nearest walk: the six lines from the middle to the edges' middles."""
+    best = 99.0
+    for k in range(6):
+        a = math.radians(60 * k)
+        u, w = x * math.cos(a) + y * math.sin(a), -x * math.sin(a) + y * math.cos(a)
+        best = min(best, abs(w) if 0 <= u <= X1 else math.hypot(x, y) if u < 0 else 99.0)
+    return best
+
+
+def circle(piece, x, y, spin):
+    """A placed prop's footprint circle: (cx, cy, radius)."""
+    cx, rad = FOOT[piece]
+    return (x + cx * math.cos(spin), y + cx * math.sin(spin), rad)
+
+
+def clear(c, taken, gap=GAP):
+    """Whether circle c keeps `gap` from every circle taken, stays inside the tile and keeps a mini's width off the walks."""
+    x, y, rad = c
+    if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) + rad > X1 - 0.05:
+        return False
+    if walk_gap(x, y) < WALK_HALF + rad:
+        return False
+    return all(math.hypot(x - tx, y - ty) >= rad + tr + gap for tx, ty, tr in taken)
+
+
+def outpost_layout(q, r):
+    """An overrun outpost tile's props, tile-local (piece, x, y, spin): its remains, one or two burrows, goblin junk.
+    Burrows take bare corner gaps (a tile with none gives up one remains for its burrow), turning until the ground in
+    front of the mouth is open. Junk goes just in front of or behind a remains, or in a bare gap left over, wherever it
+    keeps GAP from everything else and off the walks; where it can't, there's none."""
+    remains = [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)]
+    slot_of = lambda x, y: round((math.degrees(math.atan2(y, x)) % 360 - 30) / 60) % 6  # noqa: E731
+    held = {slot_of(x, y): pc for pc, x, y, _ in remains}
+    bare = sorted((c for c in range(6) if c not in held), key=lambda c: gc.hash01(q * 6 + c, r, 39))
+    want = 2 if gc.hash01(q, r, 38) < BURROW_TWO else 1
+    slots = bare[:want]
+    if not slots:  # no bare gap: the burrow takes one remains' place
+        slots = [min(held, key=lambda c: gc.hash01(q * 6 + c, r, 39))]
+        remains = [t for t in remains if slot_of(t[1], t[2]) != slots[0]]
+    taken = [circle(*t) for t in remains]
+    burrows, mouths = [], []
+    for c in slots:
+        a = math.radians(30 + 60 * c)
+        x, y = SLOT_R * math.cos(a), SLOT_R * math.sin(a)
         kind = "outpost_burrow_timber" if gc.hash01(q * 6 + c, r, 40) < 0.6 else "outpost_burrow_scrap"
-        out.append((kind, d * math.cos(a), d * math.sin(a), a + math.pi + 1.0 * (gc.hash01(q * 6 + c, r, 36) - 0.5)))
-    return out
-
-
-def tile_junk(q, r):
-    """(piece, x, y, spin) of an overrun outpost tile's goblin junk: behind most remains, out in their corner, where no burrow is."""
-    used = {round(math.degrees(math.atan2(y, x))) % 360 for _, x, y, _ in tile_burrows(q, r)}
-    out = []
-    for kind, x, y, _ in tile_remains(q, r):
-        a = math.atan2(y, x)
-        c = round((math.degrees(a) % 360 - 30) / 60)
-        if round(math.degrees(a)) % 360 in used or gc.hash01(q * 6 + c, r, 41) >= JUNK_FILL:
+        base = a + math.pi
+        for turn in (1.0 * (gc.hash01(q * 6 + c, r, 36) - 0.5), 0.0, 0.5, -0.5, 0.9, -0.9):
+            face = base + turn
+            body = circle(kind, x, y, face)
+            mouth = (x + MOUTH[0] * math.cos(face), y + MOUTH[0] * math.sin(face), MOUTH[1])
+            if clear(body, taken + mouths) and all(math.hypot(mouth[0] - tx, mouth[1] - ty) >= mouth[2] + tr for tx, ty, tr in taken):
+                burrows.append((kind, x, y, face))
+                taken.append(body)
+                mouths.append(mouth)
+                break
+    junk = []
+    spots = [(pc, slot_of(x, y)) for pc, x, y, _ in remains] + [(None, c) for c in bare if c not in slots]
+    for pc, c in spots:
+        if gc.hash01(q * 6 + c, r, 41) >= JUNK_FILL:
             continue
-        which = JUNK[int(gc.hash01(q * 6 + c, r, 42) * len(JUNK))]
-        out.append((f"outpost_{which}", BEHIND_R * math.cos(a), BEHIND_R * math.sin(a), 6.283 * gc.hash01(q * 6 + c, r, 43)))
-    return out
+        first = JUNK[int(gc.hash01(q * 6 + c, r, 42) * len(JUNK))]
+        a = math.radians(30 + 60 * c)
+        done = False
+        for which in [f"outpost_{k}" for k in [first] + [k for k in ("banner", "totem") if k != first]]:  # the slimmer ones where the first won't fit, the banner first for its colour
+            rj = FOOT[which][1]
+            if pc is None:
+                options = [(SLOT_R, 0.0)]
+            else:
+                rr = FOOT[pc][1]
+                options = [(SLOT_R + d * (rr + rj + GAP), da) for d in (1, -1) for da in (0.0, 0.12, -0.12)]
+                if gc.hash01(q * 6 + c, r, 44) < 0.5:
+                    options = options[3:] + options[:3]
+            for d, da in options:
+                x, y = d * math.cos(a + da), d * math.sin(a + da)
+                if clear((x, y, rj), taken + mouths):
+                    junk.append((which, x, y, 6.283 * gc.hash01(q * 6 + c, r, 43)))
+                    taken.append((x, y, rj))
+                    done = True
+                    break
+            if done:
+                break
+    return remains, burrows, junk
 
 
 def tile_props(name, q, r):
     """Every prop a ruins tile of this look stands: (piece, x, y, spin), tile-local."""
-    out = [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
-    return out + (tile_burrows(q, r) + tile_junk(q, r) if name in BURROWED else [])
+    if name in BURROWED:
+        remains, burrows, junk = outpost_layout(q, r)
+        return remains + burrows + junk
+    return [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
 
 
 def remains_piece(which, growth=PICKED_GROWTH):
@@ -616,9 +683,10 @@ def burrow(p, rng, scrap):
     mouth in it with eyes, and a frame round the mouth, timber posts and a lintel with a skull, or bent tin sheets."""
     x0, w, h = 0.1, 0.25, 0.42
     # the mound: a dome of earth, its front cut flat where it was dug
-    before = set(p.bm.verts)
-    p.blob(Vector((-0.25, 0, 0)), 0.6, "burrow_earth", z=-0.05, squash=1.15)
-    for v in set(p.bm.verts) - before:
+    m = Matrix.Translation((-0.25, 0, -0.05)) @ Matrix.Diagonal((1, 1, 1.15, 1))
+    made = __import__("bmesh").ops.create_icosphere(p.bm, subdivisions=2, radius=0.6, matrix=m)["verts"]   # finer than blob's, so its top is round
+    p._paint(made, "burrow_earth")
+    for v in made:
         v.co.x = min(v.co.x, x0)
         v.co.z = max(v.co.z, 0.0)
     # broken stone heaped on it and against its sides
@@ -666,6 +734,15 @@ def totem(p, rng):
         p.box(Vector((math.cos(a) * 0.14, math.sin(a) * 0.14, 0)), (0.14, 0.12, 0.1), rng.choice(STONES), spin=a)
 
 
+def pole_banner(p, rng):
+    """A rag banner for the outpost's tiles: the Warren's red and yellow strips on a short cross-bar, close to the pole, so it fits beside a remains."""
+    p.box(Vector((0, 0, 0)), (0.09, 0.09, 2.6), "deadwood")
+    p.box(Vector((0.1, 0, 0)), (0.24, 0.06, 0.06), "deadwood", z=2.48)
+    for k in range(3):
+        l = rng.uniform(0.6, 0.95)
+        p.box_rot(Vector((0.07 + 0.07 * k, 0, 2.45 - l / 2)), (0.08, 0.025, l), ("goblin_rag_red", "goblin_rag_yellow")[k % 2], Matrix.Rotation(rng.uniform(-0.06, 0.06), 3, "Y"))
+
+
 def crate_stack(p, rng):
     crate(p, rng, Vector((0, 0, 0)), 0.36, spin=0.2)
     crate(p, rng, Vector((0.34, 0.18, 0)), 0.3, spin=-0.3)
@@ -676,7 +753,7 @@ def crate_stack(p, rng):
 PROP_PIECES = {**REMAINS_PIECES,
                "outpost_burrow_timber": lambda p, rng: burrow(p, rng, False),
                "outpost_burrow_scrap": lambda p, rng: burrow(p, rng, True),
-               "outpost_banner": lambda p, rng: rag_banner(p, rng, Vector((0, 0, 0)), 2.6, strips=5),
+               "outpost_banner": lambda p, rng: pole_banner(p, rng),
                "outpost_bones": lambda p, rng: (bone_pile(p, rng, Vector((0, 0, 0)), 6), bone_pile(p, rng, Vector((0.3, 0.2, 0)), 3)),
                "outpost_crates": crate_stack,
                "outpost_totem": totem}

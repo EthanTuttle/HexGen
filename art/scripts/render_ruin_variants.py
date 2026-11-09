@@ -89,31 +89,119 @@ def check_landmark(name, pieces):
     print(f"ON PATHS {sorted(bad)[:40]} ({len(bad)} verts)")
 
 
+def hull(pts):
+    """2D convex hull, anticlockwise (monotone chain)."""
+    pts = sorted(set(pts))
+    if len(pts) < 3:
+        return pts
+
+    def half(seq):
+        out = []
+        for q in seq:
+            while len(out) >= 2 and (out[-1][0] - out[-2][0]) * (q[1] - out[-2][1]) - (out[-1][1] - out[-2][1]) * (q[0] - out[-2][0]) <= 0:
+                out.pop()
+            out.append(q)
+        return out[:-1]
+    return half(pts) + half(reversed(pts))
+
+
+def poly_gap(a, b):
+    """Distance between two convex polygons; 0 if they overlap."""
+    def inside(q, poly):
+        return all((poly[(i + 1) % len(poly)][0] - poly[i][0]) * (q[1] - poly[i][1]) - (poly[(i + 1) % len(poly)][1] - poly[i][1]) * (q[0] - poly[i][0]) >= 0 for i in range(len(poly)))
+
+    def seg(q, u, v):
+        dx, dy = v[0] - u[0], v[1] - u[1]
+        t = max(0.0, min(1.0, ((q[0] - u[0]) * dx + (q[1] - u[1]) * dy) / (dx * dx + dy * dy or 1)))
+        return math.hypot(q[0] - u[0] - dx * t, q[1] - u[1] - dy * t)
+    if any(inside(q, b) for q in a) or any(inside(q, a) for q in b):
+        return 0.0
+    return min(min(seg(q, b[i], b[(i + 1) % len(b)]) for q in a for i in range(len(b))),
+               min(seg(q, a[i], a[(i + 1) % len(a)]) for q in b for i in range(len(a))))
+
+
+def shapes(pieces, names):
+    """Each prop's outline (the hull of what stands above the paving) and its points, tile-local before turning."""
+    out = {}
+    for n in names:
+        vs = [v.co for v in pieces[n].data.vertices if v.co.z > 0.03]
+        out[n] = ([(v.x, v.y) for v in vs], hull([(round(v.x, 3), round(v.y, 3)) for v in vs]), [(v.x, v.y) for v in vs if v.z > 0.1])
+    return out
+
+
+def placed(poly, x, y, spin):
+    c, s_ = math.cos(spin), math.sin(spin)
+    return [(x + px * c - py * s_, y + px * s_ + py * c) for px, py in poly]
+
+
+def layout_problems(props, shape):
+    """A tile's clashes: props whose outlines come closer than GAP, and burrow mouths with something standing in front."""
+    out = []
+    outl = [placed(shape[n][1], x, y, sp) for n, x, y, sp in props]
+    for i in range(len(props)):
+        for j in range(i + 1, len(props)):
+            if props[i][0].startswith("ruin_") and props[j][0].startswith("ruin_"):
+                continue  # remains among themselves are the frozen plain tiles'
+            if math.hypot(props[i][1] - props[j][1], props[i][2] - props[j][2]) > 3.0:
+                continue
+            g = poly_gap(outl[i], outl[j])
+            if g < rl.GAP - 0.02:
+                out.append(f"{props[i][0]}~{props[j][0]} gap {g:.2f}")
+    for n, x, y, sp in props:
+        if "burrow" not in n:
+            continue
+        c, s_ = math.cos(sp), math.sin(sp)
+        for m, mx, my, msp in props:
+            if (m, mx, my) == (n, x, y):
+                continue
+            for px, py in placed(shape[m][2], mx, my, msp):
+                u, w = (px - x) * c + (py - y) * s_, -(px - x) * s_ + (py - y) * c
+                if 0.3 < u < 1.3 and abs(w) < 0.45:
+                    out.append(f"{n} mouth blocked by {m}")
+                    break
+    return out
+
+
 def check(variant, pieces):
     """Every prop the variant's tiles stand, over many tiles: anything taller than 0.25 nearer a walk than WALK_HALF or
-    past the tile's edge; triangles per tile."""
+    past the tile's edge; outlines closer than GAP; burrow mouths blocked; FOOT still holding; triangles per tile."""
     bad = set()
     tris = {}
     for name, obj in pieces.items():
         obj.data.calc_loop_triangles()
         tris[name] = len(obj.data.loop_triangles)
+    props_ = [n for n in pieces if n in rl.PROP_PIECES]
+    shape = shapes(pieces, props_)
+    for n in props_:
+        cx, rad = rl.FOOT[n]
+        got = max(math.hypot(px - cx, py) for px, py in shape[n][0])
+        if got > rad + 1e-3:
+            print(f"FOOT TOO SMALL {n}: {got:.3f} > {rad}")
     tall = {n: [v.co.copy() for v in o.data.vertices if v.co.z >= 0.25] for n, o in pieces.items() if n in rl.PROP_PIECES}
-    worst = 0
+    worst, clashes, counts, dropped = 0, {}, {}, 0
     for q in range(-10, 10):
         for r in range(-10, 10):
             props = rl.tile_props(variant, q, r)
             worst = max(worst, sum(tris[n] for n, *_ in props))
+            nb = sum("burrow" in n for n, *_ in props)
+            counts[nb] = counts.get(nb, 0) + 1
+            dropped += len(rl.tile_remains(q, r)) > sum(n.startswith("ruin_") for n, *_ in props)
+            found = layout_problems(props, shape)
+            if found:
+                clashes[(q, r)] = found
             for name, sx, sy, spin in props:
                 for co in tall[name]:
                     x = sx + co.x * math.cos(spin) - co.y * math.sin(spin)
                     y = sy + co.x * math.sin(spin) + co.y * math.cos(spin)
-                    if rro.walk_gap(x, y) < rl.WALK_HALF:
+                    if rl.walk_gap(x, y) < rl.WALK_HALF:
                         bad.add((name, "walk"))
                     if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) > rl.X1 - 0.05:
                         bad.add((name, "edge"))
     ground = tris[f"{variant}_centre"] + 6 * max(tris[n] for n in pieces if n.startswith(f"{variant}_edge"))
     print(f"TRIS {variant}: ground {ground} + props up to {worst} = {ground + worst} of 4816; props {dict((n, tris[n]) for n in tall)}")
     print(f"OFF BOUNDS {sorted(bad)}")
+    print(f"BURROWS PER TILE {dict(sorted(counts.items()))}; tiles giving up a remains for a burrow {dropped} of 400")
+    print(f"CLASHES {len(clashes)} tiles {dict(list(clashes.items())[:8])}")
 
 
 def night():
@@ -163,6 +251,8 @@ if __name__ == "__main__":
         check_landmark(variant, {k: v for k, v in build_live(variant).items()})
     else:
         check(variant, build_live(variant))
+    if "check" in args:
+        sys.exit(0)
     title = TITLES[variant]
     centre = hk.tile_position(0, 0)
     party = tuple(centre + Vector((2.2, 0.0, 0.02)))
@@ -174,8 +264,14 @@ if __name__ == "__main__":
         at = hk.tile_position(*near)
         party = tuple(at + Vector((2.2, 0.0, 0.02)))
         close = (at + Vector((0.4, 0.6, 0.5)), 24, 42)
-    if "map_day" in args:  # just the region map by day
-        shot(variant, f"ruins_{variant}_map_day", title, "Its region among plain ruins and plains, by day", hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, False)
+    tiles = [tuple(int(v) for v in a_[5:].split(",")) for a_ in args if a_.startswith("tile:")]
+    if "map_day" in args or tiles:  # just the region map by day, and close-ups of the named tiles (-- overrun_outpost map_day tile:0,1)
+        if "map_day" in args:
+            shot(variant, f"ruins_{variant}_map_day", title, "Its region among plain ruins and plains, by day", hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, False)
+        for t in tiles:
+            at = hk.tile_position(*t)
+            shot(variant, f"ruins_{variant}_tile_{t[0]}_{t[1]}".replace("-", "m"), title, f"Close: tile {t[0]},{t[1]}, a party for scale, by day",
+                 at + Vector((0, 0.3, 0.4)), 21, 50, False, tuple(at + Vector((0.0, 0.0, 0.02))))
         sys.exit(0)
     rows = []
     for dark in (False, True):
