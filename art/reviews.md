@@ -183,3 +183,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-09 | `art/preview/ruins_t0_a_map_v1.png` | approved (ground) | Ruins plain tiles round 1 (claude/art-ruins-3): a Plaza's flagstone ground picked over b Rubble and c Streets |
 | 2026-11-09 | `art/preview/ruins_t0_sheet_v1.png` | note | The remains need to be bigger and fewer, with more contrast against the ground: they read small and grey at map distance |
 | 2026-11-09 | `art/preview/ruins_t0_remains_sheet_v1.png` | rejected | Bigger remains read as disconnected random objects; go back to round 1's many smaller remains (cohesive look) and add colour with overgrowth, moss and ivy instead |
+| 2026-11-09 | `art/preview/ruins_t0_growth_medium_map_v1.png` | approved | Ruins plain tiles: round 1's remains on the Plaza ground with medium overgrowth (moss, ivy, leafy clumps, green in the cracks; grass cover 0.1). Light and heavy not picked |
