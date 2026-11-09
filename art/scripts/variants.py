@@ -5210,7 +5210,9 @@ hk.PALETTE.update(fl.PALETTE)
 hk.PALETTE.update(bl.PALETTE)
 hk.PALETTE.update(st.PALETTE)
 hk.PALETTE.update(rl.PALETTE)
-PROP_PIECES.update(rl.REMAINS_PIECES)
+PROP_PIECES.update(rl.PROP_PIECES)
+VARIANTS.update(rl.VARIANTS)
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | rl.OWN
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
 VARIANTS["bog"] = sl.BOG

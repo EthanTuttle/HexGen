@@ -52,15 +52,23 @@ PALETTE = {
     "ruin_moss_b": "#86A75C",   # overgrowth: moss on tops
     "ruin_ivy": "#527F3B",      # ivy on faces and leafy clumps
     "ruin_crack": "#7FA552",    # green in the paving's cracks
+    # overrun outpost
+    "burrow_earth": "#8B6B4C",
+    "burrow_earth_dark": "#6E5239",
+    "burrow_dark": "#2B241E",
+    "goblin_eye": "#F4E04D",    # its own material: the engine lights it at night
 }
-OWN = set()
+OWN = {"goblin_eye"}
 SLABS = ["ruin_slab_a", "ruin_slab_b", "ruin_slab_c", "ruin_slab_d"]
 STONES = ["ruin_grey", "ruin_marble", "ruin_warm", "ruin_slab_d"]   # walls mix these
 STATUE_STONES = ["ruin_marble", "ruin_bronze", "ruin_basalt", "ruin_warm"]
 OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_rubble", cover=0.08), "c": dict(ground="ruin_ground", cover=0.05)}
 KINDS = ("centre", "same", "same_b", "other", "other_b")
 PICKED_GROWTH = "medium"
-LOOKS = {"ruins"}   # tiles that stand remains in their corner gaps (tile_remains)
+LOOKS = {"ruins", "overrun_outpost"}   # tiles that stand remains in their corner gaps (tile_remains)
+BURROWED = {"overrun_outpost"}          # and burrows in every corner gap (tile_burrows)
+BURROW_IN = 0.32      # a burrow under a remains is dug in at its foot, this far in from the slot toward the tile's middle
+BARE_BURROW = 0.6     # share of bare gaps that hold a big burrow of their own
 # Overgrowth amounts: moss on upward faces (share), ivy on side faces (share at the foot, thinning to none at ivy_top),
 # leafy clumps round a remains' foot, green patches under the paving per piece (centre, wedge), ground cover density.
 GROWTH = {
@@ -354,6 +362,30 @@ def overgrow(p, rng, growth):
         p.cone(at, rng.uniform(0.14, 0.22), rng.uniform(0.12, 0.2), rng.choice(("ruin_ivy", "ruin_moss_b")), segments=5, spin=rng.uniform(0, 6))
 
 
+def tile_burrows(q, r):
+    """(piece, x, y, spin) of an overrun outpost tile's burrows, tile-local. Every remains has one dug in under its foot, on
+    the side toward the tile's middle; most bare gaps have a bigger one with its spoil heaped round it.
+    The mouth faces the tile's middle, give or take, so it shows across the tile."""
+    held = {round(math.degrees(math.atan2(y, x))) % 360 for _, x, y, _ in tile_remains(q, r)}
+    out = []
+    for c in range(6):
+        deg = 30 + 60 * c
+        a = math.radians(deg)
+        face = a + math.pi + 1.4 * (gc.hash01(q * 6 + c, r, 36) - 0.5)
+        if deg in held:
+            d = SLOT_R - BURROW_IN
+            out.append(("outpost_burrow", d * math.cos(a), d * math.sin(a), face))
+        elif gc.hash01(q * 6 + c, r, 37) < BARE_BURROW:
+            out.append(("outpost_burrow_big", SLOT_R * math.cos(a), SLOT_R * math.sin(a), face))
+    return out
+
+
+def tile_props(name, q, r):
+    """Every prop a ruins tile of this look stands: (piece, x, y, spin), tile-local."""
+    out = [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
+    return out + (tile_burrows(q, r) if name in BURROWED else [])
+
+
 def remains_piece(which, growth=PICKED_GROWTH):
     """A prop piece for one kind of remains, centred on its slot, for REMAINS_PIECES."""
     def build(p, rng):
@@ -363,6 +395,60 @@ def remains_piece(which, growth=PICKED_GROWTH):
 
 
 REMAINS_PIECES = {f"ruin_{k}": remains_piece(k) for k in REMAINS}
+
+
+# --- Overrun outpost: burrows under the remains, goblin eyes in them ------------
+
+def burrow(p, rng, big):
+    """A mound of dug earth with a dark mouth facing +X, eyes in the dark, broken slabs and spilled earth round it.
+    big: a bare gap's burrow, its spoil heaped higher behind it."""
+    s = 1.3 if big else 1.0
+    # spilled earth in a fan out of the mouth, over the paving
+    plate(p, [Vector((0.25 * s + math.cos(t) * 0.5 * s * (1.25 if math.cos(t) > 0 else 0.7), math.sin(t) * 0.42 * s, 0)) for t in [6.283 * k / 9 for k in range(9)]], 0.036, "burrow_earth")
+    # the mound: a squashed dome behind the mouth
+    p.blob(Vector((-0.12 * s, 0, 0)), 0.42 * s, "burrow_earth", z=-0.1 * s, squash=0.62)
+    if big:
+        p.blob(Vector((-0.55, 0.3, 0)), 0.36, "burrow_earth_dark", z=-0.08, squash=0.7)
+        p.blob(Vector((-0.45, -0.38, 0)), 0.3, "burrow_earth", z=-0.06, squash=0.65)
+    # the mouth: a dark arch leaning back into the mound
+    h, w = 0.3 * s, 0.24 * s
+    pts = [(-w, 0.0), (w, 0.0), (w * 0.9, h * 0.6), (w * 0.45, h), (-w * 0.45, h), (-w * 0.9, h * 0.6)]
+    x0 = 0.2 * s
+    lean = 0.35
+    f = p.bm.faces.new([p.bm.verts.new((x0 - z * lean, y, z + 0.02)) for y, z in pts])
+    f.material_index = p._slot("burrow_dark")
+    p.surface.add(f)
+    p.bm.normal_update()
+    if f.normal.x < 0:
+        f.normal_flip()
+    # a dark floor going in
+    plate(p, [Vector((x0 + 0.08, -w, 0)), Vector((x0 + 0.08, w, 0)), Vector((x0 - 0.12, w * 0.8, 0)), Vector((x0 - 0.12, -w * 0.8, 0))], 0.04, "burrow_dark")
+    # eyes: pairs in the dark, just in front of the mouth's face
+    pairs = [(0.0, 0.42)] + ([(-0.11, 0.24), (0.12, 0.62)] if big else [(0.1, 0.25)])
+    for y, zf in pairs:
+        z = h * zf + 0.02
+        x = x0 - z * lean + 0.012
+        for dy in (-0.045, 0.045):
+            p.box(Vector((x, (y + dy) * s, 0)), (0.014, 0.038, 0.03), "goblin_eye", z=z)
+    # paving slabs tipped up where it was dug through
+    for k in range(3 if big else 2):
+        a = rng.uniform(-1.2, 1.2) + (0 if k % 2 else math.pi)
+        c = Vector((math.cos(a), math.sin(a), 0)) * rng.uniform(0.45, 0.62) * s
+        rot = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(rng.uniform(0.35, 0.7), 3, "Y")
+        p.box_rot(c + Vector((0, 0, 0.1)), (0.34, 0.3, 0.06), rng.choice(SLABS), rot)
+
+
+PROP_PIECES = {**REMAINS_PIECES, "outpost_burrow": lambda p, rng: burrow(p, rng, False), "outpost_burrow_big": lambda p, rng: burrow(p, rng, True)}
+
+
+def plain_ground(p, rng, kind):
+    """A ruins variant's ground: the plain tiles' own pieces, slab for slab (they're frozen), seeded by the plain piece's name."""
+    kind = kind.replace("edge_", "")
+    plain = "ruins_centre" if kind == "centre" else f"ruins_edge_{kind}"
+    ruins(p, hk.seeded(plain + "a"), kind, "a", PICKED_GROWTH)
+
+
+VARIANTS = {"overrun_outpost": ("ruins", plain_ground, "ruin_ground", ("edge_same_b", "edge_other_b"))}
 
 
 # --- Ground per option -------------------------------------------------------
