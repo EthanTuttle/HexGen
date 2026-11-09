@@ -211,12 +211,13 @@ func _fill_party() -> void:
 
 ## "Race Class (Subclass) · Lv" (design/07 -> Screen text -> Character subtitles). No subclass before level 5.
 func subtitle(m: Dictionary) -> String:
+	var sc := Progression.sub(m)
 	if m == game.party[0] and Hero.current != null:
-		return Hero.current.subtitle(game.level)
+		return Hero.current.subtitle(game.level, sc)
 	if COMPANION.has(m.name):
-		return "%s %s · Lv %d" % [COMPANION[m.name][0], COMPANION[m.name][1], game.level]
+		return Hero.subtitle_of(COMPANION[m.name][0], COMPANION[m.name][1], sc, game.level)
 	var race: String = m.get("sub", "") if m.get("sub", "") != "" and m.get("race", "") in ["Elf", "Dwarf"] else m.get("race", "")
-	return "%s Fighter · Lv %d" % [race, game.level]   # the hero with no creator behind the run (Rules.HERO_DEFAULT)
+	return Hero.subtitle_of(race, "Fighter", sc, game.level)   # the hero with no creator behind the run (Rules.HERO_DEFAULT)
 
 
 func _pick_member(i: int) -> void:

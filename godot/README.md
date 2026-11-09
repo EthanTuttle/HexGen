@@ -113,14 +113,14 @@ A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`)
 
 ## Action cards screen
 
-`scripts/action_cards/`, from Action cards v3b, opened by combat's Edit hotbar (All actions). `-- --cardscheck` plays it by touch in a fight and prints `CARDS OK` / `CARDS FAIL` (add `--shots` for `screens/action_cards/`, `--safe=both` for the phone). Each member keeps its 7 slots as `hot_slots`, gaps included. `hot`, which combat draws, is the same cards without the gaps, changed in place so the fight sees it.
+`scripts/action_cards/`, from Action cards v3b, opened by combat's Edit hotbar (All actions). `-- --cardscheck` plays it by touch in a fight and prints `CARDS OK` / `CARDS FAIL` (add `--shots` for `screens/action_cards/`, `--safe=both` for the phone; `--shots --subshots` levels the party to 5 the bots' way and shoots each member's top bar as `subtitle_<n>.png`, then quits). Each member keeps its 7 slots as `hot_slots`, gaps included. `hot`, which combat draws, is the same cards without the gaps, changed in place so the fight sees it.
 
 | Placeholder | Value here | Why |
 | --- | --- | --- |
 | Weapon sets | One. The Set 1 / Set 2 tabs always show; Set 2 is dimmed with "No weapon" and can't be picked (Ethan, Nov 5) | Party members have one weapon |
 | List columns | 3 on a phone, 4 at full width | v3 has 4 at 844 pt |
 | Scrolling the list by touch | A quick swipe up or down in the list scrolls it until the finger leaves the list, which lifts the card. A sideways move, or a move after a long-press, lifts it at once. With the mouse, every drag lifts and the wheel scrolls | v3 drags on every move, which leaves no way to scroll by finger |
-| Subtitles | The hero's from the creator. Companions: "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue" · Lv. No subclass before level 5 | Fluffy's race name is open |
+| Subtitles | "Race Class (Subclass) · Lv": the hero's race and class from the creator; companions "Cat Wizard", "Dragonborn Cleric", "Wood Elf Rogue". The subclass shows once picked at level 5 (the Action cards top bar and the save's subtitle on Load) | Fluffy's race name is open |
 | Gear screen way in | Not hooked up | No gear screen yet; the menu backdrop is built |
 
 Per 07 (Nov 5): Race first, then Basic, Weapon and Class; combat's 170 pt details panel with its sizes (name 17, text 11), and every card fits it (`--cardscheck` shows each one; Breath Weapon, blue, is the tallest at 188 of 276 pt); no label column on the tray. Cut: v3's hints, the drag footer, tiles' source words and slot numbers, the slots' number badges, "always available", the set's name in the list's header (the tab says it), and the Class section's race and class. "Empty" stays in empty slots.

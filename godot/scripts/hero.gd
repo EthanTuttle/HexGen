@@ -23,9 +23,13 @@ var proficiencies: Array = []   # the background's pick, the class's pick
 var gear := {}                  # main, off, armour
 
 
-## "Race Class · Lv" (DOCS: Screen text -> Character subtitles).
-func subtitle(level := 1) -> String:
-	return "%s %s · Lv %d" % [race_name, klass.capitalize(), level]
+## "Race Class (Subclass) · Lv" (DOCS: Screen text -> Character subtitles). The subclass comes at level 5; before it, "Race Class · Lv".
+func subtitle(level := 1, subclass := "") -> String:
+	return Hero.subtitle_of(race_name, klass.capitalize(), subclass, level)
+
+
+static func subtitle_of(race_text: String, klass_text: String, subclass: String, level: int) -> String:
+	return "%s %s%s · Lv %d" % [race_text, klass_text, " (%s)" % subclass if subclass != "" else "", level]
 
 
 ## This check's coins with the hero's score, and +1 if proficient (design/03 -> Checks outside combat). With no creator

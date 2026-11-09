@@ -118,6 +118,16 @@ func _run() -> void:
 	_check(screen.member() == m, "it opens on whoever acts (%s)" % m.name)
 	_check(screen._name.text == m.name and screen._sub.text != "", "top bar: %s, %s" % [screen._name.text, screen._sub.text])
 	await _shot("from_combat")
+	if "--subshots" in OS.get_cmdline_user_args():   # test aid: every member's top bar at level 5, subclass picked the bots' way
+		game.level = 5
+		for mem: Dictionary in game.party:
+			Progression.catch_up(mem, 5)
+		for i in game.party.size():
+			await _touch(_centre(screen._party.get_child(i)))
+			print("CARDS subtitle %s: %s" % [screen._name.text, screen._sub.text])
+			await _shot("subtitle_%d" % i)
+		get_tree().quit()
+		return
 
 	# Fits: nothing past the safe area, the tray's slots inside the tray, the details' contents inside the panel
 	var safe := screen._root.get_global_rect()

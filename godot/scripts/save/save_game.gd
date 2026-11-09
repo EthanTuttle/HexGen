@@ -91,7 +91,7 @@ static func capture(g: Game) -> Dictionary:
 		version = VERSION,
 		saved_at = int(Time.get_unix_time_from_system()),
 		meta = {hero_id = hero.id if hero else "", name = g.party[0].name, level = g.level, place = place_of(g),
-			subtitle = hero.subtitle(g.level) if hero else "", color = g.party[0].color, initial = g.party[0].initial},
+			subtitle = hero.subtitle(g.level, Progression.sub(g.party[0])) if hero else "", color = g.party[0].color, initial = g.party[0].initial},
 		hero = _fields(hero) if hero else {},
 		run = _fields(g.run),
 		rng = {seed = g.rng.seed, state = g.rng.state},
