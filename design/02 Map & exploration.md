@@ -42,6 +42,16 @@ The campaign map, placement rules, day and night, terrain and regions, encounter
 - A card is placed first, then the party walks in. Random content on plain land (fights, passing merchants, village quests) rolls per region and is spread across the region's tiles, not rolled per tile (decided Oct 23, 2026). Landmark and Story contents are fixed.
 - Already-placed tiles have a chance to spawn encounters. Spawning works per region: each region can hold a set number of active encounters, and tier-2 regions hold more and tougher ones. More spawn at night, and limited vision makes it harder to see what is around the hero.
 - **Three kinds of encounter** (decided Nov 4, 2026): random map events are one system, all spawning on the same rolls, region limits and lifespan: **Fight**, **Social** (e.g. a roaming trader, a drinking contest) and **Discovery** (e.g. buried treasure). Each region's table sets the mix (ruins: Fight and Discovery only, see Region variants and locations). Landmarks keep their own events. **A few roam** (Nov 4, 2026): some table entries, such as traders, patrols and beasts, move a tile at a time on the clock; the rest stay put until they expire. **What you see** (Nov 4, 2026): an encounter's badge and figures show only within sight range; by day, sight is wider (double, as a placeholder), and at night it's the normal range. Its details show on long-press within that range. How Scouting reveals encounters past it: open.
+- **Encounter tables** (first set Nov 8, 2026, for ruins): unfinished tiles of a terrain roll its base table; a finished variant region rolls only its own table, which replaces the base one. Some Discoveries can start a fight when their check fails. Entries name kinds of foe; stats come with the enemy roster.
+
+  | Ruins table | Fight | Discovery |
+  |---|---|---|
+  | Base (unfinished ruins) | Goblin scouts (raiding parties out of the Warrens; they roam) | Old cache (coins and gear; on a fail it's a mimic); fallen adventurer (remains with gear and a note or map pointing to something nearby) |
+  | Overrun outpost | Goblin war band (a bigger group with a boss; stays put); trap-setters (goblins who fight on a grid full of their own traps) | Caged prisoner (free a captive for a reward; a fail wakes the guards); goblin totem (smash or deface it for a short boost against goblins in the region) |
+  | Haunted ruins | Skeleton patrol (old soldiers walking their rounds; they roam); wraiths (night only) | Grave goods (valuables left with the dead; a fail rouses wraiths); restless spirit (lay it to rest with Religion for a blessing) |
+  | Basilisk ruins | Young basilisks (a weaker gaze); giant lizards | Petrified explorer (a stone adventurer whose pack can still be searched); basilisk eggs (a big reward; a fail brings a basilisk) |
+  | Trapped vault | Mimics; treasure hunters (a rival crew trying to crack the vault first) | Open: waits on the variant's look (Presentation → Region variant looks) |
+
 - **Encounters on water** (decided Nov 4, 2026): encounters stand on chosen clear land spots. Water tiles with no land spot get water-borne encounters later (boats, water spirits and so on); until then, nothing spawns on them. On rapids, an encounter stands only where a party can walk to it: on the near bank or by a bridge, never needing a crossing (for now).
 - **Encounter rolls** (decided Nov 1, 2026): spawning rolls every 8 in-game hours (about 10 real minutes), so a full day has three rolls, each on random already-placed tiles. Encounters are temporary (fights, passing merchants and the like).
 - Spawned encounters disappear after about 15 minutes (12 in-game hours, half a day cycle) if not dealt with (exception: see Defeat).
@@ -193,8 +203,9 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - [x] ~~What "reverts to plain terrain" means~~ (settled Oct 23, 2026: plains/grassland)
 - [x] ~~One tile joining two finished regions~~ (settled Oct 23, 2026: they stay separate; the tile joins the newer region)
 - [ ] **New:** Militia Barn mixes a repeatable quest with fights: service or quest site? (Sentinel Hall's golem lore question dropped with the variant, Nov 8, 2026)
-- [ ] **New:** farmland and ruins: encounter tables, crossing speed, which obstacles they get, and whether they get cluster goals (ruins mix settled Nov 8, 2026: Fight and Discovery only; the entries themselves are still open)
-- [ ] **New (Nov 8, 2026):** the ruins dungeons' rooms: Warren, Crypt, Basilisk Nest and Vault (rooms, traps, bosses), with the dungeon room counts
+- [ ] **New:** farmland and ruins: encounter tables, crossing speed, which obstacles they get, and whether they get cluster goals (ruins settled Nov 8, 2026: Fight and Discovery only, tables in Hex contents and encounters, the trapped vault's Discoveries still open)
+- [ ] **New (Nov 8, 2026):** the ruins dungeons' rooms: Warren, Crypt, Basilisk Nest and Vault (rooms, traps, bosses), with the dungeon room counts, in the general landmark pass. Room ideas for the Vault (Ethan liked them as rooms, not map encounters): a pressure-plate hall, a puzzle lock, a too-good chest that's a mimic, a hidden lever to a side room
+- [ ] **New (Nov 8, 2026):** trapped vault's Discovery encounters, after its look is chosen
 - [x] ~~Rare cards on the map~~ (settled Oct 24, 2026: Rare cards are no longer map cards; they are landmarks in region pools)
 - [ ] **New (placement review, Oct 23):** does a terrain card placed next to a Story card still check terrain pairing against it?
 - [ ] **New:** tier 3 variants: each god's holy-land aura (set with the temple rewards); the Mad King's decree list; shortcut quests (start and steps) for every tier 3 that lacks one
