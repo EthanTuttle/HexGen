@@ -29,7 +29,8 @@ RING2 = [(2, 0), (2, -1), (2, -2), (1, -2), (0, -2), (-1, -1), (-2, 0), (-2, 1),
 def world(variant):
     """The variant's region of seven, plain ruins round most of it, plains beyond; a landmark at its middle."""
     region = rl.LANDMARKS.get(variant, variant)
-    w = {(0, 0): variant, **{d: region for d in hk.NEIGHBOURS}}
+    middle = next((m for m, v in rl.LANDMARKS.items() if v == variant), variant)  # a variant's landmark, if it has one
+    w = {(0, 0): middle, **{d: region for d in hk.NEIGHBOURS}}
     for k, t in enumerate(RING2):
         w[t] = "plains" if k in (5, 6, 7) else "ruins"
     for t in ((3, -1), (3, -2), (-1, 3), (-2, 3), (1, 2)):
@@ -41,11 +42,11 @@ def build_live(variant):
     """The variant's pieces and every ruins prop, built now (the kit has them only once they're approved)."""
     col = bpy.data.collections.new("live")
     out = {}
-    if variant in rl.LANDMARK_CENTRES:
-        p = hk.Piece(f"{variant}_centre")
-        rl.LANDMARK_CENTRES[variant](p, hk.seeded(p.name), "centre")
+    variant = rl.LANDMARKS.get(variant, variant)
+    for lm in (m for m, v in rl.LANDMARKS.items() if v == variant):
+        p = hk.Piece(f"{lm}_centre")
+        rl.LANDMARK_CENTRES[lm](p, hk.seeded(p.name), "centre")
         out[p.name] = p.finish(col)
-        variant = rl.LANDMARKS[variant]
     _, builder, _, extras = rl.VARIANTS[variant]
     for kind in ("centre", "same", "other") + extras:
         name = f"{variant}_{kind}" if kind not in ("same", "other") else f"{variant}_edge_{kind}"
@@ -89,35 +90,29 @@ def check_landmark(name, pieces):
 
 
 def check(variant, pieces):
-    props = {n: o for n, o in pieces.items() if n in rl.PROP_PIECES}
+    """Every prop the variant's tiles stand, over many tiles: anything taller than 0.25 nearer a walk than WALK_HALF or
+    past the tile's edge; triangles per tile."""
     bad = set()
-    for name, obj in props.items():
-        for t in range(12):
-            spin = math.radians(30 * t)
-            for c in range(6):
-                a = math.radians(30 + 60 * c)
-                for sx, sy in ((rl.SLOT_R * math.cos(a), rl.SLOT_R * math.sin(a)), ((rl.SLOT_R - rl.BURROW_IN) * math.cos(a), (rl.SLOT_R - rl.BURROW_IN) * math.sin(a))):
-                    if name.startswith("ruin_") and sx != rl.SLOT_R * math.cos(a):
-                        continue
-                    for v in obj.data.vertices:
-                        if v.co.z < 0.25:
-                            continue
-                        x = sx + v.co.x * math.cos(spin) - v.co.y * math.sin(spin)
-                        y = sy + v.co.x * math.sin(spin) + v.co.y * math.cos(spin)
-                        if rro.walk_gap(x, y) < rl.WALK_HALF:
-                            bad.add((name, "walk"))
-                        if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) > rl.X1 - 0.05:
-                            bad.add((name, "edge"))
     tris = {}
     for name, obj in pieces.items():
         obj.data.calc_loop_triangles()
         tris[name] = len(obj.data.loop_triangles)
-    ground = tris[f"{variant}_centre"] + 6 * max(tris[n] for n in pieces if n.startswith(f"{variant}_edge"))
+    tall = {n: [v.co.copy() for v in o.data.vertices if v.co.z >= 0.25] for n, o in pieces.items() if n in rl.PROP_PIECES}
     worst = 0
-    for q in range(-12, 12):
-        for r in range(-12, 12):
-            worst = max(worst, sum(tris[p] for p, *_ in rl.tile_props(variant, q, r)))
-    print(f"TRIS {variant}: ground {ground} + props up to {worst} = {ground + worst} of 4816; props {dict((n, tris[n]) for n in props)}")
+    for q in range(-10, 10):
+        for r in range(-10, 10):
+            props = rl.tile_props(variant, q, r)
+            worst = max(worst, sum(tris[n] for n, *_ in props))
+            for name, sx, sy, spin in props:
+                for co in tall[name]:
+                    x = sx + co.x * math.cos(spin) - co.y * math.sin(spin)
+                    y = sy + co.x * math.sin(spin) + co.y * math.cos(spin)
+                    if rro.walk_gap(x, y) < rl.WALK_HALF:
+                        bad.add((name, "walk"))
+                    if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) > rl.X1 - 0.05:
+                        bad.add((name, "edge"))
+    ground = tris[f"{variant}_centre"] + 6 * max(tris[n] for n in pieces if n.startswith(f"{variant}_edge"))
+    print(f"TRIS {variant}: ground {ground} + props up to {worst} = {ground + worst} of 4816; props {dict((n, tris[n]) for n in tall)}")
     print(f"OFF BOUNDS {sorted(bad)}")
 
 
@@ -144,10 +139,9 @@ def shot(variant, stem, title, sub, target, dist, el, dark, party=None):
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     templates.update(build_live(variant))
     rp.build_map(templates, tiles=world(variant))
-    if variant in rl.LANDMARK_CENTRES:  # preview only: the mouth turned toward the camera (the engine turns it toward the longest trail)
-        for o in bpy.data.collections["map"].objects:
-            if o.name.startswith(f"{variant}_centre"):
-                o.rotation_euler.z = math.radians(-60)
+    for o in bpy.data.collections["map"].objects:  # preview only: a landmark's mouth turned toward the camera (the engine turns it toward the longest trail)
+        if any(o.name.startswith(f"{lm}_centre") for lm in rl.LANDMARK_CENTRES):
+            o.rotation_euler.z = math.radians(-60)
     if party:
         minis = rp.load_templates(rp.latest(os.path.join("minis", "standins"), "standin_minis"))
         ct._mini_spots(bpy.data.collections["map"], minis, [(party, math.radians(180))])
@@ -166,7 +160,7 @@ if __name__ == "__main__":
     hk.empty_scene()
     if variant in rl.LANDMARK_CENTRES:
         rl.BURROWED.clear()  # the outpost's burrows are being redone after the Warren is picked: plain outpost ground round it
-        check_landmark(variant, build_live(variant))
+        check_landmark(variant, {k: v for k, v in build_live(variant).items()})
     else:
         check(variant, build_live(variant))
     title = TITLES[variant]
@@ -175,6 +169,11 @@ if __name__ == "__main__":
     if variant in rl.LANDMARK_CENTRES:  # on the approach, before the mouth (turned as above)
         party = tuple(centre + Matrix.Rotation(math.radians(-60), 3, "Z") @ Vector((2.9, 0.0, 0.02)))
     close = (centre + Vector((0.3, -0.3, 1.5)), 27, 38) if variant in rl.LANDMARK_CENTRES else (centre + Vector((0.6, 0.2, 0.4)), 22, 46)
+    if variant in rl.LANDMARKS.values():  # close on the region tile nearest the camera, the landmark behind it
+        near = min(hk.NEIGHBOURS, key=lambda d: hk.tile_position(*d).y)
+        at = hk.tile_position(*near)
+        party = tuple(at + Vector((2.2, 0.0, 0.02)))
+        close = (at + Vector((0.4, 0.6, 0.5)), 24, 42)
     rows = []
     for dark in (False, True):
         when = "night" if dark else "day"
