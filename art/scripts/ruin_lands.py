@@ -5,7 +5,8 @@ Tier 0 study, three ways to lay the ground (OPTIONS), each with the same mixed r
   b  rubble: gravel and broken stone, with patches of paving left
   c  streets: paved streets along the six walks, raised foundations between them
 Ethan picked a (Nov 9, 2026), now frozen: build_tiles.ruins builds it with the study's seeds. b and c stay for reference.
-The remains are props, one or two big ones a tile (tile_remains), in stones picked to stand out from the paving.
+Round 1's remains are back (the bigger, fewer set was rejected Nov 9, 2026); colour comes from overgrowth (GROWTH): moss on tops,
+ivy creeping up faces, green under the paving that shows in its cracks and holes, and small plants round the remains' feet.
 Pieces are the plain kit: <terrain>_centre, _edge_same, _edge_same_b, _edge_other, _edge_other_b, edge pieces facing +X.
 Every walk between two edges runs through an edge's middle and the tile's middle, so remains keep WALK_HALF off those lines.
 The first section is plain data; the rest uses the Piece API.
@@ -48,13 +49,9 @@ PALETTE = {
     "ruin_basalt": "#6F6D6B",
     "ruin_bronze": "#6E9A88",
     "ruin_moss": "#8C9A74",
-    # remains, picked to stand out from the pale paving (Ethan, Nov 9, 2026: more contrast)
-    "ruin_red": "#99573F",
-    "ruin_dark": "#565452",
-    "ruin_white": "#EEEAE1",
-    "ruin_verdigris": "#4A8C78",
-    "ruin_ivy": "#58873F",
-    "ruin_scar": "#7D766B",
+    "ruin_moss_b": "#86A75C",   # overgrowth: moss on tops
+    "ruin_ivy": "#527F3B",      # ivy on faces and leafy clumps
+    "ruin_crack": "#7FA552",    # green in the paving's cracks
 }
 OWN = set()
 SLABS = ["ruin_slab_a", "ruin_slab_b", "ruin_slab_c", "ruin_slab_d"]
@@ -62,26 +59,31 @@ STONES = ["ruin_grey", "ruin_marble", "ruin_warm", "ruin_slab_d"]   # walls mix 
 STATUE_STONES = ["ruin_marble", "ruin_bronze", "ruin_basalt", "ruin_warm"]
 OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_rubble", cover=0.08), "c": dict(ground="ruin_ground", cover=0.05)}
 KINDS = ("centre", "same", "same_b", "other", "other_b")
-# Remains stand in the tile's corner gaps, between the walks: a slot on a corner's direction, SLOT_R out, with SLOT_ROOM clear
-# round it (the walks are SLOT_R / 2 away, the tile's edges (4.5 - SLOT_R) * sin 60). One or two big pieces a tile
-# (Ethan, Nov 9, 2026: bigger and fewer, to read from the map): a world hash picks how many, which corners (a second sits
-# across the tile from the first), the kinds and the turns, so no two tiles match and styles mix.
-SLOT_R = 3.3
-SLOT_ROOM = 1.0
-SECOND = 0.45        # share of tiles with a second piece
-REMAINS = ("gate", "pointed_gate", "colonnade", "colossus", "lion", "head", "tower", "obelisk")
+# Overgrowth amounts: moss on upward faces (share), ivy on side faces (share at the foot, thinning to none at ivy_top),
+# leafy clumps round a remains' foot, green patches under the paving per piece (centre, wedge), ground cover density.
+GROWTH = {
+    "light": dict(moss=0.3, ivy=0.25, ivy_top=1.2, clumps=1, patches=(3, 5), cover=0.06),
+    "medium": dict(moss=0.55, ivy=0.5, ivy_top=1.9, clumps=3, patches=(6, 10), cover=0.1),
+    "heavy": dict(moss=0.85, ivy=0.8, ivy_top=2.8, clumps=5, patches=(10, 18), cover=0.16),
+}
+# Remains stand in the tile's six corner gaps, between the walks: one slot on each corner's direction, SLOT_R out, with
+# SLOT_ROOM clear round it (the walks are SLOT_R / 2 away, the tile's edges further). A world hash fills each slot or
+# leaves it bare and picks the kind and turn, so no two tiles match and styles mix.
+SLOT_R = 3.0
+SLOT_ROOM = 0.86
+SLOT_FILL = 0.65
+REMAINS = ("arch", "arch_pointed", "arch_broken", "colonnade", "column", "toppled", "robed", "beast", "head", "torso", "obelisk", "corner", "wall", "heap")
 
 
 def tile_remains(q, r):
-    """(kind, x, y, spin) of tile (q, r)'s remains, tile-local."""
-    first = int(gc.hash01(q, r, 31) * 6)
-    corners = [first] + ([(first + 3) % 6] if gc.hash01(q, r, 34) < SECOND else [])
-    k0 = int(gc.hash01(q, r, 32) * len(REMAINS))
-    kinds = [k0, (k0 + 1 + int(gc.hash01(q, r, 35) * (len(REMAINS) - 1))) % len(REMAINS)]
+    """(kind, x, y, spin) of tile (q, r)'s remains, tile-local: a slot on each corner's direction, filled or bare by hash."""
     out = []
-    for c, k in zip(corners, kinds):
+    for c in range(6):
+        if gc.hash01(q * 6 + c, r, 31) >= SLOT_FILL:
+            continue
         a = math.radians(30 + 60 * c)
-        out.append((REMAINS[k], SLOT_R * math.cos(a), SLOT_R * math.sin(a), 2 * math.pi * gc.hash01(q * 6 + c, r, 33)))
+        kind = REMAINS[int(gc.hash01(q * 6 + c, r, 32) * len(REMAINS))]
+        out.append((kind, SLOT_R * math.cos(a), SLOT_R * math.sin(a), 2 * math.pi * gc.hash01(q * 6 + c, r, 33)))
     return out
 
 
@@ -177,7 +179,106 @@ def gravel(p, rng, at, r):
         p.cone(c, rng.uniform(0.07, 0.13), rng.uniform(0.06, 0.12), rng.choice(STONES), segments=3, spin=rng.uniform(0, 6))
 
 
-# --- Remains: big, mixed, from no one style ----------------------------------
+# --- Remains: mixed, from no one style ---------------------------------------
+
+def broken_wall(p, rng, a, b, top=(0.4, 1.5)):
+    """Stone blocks with a ragged top and gaps where it has fallen; one stone per wall, as if built at one time."""
+    d = b - a
+    length, ang = d.length, math.atan2(d.y, d.x)
+    mat = rng.choice(STONES)
+    t, h_top = 0.0, rng.uniform(*top)
+    while t < length - 1e-3:
+        w = min(rng.uniform(0.3, 0.5), length - t)
+        h_top = max(0.0, min(top[1], h_top + rng.uniform(-0.35, 0.3)))
+        z = 0.0
+        while z < h_top:
+            h = rng.uniform(0.2, 0.28)
+            p.box(a + d * ((t + w / 2) / length), (w - 0.03, 0.24, h - 0.01), mat, z=z, spin=ang + rng.uniform(-0.04, 0.04))
+            z += h
+        if h_top < 0.15 and rng.random() < 0.6:
+            off = Vector((-math.sin(ang), math.cos(ang), 0)) * rng.choice((-0.32, 0.32))
+            p.box(a + d * ((t + w / 2) / length) + off, (0.28, 0.2, 0.18), mat, spin=rng.uniform(0, 1))
+        t += w
+
+
+def arch(p, rng, at, spin, pointed=False, broken=False):
+    """Two piers and a ring of stones over them, round or pointed; a broken one has lost a pier and half its ring."""
+    mat = rng.choice(STONES)
+    rot = Matrix.Rotation(spin, 3, "Z")
+    half, pier_h = 0.5, rng.uniform(1.4, 1.8)
+    for sd in ((-1,) if broken else (-1, 1)):
+        p.box(at + rot @ Vector((sd * (half + 0.13), 0, 0)), (0.26, 0.34, pier_h), mat, spin=spin)
+        p.box(at + rot @ Vector((sd * (half + 0.13), 0, 0)), (0.32, 0.4, 0.08), mat, z=pier_h, spin=spin)
+    n = 7
+    for k in range(n):
+        if broken and k > 2:
+            break
+        th0, th1 = math.pi * k / n, math.pi * (k + 1) / n
+        th = (th0 + th1) / 2
+        if pointed:
+            x, z = -math.cos(th) * (half + 0.13), pier_h + math.sin(th) * (half + 0.13) * 1.45
+        else:
+            x, z = -math.cos(th) * (half + 0.13), pier_h + math.sin(th) * (half + 0.13)
+        tilt = (math.pi / 2 - th) * (1.25 if pointed else 1.0)
+        p.box_rot(at + rot @ Vector((x, 0, z)), (0.28, 0.34, 0.22), mat, rot @ Matrix.Rotation(tilt, 3, "Y"))
+    if broken:
+        for k in range(3):
+            p.box(at + rot @ Vector((0.3 + 0.28 * k, rng.uniform(-0.3, 0.3), 0)), (0.26, 0.3, 0.2), mat, spin=rng.uniform(0, 3))
+
+
+def column(p, rng, at, style, height=None):
+    """round: a drum shaft on a square base under a capital; square: a plain pillar; banded: an eight-sided shaft in two stones."""
+    h = height if height is not None else rng.choice((0.5, 0.9, 1.5, 2.1))
+    if style == "round":
+        mat = rng.choice(("ruin_marble", "ruin_grey"))
+        p.box(at, (0.44, 0.44, 0.14), mat)
+        p.cylinder(at, 0.16, h, mat, segments=8, z=0.14)
+        if h > 1.8:
+            p.box(at, (0.46, 0.46, 0.12), mat, z=0.14 + h)
+    elif style == "square":
+        mat = rng.choice(("ruin_warm", "ruin_grey", "ruin_basalt"))
+        p.box(at, (0.3, 0.3, h + 0.1), mat, spin=math.radians(45) * rng.choice((0, 1)))
+    else:
+        z, k = 0.0, 0
+        while z < h:
+            seg = min(0.32, h - z)
+            p.cylinder(at, 0.17, seg, ("ruin_warm", "ruin_grey")[k % 2], segments=8, z=z)
+            z, k = z + seg, k + 1
+
+
+def toppled_column(p, rng, at, spin):
+    """A fallen shaft in drums, slipped apart where it broke."""
+    mat = rng.choice(("ruin_marble", "ruin_grey", "ruin_warm"))
+    d = Vector((math.cos(spin), math.sin(spin), 0))
+    for k in range(rng.choice((2, 3))):
+        p.log(at + d * (0.42 * k - 0.42) + Vector((-d.y, d.x, 0)) * rng.uniform(-0.04, 0.04), 0.16, 0.36, mat, spin=spin + rng.uniform(-0.12, 0.12), segments=8)
+
+
+def statue(p, rng, at, spin, kind):
+    """robed: a standing figure on a plinth; beast: a crouched lion on a plinth; head: a huge head lying on its side; torso: arms and head gone."""
+    mat = rng.choice(STATUE_STONES)
+    rot = Matrix.Rotation(spin, 3, "Z")
+    if kind == "robed":
+        p.box(at, (0.7, 0.7, 0.55), "ruin_grey", spin=spin)
+        frustum(p, at, 0.32, 0.2, 1.3, mat, z=0.55)                   # the robe
+        p.box(at, (0.62, 0.3, 0.22), mat, z=1.82, spin=spin)          # shoulders
+        p.box_rot(at + rot @ Vector((0.0, 0.28, 2.18)), (0.12, 0.12, 0.7), mat, rot @ Matrix.Rotation(-0.3, 3, "X"))   # a raised arm
+        p.blob(at, 0.17, mat, z=2.2)
+    elif kind == "beast":
+        p.box(at, (0.95, 0.5, 0.32), "ruin_grey", spin=spin)
+        p.box(at + rot @ Vector((-0.1, 0, 0)), (0.7, 0.34, 0.3), mat, z=0.32, spin=spin)
+        p.box(at + rot @ Vector((0.3, 0, 0)), (0.3, 0.36, 0.52), mat, z=0.32, spin=spin)
+        p.blob(at + rot @ Vector((0.36, 0, 0)), 0.2, mat, z=0.9)
+    elif kind == "head":
+        p.blob(at, 0.55, mat, z=0.45, squash=1.1)
+        p.box_rot(at + rot @ Vector((0.5, 0, 0.5)), (0.16, 0.18, 0.3), mat, rot @ Matrix.Rotation(-0.25, 3, "Y"))   # nose
+        p.box(at + rot @ Vector((0.42, 0, 0)), (0.12, 0.42, 0.06), mat, z=0.25, spin=spin)    # lips
+        p.box(at + rot @ Vector((0.3, 0, 0)), (0.22, 0.62, 0.1), mat, z=0.72, spin=spin)      # brow
+    else:
+        p.box(at, (0.5, 0.5, 0.7), "ruin_basalt", spin=spin)
+        p.box(at, (0.42, 0.26, 0.6), mat, z=0.7, spin=spin)
+        p.box(at, (0.3, 0.22, 0.32), mat, z=0.4, spin=spin + 0.05)
+
 
 def frustum(p, at, r0, r1, h, mat, z=0.0, segments=6, spin=0.0):
     """A cone cut flat at the top."""
@@ -186,117 +287,76 @@ def frustum(p, at, r0, r1, h, mat, z=0.0, segments=6, spin=0.0):
     p._paint(r["verts"], mat)
 
 
-def scar(p, rng, r=0.95):
-    """A patch of darker broken ground under a piece, so it sits on the paving and reads from far off."""
-    n = 8
-    plate(p, [Vector((math.cos(6.283 * k / n), math.sin(6.283 * k / n), 0)) * r * rng.uniform(0.78, 1.0) for k in range(n)], 0.034, "ruin_scar")
+def obelisk(p, rng, at):
+    """A tapering shaft snapped off partway, its tip lying beside it."""
+    mat = rng.choice(("ruin_warm", "ruin_grey"))
+    p.box(at, (0.5, 0.5, 0.2), "ruin_marble")
+    h = rng.uniform(1.3, 1.8)
+    frustum(p, at, 0.2, 0.14, h, mat, z=0.2, segments=4, spin=math.radians(45))
+    p.box_rot(at + Vector((0.32, 0.18, 0.12)), (0.5, 0.2, 0.2), mat, Matrix.Rotation(0.6, 3, "Z"))
 
 
-def fallen(p, rng, mat, spots, size=0.26):
-    for x, y in spots:
-        p.box(Vector((x, y, 0)), (size * rng.uniform(0.9, 1.3), size * rng.uniform(0.7, 1.0), size * 0.75), mat, spin=rng.uniform(0, 3))
+def block_heap(p, rng, at, r=0.35):
+    for k in range(rng.choice((3, 4, 5))):
+        c = at + Vector((rng.uniform(-r, r), rng.uniform(-r, r), 0))
+        p.box(c, (rng.uniform(0.22, 0.36), rng.uniform(0.18, 0.28), rng.uniform(0.15, 0.22)), rng.choice(STONES), z=0.17 if k >= 3 else 0.0, spin=rng.uniform(0, 3))
 
 
-def arch_ring(p, at, half, pier_h, depth, mat, pointed, stop=None):
-    n = 7
-    for k in range(n if stop is None else stop):
-        th = math.pi * (k + 0.5) / n
-        x, z = -math.cos(th) * (half + 0.18), pier_h + math.sin(th) * (half + 0.18) * (1.45 if pointed else 1.0)
-        tilt = (math.pi / 2 - th) * (1.25 if pointed else 1.0)
-        p.box_rot(at + Vector((x, 0, z)), (0.4, depth, 0.3), mat, Matrix.Rotation(tilt, 3, "Y"))
+def remains(p, rng, at, spin, which, room):
+    """One remains feature at `at`, fitting in `room` (its free radius)."""
+    if which == "wall":
+        d = Vector((math.cos(spin), math.sin(spin), 0)) * 0.8
+        broken_wall(p, rng, at - d, at + d)
+    elif which == "corner":
+        a, b = Vector((math.cos(spin), math.sin(spin), 0)), Vector((-math.sin(spin), math.cos(spin), 0))
+        broken_wall(p, rng, at - a * 0.5 - b * 0.5, at + a * 0.6 - b * 0.5)
+        broken_wall(p, rng, at - a * 0.5 - b * 0.38, at - a * 0.5 + b * 0.6)
+    elif which in ("arch", "arch_pointed", "arch_broken"):
+        arch(p, rng, at, spin, pointed=which == "arch_pointed", broken=which == "arch_broken")
+    elif which == "colonnade":
+        d = Vector((math.cos(spin), math.sin(spin), 0))
+        style = rng.choice(("round", "square", "banded"))
+        hs = [2.5, rng.choice((0.5, 0.9)), 1.8]
+        for k, off in enumerate((-0.6, 0.0, 0.6)):
+            if rng.random() < 0.8:
+                column(p, rng, at + d * off, style, hs[k])
+    elif which == "column":
+        column(p, rng, at + Vector((-0.3, 0, 0)), rng.choice(("round", "square", "banded")), 2.5)
+        toppled_column(p, rng, at + Vector((0.05, 0.25, 0)), spin - 0.4)
+    elif which == "toppled":
+        toppled_column(p, rng, at, spin)
+        block_heap(p, rng, at + Vector((-0.2, 0.35, 0)), 0.2)
+    elif which in ("robed", "beast", "head", "torso"):
+        statue(p, rng, at, spin, which)
+    elif which == "obelisk":
+        obelisk(p, rng, at)
+    else:
+        block_heap(p, rng, at)
 
 
-def gate(p, rng, pointed):
-    """A big arch standing alone: red granite and round, or dark stone and pointed with ivy on it, its keystone gone on one side."""
-    mat = "ruin_dark" if pointed else "ruin_red"
-    half, pier_h, depth = 0.55, 2.1 if pointed else 2.3, 0.5
-    for sd in (-1, 1):
-        p.box(Vector((sd * (half + 0.18), 0, 0)), (0.38, depth, pier_h), mat)
-        p.box(Vector((sd * (half + 0.18), 0, 0)), (0.46, depth + 0.08, 0.12), "ruin_white" if not pointed else mat, z=pier_h)
-    arch_ring(p, Vector((0, 0, 0)), half, pier_h, depth, mat, pointed, stop=6 if pointed else None)
-    if pointed:
-        p.box(Vector((-0.6, 0.2, 0)), (0.42, 0.3, 1.6), "ruin_ivy", z=0.25)   # ivy down one pier
-        p.box(Vector((-0.6, -0.2, 0)), (0.42, 0.3, 1.1), "ruin_ivy", z=0.7)
-    fallen(p, rng, mat, [(0.35, -0.55), (0.75, 0.55), (-0.2, 0.62)])
+def overgrow(p, rng, growth):
+    """Moss and ivy on what's been built: recolours whole faces, so it costs no triangles. Moss takes upward faces, ivy
+    side faces, thickest at the foot and gone by ivy_top. Then low leafy clumps round the foot, clear of the walks' side."""
+    g = GROWTH[growth]
+    p.bm.normal_update()
+    moss, ivy = p._slot("ruin_moss_b"), p._slot("ruin_ivy")
+    for f in list(p.bm.faces):
+        z = f.calc_center_median().z
+        if f.normal.z > 0.7 and z > 0.1 and rng.random() < g["moss"]:
+            f.material_index = moss
+        elif abs(f.normal.z) < 0.4 and rng.random() < g["ivy"] * max(0.0, 1 - z / g["ivy_top"]):
+            f.material_index = ivy
+    for _ in range(g["clumps"]):
+        a, d = rng.uniform(0, 6.28), rng.uniform(0.35, SLOT_ROOM - 0.15)
+        at = Vector((math.cos(a) * d, math.sin(a) * d, 0))
+        p.cone(at, rng.uniform(0.14, 0.22), rng.uniform(0.12, 0.2), rng.choice(("ruin_ivy", "ruin_moss_b")), segments=5, spin=rng.uniform(0, 6))
 
 
-def colonnade(p, rng):
-    """Three white columns on a dark step, a lintel still across two."""
-    p.box(Vector((0, 0, 0)), (1.75, 0.6, 0.18), "ruin_dark")
-    hs = (2.7, 2.7, rng.choice((0.8, 1.2)))
-    for k, x in enumerate((-0.6, 0.0, 0.6)):
-        p.box(Vector((x, 0, 0)), (0.42, 0.42, 0.14), "ruin_white", z=0.18)
-        p.cylinder(Vector((x, 0, 0)), 0.17, hs[k], "ruin_white", segments=8, z=0.32)
-    p.box(Vector((-0.3, 0, 0)), (1.2, 0.44, 0.28), "ruin_dark", z=0.32 + 2.7)
-    p.log(Vector((0.25, -0.62, 0)), 0.17, 0.95, "ruin_white", spin=0.15, segments=8)
-
-
-def colossus(p, rng):
-    """A robed figure in green bronze on a dark plinth, an arm raised, as tall as a hill's shoulder."""
-    mat = "ruin_verdigris"
-    p.box(Vector((0, 0, 0)), (0.95, 0.95, 0.6), "ruin_dark")
-    frustum(p, Vector((0, 0, 0)), 0.42, 0.27, 1.7, mat, z=0.6)
-    p.box(Vector((0, 0, 0)), (0.82, 0.38, 0.28), mat, z=2.3)
-    p.box_rot(Vector((0.0, 0.38, 2.8)), (0.16, 0.16, 0.9), mat, Matrix.Rotation(-0.3, 3, "X"))
-    p.box_rot(Vector((0.0, -0.36, 2.05)), (0.15, 0.15, 0.7), mat, Matrix.Rotation(0.2, 3, "X"))
-    p.blob(Vector((0, 0, 0)), 0.22, mat, z=2.82)
-    fallen(p, rng, "ruin_dark", [(0.75, 0.45), (-0.7, -0.5)], 0.24)
-
-
-def lion(p, rng):
-    """A crouching beast in dark stone on a red plinth."""
-    mat = "ruin_dark"
-    p.box(Vector((0, 0, 0)), (1.45, 0.75, 0.55), "ruin_red")
-    p.box(Vector((-0.15, 0, 0)), (1.05, 0.52, 0.5), mat, z=0.55)          # body
-    p.box(Vector((0.42, 0, 0)), (0.48, 0.58, 0.9), mat, z=0.55)           # chest and mane
-    p.blob(Vector((0.52, 0, 0)), 0.3, mat, z=1.55)                         # head
-    p.box(Vector((0.8, 0, 0)), (0.2, 0.24, 0.2), mat, z=1.4)              # muzzle
-    for y in (-0.17, 0.17):
-        p.box(Vector((0.5, y, 0)), (0.5, 0.15, 0.14), mat, z=0.55)       # forepaws
-    fallen(p, rng, "ruin_red", [(-0.35, 0.62), (0.15, -0.64)], 0.2)
-
-
-def head(p, rng):
-    """A colossal head in green bronze, fallen on its side."""
-    mat = "ruin_verdigris"
-    p.blob(Vector((0, 0, 0)), 0.72, mat, z=0.62, squash=1.1)
-    p.box_rot(Vector((0.66, 0, 0.7)), (0.22, 0.24, 0.42), mat, Matrix.Rotation(-0.25, 3, "Y"))   # nose
-    p.box(Vector((0.55, 0, 0)), (0.16, 0.55, 0.08), mat, z=0.36)       # lips
-    p.box(Vector((0.42, 0, 0)), (0.28, 0.8, 0.14), mat, z=1.0)         # brow
-    p.box(Vector((-0.1, 0, 0)), (0.7, 0.95, 0.18), "ruin_dark", z=0.0)  # the broken neck's stone, half sunk
-    fallen(p, rng, mat, [(-0.75, 0.45)], 0.24)
-
-
-def tower(p, rng):
-    """The stump of a round tower in red stone, broken off high on one side, a gap where its door was."""
-    n, r = 9, 0.68
-    tops = [rng.uniform(0.6, 1.0) for _ in range(n)]
-    for k in range(n):
-        if k == 0:
-            continue   # the doorway
-        a = 2 * math.pi * k / n
-        h = 2.9 * tops[k] if k in (3, 4, 5) else 1.4 * tops[k]
-        p.box(Vector((math.cos(a), math.sin(a), 0)) * r, (0.5, 0.28, h), "ruin_red", spin=a + math.pi / 2)
-    plate(p, [Vector((math.cos(6.283 * k / 8), math.sin(6.283 * k / 8), 0)) * 0.55 for k in range(8)], 0.04, "ruin_dark")
-
-
-def obelisk(p, rng):
-    """A tall dark shaft on a white base, its tip snapped off and lying by it."""
-    p.box(Vector((0, 0, 0)), (0.8, 0.8, 0.3), "ruin_white")
-    frustum(p, Vector((0, 0, 0)), 0.3, 0.2, 2.9, "ruin_dark", z=0.3, segments=4, spin=math.radians(45))
-    p.box_rot(Vector((0.4, 0.4, 0.15)), (0.6, 0.28, 0.28), "ruin_dark", Matrix.Rotation(0.8, 3, "Z"))
-    fallen(p, rng, "ruin_white", [(-0.6, 0.45)], 0.22)
-
-
-BUILD = {"gate": lambda p, rng: gate(p, rng, False), "pointed_gate": lambda p, rng: gate(p, rng, True), "colonnade": colonnade,
-         "colossus": colossus, "lion": lion, "head": head, "tower": tower, "obelisk": obelisk}
-
-
-def remains_piece(which):
+def remains_piece(which, growth="medium"):
     """A prop piece for one kind of remains, centred on its slot, for REMAINS_PIECES."""
     def build(p, rng):
-        scar(p, rng)
-        BUILD[which](p, rng)
+        remains(p, rng, Vector((0, 0, 0)), 0.0, which, SLOT_ROOM)
+        overgrow(p, hk.seeded(p.name + "growth" + growth), growth)
     return build
 
 
@@ -414,6 +474,23 @@ def foundation(p, rng, poly, full):
 GROUNDS = {"a": ground_plaza, "b": ground_rubble, "c": ground_streets}
 
 
-def ruins(p, rng, kind, option="a"):
+def crack_green(p, kind, growth):
+    """Green patches lying just under the paving, so they show only in its joints and where slabs are missing: grass and
+    moss in the cracks, without moving a slab. Its own random stream, so the picked ground's slabs stay as they were."""
+    rng = hk.seeded(p.name + "cracks" + growth)
+    n = GROWTH[growth]["patches"][0 if kind == "centre" else 1]
+    if kind == "centre":
+        pts = hk.scatter(rng, lambda q: hk.in_centre(q, 0.2), n, 0.5, hk.CENTRE_BOUNDS)
+    else:
+        pts = hk.scatter(rng, lambda q: hk.in_edge_wedge(q, margin=0.2, inner=0.05), n, 0.5, hk.WEDGE_BOUNDS)
+    for at in pts:
+        r, k0 = rng.uniform(0.22, 0.42), rng.uniform(0, 6.3)
+        poly = [at + Vector((math.cos(k0 + 6.283 * k / 6), math.sin(k0 + 6.283 * k / 6), 0)) * r * rng.uniform(0.7, 1.0) for k in range(6)]
+        plate(p, poly, 0.009, "ruin_crack")
+
+
+def ruins(p, rng, kind, option="a", growth=None):
     """The ground only: the remains are props, placed per tile (tile_remains)."""
     GROUNDS[option](p, rng, kind)
+    if growth:
+        crack_green(p, kind, growth)

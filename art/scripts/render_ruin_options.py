@@ -28,22 +28,22 @@ WORLD = {(0, 0): "ruins", (1, 0): "ruins", (1, -1): "ruins", (0, -1): "ruins", (
          (-1, -1): "plains", (-2, 0): "plains", (-2, 1): "plains", (-2, 2): "plains", (-1, 2): "plains", (0, 2): "ruins", (3, -1): "wasteland", (3, -2): "desert"}
 
 
-def build_option(option):
+def build_option(option, growth=None):
     """The option's pieces, named as the kit's, in a collection kept out of the scene."""
     col = bpy.data.collections.new(f"ruins_{option}")
     out = {}
     for kind in rl.KINDS:
         name = f"ruins_{kind}" if kind == "centre" else f"ruins_edge_{kind}"
         p = hk.Piece(name)
-        rl.ruins(p, hk.seeded(name + option), kind, option)
+        rl.ruins(p, hk.seeded(name + option), kind, option, growth)
         out[name] = p.finish(col)
     return out
 
 
-def build_remains():
+def build_remains(growth="medium"):
     col = bpy.data.collections.new("ruin_remains")
     out = {}
-    for name, builder in rl.REMAINS_PIECES.items():
+    for name, builder in {f"ruin_{k}": rl.remains_piece(k, growth) for k in rl.REMAINS}.items():
         p = hk.Piece(name)
         builder(p, hk.seeded(name))
         out[name] = p.finish(col)
@@ -98,13 +98,13 @@ def place_remains(templates, option):
             rp.place(templates, f"ruin_{kind}", col, at + Vector((x, y, rl.FOUND_H if option == "c" else 0.0)), spin)
 
 
-def shot(option, stem, sub, target, dist, el, size=(1600, 1000), mini=None):
+def shot(option, stem, sub, target, dist, el, size=(1600, 1000), mini=None, growth="medium"):
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
-    templates.update(build_option(option))
-    templates.update(build_remains())
+    templates.update(build_option(option, growth))
+    templates.update(build_remains(growth))
     templates["base_ruins"].data.materials[0] = hk.material(rl.OPTIONS[option]["ground"])
-    gc.DENSITY["ruins"] = rl.OPTIONS[option]["cover"]
+    gc.DENSITY["ruins"] = rl.GROWTH[growth]["cover"]
     rp.build_map(templates, tiles=WORLD)
     place_remains(templates, option)
     if mini:
@@ -119,19 +119,17 @@ def shot(option, stem, sub, target, dist, el, size=(1600, 1000), mini=None):
 
 
 if __name__ == "__main__":
-    # Round 2: the picked plaza ground (a) with the bigger, fewer remains.
-    hk.empty_scene()
-    remains = build_remains()
-    reach = max(math.hypot(v.co.x, v.co.y) for o in remains.values() for v in o.data.vertices)
-    print(f"REACH widest remains {reach:.2f} of slot room {rl.SLOT_ROOM}")
-    check(build_option("a"), remains)
-    counts = [len(rl.tile_remains(q, r)) for q in range(-20, 20) for r in range(-20, 20)]
-    print(f"PER TILE one: {counts.count(1)}, two: {counts.count(2)}")
+    # Round 3: the picked plaza ground with round 1's remains, and three amounts of overgrowth.
+    for growth in rl.GROWTH:
+        hk.empty_scene()
+        print("GROWTH", growth)
+        check(build_option("a", growth), build_remains(growth))
     centre = hk.tile_position(0, 0)
     walk = centre + Vector((2.2, 0.0, 0.02))
-    sub = "Picked plaza ground; one or two big remains a tile"
-    TITLES["a"] = "Ruins: bigger remains"
-    rows = [[shot("a", "ruins_t0_remains_map", sub, hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, (1000, 625)),
-             shot("a", "ruins_t0_remains_close", "Close: one tile, a party for scale", centre + Vector((0.6, 0.2, 0.6)), 24, 46, (1000, 625), [tuple(walk)])]]
-    rst.SHEET_STEM = "ruins_t0_remains_sheet"
+    rows = []
+    for growth in rl.GROWTH:
+        TITLES["a"] = f"Overgrowth: {growth}"
+        rows.append([shot("a", f"ruins_t0_growth_{growth}_map", "Plaza ground, round 1's remains", hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45, (1000, 625), growth=growth),
+                     shot("a", f"ruins_t0_growth_{growth}_close", "Close: one tile, a party for scale", centre + Vector((0.6, 0.2, 0.4)), 22, 46, (1000, 625), [tuple(walk)], growth=growth)])
+    rst.SHEET_STEM = "ruins_t0_growth_sheet"
     rst.sheet(rows)
