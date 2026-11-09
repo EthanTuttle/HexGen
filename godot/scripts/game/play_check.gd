@@ -88,6 +88,11 @@ func _run() -> void:
 	print("PLAY party %d at the end, %d rests" % [game.party.size(), rests])
 	print("PLAY %d steps; %d regions, %d fights, %d wipes, %d levels (level %d, %d gold), %d times out of cards, day %d" % [steps, game.regions.size(), fights, wipes, levels, game.level, game.gold, empties, game.day])
 	_check(game.fights_won == 0 or game.gold > 0, "wins pay gold")
+	var seen := {}
+	for g: Dictionary in game.regions:
+		if not seen.has(g.terrain):
+			seen[g.terrain] = true
+			_check(g.tier == 1, "the first %s region is tier 1 (02 -> Region tiers)" % g.terrain)
 	print("PLAY party HP at the end: %s; %d potions drunk, %d left" % [game.party.map(func(m): return m.hp), drunk, game.potions])
 	_check(game._ended, "the goal's 3 regions brought up the end panel")
 	_check(game.end_panel.visible, "the end panel shows")
@@ -221,7 +226,11 @@ func _go_to_a_fight() -> void:
 		empties += 1
 	var goal = null
 	var near := 1 << 20
+	# Out of cards: social and discovery encounters first, so a fight it keeps losing isn't all it does.
+	var calm := game.deck.hand.is_empty() and game.encounters.keys().any(func(t): return game.encounters[t].entry.kind != "fight" and not game.path_to(t).is_empty())
 	for t: Vector2i in game.encounters:
+		if calm and game.encounters[t].entry.kind == "fight":
+			continue
 		var d := Rules.hex_distance(t, game.party_tile)
 		if d < near and not game.path_to(t).is_empty():
 			near = d

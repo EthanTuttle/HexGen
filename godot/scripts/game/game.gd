@@ -514,6 +514,7 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		var plain := new_region(terrain, tiles, "", tiles[0])
 		plain.name = Rules.NAMES.ruins
 		plain.landmark = ""
+		plain.tier = 1 if first else 2   # a terrain's first region is tier 1, ruins too (02 -> Region tiers); new_region reads "" as tier 2
 		deck.draw(Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION)
 		return
 	var region := new_region(terrain, tiles, variant, _landmark_tile(variant, tiles))
@@ -1271,7 +1272,7 @@ func _update_encounters() -> void:
 	var moved := {}
 	for t: Vector2i in encounters.keys():
 		var e: Dictionary = encounters[t]
-		if e.entry.get("roams", false) and not e.persistent and not fight.active and _now_minutes() >= e.roam_at:
+		if e.entry.get("roams", false) and not e.persistent and not fight.active and t != party_tile and _now_minutes() >= e.roam_at:   # not off the party's tile: the zoom into its fight runs before fight.active
 			e.roam_at = _now_minutes() + Rules.ROAM_MINUTES
 			var to := _roam_to(t)
 			if to != t:
