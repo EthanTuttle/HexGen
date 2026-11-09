@@ -516,7 +516,7 @@ func _act(f: Fight, u: Dictionary) -> void:
 		if spell != "":
 			await _hit(f, foe, spell)
 			continue
-		if u.name == "[Hero name]" and f.cant_use(u, Cards.get_card("action_surge")) == "" and f.dist(foe, u) == 1:
+		if u.name == "[Hero name]" and "action_surge" in u.cards and f.cant_use(u, Cards.get_card("action_surge")) == "" and f.dist(foe, u) == 1:
 			f.pick_card("action_surge")
 			await _wait(0.5)
 			await f.press_button()

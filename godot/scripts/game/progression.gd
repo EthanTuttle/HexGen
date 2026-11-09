@@ -19,10 +19,10 @@ const FEAT_LEVELS := [4, 12]                                    # DOCS (05 -> Ge
 const SUBCLASS_LEVEL := 5
 const CLASS_CARD_LEVEL := 3
 const SPELL_PICKS_3 := 2                                         # DOCS (03): casters pick 2 spells at level 3
-## The level-3 class card (03 -> Martial class cards). DOCS (06 -> Start): the first playable gives it at level 1 already,
-## so level 3 shows the kit with nothing new until that changes (LEVEL3_AT_START).
+## The level-3 class card (03 -> Martial class cards; 06 -> Start, Ethan, Nov 9, 2026: no longer in the starting kit), and
+## Chelmsford's Healing Word, which also comes at level 3 now, beside his 2 picks (06 -> Start).
 const LEVEL3_CARD := {"fighter": "action_surge", "rogue": "poison_blade", "ranger": "snare"}
-const LEVEL3_AT_START := true
+const LEVEL3_GRANT := {"Chelmsford": "healing_word"}
 
 ## Weapon mastery: the first node of each branch (04 -> each weapon's tree). kind: card (a new card), upgrade (changes a
 ## card, renaming it), passive. Staves and wands have no tree (04: casters don't train).
@@ -280,7 +280,7 @@ static func spell_groups_3(m: Dictionary) -> Dictionary:
 	var src: Dictionary = WIZARD_3 if klass(m) == "wizard" else CLERIC_3
 	var out := {}
 	for g: String in src:
-		out[g] = src[g].filter(func(id): return not id in m.get("cards", []))
+		out[g] = src[g].filter(func(id): return not id in m.get("cards", []) and id != LEVEL3_GRANT.get(m.get("name", ""), ""))
 	return out
 
 
@@ -367,6 +367,7 @@ static func apply_mastery(m: Dictionary, cat: String, node: Dictionary) -> void:
 static func apply_level3(m: Dictionary, spells: Array) -> void:
 	if martial(m):
 		gain_card(m, LEVEL3_CARD.get(klass(m), ""))
+	gain_card(m, LEVEL3_GRANT.get(m.get("name", ""), ""))
 	for id: String in spells:
 		gain_card(m, id)
 

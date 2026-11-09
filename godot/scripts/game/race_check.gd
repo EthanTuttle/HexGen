@@ -110,6 +110,8 @@ func _shot(name: String) -> void:
 
 ## Plays card id for u at a cell, with these coins next. With --shots: the aimed card before, the board after.
 func _play(u: Dictionary, id: String, at, coins: Array) -> void:
+	if not id in u.cards:   # a level-3 card (Snare, Poison Blade), as at level 3 (06 -> Start, Nov 9, 2026)
+		u.cards.append(id)
 	_turn(u)
 	Coins.forced.assign(coins)
 	f.pick_card(id)
@@ -468,7 +470,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		and f.attack_mods(hero, foe, atk).any(func(x): return x.icon == "night"), "a night fight: attacks flip 1 fewer coin")
 	f.night = false
 	if m.klass == "ranger":
-		_check("hunters_mark" in hero.cards and "snare" in hero.cards and hero.hot.slice(2, 4) == ["hunters_mark", "snare"] if Races.cards(m).is_empty() else true, "the Ranger starts with Hunter's Mark and Snare on the bar: %s" % [hero.hot])
+		_check("hunters_mark" in hero.cards and not "snare" in hero.cards and hero.hot[2] == "hunters_mark" if Races.cards(m).is_empty() else true, "the Ranger starts with Hunter's Mark on the bar, Snare comes at level 3: %s" % [hero.hot])
 		var run := RunSetup.new()
 		run.klass = "ranger"
 		run.background = "noble"
@@ -521,7 +523,7 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 	var m: Dictionary = hero.member
 	var w: Dictionary = Weapons.of(hero.weapon)
 	_check(not Weapons.armoured(m.armour), "the Rogue wears Clothes")
-	_check("sneak_attack" in hero.cards and "poison_blade" in hero.cards and hero.hot.slice(2, 4) == ["sneak_attack", "poison_blade"] if Races.cards(m).is_empty() else true, "the Rogue starts with Sneak Attack and Poison Blade on the bar: %s" % [hero.hot])
+	_check("sneak_attack" in hero.cards and not "poison_blade" in hero.cards and hero.hot[2] == "sneak_attack" if Races.cards(m).is_empty() else true, "the Rogue starts with Sneak Attack on the bar, Poison Blade comes at level 3: %s" % [hero.hot])
 	var run := RunSetup.new()
 	run.klass = "rogue"
 	run.background = "noble"

@@ -376,7 +376,7 @@ Following the screen rules in `design/07 Presentation.md` where the 3D view can'
 | 3 AP each; up to 6 with bonus AP, spent first and lost at the end of the turn | 03 → Turns, AP and health | Action Surge, with the lightning pips |
 | Allies all act in any order, then all foes | 03 → Combat | |
 | Basic actions at 1 AP: Move and Attack repeat; once per turn by default; once-per-fight cards | 03 → Combat | |
-| Class cards: Second Wind, Action Surge (Fighter); Firebolt, Frost Ray (Fluffy; the Wizard picks 2 of 9); Sacred Flame, Bless, Healing Word (Chelmsford); Sneak Attack, Poison Blade (Mel) | 03 → Martial class cards; spell sections | As the combat mockup gives each character |
+| Class cards at level 1: Second Wind (Fighter); Firebolt, Frost Ray (Fluffy; the Wizard picks 2 of 9); Sacred Flame, Bless (Chelmsford); Sneak Attack (Mel). Action Surge, Snare, Poison Blade and Healing Word come at level 3 (Nov 9, 2026) | 03 → Martial class cards; spell sections | As the combat mockup gives each character |
 | Downed allies stay down until the fight ends | 03 → Combat | |
 | Rocks and minis block movement, trees don't | 07 → Combat screen | |
 | End phase asks if allies still have AP | 07 → Combat screen | |
@@ -420,7 +420,7 @@ Scope: 06 → First playable → Levels. Rules: 05 → Levels and milestones, Ge
   - Bots, late joiners and saves from before this change all use Progression's bot picks: built options first.
   - Companions keep their default subclass: Fluffy Blaster, Mel Con Artist, Chelmsford Order of Good, of Aurora (01).
   - Everything picked is kept on the party member (`mastery`, `feat`, `subclass`, `form`, `beast`, `god`, `renames`, `levelled`), so saves keep it.
-- **Level 3's class card:** 06 → Start already gives the Fighter, Ranger and Rogue their level-3 card at level 1. Until that changes, level 3 shows the kit with nothing new (`Progression.LEVEL3_AT_START`).
+- **Level 3's class card** (06 → Start, Ethan, Nov 9, 2026): Action Surge, Snare and Poison Blade (the hero's and Mel's) are no longer in the starting kit; level 3 grants them. Chelmsford's Healing Word comes at level 3 too, beside his 2 spell picks.
 - **Level up now:** in the debug menu (three fingers, or F8), debug builds only (`Rules.TEST_LEVEL_UP`). It grants the next level on the spot.
 - **Check:**
   - `-- --levelcheck` levels the party from 2 to 5 through the screen, checks each gain, plays every new built card once with set coins, then lets the fight bot play a fight.

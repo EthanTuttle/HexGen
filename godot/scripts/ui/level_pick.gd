@@ -470,7 +470,10 @@ func _chip(t: String, bg: Color, ink: Color) -> Control:
 ## A card's text without its "Blaster spell:" or "Longsword:" lead, which the pop-up's tag already says.
 static func text_of(k: Dictionary) -> String:
 	var t: String = k.desc
-	return t.substr(t.find(": ") + 2) if t.find(": ") >= 0 and t.find(": ") < 24 else t
+	if t.find(": ") >= 0 and t.find(": ") < 24:
+		t = t.substr(t.find(": ") + 2)
+		t = t[0].to_upper() + t.substr(1)   # "mark a foe" after "Order of Light:" reads as a sentence
+	return t
 
 
 func _card_row(id: String, tag: String, picked: bool, choose: Variant, note := "") -> Dictionary:
@@ -518,7 +521,7 @@ func _mastery_columns(m: Dictionary) -> Array:
 func _class_cards(m: Dictionary) -> Control:
 	var row := CUI.hbox(10)
 	var k := Progression.klass(m)
-	for id: String in Weapons.CLASS_CARDS.get(k, []):
+	for id: String in Weapons.CLASS_CARDS.get(k, []) + [Progression.LEVEL3_CARD.get(k, "")]:
 		var new: bool = id == Progression.LEVEL3_CARD.get(k, "") and not id in m.get("cards", [])
 		row.add_child(_card_tile(id, m, new))
 	return row

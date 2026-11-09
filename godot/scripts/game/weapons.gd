@@ -43,7 +43,7 @@ const ARMOURED_HEADS := 2
 const SHIELD_HEADS := 1
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
-const CLASS_CARDS := {"fighter": ["second_wind", "action_surge"], "ranger": ["hunters_mark", "snare"], "rogue": ["sneak_attack", "poison_blade"]}   # DOCS (06 -> Start)
+const CLASS_CARDS := {"fighter": ["second_wind"], "ranger": ["hunters_mark"], "rogue": ["sneak_attack"]}   # DOCS (06 -> Start, Nov 9, 2026: the level-3 cards come at level 3, Progression)
 const CLASS_HP := {"fighter": 12, "ranger": 10, "rogue": 8, "wizard": 6}   # PLACEHOLDER (06 -> Start)
 
 

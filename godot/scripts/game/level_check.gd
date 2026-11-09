@@ -88,9 +88,13 @@ func _levels() -> void:
 					_check(m.get("mastery", []).size() == (1 if want else 0), "%s: %s mastery node at level 2 (%s)" % [m.name, "one" if want else "no", m.get("mastery", [])])
 				3:
 					if Progression.klass(m) in Progression.CASTERS:
-						_check(gained.size() == Progression.SPELL_PICKS_3, "%s: 2 level-3 spells (%s)" % [m.name, gained])
+						var picked := gained.filter(func(id): return id != Progression.LEVEL3_GRANT.get(m.name, ""))
+						_check(picked.size() == Progression.SPELL_PICKS_3, "%s: 2 level-3 spell picks (%s)" % [m.name, gained])
 					else:
-						_check(Progression.LEVEL3_CARD[Progression.klass(m)] in m.cards, "%s: has its level-3 class card" % m.name)
+						var card: String = Progression.LEVEL3_CARD[Progression.klass(m)]
+						_check(card in gained, "%s: gains %s at level 3" % [m.name, Cards.ALL[card].n])
+					if m.name == "Chelmsford":
+						_check("healing_word" in gained and gained.size() == 3, "Chelmsford: Healing Word and 2 picks at level 3 (%s)" % [gained])
 				4:
 					var feat := Progression.feat_of(Progression.feat(m))
 					_check(not feat.is_empty() and Progression.missing(m, feat, game.run.background) == "", "%s: a feat it qualifies for (%s)" % [m.name, Progression.feat(m)])

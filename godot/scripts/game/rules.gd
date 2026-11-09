@@ -244,16 +244,16 @@ const TROPHY_MORE := 1                   # PLACEHOLDER (03): Trophy Mark, more a
 const PARTY := [
 	{"name": "[Hero name]", "initial": "H", "color": "#E9C46A", "mini": "standin_hero", "ability": "STR", "hp": 12, "race": "Human", "sub": "", "scores": {"STR": 3, "CON": 2},
 		"weapon": "longsword",
-		"cards": ["move", "attack", "use_item", "parry", "block", "shield_bash", "second_wind", "action_surge"]},
+		"cards": ["move", "attack", "use_item", "parry", "block", "shield_bash", "second_wind"]},
 	{"name": "Fluffy", "initial": "F", "color": "#C9B3E6", "mini": "standin_fluffy", "ability": "INT", "hp": 8, "race": "Fluffy", "sub": "", "armour": "none", "scores": {"INT": 3, "DEX": 2},
 		"weapon": "staff",
 		"cards": ["move", "attack", "defend", "use_item", "trip", "ward", "firebolt", "frost_ray"]},
 	{"name": "Chelmsford", "initial": "C", "color": "#8EC3F2", "mini": "standin_chelmsford", "ability": "STR", "hp": 14, "race": "Dragonborn", "sub": "Blue", "armour": "Armoured", "off": "shield", "scores": {"WIS": 2, "STR": 2, "CON": 2},
 		"weapon": "mace",
-		"cards": ["move", "attack", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless", "healing_word"]},
+		"cards": ["move", "attack", "use_item", "bonebreaker", "block", "shield_bash", "sacred_flame", "bless"]},
 	{"name": "Mel", "initial": "M", "color": "#F4B6A8", "mini": "standin_small", "ability": "DEX", "hp": 8, "race": "Elf", "sub": "Wood elf", "armour": "none", "scores": {"DEX": 2, "WIS": 2, "CHA": 2},
 		"weapon": "dagger",
-		"cards": ["move", "attack", "defend", "use_item", "throw", "sneak_attack", "poison_blade"]},
+		"cards": ["move", "attack", "defend", "use_item", "throw", "sneak_attack"]},
 ]
 ## PLACEHOLDER: the hero with no creator behind the run (the checks, the demo): a Human Fighter, race +1s on STR and CON and the
 ## class +1 on STR, a legal start (design/03 -> Starting scores) that keeps the old STR 3. `--race=`, `--sub=` and `--spell=` change it.
