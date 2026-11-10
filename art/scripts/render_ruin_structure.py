@@ -217,6 +217,10 @@ def check_haunted(live):
     day = tris(live["haunted_ruins_centre"]) + 6 * ground + 6 * block + 3 * tris(live["haunt_wisps"]) + 2 * tris(live["haunt_mist"])
     print(f"CHECK haunted: {len(bad)} problems {bad[:8]}; worst block {block}, ghost {ghost}; worst tile by day {day}, "
           f"at night {day + 6 * ghost} (budget 4816); Crypt centre {tris(live['crypt_centre'])}")
+    world = {(q, r): "haunted_ruins" for q in range(-11, 11) for r in range(-11, 11)}   # the tiles as placed, over 400 of them
+    base = tris(live["haunted_ruins_centre"]) + 6 * ground
+    real = [base + sum(tris(live[pc]) for pc, *_ in rs.haunted_props(world, q, r, True)) for q in range(-10, 10) for r in range(-10, 10)]
+    print(f"PLACED: worst tile at night {max(real)}, mean {sum(real) // len(real)}, over budget {sum(t > 4816 for t in real)} of {len(real)}")
 
 
 def ghost_materials(dark):
