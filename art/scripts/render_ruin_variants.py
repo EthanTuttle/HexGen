@@ -21,8 +21,9 @@ import render_start_tiles as rst  # noqa: E402
 import ruin_lands as rl  # noqa: E402
 import variants as vr  # noqa: E402
 
-TITLES = {"overrun_outpost": "Overrun outpost", "warren": "Warren"}
-GLOW = {"goblin_eye": 9.0}   # emission strength at night, a stand-in for the engine's
+TITLES = {"overrun_outpost": "Overrun outpost", "warren": "Warren", "haunted_ruins": "Haunted ruins", "crypt": "Crypt"}
+GLOW = {"goblin_eye": 9.0, "haunt_glow": 1.4, "haunt_wisp": 2.2, "haunt_light": 1.2}   # emission strength at night, a stand-in for the engine's
+DAY_GLOW = {"haunt_glow": 0.4, "haunt_wisp": 0.5, "haunt_light": 0.2}                   # and by day: faint
 RING2 = [(2, 0), (2, -1), (2, -2), (1, -2), (0, -2), (-1, -1), (-2, 0), (-2, 1), (-2, 2), (-1, 2), (0, 2), (1, 1)]
 
 
@@ -140,6 +141,8 @@ def layout_problems(props, shape):
     outl = [placed(shape[n][1], x, y, sp) for n, x, y, sp in props]
     for i in range(len(props)):
         for j in range(i + 1, len(props)):
+            if props[i][0] not in rl.FOOT or props[j][0] not in rl.FOOT:
+                continue  # wisps and mist stand on nothing
             if props[i][0].startswith("ruin_") and props[j][0].startswith("ruin_"):
                 continue  # remains among themselves are the frozen plain tiles'
             if math.hypot(props[i][1] - props[j][1], props[i][2] - props[j][2]) > 3.0:
@@ -152,7 +155,7 @@ def layout_problems(props, shape):
             continue
         c, s_ = math.cos(sp), math.sin(sp)
         for m, mx, my, msp in props:
-            if (m, mx, my) == (n, x, y):
+            if (m, mx, my) == (n, x, y) or m not in rl.FOOT:
                 continue
             for px, py in placed(shape[m][2], mx, my, msp):
                 u, w = (px - x) * c + (py - y) * s_, -(px - x) * s_ + (py - y) * c
@@ -173,6 +176,8 @@ def check(variant, pieces):
     props_ = [n for n in pieces if n in rl.PROP_PIECES]
     shape = shapes(pieces, props_)
     for n in props_:
+        if n not in rl.FOOT:
+            continue  # wisps and mist: nothing standing
         cx, rad = rl.FOOT[n]
         got = max(math.hypot(px - cx, py) for px, py in shape[n][0])
         if got > rad + 1e-3:
@@ -183,7 +188,7 @@ def check(variant, pieces):
         for r in range(-10, 10):
             props = rl.tile_props(variant, q, r)
             worst = max(worst, sum(tris[n] for n, *_ in props))
-            nb = sum("burrow" in n for n, *_ in props)
+            nb = sum("burrow" in n for n, *_ in props) if variant in rl.BURROWED else sum(n.startswith("haunt_") and n in rl.FOOT for n, *_ in props)
             counts[nb] = counts.get(nb, 0) + 1
             dropped += len(rl.tile_remains(q, r)) > sum(n.startswith("ruin_") for n, *_ in props)
             found = layout_problems(props, shape)
@@ -200,7 +205,7 @@ def check(variant, pieces):
     ground = tris[f"{variant}_centre"] + 6 * max(tris[n] for n in pieces if n.startswith(f"{variant}_edge"))
     print(f"TRIS {variant}: ground {ground} + props up to {worst} = {ground + worst} of 4816; props {dict((n, tris[n]) for n in tall)}")
     print(f"OFF BOUNDS {sorted(bad)}")
-    print(f"BURROWS PER TILE {dict(sorted(counts.items()))}; tiles giving up a remains for a burrow {dropped} of 400")
+    print(f"BURROWS (OR TOMBS) PER TILE {dict(sorted(counts.items()))}; tiles giving up a remains for a burrow {dropped} of 400")
     print(f"CLASHES {len(clashes)} tiles {dict(list(clashes.items())[:8])}")
 
 
@@ -236,6 +241,13 @@ def shot(variant, stem, title, sub, target, dist, el, dark, party=None):
     rp.stage(target, dist, el)
     if dark:
         night()
+    else:
+        for mat, strength in DAY_GLOW.items():
+            m = bpy.data.materials.get(mat)
+            if m and m.use_nodes:
+                b = m.node_tree.nodes.get("Principled BSDF")
+                b.inputs["Emission Color"].default_value = (*hk.linear(mat), 1.0)
+                b.inputs["Emission Strength"].default_value = strength
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
     rst.label(title, sub)
     rp.render(stem)
@@ -264,6 +276,8 @@ if __name__ == "__main__":
         at = hk.tile_position(*near)
         party = tuple(at + Vector((2.2, 0.0, 0.02)))
         close = (at + Vector((0.4, 0.6, 0.5)), 24, 42)
+        if variant in rl.HAUNTED:  # the Crypt in the frame too, behind the tile
+            close = (at * 0.62 + Vector((0.0, 0.0, 0.8)), 27, 40)
     tiles = [tuple(int(v) for v in a_[5:].split(",")) for a_ in args if a_.startswith("tile:")]
     if "map_day" in args or tiles:  # just the region map by day, and close-ups of the named tiles (-- overrun_outpost map_day tile:0,1)
         if "map_day" in args:

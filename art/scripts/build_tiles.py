@@ -19,6 +19,7 @@ from mathutils import Matrix, Vector  # noqa: E402
 
 import hexkit as hk  # noqa: E402
 import ruin_lands as rl  # noqa: E402
+import ruin_structure as rs  # noqa: E402
 import water as wt  # noqa: E402
 
 hk.PALETTE.update(rl.PALETTE)
@@ -40,7 +41,7 @@ def centre_outline(scale=1.0):
 
 
 # Ground colour under each terrain's props; water sits on grass so its banks show.
-GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "ruin_ground"}
+GROUND = {"river": "plains", "village": "cobble", "farmland": "plains", "hills": "hill_grass", "ruins": "rs_ground"}
 
 
 def base(terrain, col, ground=None):
@@ -910,8 +911,9 @@ def paving(p, rng, centres, missing=0.25):
 
 
 def ruins(p, rng, kind):
-    """Tier 0: ruin_lands.py, the plaza ground with medium overgrowth (Ethan's picks, Nov 9, 2026), seeded as in the study he picked from. The remains are props (ruin_lands.REMAINS_PIECES), placed per tile by ruin_lands.tile_remains."""
-    rl.ruins(p, hk.seeded(p.name + "a"), kind.replace("edge_", ""), "a", rl.PICKED_GROWTH)
+    """Tier 0, rebuilt as structure (Ethan, Nov 9, 2026): ruin_structure.py's corner halls, seeded as in the study he picked
+    from. These pieces hold the streets and the worn plaza; the halls are props (ruin_hall_*), placed by ruin_lands.tile_props."""
+    rs.ground(rs.KIT)(p, rng, kind)   # corner halls (from tiles_v92): streets and plaza here, the halls are props
 
 
 def ruins_v5(p, rng, kind):

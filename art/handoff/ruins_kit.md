@@ -1,33 +1,36 @@
-# Ruins kit (tiles_v90, overrun outpost and Warren from tiles_v91)
+# Ruins kit (corner halls from tiles_v92; overrun outpost and Warren from tiles_v91)
 
-Ruins tier 0, approved by Ethan on Nov 9, 2026: Plaza ground, round 1's remains, medium overgrowth. Look rules: `design/07 Presentation.md` → Ruins land. Code: `art/scripts/ruin_lands.py`.
+Ruins tier 0, rebuilt as structure and approved by Ethan on Nov 9, 2026 (corner halls, take B, refined v2). It replaces tiles_v90's plaza and scattered remains. Look rules: `design/07 Presentation.md` → Ruins land. Code: `art/scripts/ruin_structure.py` (the takes study; the kit uses `KIT = "b"`) and `art/scripts/ruin_lands.py`.
+
+Every tile has open streets along its six walks and a worn plaza at its middle, on pale paved ground. At each of its six corners stands a third of a tall roofless six-sided hall with a grassy floor, so where three ruins tiles meet the thirds make one hall. Low footprints or rubble lie on the way in.
 
 ## Pieces (in `art/export/tiles.glb`)
 
 | Piece | What |
 | --- | --- |
-| `base_ruins` | The slab, top `ruin_ground` (#9D988F) |
-| `ruins_centre` | Flagstones round the middle, green showing in the cracks |
-| `ruins_edge_same`, `ruins_edge_same_b` | Flagstones to the edge; pick `_b` by `hash01(q * 6 + i, r, 8) < 0.5`, as other terrains do |
+| `base_ruins` | The slab, top `rs_ground` (#B9B3A6), the pale paved ground |
+| `ruins_centre` | The worn plaza: square flagstones on one grid, thinning out from the middle, and the streets' lanes beyond |
+| `ruins_edge_same`, `ruins_edge_same_b` | A worn street of flagstones along the walk; pick `_b` by `hash01(q * 6 + i, r, 8) < 0.5`, as other terrains do |
 | `ruins_edge_other`, `ruins_edge_other_b` | The same, thinning out over the last metre to the edge; `_b` by the same hash |
-| `ruin_<kind>` | 14 remains props: `arch`, `arch_pointed`, `arch_broken`, `colonnade`, `column`, `toppled`, `robed`, `beast`, `head`, `torso`, `obelisk`, `corner`, `wall`, `heap` |
+| `ruin_hall_<n>_<lo><hi>` | One corner's block, 12 pieces: variant `n` 0–2 (0 plain hall and a rubble mound, 1 a hall with a door gap and a footprint, 2 a hall with a lower inner ring and a footprint), and `lo`/`hi` 1 where that side's neighbour is ruins. Origin at the tile's middle, built facing +X toward the corner |
+| `ruin_<kind>` | tiles_v90's 14 remains props, kept only for the overrun outpost until it's redone on the halls |
 
 All use the shared `kit` material, and nothing glows.
 
 ## What the engine does
 
-- **Remains:** port `tile_remains(q, r)` from the top of `ruin_lands.py`. It's plain Python and uses `ground_cover.hash01`. It returns `(kind, x, y, spin)` in tile-local space: at most one remains in each of the six corner gaps between the walks (3.0 out on each corner's direction), about 65% filled. Place `ruin_<kind>` there, turned by `spin` about Z. They keep 0.62 off every walk line and stay inside the tile at any turn.
-- **Ground cover:** ruins density is 0.1 (`ground_cover.DENSITY`).
-- **Walks:** these are the usual straight lines from each edge's middle to the tile's middle, with no path data.
+- **Halls:** port `ruin_structure.block_props(take, world, q, r)` (plain Python, uses `ground_cover.hash01` and `hexkit.NEIGHBOURS`). For each corner `c` (0–5) of tile (q, r): `lo` is whether the neighbour across edge `c` is ruins, `hi` the neighbour across edge `c + 1` (any ruins look counts: `ruin_lands.LOOKS`); the variant is `int(hash01(q * 6 + c, r, 51) * 3)`. Place `ruin_hall_<n>_<lo><hi>` at the tile's middle, turned `30 + 60 * c` degrees about Z. A block reaches the tile edge on a side where the ruins carry on and keeps back where they don't, so when a neighbour changes (a tile placed, a region finishing), re-pick that tile's blocks too.
+- **Ground cover:** ruins density is 0.1 (`ground_cover.DENSITY`). The ground pieces carry `no_cover` circles along the streets and over the plaza (in `tiles_paths.json`), so cover lands only on the yards and hall floors.
+- **Walks:** the usual straight lines from each edge's middle to the tile's middle, with no path data. Every raised stone keeps 0.62 off them (`render_ruin_structure.py -- check`).
 - Ruins next to Dunfaire Tower: the tower tile keeps its own approved look. How it sits on ruins land is still open (07).
 
 ## Triangles
 
-The worst tile is about 2,760 of 4,816 (ground plus six of the biggest remains).
+The worst tile is about 1,550 of 4,816 (ground plus six of the biggest blocks).
 
 ## Overrun outpost and the Warren (tiles_v91)
 
-Approved by Ethan on Nov 9, 2026. Looks: `design/07 Presentation.md` → Region variants (Overrun outpost) and Landmark tiles (Warren).
+Approved by Ethan on Nov 9, 2026. Looks: `design/07 Presentation.md` → Region variants (Overrun outpost) and Landmark tiles (Warren). **The outpost is being redone on the corner halls** (07: each variant recolours the mass); until then it keeps tiles_v90's plain pieces and remains below. The Warren stays as it is.
 
 | Piece | What |
 | --- | --- |
