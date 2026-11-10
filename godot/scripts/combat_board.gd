@@ -23,8 +23,9 @@ const LINEUP := [
 const BOUTS := [[0, 5], [5, 2], [1, 6], [4, 0]]
 
 # Tween timings and sizes (no values in the docs yet; tuned by eye).
-const SHRINK_WAIT := 0.35     # PLACEHOLDER: a fallen foe lies there this long, then shrinks away
-const SHRINK_TIME := 0.45
+const LIFT_WAIT := 0.15       # PLACEHOLDER: a fallen foe stands a moment, then is lifted straight up and away
+const LIFT_TIME := 0.8
+const LIFT_HEIGHT := 6.0      # metres up, out of the camera's view
 
 var minis: Array[Node3D] = []
 var auto_play := false
@@ -255,20 +256,22 @@ func step_along(mini: Node3D, path: Array) -> void:
 		await tw.finished
 
 
-## A downed mini tips over and stays down.
-## A downed mini tips over. A fallen foe then shrinks into nothing and is hidden (Ethan's phone note, Nov 5, 2026), without
-## holding up the turn; a downed ally stays lying there, since it can still be brought back (03 -> Downed).
+## A fallen foe is lifted off the board: it rises straight up and away, upright, as if picked up by an unseen hand, then is
+## hidden (07 -> Combat, Ethan, Nov 9, 2026; it fell over and shrank before), without holding up the turn. A downed ally
+## tips over and stays lying there, since it can still be brought back (03 -> Downed).
 func fall(mini: Node3D, vanish := false) -> void:
+	if vanish:
+		mini.set_meta("home_y", mini.position.y)
+		var gone := create_tween()
+		gone.tween_interval(LIFT_WAIT)
+		gone.tween_property(mini, "position:y", mini.position.y + LIFT_HEIGHT, LIFT_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		gone.tween_callback(func(): mini.visible = false)
+		mini.set_meta("vanish", gone)
+		return
 	var body := mini.get_node("body") as Node3D
 	var tw := create_tween()
 	tw.tween_property(body, "quaternion", Quaternion(Vector3.RIGHT, deg_to_rad(-80)), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tw.finished
-	if vanish:
-		var gone := create_tween()
-		gone.tween_interval(SHRINK_WAIT)
-		gone.tween_property(mini, "scale", Vector3.ONE * 0.01, SHRINK_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		gone.tween_callback(func(): mini.visible = false)
-		mini.set_meta("vanish", gone)
 
 
 ## Back on its feet at full size (test aid: the checks reuse a fallen unit).
@@ -276,6 +279,9 @@ func stand(mini: Node3D) -> void:
 	if mini.has_meta("vanish"):
 		(mini.get_meta("vanish") as Tween).kill()
 		mini.remove_meta("vanish")
+	if mini.has_meta("home_y"):
+		mini.position.y = mini.get_meta("home_y")
+		mini.remove_meta("home_y")
 	mini.scale = Vector3.ONE
 	mini.visible = true
 	(mini.get_node("body") as Node3D).quaternion = Quaternion.IDENTITY

@@ -84,6 +84,7 @@ func _run() -> void:
 	await _new_game()
 	_check(game.party.size() == 2 and not game.run.wide_deck, "a real first-playable run: the hero and Fluffy, seed %s" % game.run.seed_text)
 	await _time("start", game)
+	await _save_from_menu()
 	var moves := 0
 	for target: int in POINTS:
 		await _play(target - moves)
@@ -96,6 +97,32 @@ func _run() -> void:
 	print("SAVE timings: %s" % [timings])
 	print("SAVE DONE: %d failed" % failed)
 	get_tree().quit()
+
+
+## The pause menu's Save on a new hero, whose 3 slots are all empty: tapping Slot 1 writes it (the phone playtest, Nov 8:
+## empty slots were pale and took no taps, so nothing could be saved by hand).
+func _save_from_menu() -> void:
+	var pops := PauseMenu.open(game)
+	await _frames(2)
+	var save_button: Control = pops.find_children("*", "TagButton", true, false).filter(func(b): return b.accessibility_name == "Save")[0]
+	save_button.pressed.emit()
+	await _frames(2)
+	var rows := pops.find_children("*", "PanelContainer", true, false).filter(func(r): return r.has_signal("tapped") \
+			and r.find_children("*", "Label", true, false).any(func(l): return l.text == "Slot 1"))
+	_check(rows.size() == 1, "the Save pop-up lists Slot 1")
+	if rows.size() == 1:
+		var row: Control = rows[0]
+		for down in [true, false]:
+			var e := InputEventMouseButton.new()
+			e.button_index = MOUSE_BUTTON_LEFT
+			e.pressed = down
+			e.position = row.size / 2.0
+			row._gui_input(e)
+		await _frames(2)
+		var h: Dictionary = Saves.read_index().heroes.get(Hero.current.id, {slots = [{}]})
+		_check(not h.slots[0].is_empty(), "tapping an empty Slot 1 in the pause menu saves to it")
+	pops.close()
+	await _frames(2)
 
 
 ## n of PlayCheck's moves (place, fight, rest, answer pop-ups), from whatever state the game is in.

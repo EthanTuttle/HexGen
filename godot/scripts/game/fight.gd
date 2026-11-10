@@ -70,7 +70,7 @@ func _ready() -> void:
 	# Combat v14 colours: active ally rim, foes in reach (gold), the target (orange), allies in reach
 	# (light green circle), the ally target (dark green), hexes a Move can reach.
 	for k in [["active", "#FCF7EE"], ["reach", "#F2C14E"], ["target", "#B5532F"], ["ally", "#A8DC8C"],
-			["ally_target", "#2E8A47"], ["move", "#D3EBC1"], ["move_lava", "#F2B27A"], ["move_tree", "#86B97E"], ["up", "#2E8A47"]]:   # up: PLACEHOLDER
+			["ally_target", "#2E8A47"], ["move", "#D3EBC1"], ["move_lava", "#F2B27A"], ["move_tree", "#86B97E"], ["up", "#2E8A47"], ["range", "#F4E6BC"]]:   # up, range: PLACEHOLDER
 		var m := StandardMaterial3D.new()
 		m.albedo_color = Color(k[1])
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -452,6 +452,20 @@ func _step_path(u: Dictionary, foe: Dictionary, budget: int) -> Array:
 	return best
 
 
+## The hexes a card with a range reaches from u, tinted when it's picked (07 -> Combat): attacks, save spells and ally
+## cards; cards that light their own cells (Move, breath, arcs, cells) and cards with no range (self, any visible foe) don't.
+func range_cells(u: Dictionary, c: Dictionary) -> Array:
+	if busy or not c.kind in ["attack", "save", "ally"]:
+		return []
+	var reach: int = c.get("range", 1)
+	var out := []
+	for cell: Vector2i in grid:
+		var d := Rules.hex_distance(cell, u.cell)
+		if d >= 1 and d <= reach:
+			out.append(cell)
+	return out
+
+
 func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
 	if c.get("summons_only", false) and a.get("summon_of", "") != u.name:
 		return false   # Soul Swap: one of your summons (03)
@@ -804,6 +818,14 @@ func _show_overlays() -> void:
 		for cell in cell_options(current, c):
 			_overlay(cell, "target" if cell == cell_target or cell in ring else "move")
 	_overlay(current.cell, "active")
+	var lit := {}
+	for u in units:
+		if in_reach(current, u, c) or ally_in_reach(current, u, c):
+			for cell in cells_of(u):
+				lit[cell] = true
+	for cell in range_cells(current, c):   # every hex the card reaches (07 -> Combat: range shows on the board, Nov 9, 2026)
+		if not lit.has(cell):
+			_overlay(cell, "range")
 	for u in units:
 		if in_reach(current, u, c):
 			for cell in cells_of(u):
