@@ -184,8 +184,16 @@ func _class_items() -> Array:
 			for _i in 2:
 				kit.append({"card": false, "n": "Spell"})
 		out.append({"id": k.id, "n": k.id, "bl": x.bl, "icon": D.IC[k.i], "cloth": Color(D.TER[k.t[0]][1]), "dark": D.DARK.has(k.t[0]),
-			"chips": k.main, "lines": [["Weapons", x.wt], ["Armour", x.at]], "kit": kit, "locked": not k.id in Creator.PLAYABLE})
+			"chips": k.main, "lines": [["Weapons", x.wt], ["Armour", _armour_line(k.id)]], "kit": kit, "locked": not k.id in Creator.PLAYABLE})
 	return out
+
+
+## The class banner's Armour line, from Gear (04 -> Armour: Clothes or Armoured, plus a shield). PLACEHOLDER wording, sent
+## to the planner Nov 9, 2026 for Screen text.
+static func _armour_line(klass: String) -> String:
+	if Gear.armour_for(klass).size() < 2:
+		return "Clothes only"
+	return "Armoured, shields" if Gear.shield_for(klass) else "Armoured"
 
 
 func _race_items() -> Array:
