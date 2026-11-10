@@ -5155,6 +5155,7 @@ import fey_lands as fl  # noqa: E402
 import buried_lands as bl  # noqa: E402
 import start_tiles as st  # noqa: E402
 import ruin_lands as rl  # noqa: E402
+import ruin_structure as rs  # noqa: E402
 
 VARIANTS = {
     "deep_forest": ("forest", deep_forest, "deep_forest", ("edge_trail", "centre_near")),
@@ -5210,8 +5211,9 @@ hk.PALETTE.update(fl.PALETTE)
 hk.PALETTE.update(bl.PALETTE)
 hk.PALETTE.update(st.PALETTE)
 hk.PALETTE.update(rl.PALETTE)
-PROP_PIECES.update(rl.PROP_PIECES)
-VARIANTS.update(rl.VARIANTS)
+PROP_PIECES.update({k: v for k, v in rl.PROP_PIECES.items() if k not in rl.UNAPPROVED})
+PROP_PIECES.update(rs.block_pieces(rs.KIT))   # the plain ruins' corner halls
+VARIANTS.update({k: v for k, v in rl.VARIANTS.items() if k not in rl.UNAPPROVED})
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | rl.OWN
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
@@ -5219,7 +5221,7 @@ VARIANTS["bog"] = sl.BOG
 LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(fl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(bl.LANDMARK_CENTRES)
-LANDMARK_CENTRES.update(rl.LANDMARK_CENTRES)
+LANDMARK_CENTRES.update({k: v for k, v in rl.LANDMARK_CENTRES.items() if k not in rl.UNAPPROVED})
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
 # (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
@@ -5235,7 +5237,7 @@ LANDMARKS = {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt
 LANDMARKS.update(sl.LANDMARKS)
 LANDMARKS.update(fl.LANDMARKS)
 LANDMARKS.update(bl.LANDMARKS)
-LANDMARKS.update(rl.LANDMARKS)
+LANDMARKS.update({k: v for k, v in rl.LANDMARKS.items() if k not in rl.UNAPPROVED})
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

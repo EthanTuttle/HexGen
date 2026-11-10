@@ -389,7 +389,7 @@ def build_map(templates, animated=False, tiles=None, raised_regions=(), flows=No
                 place(templates, part, col, at + Matrix.Rotation(spin, 3, "Z") @ hub, spin)
         if name in vr.rl.LOOKS:
             # Ruins remains in the tile's corner gaps, picked by a world hash, the way the engines will (ruin_lands.tile_remains).
-            for piece_, x_, y_, spin_ in vr.rl.tile_props(name, q, r):  # and an overrun outpost's burrows
+            for piece_, x_, y_, spin_ in vr.rl.tile_props(name, q, r, MAP):  # and an overrun outpost's burrows
                 place(templates, piece_, col, at + Vector((x_, y_, 0)), spin_)
         if name in sand.LOOKS:
             # The sand is shaped in world space, the way the engines will.

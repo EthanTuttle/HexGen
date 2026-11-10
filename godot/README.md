@@ -65,7 +65,7 @@ The demo uses the same calls a player's clicks make, and plays simply. One excep
 
 ## The screens before the game (first playable)
 
-A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`). Any run with its own arguments or a `HEXGEN_PHONE*` variable goes straight to the game, so every check, demo and phone run starts as before; `-- --direct` asks for that with no other arguments, and `-- --front` forces the title. `-- --front --check` plays the whole run by touch, from the title through the creator into the game, a town with its shop and inn, and a Social event with a check and a fight, and prints `FRONT OK` / `FRONT FAIL` (add `--shots` for `screens/front_*.png`, `--safe=both` for what iOS reports today).
+A plain launch opens on the title screen (`scenes/front.tscn`, `scripts/front/`). Any run with its own arguments or a `HEXGEN_PHONE*` variable goes straight to the game, so every check, demo and phone run starts as before; `-- --direct` asks for that with no other arguments, and `-- --front` forces the title. `-- --front --check` plays the whole run by touch, from the title through the creator into the game, a town with its shop and inn, and a Social event with a check and a fight, and prints `FRONT OK` / `FRONT FAIL` (add `--shots` for `screens/front_*.png`, `--safe=both` for what iOS reports today). Test aid `--check --steadycheck` opens the creator and taps every pick on each step, checking that nothing under wrapping text moves from one pick to the next (Ethan's phone note, Nov 8, 2026), then quits; `--shots` saves `front_steady_*.png`.
 
 | Placeholder | Value here | Why |
 | --- | --- | --- |
