@@ -216,10 +216,7 @@ func bg_data() -> Dictionary:
 
 
 func weapon(id: String) -> Dictionary:
-	for w: Dictionary in D.W:
-		if w.id == id:
-			return w
-	return {}
+	return Gear.item(id)
 
 
 func race_name() -> String:
@@ -263,28 +260,16 @@ func human() -> bool:
 
 ## What the offhand can hold beside the main weapon.
 func off_options() -> Array:
-	var mw := weapon(main)
-	var out := []
-	var hands := str(mw.get("h", ""))
-	if hands != "1" and hands != "v":
-		return out
-	out.append({"id": "none", "n": "Empty hand", "i": "none", "h": 0})
-	if human() or cls_data().get("sh", false):
-		out.append({"id": "shield", "n": "Shield", "i": "shield", "h": 0})
-	if hands == "1":
-		for w: Dictionary in allowed_weapons():
-			if str(w.h) == "1":
-				out.append(w)
-	return out
+	return Gear.off_for(cls, human(), main)
 
 
 func allowed_weapons() -> Array:
-	var c := cls_data()
-	if c.is_empty():
-		return []
-	if human() or str(c.w) == "all":
-		return D.W
-	return D.W.filter(func(w): return w.id in c.w)
+	return Gear.weapons_for(cls, human())
+
+
+## The armour slot's choices: Clothes, or Clothes and Armoured.
+func armour_options() -> Array:
+	return Gear.armour_for(cls, human())
 
 
 func scores() -> Dictionary:

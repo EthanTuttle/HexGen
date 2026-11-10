@@ -9,6 +9,7 @@ var bg := UI.ORANGE
 var ink := UI.WHITE_WARM
 var shadow := UI.ORANGE_EDGE
 var text := ""
+var sub := ""                   # an optional small second line under the label (Sneak past's "Stealth")
 var text_size := 15
 var cut := 12.0
 var coin := false
@@ -51,6 +52,12 @@ func _draw() -> void:
 	var x := (size.x - w) * 0.5
 	var asc := f.get_ascent(text_size)
 	var y := (size.y - (asc + f.get_descent(text_size))) * 0.5 + asc
+	if sub != "":   # the label and its small line, centred together
+		var sf := UI.font("n800")
+		var sh := sf.get_ascent(11) + sf.get_descent(11)
+		y -= sh * 0.5
+		var sw := sf.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		draw_string(sf, Vector2((size.x - sw) * 0.5, y + f.get_descent(text_size) + sf.get_ascent(11) - 1), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(k, 0.8))
 	if coin:
 		var c := Vector2(x + 9, size.y * 0.5)
 		draw_circle(c, 9, UI.GOLD_EDGE)

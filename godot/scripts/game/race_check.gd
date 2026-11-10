@@ -448,6 +448,11 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_check(gear_ids == fight_ids, "the gear reference and the fight numbers list the same weapons (Gear, Weapons.CAT)")
 	_check(Gear.armour_for("rogue").size() == 1 and Gear.armour_for("rogue", true).size() == 2 and Gear.armour_for("fighter").map(func(a): return a.n) == ["Clothes", "Armoured"],
 			"armour is Clothes or Armoured (04): a Rogue gets Clothes only, a Human Rogue and a Fighter both")
+	_check(Gear.armour_for("bard").size() == 1 and Gear.armour_for("bard", false, "Leader").size() == 2 and Gear.armour_for("ranger").size() == 2
+			and Gear.armour_for("wizard").size() == 1 and Gear.armour_for("cleric").size() == 2 and Gear.shield_for("cleric") and not Gear.shield_for("ranger"),
+			"class armour per 04: Bards in Clothes until Leader, Rangers and Clerics Armoured, Clerics with shields")
+	_check(Gear.weapons_for("bard", false, "Leader").any(func(w): return w.id == "halberd") and not Gear.weapons_for("bard").any(func(w): return w.id == "halberd"),
+			"Leader bards gain polearms")
 	_check(Gear.armoured("armoured") and Gear.armoured("Light") and not Gear.armoured("none") and not Gear.armoured(""), "older runs' Light, Medium and Heavy count as Armoured")
 	var hp1: int = Foes.roster("enc_fight_bandits", ["soldier"], 1)[0].hp
 	var lv: int = game.level
