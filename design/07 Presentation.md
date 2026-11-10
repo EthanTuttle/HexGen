@@ -133,7 +133,7 @@ Art direction, UI look, screen layouts, screen mockups, camera and controls, aud
   | Overrun outpost | Warren | One big ruin patched with goblin scrap walls, a burrow entrance dug in at its base, red and yellow rag banners on poles and on top (chosen Nov 9, 2026) |
   | Haunted ruins | Crypt | A large mausoleum with a cracked dome and heavy doors ajar, pale light spilling from wide stairs going down, flanked by mourning statues (chosen Nov 3, 2026) |
   | ~~Golem-guarded ruins~~ | ~~Sentinel Hall~~ (dropped Nov 8, 2026; Basilisk Nest and Vault need looks) | Two looks (chosen Nov 3, 2026): a hall of hex columns up wide column stairs with two huge kneeling golems at its door and amber runes on the steps; or one colossal seated golem at the back of a roofless hall, its eyes faintly lit |
-  | Basilisk ruins | Basilisk Nest | A whole petrified garden of grey stone trees and statues around a cracked dome (chosen Nov 9, 2026) |
+  | Basilisk ruins | Basilisk Nest | A whole petrified garden of grey stone trees and statues around a cracked dome (chosen Nov 9, 2026), big enough to read from the map, with a sickly yellow-green glint of eyes in its doorway and dome cracks that glows at night (Ethan, Nov 10, 2026) |
   | Trapped vault | Vault | A massive round bronze vault door set into a stone face, with locks and carvings (chosen Nov 9, 2026) |
   | Canyon | Echo Cave | A gorge ending at a massive dark cave mouth in the banded cliff, framed by a stone arch, with carved spiral marks (chosen Nov 2, 2026) |
   | Dark wood | Spider Nest | A rocky outcrop among the dead trees with a cave mouth sealed by thick webs; bones and broken gear scattered at the entrance |
