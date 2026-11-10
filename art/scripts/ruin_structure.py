@@ -123,10 +123,10 @@ def wall(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), z=0.0, thick=WALL_T
         t += w
 
 
-def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0):
+def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0, tidy=False):
     """A ruined masonry wall from a to b: a solid core whose height wanders gently, broken tops stepping down in a block or
     two (each narrower and set back), door gaps left open, a breach now and then with its fallen stones, and a few stones
-    lying at the foot. Built for b's corner halls (design/07 -> Ruins land, refined Nov 9, 2026)."""
+    lying at the foot (none of the fallen stones where tidy: an opening that must stay clear). Built for b's corner halls (design/07 -> Ruins land, refined Nov 9, 2026)."""
     d = b - a
     length = d.length
     if length < 0.2:
@@ -135,6 +135,7 @@ def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0):
     side = Vector((-e.y, e.x, 0))
     ang = math.atan2(d.y, d.x)
     t, h = 0.0, rng.uniform(*band)
+    tops = []   # (where, height, turn) of each stretch built, for whatever hangs on the wall
     holes = list(gaps)
     if rng.random() < breach:
         holes.append(length * rng.uniform(0.3, 0.7))
@@ -146,7 +147,7 @@ def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0):
         f = taper[0] + (taper[1] - taper[0]) * mid / length
         if any(abs(mid - g) < 0.3 for g in holes):
             fell = a + e * mid + side * rng.uniform(-0.25, 0.25)
-            if rng.random() < 0.7 and in_tile(fell, 0.3):   # what fell from the gap
+            if rng.random() < 0.7 and in_tile(fell, 0.3) and not tidy:   # what fell from the gap
                 p.box(fell, (0.3, 0.22, 0.16), mat, spin=ang + rng.uniform(-0.6, 0.6))
             t += w
             continue
@@ -156,6 +157,7 @@ def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0):
         at = a + e * mid
         if core > 0.08:
             p.box(at, (w - 0.02, WALL_T, core), mat, spin=ang)
+            tops.append((at, top, ang))
         z, bw = max(core, 0.0), w
         while z < top - 0.08:   # the broken top: blocks set back and narrower as it steps down
             bw *= rng.uniform(0.7, 0.9)
@@ -168,9 +170,10 @@ def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0):
         at = a + e * rng.uniform(0.15, 0.85) * length + side * rng.choice((-1, 1)) * rng.uniform(0.3, 0.5)
         rot = Matrix.Rotation(rng.uniform(0, 3), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.35, 0.35), 3, "X")
         s_ = rng.uniform(0.2, 0.3)
-        if not in_tile(at, 0.35):
+        if not in_tile(at, 0.35) or tidy:
             continue
         p.box_rot(at + Vector((0, 0, s_ * 0.35)), (s_ * 1.3, s_, s_ * 0.75), mat, rot)
+    return tops
 
 
 def in_tile(q, m):
@@ -308,7 +311,10 @@ def block_a(p, rng, joins, n):
 HALL_R = 1.35   # the corner halls' radius: their walls reach the tile edges well short of the streets
 
 
-def block_b(p, rng, joins, n):
+def block_b(p, rng, joins, n, burrow=False):
+    """A corner hall's third, the plaza side's footprint or mound, and the yard. burrow (the overrun outpost): this third's
+    walls are gone, a burrow dug into its floor instead (placed as its own prop, outpost_props), with the inner ring and
+    the lot before it left out so its mouth faces open ground. Returns the hall's walls' stretches."""
     m = margins(joins)
     rl.plate(p, kite(FLAT_KEEP + 0.15, m["lo"], m["hi"], x0=TAKES["b"]["plaza"] + 0.1), 0.012, "rs_yard")
     corner = Vector((CORNER, 0, 0))
@@ -316,8 +322,14 @@ def block_b(p, rng, joins, n):
     rl.plate(p, ccw([corner, pts[0], pts[1], pts[2]]), 0.022, "rs_floor")
     pts[0], pts[2] = pts[0].lerp(pts[1], 0.12), pts[2].lerp(pts[1], 0.12)   # the walls' ends stop short of the tile edge
     mat = rng.choice(WALLS)
-    for a, b in ((pts[0], pts[1]), (pts[1], pts[2])):   # tall in the middle of each side, falling low at its ends
-        masonry(p, rng, a, b, (0.9, 1.5), mat, gaps=((b - a).length * 0.5,) if n == 1 else (), taper=(0.45, 1.0), breach=0.2)
+    tops = []
+    for k, (a, b) in enumerate(((pts[0], pts[1]), (pts[1], pts[2]))):   # tall in the middle of each side, falling low at its ends
+        gaps = ((b - a).length * 0.5,) if n == 1 else ()
+        if burrow:   # this third's walls have fallen into the burrow's mound; the other tiles' thirds still stand
+            break
+        tops += masonry(p, rng, a, b, (0.9, 1.5), mat, gaps=gaps, taper=(0.45, 1.0), breach=0.0 if burrow else 0.2, tidy=burrow)
+    if burrow:
+        return tops
     if n == 2:   # a second ring inside, lower
         inner = [corner + (q - corner) * 0.55 for q in pts]
         masonry(p, rng, inner[0], inner[1], (0.45, 0.8), mat, breach=0.3)
@@ -328,6 +340,7 @@ def block_b(p, rng, joins, n):
             mound(p, rng, lot, 0.35)
         else:
             footprint(p, rng, lot)
+    return tops
 
 
 def block_c(p, rng, joins, n):
@@ -457,4 +470,86 @@ def block_props(take, world, q, r):
         hi = ruin((q + hk.NEIGHBOURS[(c + 1) % 6][0], r + hk.NEIGHBOURS[(c + 1) % 6][1]))
         n = int(gc.hash01(q * 6 + c, r, 51) * VARIANTS_PER_TAKE)
         out.append((block_name(take, n, f"{int(lo)}{int(hi)}"), 0.0, 0.0, math.radians(30 + 60 * c)))
+    return out
+
+
+# --- Overrun outpost on the corner halls (design/07 -> Region variants: each variant recolours the mass) ----------------
+# The same halls, stone for stone where no burrow is dug, recoloured: hall floors and yards trampled to dug earth, the
+# ground dirtier; rusty tin and plank patches on the walls, red and yellow rags hung over them and on poles. One or two
+# corners a tile have a framed burrow dug into its hall's floor (the approved outpost_burrow_* props), its mouth looking
+# out through a gap in the hall's front, the eyes in its own material.
+
+PALETTE_OUTPOST = {   # made up
+    "op_ground": "#B2A58F",    # trampled ground
+    "op_floor": "#977C5A",     # hall floors dug to earth
+    "op_yard": "#93896A",      # yards gone to mud
+}
+hk.PALETTE.update(PALETTE_OUTPOST)
+OUTPOST_RECOLOUR = {"rs_floor": "op_floor", "rs_yard": "op_yard"}
+BURROW_TWO = 0.5      # share of outpost tiles with two burrows; the rest have one (as tiles_v91's outpost)
+BURROW_AT = Vector((3.5, 0, 0))   # in a block's frame, its mouth turned to face the tile's middle
+
+
+def outpost_block(n, join, burrow):
+    seed = f"rsb_block_{n}_{join}"   # the plain halls' seeds, so a hall without a burrow is the plain one recoloured
+
+    def build(p, rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        tops = block_b(p, hk.seeded(seed), joins, n, burrow)
+        weather(p, hk.seeded(seed + "weather"))
+        p.mats[:] = [OUTPOST_RECOLOUR.get(mat, mat) for mat in p.mats]
+        goblin(p, hk.seeded(seed + ("goblin_b" if burrow else "goblin")), tops, burrow)
+    return build
+
+
+def goblin(p, rng, tops, burrow):
+    """Scrap and rags on a hall's walls: tin or planks over a stretch or two, rags hung over the tops, a rag pole inside."""
+    spots = [s_ for s_ in tops if s_[1] > 0.5]
+    rng.shuffle(spots)
+    for at, top, ang in spots[:rng.choice((1, 2))]:   # a rusty sheet or planks nailed on, on the inside or the outside
+        side = Vector((-math.sin(ang), math.cos(ang), 0)) * rng.choice((-1, 1)) * (WALL_T / 2 + 0.03)
+        if rng.random() < 0.55:
+            rl.tin_sheet(p, rng, at + side + Vector((0, 0, min(top, 0.9) * 0.45)), (0.5, 0.035, min(top, 0.9) * 0.8), ang, lean=rng.uniform(-0.12, 0.12))
+        else:
+            e = Vector((math.cos(ang), math.sin(ang), 0))
+            rl.plank_patch(p, rng, at - e * 0.28 + side, at + e * 0.28 + side, 0.0, min(top, 0.9) * 0.85)
+    for at, top, ang in spots[2:2 + rng.choice((1, 2, 2))]:   # rags hung over the wall's top, down both faces
+        mat = rng.choice(("goblin_rag_red", "goblin_rag_yellow"))
+        l = rng.uniform(0.3, 0.5)
+        e = Vector((math.cos(ang), math.sin(ang), 0)) * rng.uniform(-0.12, 0.12)
+        p.box(at + e, (0.2, WALL_T + 0.05, 0.03), mat, z=top - 0.24, spin=ang)
+        for sd in (-1, 1):
+            p.box(at + e + Vector((-math.sin(ang), math.cos(ang), 0)) * sd * (WALL_T / 2 + 0.02), (0.2, 0.025, l), mat, z=top - 0.22 - l, spin=ang)
+    if burrow:   # a rag pole beside the burrow's mound
+        if rng.random() < 0.7:
+            rl.rag_banner(p, rng, Vector((3.95, rng.choice((-1, 1)) * 0.75, 0)), rng.uniform(1.6, 2.0), spin=math.pi + rng.uniform(-0.4, 0.4), strips=3)
+    elif rng.random() < 0.6:   # a rag pole in the hall, above its walls
+        rl.rag_banner(p, rng, Vector((CORNER - 0.55, rng.uniform(-0.25, 0.25), 0)), rng.uniform(1.9, 2.3), spin=math.pi + rng.uniform(-0.6, 0.6), strips=3)
+
+
+def outpost_pieces():
+    out = {}
+    for n in range(VARIANTS_PER_TAKE):
+        for j in JOINS:
+            out[f"outpost_hall_{n}_{j}"] = outpost_block(n, j, False)
+            out[f"outpost_hall_{n}_{j}_burrow"] = outpost_block(n, j, True)
+    return out
+
+
+def outpost_props(world, q, r):
+    """(piece, x, y, spin) for an outpost tile: its six recoloured halls, and one or two of them with a burrow dug in."""
+    out = []
+    count = 2 if gc.hash01(q, r, 54) < BURROW_TWO else 1
+    dug = sorted(range(6), key=lambda c: gc.hash01(q * 6 + c, r, 52))[:count]
+    for piece, _, _, spin in block_props(KIT, world, q, r):
+        c = round((math.degrees(spin) - 30) / 60) % 6
+        n_join = piece[len("ruin_hall_"):]
+        if c in dug:
+            out.append((f"outpost_hall_{n_join}_burrow", 0.0, 0.0, spin))
+            at = BURROW_AT.copy()
+            at.rotate(Matrix.Rotation(spin, 3, "Z"))
+            kind = "scrap" if gc.hash01(q * 6 + c, r, 53) < 0.5 else "timber"
+            out.append((f"outpost_burrow_{kind}", at.x, at.y, spin + math.pi))
+        else:
+            out.append((f"outpost_hall_{n_join}", 0.0, 0.0, spin))
     return out
