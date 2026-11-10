@@ -1732,10 +1732,14 @@ func start_fight(t: Vector2i) -> void:
 	var drawn: Array[String] = []
 	var dropped: Array = []
 	var earned := 0
+	var xp_from := -1.0   # the After combat bar fills from here (07 -> After combat)
+	var level_from := 0
 	if won:
 		fights_won += 1
 		earned = Foes.reward(roles, Foes.tier(self, t))
 		gold += earned
+		xp_from = float(xp) / xp_needed()
+		level_from = level
 		_add_xp(earned)
 		var back: Array = encounters[t].dropped
 		encounters.erase(t)
@@ -1754,7 +1758,7 @@ func start_fight(t: Vector2i) -> void:
 		for m in party:
 			m.hp = Rules.REVIVE_HP
 	held = -1
-	after.show_result(self, won, downed, drawn, dropped, earned)
+	after.show_result(self, won, downed, drawn, dropped, earned, xp_from, level_from)
 	await after.done
 	after.visible = false
 	fight.visible = false
