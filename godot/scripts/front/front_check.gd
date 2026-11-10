@@ -87,6 +87,13 @@ func text_sizes(where: String, root: Node) -> void:
 func _run() -> void:
 	await _wait(1.6)
 	_kit_report()
+	if "--steadycheck" in OS.get_cmdline_user_args():   # test aid: nothing on a creator step moves as its text changes
+		await tap_on("New campaign")
+		await _wait(0.3)
+		await _steady(front.creator)
+		print("FRONT DONE: %d failed" % failed)
+		get_tree().quit(1 if failed > 0 else 0)
+		return
 	await _title()
 	await _note("title")
 	await _creator()
@@ -637,3 +644,137 @@ func _cost(where: String) -> void:
 	for _k in 10:
 		await get_tree().process_frame
 	print("FRONT cost %s: %d draw calls, %d nodes" % [where, Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.OBJECT_NODE_COUNT)])
+
+
+# --- Steady layout (--steadycheck) --------------------------------------------------------
+
+## Where things sit, top to bottom: every visible node under `root` that `pick` accepts, by its global y.
+func _marks(root: Node, pick: Callable) -> Array:
+	var out := []
+	for n in root.find_children("*", "Control", true, false):
+		if (n as Control).is_visible_in_tree() and pick.call(n):
+			out.append(roundi((n as Control).get_global_rect().position.y))
+	out.sort()
+	return out
+
+
+## Every pick in a group should leave the marks where the first one left them. Picks with a different number of marks
+## (a race without passives, a weapon without a note) are laid out differently by design, so each count is its own group.
+func _same(what: String, seen: Dictionary) -> void:
+	var first := {}
+	var off := []
+	for k in seen:
+		var n: int = seen[k].size()
+		if not first.has(n):
+			first[n] = seen[k]
+		elif seen[k] != first[n]:
+			off.append("%s %s" % [k, seen[k]])
+	check(off.is_empty(), "%s: nothing moves from one pick to the next %s" % [what, ("(first %s; moved: %s)" % [first, ", ".join(off)]) if not off.is_empty() else ""])
+
+
+## Ethan's phone note (Nov 8, 2026): text that wraps to a second line must not push what's below it. Each step's picks in
+## turn, comparing where the dividers, headings and buttons under the text sit.
+func _steady(c: Creator) -> void:
+	var banner_marks := func(n: Node) -> bool:
+		return n is CreatorBanners.Stitch or (n is Label and (n as Label).text in ["WEAPONS", "ARMOUR", "BOOSTS", "STARTING PLACE"]) \
+			or str((n as Control).accessibility_name).ends_with("(racial passive)")
+	var seen := {}
+	for k: Dictionary in CreatorData.CLS:
+		await tap_on(k.id)
+		await _wait(0.6)
+		seen[k.id] = _marks(c, banner_marks)
+		await shot("steady_class_%s" % str(k.id).to_lower())
+	_same("class", seen)
+	await tap_on("Fighter")
+	await _wait(0.6)
+	await tap_on("Next")
+	await _wait(0.3)
+	var plain := {}
+	var subs := {}
+	for r: Dictionary in CreatorData.RACES:
+		await tap_on(r.id)
+		await _wait(0.6)
+		if r.get("subs", []).is_empty():
+			plain[r.id] = _marks(c, banner_marks)
+		else:
+			subs[r.id] = _marks(c, banner_marks)
+			for x: Dictionary in r.subs:
+				await tap_on(str(x.id))
+				await _wait(0.5)
+				subs[x.id] = _marks(c, banner_marks)
+		await shot("steady_race_%s" % str(r.id).to_lower())
+	_same("race without sub-types", plain)
+	_same("race with sub-types", subs)
+	await tap_on("Dwarf")
+	await _wait(0.6)
+	await tap_on("Shield dwarf")
+	await _wait(0.5)
+	await tap_on("Next")
+	await _wait(0.3)
+	seen = {}
+	for b: Dictionary in CreatorData.BGS:
+		await tap_on(b.id)
+		await _wait(0.6)
+		seen[b.id] = _marks(c, banner_marks)
+		await shot("steady_background_%s" % str(b.id).to_lower().replace(" ", "_"))
+	_same("background", seen)
+	# Skills: the details pane's base line, signature and Choose.
+	c.go("skills")
+	await _wait(0.4)
+	seen = {}
+	var keys := []
+	for n in c.find_children("*", "Control", true, false):
+		var key := str((n as Control).accessibility_name)
+		if (key.begins_with("bg:") or key.begins_with("cls:")) and not key in keys:
+			keys.append(key)
+	for key: String in keys:
+		await tap_on(key)
+		await _wait(0.1)
+		seen[key] = _marks(c, func(n: Node) -> bool: return n is Label and ((n as Label).text == "SIGNATURE" or (n as Label).text.begins_with("Base: ")))
+		await shot("steady_skills_%s" % key.replace(":", "_").to_lower().replace(" ", "_"))
+	_same("skills", seen)
+	# Gear: weapons with the same cards and modifier keep their text where it was.
+	c.go("gear")
+	await _wait(0.4)
+	var groups := {}
+	for w: Dictionary in c.allowed_weapons():
+		await tap_on(str(w.n))
+		await _wait(0.1)
+		var key := "%d card(s)%s" % [CreatorData.WC.get(w.id, []).size(), ", a modifier" if CreatorData.WM.has(w.id) else ""]
+		if not groups.has(key):
+			groups[key] = {}
+		groups[key][w.id] = _marks(c, func(n: Node) -> bool:
+			return n is Label and n.get_theme_font_size("font_size") == 11 and (n as Label).autowrap_mode != TextServer.AUTOWRAP_OFF and (n as Label).custom_minimum_size.x > 120.0)
+		await shot("steady_gear_%s" % str(w.id))
+	for key: String in groups:
+		_same("gear, weapons with %s" % key, groups[key])
+	# Spells: the pop-up's foot, with AP and Choose.
+	c.cls = "Wizard"
+	c.spells = []
+	c.go("spells")
+	await _wait(0.5)
+	seen = {}
+	for s: String in Weapons.WIZARD_SPELLS:
+		for id: String in Weapons.WIZARD_SPELLS[s]:
+			var nm := str(Cards.get_card(id).n)
+			await tap_on(nm)
+			await _wait(0.15)
+			var choose := control("Choose")
+			seen[id] = [roundi(choose.get_global_rect().position.y)] if choose else []
+			await shot("steady_spells_%s" % id)
+			await tap_on(nm)
+			await _wait(0.1)
+	_same("spells", seen)
+	# Name: the hero's banner keeps its hexes where they were as the name grows.
+	c.cls = "Fighter"
+	c.go("name")
+	await _wait(0.9)
+	var edit := c.find_children("*", "LineEdit", true, false)[0] as LineEdit
+	seen = {}
+	for nm: String in ["", "Al", "Hilde Oakshield", "Bartholomew Ashgrove"]:
+		edit.text = nm
+		edit.text_changed.emit(nm)
+		await _wait(0.2)
+		seen["'%s'" % nm] = _marks(c, func(n: Node) -> bool: return n is CreatorBanners.Stitch)
+		await shot("steady_name_%d" % nm.length())
+	_same("name", seen)

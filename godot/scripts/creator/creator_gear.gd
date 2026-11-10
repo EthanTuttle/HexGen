@@ -261,10 +261,13 @@ func _details() -> Control:
 			for card: Array in D.WC.get(det.id, []):
 				v.add_child(_action_card(card, inner))
 		if not mod.is_empty():
-			v.add_child(CUI.wrap(UI.label("%s: %s" % [mod[0], mod[1]], "n700", 11, CUI.SOFT_INK, 0, 1.25), inner))
+			var mods := []
+			for m: Array in D.WM.values():
+				mods.append("%s: %s" % [m[0], m[1]])
+			v.add_child(CUI.reserve(CUI.wrap(UI.label("%s: %s" % [mod[0], mod[1]], "n700", 11, CUI.SOFT_INK, 0, 1.25), inner), mods))
 		var note := _note_of(det)
 		if note != "":
-			v.add_child(CUI.wrap(UI.label(note, "n700", 11, CUI.CAP_INK, 0, 1.25), inner))
+			v.add_child(CUI.reserve(CUI.wrap(UI.label(note, "n700", 11, CUI.CAP_INK, 0, 1.25), inner), items.map(_note_of)))
 		v.add_child(CUI.spring())
 		if _current() == det.id:
 			v.add_child(CreatorTraining.chosen())
@@ -308,7 +311,11 @@ func _action_card(card: Array, w: float) -> Control:
 	var v := CUI.vbox(0)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(UI.label(card[0], "n900", 12, Color("#3E5A70"), 0, 1.1))
-	v.add_child(CUI.wrap(UI.label(card[2], "n700", 11, CUI.SOFT_INK, 0, 1.2), w - 38.0))
+	var texts := []   # room for the longest card text, so the cards keep their size from one weapon to the next (Nov 8 note)
+	for cards: Array in D.WC.values():
+		for k: Array in cards:
+			texts.append(k[2])
+	v.add_child(CUI.reserve(CUI.wrap(UI.label(card[2], "n700", 11, CUI.SOFT_INK, 0, 1.2), w - 38.0), texts))
 	p.add_child(v)
 	var band := ColorRect.new()
 	band.color = Color("#5F7F99")

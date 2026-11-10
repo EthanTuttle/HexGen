@@ -276,14 +276,15 @@ func _prof_details() -> Control:
 	var inner := 212.0 - 24.0
 	v.add_child(UI.label(("Background proficiency" if src == "bg" else "Class proficiency").to_upper(), "n900", 11, Color("#7A5A2E") if src == "bg" else Color("#9A4424"), 1))
 	v.add_child(UI.label(prof, "lilita", 18, UI.INK, 0, 1.05))
-	v.add_child(CUI.wrap(UI.label(D.PROFD[prof][0], "n700", 11, CUI.SOFT_INK, 0, 1.3), inner))
+	var all: Array = D.PROFD.values()   # room for the longest, so nothing below moves from one skill to the next (Nov 8 note)
+	v.add_child(CUI.reserve(CUI.wrap(UI.label(D.PROFD[prof][0], "n700", 11, CUI.SOFT_INK, 0, 1.3), inner), all.map(func(x): return x[0])))
 	v.add_child(UI.label("Base: %s + 1 coin" % D.PROFB[prof], "n800", 11, Color("#2E6B3A")))
 	var sig := PanelContainer.new()
 	sig.add_theme_stylebox_override("panel", UI.box(Color("#F3EADA"), 10, Color(0, 0, 0, 0), 0, Vector4(8, 5, 8, 5)))
 	sig.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sv := CUI.vbox(1)
 	sv.add_child(UI.label("SIGNATURE", "n900", 11, UI.INK_MUTED, 1))
-	sv.add_child(CUI.wrap(UI.label(D.PROFD[prof][1], "n800", 11, UI.INK, 0, 1.25), inner - 16.0))
+	sv.add_child(CUI.reserve(CUI.wrap(UI.label(D.PROFD[prof][1], "n800", 11, UI.INK, 0, 1.25), inner - 16.0), all.map(func(x): return x[1])))
 	sig.add_child(sv)
 	v.add_child(sig)
 	if other == prof and not picked:   # once chosen, the rows' Rank 2 tags show it

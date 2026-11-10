@@ -150,6 +150,26 @@ func _picked_centre() -> float:
 	return -1.0
 
 
+## Every blurb this step can show, sub-types' too: the picked banner keeps room for the longest (Ethan's phone note, Nov 8, 2026).
+func blurbs() -> Array:
+	var out := []
+	for it: Dictionary in _items:
+		out.append(it.bl)
+	if c.step == "race":
+		for x: Dictionary in D.SX.values():
+			out.append(x.bl)
+	return out
+
+
+## Every text the facts' `i`th line can show on this step.
+func line_texts(i: int) -> Array:
+	var out := []
+	for it: Dictionary in _items:
+		if i < it.lines.size():
+			out.append(it.lines[i][1])
+	return out
+
+
 # --- Each step's banners (the mockup's classItems, raceItems, bgItems) -----------------
 
 func _class_items() -> Array:
@@ -525,6 +545,7 @@ class Banner extends Control:
 			row.add_child(crest)
 			var text_w := inner - crest.custom_minimum_size.x - 10.0
 			bl.custom_minimum_size.x = text_w
+			CUI.reserve(bl, view.blurbs())
 			name_l.custom_minimum_size.x = text_w
 			words.add_child(name_l)
 			words.add_child(bl)
@@ -539,6 +560,7 @@ class Banner extends Control:
 			name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			bl.custom_minimum_size.x = minf(inner, 440.0)
+			CUI.reserve(bl, view.blurbs())
 			bl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			col.add_child(name_l)
 			col.add_child(bl)
@@ -578,13 +600,14 @@ class Banner extends Control:
 		if not lines.is_empty():
 			var col2 := CUI.vbox(4)
 			var line_w := minf(inner - 16.0 - (115.0 if not chips.is_empty() else 0.0) - 64.0, 222.0)
-			for l: Array in lines:
+			for i in lines.size():
+				var l: Array = lines[i]
 				var row2 := CUI.hbox(6)
 				var key := CUI.cap(l[0], soft)
 				key.custom_minimum_size.x = 58
 				key.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 				row2.add_child(key)
-				row2.add_child(CUI.wrap(UI.label(l[1], "n800", 11, ink, 0, 1.3), line_w))
+				row2.add_child(CUI.reserve(CUI.wrap(UI.label(l[1], "n800", 11, ink, 0, 1.3), line_w), view.line_texts(i)))
 				col2.add_child(row2)
 			facts.add_child(col2)
 		var passives: Array = it.get("passives", [])
