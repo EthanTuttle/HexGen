@@ -66,7 +66,7 @@ All 21 of the Fighter's weapons have a mesh and an approved pose (Ethan, pose pa
 | `across` | `staff` | Two | Quarterstaff guard across the body |
 | `cast` | `staff` (`caster`) | One | Planted, the free hand raised, an open palm |
 | `point` | `wand` | One | Arm out, angled forward and out |
-| `bow` | `shortbow`, `longbow` | Two | Side-on, drawn to the cheek, arrow nocked, the drawing forearm along the arrow |
+| `bow` | `shortbow`, `longbow` | Two | Side-on, arrow nocked at shoulder height, the drawing hand just under the jaw, the drawing arm level with the elbow drawn back (Ethan, Nov 9, 2026) |
 | `aim` | `crossbow` | Two | Stock at the shoulder |
 | `guard` | `gauntlets` | Fists | Fists at the chin |
 | `haymaker` | `brass_knuckles` | Fists | Torso twisted, the rear arm pulled back level at shoulder height |
