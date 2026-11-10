@@ -122,7 +122,7 @@ func _layout() -> void:
 	var lw := w - m * 2.0 - dw - 12.0
 	_top.position = Vector2(m, 12)
 	_top.size = Vector2(w - m * 2.0, 54)
-	_party.position = Vector2((_top.size.x - _party.get_combined_minimum_size().x) * 0.5, 0)
+	_place_party()
 	_tabs.position = Vector2(_top.size.x - _tabs.get_combined_minimum_size().x, 7)
 	_list_panel.position = Vector2(m, 76)
 	_list_panel.size = Vector2(lw, 192)
@@ -220,6 +220,16 @@ func subtitle(m: Dictionary) -> String:
 	return Hero.subtitle_of(race, "Fighter", sc, game.level)   # the hero with no creator behind the run (Rules.HERO_DEFAULT)
 
 
+## The party centred in the top bar, or just past the name and subtitle when a long subtitle ("Dragonborn Cleric (Order of
+## Good) · Lv 5") would run under it.
+func _place_party() -> void:
+	if _top.size.x <= 0:
+		return
+	var words := maxf(UI.font("lilita").get_string_size(_name.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x,
+		UI.font("n700").get_string_size(_sub.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x)   # the labels' sizes lag a frame behind their text
+	_party.position = Vector2(maxf((_top.size.x - _party.get_combined_minimum_size().x) * 0.5, 54 + words + 12), 0)
+
+
 func _pick_member(i: int) -> void:
 	ci = clampi(i, 0, game.party.size() - 1)
 	var m := member()
@@ -229,7 +239,7 @@ func _pick_member(i: int) -> void:
 	_fill_party()
 	_fill_tabs()
 	if is_inside_tree() and _root.size.x > 0:
-		_party.position.x = (_top.size.x - _party.get_combined_minimum_size().x) * 0.5
+		_place_party()
 		_fill_list()
 		_fill_details()
 	_fill_slots()
@@ -592,7 +602,16 @@ class _Tile extends Control:
 		var ap := Cards.ap_text(k)
 		draw_string(f, Vector2(18 - f.get_string_size(ap, 0, -1, 11).x * 0.5, 26), ap, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
 		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 18, 2), Rect2(Vector2(34, 13), Vector2(18, 18)), false)
-		draw_string(f, Vector2(58, 27), k.n, HORIZONTAL_ALIGNMENT_LEFT, size.x - 64.0, 12, UI.INK)
+		var room := size.x - 64.0
+		var lines := [String(k.n)]
+		if f.get_string_size(k.n, 0, -1, 12).x > room and String(k.n).contains(" "):   # a long name takes two lines, not a cut
+			var words := String(k.n).split(" ")
+			var cut := words.size() - 1
+			while cut > 1 and f.get_string_size(" ".join(words.slice(0, cut)), 0, -1, 12).x > room:
+				cut -= 1
+			lines = [" ".join(words.slice(0, cut)), " ".join(words.slice(cut))]
+		for i in lines.size():
+			draw_string(f, Vector2(58, 27 + (i - (lines.size() - 1) * 0.5) * 13), lines[i], HORIZONTAL_ALIGNMENT_LEFT, room, 12, UI.INK)
 
 	func _gui_input(e: InputEvent) -> void:
 		if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and e.pressed:
