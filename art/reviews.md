@@ -193,3 +193,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-09 | `art/preview/hero_bow_draw_v1.png` | approved | Bow draw: arrow at shoulder height, elbow level, arm flat like the haymaker |
 | 2026-11-09 | `art/preview/golem_looks_v3.png` | picked | Golems get their own shape per sub-type: stone A cairn, wood C folk carving; metal neither: draft an original ancient sky-castle guardian (Castle in the Sky feel) |
 | 2026-11-09 | `art/preview/ruins_outpost_halls_sheet_v1.png` | approved | Overrun outpost on the corner halls: earth floors, muddy yards, tan streets, scrap and red/yellow rags, framed burrows in fallen hall thirds; Warren unchanged |
+| 2026-11-09 | `art/preview/golem_set_v3.png` | picked | Golem set: stone cairn, wood folk carving, metal C shell-back with real long arms (own arm placements per pose). Four heads per look still to make |
