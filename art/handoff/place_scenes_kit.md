@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v3 (exported), made Nov 10, 2026, waiting on Ethan's review beside v2. v1 was too small next to the party. Not in Godot yet.
+**Status:** fortified town v4 (exported), made Nov 10, 2026, waiting on Ethan's OK. v1 was too small next to the party; Ethan picked v3's layout with v2's Keep size. Not in Godot yet.
 
 ## What each kit hands Godot
 
@@ -19,7 +19,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `art/scripts/render_place_scenes.py -- <id>` renders the previews. `-- <id> check` runs the checks: everything stands on the floor, every spot is clear by 0.42 or more, and the triangles are within budget. It exits 1 on a failure.
 - **Previews:** `art/preview/place_<id>_{day,night}_none_vN.png`, `_day_shop_`, `_day_board_` (at the town kit's 21 m preview camera) and `_wide_` (at PlaceStage's 33 m), plus `place_<id>_sheet_vN.png`.
 
-## Fortified town (`fortified_town`, v3)
+## Fortified town (`fortified_town`, v4)
 
 **Look:** grey flagstones and stone houses under slate. The town wall runs down both sides, with towers and the garrison's red banners on its inner face. The Keep, the town's landmark, stands over the back of the square (Ethan, Nov 9, 2026: a town variant's landmark is part of its square). Its gate faces a lane between the left back house and the inn, with braziers at the lane's mouth.
 
@@ -27,10 +27,10 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
 - **Houses:** the market square's townhouses at 1.75×, with doors and windows to match. Their walls are 1.9–2.6 m.
 - **Inn:** 2×.
 - **Town wall:** 1.45×.
-- **The Keep:**
-  - v3 (exported) has it at 1.9×, close behind the inn. Its towers are about 6 m. From PlaceStage's 33 m its gatehouse and towers show over the inn, with the tower tops just out of frame.
-  - v2 has it at 2.4× and further back. It looms more, but at 33 m only its gate shows.
-  - No size fits the whole Keep behind the back row inside the 33 m frame. Aiming PlaceStage's camera a little higher would show more of it.
+- **The Keep:** 2.4×, close behind the inn, with towers about 7.5 m tall (Ethan, Nov 10, 2026: v3's layout at v2's size).
+  - From PlaceStage's 33 m view only its gatehouse wall and a banner show over the inn. The towers and battlements are out of frame.
+  - Aiming the camera higher would show more of it. That's a Godot choice.
+  - Earlier takes: v2 had it at 2.4× and further back; v3 at 1.9×, close.
 
 **Services:** the same places and spot sets as the market square, so the party's moves are the same. The props are new looks on the same pieces.
 
@@ -55,7 +55,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
 - the inn's door: #FFC27A, 32 W;
 - the Keep's gate: #FF9A4A, 40 W, flicker.
 
-**Triangles:** 15,962 of the placeholder 20,000 (v2: 16,370).
+**Triangles:** 16,274 of the placeholder 20,000.
 
 ## Not checked
 

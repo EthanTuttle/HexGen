@@ -45,9 +45,9 @@ HOUSE_S = 1.75         # houses and their doors and windows, against the market 
 INN_S = 2.0            # the inn
 WALL_S = 1.45          # the town wall, its towers and banners
 WALL_X = 7.6           # the town wall down each side
-WALL_YS = (-0.4, 3.4, 7.2, 11.0)
+WALL_YS = (-0.4, 3.4, 7.2, 11.0, 14.8)
 # The Keep stands behind the back row; its gate faces the lane between the left house and the inn.
-KEEP_AT, KEEP_SCALE = Vector((-2.75, 9.4, 0)), 1.9
+KEEP_AT, KEEP_SCALE = Vector((-2.75, 10.3, 0)), 2.4
 GATE = KEEP_AT + Vector((0, -1.5 * KEEP_SCALE, 0))
 # Lights (Blender's frame and watts, as the town kit's): the braziers, the inn's door and the Keep's gate, at night.
 BRAZIERS = [Vector((-3.55, 2.55, 0)), Vector((hx(2, 0).x + 0.7, hx(2, 0).y + 0.6, 0)), Vector((-1.95, 2.55, 0))]
