@@ -6,6 +6,8 @@ Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --pyt
           sub-types named, a third row shows each whole on the average build
   poses   art/preview/golem_metal_poses_vN.png: the metal golem's long arms in every grip and variant
   armour  art/preview/golem_armour_vN.png: each sub-type bare, then in light, medium and heavy armour
+  set     art/preview/golem_final_set_vN.png: per sub-type the kit's heads a-d close, then whole on the slim, average and broad
+          builds, a column per head
 Prints whole-hero triangle counts.
 """
 import math
@@ -124,6 +126,25 @@ def poses():
     save([tiles[i:i + 7] for i in range(0, len(tiles), 7)], "golem_metal_poses")
 
 
+def set_sheet():
+    t, col = setup()
+    grid, tris = [], {}
+    for sub in gk.SUBTYPES:
+        size, h, y = (0.42, 1.0, -0.17) if sub == "metal" else (0.62, 1.0, 0.0)
+        rows = {}
+        for build in ("average", "slim", "broad"):
+            rows[build] = []
+            for head in hb.HEADS:
+                ob, n = hb.assemble(t, desc(sub, head=head, build=build), f"{sub}_{build}_{head}", col)
+                tris[f"{sub} {build} {head}"] = n
+                rows[build].append(ob)
+        grid.append([shot(o, col, 25, size, h, y) for o in rows["average"]])
+        for build in ("slim", "average", "broad"):
+            grid.append([shot(o, col, 28, 1.5, 0.62) for o in rows[build]])
+    print("SET TRIS (longsword, no armour)", tris)
+    save(grid, "golem_final_set", group=4)
+
+
 def armour():
     t, col = setup()
     grid, tris = [], {}
@@ -157,4 +178,4 @@ if __name__ == "__main__":
         if a == "heads" and subs:
             heads(subs)
         elif a not in gk.SUBTYPES:
-            {"heads": heads, "poses": poses, "armour": armour}[a]()
+            {"heads": heads, "poses": poses, "armour": armour, "set": set_sheet}[a]()

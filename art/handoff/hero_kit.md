@@ -9,12 +9,12 @@ Scripted hero minis for the first playable (design/06 → Hero minis), replaced 
 - New grips, the two-handed and casting variants (`two`, `caster` in the description), and open palms; the wraps' open hand is its own piece, `hero_hand_open_wraps`.
 - The table: `T.races[race].builds[build].poses[main][variant]`, with `torso`, `head`, `hair`, `legs`, `arms`, `main`, `offhand`. Section "What Godot needs" has the whole recipe.
 
-**Golems (kit v13, Nov 10, 2026; heads still to pick, so not merged):** each golem sub-type has its own shape, and the metal golem has its own long-arm placements. A description now carries `subtype` for a golem, its piece names carry the sub-type, and the table gains a `golem_metal` entry. Every other entry is unchanged, the old golem entry included. See Golems below.
+**Golems (kit v14, Nov 10, 2026; waiting on Ethan's approval of the final set, so not merged):** each golem sub-type has its own shape, and the metal golem has its own long-arm placements. A description now carries `subtype` for a golem, its piece names carry the sub-type, and the table gains a `golem_metal` entry. Every other entry is unchanged, the old golem entry included. See Golems below.
 
 **Hair fix (kit v11, from the phone test's note 071357):** the skull no longer shows through the hair at the back, on any head, race or style. The caps cover the widest of the four heads and have one more ring, so each hair piece has 16 more triangles. Elves and tieflings now get full-width hair, so only their `pose.hair` matrices changed. The table's format is the same.
 
-- **Models:** `art/export/heroes.glb` (from `art/minis/heroes/heroes_v3.blend`, a copy of `hero_kit_v11.blend` named for the export), one shared `kit` material with vertex colours. 163 nodes at the origin, named as below. **Place them only through the assembler:** player colours are marks, which look wrong until swapped.
-- **Placements:** `art/export/heroes_placements.json`, 1.5 MB (it was 554 KB: each pose now holds the whole body). Parse once and keep it.
+- **Models:** `art/export/heroes.glb` (from `art/minis/heroes/heroes_v4.blend`, a copy of `hero_kit_v14.blend` named for the export), one shared `kit` material with vertex colours. 189 nodes at the origin, named as below. **Place them only through the assembler:** player colours are marks, which look wrong until swapped.
+- **Placements:** `art/export/heroes_placements.json`, 1.7 MB (it was 554 KB: each pose now holds the whole body; the metal golem's entry added the rest). Parse once and keep it.
 - **Scripts:** `art/scripts/build_hero_kit.py`, `export_hero_kit.py` (writes the table; `from_table()` is the recipe below in code, the model for Godot's assembler), `render_hero_kit.py`, `render_pose_check.py` (the pose sheets), `render_hero_export.py` (heroes built from the export alone).
 - **Previews (`art/preview/`):** `hero_kit_weapons_v1.png` (all 21 weapons, cycling races, gear and offhands), `hero_kit_dragon_heads_v1.png` (the 4 dragonborn heads from three sides), `hero_kit_dragon_look_v1.png` (5 dragon types at Look size), `hero_kit_look_v2.png`, `hero_kit_look_back_v2.png`, `hero_kit_faces_v2.png`, `hero_kit_builds_v2.png`, `hero_kit_hair_v2.png`. Map sizes, from before the new heads and weapons: `hero_kit_map_58m_v1.png`, `hero_kit_map_30m_v1.png`, `hero_kit_map_18m_v1.png`. **The poses:** the approved panels are in `pose_check_*` and `pose_check_round3_*` to `pose_check_round6_*`; `hero_export_check_v1.png` and `_back_v1.png` show ten heroes built from the glb and table alone, one per pose family. **Hair from behind:** `hero_hair_check_<race>_v1.png` (human `_v2`): every style on every head, from behind and three-quarter back. `hero_hair_worst_v1.png` and `_v2.png` show the worst cases before and after the fix.
 
@@ -43,7 +43,7 @@ Scripted hero minis for the first playable (design/06 → Hero minis), replaced 
 | `hero_boot_<kind>` | 4 | 32-44 | `leather`, `golem_stone`, `golem_wood`, `golem_metal` |
 | Weapons and `hero_shield` | 23 | 24-96 | Below. Fist weapons are one piece, placed on each fist. `hero_wraps_open` is no longer used (the open hand replaced it); ignore it |
 
-189 pieces. A whole hero comes to at most **1,372 triangles**: a broad stone golem with head b, heavy armour and wraps. The heaviest dragonborn is 1,342. Bandits are 386-557. Ethan accepts heavy armour and dragon heads being heaviest until a phone test says otherwise (Nov 4, 2026).
+189 pieces. A whole hero comes to at most **1,360 triangles**: a broad stone golem with head b, heavy armour and wraps. The heaviest dragonborn and the heaviest wood golem are 1,342. Bandits are 386-557. Ethan accepts heavy armour and dragon heads being heaviest until a phone test says otherwise (Nov 4, 2026).
 
 ## Grips and weapons
 
@@ -101,9 +101,9 @@ Each sub-type has its own shape (Ethan, Nov 9, 2026; `art/preview/golem_set_v3.p
 | `metal` | The shell-back: stooped under a domed back like an old cupola, with a moss garden and a sapling on top. A small round head low and forward under its rim, verdigris, mitten hands | **Long** |
 
 - **Colours:** the material is the skin zone, as before (`T.swatches.skin.golem_<subtype>`). No golem uses the cloth zone. Moss, leaves, the sapling, flowers, fungus and verdigris are fixed colours.
-- **Heads:** four per sub-type, `a`-`d`. They're being picked (`art/preview/golem_heads_v1.png`: five candidates each, for four), so the glb waits for that pick.
-- **Armour:** the golem armour pieces are shared by all three sub-types (`hero_armour_<tier>_golem_<build>`) and sit over each shape (`art/preview/golem_armour_v1.png`).
-- **Triangles:** a whole golem with a longsword and no armour is about 910-1,000 (wood), 1,030-1,080 (metal) and 1,040-1,070 (stone). The worst case, broad with heavy armour and wraps, is 1,342 for wood, 1,360 for metal and 1,372 for stone with head b.
+- **Heads:** four per sub-type, `a`-`d`, picked by Ethan from five candidates each (`art/preview/golem_heads_v1.png`, wood `golem_heads_v2.png`). All of them, on all three builds: `art/preview/golem_final_set_v1.png`.
+- **Armour:** the golem armour pieces are shared by all three sub-types (`hero_armour_<tier>_golem_<build>`) and sit over each shape (`art/preview/golem_armour_v2.png`).
+- **Triangles:** a whole golem with a longsword and no armour is about 910-1,000 (wood), 1,030-1,080 (metal) and 1,040-1,070 (stone). The worst case, broad with heavy armour and wraps, is 1,342 for wood, 1,340 for metal and 1,360 for stone.
 
 ### The metal golem's own arm placements
 

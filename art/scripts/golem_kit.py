@@ -379,7 +379,7 @@ HEAD_CANDIDATES = {
     "wood": [wood_head_1, wood_head_2, wood_head_3, wood_head_4, wood_head_5],
     "metal": [metal_head_1, metal_head_2, metal_head_3, metal_head_4, metal_head_5],
 }
-KIT_HEADS = {"stone": (1, 3, 4, 5), "wood": (1, 2, 3, 4), "metal": (1, 3, 4, 5)}  # candidates (1-5) that become heads a-d: stone and metal picked Nov 10, 2026; wood still to pick
+KIT_HEADS = {"stone": (1, 3, 4, 5), "wood": (1, 2, 4, 5), "metal": (1, 3, 4, 5)}  # candidates (1-5) that become heads a-d (Ethan, Nov 10, 2026)
 
 
 def head(sub, n, name=None):
