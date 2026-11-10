@@ -409,7 +409,7 @@ func _build_encounter() -> void:
 	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_enc_layer.add_child(cc)
 	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(16, 16, 16, 16))
-	p.custom_minimum_size.x = 300
+	p.custom_minimum_size.x = 380   # three hex buttons side by side (Ethan's playtest, Nov 9, 2026)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	_enc_where = UI.label("", "n900", 11, UI.RED, 1)
@@ -417,14 +417,13 @@ func _build_encounter() -> void:
 	v.add_child(UI.label("[Enemy group]", "lilita", 20))
 	_enc_text = UI.label("", "n700", 12, UI.INK_SOFT, 0, 1.35)
 	_enc_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_enc_text.custom_minimum_size.x = 268
+	_enc_text.custom_minimum_size.x = 348
 	v.add_child(_enc_text)
 	_enc_coins.add_theme_constant_override("separation", 6)
+	_enc_coins.custom_minimum_size.y = 30   # the coins' row keeps its room before the flip, so the pop-up doesn't change size
 	v.add_child(_enc_coins)
-	_enc_buttons.add_theme_constant_override("separation", 8)
-	var gap := Control.new()
-	gap.custom_minimum_size.y = 0
-	v.add_child(gap)
+	_enc_buttons.add_theme_constant_override("separation", 10)
+	_enc_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(_enc_buttons)
 	p.add_child(v)
 	cc.add_child(p)
@@ -445,26 +444,21 @@ func show_encounter(where: String, stage: String, coins: Array) -> void:
 		c.queue_free()
 	for h in coins:
 		_enc_coins.add_child(CoinView.make(h, 30))
-	_enc_coins.visible = not coins.is_empty()
+	_enc_coins.visible = true
+	if stage == "ask":   # Sneak past's coins, still to flip, where the flip will land
+		for _i in Hero.coins_for("DEX", "Stealth"):
+			_enc_coins.add_child(CoinView.blank(30))
 	for c in _enc_buttons.get_children():
 		_enc_buttons.remove_child(c)
 		c.queue_free()
 	if stage != "passed":
-		var fight := TagButton.make("Fight", 0, 40)
-		fight.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		fight.pressed.connect(game.choose_fight)
-		_enc_buttons.add_child(fight)
+		_enc_buttons.add_child(_enc_button("Fight", "", "fight", game.choose_fight))
 	if stage == "ask":
-		var sneak := _pill_button("Sneak past", "Stealth", UI.SAND, UI.INK)
-		sneak.pressed.connect(game.choose_sneak)
-		_enc_buttons.add_child(sneak)
-		var ambush := _pill_button("Ambush", "Stealth · Deceive", UI.SAND, UI.INK)   # picked in the check pop-up (03 -> Ambush)
-		ambush.pressed.connect(game.choose_ambush)
-		_enc_buttons.add_child(ambush)
+		_enc_buttons.add_child(_enc_button("Sneak past", "Stealth", "", game.choose_sneak))
+		_enc_buttons.add_child(_enc_button("Ambush", "Stealth · Deceive", "", game.choose_ambush))   # picked in the check pop-up (03 -> Ambush)
 	if stage == "passed":
-		var on := _pill_button("Carry on", "", UI.DARK, UI.CREAM)
-		on.pressed.connect(game.choose_carry_on)
-		_enc_buttons.add_child(on)
+		_enc_buttons.add_child(_enc_button("Carry on", "", "dark", game.choose_carry_on))
+	_lone_button()
 	_enc_layer.visible = true
 
 
@@ -472,13 +466,15 @@ func show_encounter(where: String, stage: String, coins: Array) -> void:
 func show_event(where: String, what: String) -> void:
 	_enc_where.text = ("Encounter · " + where).to_upper()
 	_enc_text.text = what
-	_enc_coins.visible = false
+	for c in _enc_coins.get_children():
+		_enc_coins.remove_child(c)
+		c.queue_free()
 	for c in _enc_buttons.get_children():
 		_enc_buttons.remove_child(c)
 		c.queue_free()
-	var on := _pill_button("Carry on", "", UI.DARK, UI.CREAM)
-	on.pressed.connect(game.choose_event_done)
-	_enc_buttons.add_child(on)
+	_enc_coins.visible = false   # no check here
+	_enc_buttons.add_child(_enc_button("Carry on", "", "dark", game.choose_event_done))
+	_lone_button()
 	_enc_layer.visible = true
 
 
@@ -514,19 +510,32 @@ func open_shop(where: String, on_buy: Callable, on_close: Callable) -> void:
 	shop.open(where, on_buy)
 
 
-func _pill_button(t: String, sub: String, bg: Color, ink: Color) -> Button:
-	var b := UI.FingerButton.new()
-	b.text = t + ("\n" + sub if sub != "" else "")
+## A button on its own keeps one button's width, centred, rather than a bar across the pop-up.
+func _lone_button() -> void:
+	if _enc_buttons.get_child_count() == 1:
+		var b := _enc_buttons.get_child(0) as Control
+		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		b.custom_minimum_size.x = 176
+
+
+## The pop-up's buttons, hex-ended like the rest of the game (Ethan's playtest, Nov 9, 2026): Fight orange, Carry on dark,
+## the checks cream with their skills on a small second line.
+func _enc_button(t: String, small: String, kind: String, on_press: Callable) -> TagButton:
+	var b := TagButton.make(t, 0, 48, 16)
+	b.sub = small
+	b.cut = 13.0
+	b.accessibility_name = t
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.custom_minimum_size.y = 40
-	b.add_theme_font_override("font", UI.font("n900"))
-	b.add_theme_font_size_override("font_size", 12 if sub != "" else 13)
-	b.add_theme_constant_override("line_spacing", -3)
-	for s in ["normal", "hover", "pressed", "focus"]:
-		b.add_theme_stylebox_override(s, UI.box(bg if s != "hover" else bg.darkened(0.05), 20, Color(0, 0, 0, 0), 0, Vector4(6, 2, 6, 2)))
-	for s in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(s, ink)
-	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	match kind:
+		"dark":
+			b.bg = UI.DARK
+			b.ink = UI.CREAM
+			b.shadow = Color("#141B18")
+		"":
+			b.bg = UI.SAND   # cream would vanish on the cream pop-up, as on the creator's panes
+			b.ink = Color("#33403B")
+			b.shadow = UI.HEX_SHADOW
+	b.pressed.connect(on_press)
 	return b
 
 

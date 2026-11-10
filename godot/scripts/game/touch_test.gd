@@ -421,6 +421,17 @@ func _run() -> void:
 	while not game.hud.encounter_open():
 		await _wait(0.1)
 	await _wait(0.5)
+	if "--encshots" in OS.get_cmdline_user_args():   # test aid: the encounter pop-up's states, a shot each, then quits
+		var where: String = game.hud._enc_where.text.trim_prefix("ENCOUNTER · ").capitalize()
+		for st: Array in [["ask", []], ["spotted", [true, false, false]], ["passed", [true, true, false]]]:
+			game.hud.show_encounter(where, st[0], st[1])
+			await _wait(0.3)
+			await shot("encounter_" + st[0])
+		game.hud.show_event(where, "[Event]")
+		await _wait(0.3)
+		await shot("encounter_event")
+		get_tree().quit()
+		return
 	say("Tap Fight")
 	await tap(control("Fight"))
 	await _wait(1.6)
