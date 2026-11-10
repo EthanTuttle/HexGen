@@ -231,6 +231,18 @@ def ghost_materials(dark):
         m.use_backface_culling = False
 
 
+def ghost_world():
+    """A town-sized region: the Crypt, two rings of haunted ruins round it, plain ruins beyond (a few plains), plains outside."""
+    w = {}
+    for q in range(-5, 6):
+        for r in range(-5, 6):
+            d = max(abs(q), abs(r), abs(q + r))
+            if d <= 4:
+                w[(q, r)] = "crypt" if d == 0 else "haunted_ruins" if d <= 2 else \
+                    "ruins" if d == 3 and (q, r) not in ((3, -3), (-3, 3), (0, 3)) else "plains"
+    return w
+
+
 def haunted_shot(close, dark):
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
@@ -241,7 +253,7 @@ def haunted_shot(close, dark):
     for d, (k, v) in added.items():
         getattr(vr, d)[k] = v
     vr.BASE["crypt"] = "ruins"
-    world = rc.world("haunted_ruins", "ruins")
+    world = ghost_world()
     vr.rl.tile_props = lambda name, q, r, w=None: (rs.block_props(rs.KIT, world, q, r) if name == "ruins" else
                                                    rs.haunted_props(world, q, r, dark) if name == "haunted_ruins" else ORIGINAL_PROPS(name, q, r, w))
     rp.build_map(templates, tiles=world)
@@ -252,10 +264,10 @@ def haunted_shot(close, dark):
     for o in bpy.data.collections["map"].objects:   # preview only: the Crypt's doors toward the camera
         if o.name.startswith("crypt_centre"):
             o.rotation_euler.z = math.radians(-60)
-    if close:
-        rp.stage(hk.tile_position(1, 0) * 0.55 + Vector((0, -1.5, 0)), 26, 45)
+    if close:   # the region's edge: the town meeting plain ruins
+        rp.stage(hk.tile_position(2, 0) * 0.85 + Vector((0, -1.5, 0)), 30, 45)
     else:
-        rp.stage(hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45)
+        rp.stage(Vector((0, -3, 0)), 92, 45)
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
     ghost_materials(dark)
     if dark:
@@ -267,8 +279,8 @@ def haunted_shot(close, dark):
                 b = m.node_tree.nodes.get("Principled BSDF")
                 b.inputs["Emission Color"].default_value = (*hk.linear(mat), 1.0)
                 b.inputs["Emission Strength"].default_value = strength
-    rst.label("Haunted ruins: the ghost town", ("Closer: the Crypt and its neighbours" if close else "The region round the Crypt") +
-              (", at night: the ghost houses" if dark else ", by day: bare shells"))
+    rst.label("Haunted ruins: the ghost town", ("Closer, at its edge" if close else "Two rings round the Crypt") +
+              (", night: ghost houses" if dark else ", day: bare shells"))
     stem = f"ruins_ghost_town_{'close' if close else 'map'}{'_night' if dark else ''}"
     rp.render(stem)
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
@@ -281,8 +293,8 @@ if __name__ == "__main__":
             hk.empty_scene()
             check_haunted(build_haunted())
             sys.exit(0)
-        if "quick" in args:   # a quick look: the close-up by day and at night
-            print("SHOT", haunted_shot(True, False), haunted_shot(True, True))
+        if "quick" in args:   # a quick look: the map and close-up by day
+            print("SHOT", haunted_shot(False, False), haunted_shot(True, False))
             sys.exit(0)
         rows = [[haunted_shot(False, False), haunted_shot(True, False)], [haunted_shot(False, True), haunted_shot(True, True)]]
         rst.SHEET_STEM = "ruins_ghost_town_sheet"

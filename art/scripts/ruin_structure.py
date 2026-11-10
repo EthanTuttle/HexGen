@@ -562,12 +562,12 @@ def outpost_props(world, q, r):
     return out
 
 
-# --- Haunted ruins: the ghost town (round 2, not approved) -------------------------------------
+# --- Haunted ruins: the ghost town (round 3, not approved) -------------------------------------
 # design/07 -> Region variant looks: here the base changes to stone house shells along the streets (walls with door and
 # window holes and gable ends, no roofs). By day they're bare shells; at night pale ghost houses fill them out as they once
-# stood, with ghostly roofs and lit windows (a separate piece per block, shown only at night). Tombs, wisps, mist and a
-# few glowing cracks are accents. The ground and streets are the plain halls' own, so the streets carry on; a corner that
-# touches plain ruins or the outpost builds the plain hall's third instead, so the halls still close at the region's edge.
+# stood, with ghostly roofs and lit windows (a separate piece per block, shown only at night). Tombs, wisps and mist are
+# accents. The ground and streets are the plain halls' own, so the streets carry on; shells stand at every corner out to
+# the region's edge, and a plain hall beside them is left part-open there, as beside the outpost (Ethan, Nov 10).
 # The Crypt keeps its own look (ruin_lands.crypt).
 
 PALETTE_GHOST = {   # made up
@@ -737,14 +737,9 @@ def tomb(p, rng, n, mat):
 
 
 def haunted_ground(p, rng, kind):
-    """The plain halls' ground, slab for slab and seeded as theirs, with a few glowing cracks on their own seed."""
+    """The plain halls' ground, slab for slab and seeded as theirs (no glowing cracks: Ethan, Nov 10)."""
     plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
     ground(KIT)(p, hk.seeded(plain), kind)
-    crng = hk.seeded(plain + "fissures")
-    if kind.replace("edge_", "") == "centre":
-        rl.fissure(p, crng, Vector((crng.uniform(-0.6, 0.6), crng.uniform(-0.6, 0.6), 0)), crng.uniform(0, 6.28), crng.uniform(0.7, 1.0))
-    elif crng.random() < 0.5:
-        rl.fissure(p, crng, Vector((crng.uniform(rl.X0 + 0.3, A - 0.6), crng.uniform(-0.25, 0.25), 0)), crng.uniform(0, 6.28), crng.uniform(0.6, 1.0))
 
 
 def haunted_pieces():
@@ -755,18 +750,11 @@ def haunted_pieces():
     return out
 
 
-HALL_LOOKS = {"ruins", "overrun_outpost"}   # a haunted corner touching one of these builds the plain hall's third
-
-
 def haunted_props(world, q, r, night=False):
-    """(piece, x, y, spin) for a haunted tile: a corner touching plain ruins or the outpost stands the plain hall's third,
-    the others the ghost town's shells (with their ghost houses at night); wisps over two or three tombs; one or two mists."""
+    """(piece, x, y, spin) for a haunted tile: shells at every corner out to the region's edge (with their ghost houses at
+    night; a plain hall beside them is left part-open, as beside the outpost), wisps over two or three tombs, one or two mists."""
     out, tombs = [], []
     for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
-        near = [world.get((q + hk.NEIGHBOURS[k % 6][0], r + hk.NEIGHBOURS[k % 6][1])) for k in (c, c + 1)]
-        if any(t in HALL_LOOKS for t in near):
-            out.append((piece, x, y, spin))
-            continue
         nj = piece[len("ruin_hall_"):]
         out.append((f"haunted_block_{nj}", x, y, spin))
         if night:
