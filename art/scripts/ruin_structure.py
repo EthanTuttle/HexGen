@@ -536,6 +536,13 @@ def outpost_pieces():
     return out
 
 
+def outpost_ground(p, rng, kind):
+    """The outpost's ground pieces: the plain halls' ground, slab for slab, seeded by the plain piece's name (the variant's
+    ground colour, op_ground, is the engine's recolour of the base)."""
+    plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
+    ground(KIT)(p, hk.seeded(plain), kind)
+
+
 def outpost_props(world, q, r):
     """(piece, x, y, spin) for an outpost tile: its six recoloured halls, and one or two of them with a burrow dug in."""
     out = []
