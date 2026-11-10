@@ -46,10 +46,22 @@ func _ready() -> void:
 	head.fit(size.x - 160.0 - 96.0)
 	stage = TownStage.new(game)
 	game.add_child(stage)
+	if "--tilescene" in OS.get_cmdline_user_args():   # PROTOTYPE (07 -> Scenes are built from the tile): the map's own tile up close
+		await _fade_cut(func():
+			game.rig.frame(Hex.to3(Hex.tile_position(tile.x, tile.y)), float(_arg("--tiledist", "18")), float(_arg("--tilepitch", "36")), game.rig.yaw_deg))
+		_show_square()
+		return
 	await _fade_cut(func():
 		stage.begin()
 		stage.show_scene("square", "none", _is_night()))
 	_show_square()
+
+
+func _arg(key: String, fallback: String) -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with(key + "="):
+			return a.get_slice("=", 1)
+	return fallback
 
 
 func _is_night() -> bool:
