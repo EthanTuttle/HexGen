@@ -32,7 +32,6 @@ var day := 1
 var encounters := {}                  # tile -> {expires, persistent, dropped, entry, id, roam_at}
 var _encounter_views := {}            # encounter id -> its EncounterView
 var _encounter_count := 0
-var walk_limited := true              # the checks walk far on one call
 var run: RunSetup
 var gold := 0
 var potions := 0                      # health potions, from a shop; Use item drinks one in a fight (design/06)
@@ -74,7 +73,6 @@ var _debug_fill := {}                 # spawn_forest_regions' plains (no cluster
 
 func _ready() -> void:
 	run = RunSetup.for_launch()
-	walk_limited = not run.wide_deck
 	debug_auto_cross = Array(OS.get_cmdline_user_args()).any(func(a): return a.ends_with("check") or a.begins_with("--demo") or a == "--touchtest")
 	if run.seed_text == "":
 		run.seed_text = str(randi())
@@ -1353,9 +1351,9 @@ func _roam_to(t: Vector2i) -> Vector2i:
 	return t if free.is_empty() else free[rng.randi_range(0, free.size() - 1)]
 
 
-## As much of a path as one tap walks (DOCS: design/02 -> one tap moves the party at most its sight range).
+## As much of a path as one tap walks: all of it (design/02: no cap since Nov 9, 2026, after a playtest; was the sight range).
 func _in_reach(path: Array[Vector2i]) -> Array[Vector2i]:
-	return path.slice(0, Rules.sight_now(minute) + Progression.sight_bonus(party)) if walk_limited else path
+	return path
 
 
 # --- Walking -----------------------------------------------------------------
