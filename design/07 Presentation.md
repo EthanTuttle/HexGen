@@ -350,6 +350,8 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 
 **Town screen** (in progress: way in v1a, shop v2a, inn v2e and the town square v3a chosen; latest v4 adds the camera; choices made Oct 28, 2026; rules for towns and services: [Map & exploration](02 Map & exploration.md) → Camps and rest, [Cards & progression](05 Cards & progression.md) → Class locations, [Weapons & gear](04 Weapons & gear.md) → Loot, inventory and gold)
 
+- **Scenes are built from the tile** (Ethan, Nov 9, 2026, from a playtest): a place you enter (a town, a starting tile) shows that actual map tile up close, so each scene matches what the player saw on the map, instead of one shared square layout.
+
 - **A scene, then menus** (chosen Oct 28, 2026: v1a, after comparing all three ways in): standing on a town (a Village region such as a market town, an inn, or a Great city) shows an Enter card, and tapping it opens a scene on the social encounter screen (Enter card: Ethan, Nov 4, 2026): the camera holds on the hex, the party's tokens stand on the board, and the services show as option cards. Each card (Shop, Inn, Quest board…) opens its own panel, and closing it returns to the scene. Class locations such as the Training Grounds keep their own screens.
 - **First mockup covers** (chosen Oct 28, 2026): buying at a shop (gear and camp kits), selling spare loot from the shared inventory, resting at the inn for gold, and taking quests from the quest board.
 - Not picked (v1, Oct 28, 2026): **v1b, town hub:** a menu screen on the menu backdrop, with the gear screen's top bar (back to map, town name, gold) and one big hex per service. **v1c, straight to services:** walking onto the town opens a pop-up over the dimmed map, in the encounter pop-up's style, with one button per service; Carry on closes it and tapping the town opens it again.
@@ -625,6 +627,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [ ] **New:** Fluffy's own skeleton still needs the category-free worn gear anyone can wear (some helmets, leggings, boots and gloves: [Weapons & gear](04 Weapons & gear.md) → Equipment) fitted to his cat body
 - [x] ~~The exact offhand arm variants~~: shield and second weapon only; an empty hand keeps the base pose (see **Pose library**)
 - [x] ~~Which pose each weapon category uses~~: see **Pose library**
+- [ ] **New (Nov 9, 2026, playtest):** the golem model feels too robotic: rework it toward a crafted being woken to a will of its own (03 → Races), not a machine
 - [ ] **New:** body types to build (races, the golem sub-types, Fluffy's cat race, sizes such as halfling vs dragonborn), since gear parts must fit each one
 - [ ] **New:** how enchantments and special or Legendary items look: in-game effects (fire, ice, lightning) on standard parts, and whether special items get unique models
 - [x] ~~AI minis: which orthographic set feeds the Meshy vs Tripo test~~ (v5c, then replaced the same day by ChatGPT renders of each visual description, Oct 29, 2026)
