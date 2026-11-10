@@ -478,8 +478,9 @@ def tile_props(name, q, r, world=None):
     if name in BURROWED:   # the outpost on the corner halls (from tiles_v93): recoloured halls, one or two dug with a burrow
         import ruin_structure as rs
         return rs.outpost_props(world or {}, q, r)
-    if name in HAUNTED:
-        return haunted_layout(q, r)
+    if name in HAUNTED:   # the ghost town (from tiles_v94): house shells; the engine adds their ghost houses at night
+        import ruin_structure as rs
+        return rs.haunted_props(world or {}, q, r)
     return [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
 
 
@@ -1067,7 +1068,8 @@ FOOT.update({"haunt_toppled": (0.0, 0.82), "haunt_graves": (0.0, 0.8), "haunt_sl
 PROP_PIECES.update({f"haunt_{k}": haunt_piece(k) for k in TOMBS})
 # Not approved yet: variants.py leaves these out of the kit; render_ruin_variants.py builds them live.
 RETIRED = {f"ruin_{k}" for k in REMAINS} | {f"outpost_{k}" for k in ("banner", "bones", "crates", "totem")}   # kept out of the kit since the outpost moved onto the halls (tiles_v93)
-UNAPPROVED = {"haunted_ruins", "crypt", "haunt_wisps", "haunt_mist"} | {f"haunt_{k}" for k in TOMBS}
+RETIRED |= {f"haunt_{k}" for k in TOMBS}   # and the loose tombs since Haunted became the ghost town, its tombs in its blocks (tiles_v94)
+UNAPPROVED = set()   # all in the kit since tiles_v94
 PROP_PIECES.update({"haunt_wisps": wisps, "haunt_mist": lambda p, rng: mist(p, rng)})
 VARIANTS["haunted_ruins"] = ("ruins", haunted_ground, "ruin_ground", ("edge_same_b", "edge_other_b"))
 

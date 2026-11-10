@@ -5216,6 +5216,8 @@ PROP_PIECES.update(rs.block_pieces(rs.KIT))   # the plain ruins' corner halls
 PROP_PIECES.update(rs.outpost_pieces())       # the overrun outpost's halls
 VARIANTS.update({k: v for k, v in rl.VARIANTS.items() if k not in rl.UNAPPROVED})
 VARIANTS["overrun_outpost"] = ("ruins", rs.outpost_ground, "op_ground", ("edge_same_b", "edge_other_b"))
+PROP_PIECES.update(rs.haunted_pieces())       # the ghost town's shells and their night ghost houses
+VARIANTS["haunted_ruins"] = ("ruins", rs.haunted_ground, "gt_ground", ("edge_same_b", "edge_other_b"))
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | rl.OWN
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
