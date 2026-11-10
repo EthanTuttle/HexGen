@@ -35,7 +35,7 @@ static func test_hero(hero_name: String) -> Hero:
 	c.hero_name = hero_name
 	c.main = "longsword"
 	c.off = "shield"
-	c.arm = "Medium"
+	c.arm = "armoured"
 	var h := c.hero()
 	h.scores = {"STR": 3, "CON": 2, "DEX": 1}
 	c.free()
