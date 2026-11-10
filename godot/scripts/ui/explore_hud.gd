@@ -458,7 +458,6 @@ func show_encounter(where: String, stage: String, coins: Array) -> void:
 		_enc_buttons.add_child(_enc_button("Ambush", "Stealth · Deceive", "", game.choose_ambush))   # picked in the check pop-up (03 -> Ambush)
 	if stage == "passed":
 		_enc_buttons.add_child(_enc_button("Carry on", "", "dark", game.choose_carry_on))
-	_lone_button()
 	_enc_layer.visible = true
 
 
@@ -474,7 +473,6 @@ func show_event(where: String, what: String) -> void:
 		c.queue_free()
 	_enc_coins.visible = false   # no check here
 	_enc_buttons.add_child(_enc_button("Carry on", "", "dark", game.choose_event_done))
-	_lone_button()
 	_enc_layer.visible = true
 
 
@@ -511,15 +509,8 @@ func open_shop(where: String, on_buy: Callable, on_close: Callable) -> void:
 
 
 ## A button on its own keeps one button's width, centred, rather than a bar across the pop-up.
-func _lone_button() -> void:
-	if _enc_buttons.get_child_count() == 1:
-		var b := _enc_buttons.get_child(0) as Control
-		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		b.custom_minimum_size.x = 176
-
-
 ## The pop-up's buttons, hex-ended like the rest of the game (Ethan's playtest, Nov 9, 2026): Fight orange, Carry on dark,
-## the checks cream with their skills on a small second line.
+## the checks cream with their skills on a small second line. A button on its own spans the pop-up (Ethan, Nov 9, 2026).
 func _enc_button(t: String, small: String, kind: String, on_press: Callable) -> TagButton:
 	var b := TagButton.make(t, 0, 48, 16)
 	b.sub = small
