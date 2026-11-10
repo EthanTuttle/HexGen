@@ -416,7 +416,7 @@ Some subclasses borrow features and themes from another class. Each half-class a
 
 - **Holy Defender (Fighter) borrows from the Cleric:** picks a god at level 5, gets god spells (early free, later unlocked through meditations), and gets Meditation Rock, where it communes with its god (the meditations that strengthen the bond).
 - **Arcane Knight (Fighter) and Arcane Trickster (Rogue) borrow from the Wizard:** cast through spell materials, use INT to make enemy saves harder, and get the Library, where they upgrade their arcane cards. They gain a small set of arcane cards as level-ups instead of wizard spell picks (moved from Library visits, Oct 22, 2026).
-- **Leader (Bard) borrows from the Fighter:** weapon focus (medium armor, polearms, weapon-attack spells), and gets Training Grounds, where it learns and improves weapon techniques (see [Weapons & gear](04 Weapons & gear.md) → Weapon mastery).
+- **Leader (Bard) borrows from the Fighter:** weapon focus (Armoured, polearms, weapon-attack spells), and gets Training Grounds, where it learns and improves weapon techniques (see [Weapons & gear](04 Weapons & gear.md) → Weapon mastery).
 
 **Arcane half-class cards** (3 cards each, gained as level-ups. Arcane Trickster: pick 1 as its level-15 card, a second at a later level-up (decided Oct 22, 2026). Arcane Knight: the same, decided Oct 22, 2026)
 
@@ -639,7 +639,7 @@ Requiem hits every foe on the field for 3 AP, the widest area of any spell so fa
 | After level 5 | Dance of Blades: several strikes on foes you move past | 3 | Attack flip per strike |
 | After level 5 | Dance Macabre: foes in an area are forced to dance and can't act | 3 | Targets' CHA save |
 
-**Leader** (command; weapon focus: Leader bards also gain medium armor and polearms (spears, halberds, glaives) and many of their spells are weapon attacks)
+**Leader** (command; weapon focus: Leader bards also gain Armoured and polearms (spears, halberds, glaives) and many of their spells are weapon attacks)
 
 | Unlock | Spell | AP | Resolved by |
 | --- | --- | --- | --- |

@@ -102,7 +102,7 @@ func open_save(slots: Array, pick: Callable) -> void:
 	var body := _open("Save", 330)
 	for i in slots.size():
 		var s: Dictionary = slots[i]
-		body.add_child(_row("Slot %d" % (i + 1), "Empty" if s.is_empty() else "%s · %s" % [s.place, s.time], s.is_empty(), pick.bind(i)))
+		body.add_child(_row("Slot %d" % (i + 1), "Empty" if s.is_empty() else "%s · %s" % [s.place, s.time], s.is_empty(), pick.bind(i), true))
 
 
 # --- Confirm ----------------------------------------------------------------------
@@ -224,7 +224,8 @@ func _scroll(inner: Control, most: float) -> ScrollContainer:
 
 
 ## A save row: two lines, dimmed (and not tappable) when empty or unreadable.
-func _row(top: String, sub: String, dim: bool, tap: Callable) -> Control:
+## dim: pale, and not tappable unless live (Save's empty slots look pale, as mocked up, but take a save).
+func _row(top: String, sub: String, dim: bool, tap: Callable, live := false) -> Control:
 	var r := _Tap.new()
 	r.add_theme_stylebox_override("panel", UI.box(UI.CREAM, 10, Color(0, 0, 0, 0), 0, Vector4(10, 7, 10, 7)))
 	var v := VBoxContainer.new()
@@ -235,7 +236,7 @@ func _row(top: String, sub: String, dim: bool, tap: Callable) -> Control:
 	r.add_child(v)
 	if dim:
 		r.modulate.a = 0.6
-	else:
+	if live or not dim:
 		r.tapped.connect(tap)
 	return r
 

@@ -22,14 +22,14 @@ Equipment, weapon and armor categories, weapon rules, weapon category cards, wea
 
 | Class | Weapons | Armor |
 | --- | --- | --- |
-| Fighter | All | All, including shields |
+| Fighter | All | Armoured, shields |
 | Rogue | Daggers, shortswords, rapiers, scimitars, shortbows, crossbows, fist weapons | Clothes only (Ethan, Nov 6, 2026, under the armour rework; was Light). A Human Rogue may still be Armoured (Versatile wins). An empty armour slot reads "Clothes" |
-| Wizard | Daggers, staves, wands | None |
-| Cleric | Maces, warhammers, staves | Light, medium, shields |
-| Ranger | Longswords, shortswords, scimitars, daggers, spears, glaives, shortbows, longbows, crossbows, fist weapons | Light, medium |
-| Bard | Rapiers, longswords, shortswords, daggers, shortbows, crossbows | Light |
+| Wizard | Daggers, staves, wands | Clothes only |
+| Cleric | Maces, warhammers, staves | Armoured, shields |
+| Ranger | Longswords, shortswords, scimitars, daggers, spears, glaives, shortbows, longbows, crossbows, fist weapons | Armoured |
+| Bard | Rapiers, longswords, shortswords, daggers, shortbows, crossbows | Clothes only, until Leader |
 
-Leader bards also gain medium armor and polearms (see [Classes & combat](03 Classes & combat.md) → Bard spells).
+Armour column updated to Clothes or Armoured (Ethan, Nov 9, 2026): anyone who had medium armour may be Armoured; Bards, who had light only, stay in Clothes until the Leader subclass. Leader bards also gain Armoured (was medium armor) and polearms (see [Classes & combat](03 Classes & combat.md) → Bard spells).
 
 ## Armour
 

@@ -32,7 +32,6 @@ var day := 1
 var encounters := {}                  # tile -> {expires, persistent, dropped, entry, id, roam_at}
 var _encounter_views := {}            # encounter id -> its EncounterView
 var _encounter_count := 0
-var walk_limited := true              # the checks walk far on one call
 var run: RunSetup
 var gold := 0
 var potions := 0                      # health potions, from a shop; Use item drinks one in a fight (design/06)
@@ -74,7 +73,6 @@ var _debug_fill := {}                 # spawn_forest_regions' plains (no cluster
 
 func _ready() -> void:
 	run = RunSetup.for_launch()
-	walk_limited = not run.wide_deck
 	debug_auto_cross = Array(OS.get_cmdline_user_args()).any(func(a): return a.ends_with("check") or a.begins_with("--demo") or a == "--touchtest")
 	if run.seed_text == "":
 		run.seed_text = str(randi())
@@ -1353,9 +1351,9 @@ func _roam_to(t: Vector2i) -> Vector2i:
 	return t if free.is_empty() else free[rng.randi_range(0, free.size() - 1)]
 
 
-## As much of a path as one tap walks (DOCS: design/02 -> one tap moves the party at most its sight range).
+## As much of a path as one tap walks: all of it (design/02: no cap since Nov 9, 2026, after a playtest; was the sight range).
 func _in_reach(path: Array[Vector2i]) -> Array[Vector2i]:
-	return path.slice(0, Rules.sight_now(minute) + Progression.sight_bonus(party)) if walk_limited else path
+	return path
 
 
 # --- Walking -----------------------------------------------------------------
@@ -1732,10 +1730,14 @@ func start_fight(t: Vector2i) -> void:
 	var drawn: Array[String] = []
 	var dropped: Array = []
 	var earned := 0
+	var xp_from := -1.0   # the After combat bar fills from here (07 -> After combat)
+	var level_from := 0
 	if won:
 		fights_won += 1
 		earned = Foes.reward(roles, Foes.tier(self, t))
 		gold += earned
+		xp_from = float(xp) / xp_needed()
+		level_from = level
 		_add_xp(earned)
 		var back: Array = encounters[t].dropped
 		encounters.erase(t)
@@ -1754,7 +1756,7 @@ func start_fight(t: Vector2i) -> void:
 		for m in party:
 			m.hp = Rules.REVIVE_HP
 	held = -1
-	after.show_result(self, won, downed, drawn, dropped, earned)
+	after.show_result(self, won, downed, drawn, dropped, earned, xp_from, level_from)
 	await after.done
 	after.visible = false
 	fight.visible = false

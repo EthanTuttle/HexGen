@@ -73,6 +73,21 @@ static func wrap(l: Label, w: float) -> Label:
 	return l
 
 
+## Holds a wrapping label at the height of the longest of `texts` at its width, so what's below it doesn't move as its
+## text changes (Ethan's phone note, Nov 8, 2026). Call it after the label's width is set.
+static func reserve(l: Label, texts: Array) -> Label:
+	var f := l.get_theme_font("font")
+	var px := l.get_theme_font_size("font_size")
+	var fh := f.get_height(px)
+	var brk := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+	var n := 1
+	for t in texts + [l.text]:
+		var lines := roundi(f.get_multiline_string_size(str(t), HORIZONTAL_ALIGNMENT_LEFT, l.custom_minimum_size.x, px, -1, brk).y / fh)
+		n = maxi(n, lines)
+	l.custom_minimum_size.y = n * fh + (n - 1) * l.get_theme_constant("line_spacing")   # how a Label stacks its lines
+	return l
+
+
 static func spring() -> Control:
 	var c := Control.new()
 	c.size_flags_vertical = Control.SIZE_EXPAND_FILL

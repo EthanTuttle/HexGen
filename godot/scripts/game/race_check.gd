@@ -346,6 +346,7 @@ func _run() -> void:
 	await _card_checks(hero, fluffy, chelm, mel, foe, s, line[1])
 	await _gear_checks(hero, fluffy, foe, s, line[1])
 	await _hero_checks(hero, fluffy, foe, s, line[1], level)
+	await _board_checks(fluffy, foe, s, line[1])
 	await _cover_checks()
 	_done()
 
@@ -440,6 +441,14 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_check(Foes.reward(["minion", "soldier"], 1) < Foes.reward(["minion", "soldier"], 2) and Foes.reward(["soldier"], 1) < Foes.reward(["elite"], 1),
 		"XP grows with the region tier and the foe's role")
 	_check(Foes.tier(game, Vector2i(99, 99)) == 1, "a tile outside any finished region counts as tier 1")
+	var gear_ids := Gear.WEAPONS.map(func(w): return w.id)
+	var fight_ids := Weapons.CAT.keys().filter(func(k): return not k.begins_with("summon_"))
+	gear_ids.sort()
+	fight_ids.sort()
+	_check(gear_ids == fight_ids, "the gear reference and the fight numbers list the same weapons (Gear, Weapons.CAT)")
+	_check(Gear.armour_for("rogue").size() == 1 and Gear.armour_for("rogue", true).size() == 2 and Gear.armour_for("fighter").map(func(a): return a.n) == ["Clothes", "Armoured"],
+			"armour is Clothes or Armoured (04): a Rogue gets Clothes only, a Human Rogue and a Fighter both")
+	_check(Gear.armoured("armoured") and Gear.armoured("Light") and not Gear.armoured("none") and not Gear.armoured(""), "older runs' Light, Medium and Heavy count as Armoured")
 	var hp1: int = Foes.roster("enc_fight_bandits", ["soldier"], 1)[0].hp
 	var lv: int = game.level
 	game.level = 9
@@ -1016,6 +1025,38 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			_check(f.card("throw").range == Weapons.THROW_RANGE, "a thrown dagger reaches 4")
 	foe.max_hp = tough
 	_fresh(foe)
+
+
+## Ethan's playtest of Nov 8 (07 -> Combat): picking a card with a range tints every hex it reaches, and a fallen foe is lifted
+## straight up off the board instead of tipping over.
+func _board_checks(fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	_clear_round(s, [])
+	_place(fluffy, s)
+	_place(foe, s + dv * 3)
+	_fresh(foe)
+	f.phase = "allies"
+	f.busy = false
+	f.select(fluffy)
+	f.pick_card("firebolt")
+	var reach: int = f.card().get("range", 1)
+	var want := f.grid.keys().filter(func(c): return Rules.hex_distance(c, s) in range(1, reach + 1)).size()
+	await _shot("board_range_firebolt")
+	var tinted := f._overlays.filter(func(o): return is_instance_valid(o) and o.material_override == f._mats["range"]).size()
+	_check(f.range_cells(fluffy, f.card()).size() == want and tinted == want - 1,
+			"picking Firebolt tints every hex within its %d: %d tinted, the foe's hex lit as in reach" % [reach, tinted])
+	f.pick_card("move")
+	_check(f._overlays.all(func(o): return not is_instance_valid(o) or o.material_override != f._mats["range"]), "Move shows no range tint")
+	var y0: float = foe.mini.position.y
+	f._hurt(foe, foe.hp)
+	await _wait(0.8)
+	await _shot("board_foe_lifting")
+	await _wait(1.2)
+	var body := foe.mini.get_node("body") as Node3D
+	_check(foe.mini.position.y > y0 + 3.0 and not foe.mini.visible and body.quaternion.is_equal_approx(Quaternion.IDENTITY),
+			"a fallen foe is lifted straight up off the board, upright, and gone (%.1f m up)" % (foe.mini.position.y - y0))
+	f.board.stand(foe.mini)
+	_check(is_equal_approx(foe.mini.position.y, y0) and foe.mini.visible, "and stands back in place when a check reuses it")
 
 
 func _hero_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int, level: int) -> void:
