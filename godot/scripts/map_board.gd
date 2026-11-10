@@ -1014,10 +1014,13 @@ func _setup_materials() -> void:
 		for k in mesh.get_surface_count():
 			var mat_name := Kit.material_name(mesh, k)
 			if mat_name == "haunt_wisp":
-				if not _haunt_wisp:
+				var had := mesh.surface_get_material(k)
+				if not _haunt_wisp and had is ShaderMaterial:
+					_haunt_wisp = had   # an earlier board already set it up on the shared mesh
+				elif not _haunt_wisp:
 					_haunt_wisp = ShaderMaterial.new()
 					_haunt_wisp.shader = load("res://shaders/haunt_wisp.gdshader")
-					_haunt_wisp.set_shader_parameter("colour", (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color)
+					_haunt_wisp.set_shader_parameter("colour", (had as BaseMaterial3D).albedo_color)
 					_haunt_wisp.resource_name = mat_name
 				mesh.surface_set_material(k, _haunt_wisp)
 			elif mat_name in ["ghost_house", "ghost_roof", "ghost_window", "haunt_glow", "haunt_light"]:
