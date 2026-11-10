@@ -23,15 +23,10 @@ func _items() -> Array:
 	match slot:
 		"main": return c.allowed_weapons()
 		"off": return c.off_options()
-	var armour := [{"id": "none", "n": "Clothes"}]   # an empty armour slot reads Clothes (04, Ethan, Nov 6, 2026)
-	for a: String in (["Light", "Medium", "Heavy"] if c.human() else c.cls_data().a):
-		armour.append({"id": a, "n": a + " armour"})
-	return armour
+	return c.armour_options()
 
 
 func _icon_of(o: Dictionary) -> String:
-	if slot == "arm":
-		return D.IC.none if o.id == "none" else D.IC.armour
 	return D.IC.get(o.get("i", "none"), D.IC.none)
 
 
@@ -97,12 +92,13 @@ func _card() -> Control:
 		if o.id == c.off:
 			off_item = o
 	var off_icon: String = D.IC.none if off_item.is_empty() or off_item.id == "none" else D.IC[off_item.i]
-	var off_note := "Pick a weapon first" if c.main == "" else ("Worn as a pair" if str(mw.get("h", "")) == "f" else "Both hands")
+	var off_note := "Pick a weapon first" if c.main == "" else ("Worn as a pair" if str(mw.get("hands", "")) == "f" else "Both hands")
 	row.add_child(_slot_hex("main", "Main hand", mw.get("n", ""), D.IC[mw.i] if not mw.is_empty() else "", false, ""))
 	var empty_hand: bool = not off_item.is_empty() and off_item.id == "none"
 	row.add_child(_slot_hex("off", "Offhand", "Empty hand" if empty_hand else off_item.get("n", ""), off_icon if not off_item.is_empty() else "", c.main == "" or _off_crossed(), off_note))
-	var arm_name := "" if c.arm == "" else ("Clothes" if c.arm == "none" else c.arm + " armour")
-	row.add_child(_slot_hex("arm", "Armour", arm_name, (D.IC.none if c.arm == "none" else D.IC.armour) if c.arm != "" else "", false, ""))
+	var arm_name := "" if c.arm == "" else Gear.armour_name(c.arm)
+	var arm_icon: String = (D.IC.armour if Gear.armoured(c.arm) else D.IC.none) if c.arm != "" else ""
+	row.add_child(_slot_hex("arm", "Armour", arm_name, arm_icon, false, ""))
 	v.add_child(row)
 	card.add_child(v)
 	return card
@@ -186,10 +182,10 @@ func _slot_note() -> String:
 	var k := c.cls_data()
 	match slot:
 		"main":
-			return "Any basic weapon (Versatile)" if c.human() else ("Any basic weapon" if str(k.w) == "all" else k.id + " weapons")
+			return "Any basic weapon (Versatile)" if c.human() else ("Any basic weapon" if c.allowed_weapons().size() == Gear.WEAPONS.size() else k.id + " weapons")
 		"off":
 			var mw := c.weapon(c.main)
-			return "A shield, or nothing: two-handed %s" % str(mw.n).to_lower() if str(mw.h) == "v" else "A shield, a second one-handed weapon or nothing"
+			return "A shield, or nothing: two-handed %s" % str(mw.n).to_lower() if str(mw.hands) == "v" else "A shield, a second one-handed weapon or nothing"
 	return "Any basic armour (Versatile)" if c.human() else k.id + " armour"
 
 
@@ -211,7 +207,7 @@ func _item(o: Dictionary, fid: String) -> Control:
 		UI.at(tick, 37, -3)
 		hx.add_child(tick)
 	_hexes[o.id] = hx
-	var lab: String = ("None" if o.id == "none" else o.id) if slot == "arm" else o.n
+	var lab: String = o.n
 	var l := UI.label(lab, "n800", 11, Color("#33403B"), 0, 1.1)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -247,8 +243,8 @@ func _details() -> Control:
 		var mod: Array = D.WM.get(det.id, []) if slot != "arm" else []
 		var hands := ""
 		if slot == "main":
-			hands = D.HL[str(det.h)]
-		elif slot == "off" and str(det.get("h", 0)) == "1":
+			hands = D.HL[str(det.hands)]
+		elif slot == "off" and str(det.get("hands", "")) == "1":
 			hands = "One-handed"
 		if hands != "" or not mod.is_empty():
 			var chips := CUI.hbox(5)
@@ -296,8 +292,8 @@ func _note_of(o: Dictionary) -> String:
 	if slot == "off":
 		if o.id == "none":
 			var mw := c.weapon(c.main)
-			return "The %s is held in both hands for more damage" % str(mw.n).to_lower() if str(mw.h) == "v" else ""
-		if str(o.get("h", 0)) == "1":
+			return "The %s is held in both hands for more damage" % str(mw.n).to_lower() if str(mw.hands) == "v" else ""
+		if str(o.get("hands", "")) == "1":
 			return "Free offhand attack once per turn"
 	return ""
 

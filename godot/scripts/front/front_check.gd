@@ -130,7 +130,7 @@ func _creator() -> void:
 	text_sizes("class", c)
 	await _cost("creator class")
 	# The Ranger (06 -> Start, Nov 5, 2026): playable, its kit shows Hunter's Mark (Snare comes at level 3, Nov 9), and gear offers only its own
-	# weapons and light or medium armour, unless the hero is Human (Versatile).
+	# weapons and Clothes or Armoured (04 -> Armour; the class list is a PLACEHOLDER in Gear), unless the hero is Human (Versatile).
 	await tap_on("Ranger")
 	await _wait(0.6)
 	check(c.cls == "Ranger" and c.done("class"), "class: the Ranger is playable")
@@ -138,9 +138,9 @@ func _creator() -> void:
 	await shot("class_ranger")
 	var ranger_w: Array = c.allowed_weapons().map(func(w): return w.id)
 	check(ranger_w == ["longsword", "shortsword", "scimitar", "dagger", "spear", "glaive", "shortbow", "longbow", "crossbow", "gauntlets", "knuckles", "wraps"], "gear: a Ranger gets only Ranger weapons: %s" % [ranger_w])
-	check(c.cls_data().a == ["Light", "Medium"], "gear: a Ranger wears light or medium armour")
+	check(c.armour_options().map(func(a): return a.id) == ["none", "armoured"], "gear: a Ranger wears Clothes or Armoured")
 	c.race = "Human"
-	check(c.allowed_weapons().size() == CreatorData.W.size(), "gear: a Human Ranger gets every weapon (Versatile)")
+	check(c.allowed_weapons().size() == Gear.WEAPONS.size(), "gear: a Human Ranger gets every weapon (Versatile)")
 	c.race = ""
 	# The Rogue (06 -> Start, Nov 6, 2026): playable, its kit shows Sneak Attack (Poison Blade comes at level 3, Nov 9), and gear offers only its own
 	# weapons and no armour (Clothes only, 04).
@@ -151,13 +151,13 @@ func _creator() -> void:
 	await shot("class_rogue")
 	var rogue_w: Array = c.allowed_weapons().map(func(w): return w.id)
 	check(rogue_w == ["shortsword", "rapier", "scimitar", "dagger", "shortbow", "crossbow", "gauntlets", "knuckles", "wraps"], "gear: a Rogue gets only Rogue weapons: %s" % [rogue_w])
-	check(c.cls_data().a.is_empty(), "gear: a Rogue wears Clothes only")
+	check(c.armour_options().map(func(a): return a.id) == ["none"], "gear: a Rogue wears Clothes only")
 	# The Wizard (06 -> Start, Nov 6, 2026): playable, its kit shows two spell slots, Clothes only, and a Spells step after
 	# Gear: 2 picks from the 9 level-1 spells, a third swapping out the first, a tap on a filled slot clearing it.
 	await tap_on("Wizard")
 	await _wait(0.6)
 	check(c.cls == "Wizard" and c.done("class"), "class: the Wizard is playable")
-	check(c.allowed_weapons().map(func(w): return w.id) == ["dagger", "staff", "wand"] and c.cls_data().a.is_empty(), "gear: a Wizard gets daggers, staves and wands, and wears Clothes only")
+	check(c.allowed_weapons().map(func(w): return w.id) == ["dagger", "staff", "wand"] and c.armour_options().map(func(a): return a.id) == ["none"], "gear: a Wizard gets daggers, staves and wands, and wears Clothes only")
 	check(c.steps().map(func(x): return x[0]) == ["class", "race", "bg", "scores", "skills", "gear", "spells", "look", "name"], "class: a Wizard's steps add Spells after Gear")
 	await shot("class_wizard")
 	c.race = "Human"
@@ -287,9 +287,9 @@ func _creator() -> void:
 	await shot("gear_offhand")
 	await tap_on("Next: Armour")
 	await _wait(0.1)
-	await tap_on("Medium armour")
+	await tap_on("Armoured")
 	await _wait(0.05)
-	await tap_on("Choose Medium armour")
+	await tap_on("Choose Armoured")
 	await _wait(0.6)
 	check(c.done("gear"), "gear: all three slots filled")
 	await tap_on("Next")
@@ -626,9 +626,9 @@ func _look_shots() -> void:
 	var c := front.creator
 	var look := c.find_children("*", "CreatorLook", true, false)[0] as CreatorLook
 	await tap_on("Turn left")   # back to the front after the walk's turn
-	for h: Array in [["bow", "Ranger", "Elf", "Wood elf", "shortbow", "", "Light"], ["glaive", "Fighter", "Dragonborn", "Blue", "glaive", "", "Heavy"],
-			["longsword_two", "Fighter", "Human", "", "longsword", "", "Medium"], ["staff_cast", "Wizard", "Halfling", "", "staff", "", ""],
-			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "Light"], ["rogue_daggers", "Rogue", "Halfling", "", "dagger", "dagger", ""],
+	for h: Array in [["bow", "Ranger", "Elf", "Wood elf", "shortbow", "", "armoured"], ["glaive", "Fighter", "Dragonborn", "Blue", "glaive", "", "armoured"],
+			["longsword_two", "Fighter", "Human", "", "longsword", "", "armoured"], ["staff_cast", "Wizard", "Halfling", "", "staff", "", ""],
+			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "armoured"], ["rogue_daggers", "Rogue", "Halfling", "", "dagger", "dagger", ""],
 			["rogue_rapier", "Rogue", "Tiefling", "", "rapier", "", ""], ["rogue_rapier_dagger", "Rogue", "Elf", "High elf", "rapier", "dagger", ""],
 			["rogue_scimitars", "Rogue", "Human", "", "scimitar", "scimitar", ""], ["rogue_shortbow", "Rogue", "Elf", "Wood elf", "shortbow", "", ""]]:
 		c.cls = h[1]
