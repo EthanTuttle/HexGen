@@ -560,3 +560,213 @@ def outpost_props(world, q, r):
         else:
             out.append((f"outpost_hall_{n_join}", 0.0, 0.0, spin))
     return out
+
+
+# --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kit from tiles_v94) -------------------------------------
+# design/07 -> Region variant looks: here the base changes to stone house shells along the streets (walls with door and
+# window holes and gable ends, no roofs). By day they're bare shells; at night pale ghost houses fill them out as they once
+# stood, with ghostly roofs and lit windows (a separate piece per block, shown only at night). Tombs, wisps and mist are
+# accents. The ground and streets are the plain halls' own, so the streets carry on; shells stand at every corner out to
+# the region's edge, and a plain hall beside them is left part-open there, as beside the outpost (Ethan, Nov 10).
+# The Crypt keeps its own look (ruin_lands.crypt).
+
+PALETTE_GHOST = {   # made up
+    "gt_ground": "#AEB0AB",      # the paving, a shade cooler than the plain ruins
+    "ghost_house": "#D6F2EA",    # the ghost houses' walls: pale, see-through, a faint glow (own material)
+    "ghost_roof": "#B5DCD6",     # their roofs (own material)
+    "ghost_window": "#F2F7C8",   # their lit windows (own material, bright at night)
+}
+hk.PALETTE.update(PALETTE_GHOST)
+GHOST_OWN = {"ghost_house", "ghost_roof", "ghost_window"}
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | GHOST_OWN   # the engine shows them only at night, see-through and glowing
+SHELL_T = 0.09        # a shell's walls
+SHELL_KEEP = rl.WALK_HALF + 0.12   # a shell's front keeps this far off its walk's line
+ROOF_H = 0.42         # the gables' and the ghost roofs' height
+TOMB_AT = Vector((3.6, 0, 0))   # in a block's frame: the tomb between the two shells' backs
+DOOR, WIN = (0.24, 0.48), (0.16, 0.2)   # holes: (width, height)
+
+
+def shell_wall(p, frame, u0, u1, v, h, holes, mat, drops=()):
+    """A wall along u (from u0 to u1) at v, h high, with holes (u, z0, w, hh): columns between the holes' sides, the
+    stone below and above each hole. drops: (u_a, u_b, dz) stretches whose top has crumbled lower."""
+    cuts = sorted({u0, u1, *[c for u, z0, w, hh in holes for c in (u - w / 2, u + w / 2)], *[c for a, b, _ in drops for c in (a, b)]})
+    cuts = [c for c in cuts if u0 <= c <= u1]
+    for a, b in zip(cuts, cuts[1:]):
+        if b - a < 0.01:
+            continue
+        m = (a + b) / 2
+        top = h - max([dz for da, db, dz in drops if da <= m <= db] or [0.0])
+        spans = [(0.0, top)]
+        for u, z0, w, hh in sorted(holes, key=lambda h_: h_[1]):   # cut each hole in this column out of the stone left
+            if u - w / 2 <= m <= u + w / 2:
+                spans = [s_ for za, zb in spans for s_ in ((za, min(zb, z0)), (max(za, z0 + hh), zb))]
+        for za, zb in spans:
+            if zb - za > 0.03:
+                frame(p, Vector((m, v, 0)), (b - a, SHELL_T, zb - za), za, mat)
+
+
+def gable(p, frame3, u, d, z, h, mat, cut=0.0):
+    """A gable end's triangle across v (-d/2..d/2) at u, from z up to its peak h above; cut: its top broken off this far down."""
+    pts = [(-d / 2, 0.0), (d / 2, 0.0)]
+    if cut > 0:
+        k = 1 - cut / h
+        pts += [(d / 2 * (1 - k), h * k), (-d / 2 * (1 - k), h * k)]
+    else:
+        pts += [(0.0, h)]
+    front = [p.bm.verts.new(frame3(Vector((u - SHELL_T / 2, a, z + b)))) for a, b in pts]
+    back = [p.bm.verts.new(frame3(Vector((u + SHELL_T / 2, a, z + b)))) for a, b in pts]
+    idx = p._slot(mat)
+    faces = [front[::-1], back]
+    n = len(pts)
+    faces += [(front[i], front[(i + 1) % n], back[(i + 1) % n], back[i]) for i in range(n)]
+    for f in faces:
+        p.bm.faces.new(f).material_index = idx
+
+
+def shell(p, rng, at, ang, w, d, h, mat, broken=0):
+    """A roofless stone house: ridge along ang, its front (door, windows) toward -v, the walk side. Returns its hole
+    layout for the ghost house: [(side, u, z0, w, hh)]."""
+    rot = Matrix.Rotation(ang, 3, "Z")
+
+    def frame(p_, c, size, z, mat_):
+        p_.box(at + rot @ c, size, mat_, z=z, spin=ang)
+
+    def frame_end(p_, c, size, z, mat_):   # an end wall's columns run along v
+        p_.box(at + rot @ c, (size[1], size[0], size[2]), mat_, z=z, spin=ang)
+
+    def frame3(c):
+        return at + rot @ c
+    two = h > 0.95
+    upper = h * 0.55
+    door = rng.uniform(-0.1, 0.1) * w
+    front = [(door, 0.0, *DOOR)] + [(sd * w * 0.32, 0.26, *WIN) for sd in (-1, 1)]
+    back = []   # the back and end walls stay solid: the street sees the fronts (and it keeps the triangles down)
+    if two:   # the upper windows over the lower ones and the door, so the columns don't multiply
+        front += [(u, upper + 0.2, *WIN) for u in (door, -w * 0.32, w * 0.32)]
+    drops = []
+    for _ in range(broken):   # a stretch of the top crumbled away
+        a = rng.uniform(-w / 2, w / 2 - 0.3)
+        drops.append((a, a + rng.uniform(0.25, 0.45), rng.uniform(0.15, 0.35)))
+    shell_wall(p, frame, -w / 2, w / 2, -d / 2 + SHELL_T / 2, h, front, mat, drops)
+    shell_wall(p, frame, -w / 2, w / 2, d / 2 - SHELL_T / 2, h, back, mat, drops[:1])
+    ends = []
+    for sd in (-1, 1):
+        u = sd * (w / 2 - SHELL_T / 2)
+        win = []
+        ends.append((sd, win))
+        # the end walls: columns across v, given to shell_wall in their own frame (u <- v)
+        shell_wall(p, lambda p_, c, size, z, m_, u=u: frame_end(p_, Vector((u, c.x, 0)), size, z, m_), -d / 2 + SHELL_T, d / 2 - SHELL_T, 0.0, h, win, mat)
+        cut = rng.uniform(0.12, 0.3) if broken and sd == 1 else 0.0
+        gable(p, frame3, u, d, h, ROOF_H, mat, cut)
+    rl.plate(p, [at + rot @ Vector((x, y, 0)) for x, y in ((-w / 2 + SHELL_T, -d / 2 + SHELL_T), (w / 2 - SHELL_T, -d / 2 + SHELL_T),
+                                                           (w / 2 - SHELL_T, d / 2 - SHELL_T), (-w / 2 + SHELL_T, d / 2 - SHELL_T))], 0.015, "rs_floor")
+    holes = [("front", u, z0, ww, hh) for u, z0, ww, hh in front] + [("back", u, z0, ww, hh) for u, z0, ww, hh in back]
+    holes += [(f"end{sd}", u, z0, ww, hh) for sd, win in ends for u, z0, ww, hh in win]
+    return holes
+
+
+def ghost(p, at, ang, w, d, h, holes):
+    """The house as it once stood, over its shell: pale see-through walls and roof, its windows and door lit."""
+    rot = Matrix.Rotation(ang, 3, "Z")
+    p.box(at, (w + 0.03, d + 0.03, h), "ghost_house", spin=ang)
+    p.gable_roof(at, w + 0.16, d + 0.18, ROOF_H, "ghost_roof", z=h, spin=ang)
+    out = 0.018
+    for side, u, z0, ww, hh in holes:
+        v = (-1 if side == "front" else 1) * (d / 2 + out)   # one lit quad over the hole, facing out
+        quad = [at + rot @ Vector((u + a, v, z0 + b)) for a, b in ((-ww / 2, 0), (ww / 2, 0), (ww / 2, hh), (-ww / 2, hh))]
+        f = p.bm.faces.new([p.bm.verts.new(q_) for q_ in (quad if side == "front" else quad[::-1])])
+        f.material_index = p._slot("ghost_window")
+
+
+def block_houses(n, join):
+    """A ghost town corner, in the block frame: a shell fronting each of the two streets beside the corner (the +30
+    degree walk ends at the hi edge, the -30 degree one at the lo edge), a tomb between their backs. Returns (build,
+    ghost build): the same seed lays out both, so the ghost houses sit exactly on their shells."""
+    seed = f"gt_block_{n}_{join}"
+
+    def layout(rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        out = []
+        sizes = [(1.1, 0.66, 0.78, 0), (1.05, 0.62, 0.74, 1)] if n == 0 else \
+                [(1.0, 0.64, 1.15, 0), (1.12, 0.62, 0.76, 2)] if n == 1 else [(1.18, 0.66, 0.8, 1), (0.95, 0.6, 1.1, 1)]
+        rng.shuffle(sizes)
+        for (w, d, h, broken), sd in zip(sizes, (1, -1)):
+            edge = "hi" if sd == 1 else "lo"
+            t_end = A - (0.14 if joins[edge] else 0.5)
+            tc = t_end - w / 2
+            a = math.radians(30 * sd)
+            along = Vector((math.cos(a), math.sin(a), 0))
+            into = Vector((math.sin(a), -math.cos(a), 0)) if sd == 1 else Vector((-math.sin(a), math.cos(a), 0))
+            at = along * tc + into * (SHELL_KEEP + d / 2)
+            ang = a if sd == -1 else a + math.pi   # its front (-v) toward its walk
+            out.append((at, ang, w, d, h, broken))
+        return out
+
+    def build(p, rng):
+        rng = hk.seeded(seed)
+        mat = rng.choice(WALLS)
+        houses = layout(rng)
+        for at, ang, w, d, h, broken in houses:
+            shell(p, rng, at, ang, w, d, h, mat, broken)
+        weather(p, hk.seeded(seed + "weather"))
+        tomb(p, hk.seeded(seed + "tomb"), n, mat)
+
+    def build_ghost(p, rng):
+        rng = hk.seeded(seed)
+        rng.choice(WALLS)
+        for at, ang, w, d, h, broken in layout(rng):
+            holes = shell(hk.Piece("scratch"), rng, at, ang, w, d, h, "rs_wall_a", broken)   # the same draws, for the same holes
+            ghost(p, at, ang, w, d, h, holes)
+    return build, build_ghost
+
+
+def tomb(p, rng, n, mat):
+    """The tomb between the two shells' backs: two leaning headstones (0), a coffin with its lid slid off (1), an open grave (2)."""
+    c = TOMB_AT
+    if n == 0:
+        for x, h, lean in ((-0.22, 0.42, 0.15), (0.2, 0.5, -0.2)):
+            rl.headstone(p, c + Vector((x, 0, 0)), rng.uniform(-0.2, 0.2), mat, h, lean)
+    elif n == 1:
+        p.box(c, (0.72, 0.32, 0.28), mat, spin=rng.uniform(-0.08, 0.08))
+        p.box(c + Vector((-0.1, 0, 0)), (0.44, 0.2, 0.02), "haunt_glow", z=0.28)
+        p.box_rot(c + Vector((0.2, 0.06, 0.31)), (0.7, 0.36, 0.06), mat, Matrix.Rotation(-0.15, 3, "X"))
+    else:
+        rl.plate(p, [c + Vector((x, y, 0)) for x, y in ((-0.34, -0.17), (0.34, -0.17), (0.34, 0.17), (-0.34, 0.17))], 0.02, "crypt_dark")
+        rl.plate(p, [c + Vector((x, y, 0)) for x, y in ((-0.24, -0.09), (0.24, -0.09), (0.24, 0.09), (-0.24, 0.09))], 0.022, "haunt_glow")
+        p.box_rot(c + Vector((0.0, 0.25, 0.1)), (0.66, 0.06, 0.32), mat, Matrix.Rotation(0.4, 3, "X"))   # its slab, leant up
+
+
+def haunted_ground(p, rng, kind):
+    """The plain halls' ground, slab for slab and seeded as theirs (no glowing cracks: Ethan, Nov 10)."""
+    plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
+    ground(KIT)(p, hk.seeded(plain), kind)
+
+
+def haunted_pieces():
+    out = {}
+    for n in range(VARIANTS_PER_TAKE):
+        for j in JOINS:
+            out[f"haunted_block_{n}_{j}"], out[f"haunted_ghost_{n}_{j}"] = block_houses(n, j)
+    return out
+
+
+def haunted_props(world, q, r, night=False):
+    """(piece, x, y, spin) for a haunted tile: shells at every corner out to the region's edge (with their ghost houses at
+    night; a plain hall beside them is left part-open, as beside the outpost), wisps over two or three tombs, one or two mists."""
+    out, tombs = [], []
+    for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
+        nj = piece[len("ruin_hall_"):]
+        out.append((f"haunted_block_{nj}", x, y, spin))
+        if night:
+            out.append((f"haunted_ghost_{nj}", x, y, spin))
+        tombs.append((c, spin))
+    count = 3 if gc.hash01(q, r, 57) < 0.4 else 2
+    for c, spin in sorted(tombs, key=lambda t: gc.hash01(q * 6 + t[0], r, 56))[:count]:
+        at = TOMB_AT.copy()
+        at.rotate(Matrix.Rotation(spin, 3, "Z"))
+        out.append(("haunt_wisps", at.x, at.y, 6.283 * gc.hash01(q * 6 + c, r, 55)))
+    for k in range(2 if gc.hash01(q, r, 58) < 0.5 else 1):
+        a = 6.283 * gc.hash01(q * 2 + k, r, 59)
+        d = 1.2 + 1.0 * gc.hash01(q * 2 + k, r, 60)
+        out.append(("haunt_mist", d * math.cos(a), d * math.sin(a), a))
+    return out
