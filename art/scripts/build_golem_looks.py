@@ -26,7 +26,8 @@ import render_preview as rp  # noqa: E402
 import variants as vr  # noqa: E402
 
 zone, SIDE, Z0 = hb.zone, hb.SIDE, hb.Z0
-F = hb.frame("golem", "average")
+BUILD = "average"  # build_golem_set.py sets BUILD and F per build
+F = hb.frame("golem", BUILD)
 R = hb.RACES["golem"]["head"]
 for k_, c_ in {"gl_moss": "#6F8F3E", "gl_moss_dark": "#55722F", "gl_leaf": "#7FA347", "gl_leaf_dark": "#5E8236", "gl_flower": "#E8D27A",
                "gl_verdigris": "#6FA894", "gl_twine": "#8A6A44"}.items():
@@ -65,12 +66,12 @@ def limbs(stem_paint, upper, fore, thigh, shin, sides=6):
 
 
 def neck(p, r0=0.62, r1=0.5, paint=None):
-    em.limb(p, [F["chest"] + V((0, 0, 0.05)), hb.head_point("golem", "average") + V((0, 0.02, -F["head"] * 0.55))],
+    em.limb(p, [F["chest"] + V((0, 0, 0.05)), hb.head_point("golem", BUILD) + V((0, 0.02, -F["head"] * 0.55))],
             [F["head"] * r0, F["head"] * r1], [paint or sk(0.85)], sides=6)
 
 
 def body_piece(build_fn):
-    p = hk.Piece("hero_body_golem_average")
+    p = hk.Piece(f"hero_body_golem_{BUILD}")
     build_fn(p)
     hb.finish_scale(p, "golem")
     return p
