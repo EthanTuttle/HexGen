@@ -29,6 +29,7 @@ const TERRAIN_MAP := {
 	Vector2i(3, 0): "hills",  # a lone hills tile, for its own peak
 }
 const BORDERED := ["farmland", "village"]
+const GHOSTS := "haunt_ghosts"   # the group of the ghost town's ghost-house pieces
 const BLEND_WIDTH := 1.6   # ground colour fade width; no doc value yet, matches ground cover's BLEND
 
 # render_animation.py
@@ -90,6 +91,9 @@ var _shape := {}                       # raised tile -> what its cliffs were bui
 var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
 var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
 var _goblin_eye: StandardMaterial3D    # the eyes in the Overrun outpost's burrows and the Warren's mouth
+var _haunt := {}                       # the ghost town's own materials (ghost_house, ghost_roof, ghost_window, haunt_glow, haunt_light), by name
+var _haunt_wisp: ShaderMaterial         # the wisps, drifting up
+var _ghosts_shown := false              # whether the ghost houses are showing (from dusk to dawn)
 ## The canyon (Canyon; art/handoff/desert_kit.md): generated once when a region finishes, and kept.
 var canyons := {}                      # canyon tile -> {openset, entrances, landmark, turn} of its region
 var canyon_stats := []                 # each generated region's triangles and times, for the check's report
@@ -1004,6 +1008,34 @@ func _setup_materials() -> void:
 						_goblin_eye.emission = c
 						_goblin_eye.resource_name = "goblin_eye"   # the meshes are shared, so a later board finds it by name too
 					mesh.surface_set_material(k, _goblin_eye)
+	# Tiles v94, the ghost town (art/handoff/ruins_kit.md -> Ghost materials): see-through ghost houses and roofs over the shells,
+	# lit windows, glows, and wisps that drift up. resource_name keeps each name, since the meshes are shared between boards.
+	for mesh: Mesh in _kit.values():
+		for k in mesh.get_surface_count():
+			var mat_name := Kit.material_name(mesh, k)
+			if mat_name == "haunt_wisp":
+				if not _haunt_wisp:
+					_haunt_wisp = ShaderMaterial.new()
+					_haunt_wisp.shader = load("res://shaders/haunt_wisp.gdshader")
+					_haunt_wisp.set_shader_parameter("colour", (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color)
+					_haunt_wisp.resource_name = mat_name
+				mesh.surface_set_material(k, _haunt_wisp)
+			elif mat_name in ["ghost_house", "ghost_roof", "ghost_window", "haunt_glow", "haunt_light"]:
+				if not _haunt.has(mat_name):
+					var g := _glow.duplicate() as StandardMaterial3D
+					var c := (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
+					g.albedo_color = Color(c, 1.0)
+					g.emission = Color(c, 1.0)
+					g.resource_name = mat_name
+					if mat_name.begins_with("ghost_"):
+						# The shell shows through: no depth write, both sides, no shadows (the nodes cast none either). The window is
+						# opaque at night, but fades with the house at dusk and dawn.
+						g.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+						g.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+						g.cull_mode = BaseMaterial3D.CULL_DISABLED
+						g.disable_receive_shadows = true
+					_haunt[mat_name] = g
+				mesh.surface_set_material(k, _haunt[mat_name])
 	# The swamp kit: what glows at night.
 	_marsh_water = StandardMaterial3D.new()   # PLACEHOLDER: glossy still water, like the old pools
 	_marsh_water.vertex_color_use_as_albedo = true
@@ -1023,6 +1055,32 @@ func _setup_materials() -> void:
 				mesh.surface_set_material(k, _marsh_glow[mat_name])
 	_mist_mat = ShaderMaterial.new()
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
+
+
+## The ghost town by the light (0 day, 1 night; art/handoff/ruins_kit.md -> Night swap): the ghost houses fade in at dusk and out at
+## dawn, hidden by day; the glows are lit a little by day. Strengths are the previews' (PLACEHOLDER until seen on the phone).
+func _set_haunt(night: float) -> void:
+	if _haunt.has("ghost_house"):
+		_haunt.ghost_house.albedo_color.a = 0.2 * night
+		_haunt.ghost_house.emission_energy_multiplier = 0.45 * night
+	if _haunt.has("ghost_roof"):
+		_haunt.ghost_roof.albedo_color.a = 0.3 * night
+		_haunt.ghost_roof.emission_energy_multiplier = 0.4 * night
+	if _haunt.has("ghost_window"):
+		_haunt.ghost_window.albedo_color.a = night
+		_haunt.ghost_window.emission_energy_multiplier = 5.0 * night
+	if _haunt.has("haunt_glow"):
+		_haunt.haunt_glow.emission_energy_multiplier = lerpf(0.4, 1.4, night)
+	if _haunt.has("haunt_light"):
+		_haunt.haunt_light.emission_energy_multiplier = lerpf(0.2, 1.2, night)
+	if _haunt_wisp:
+		_haunt_wisp.set_shader_parameter("strength", lerpf(0.5, 2.2, night))
+	var show := night > 0.02
+	if show != _ghosts_shown:
+		_ghosts_shown = show
+		for g in get_tree().get_nodes_in_group(GHOSTS):
+			if is_ancestor_of(g):
+				(g as Node3D).visible = show
 
 
 ## A bog tile's low mist: two flat layers of drifting haze (PLACEHOLDER heights and look; three layers at
@@ -1135,7 +1193,11 @@ func _build_tile(t: Vector2i) -> void:
 	for f in _features.get(t, []):
 		Kit.place(node, _kit, f[1], Vector2(f[2], f[3]), deg_to_rad(f[4]))
 	for h: Array in RuinHalls.props(name, terrains, t):   # ruins: corner halls, re-picked as the neighbours change
-		Kit.place(node, _kit, h[0], at + Vector2(h[1], h[2]), h[3])
+		var piece := Kit.place(node, _kit, h[0], at + Vector2(h[1], h[2]), h[3])
+		if piece and h[0].begins_with("haunted_ghost_"):   # the ghost houses: night only (_show_ghosts)
+			piece.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			piece.visible = _ghosts_shown
+			piece.add_to_group(GHOSTS)
 	var fx := ForestFx.for_tile(name, at, t, landmark_turns.get(t, 0))
 	if fx:
 		node.add_child(fx)
@@ -2656,6 +2718,7 @@ func _process(delta: float) -> void:
 		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
 		if _goblin_eye:
 			_goblin_eye.emission_energy_multiplier = 6.0 * night   # PLACEHOLDER strength: they glint at night only (07; the previews use 9)
+		_set_haunt(night)
 		for g: StandardMaterial3D in _marsh_glow.values():
 			g.emission_energy_multiplier = 0.3 + 2.5 * night   # PLACEHOLDER: lit a little by day
 		SwampFx.set_night(night)

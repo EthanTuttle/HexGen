@@ -512,12 +512,6 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		return
 	var first := not regions.any(func(g): return g.terrain == terrain)
 	var variant: String = Variants.TIER1[terrain] if first else _roll_tier2(terrain)
-	if terrain == "ruins" and not first and not run.wide_deck:   # ruins' tier 2 has no art yet (Haunted in progress): the region stays plain, with no landmark, and still counts toward the goal
-		var plain := new_region(terrain, tiles, "", tiles[0])
-		plain.name = Rules.NAMES.ruins
-		plain.landmark = ""
-		deck.draw(Rules.DRAW_TIER2_REGION)
-		return
 	var region := new_region(terrain, tiles, variant, _landmark_tile(variant, tiles))
 	_transform(tiles, region, t)
 	var draw := Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION
@@ -813,18 +807,30 @@ func _spawn_feywild(changes: Dictionary) -> void:
 	_debug_road(anchor + Vector2i(-3, 3), changes)
 
 
-## Debug: a 12-tile Overrun outpost with its Warren and a tier 0 ruins group, on free land out past the rest, with plains laid to them.
+## Debug: a 12-tile Overrun outpost with its Warren, a 12-tile Haunted ruins with its Crypt and two plain ruins tiles at its edge,
+## and a tier 0 ruins group, on free land out past the rest, with plains laid to them.
 func _spawn_ruins(changes: Dictionary) -> void:
-	var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
-	var tiles: Array[Vector2i] = []
-	for s: Vector2i in DEBUG_PLAINS_SHAPE:
-		tiles.append(anchor + s)
-	var region := new_region("ruins", tiles, "overrun_outpost", tiles[0])
-	_set_flow(region)
-	for x in tiles:
-		changes[x] = region_look(region, x)
-		order[x] = order.size()
-	_debug_road(anchor + Vector2i(-3, 3), changes)
+	for v: String in ["overrun_outpost", "haunted_ruins"]:
+		var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+		var tiles: Array[Vector2i] = []
+		for s: Vector2i in DEBUG_PLAINS_SHAPE:
+			tiles.append(anchor + s)
+		var region := new_region("ruins", tiles, v, tiles[0])
+		_set_flow(region)
+		for x in tiles:
+			changes[x] = region_look(region, x)
+			order[x] = order.size()
+		_debug_road(anchor + Vector2i(-3, 3), changes)
+		if v == "haunted_ruins":   # plain halls beside the ghost town, left part-open toward it
+			var laid := 0
+			for x in tiles:
+				for n in Hex.NEIGHBOURS:
+					var y: Vector2i = x + n
+					if laid < 2 and not changes.has(y) and not map.terrains.has(y):
+						changes[y] = "ruins"
+						order[y] = order.size()
+						_debug_fill[y] = true
+						laid += 1
 	var t0: Array = [Vector2i.ZERO]
 	t0.append_array(Hex.NEIGHBOURS)
 	var at := _free_spot(t0, changes)
