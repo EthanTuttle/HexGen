@@ -606,7 +606,16 @@ func _kit_report() -> void:
 	var built := 0
 	var missing := {}
 	var kit := Kit.meshes(HeroMini.GLB)
+	# Each race, a golem once per sub-type (kit v14; golem_metal is the metal golem's own entry, read through its sub-type).
+	var shapes := []
 	for race: String in t.races:
+		if race == "golem":
+			for sub: String in t.golem_subtypes:
+				shapes.append([race, sub])
+		elif not race.begins_with("golem_"):
+			shapes.append([race, ""])
+	for shape: Array in shapes:
+		var race: String = shape[0]
 		for build: String in t.builds:
 			for main: String in t.races[race].builds[build].poses:
 				for hold: String in t.races[race].builds[build].poses[main]:
@@ -615,6 +624,8 @@ func _kit_report() -> void:
 						var d := {"race": race, "build": build, "head": "a", "hair": "long", "armour": armour, "main": main, "offhand": off,
 							"two": hold == "two", "caster": hold == "cast",
 							"colours": {"skin": "#C68E64", "hair": "#2B211C", "eyes": "#4F7A33", "cloth": "#3E6F8C"}}
+						if shape[1] != "":
+							d.subtype = shape[1]
 						for part: Array in HeroMini.parts(d):
 							if not kit.has(part[0]):
 								missing[part[0]] = true
@@ -625,10 +636,17 @@ func _kit_report() -> void:
 						times.append((Time.get_ticks_usec() - t0) / 1000.0)
 						tris.append(m.surface_get_array_index_len(0) / 3)
 						built += 1
+	# Golems -> The metal golem's own arm placements: its arms and weapon sit elsewhere, its body where the stone golem's does.
+	var g := {"race": "golem", "build": "average", "head": "a", "hair": "", "armour": "none", "main": "greatsword", "offhand": "",
+		"colours": {"skin": "#9AA3AB", "hair": "#2B211C", "eyes": "#4F7A33", "cloth": "#3E6F8C"}}
+	var metal := HeroMini.parts(g.merged({"subtype": "metal"}))
+	var stone := HeroMini.parts(g.merged({"subtype": "stone"}))
+	check(metal[1][1] == stone[1][1] and metal[-1][1] != stone[-1][1] and metal[-1][0] == "hero_greatsword",
+			"kit: the metal golem reads its own entry (its greatsword moves, its body doesn't)")
 	check(missing.is_empty(), "kit: every piece the table asks for exists %s" % [missing.keys() if not missing.is_empty() else ""])
 	times.sort()
 	print("FRONT kit: %d heroes, %d to %d triangles; rebuild median %.1f ms, worst %.1f ms" % [built, tris.min(), tris.max(), times[times.size() / 2], times[-1]])
-	check(tris.max() <= 1350, "kit: a hero stays near the hand-off's 1,342 triangles")
+	check(tris.max() <= 1360, "kit: a hero stays within the hand-off's 1,360 triangles (kit v14)")
 
 
 ## The Look step's mini for a few heroes, one per pose family (art/handoff/hero_kit.md, kit v10): [name, class, race, sub,
@@ -641,14 +659,23 @@ func _look_shots() -> void:
 			["longsword_two", "Fighter", "Human", "", "longsword", "", "armoured"], ["staff_cast", "Wizard", "Halfling", "", "staff", "", ""],
 			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "armoured"], ["rogue_daggers", "Rogue", "Halfling", "", "dagger", "dagger", ""],
 			["rogue_rapier", "Rogue", "Tiefling", "", "rapier", "", ""], ["rogue_rapier_dagger", "Rogue", "Elf", "High elf", "rapier", "dagger", ""],
-			["rogue_scimitars", "Rogue", "Human", "", "scimitar", "scimitar", ""], ["rogue_shortbow", "Rogue", "Elf", "Wood elf", "shortbow", "", ""]]:
+			["rogue_scimitars", "Rogue", "Human", "", "scimitar", "scimitar", ""], ["rogue_shortbow", "Rogue", "Elf", "Wood elf", "shortbow", "", ""],
+			# kit v14: each golem sub-type its own shape; the metal golem's long arms on a two-handed grip and a shield
+			["golem_metal", "Fighter", "Golem", "Metal", "greatsword", "", "armoured"], ["golem_metal_shield", "Cleric", "Golem", "Metal", "mace", "shield", ""],
+			["golem_stone", "Fighter", "Golem", "Stone", "warhammer", "", ""], ["golem_wood", "Ranger", "Golem", "Wood", "longbow", "", ""]]:
 		c.cls = h[1]
 		c.race = h[2]
 		c.sub = h[3]
 		c.main = h[4]
 		c.off = h[5]
 		c.arm = h[6]
-		look._mini.show_hero(HeroMini.description(c.hero()))
+		var d := HeroMini.description(c.hero())
+		look._mini.show_hero(d)
+		if h[2] == "Golem":
+			var sub := str(h[3]).to_lower()
+			var names := HeroMini.parts(d).map(func(p): return p[0])
+			check(d.get("subtype") == sub and names.any(func(n): return n.begins_with("hero_body_golem_%s_" % sub)) and "hero_hand_golem_" + sub in names,
+					"Look: a %s golem wears its own shape (%s)" % [sub, names.filter(func(n): return "golem" in n)])
 		await _wait(0.4)
 		await shot("look_kit_" + h[0])
 

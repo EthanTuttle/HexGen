@@ -4,7 +4,8 @@ extends RefCounted
 ## art/export/heroes_placements.json, player colours swapped in where the vertex colours carry a mark. The description, not
 ## the mesh, is what a save or a guest carries later.
 ## description: {race, build, head, hair, armour, main, offhand, two, caster, colours: {skin, hair, eyes, cloth}}, in the kit's
-## words (kit v10: every pose moves the whole hero, legs and arms are posed parts).
+## words (kit v10: every pose moves the whole hero, legs and arms are posed parts); a golem adds subtype (kit v14: stone, wood
+## or metal, each its own shape).
 
 const GLB := "res://art/heroes.glb"
 const TABLE := "res://art/heroes_placements.json"
@@ -34,7 +35,7 @@ static func description(h: Hero) -> Dictionary:
 	var armour: String = str(h.gear.get("armour", "none")).to_lower()
 	if main == "":
 		main = "longsword"
-	return {
+	var d := {
 		"race": h.race.to_lower(), "build": str(a.get("build", "Average")).to_lower(),
 		"head": t.heads[int(a.get("head", 0))], "hair": t.hairstyles[int(a.get("hair", 0))],
 		"armour": armour, "main": main, "offhand": off,
@@ -43,6 +44,13 @@ static func description(h: Hero) -> Dictionary:
 		"two": off == "" and main in t.two_grip, "caster": off == "" and main == "staff" and h.klass.to_lower() in CASTERS,
 		"colours": {"skin": a.get("skin", "#F3D2B5"), "hair": a.get("hair_colour", "#2B211C"), "eyes": a.get("eyes", "#4F7A33"), "cloth": a.get("cloth", "#B5532F")},
 	}
+	if d.race == "golem":
+		# The creator's sub-type ("Metal"); before one is picked the Look step shows the first, as its palette does.
+		var sub := str(a.get("sub", h.sub)).to_lower()
+		d.subtype = sub if sub in t.golem_subtypes else "metal"
+		if not a.has("skin"):   # no colour picked: the sub-type's first material, not a human skin
+			d.colours.skin = t.swatches.skin["golem_" + d.subtype][0]
+	return d
 
 
 ## The mesh for this hero, built once.
@@ -84,15 +92,19 @@ static func parts(d: Dictionary) -> Array:
 		variant = "two"
 	elif off != "":
 		variant = "shield" if off == "shield" else "second"
-	var pose: Dictionary = t.races[race].builds[build].poses[main][variant]
 	var golem := race == "golem"
-	var leg := "golem" if golem else ("scaled" if race == "dragonborn" else "cloth")
-	var kind: String = "golem" if golem else {"medium": "chain", "heavy": "plate"}.get(armour, "bare")
-	var fist := "golem" if golem else ("gauntlet" if armour == "heavy" else "bare")
-	var out: Array = [["hero_base", null], ["hero_body_%s_%s" % [race, build], pose.torso]]
+	var sub: String = d.get("subtype", "metal")
+	# Golems -> The metal golem's own arm placements: a sub-type in long_arms reads its own entry, else the race's.
+	var entry := "golem_" + sub if golem and t.long_arms.has(sub) else race
+	var pose: Dictionary = t.races[entry].builds[build].poses[main][variant]
+	var shape := "golem_" + sub if golem else race   # the body and head pieces carry the sub-type
+	var leg := shape if golem else ("scaled" if race == "dragonborn" else "cloth")
+	var kind: String = shape if golem else {"medium": "chain", "heavy": "plate"}.get(armour, "bare")
+	var fist := shape if golem else ("gauntlet" if armour == "heavy" else "bare")
+	var out: Array = [["hero_base", null], ["hero_body_%s_%s" % [shape, build], pose.torso]]
 	if armour != "none":
-		out.append(["hero_armour_%s_%s_%s" % [armour, race, build], pose.torso])
-	out.append(["hero_head_%s_%s" % [race, d.head], pose.head])
+		out.append(["hero_armour_%s_%s_%s" % [armour, race, build], pose.torso])   # shared by the three sub-types
+	out.append(["hero_head_%s_%s" % [shape, d.head], pose.head])
 	if d.hair != "" and d.hair != "none" and not race in t.hairless:
 		out.append(["hero_hair_%s" % d.hair, pose.hair])
 	for l: Dictionary in pose.legs:
@@ -100,7 +112,7 @@ static func parts(d: Dictionary) -> Array:
 		out.append(["hero_leg_lower_" + leg, l.lower])
 		if armour == "heavy" and not golem:
 			out.append(["hero_leg_greave", l.greave])
-		out.append(["hero_boot_golem" if golem else "hero_boot_leather", l.boot])
+		out.append(["hero_boot_" + (shape if golem else "leather"), l.boot])
 	for arm: Dictionary in pose.arms:   # right, then left
 		out.append(["hero_arm_upper_" + kind, arm.upper])
 		out.append(["hero_arm_fore_" + kind, arm.fore])
