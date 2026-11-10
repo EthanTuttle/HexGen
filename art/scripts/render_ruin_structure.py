@@ -179,8 +179,99 @@ def outpost_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def build_haunted():
+    """Haunted ruins on the halls, built live (not in the kit until approved): its ground, halls, wisps and mist, and the Crypt."""
+    col = bpy.data.collections.new("live")
+    out = {}
+    for name, kind in (("centre", "centre"), ("edge_same", "same"), ("edge_same_b", "edge_same_b"), ("edge_other", "other"), ("edge_other_b", "edge_other_b")):
+        p = hk.Piece(f"haunted_ruins_{name}")   # as build_tiles names and builds a variant's pieces
+        rs.haunted_ground(p, None, kind)
+        out[p.name] = p.finish(col)
+    builders = {**rs.haunted_pieces(), "haunt_wisps": vr.rl.wisps, "haunt_mist": vr.rl.PROP_PIECES["haunt_mist"]}
+    for name, b_ in builders.items():
+        p = hk.Piece(name)
+        b_(p, hk.seeded(name))
+        out[name] = p.finish(col)
+    p = hk.Piece("crypt_centre")
+    vr.rl.LANDMARK_CENTRES["crypt"](p, hk.seeded(p.name), "centre")
+    out[p.name] = p.finish(col)
+    return out
+
+
+def check_haunted(live):
+    """Each haunted hall inside the tile and its raised parts off the walks; triangles per tile."""
+    bad = []
+    for name, obj in live.items():
+        if not name.startswith("haunted_hall_"):
+            continue
+        for v in obj.data.vertices:
+            x, y, z = v.co
+            if max(x * math.cos(math.radians(60 * k + 30)) + y * math.sin(math.radians(60 * k + 30)) for k in range(6)) > rs.A + 0.01:
+                bad.append((name, "edge", round(x, 2), round(y, 2)))
+            if z > 0.03 and abs(x * 0.5) - abs(y) * math.cos(math.radians(30)) < vr.rl.WALK_HALF:
+                bad.append((name, "walk", round(x, 2), round(y, 2)))
+    worst = max(tris(o) for n, o in live.items() if n.startswith("haunted_hall_"))
+    ground = max(tris(live[f"haunted_ruins_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
+    extra = 3 * tris(live["haunt_wisps"]) + 2 * tris(live["haunt_mist"])
+    print(f"CHECK haunted: {len(bad)} problems {bad[:8]}; worst hall {worst}, worst tile "
+          f"{tris(live['haunted_ruins_centre']) + 6 * ground + 6 * worst + extra} (budget 4816); Crypt centre {tris(live['crypt_centre'])}")
+
+
+def haunted_shot(close, dark):
+    hk.empty_scene()
+    templates = rp.load_templates(rp.latest("tiles", "tiles"))
+    templates.update(build_haunted())
+    added = {"VARIANTS": ("haunted_ruins", ("ruins", rs.haunted_ground, "hr_ground", ("edge_same_b", "edge_other_b"))),
+             "LANDMARKS": ("crypt", "haunted_ruins"), "LANDMARK_CENTRES": ("crypt", vr.rl.LANDMARK_CENTRES["crypt"]),
+             "BASE": ("haunted_ruins", "ruins")}
+    for d, (k, v) in added.items():
+        getattr(vr, d)[k] = v
+    vr.BASE["crypt"] = "ruins"
+    world = rc.world("haunted_ruins", "ruins")
+    vr.rl.tile_props = lambda name, q, r, w=None: (rs.block_props(rs.KIT, world, q, r) if name == "ruins" else
+                                                   rs.haunted_props(world, q, r) if name == "haunted_ruins" else ORIGINAL_PROPS(name, q, r, w))
+    rp.build_map(templates, tiles=world)
+    vr.rl.tile_props = ORIGINAL_PROPS
+    for d, (k, _) in added.items():
+        getattr(vr, d).pop(k)
+    vr.BASE.pop("crypt")
+    for o in bpy.data.collections["map"].objects:   # preview only: the Crypt's doors toward the camera
+        if o.name.startswith("crypt_centre"):
+            o.rotation_euler.z = math.radians(-60)
+    if close:
+        rp.stage(hk.tile_position(1, 0) * 0.55 + Vector((0, -1.5, 0)), 26, 45)
+    else:
+        rp.stage(hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
+    else:
+        for mat, strength in rv.DAY_GLOW.items():
+            m = bpy.data.materials.get(mat)
+            if m and m.use_nodes:
+                b = m.node_tree.nodes.get("Principled BSDF")
+                b.inputs["Emission Color"].default_value = (*hk.linear(mat), 1.0)
+                b.inputs["Emission Strength"].default_value = strength
+    rst.label("Haunted ruins on the corner halls", ("Closer: the Crypt and its neighbours" if close else "The region round the Crypt") + (", at night" if dark else ", by day"))
+    stem = f"ruins_haunted_halls_{'close' if close else 'map'}{'_night' if dark else ''}"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if "haunted" in args:
+        if "check" in args:
+            hk.empty_scene()
+            check_haunted(build_haunted())
+            sys.exit(0)
+        if "day" in args:   # a quick look: the map by day only
+            print("SHOT", haunted_shot(False, False))
+            sys.exit(0)
+        rows = [[haunted_shot(False, False), haunted_shot(True, False)], [haunted_shot(False, True), haunted_shot(True, True)]]
+        rst.SHEET_STEM = "ruins_haunted_halls_sheet"
+        rst.sheet(rows)
+        sys.exit(0)
     if "outpost" in args:
         if "check" in args:
             hk.empty_scene()

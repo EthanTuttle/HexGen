@@ -560,3 +560,131 @@ def outpost_props(world, q, r):
         else:
             out.append((f"outpost_hall_{n_join}", 0.0, 0.0, spin))
     return out
+
+
+# --- Haunted ruins on the halls (round 1, not approved) ------------------------------------
+# The plain halls recoloured darker and cooler (design/07: each variant recolours the mass), pale blue-green glow along
+# the feet of the hall walls, and a tomb in each hall third's floor: a toppled coffin (0), a row of graves (1), or an
+# open grave sunk inside the lower inner ring (2). Glowing cracks across the streets and plaza; wisps over some tombs
+# and thin low mist are props (haunted_props). The Crypt keeps its own look (ruin_lands.crypt).
+
+PALETTE_HAUNTED = {   # made up
+    "hr_ground": "#8F959A",    # cold grey paving
+    "hr_wall_a": "#6C7076",
+    "hr_wall_b": "#737884",
+    "hr_wall_c": "#63676D",
+    "hr_floor": "#5F6D61",     # hall floors, dead grey-green
+    "hr_yard": "#6D786C",
+    "hr_moss": "#6E7D66",      # moss on the tops, gone grey
+    "hr_ivy": "#4C5A4D",
+    "hr_slab_a": "#A2A6AA",
+    "hr_slab_b": "#959A9F",
+    "hr_slab_c": "#ABAFB2",
+    "hr_slab_d": "#8A8F95",
+}
+hk.PALETTE.update(PALETTE_HAUNTED)
+HAUNTED_RECOLOUR = {"rs_wall_a": "hr_wall_a", "rs_wall_b": "hr_wall_b", "rs_wall_c": "hr_wall_c", "rs_floor": "hr_floor",
+                    "rs_yard": "hr_yard", "ruin_moss_b": "hr_moss", "ruin_ivy": "hr_ivy", "rs_rubble": "hr_wall_c", "rs_rubble_d": "hr_wall_a",
+                    "ruin_slab_a": "hr_slab_a", "ruin_slab_b": "hr_slab_b", "ruin_slab_c": "hr_slab_c", "ruin_slab_d": "hr_slab_d"}
+TOMB_AT = Vector((CORNER - 0.65, 0, 0))   # in a block's frame: the tomb's middle on the hall's floor
+WISPS_PER_TILE = (2, 3)
+
+
+def recolour(p, table):
+    p.mats[:] = [table.get(mat, mat) for mat in p.mats]
+
+
+def glow_line(p, rng, a, b, off, z=0.03, w=0.05, fill=0.85):
+    """Pale glow seeping out along a wall's foot: broken strips on the floor beside it, off to one side."""
+    d = (b - a).normalized()
+    side = Vector((-d.y, d.x, 0)) * off
+    t, n = rng.uniform(0.0, 0.15), (b - a).length
+    while t < n - 0.15:
+        l = min(rng.uniform(0.35, 0.8), n - t)
+        if rng.random() < fill:
+            pa, pb = a + d * t + side, a + d * (t + l) + side
+            wa = Vector((-d.y, d.x, 0)) * w / 2
+            rl.plate(p, [pa - wa, pb - wa, pb + wa, pa + wa], z, "haunt_glow")
+        t += l + rng.uniform(0.06, 0.2)
+
+
+def tomb(p, rng, n, mat):
+    """The hall's tomb on its floor, inside its third (the floor narrows toward the corner and the walls)."""
+    c = TOMB_AT
+    if n == 0:   # a stone coffin, its lid slid half off, the glow inside
+        p.box(c, (0.36, 0.8, 0.3), mat, spin=rng.uniform(-0.08, 0.08))
+        p.box(c + Vector((0, -0.12, 0)), (0.24, 0.5, 0.02), "haunt_glow", z=0.3)
+        p.box_rot(c + Vector((0.0, 0.22, 0.34)), (0.4, 0.78, 0.07), mat, Matrix.Rotation(0.18, 3, "X") @ Matrix.Rotation(rng.uniform(-0.1, 0.1), 3, "Z"))
+    elif n == 1:   # a row of leaning graves, one fallen flat before them, a crack glowing
+        for y, h, lean in ((-0.35, 0.5, 0.12), (0.0, 0.62, -0.2), (0.35, 0.45, 0.3)):
+            rl.headstone(p, c + Vector((0.15, y, 0)), math.pi / 2 + rng.uniform(-0.15, 0.15), mat, h, lean)
+        p.box(c + Vector((-0.2, 0.0, 0)), (0.3, 0.48, 0.08), mat, spin=rng.uniform(-0.2, 0.2))
+        rl.fissure(p, rng, c + Vector((0.3, -0.2, 0)), math.pi + 0.3, 0.6, z=0.03)
+    else:   # an open grave sunk inside the inner ring: dark, the glow down in it, its lid tipped up on the kerb
+        g = Vector((CORNER - 0.42, 0, 0))
+        rl.plate(p, [g + Vector((-0.2, -0.24, 0)), g + Vector((0.16, -0.24, 0)), g + Vector((0.16, 0.24, 0)), g + Vector((-0.2, 0.24, 0))], 0.026, "crypt_dark")
+        rl.plate(p, [g + Vector((-0.12, -0.15, 0)), g + Vector((0.08, -0.15, 0)), g + Vector((0.08, 0.15, 0)), g + Vector((-0.12, 0.15, 0))], 0.028, "haunt_glow")
+        for sd in (-1, 1):   # a kerb round it
+            p.box(g + Vector((-0.02, sd * 0.28, 0)), (0.42, 0.07, 0.1), mat)
+        p.box_rot(g + Vector((-0.02, 0.0, 0.13)), (0.38, 0.5, 0.06), mat, Matrix.Rotation(0.5, 3, "Y"))
+
+
+def haunted_block(n, join):
+    seed = f"rsb_block_{n}_{join}"   # the plain halls' seeds: the same walls, recoloured
+
+    def build(p, rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        block_b(p, hk.seeded(seed), joins, n)
+        weather(p, hk.seeded(seed + "weather"))
+        g = hk.seeded(seed + "haunt")
+        corner = Vector((CORNER, 0, 0))
+        pts = [corner + Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * HALL_R for a in (120, 180, 240)]
+        pts[0], pts[2] = pts[0].lerp(pts[1], 0.12), pts[2].lerp(pts[1], 0.12)
+        for a, b in ((pts[0], pts[1]), (pts[1], pts[2])):
+            glow_line(p, g, a, b, -(WALL_T / 2 + 0.05))   # inside the hall
+            glow_line(p, g, a, b, WALL_T / 2 + 0.05, fill=0.3)   # and a little outside, on the yard
+        if n == 2:
+            inner = [corner + (q - corner) * 0.55 for q in pts]
+            for a, b in ((inner[0], inner[1]), (inner[1], inner[2])):
+                glow_line(p, g, a, b, WALL_T / 2 + 0.04)
+        tomb(p, g, n, g.choice(WALLS))
+        recolour(p, HAUNTED_RECOLOUR)
+    return build
+
+
+def haunted_ground(p, rng, kind):
+    """The halls' ground, slab for slab and seeded as theirs, recoloured cold, with glowing cracks on their own seed."""
+    plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
+    ground(KIT)(p, hk.seeded(plain), kind)
+    crng = hk.seeded(plain + "fissures")
+    if kind.replace("edge_", "") == "centre":
+        for _ in range(2):
+            rl.fissure(p, crng, Vector((crng.uniform(-0.8, 0.8), crng.uniform(-0.8, 0.8), 0)), crng.uniform(0, 6.28), crng.uniform(0.8, 1.2))
+    else:
+        for _ in range(crng.choice((1, 2))):
+            x = crng.uniform(rl.X0 + 0.3, A - 0.6)
+            fissure_y = crng.uniform(-0.3, 0.3)
+            rl.fissure(p, crng, Vector((x, fissure_y, 0)), crng.uniform(0, 6.28), crng.uniform(0.8, 1.3))
+    recolour(p, HAUNTED_RECOLOUR)
+
+
+def haunted_pieces():
+    return {f"haunted_hall_{n}_{j}": haunted_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+
+
+def haunted_props(world, q, r):
+    """(piece, x, y, spin) for a haunted tile: its six haunted halls, wisps rising over two or three of their tombs, one or two mists."""
+    out = []
+    halls = [(f"haunted_hall_{piece[len('ruin_hall_'):]}", x, y, spin) for piece, x, y, spin in block_props(KIT, world, q, r)]
+    out += halls
+    count = WISPS_PER_TILE[1] if gc.hash01(q, r, 57) < 0.4 else WISPS_PER_TILE[0]
+    for c in sorted(range(6), key=lambda c: gc.hash01(q * 6 + c, r, 56))[:count]:
+        spin = halls[c][3]
+        at = TOMB_AT.copy()
+        at.rotate(Matrix.Rotation(spin, 3, "Z"))
+        out.append(("haunt_wisps", at.x, at.y, 6.283 * gc.hash01(q * 6 + c, r, 55)))
+    for k in range(2 if gc.hash01(q, r, 58) < 0.5 else 1):
+        a = 6.283 * gc.hash01(q * 2 + k, r, 59)
+        d = 1.2 + 1.2 * gc.hash01(q * 2 + k, r, 60)
+        out.append(("haunt_mist", d * math.cos(a), d * math.sin(a), a))
+    return out
