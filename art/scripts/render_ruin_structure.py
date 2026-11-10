@@ -5,6 +5,7 @@ Each take's ground and blocks are built live over the latest kit's ruins pieces 
 region is render_region_compare.world("ruins"). Writes art/preview/ruins_structure_<take>_map_vN.png and _close_vN.png,
 and the sheet ruins_structure_sheet_vN.png with the forest and village maps from the comparison (same camera).
 -- outpost [check]: the overrun outpost on the corner halls round the Warren, map and close-up by day and at night.
+-- basilisk [check|quick]: basilisk ruins on the halls round the Basilisk Nest, map and close-up by day and at night.
 -- haunted [check|quick]: the ghost town round the Crypt, map and close-up by day (bare shells) and at night (ghost houses).
 -- b: that take alone, map and close-up by day and at night, sheet ruins_structure_b_sheet_vN.png.
 check: walls and raised stone off the walks, nothing past the tile edge, triangles per tile, then exit.
@@ -290,8 +291,116 @@ def haunted_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def build_basilisk():
+    """Basilisk ruins on the halls, built live (not in the kit until approved): its ground, petrified halls, and the Nest."""
+    col = bpy.data.collections.new("live")
+    out = {}
+    for name, kind in (("centre", "centre"), ("edge_same", "same"), ("edge_same_b", "edge_same_b"), ("edge_other", "other"), ("edge_other_b", "edge_other_b")):
+        p = hk.Piece(f"basilisk_ruins_{name}")
+        rs.basilisk_ground(p, None, kind)
+        out[p.name] = p.finish(col)
+    for name, b_ in rs.basilisk_pieces().items():
+        p = hk.Piece(name)
+        b_(p, hk.seeded(name))
+        out[name] = p.finish(col)
+    p = hk.Piece("basilisknest_centre")
+    rs.basilisknest(p, hk.seeded(p.name), "centre")
+    out[p.name] = p.finish(col)
+    return out
+
+
+def check_basilisk(live):
+    """Each petrified hall inside the tile and off the walks; the Nest's raised parts off its ring, spokes and approach
+    and inside the tile; triangles per tile."""
+    bad = []
+    for name, obj in live.items():
+        if not name.startswith("basilisk_hall_"):
+            continue
+        for v in obj.data.vertices:
+            x, y, z = v.co
+            if max(x * math.cos(math.radians(60 * k + 30)) + y * math.sin(math.radians(60 * k + 30)) for k in range(6)) > rs.A + 0.01:
+                bad.append((name, "edge", round(x, 2), round(y, 2)))
+            if z > 0.03 and abs(x * 0.5) - abs(y) * math.cos(math.radians(30)) < vr.rl.WALK_HALF:
+                bad.append((name, "walk", round(x, 2), round(y, 2), round(z, 2)))
+    nest = live["basilisknest_centre"]
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * rs.NEST_RING for i in range(6)]
+    segs = [(ring[i], ring[(i + 1) % 6]) for i in range(6)] + [(q / rs.NEST_RING * rs.A, q) for q in ring] + [(Vector((rs.NEST_RING, 0, 0)), Vector((rs.NEST_DOOR, 0, 0)))]
+    for v in nest.data.vertices:   # a centre piece is in the tile's frame: its edges' middles at 60 * k degrees
+        x, y, z = v.co
+        if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) > rs.A + 0.01:
+            bad.append(("nest", "edge", round(x, 2), round(y, 2)))
+        near = min(rv.seg_gap(x, y, a, b) for a, b in segs[:-1])
+        if x >= rs.NEST_DOOR:   # the approach ends at the door: the dome itself stands just behind its end
+            near = min(near, rv.seg_gap(x, y, *segs[-1]))
+        if z > 0.03 and near < vr.rl.WALK_HALF:
+            bad.append(("nest", "path", round(x, 2), round(y, 2), round(z, 2)))
+    worst = max(tris(o) for n, o in live.items() if n.startswith("basilisk_hall_"))
+    ground = max(tris(live[f"basilisk_ruins_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
+    print(f"CHECK basilisk: {len(bad)} problems {bad[:8]}; worst hall {worst}, worst tile {tris(live['basilisk_ruins_centre']) + 6 * ground + 6 * worst} "
+          f"(budget 4816); Nest tile {tris(nest) + 6 * ground}")
+
+
+def basilisk_world():
+    """The Nest, two rings of basilisk ruins round it, plain ruins beyond (a few plains), plains outside."""
+    return {t: ("basilisknest" if v == "crypt" else "basilisk_ruins" if v == "haunted_ruins" else v) for t, v in ghost_world().items()}
+
+
+def basilisk_shot(close, dark):
+    hk.empty_scene()
+    templates = rp.load_templates(rp.latest("tiles", "tiles"))
+    templates.update(build_basilisk())
+    added = {"VARIANTS": ("basilisk_ruins", ("ruins", rs.basilisk_ground, "bs_ground", ("edge_same_b", "edge_other_b"))),
+             "LANDMARKS": ("basilisknest", "basilisk_ruins"), "LANDMARK_CENTRES": ("basilisknest", rs.basilisknest),
+             "BASE": ("basilisk_ruins", "ruins")}
+    for d, (k, v) in added.items():
+        getattr(vr, d)[k] = v
+    vr.BASE["basilisknest"] = "ruins"
+    looks = set(vr.rl.LOOKS)
+    vr.rl.LOOKS.add("basilisk_ruins")   # a ruins look: its neighbours' halls join it, and it stands props
+    for t in ("basilisk_ruins", "basilisknest"):   # preview stand-in for ground_cover's data: stone tufts, no flowers
+        rp.gc.DENSITY[t] = 0.1
+        rp.gc.TUFT[t] = "tuft_stone"
+        rp.gc.NO_FLOWERS.add(t)
+    world = basilisk_world()
+    vr.rl.tile_props = lambda name, q, r, w=None: (rs.block_props(rs.KIT, world, q, r) if name == "ruins" else
+                                                   rs.basilisk_props(world, q, r) if name == "basilisk_ruins" else ORIGINAL_PROPS(name, q, r, w))
+    rp.build_map(templates, tiles=world)
+    vr.rl.tile_props = ORIGINAL_PROPS
+    vr.rl.LOOKS.clear()
+    vr.rl.LOOKS.update(looks)
+    for d, (k, _) in added.items():
+        getattr(vr, d).pop(k)
+    vr.BASE.pop("basilisknest")
+    for o in bpy.data.collections["map"].objects:   # preview only: the Nest's door toward the camera
+        if o.name.startswith("basilisknest_centre"):
+            o.rotation_euler.z = math.radians(-60)
+    if close:   # the Nest and the halls beside it
+        rp.stage(Vector((1.2, -1.2, 0)), 28, 45)
+    else:
+        rp.stage(Vector((0, -3, 0)), 92, 45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
+    rst.label("Basilisk ruins on the corner halls", ("Closer: the Nest and its neighbours" if close else "Two rings round the Nest") + (", night" if dark else ", day"))
+    stem = f"ruins_basilisk_halls_{'close' if close else 'map'}{'_night' if dark else ''}"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if "basilisk" in args:
+        if "check" in args:
+            hk.empty_scene()
+            check_basilisk(build_basilisk())
+            sys.exit(0)
+        if "quick" in args:
+            print("SHOT", basilisk_shot(False, False), basilisk_shot(True, False))
+            sys.exit(0)
+        rows = [[basilisk_shot(False, False), basilisk_shot(True, False)], [basilisk_shot(False, True), basilisk_shot(True, True)]]
+        rst.SHEET_STEM = "ruins_basilisk_halls_sheet"
+        rst.sheet(rows)
+        sys.exit(0)
     if "haunted" in args:
         if "check" in args:
             hk.empty_scene()

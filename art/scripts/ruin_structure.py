@@ -770,3 +770,158 @@ def haunted_props(world, q, r, night=False):
         d = 1.2 + 1.0 * gc.hash01(q * 2 + k, r, 60)
         out.append(("haunt_mist", d * math.cos(a), d * math.sin(a), a))
     return out
+
+
+# --- Basilisk ruins on the halls (round 1, not approved) ------------------------------------
+# design/07 -> Region variant looks: grass, bushes and trees turned to grey stone, with grey stone explorers frozen
+# mid-stride or mid-flight among them, some crumbling. The plain halls, stone for stone, recoloured: their grass floors,
+# yards and moss gone to grey stone; in each hall a stone tree and bushes, and stone explorers on the yard before it,
+# fleeing toward the plaza. Landmark: the Basilisk Nest, a whole petrified garden of stone trees and statues round a cracked dome.
+
+PALETTE_BASILISK = {   # made up
+    "bs_ground": "#A9A8A2",     # the paving, greyer
+    "bs_floor": "#8D8F89",      # hall floors: grass gone to stone
+    "bs_yard": "#9A9A94",
+    "bs_moss": "#A3A59D",       # moss on the tops, stone
+    "bs_ivy": "#7F817B",
+    "bs_stone": "#8E8F8A",      # the petrified things
+    "bs_stone_d": "#73746F",
+    "bs_stone_l": "#A4A49E",
+    "tuft_stone": "#8C8D87",    # ground cover tufts, stone too
+}
+hk.PALETTE.update(PALETTE_BASILISK)
+BASILISK_RECOLOUR = {"rs_floor": "bs_floor", "rs_yard": "bs_yard", "ruin_moss_b": "bs_moss", "ruin_ivy": "bs_ivy"}
+PETRIFIED = ("bs_stone", "bs_stone_d", "bs_stone_l")
+TREE_AT = Vector((CORNER - 0.62, 0, 0))   # in a block's frame: the stone tree in the hall's floor
+FLEE_AT = [Vector((2.6, sd * 0.3, 0)) for sd in (1, -1)]   # explorers on the yard before the hall, toward the plaza, clear of the walks
+
+
+def recolour(p, table):
+    p.mats[:] = [table.get(mat, mat) for mat in p.mats]
+
+
+def explorer(p, rng, at, spin, pose, mat, crumble=False):
+    """A stone explorer about 0.85 tall facing spin: "stride" mid-step, "flee" running with an arm up against the gaze,
+    "cower" half-crouched with an arm over the head. A pack on the back. crumble: a limb or the head broken off, chips at the feet."""
+    rot = Matrix.Rotation(spin, 3, "Z")
+    lean = {"stride": 0.08, "flee": 0.3, "cower": 0.5}[pose]
+    step = {"stride": 0.35, "flee": 0.6, "cower": 0.25}[pose]
+    hip = 0.4 if pose != "cower" else 0.3
+    for sd, a in ((1, -step), (-1, step * 0.8)):   # legs: front one forward, back one back
+        r = rot @ Matrix.Rotation(a, 3, "Y")
+        p.box_rot(at + rot @ Vector((0, sd * 0.06, 0)) + r @ Vector((0, 0, hip / 2)), (0.09, 0.09, hip + 0.02), mat, r)
+    body = rot @ Matrix.Rotation(lean, 3, "Y")
+    top = at + Vector((0, 0, hip)) + body @ Vector((0, 0, 0.34))
+    p.box_rot(at + Vector((0, 0, hip)) + body @ Vector((0, 0, 0.17)), (0.17, 0.25, 0.34), mat, body)
+    p.box_rot(at + Vector((0, 0, hip)) + body @ Vector((-0.13, 0, 0.18)), (0.11, 0.2, 0.22), mat, body)   # the pack
+    gone = rng.choice(("head", "arm", "arm2")) if crumble else None
+    if gone != "head":
+        p.box_rot(top + body @ Vector((0.0, 0, 0.09)), (0.13, 0.13, 0.15), mat, body)
+    arms = {"stride": ((0.5, 0.0), (-0.5, 0.0)), "flee": ((-2.5, 0.3), (0.9, -0.2)), "cower": ((-2.8, 0.5), (-1.2, -0.3))}[pose]
+    for k, (sd, (a, roll)) in enumerate(zip((1, -1), arms)):
+        if gone == ("arm" if k == 0 else "arm2"):
+            continue
+        r = body @ Matrix.Rotation(roll * sd, 3, "X") @ Matrix.Rotation(a, 3, "Y")
+        p.box_rot(top + body @ Vector((0, sd * 0.16, -0.03)) + r @ Vector((0, 0, -0.15)), (0.07, 0.07, 0.3), mat, r)
+    if crumble:
+        for _ in range(2):
+            p.box(at + rot @ Vector((rng.uniform(-0.25, 0.25), rng.uniform(-0.2, 0.2), 0)), (0.09, 0.08, 0.06), mat, spin=rng.uniform(0, 3))
+
+
+def stone_tree(p, rng, at, h=None):
+    """A tree turned to stone: trunk, a broken bough or two, a lumpy crown, all grey."""
+    h = h or rng.uniform(1.5, 1.9)
+    p.cylinder(at, 0.08, h * 0.55, "bs_stone_d")
+    for _ in range(rng.choice((1, 2))):   # boughs reaching out, snapped
+        a = rng.uniform(0, 6.28)
+        r = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(-0.9, 3, "Y")
+        p.box_rot(at + Vector((0, 0, h * 0.45)) + r @ Vector((0, 0, 0.16)), (0.06, 0.06, 0.32), "bs_stone_d", r)
+    p.blob(at + Vector((rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), 0)), h * 0.22, rng.choice(("bs_stone", "bs_stone_l")), z=h * 0.68, squash=1.1)
+
+
+def stone_bush(p, rng, at):
+    p.cone(at, rng.uniform(0.16, 0.24), rng.uniform(0.22, 0.32), rng.choice(PETRIFIED), segments=5, spin=rng.uniform(0, 1))
+
+
+def basilisk_block(n, join):
+    seed = f"rsb_block_{n}_{join}"   # the plain halls' seeds: the same walls, petrified round them
+
+    def build(p, rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        block_b(p, hk.seeded(seed), joins, n)
+        weather(p, hk.seeded(seed + "weather"))
+        recolour(p, BASILISK_RECOLOUR)
+        g = hk.seeded(seed + "basilisk")
+        stone_tree(p, g, TREE_AT + Vector((g.uniform(-0.1, 0.1), g.uniform(-0.15, 0.15), 0)))
+        for _ in range(g.choice((1, 2))):   # bushes in the hall's floor, beside the tree
+            stone_bush(p, g, TREE_AT + Vector((g.uniform(-0.35, 0.05), g.choice((-1, 1)) * g.uniform(0.3, 0.45), 0)))
+        spots = FLEE_AT[:]
+        g.shuffle(spots)
+        for at in spots[:g.choice((0, 1, 1, 2))]:   # explorers fleeing from the hall toward the plaza
+            away = math.atan2(at.y, at.x - CORNER)   # facing away from the hall's corner, out toward the plaza
+            explorer(p, g, at, away + g.uniform(-0.5, 0.5), g.choice(("stride", "flee", "flee", "cower")), g.choice(PETRIFIED), crumble=g.random() < 0.35)
+    return build
+
+
+def basilisk_pieces():
+    return {f"basilisk_hall_{n}_{j}": basilisk_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+
+
+def basilisk_ground(p, rng, kind):
+    """The plain halls' ground, slab for slab and seeded as theirs (its ground colour is the variant's: bs_ground)."""
+    plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
+    ground(KIT)(p, hk.seeded(plain), kind)
+
+
+def basilisk_props(world, q, r):
+    """(piece, x, y, spin) for a basilisk tile: its six halls, petrified."""
+    return [(f"basilisk_hall_{piece[len('ruin_hall_'):]}", x, y, spin) for piece, x, y, spin in block_props(KIT, world, q, r)]
+
+
+NEST_RING = rl.WARREN_RING   # 3.0: the ring path round the Nest, as round the Warren and the Crypt
+NEST_DOOR = 1.6              # the approach along edge 0 ends at the dome's door
+
+
+def basilisknest(p, rng, kind):
+    """The Basilisk Nest's centre: the plain plaza, and on it a cracked stone dome on a low drum, its dark door facing
+    edge 0; inside the ring path stone explorers and statues frozen fleeing from it among stone bushes; outside the ring,
+    in each of the six corners, stone trees."""
+    basilisk_ground(p, hk.seeded("ruins_centre"), "centre")
+    c = Vector((-0.15, 0, 0))
+    p.cylinder(c, 1.45, 0.2, "ruin_grey", segments=12)                  # the plinth
+    p.cylinder(c, 1.22, 0.85, "bs_stone_d", segments=12, z=0.2)          # the drum
+    p.cylinder(c, 1.28, 0.1, "ruin_grey", segments=12, z=1.05)           # its cornice
+    rl.dome(p, rng, c, 1.18, 1.15, "bs_stone", "crypt_dark")
+    door = Vector((c.x + 1.2, 0, 0))   # the door: a dark arch in the drum, its frame, rubble before it
+    p.box(door, (0.1, 0.6, 0.72), "crypt_dark", z=0.2)
+    p.box(door + Vector((0.06, 0, 0)), (0.12, 0.8, 0.12), "ruin_grey", z=0.92)
+    for sd in (-1, 1):
+        p.box(door + Vector((0.06, sd * 0.36, 0)), (0.12, 0.12, 0.72), "ruin_grey", z=0.2)
+    for x, y in ((1.32, 0.48), (1.36, -0.45)):
+        p.box(Vector((x, y, 0)), (0.2, 0.16, 0.12), "bs_stone_d", spin=rng.uniform(0, 3))
+    for x, y, zz in ((-0.5, 1.1, 1.15), (0.6, -1.05, 0.2), (-1.5, -0.45, 0.2)):   # bits of the dome fallen off
+        p.box(Vector((x, y, 0)), (0.26, 0.22, 0.16), "bs_stone", z=zz, spin=rng.uniform(0, 3))
+    # inside the ring: frozen explorers fleeing from the door and two old statues, bushes between, off the approach
+    for a, pose, crumble in ((50, "flee", False), (105, "cower", True), (165, "stride", False), (200, "flee", True), (300, "stride", True)):
+        at = Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * 1.62
+        explorer(p, rng, at, math.radians(a) + rng.uniform(-0.4, 0.4), pose, rng.choice(PETRIFIED), crumble)
+    for a in (135, 250):
+        at = Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * 1.72
+        rl.statue(p, rng, at, math.radians(a + 180), "torso")
+    for a in (75, 190, 275, 325):
+        stone_bush(p, rng, Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * rng.uniform(1.6, 1.8))
+    # outside the ring: the petrified garden in the corners
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        d = Vector((math.cos(a), math.sin(a), 0))
+        side = Vector((-d.y, d.x, 0))
+        stone_tree(p, rng, d * 3.75 + side * rng.uniform(-0.15, 0.15))
+        if rng.random() < 0.7:
+            stone_bush(p, rng, d * 3.45 + side * rng.choice((-1, 1)) * 0.38)
+        if rng.random() < 0.5:
+            explorer(p, rng, d * 4.0 + side * rng.choice((-1, 1)) * 0.25, a + math.pi + rng.uniform(-0.6, 0.6), rng.choice(("stride", "flee")), rng.choice(PETRIFIED), rng.random() < 0.4)
+    p.paths.append([Vector((NEST_RING, 0, 0)), Vector((NEST_DOOR, 0, 0))])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * NEST_RING for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    for i, q in enumerate(ring):
+        p.spokes[i] = [q / NEST_RING * A, q]
