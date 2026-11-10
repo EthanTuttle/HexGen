@@ -938,7 +938,9 @@ def grip_layout(race, build, weapon, offhand, two=False, caster=False):
         right = chest + V((w * 0.6, -0.44, 0.02))
         left = chest + V((-w * 1.05, -0.02, -0.3))
     else:  # bow: side-on, the bow hand at arm's length ahead, the drawing hand at the jaw on the string (given after the twist)
-        left = chest + V((0.09, -0.52, 0.11))  # the arrow's line runs past the drawing side of the face, the hand at the jaw, outside it
+        # The arrow's line at shoulder height (Ethan, Nov 9, 2026: the drawing arm level, like the haymaker), past the drawing
+        # side of the face, the hand just under the jaw, outside it.
+        left = chest + V((0.09, -0.52, 0.02))
         right = left + V((0, DRAW, 0))
         out.append((f"hero_{weapon}", aimed(left, V((0, 0, 1)), V((1, 0, 0)))))
     if weapon in ONE_HANDED and grip not in ("high", "executioner", "pike", "across", "cast"):
@@ -1012,7 +1014,9 @@ def layout(desc):
             pole = V((-0.6, 0.1, -0.8))
         elbow = ik(shoulder, hand, reach * 0.73, reach * 0.67, pole if world else turn3 @ pole)
         if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "bow" and side == 1:
-            elbow = hand + V((0, reach * 0.67, 0))  # the drawing forearm straight back from the jaw along the arrow's line
+            # The drawing arm level at shoulder height (Ethan, Nov 9, 2026, like the haymaker): the elbow drawn back behind the
+            # shoulder and out from it, the forearm running forward from it to the hand on the string.
+            elbow = shoulder + V((0.55, 0.45, 0)).normalized() * reach * 0.5
         if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "haymaker" and side == 1:
             # A pulled-back haymaker (Ethan, round 5): the elbow kept back at shoulder height, the forearm level with the upper
             # arm, running forward and a little out from it, so the fist sits at shoulder height beside the shoulder.
