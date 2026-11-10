@@ -194,3 +194,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-09 | `art/preview/golem_looks_v3.png` | picked | Golems get their own shape per sub-type: stone A cairn, wood C folk carving; metal neither: draft an original ancient sky-castle guardian (Castle in the Sky feel) |
 | 2026-11-09 | `art/preview/ruins_outpost_halls_sheet_v1.png` | approved | Overrun outpost on the corner halls: earth floors, muddy yards, tan streets, scrap and red/yellow rags, framed burrows in fallen hall thirds; Warren unchanged |
 | 2026-11-09 | `art/preview/golem_set_v3.png` | picked | Golem set: stone cairn, wood folk carving, metal C shell-back with real long arms (own arm placements per pose). Four heads per look still to make |
+| 2026-11-10 | `art/preview/ruins_haunted_halls_sheet_v1.png` | rejected | Haunted on dark recoloured halls: change the base instead, to stone house shells that show ghost houses at night |
+| 2026-11-10 | `art/preview/golem_wood_takes_v1.png` | picked | Wood golem: C living growth, with the cloth-colour paint dropped (bare carved wood) |
