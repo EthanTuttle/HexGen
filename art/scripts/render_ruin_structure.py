@@ -346,6 +346,8 @@ def basilisk_world():
 
 
 def basilisk_shot(close, dark):
+    rv.GLOW["basilisk_eye"] = 2.5       # preview stand-ins for the engine's glow: the eyes and cracks at night,
+    rv.DAY_GLOW["basilisk_eye"] = 0.6   # a faint glint by day
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     templates.update(build_basilisk())
@@ -375,12 +377,18 @@ def basilisk_shot(close, dark):
         if o.name.startswith("basilisknest_centre"):
             o.rotation_euler.z = math.radians(-60)
     if close:   # the Nest and the halls beside it
-        rp.stage(Vector((1.2, -1.2, 0)), 28, 45)
+        rp.stage(Vector((1.2, -1.2, 0)), 32, 45)
     else:
         rp.stage(Vector((0, -3, 0)), 92, 45)
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
     if dark:
         rv.night()
+    else:
+        m = bpy.data.materials.get("basilisk_eye")
+        if m and m.use_nodes:
+            b = m.node_tree.nodes.get("Principled BSDF")
+            b.inputs["Emission Color"].default_value = (*hk.linear("basilisk_eye"), 1.0)
+            b.inputs["Emission Strength"].default_value = rv.DAY_GLOW["basilisk_eye"]
     rst.label("Basilisk ruins on the corner halls", ("Closer: the Nest and its neighbours" if close else "Two rings round the Nest") + (", night" if dark else ", day"))
     stem = f"ruins_basilisk_halls_{'close' if close else 'map'}{'_night' if dark else ''}"
     rp.render(stem)

@@ -879,37 +879,40 @@ def basilisk_props(world, q, r):
 
 
 NEST_RING = rl.WARREN_RING   # 3.0: the ring path round the Nest, as round the Warren and the Crypt
-NEST_DOOR = 1.6              # the approach along edge 0 ends at the dome's door
+NEST_DOOR = 1.7              # the approach along edge 0 ends at the plinth's step, before the door
+hk.PALETTE["basilisk_eye"] = "#A9D84A"   # made up: the sickly yellow-green glint, its own material, glowing at night
+BASILISK_OWN = {"basilisk_eye"}
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | BASILISK_OWN
 
 
 def basilisknest(p, rng, kind):
-    """The Basilisk Nest's centre: the plain plaza, and on it a cracked stone dome on a low drum, its dark door facing
-    edge 0; inside the ring path stone explorers and statues frozen fleeing from it among stone bushes; outside the ring,
-    in each of the six corners, stone trees."""
+    """The Basilisk Nest's centre: the plain plaza, and on it a tall cracked stone dome on a drum, as big as the Crypt,
+    its dark door facing edge 0 with the basilisk's eyes glinting in it, the dome's cracks glinting too; inside the
+    ring path stone explorers frozen fleeing from it; outside the ring, in each of the six corners, stone trees."""
     basilisk_ground(p, hk.seeded("ruins_centre"), "centre")
     c = Vector((-0.15, 0, 0))
-    p.cylinder(c, 1.45, 0.2, "ruin_grey", segments=12)                  # the plinth
-    p.cylinder(c, 1.22, 0.85, "bs_stone_d", segments=12, z=0.2)          # the drum
-    p.cylinder(c, 1.28, 0.1, "ruin_grey", segments=12, z=1.05)           # its cornice
-    rl.dome(p, rng, c, 1.18, 1.15, "bs_stone", "crypt_dark")
-    door = Vector((c.x + 1.2, 0, 0))   # the door: a dark arch in the drum, its frame, rubble before it
-    p.box(door, (0.1, 0.6, 0.72), "crypt_dark", z=0.2)
-    p.box(door + Vector((0.06, 0, 0)), (0.12, 0.8, 0.12), "ruin_grey", z=0.92)
+    p.cylinder(c, 1.58, 0.22, "ruin_grey", segments=12)                 # the plinth
+    p.cylinder(c, 1.38, 1.8, "bs_stone_d", segments=12, z=0.22)         # the drum
+    p.cylinder(c, 1.46, 0.14, "ruin_grey", segments=12, z=2.02)         # its cornice
+    rl.dome(p, rng, c, 1.34, 2.16, "bs_stone", "basilisk_eye")          # the cracks glint
+    p.cylinder(c, 0.3, 0.38, "ruin_grey", segments=8, z=3.4)            # a broken lantern on top
+    p.blob(c, 0.2, "bs_stone_d", z=3.92, squash=0.9)
+    door = Vector((c.x + 1.38, 0, 0))   # the door: a tall dark arch in the drum, its frame, the eyes inside
+    p.box(door, (0.1, 0.86, 1.3), "crypt_dark", z=0.22)
+    p.box(door + Vector((0.07, 0, 0)), (0.14, 1.12, 0.16), "ruin_grey", z=1.52)
     for sd in (-1, 1):
-        p.box(door + Vector((0.06, sd * 0.36, 0)), (0.12, 0.12, 0.72), "ruin_grey", z=0.2)
-    for x, y in ((1.32, 0.48), (1.36, -0.45)):
+        p.box(door + Vector((0.07, sd * 0.5, 0)), (0.14, 0.14, 1.3), "ruin_grey", z=0.22)
+        slant = Matrix.Rotation(sd * 0.35, 3, "X")   # the eyes slanted, narrow, a reptile's
+        p.box_rot(door + Vector((0.052, sd * 0.14, 1.05)), (0.012, 0.17, 0.045), "basilisk_eye", slant)
+    p.box(Vector((1.58, 0, 0)), (0.16, 0.9, 0.11), "ruin_grey")   # a step up to the plinth
+    for x, y in ((1.55, 0.72), (1.5, -0.7)):
         p.box(Vector((x, y, 0)), (0.2, 0.16, 0.12), "bs_stone_d", spin=rng.uniform(0, 3))
-    for x, y, zz in ((-0.5, 1.1, 1.15), (0.6, -1.05, 0.2), (-1.5, -0.45, 0.2)):   # bits of the dome fallen off
-        p.box(Vector((x, y, 0)), (0.26, 0.22, 0.16), "bs_stone", z=zz, spin=rng.uniform(0, 3))
-    # inside the ring: frozen explorers fleeing from the door and two old statues, bushes between, off the approach
-    for a, pose, crumble in ((50, "flee", False), (105, "cower", True), (165, "stride", False), (200, "flee", True), (300, "stride", True)):
-        at = Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * 1.62
-        explorer(p, rng, at, math.radians(a) + rng.uniform(-0.4, 0.4), pose, rng.choice(PETRIFIED), crumble)
-    for a in (135, 250):
-        at = Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * 1.72
-        rl.statue(p, rng, at, math.radians(a + 180), "torso")
-    for a in (75, 190, 275, 325):
-        stone_bush(p, rng, Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * rng.uniform(1.6, 1.8))
+    for x, y, zz in ((-0.6, 1.2, 2.02), (0.5, -1.45, 0.22), (-1.55, -0.55, 0.22)):   # bits of the dome fallen off
+        p.box(Vector((x, y, 0)), (0.28, 0.24, 0.18), "bs_stone", z=zz, spin=rng.uniform(0, 3))
+    # inside the ring: frozen explorers fleeing from the door, off the approach, in the ring's corners where there's room
+    for a, pose, crumble in ((60, "flee", False), (120, "stride", True), (180, "cower", False), (240, "flee", True), (300, "stride", True)):
+        at = Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * 1.78
+        explorer(p, rng, at, math.radians(a) + rng.uniform(-0.15, 0.15), pose, rng.choice(PETRIFIED), crumble)
     # outside the ring: the petrified garden in the corners
     for k in range(6):
         a = math.radians(30 + 60 * k)
