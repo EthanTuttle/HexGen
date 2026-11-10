@@ -6,7 +6,7 @@ extends RefCounted
 
 ## Each terrain's tier 1 variant (render_preview.TIER1).
 const TIER1 := {"forest": "deep_forest", "plains": "meadows", "hills": "highlands", "farmland": "windmill_country",
-	"village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "excavation"}
+	"village": "market_town", "river": "delta", "swamp": "bog", "desert": "wasteland", "ruins": "overrun_outpost"}
 
 ## Tier 2 variants with art (DOCS: design/02 -> Region variants and locations; the class variant is in the
 ## pool too). Terrains not listed have no tier 2 art yet and keep their terrain's look.
@@ -41,7 +41,8 @@ const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "da
 	"monastery_heights": "library", "market_town": "tradinghouse", "fortified_town": "keep", "slums": "blackmarket",
 	"scholars_town": "college", "delta": "riverport", "great_lake": "serpentlair", "rapids": "trollbridge",
 	"still_waters": "meditationrock", "wasteland": "sandstonesphinx", "badlands": "raiderstronghold", "oasis": "oasisbazaar",
-	"canyon": "echocave", "bog": "witchhut", "wisp_marsh": "wisphollow", "rot_swamp": "plaguepit", "smugglers_bayou": "thievesguild", "feywild_crossing": "feygate"}
+	"canyon": "echocave", "bog": "witchhut", "wisp_marsh": "wisphollow", "rot_swamp": "plaguepit", "smugglers_bayou": "thievesguild", "feywild_crossing": "feygate",
+	"overrun_outpost": "warren"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
@@ -53,13 +54,13 @@ const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "f
 	"college": "scholars_town", "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids",
 	"meditationrock": "still_waters", "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis",
 	"oasispool": "oasis", "echocave": "canyon", "witchhut": "bog", "wisphollow": "wisp_marsh", "plaguepit": "rot_swamp",
-	"thievesguild": "smugglers_bayou", "feygate": "feywild_crossing"}
+	"thievesguild": "smugglers_bayou", "feygate": "feywild_crossing", "warren": "overrun_outpost"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
 	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
 	"library", "tradinghouse", "keep", "blackmarket", "college", "riverport", "serpentlair", "trollbridge", "meditationrock",
-	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild", "feygate"]
+	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild", "feygate", "warren"]
 
 ## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
 const RAISE := 5.0
@@ -75,7 +76,7 @@ const MILL_HUB := Vector3(0.8, 0, 3.15)
 ## terrain's base slab.
 const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands": "highland_grass",
 	"windmill_country": "plains", "market_town": "cobble", "delta": "plains", "bog": "bog",
-	"wasteland": "wasteland", "excavation": "plains",
+	"wasteland": "wasteland", "overrun_outpost": "op_ground", "warren": "op_ground",
 	"fey_wood": "fey_wood", "dark_wood": "dark_wood", "heartwood": "heartwood",
 	"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood", "spidernest": "dark_wood",
 	"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass",

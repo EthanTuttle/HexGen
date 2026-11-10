@@ -89,6 +89,7 @@ var _links := {}                       # Vector4i(a, b) of two neighbours -> the
 var _shape := {}                       # raised tile -> what its cliffs were built from, to spot changes
 var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
 var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
+var _goblin_eye: StandardMaterial3D    # the eyes in the Overrun outpost's burrows and the Warren's mouth
 ## The canyon (Canyon; art/handoff/desert_kit.md): generated once when a region finishes, and kept.
 var canyons := {}                      # canyon tile -> {openset, entrances, landmark, turn} of its region
 var canyon_stats := []                 # each generated region's triangles and times, for the check's report
@@ -995,6 +996,14 @@ func _setup_materials() -> void:
 				"window_faint": mesh.surface_set_material(k, _faint)
 				"lava": mesh.surface_set_material(k, _lava)
 				"lantern_red": mesh.surface_set_material(k, _lantern_red)
+				"goblin_eye":
+					if not _goblin_eye:
+						_goblin_eye = _glow.duplicate() as StandardMaterial3D
+						var c := (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
+						_goblin_eye.albedo_color = c
+						_goblin_eye.emission = c
+						_goblin_eye.resource_name = "goblin_eye"   # the meshes are shared, so a later board finds it by name too
+					mesh.surface_set_material(k, _goblin_eye)
 	# The swamp kit: what glows at night.
 	_marsh_water = StandardMaterial3D.new()   # PLACEHOLDER: glossy still water, like the old pools
 	_marsh_water.vertex_color_use_as_albedo = true
@@ -1125,6 +1134,8 @@ func _build_tile(t: Vector2i) -> void:
 		_add_ripples(node, t, at)
 	for f in _features.get(t, []):
 		Kit.place(node, _kit, f[1], Vector2(f[2], f[3]), deg_to_rad(f[4]))
+	for h: Array in RuinHalls.props(name, terrains, t):   # ruins: corner halls, re-picked as the neighbours change
+		Kit.place(node, _kit, h[0], at + Vector2(h[1], h[2]), h[3])
 	var fx := ForestFx.for_tile(name, at, t, landmark_turns.get(t, 0))
 	if fx:
 		node.add_child(fx)
@@ -2643,6 +2654,8 @@ func _process(delta: float) -> void:
 		_st_glow.emission_energy_multiplier = 0.4 + 0.8 * night   # PLACEHOLDER: the kit's previews give it 1.2
 		_faint.emission_energy_multiplier = 0.1 + 0.9 * night   # PLACEHOLDER: dimmer than the windows
 		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
+		if _goblin_eye:
+			_goblin_eye.emission_energy_multiplier = 6.0 * night   # PLACEHOLDER strength: they glint at night only (07; the previews use 9)
 		for g: StandardMaterial3D in _marsh_glow.values():
 			g.emission_energy_multiplier = 0.3 + 2.5 * night   # PLACEHOLDER: lit a little by day
 		SwampFx.set_night(night)

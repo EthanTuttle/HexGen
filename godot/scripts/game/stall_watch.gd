@@ -78,6 +78,11 @@ func _dump() -> void:
 	print("STALL %d s with nothing moving, last check: %s | tile %s, busy %s, walking %s, holding %s, check pop-up %s, shop %s, encounter %s, fight %s, day %d minute %.1f, tiles built %d" % [
 			int(_quiet), _last, game.party_tile, game.busy, game.party_node.walking, game.party_node.holding,
 			game.hud.check.visible, game.hud.shop.visible, game.hud.encounter_open(), game.fight.active, game.day, game.minute, game.map.tiles_built])
+	if game.fight.active:
+		var f: Fight = game.fight
+		print("STALL fight: phase %s, busy %s, selected %s" % [f.phase, f.busy, f.current.get("name", "") if f.current else ""])
+		for u: Dictionary in f.units:
+			print("STALL   %s %s hp %d ap %s at %s%s" % ["ally" if u.ally else "foe", u.name, u.hp, u.get("ap"), u.cell, " down" if u.down else ""])
 	print("STALL panels: level pick %s, after combat %s, end panel %s, ended %s, town %s, fading %s" % [game.level_pick.visible, game.after.visible, game.end_panel.visible, game._ended, game.get("in_town"), game.get("_fading")])
 	print("STALL frames in those %d s: %d processed, %d post-draw signals, %d drawn in all; %.0f fps; time scale %.2f; paused %s; render loop %s; window mode %d, focused %s, size %s" % [
 			int(_quiet), _procs - _procs_quiet, _draws - _draws_quiet, Engine.get_frames_drawn(), Engine.get_frames_per_second(), Engine.time_scale,

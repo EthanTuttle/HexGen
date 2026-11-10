@@ -93,6 +93,7 @@ func _run() -> void:
 	await _time("mid", game)
 	await _ring_and_slots()
 	await _debug_map()
+	_hub_facing()
 	_files()
 	print("SAVE timings: %s" % [timings])
 	print("SAVE DONE: %d failed" % failed)
@@ -274,6 +275,18 @@ func _ring_and_slots() -> void:
 
 
 ## The debug map: every finished variant, raised hills, a canyon, rivers and towns, round-tripped and timed.
+## A party loaded on a town's hub tile keeps its saved facing, though it stands strung along the hub line.
+func _hub_facing() -> void:
+	var walker := game.party_node
+	for t: Vector2i in game.map.terrains:
+		if Variants.terrain_of(game.map.terrains[t]) in ["village", "farmland"] and walker._hub_line(t):
+			walker.place_at(t, 1.0)
+			_check(is_equal_approx(walker.facing, 1.0) and is_equal_approx(walker.members[0].node.rotation.y, walker.yaw_of(1.0)),
+					"placed on a hub tile (as a load does), the party keeps the facing it was given")
+			return
+	print("SAVE note: no town hub tile on this map to check the loaded facing")
+
+
 func _debug_map() -> void:
 	game.run.goal_regions = 0   # past the prototype's goal: the end panel would stop placing
 	game.end_panel.visible = false

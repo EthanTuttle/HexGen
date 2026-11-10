@@ -118,6 +118,12 @@ func centre() -> Vector3:
 ## Stands the cluster on a tile at once (start of play, back at camp after a wipe).
 func place_at(tile: Vector2i, angle := -PI / 2) -> void:
 	if _hub_line(tile):
+		# Strung along the hub line, but facing the way it was asked to (a loaded save keeps its facing).
+		facing = angle
+		_end_facing = angle
+		for m in members:
+			m.node.rotation.y = yaw_of(angle)
+			m.yaw = m.node.rotation.y
 		return
 	_tile = tile
 	_file_end = false

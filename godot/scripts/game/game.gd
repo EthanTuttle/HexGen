@@ -192,6 +192,10 @@ func _ready() -> void:
 		var fy := FeyCheck.new()
 		fy.game = self
 		add_child(fy)
+	elif "--ruinscheck" in OS.get_cmdline_user_args():
+		var rc := RuinsCheck.new()
+		rc.game = self
+		add_child(rc)
 	elif "--swampcheck" in OS.get_cmdline_user_args():
 		var sc := SwampCheck.new()
 		sc.game = self
@@ -508,12 +512,11 @@ func _check_region(t: Vector2i, terrain: String) -> void:
 		return
 	var first := not regions.any(func(g): return g.terrain == terrain)
 	var variant: String = Variants.TIER1[terrain] if first else _roll_tier2(terrain)
-	if terrain == "ruins" and not run.wide_deck:   # design/06: ruins aren't rebuilt yet, so a finished region stays plain, with no landmark, and still counts toward the goal
+	if terrain == "ruins" and not first and not run.wide_deck:   # ruins' tier 2 has no art yet (Haunted in progress): the region stays plain, with no landmark, and still counts toward the goal
 		var plain := new_region(terrain, tiles, "", tiles[0])
 		plain.name = Rules.NAMES.ruins
 		plain.landmark = ""
-		plain.tier = 1 if first else 2   # a terrain's first region is tier 1, ruins too (02 -> Region tiers); new_region reads "" as tier 2
-		deck.draw(Rules.DRAW_EASY_FIGHT if first else Rules.DRAW_TIER2_REGION)
+		deck.draw(Rules.DRAW_TIER2_REGION)
 		return
 	var region := new_region(terrain, tiles, variant, _landmark_tile(variant, tiles))
 	_transform(tiles, region, t)
@@ -755,6 +758,7 @@ func spawn_forest_regions() -> void:
 	_spawn_deserts(changes)
 	_spawn_swamps(changes)
 	_spawn_feywild(changes)
+	_spawn_ruins(changes)
 	# Plains between them, so the party can walk there (they show no cluster goal).
 	var land_now := changes.keys()
 	land_now.append(Rules.START_TILE)
@@ -807,6 +811,28 @@ func _spawn_feywild(changes: Dictionary) -> void:
 		changes[x] = region_look(region, x)
 		order[x] = order.size()
 	_debug_road(anchor + Vector2i(-3, 3), changes)
+
+
+## Debug: a 12-tile Overrun outpost with its Warren and a tier 0 ruins group, on free land out past the rest, with plains laid to them.
+func _spawn_ruins(changes: Dictionary) -> void:
+	var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
+	var tiles: Array[Vector2i] = []
+	for s: Vector2i in DEBUG_PLAINS_SHAPE:
+		tiles.append(anchor + s)
+	var region := new_region("ruins", tiles, "overrun_outpost", tiles[0])
+	_set_flow(region)
+	for x in tiles:
+		changes[x] = region_look(region, x)
+		order[x] = order.size()
+	_debug_road(anchor + Vector2i(-3, 3), changes)
+	var t0: Array = [Vector2i.ZERO]
+	t0.append_array(Hex.NEIGHBOURS)
+	var at := _free_spot(t0, changes)
+	for s: Vector2i in t0:
+		changes[at + s] = "ruins"
+		order[at + s] = order.size()
+		_debug_fill[at + s] = true
+	_debug_road(at + Vector2i(-2, 2), changes)
 
 
 ## Debug: a 12-tile region of each swamp variant and a tier 0 group, on free land out past the rest, with plains laid to them.
