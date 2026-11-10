@@ -19,7 +19,7 @@ nearer. Ground between the remains is a darker rubble earth, so the pale stone s
 """
 import math
 
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 import ground_cover as gc
 import hexkit as hk
@@ -120,6 +120,62 @@ def wall(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), z=0.0, thick=WALL_T
         else:
             p.box(at, (w - 0.03, thick, hh), mat, z=z, spin=ang + rng.uniform(-0.03, 0.03))
         t += w
+
+
+def masonry(p, rng, a, b, band, mat, gaps=(), taper=(1.0, 1.0), breach=0.0):
+    """A ruined masonry wall from a to b: a solid core whose height wanders gently, broken tops stepping down in a block or
+    two (each narrower and set back), door gaps left open, a breach now and then with its fallen stones, and a few stones
+    lying at the foot. Built for b's corner halls (design/07 -> Ruins land, refined Nov 9, 2026)."""
+    d = b - a
+    length = d.length
+    if length < 0.2:
+        return
+    e = d / length
+    side = Vector((-e.y, e.x, 0))
+    ang = math.atan2(d.y, d.x)
+    t, h = 0.0, rng.uniform(*band)
+    holes = list(gaps)
+    if rng.random() < breach:
+        holes.append(length * rng.uniform(0.3, 0.7))
+    while t < length - 0.05:
+        w = min(rng.uniform(0.42, 0.62), length - t)
+        if length - t - w < 0.25:
+            w = length - t
+        mid = t + w / 2
+        f = taper[0] + (taper[1] - taper[0]) * mid / length
+        if any(abs(mid - g) < 0.3 for g in holes):
+            fell = a + e * mid + side * rng.uniform(-0.25, 0.25)
+            if rng.random() < 0.7 and in_tile(fell, 0.3):   # what fell from the gap
+                p.box(fell, (0.3, 0.22, 0.16), mat, spin=ang + rng.uniform(-0.6, 0.6))
+            t += w
+            continue
+        h = max(band[0] * 0.7, min(band[1], h + rng.uniform(-0.18, 0.16)))
+        top = h * f
+        core = top - rng.uniform(0.15, 0.3) if top > 0.6 else top
+        at = a + e * mid
+        if core > 0.08:
+            p.box(at, (w - 0.02, WALL_T, core), mat, spin=ang)
+        z, bw = max(core, 0.0), w
+        while z < top - 0.08:   # the broken top: blocks set back and narrower as it steps down
+            bw *= rng.uniform(0.7, 0.9)
+            bh = min(rng.uniform(0.17, 0.25), top - z)
+            off = rng.uniform(-(w - bw) / 2, (w - bw) / 2)
+            p.box(at + e * off, (bw, WALL_T - 0.04, bh), mat, z=z, spin=ang + rng.uniform(-0.05, 0.05))
+            z += bh
+        t += w
+    for _ in range(rng.choice((0, 1, 1, 2))):   # stones fallen at the foot, on either side
+        at = a + e * rng.uniform(0.15, 0.85) * length + side * rng.choice((-1, 1)) * rng.uniform(0.3, 0.5)
+        rot = Matrix.Rotation(rng.uniform(0, 3), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.35, 0.35), 3, "X")
+        s_ = rng.uniform(0.2, 0.3)
+        if not in_tile(at, 0.35):
+            continue
+        p.box_rot(at + Vector((0, 0, s_ * 0.35)), (s_ * 1.3, s_, s_ * 0.75), mat, rot)
+
+
+def in_tile(q, m):
+    """Inside the tile, m off its edges, in a block's frame (edges face 30 + 60k degrees)."""
+    inside = max(q.x * math.cos(math.radians(30 + 60 * k)) + q.y * math.sin(math.radians(30 + 60 * k)) for k in range(6)) <= A - m
+    return inside and abs(q.x * S30) - abs(q.y) * C30 >= rl.WALK_HALF + 0.25   # and clear of the walks beside the block
 
 
 def room(p, rng, poly, band, keep, m_lo, m_hi, joins, floor="rs_floor", door=True, skip_cut=False):
@@ -260,11 +316,11 @@ def block_b(p, rng, joins, n):
     pts[0], pts[2] = pts[0].lerp(pts[1], 0.12), pts[2].lerp(pts[1], 0.12)   # the walls' ends stop short of the tile edge
     mat = rng.choice(WALLS)
     for a, b in ((pts[0], pts[1]), (pts[1], pts[2])):   # tall in the middle of each side, falling low at its ends
-        wall(p, rng, a, b, (0.8, 1.4), mat, gaps=((b - a).length * 0.5,) if n == 1 else (), taper=(0.3, 1.0))
+        masonry(p, rng, a, b, (0.9, 1.5), mat, gaps=((b - a).length * 0.5,) if n == 1 else (), taper=(0.45, 1.0), breach=0.2)
     if n == 2:   # a second ring inside, lower
         inner = [corner + (q - corner) * 0.55 for q in pts]
-        wall(p, rng, inner[0], inner[1], (0.4, 0.8), mat)
-        wall(p, rng, inner[1], inner[2], (0.4, 0.8), mat)
+        masonry(p, rng, inner[0], inner[1], (0.45, 0.8), mat, breach=0.3)
+        masonry(p, rng, inner[1], inner[2], (0.45, 0.8), mat, breach=0.3)
     lot = kite(RAISED_KEEP, m["lo"] + 0.1, m["hi"] + 0.1, x0=TAKES["b"]["plaza"] + 0.3, x1=pts[1].x - 0.35)
     if lot:
         if n == 0:
@@ -322,26 +378,58 @@ def street_slabs(p, rng, x0, x1, half_w, fray=False, k=0):
             rl.slab(p, rng, rl.turn(poly, k), heave=0.03)
 
 
+PLAZA_GRID = 0.62   # b's plaza: worn square flagstones on one grid, thinning out from the middle
+
+
+def plaza_b(p, rng, t):
+    """The open middle without a pattern: flagstones on a square grid turned to a random walk, many missing and more so
+    toward the edge, so the paving fades into the ground instead of drawing a hexagon; the streets' lanes start beyond."""
+    spin = math.radians(60 * rng.randrange(6) + rng.uniform(-8, 8))
+    rot = Matrix.Rotation(spin, 3, "Z")
+    reach = 1.7
+    n = int(reach / PLAZA_GRID) + 1
+    for i in range(-n, n + 1):
+        for j in range(-n, n + 1):
+            c = rot @ Vector((i * PLAZA_GRID + rng.uniform(-0.04, 0.04), j * PLAZA_GRID + rng.uniform(-0.04, 0.04), 0))
+            r = c.length
+            if r > reach or rng.random() < 0.15 + 0.6 * (r / reach) ** 2:
+                continue
+            w = PLAZA_GRID - rl.JOINT - rng.uniform(0, 0.08)
+            sq = [c + rot @ Vector((sx * w / 2, sy * w / 2, 0)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+            rl.slab(p, rng, sq, heave=0.04)
+    for k in range(6):
+        street_slabs(p, rng, reach + 0.1, rl.X0, t["street"], k=k)
+    p.no_cover.append((Vector((0, 0, 0)), 2.0))
+
+
 def ground(take):
     t = TAKES[take]
 
     def build(p, rng, kind):
         kind = kind.replace("edge_", "")
         if kind == "centre":
-            ap = t["plaza"] * C30   # the plaza's corners point at the blocks' tips
-            rl.plate(p, [Vector((c.x, c.y, 0)) for c in hk.hex_corners(min(0.55, t["plaza"]) - rl.JOINT, pointy=True)][::-1], rl.SLAB_Z, "ruin_slab_c")
-            rows = [0.55 * C30] + [r for r in (1.1, 1.65) if r < ap - 0.2] + [ap]
-            for k in range(6):
-                if len(rows) > 1 and rows[0] < rows[-1]:
-                    for poly in rl.rows(rows, rng):
-                        if rng.random() > 0.1:
-                            rl.slab(p, rng, rl.turn(poly, k), heave=0.03)
-                if ap < rl.X0:
-                    street_slabs(p, rng, ap, rl.X0, t["street"], k=k)
+            if take == "b":
+                plaza_b(p, rng, t)
+            else:
+                ap = t["plaza"] * C30   # the plaza's corners point at the blocks' tips
+                rl.plate(p, [Vector((c.x, c.y, 0)) for c in hk.hex_corners(min(0.55, t["plaza"]) - rl.JOINT, pointy=True)][::-1], rl.SLAB_Z, "ruin_slab_c")
+                rows = [0.55 * C30] + [r for r in (1.1, 1.65) if r < ap - 0.2] + [ap]
+                for k in range(6):
+                    if len(rows) > 1 and rows[0] < rows[-1]:
+                        for poly in rl.rows(rows, rng):
+                            if rng.random() > 0.1:
+                                rl.slab(p, rng, rl.turn(poly, k), heave=0.03)
+                    if ap < rl.X0:
+                        street_slabs(p, rng, ap, rl.X0, t["street"], k=k)
             p.hub = Vector((0, 0, 0))
             return
         street_slabs(p, rng, rl.X0, A, t["street"], fray=kind.startswith("other"))
         p.paths.append([Vector((rl.X0, 0, 0)), Vector((A, 0, 0))])
+        if take == "b":   # ground cover stays on the yards, off the street
+            x = rl.X0
+            while x < A + 0.01:
+                p.no_cover.append((Vector((x, 0, 0)), t["street"] + 0.25))
+                x += 0.5
     return build
 
 

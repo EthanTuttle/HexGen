@@ -4,6 +4,7 @@ Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --pyt
 Each take's ground and blocks are built live over the latest kit's ruins pieces (the kit itself is untouched); the
 region is render_region_compare.world("ruins"). Writes art/preview/ruins_structure_<take>_map_vN.png and _close_vN.png,
 and the sheet ruins_structure_sheet_vN.png with the forest and village maps from the comparison (same camera).
+-- b: that take alone, map and close-up by day and at night, sheet ruins_structure_b_sheet_vN.png.
 check: walls and raised stone off the walks, nothing past the tile edge, triangles per tile, then exit.
 """
 import math
@@ -19,6 +20,7 @@ import hexkit as hk  # noqa: E402
 import render_preview as rp  # noqa: E402
 import render_region_compare as rc  # noqa: E402
 import render_start_tiles as rst  # noqa: E402
+import render_ruin_variants as rv  # noqa: E402
 import ruin_structure as rs  # noqa: E402
 import variants as vr  # noqa: E402
 
@@ -68,7 +70,7 @@ def check(take, live):
     return bad
 
 
-def shot(take, close):
+def shot(take, close, dark=False):
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     live = build_live(take)
@@ -83,9 +85,11 @@ def shot(take, close):
     else:
         rp.stage(hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45)
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
     t = rs.TAKES[take]
-    rst.label(t["title"], t["sub"] if not close else "Closer, the middle tile")
-    stem = f"ruins_structure_{take}_{'close' if close else 'map'}"
+    rst.label(t["title"], (t["sub"] if not close else "Closer, the middle tile") + (", at night" if dark else ""))
+    stem = f"ruins_structure_{take}_{'close' if close else 'map'}{'_night' if dark else ''}"
     rp.render(stem)
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
@@ -100,6 +104,12 @@ if __name__ == "__main__":
         for take in TAKES:
             hk.empty_scene()
             check(take, build_live(take))
+        sys.exit(0)
+    if args:   # one take refined: its map and close-up, by day and at night
+        take = args[0]
+        rows = [[shot(take, False), shot(take, True)], [shot(take, False, True), shot(take, True, True)]]
+        rst.SHEET_STEM = f"ruins_structure_{take}_sheet"
+        rst.sheet(rows)
         sys.exit(0)
     maps = [shot(t, False) for t in TAKES]
     closes = [shot(t, True) for t in TAKES]
