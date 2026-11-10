@@ -85,7 +85,7 @@ static func parts(d: Dictionary) -> Array:
 	var pose: Dictionary = t.races[race].builds[build].poses[main][variant]
 	var golem := race == "golem"
 	var leg := "golem" if golem else ("scaled" if race == "dragonborn" else "cloth")
-	var kind: String = "golem" if golem else {"medium": "chain", "heavy": "plate"}.get(armour, "bare")
+	var kind: String = "golem" if golem else {"medium": "chain", "heavy": "plate", "armoured": "chain"}.get(armour, "bare")   # armoured: PLACEHOLDER (04's flat armour has no look yet)
 	var fist := "golem" if golem else ("gauntlet" if armour == "heavy" else "bare")
 	var out: Array = [["hero_base", null], ["hero_body_%s_%s" % [race, build], pose.torso]]
 	if armour != "none":

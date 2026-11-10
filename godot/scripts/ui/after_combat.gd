@@ -11,6 +11,10 @@ signal done
 var _main: PanelContainer
 var _rewards: Control
 var _reveal: Array[Control] = []
+var _xp_bar: Bar
+var _xp_label: Label
+var _xp_to := 0.0       # where the XP bar ends: 1.0 on a level-up, else the new level's share
+var _new_level := 0     # 0, or the level reached: the label turns into "Level N!" once the bar is full
 
 
 func _init() -> void:
@@ -18,7 +22,10 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 
-func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String], dropped: Array, earned := 0) -> void:
+## xp_from: the bar's share before this fight's XP; level_from: the party's level before it (07 -> After combat: XP comes
+## last, the bar fills, then its label turns into "Level N+1!").
+func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String], dropped: Array, earned := 0,
+		xp_from := -1.0, level_from := 0) -> void:
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
@@ -60,12 +67,20 @@ func show_result(game: Game, won: bool, downed: Dictionary, drawn: Array[String]
 		var sp := Control.new()
 		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		xr.add_child(sp)
-		var lv := UI.label("Party level %d" % game.level, "n800", 11, UI.INK_SOFT)
+		var before := level_from if level_from > 0 else game.level
+		var lv := UI.label("Party level %d" % before, "n800", 11, UI.INK_SOFT)
+		_xp_label = lv
 		lv.size_flags_vertical = Control.SIZE_SHRINK_END
 		xr.add_child(lv)
 		xp.add_child(xr)
-		xp.add_child(Bar.make(330, 14, Color("#E6DCC8"), UI.GOLD, float(game.xp) / game.xp_needed(), UI.HEX_SHADOW))
+		var now := float(game.xp) / game.xp_needed()
+		_new_level = game.level if game.level > before else 0
+		_xp_to = 1.0 if _new_level > 0 else now
+		_xp_bar = Bar.make(330, 14, Color("#E6DCC8"), UI.GOLD, xp_from if xp_from >= 0.0 else now, UI.HEX_SHADOW)
+		xp.add_child(_xp_bar)
 		bottom.add_child(xp)
+	else:
+		_xp_bar = null
 	var sp2 := Control.new()
 	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(sp2)
@@ -179,6 +194,12 @@ func _play_reveal() -> void:
 		tw.tween_property(c, "position", home, 0.4).set_trans(Tween.TRANS_SINE)
 		tw.parallel().tween_property(c, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_SINE)
 		t += 0.55
+	if _xp_bar:   # XP comes last: the bar fills, then a level-up's label (07 -> After combat)
+		var tw := create_tween()
+		tw.tween_interval(t + 0.4)
+		tw.tween_property(_xp_bar, "value", _xp_to, 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		if _new_level > 0:
+			tw.tween_callback(func(): _xp_label.text = "Level %d!" % _new_level)
 
 
 ## The reward hexes, row by row, and the gold under them, centred across the box (Ethan's phone note, Nov 5, 2026).

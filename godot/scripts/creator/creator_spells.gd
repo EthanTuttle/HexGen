@@ -213,7 +213,11 @@ func _pop(panel: Control) -> void:
 		c.render())
 	top.add_child(close)
 	v.add_child(top)
-	v.add_child(CUI.wrap(UI.label(text_of(k), "n700", 12, Color("#33403B"), 0, 1.35), 230))
+	var texts := []   # room for the longest spell's text, so the foot doesn't move from one spell to the next (Nov 8 note)
+	for s: String in Weapons.WIZARD_SPELLS:
+		for id: String in Weapons.WIZARD_SPELLS[s]:
+			texts.append(text_of(Cards.get_card(id)))
+	v.add_child(CUI.reserve(CUI.wrap(UI.label(text_of(k), "n700", 12, Color("#33403B"), 0, 1.35), 230), texts))
 	var foot := CUI.hbox(6)
 	foot.add_child(_chip("%d AP" % k.ap, UI.DARK, UI.CREAM))
 	if k.get("hp", 0) > 0:

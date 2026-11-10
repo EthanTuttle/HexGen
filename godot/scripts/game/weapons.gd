@@ -1,7 +1,7 @@
 class_name Weapons
 extends RefCounted
 ## Weapon categories in play (DOCS: design/04 -> Weapon rules, Weapon category cards; numbers are Ethan's placeholders of
-## Nov 5, 2026). Ids are the creator's (CreatorData.W). Each category gives:
+## Nov 5, 2026). Ids are the gear reference's (Gear.WEAPONS). Each category gives:
 ##   ab: the score its attacks flip (04: STR for heavy weapons, DEX for finesse and ranged, INT or WIS for staves and wands)
 ##   hands: "1" one-handed, "v" versatile, "2" two-handed, "f" fist weapons (a pair)
 ##   range: the basic attack's reach in hexes (melee 1; Reach 2; bows); ranged: a ranged attack (the adjacent penalty)
@@ -70,9 +70,9 @@ static func cards_for(klass: String, main: String, off: String) -> Array:
 	return out
 
 
-## Armoured or in Clothes (04 -> Armour, reworked Nov 5, 2026): any armour the creator offers counts as Armoured.
+## Armoured or in Clothes (04 -> Armour, reworked Nov 5, 2026): the gear reference decides (Gear).
 static func armoured(armour: String) -> bool:
-	return armour in ["Light", "Medium", "Heavy", "Armoured"]
+	return Gear.armoured(armour)
 
 
 ## The heads a foe needs to hit this hero or companion, flat so players never work out halves (04 -> Armour, Ethan,

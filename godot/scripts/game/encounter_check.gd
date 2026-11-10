@@ -34,11 +34,9 @@ func _shot(name: String) -> void:
 
 func _run() -> void:
 	game.event_screen = Callable()   # the pop-up it reads; Screens' own checks play the Social screen
-	game.walk_limited = true
 	game.spawn_forest_regions()
 	await _wait(1.0)
 	game.debug_auto_cross = true
-	game.walk_limited = true
 	game.rig.player_moved = false
 	if "--encclip" in OS.get_cmdline_user_args():
 		await _clip()
@@ -71,24 +69,22 @@ func _far(n: int) -> Vector2i:
 	return game.party_tile
 
 
-func _limit() -> void:
+func _limit() -> void:   # design/02: no cap since Nov 9, 2026 (was the sight range), by day or night
 	_day()
 	var goal := _far(7)
 	var whole := game.path_to(goal)
 	_check(whole.size() >= 7, "a goal %d steps away" % whole.size())
-	var from := game.party_tile
 	game.walk_to(goal)
 	while game.busy:
 		await get_tree().process_frame
-	var by_day := game.party_tile
-	_check(by_day == whole[Rules.SIGHT_RANGE * Rules.SIGHT_DAY_TIMES - 1], "by day one tap walks at most %d, the day's sight" % (Rules.SIGHT_RANGE * Rules.SIGHT_DAY_TIMES))
+	_check(game.party_tile == whole[-1] or game.encounters.has(game.party_tile), "by day one tap walks the whole %d-step route" % whole.size())
 	_night()
 	var goal2 := _far(5)
 	var whole2 := game.path_to(goal2)
 	game.walk_to(goal2)
 	while game.busy:
 		await get_tree().process_frame
-	_check(game.party_tile == whole2[Rules.SIGHT_RANGE - 1], "at night one tap walks at most %d" % Rules.SIGHT_RANGE)
+	_check(game.party_tile == whole2[-1] or game.encounters.has(game.party_tile), "at night too: the whole %d-step route" % whole2.size())
 	_day()
 	await get_tree().process_frame
 
@@ -141,18 +137,26 @@ func _roam() -> void:
 	var at := _ring_tile(3)
 	game.add_encounter(at, false, [], Rules.ENCOUNTER_TABLE[2])
 	var e: Dictionary = game.encounters[at]
-	var moves := 0
 	var region := game.cluster(at)
-	for k in 5:
+	var where := func():
+		for t: Vector2i in game.encounters:
+			if game.encounters[t].id == e.id:
+				return t
+		return null
+	var now = at
+	var moves := 0
+	var steps_ok := true
+	for k in 5:   # a random walk can come back to where it started, so each tick's step is counted
 		game.minute = fposmod(game.minute + Rules.ROAM_MINUTES + 1.0, Rules.DAY_MINUTES)
 		game.day += 1
 		await get_tree().process_frame
-	var now = null
-	for t: Vector2i in game.encounters:
-		if game.encounters[t].id == e.id:
-			now = t
+		var next = where.call()
+		if next != null and now != null and next != now:
+			moves += 1
+			steps_ok = steps_ok and Rules.hex_distance(next, now) == 1
+		now = next
 	_check(now != null and region.has(now), "a roamer stays in its region")
-	_check(now != at or region.size() < 2, "a roamer moves a tile at a time on the clock")
+	_check((moves > 0 and steps_ok) or region.size() < 2, "a roamer moves a tile at a time on the clock (%d moves)" % moves)
 	game.encounters.erase(now)
 	var still := _ring_tile(3)
 	game.add_encounter(still, false, [], Rules.ENCOUNTER_TABLE[3])

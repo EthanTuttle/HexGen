@@ -175,6 +175,7 @@ class HeroCloth extends Control:
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		name_label.custom_minimum_size.x = w - 24.0
+		CUI.reserve(name_label, ["-\n-"])   # two lines, as a long 20-letter name takes, so the hexes don't drop while typing (Nov 8 note)
 		name_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		v.add_child(name_label)
 		var st := CreatorBanners.Stitch.new()

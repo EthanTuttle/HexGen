@@ -16,7 +16,7 @@ const SAVED := {
 }
 const REBUILT := {
 	"Game": ["map", "rig", "clock", "party_node", "debug_fail_crossing", "debug_near_miss", "debug_auto_cross", "held", "busy",
-		"_encounter_views", "walk_limited", "level_pick", "end_panel", "enter_town_screen", "event_screen", "fight", "real_time",
+		"_encounter_views", "level_pick", "end_panel", "enter_town_screen", "event_screen", "fight", "real_time",
 		"ui", "safe", "hud", "after", "_encounter_tile", "_open_pin", "_reveal_pin", "_reveal_until", "_slot_mats", "_shown_minute",
 		"_slot_marks", "popup", "picked", "_path_marks", "_debug_fill", "force_map", "_fade", "_debug_map", "ambush"],
 	"MapBoard": ["water_shapes", "boats", "slot_nodes", "_kit", "_ground", "_ground_img", "_ground_tex", "_tile_nodes", "_water_node",
@@ -128,7 +128,6 @@ static func _tiles(a: Array) -> Array[Vector2i]:
 static func apply(g: Game, data: Dictionary) -> void:
 	var t0 := Time.get_ticks_msec()
 	_set_fields(g.run, data.run)
-	g.walk_limited = not g.run.wide_deck
 	g.rng.seed = data.rng.seed
 	g.rng.state = data.rng.state
 	var s: Dictionary = data.game

@@ -106,6 +106,31 @@ func _run() -> void:
 		get_tree().quit()
 
 
+## After combat's XP comes last: the bar fills from where it was, and a level-up fills it and turns "Party level N" into
+## "Level N+1!" (07 -> After combat; Ethan's phone note, Nov 9: the bar sat still).
+func _check_xp_fill() -> void:
+	var lv0 := game.level
+	var xp0 := game.xp
+	var none: Array[String] = []
+	game.level = lv0 + 1
+	game.xp = 3
+	game.after.show_result(game, true, {}, none, [], 12, 0.8, lv0)
+	await get_tree().process_frame
+	_check(is_equal_approx(game.after._xp_bar.value, 0.8) and game.after._xp_label.text == "Party level %d" % lv0,
+			"After combat's XP bar starts where the party's XP was, under the old level")
+	await _wait(3.0)
+	_check(is_equal_approx(game.after._xp_bar.value, 1.0) and game.after._xp_label.text == "Level %d!" % (lv0 + 1),
+			"a level-up fills the bar, then the label reads \"Level %d!\" (%s, %.2f)" % [lv0 + 1, game.after._xp_label.text, game.after._xp_bar.value])
+	game.level = lv0
+	game.xp = 6
+	game.after.show_result(game, true, {}, none, [], 4, 0.1, lv0)
+	await _wait(3.0)
+	_check(is_equal_approx(game.after._xp_bar.value, 6.0 / game.xp_needed()) and game.after._xp_label.text == "Party level %d" % lv0,
+			"without a level-up the bar fills to the new share and the label stays")
+	game.after.visible = false
+	game.xp = xp0
+
+
 func _check_data() -> void:
 	var maps := CombatMap.all()
 	_check(maps.size() == 90, "%d maps: 19 forest, 20 farmland, 15 plains, 20 village, 16 hills" % maps.size())
@@ -211,6 +236,7 @@ func _whole_fight() -> void:
 	await _wait(0.4)
 	_check(game.map.visible and not game.busy, "back on the world map")
 	_check(not game.rig.limits.has_area(), "the world map's camera has no fight limits")
+	await _check_xp_fill()
 
 
 func _load(id: String) -> void:
