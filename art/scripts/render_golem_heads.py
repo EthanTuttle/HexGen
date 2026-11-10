@@ -1,8 +1,9 @@
 """Golem review sheets from the latest hero kit (golem_kit.py's pieces).
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_golem_heads.py [-- heads | poses | armour]
-  heads   art/preview/golem_heads_vN.png: per sub-type (stone, wood, metal) two rows, the five head candidates close from
-          three-quarter front, then from the off side; Ethan picks four per sub-type (golem_kit.KIT_HEADS)
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_golem_heads.py [-- heads [sub ...] | poses | armour]
+  heads   art/preview/golem_heads_vN.png: per sub-type (stone, wood, metal, or those named) two rows, the five head candidates
+          close from three-quarter front, then from the off side; Ethan picks four per sub-type (golem_kit.KIT_HEADS). With
+          sub-types named, a third row shows each whole on the average build
   poses   art/preview/golem_metal_poses_vN.png: the metal golem's long arms in every grip and variant
   armour  art/preview/golem_armour_vN.png: each sub-type bare, then in light, medium and heavy armour
 Prints whole-hero triangle counts.
@@ -87,11 +88,11 @@ def save(grid, stem, group=0):
     print("SHEET", path)
 
 
-def heads():
+def heads(subs=gk.SUBTYPES):
     t, col = setup()
     parts = hk.new_collection("parts")
     grid, tris = [], {}
-    for sub in gk.SUBTYPES:
+    for sub in subs:
         obs = []
         for n in range(1, len(gk.HEAD_CANDIDATES[sub]) + 1):
             ob = gk.head(sub, n).finish(parts)
@@ -105,8 +106,10 @@ def heads():
         size, h, y = (0.42, 1.0, -0.17) if sub == "metal" else (0.62, 1.0, 0.0)
         grid.append([shot(o, col, 25, size, h, y) for o in obs])
         grid.append([shot(o, col, -45 if sub == "metal" else -70, size, h, y) for o in obs])
+        if subs != gk.SUBTYPES:
+            grid.append([shot(o, col, 28, 1.5, 0.62) for o in obs])
     print("HEAD TRIS (head, whole hero with a longsword, no armour)", tris)
-    save(grid, "golem_heads", group=2)
+    save(grid, "golem_heads", group=2 if subs == gk.SUBTYPES else 3)
 
 
 POSES = [(w, {}) for w in hb.GRIP_OF] + [(w, {"two": True}) for w in hb.TWO_GRIP] + [("staff", {"caster": True}), ("longsword", {"off": "shield"}), ("shortsword", {"off": "dagger"})]
@@ -149,5 +152,9 @@ def armour():
 
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["heads"]
+    subs = tuple(a for a in args if a in gk.SUBTYPES)
     for a in args:
-        {"heads": heads, "poses": poses, "armour": armour}[a]()
+        if a == "heads" and subs:
+            heads(subs)
+        elif a not in gk.SUBTYPES:
+            {"heads": heads, "poses": poses, "armour": armour}[a]()

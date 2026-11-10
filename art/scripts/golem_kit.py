@@ -7,8 +7,8 @@ a stooped sky-castle guardian with long arms. Built for build_hero_kit's pieces(
                                      length 1 along +Z, radius about 1 at the top
   hero_hand_golem_<sub>, hero_boot_golem_<sub>
 
-Colours come from the material swatch (skin zone), the eyes swatch, and on the folk carving the cloth swatch; moss, leaves and
-verdigris are fixed. The looks were picked from art/preview/golem_set_v3.png; here they're trimmed to the hero budget.
+Colours come from the material swatch (skin zone) and the eyes swatch; no golem uses the cloth swatch (the folk carving is bare
+wood since Nov 10, 2026). Moss, leaves, fungus and verdigris are fixed. The looks were picked from art/preview/golem_set_v3.png; here they're trimmed to the hero budget.
 HEAD_CANDIDATES holds five heads per sub-type for Ethan's pick of four (art/preview/golem_heads_vN.png, render_golem_heads.py);
 KIT_HEADS says which four become a-d.
 """
@@ -25,7 +25,7 @@ zone, SIDE, Z0 = hb.zone, hb.SIDE, hb.Z0
 R = hb.RACES["golem"]["head"]
 SUBTYPES = ("stone", "wood", "metal")
 for k_, c_ in {"gl_moss": "#6F8F3E", "gl_moss_dark": "#55722F", "gl_leaf": "#7FA347", "gl_leaf_dark": "#5E8236", "gl_flower": "#E8D27A",
-               "gl_verdigris": "#6FA894", "gl_twine": "#8A6A44"}.items():
+               "gl_verdigris": "#6FA894", "gl_twine": "#8A6A44", "gl_fungus": "#D9C49A"}.items():
     hk.PALETTE[k_] = c_
 
 
@@ -155,15 +155,34 @@ def stone_parts():
 
 # --- Wood: the folk carving -------------------------------------------------------
 
+def smooth(c, n):
+    return sk(1.05) if n.x > -0.2 or n.y < 0 else sk(0.82)
+
+
+def ivy(c, n):
+    """Ivy winding round a limb: the faces on a spiral turn green."""
+    a = (math.atan2(n.y, n.x) / (2 * math.pi) + c.z * 1.6) % 1.0
+    return "gl_leaf_dark" if a < 0.16 else smooth(c, n)
+
+
 def wood_body(f, build):
+    """Bare carved wood, still alive (Ethan, Nov 10, 2026: take C, living growth, with the paint dropped): shoots with leaves from
+    a shoulder and the back, moss over the shoulders and down the back, a bracket fungus on the hip."""
     p = hk.Piece(f"hero_body_golem_wood_{build}")
     chest_z = f["chest"].z
-    # The ring of faces round the upper chest painted in the cloth colour, like a painted collar band.
-    hb.trunk(p, f, sk(1.05), sk(0.82), paint=lambda c, n: zone("cloth") if chest_z - 0.07 < c.z < chest_z + 0.02 and abs(n.z) < 0.6 else (sk(1.05) if n.z > 0.1 or n.y < -0.5 else sk(0.82)))
-    p.box(V((0, 0, 0)), (f["hw"] * 2.12, f["depth"] * 1.85, 0.035), zone("cloth"), z=f["hip"].z + 0.03)  # a painted belt
+    hb.trunk(p, f, sk(1.05), sk(0.82), paint=lambda c, n: "gl_moss" if n.y > 0.55 and c.z > chest_z - 0.12 else (sk(1.05) if n.z > 0.1 or n.y < -0.5 else sk(0.82)))
     for s in SIDE:
         p.blob(f["chest"] + V((s * (f["sw"] + 0.01), 0, -0.01)), f["arm"] * 1.2, sk(1.0), squash=0.9)
-    p.box(V((0, -f["depth"] * 0.86, 0)), (f["hw"] * 1.2, 0.02, 0.24), zone("cloth", 0.8), z=f["hip"].z - 0.2)
+        p.blob(f["chest"] + V((s * (f["sw"] - 0.01), 0.01, 0.045)), 0.04, "gl_moss", squash=0.45)
+    for root, lean, length in ((f["chest"] + V((-f["sw"] * 0.75, 0.02, 0.06)), V((-0.35, 0.2, 1)), 0.16), (f["chest"] + V((f["sw"] * 0.4, f["depth"] * 0.8, 0.0)), V((0.2, 0.8, 0.8)), 0.13)):
+        tip = root + lean.normalized() * length
+        em.limb(p, [root, root.lerp(tip, 0.55) + V((0, 0, 0.01)), tip], [0.01, 0.007, 0.003], [sk(0.75), sk(0.75)], sides=4)  # a shoot
+        for k, (u, d) in enumerate(((0.5, V((0.05, -0.02, 0.03))), (0.75, V((-0.05, 0.02, 0.035))), (1.0, V((0.02, 0.03, 0.05))))):
+            b = root.lerp(tip, u)
+            vr.spike(p, b, b + d, 0.022, "gl_leaf" if k % 2 == 0 else "gl_leaf_dark", segments=3)
+    hip_side = V((f["hw"] * 1.0, f["depth"] * 0.2, f["hip"].z + 0.1))
+    for dz, w in ((0.0, 0.05), (0.04, 0.036)):  # a bracket fungus, two shelves
+        p.box(hip_side + V((0.012, 0, dz)), (w * 0.6, w, 0.012), "gl_fungus")
     neck(p, f, build, 0.6, 0.55, sk(0.9))
     hb.finish_scale(p, "golem")
     return p
@@ -180,29 +199,32 @@ def carved_face(p, nose=True, brows=True, z=0.0):
 
 
 def wood_head_1(p):
-    """The picked look: a round, friendly carved face and a crown of carved leaves."""
+    """The picked look, grown: the round carved face, its crown real leaves, moss over the crown and a sprout coming up through it."""
     p.blob(V((0, 0, 0)), R * 1.08, sk(1.05), squash=1.05)
     carved_face(p)
-    for k in range(6):
-        a = 2 * math.pi * k / 6
-        b = V((math.cos(a) * R * 0.7, math.sin(a) * R * 0.7, R * 0.62))
-        vr.spike(p, b, b + V((math.cos(a) * R * 0.25, math.sin(a) * R * 0.25, R * 0.42)), R * 0.22, "gl_leaf" if k % 2 else "gl_leaf_dark", segments=3)
+    p.blob(V((0, R * 0.1, R * 0.7)), R * 0.72, "gl_moss", squash=0.45)
+    for k, (x, y) in enumerate(((-0.6, 0.1), (0.6, 0.0), (0.1, 0.55), (0.0, -0.45))):
+        p.blob(V((x * R, y * R, R * (0.9 + 0.12 * (k % 2)))), R * (0.32 - 0.02 * k), "gl_leaf" if k % 2 == 0 else "gl_leaf_dark", squash=0.6)
+    b = V((R * 0.15, 0, R * 1.0))
+    em.limb(p, [b, b + V((R * 0.05, 0, R * 0.45)), b + V((R * 0.12, 0, R * 0.75))], [R * 0.05, R * 0.04, R * 0.02], [sk(0.7), sk(0.7)], sides=4)
+    for d in (V((R * 0.3, 0, R * 0.2)), V((-R * 0.28, 0, R * 0.22))):
+        vr.spike(p, b + V((R * 0.12, 0, R * 0.75)), b + V((R * 0.12, 0, R * 0.75)) + d, R * 0.14, "gl_leaf", segments=3)
 
 
 def wood_head_2(p):
-    """A carved brimmed hat with a painted band, like a toy farmer's."""
+    """A carved brimmed hat, like a toy farmer's, moss on its brim."""
     p.blob(V((0, 0, -R * 0.1)), R * 1.0, sk(1.05), squash=1.05)
     carved_face(p, brows=False, z=-R * 0.1)
-    em.loft(p, [sec(V((0, 0, R * 0.42)), R * 1.45, R * 1.4, 10), sec(V((0, 0, R * 0.52)), R * 1.4, R * 1.35, 10)], lambda c, n: sk(0.85))  # brim
+    em.loft(p, [sec(V((0, 0, R * 0.42)), R * 1.45, R * 1.4, 10), sec(V((0, 0, R * 0.52)), R * 1.4, R * 1.35, 10)], lambda c, n: "gl_moss" if n.z > 0.5 and c.y > 0 else sk(0.85))  # brim
     em.loft(p, [sec(V((0, 0, R * 0.5)), R * 0.82, R * 0.8, 8), sec(V((0, 0, R * 0.72)), R * 0.8, R * 0.78, 8), sec(V((0, 0, R * 1.2)), R * 0.62, R * 0.6, 8)],
-            lambda c, n: zone("cloth") if c.z < R * 0.74 and abs(n.z) < 0.6 else sk(0.88))  # crown, its painted band
+            lambda c, n: sk(0.62) if c.z < R * 0.74 and abs(n.z) < 0.6 else sk(0.88))  # crown, a carved band in the darker grain
 
 
 def wood_head_3(p):
-    """A totem face: big painted rings round the eyes, a beak of a nose, two carved leaf tufts."""
+    """A totem face: deep carved rings round the eyes, a beak of a nose, two leaf tufts."""
     em.loft(p, [sec(V((0, 0, z)), R * w, R * w * 0.95, 8) for z, w in ((-R * 1.0, 0.8), (-R * 0.2, 1.0), (R * 0.6, 0.95), (R * 0.95, 0.7))], lambda c, n: sk(1.05) if n.y < -0.3 or n.z > 0.5 else sk(0.82))
     for x in SIDE:
-        em.loft(p, [face_on(V((x * R * 0.42, -R * 0.9, -R * 0.0)), R * 0.36, R * 0.36), face_on(V((x * R * 0.42, -R * 0.98, -R * 0.0)), R * 0.34, R * 0.34)], lambda c, n: zone("cloth"))
+        em.loft(p, [face_on(V((x * R * 0.42, -R * 0.9, -R * 0.0)), R * 0.36, R * 0.36), face_on(V((x * R * 0.42, -R * 0.98, -R * 0.0)), R * 0.34, R * 0.34)], lambda c, n: sk(0.55))
         p.box(V((x * R * 0.42, -R * 1.02, -R * 0.12)), (R * 0.22, R * 0.05, R * 0.22), zone("eyes", 1.3))
         vr.spike(p, V((x * R * 0.5, 0, R * 0.85)), V((x * R * 0.95, -R * 0.1, R * 1.45)), R * 0.24, "gl_leaf" if x > 0 else "gl_leaf_dark", segments=3)
     vr.spike(p, V((0, -R * 0.9, -R * 0.3)), V((0, -R * 1.35, -R * 0.55)), R * 0.18, sk(0.75), segments=4)
@@ -210,12 +232,13 @@ def wood_head_3(p):
 
 
 def wood_head_4(p):
-    """A painted kerchief over the head, tied at the back."""
-    p.blob(V((0, 0, -R * 0.05)), R * 1.04, sk(1.05), squash=1.1)
-    carved_face(p, brows=False, z=-R * 0.15)
-    em.loft(p, [sec(V((0, R * 0.08, R * 0.12)), R * 1.1, R * 1.1, 8), sec(V((0, R * 0.12, R * 0.6)), R * 0.95, R * 0.95, 8), sec(V((0, R * 0.15, R * 1.06)), R * 0.45, R * 0.45, 8)],
-            lambda c, n: zone("cloth") if n.z > -0.5 else zone("cloth", 0.75))
-    p.blob(V((0, R * 1.05, R * 0.1)), R * 0.28, zone("cloth", 0.85))  # the knot
+    """The look as first picked: the round carved face and a crown of carved leaves."""
+    p.blob(V((0, 0, 0)), R * 1.08, sk(1.05), squash=1.05)
+    carved_face(p)
+    for k in range(6):
+        a = 2 * math.pi * k / 6
+        b = V((math.cos(a) * R * 0.7, math.sin(a) * R * 0.7, R * 0.62))
+        vr.spike(p, b, b + V((math.cos(a) * R * 0.25, math.sin(a) * R * 0.25, R * 0.42)), R * 0.22, "gl_leaf" if k % 2 else "gl_leaf_dark", segments=3)
 
 
 def wood_head_5(p):
@@ -228,15 +251,20 @@ def wood_head_5(p):
 
 
 def wood_parts():
-    smooth = lambda c, n: sk(1.05) if n.x > -0.2 or n.y < 0 else sk(0.82)  # noqa: E731
-    out = [tube("hero_arm_upper_golem_wood", [(0, 1.0), (0.82, 0.82), (0.86, 0.95), (0.96, 0.95), (1, 0.78)], smooth),
-           tube("hero_arm_fore_golem_wood", [(0, 0.86), (1, 0.7)], smooth),
+    out = [tube("hero_arm_upper_golem_wood", [(0, 1.0), (0.82, 0.82), (1, 0.78)], smooth),
+           tube("hero_arm_fore_golem_wood", [(0, 0.86), (0.5, 0.78), (1, 0.7)], ivy),
            tube("hero_leg_upper_golem_wood", [(0, 1.0), (1, 0.8)], smooth),
-           tube("hero_leg_lower_golem_wood", [(0, 0.9), (1, 0.75)], smooth)]
+           tube("hero_leg_lower_golem_wood", [(0, 0.9), (0.5, 0.82), (1, 0.75)], ivy)]
     hand = hk.Piece("hero_hand_golem_wood")
     hand.blob(V((0, 0, -0.1)), 1.1, sk(1.0))
     boot = hk.Piece("hero_boot_golem_wood")
-    hb.boots(boot, (0.0, 0.0), 1.0, zone("cloth", 0.8), sk(0.7))
+    hb.boots(boot, (0.0, 0.0), 1.0, sk(0.82), sk(0.7))  # carved feet, bare wood
+    for a in (-60, 20, 160):  # roots reaching out from under the foot
+        d = V((math.cos(math.radians(a)), math.sin(math.radians(a)), 0))
+        start = len(boot.bm.verts)
+        vr.spike(boot, V((0, 0, Z0 + 0.02)), V((0, 0, Z0 + 0.006)) + d * 1.05, 0.3, sk(0.7), segments=4)
+        for v in list(boot.bm.verts)[start:]:  # the boot's heights are absolute, not scaled: flatten the root to lie on the base
+            v.co.z = Z0 + 0.008 + (v.co.z - Z0 - 0.008) * 0.06
     return out + [hand, boot]
 
 

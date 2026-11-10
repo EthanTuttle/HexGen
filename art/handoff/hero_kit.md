@@ -9,7 +9,7 @@ Scripted hero minis for the first playable (design/06 → Hero minis), replaced 
 - New grips, the two-handed and casting variants (`two`, `caster` in the description), and open palms; the wraps' open hand is its own piece, `hero_hand_open_wraps`.
 - The table: `T.races[race].builds[build].poses[main][variant]`, with `torso`, `head`, `hair`, `legs`, `arms`, `main`, `offhand`. Section "What Godot needs" has the whole recipe.
 
-**Golems (kit v12, Nov 9, 2026; heads still to pick, so not merged):** each golem sub-type has its own shape, and the metal golem has its own long-arm placements. A description now carries `subtype` for a golem, its piece names carry the sub-type, and the table gains a `golem_metal` entry. Every other entry is unchanged, the old golem entry included. See Golems below.
+**Golems (kit v13, Nov 10, 2026; heads still to pick, so not merged):** each golem sub-type has its own shape, and the metal golem has its own long-arm placements. A description now carries `subtype` for a golem, its piece names carry the sub-type, and the table gains a `golem_metal` entry. Every other entry is unchanged, the old golem entry included. See Golems below.
 
 **Hair fix (kit v11, from the phone test's note 071357):** the skull no longer shows through the hair at the back, on any head, race or style. The caps cover the widest of the four heads and have one more ring, so each hair piece has 16 more triangles. Elves and tieflings now get full-width hair, so only their `pose.hair` matrices changed. The table's format is the same.
 
@@ -97,13 +97,13 @@ Each sub-type has its own shape (Ethan, Nov 9, 2026; `art/preview/golem_set_v3.p
 | Sub-type | Look | Arms |
 |---|---|---|
 | `stone` | A cairn of stacked rounded stones, moss in the cracks, the eyes lit in a chink | Standard |
-| `wood` | A folk carving: smooth carved wood, a painted collar band, belt and kilt in the cloth colour, painted boots | Standard |
+| `wood` | A folk carving in bare wood, still alive: moss on the shoulders and back, leafy shoots, a bracket fungus on the hip, ivy round the forearms and shins, roots spreading from the feet. No paint | Standard |
 | `metal` | The shell-back: stooped under a domed back like an old cupola, with a moss garden and a sapling on top. A small round head low and forward under its rim, verdigris, mitten hands | **Long** |
 
-- **Colours:** the material is the skin zone, as before (`T.swatches.skin.golem_<subtype>`). The folk carving's paint is the cloth zone. Moss, leaves, the sapling, flowers and verdigris are fixed colours.
+- **Colours:** the material is the skin zone, as before (`T.swatches.skin.golem_<subtype>`). No golem uses the cloth zone. Moss, leaves, the sapling, flowers, fungus and verdigris are fixed colours.
 - **Heads:** four per sub-type, `a`-`d`. They're being picked (`art/preview/golem_heads_v1.png`: five candidates each, for four), so the glb waits for that pick.
 - **Armour:** the golem armour pieces are shared by all three sub-types (`hero_armour_<tier>_golem_<build>`) and sit over each shape (`art/preview/golem_armour_v1.png`).
-- **Triangles:** a whole golem with a longsword and no armour is about 750 (wood), 1,030-1,080 (metal) and 1,040-1,070 (stone). The worst case, broad with heavy armour and wraps, is 1,124 for wood, 1,360 for metal and 1,372 for stone with head b.
+- **Triangles:** a whole golem with a longsword and no armour is about 910-1,000 (wood), 1,030-1,080 (metal) and 1,040-1,070 (stone). The worst case, broad with heavy armour and wraps, is 1,342 for wood, 1,360 for metal and 1,372 for stone with head b.
 
 ### The metal golem's own arm placements
 
