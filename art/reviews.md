@@ -199,3 +199,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-10 | `art/preview/golem_heads_v1.png` | picked | Golem heads: stone 1, 3, 4, 5 (2 dropped); metal 1, 3, 4, 5 (2 dropped); wood heads to reshow on the growth body |
 | 2026-11-10 | `art/preview/golem_heads_v2.png` | picked | Wood golem heads on the bare-wood growth body: 1, 2, 4, 5 (3 totem dropped) |
 | 2026-11-10 | `art/preview/ruins_ghost_town_sheet_v1.png` | note | Ghost town direction good, but houses must fill the whole region, not just ring the landmark (corners touching plain ruins built plain halls); remove the glowing street cracks |
+| 2026-11-10 | `art/preview/golem_final_set_v1.png` | approved | Final golem set (kit v14): stone cairn 1/3/4/5, wood growth carving bare 1/2/4/5, metal shell-back with long arms 1/3/4/5; merge |
