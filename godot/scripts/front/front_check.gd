@@ -376,6 +376,16 @@ func _game_run() -> void:
 	check(g.party.size() == 2 and g.party[1].name == "Fluffy", "the party is the hero and Fluffy")
 	check(g.run.background == "folk_hero", "the run starts from the background")
 	check(g.can_enter_town(), "town: a Folk Hero's start tile, the inn, can be entered")
+	# Each place opens its own scene (07 -> Town screen; Places): the start tile, each town variant and its landmark, and a
+	# plain village, which is the market town; every kit the list names exists.
+	check(Places.id_at(g, Rules.START_TILE) == "start_folk_hero", "places: the Folk Hero's start tile is its own place")
+	for v: String in Variants.TIER2.village + ["market_town"]:
+		check(Places.PLACES.has(v), "places: %s is a place" % v)
+	for lm: String in ["tradinghouse", "keep", "blackmarket", "college"]:
+		check(Places.PLACES.has(Variants.LANDMARKS[lm]), "places: the %s is part of its town's square" % lm)
+	for id: String in Places.PLACES:
+		var pl: Dictionary = Places.PLACES[id]
+		check(Places.KITS.has(pl.kit) and Places.KITS.has(pl.inn), "places: %s's kits exist" % id)
 	var next: Vector2i = Rules.START_TILE + Hex.NEIGHBOURS[0]
 	g.map.retile({next: "village"})
 	g.order[next] = 1
@@ -392,12 +402,13 @@ func _game_run() -> void:
 	await tap_on("Enter")
 	await _wait(1.3)
 	check(control("Shop") != null and control("Inn") != null and control("Leave") != null, "town: Shop, Inn and Leave")
+	check(Places.id_at(g, next) == "market_town", "places: a plain village opens the market town")
 	check(control("Enter") == null, "town: the map's cards are gone")
 	var town := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
 	check(not g.map.visible, "town: the scene stands alone, the map hidden")
 	check(town.stage._minis.size() == g.party.size(), "town: the party stands in the square")
 	check(town.stage._keeper != null and town.stage._keeper.name == "shopkeeper", "town: the shopkeeper is at the stall")
-	check(g.clock.environment.background_color != TownStage.INN_BACKDROP, "town: the square has the map's backdrop")
+	check(g.clock.environment.background_color != Color(Places.KITS.inn.backdrop), "town: the square has the map's backdrop")
 	await _wait(0.2)
 	print("FRONT square: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	await shot("town_square")
@@ -435,7 +446,7 @@ func _game_run() -> void:
 	check(town.stage.scene_name == "inn" and town.stage._keeper.name == "innkeeper", "inn: the interior, with the innkeeper")
 	var behind_bar: Vector3 = town.stage._keeper.position
 	check(behind_bar.z < town.stage._hex(1, -2).z, "inn: the innkeeper stands behind the bar")
-	check(g.clock.environment.background_color == TownStage.INN_BACKDROP, "inn: the flat dark backdrop")
+	check(g.clock.environment.background_color == Color(Places.KITS.inn.backdrop), "inn: the flat dark backdrop")
 	print("FRONT inn: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	await shot("town_inn")
 	g.rig.yaw_deg = -50.0
@@ -478,7 +489,7 @@ func _game_run() -> void:
 	await _wait(0.5)
 	check(not g.busy, "town: Leave hands the map back")
 	check(g.map.visible and g.party_node.visible, "town: the map and party are back")
-	check(g.clock.environment.background_color != TownStage.INN_BACKDROP, "town: the backdrop follows the clock again")
+	check(g.clock.environment.background_color != Color(Places.KITS.inn.backdrop), "town: the backdrop follows the clock again")
 	await _social(g)
 
 
