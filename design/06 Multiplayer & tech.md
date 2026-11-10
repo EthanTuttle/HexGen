@@ -121,7 +121,7 @@ Decided Nov 4, 2026 (Ethan): what the prototype needs to be a playable explore a
 | Foes | Placeholders, retuned Nov 4, 2026 from bot runs at party sizes 2, 3 and 4. Minion 4, soldier 6, elite 10 HP; damage 1, 2, 3. Near is up to 4 tiles from the start, mid 5 to 9, far 10 and over. Near / mid / far: HP ×1.5 / ×2 / ×2.5; damage ×1.5 / ×1.5 / ×2, rounded; coins +0 / +1 / +2; 3 foes / 3 foes / 3 or 4 foes, with near at 2 or 3 while the party is two. Each foe attacks once a turn. The figure's kind sets the mix, one elite from mid on. A mid fight can come before the 3rd member joins: distance stays the only rule and the badge shows the risk (Ethan, Nov 4, 2026) |
 | XP per level | 20, then 10 more each level |
 | Test notes | A flag button in test builds, on every screen, for typing an issue, bug or tweak during play. Each note is saved in app storage with a screenshot and game state, for collecting later (Ethan, Nov 4, 2026). No network, like the error log |
-| Ruins | Main's old ruins tile as a marked placeholder until ruins are decided. A finished ruins region stays plain, with no variant or landmark, and still counts toward the goal |
+| Ruins | The corner halls (tiles_v92). The first finished ruins region is tier 1, the Overrun outpost with the Warren; later regions roll Haunted ruins (the ghost town, with the Crypt) as the other variants are built (Nov 10, 2026; follows 02 → Region variants) |
 | Shops | Every shop sells a simple health potion for now (Ethan, Nov 4, 2026); price and healing are placeholders |
 | Sneak past | The hero's Stealth check ([Classes & combat](03 Classes & combat.md) → Checks outside combat): heads needed = the toughest foe's defence (minion and soldier 1, elite 2, boss 3; Nov 7, 2026) |
 

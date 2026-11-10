@@ -8,8 +8,9 @@ Separate pieces, assembled from a description (assemble()), which is what Godot 
   hero_armour_<tier>_<race>_<build>   light, medium, heavy, over that body
   hero_head_<race>_<a-d>              pivot at the head's middle
   hero_hair_<style>                   pivot at the head's middle, for a human head; race scale in RACES
-  hero_arm_upper_<kind>, hero_arm_fore_<kind>   length 1 along +Z, radius 1: bare, chain, plate, golem
-  hero_hand_<kind>                    bare, gauntlet, golem
+  hero_arm_upper_<kind>, hero_arm_fore_<kind>   length 1 along +Z, radius 1: bare, chain, plate
+  hero_hand_<kind>                    bare, gauntlet
+  golems: their own pieces per sub-type (golem_kit.py), and the metal golem's long arms (LONG_ARMS)
   hero_<weapon>, hero_shield          pivot in GRIP_OF's terms, length along +Z
 
 Colours the player picks are marked in the vertex colours (see zone()), and swapped at assembly. Race shapes, heads, hair and armour looks are proposals; heights and swatches start from the v22b mockup.
@@ -85,6 +86,25 @@ RACES = {
     "tiefling": dict(k=1.0, hip=0.57, chest=0.91, sw=0.16, hw=0.125, depth=0.098, head=0.118, arm=0.046, leg=0.06, head_x=1.0),
 }
 HAIRLESS = ("golem", "dragonborn")
+GOLEM_SUBTYPES = ("stone", "wood", "metal")  # each its own shape (Ethan, Nov 9, 2026): golem_kit.py
+LONG_ARMS = {"metal": 1.3}  # the shell-back's arms: bones this many times longer, hands reaching that much further (Ethan, Nov 9, 2026)
+# Both hands on one weapon: a long-armed golem moves them together, so the grip holds.
+BOTH_HANDS = ("high", "executioner", "planted", "shoulder", "pike", "sweep", "across", "bow", "aim")
+
+
+def subtype(desc):
+    """A golem's sub-type: desc's subtype, else read off its material colour (older descriptions), else stone."""
+    if desc["race"] != "golem":
+        return None
+    if desc.get("subtype"):
+        return desc["subtype"]
+    skin = desc.get("colours", {}).get("skin")
+    return next((s for s in GOLEM_SUBTYPES if skin in SWATCHES["skin"][f"golem_{s}"]), "stone")
+
+
+def place_key(desc):
+    """Which entry of the placement table a hero reads: the metal golem has its own, for its long arms."""
+    return "golem_metal" if subtype(desc) in LONG_ARMS else desc["race"]
 # Each build is its own shape, not only wider: slim is long and narrow-waisted, broad heavy through the chest and belly.
 BUILDS = {
     "slim": dict(sw=0.84, waist=0.78, hw=0.86, depth=0.8, arm=0.8, leg=0.8, stance=0.85, up=1.02, head=0.97),
@@ -165,21 +185,14 @@ def tail(p, race, f):
 def body(race, build):
     f = frame(race, build)
     p = hk.Piece(f"hero_body_{race}_{build}")
-    if race == "golem":
-        trunk(p, f, zone("skin"), zone("skin", 0.78))
-        p.box(V((0, 0, 0)), (f["hw"] * 2.05, f["depth"] * 1.8, 0.035), zone("skin", 0.55), z=f["hip"].z + 0.05)
-        for s in SIDE:  # blocks at the shoulders and hips
-            p.box(f["chest"] + V((s * (f["sw"] + 0.02), 0, -0.06)), (f["arm"] * 2.1, f["arm"] * 2.1, 0.135), zone("skin", 0.86))
-        p.box(V((0, -f["depth"] * 0.82, 0)), (f["hw"] * 1.0, 0.016, 0.28), zone("cloth"), z=f["hip"].z - 0.22)  # a cloth at its waist
+    scaled = race == "dragonborn"
+    trousers = zone("cloth", 0.55) if scaled else zone("cloth", 0.6)
+    _ = trousers  # the legs are posed parts (leg_parts), in this colour
+    if scaled:  # the paler belly, on the faces toward the front
+        pale, s_, d_ = zone("skin", 1.3), zone("skin"), zone("skin", 0.8)
+        trunk(p, f, s_, d_, paint=lambda c, n: pale if n.y < -0.62 else (s_ if n.z > 0.1 or n.y < -0.3 else d_))
     else:
-        scaled = race == "dragonborn"
-        trousers = zone("cloth", 0.55) if scaled else zone("cloth", 0.6)
-        _ = trousers  # the legs are posed parts (leg_parts), in this colour
-        if scaled:  # the paler belly, on the faces toward the front
-            pale, s_, d_ = zone("skin", 1.3), zone("skin"), zone("skin", 0.8)
-            trunk(p, f, s_, d_, paint=lambda c, n: pale if n.y < -0.62 else (s_ if n.z > 0.1 or n.y < -0.3 else d_))
-        else:
-            trunk(p, f, zone("cloth", 0.82), zone("cloth", 0.62))
+        trunk(p, f, zone("cloth", 0.82), zone("cloth", 0.62))
     neck = [f["chest"] + V((0, 0, 0.05)), head_point(race, build) + V((0, 0.02, -f["head"] * 0.55))]
     em.limb(p, neck, [f["head"] * 0.62 * (1.2 if race == "dragonborn" else 1.0), f["head"] * 0.5], [zone("skin", 0.92)], sides=6)
     if race == "dragonborn":  # the pale throat
@@ -446,41 +459,10 @@ def dragon(p, head):
         vr.spike(p, at, at + V((0, r * 0.5, r * 0.14)), r * 0.2, dark, segments=4)
 
 
-def golem_face(p, head):
-    """Faceplates count as heads (design/07). a slit visor, b heavy brow, c rounded and riveted, d a mask."""
-    r = RACES["golem"]["head"]
-    body_ = zone("skin", 0.92)
-    plate, dark = zone("skin", 1.2), zone("skin", 0.55)
-    if head == "c":
-        p.blob(V((0, 0, 0)), r * 1.12, body_)
-    else:
-        p.box(V((0, 0, -r * 1.0)), (r * 1.9, r * 1.9, r * 2.0), body_)
-    front = -r * (1.1 if head == "c" else 0.95)
-    if head == "a":
-        p.box(V((0, front, -r * 0.82)), (r * 1.5, r * 0.16, r * 1.6), plate)
-        p.box(V((0, front - r * 0.08, -r * 0.08)), (r * 1.28, r * 0.05, r * 0.26), dark)
-    elif head == "b":
-        p.box(V((0, front, r * 0.22)), (r * 2.08, r * 0.36, r * 0.46), plate)
-        p.box(V((0, front, -r * 0.9)), (r * 1.1, r * 0.14, r * 0.5), dark)
-    elif head == "c":
-        p.box(V((0, front * 0.86, -r * 0.42)), (r * 1.3, r * 0.14, r * 0.42), dark)
-        for x in SIDE:
-            p.blob(V((x * r * 0.84, front * 0.55, -r * 0.5)), r * 0.13, plate)
-            p.blob(V((x * r * 0.84, front * 0.55, r * 0.5)), r * 0.13, plate)
-    else:
-        em.loft(p, [[V((-r * 0.82, front, r * 0.7)), V((r * 0.82, front, r * 0.7)), V((r * 0.82, front + r * 0.12, r * 0.7)), V((-r * 0.82, front + r * 0.12, r * 0.7))],
-                    [V((-r * 0.5, front, -r * 0.95)), V((r * 0.5, front, -r * 0.95)), V((r * 0.5, front + r * 0.12, -r * 0.95)), V((-r * 0.5, front + r * 0.12, -r * 0.95))]], lambda c, n: plate)
-        p.box(V((0, front - r * 0.04, -r * 0.3)), (r * 0.14, r * 0.05, r * 0.6), dark)
-    for x in SIDE:
-        p.box(V((x * r * 0.42, front - r * (0.12 if head != "c" else 0.03), r * 0.0 if head != "b" else -r * 0.08)), (r * 0.34, r * 0.05, r * 0.24), zone("eyes", 1.3))
-
-
 def head_piece(race, head):
     p = hk.Piece(f"hero_head_{race}_{head}")
     if race == "dragonborn":
         dragon(p, head)
-    elif race == "golem":
-        golem_face(p, head)
     else:
         person(p, race, head)
     return p
@@ -553,22 +535,18 @@ def arm_part(name, paint, shade, taper, sides=6):
 
 def arm_parts():
     made = []
-    kinds = {"bare": (zone("skin"), zone("skin", 0.84)), "chain": ("hero_chain", "hero_iron"), "plate": ("steel", "steel_dark"), "golem": (zone("skin"), zone("skin", 0.78))}
+    kinds = {"bare": (zone("skin"), zone("skin", 0.84)), "chain": ("hero_chain", "hero_iron"), "plate": ("steel", "steel_dark")}
     for kind, (a, b) in kinds.items():
-        sides = 4 if kind == "golem" else 6
-        made.append(arm_part(f"hero_arm_upper_{kind}", a, b, 0.86, sides))
-        made.append(arm_part(f"hero_arm_fore_{kind}", a, b, 0.76, sides))
-    for kind, paint in (("bare", zone("skin")), ("gauntlet", "steel_dark"), ("golem", zone("skin", 0.86))):
+        made.append(arm_part(f"hero_arm_upper_{kind}", a, b, 0.86))
+        made.append(arm_part(f"hero_arm_fore_{kind}", a, b, 0.76))
+    for kind, paint in (("bare", zone("skin")), ("gauntlet", "steel_dark")):
         p = hk.Piece(f"hero_hand_{kind}")
-        if kind == "golem":
-            p.box(V((0, 0, -0.85)), (1.75, 1.75, 1.7), paint)
-        else:
-            p.blob(V((0, 0, 0)), 1.0, paint)
+        p.blob(V((0, 0, 0)), 1.0, paint)
         made.append(p)
     return made
 
 
-LEG_KINDS = {"cloth": (zone("cloth", 0.6), zone("cloth", 0.5)), "scaled": (zone("cloth", 0.55), zone("cloth", 0.45)), "golem": (zone("skin"), zone("skin", 0.8))}
+LEG_KINDS = {"cloth": (zone("cloth", 0.6), zone("cloth", 0.5)), "scaled": (zone("cloth", 0.55), zone("cloth", 0.45))}
 
 
 def leg_parts():
@@ -576,11 +554,10 @@ def leg_parts():
     plate, and a boot per kind (built at the origin, its heights absolute, scaled across by the leg's radius)."""
     made = []
     for kind, (a, b) in LEG_KINDS.items():
-        sides = 4 if kind == "golem" else 6
-        made.append(arm_part(f"hero_leg_upper_{kind}", a, b, 0.8, sides))
-        made.append(arm_part(f"hero_leg_lower_{kind}", a, b, 0.75, sides))
+        made.append(arm_part(f"hero_leg_upper_{kind}", a, b, 0.8))
+        made.append(arm_part(f"hero_leg_lower_{kind}", a, b, 0.75))
     made.append(arm_part("hero_leg_greave", "steel", "steel_dark", 1.32, 6))
-    for kind, (paint, sole) in (("leather", ("boot", "bandit_leather_dark")), ("golem", (zone("skin", 0.82), zone("skin", 0.62)))):
+    for kind, (paint, sole) in (("leather", ("boot", "bandit_leather_dark")),):
         p = hk.Piece(f"hero_boot_{kind}")
         boots(p, (0.0, 0.0), 1.0, paint, sole)
         made.append(p)
@@ -959,10 +936,34 @@ def limb_matrix(a, b, ra):
     return m @ Matrix.Diagonal((ra, ra, d.length, 1))
 
 
+def long_reach(f, frame_m, grip, right, left, held, long):
+    """Long arms (the metal golem): each hand reaches `long` times as far from its shoulder, with what it holds. Where both hands
+    hold one weapon they move together, by how far their middle moves, so the grip holds. Hands reach further out and down, never
+    higher, so raised weapons stay in the cell. A planted weapon stays on the ground and a staff stays planted: they slide
+    across, not down, and the hand slides down the haft."""
+    sh = {s: frame_m @ (f["chest"] + V((s * f["sw"], 0, 0.02))) for s in SIDE}
+    if grip in BOTH_HANDS:
+        d = ((right + left) / 2 - (sh[1] + sh[-1]) / 2) * (long - 1)
+        d.z = 0 if grip == "planted" else min(d.z, 0)
+        return right + d, left + d, [(n, Matrix.Translation(d) @ m) for n, m in held]
+    dr, dl = (right - sh[1]) * (long - 1), (left - sh[-1]) * (long - 1)
+    dr.z, dl.z = min(dr.z, 0), min(dl.z, 0)
+    out = []
+    for i, (n, m) in enumerate(held):
+        d = dr if i == 0 and n != "hero_shield" else dl  # the main weapon, then the offhand
+        if grip in ("upright", "cast") and i == 0:
+            d = V((d.x, d.y, 0))
+        out.append((n, Matrix.Translation(d) @ m))
+    return right + dr, left + dl, out
+
+
 def layout(desc):
     """Every piece of a hero and where it goes: the list Godot would place. Optional desc keys: two (a versatile weapon in both
     hands), caster (a caster's staff with an empty hand takes the casting pose)."""
     race, build, tier = desc["race"], desc["build"], desc["armour"]
+    sub = subtype(desc)
+    g = f"golem_{sub}" if sub else None  # a golem's pieces carry its sub-type
+    long = LONG_ARMS.get(sub, 1.0)
     f = frame(race, build)
     k = RACES[race]["k"]
     to_full = Matrix.Translation(V((0, 0, Z0))) @ Matrix.Diagonal((k, k, k, 1)) @ Matrix.Translation(V((0, 0, -Z0)))
@@ -972,18 +973,18 @@ def layout(desc):
     drop, twist = pose.get("drop", 0.0), math.radians(pose.get("twist", 0))
     upper = Matrix.Translation(V((0, 0, -drop))) @ Matrix.Translation(hip) @ Matrix.Rotation(twist, 4, "Z") @ Matrix.Translation(-hip)
     turn = Matrix.Rotation(-twist * pose.get("head", 0.0), 4, "Z")
-    pieces = [("hero_base", Matrix.Identity(4)), (f"hero_body_{race}_{build}", to_full @ upper @ to_full.inverted())]
+    pieces = [("hero_base", Matrix.Identity(4)), (f"hero_body_{g or race}_{build}", to_full @ upper @ to_full.inverted())]
     if tier != "none":
         pieces.append((f"hero_armour_{tier}_{race}_{build}", to_full @ upper @ to_full.inverted()))
     head = head_point(race, build)
     hs = BUILDS[build]["head"]
-    pieces.append((f"hero_head_{race}_{desc['head']}", to_full @ upper @ Matrix.Translation(head) @ turn @ Matrix.Diagonal((hs, hs, hs, 1))))
+    pieces.append((f"hero_head_{g or race}_{desc['head']}", to_full @ upper @ Matrix.Translation(head) @ turn @ Matrix.Diagonal((hs, hs, hs, 1))))
     if race not in HAIRLESS and desc.get("hair") and desc["hair"] != "none":
         h = f["head"] / HR
         pieces.append((f"hero_hair_{desc['hair']}", to_full @ upper @ Matrix.Translation(head) @ turn @ Matrix.Diagonal((h * RACES[race]["head_x"], h, h, 1))))
     # Legs: from the sunk hips to the feet, the knees bending forward, all turned by the hips' turn.
     hips = Matrix.Rotation(math.radians(pose.get("hips", 0)), 3, "Z")
-    leg_kind = "golem" if race == "golem" else "scaled" if race == "dragonborn" else "cloth"
+    leg_kind = g if g else "scaled" if race == "dragonborn" else "cloth"
     span = hip.z - (Z0 + 0.13)
     for side, (fx, fy) in zip(SIDE, pose.get("feet", ((-0.13, 0.05), (0.13, -0.05)))):
         top = V((hip.x, hip.y, hip.z - drop)) + hips @ V((side * f["hw"] * 0.55, 0, 0))
@@ -996,14 +997,16 @@ def layout(desc):
         if tier == "heavy" and race != "golem":
             pieces.append(("hero_leg_greave", to_full @ limb_matrix(ankle, knee + (ankle - knee).normalized() * 0.008, r * 0.72)))
         boot = Matrix.Translation(V((foot.x, foot.y, 0))) @ hips.to_4x4() @ Matrix.Diagonal((r * 0.9, r * 0.9, 1, 1))
-        pieces.append(("hero_boot_golem" if race == "golem" else "hero_boot_leather", to_full @ boot))
+        pieces.append((f"hero_boot_{g}" if g else "hero_boot_leather", to_full @ boot))
     # Arms: from the twisted shoulders to the hands, the elbows solved to bend as real elbows do, toward each pose's pole.
-    kind = "golem" if race == "golem" else {"none": "bare", "light": "bare", "medium": "chain", "heavy": "plate"}[tier]
-    fist = "golem" if race == "golem" else "gauntlet" if tier == "heavy" else "bare"
+    kind = g if g else {"none": "bare", "light": "bare", "medium": "chain", "heavy": "plate"}[tier]
+    fist = g if g else "gauntlet" if tier == "heavy" else "bare"
     r = f["arm"]
     reach = f["chest"].z - hip.z
     world = pose.get("world", False)
     turn3 = upper.to_3x3()
+    if long != 1.0:
+        right, left, held = long_reach(f, upper if world else Matrix.Identity(4), grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)), right, left, held, long)
     for side, hand in ((1, right), (-1, left)):
         shoulder = upper @ (f["chest"] + V((side * f["sw"], 0, 0.02)))
         hand = hand if world else upper @ hand
@@ -1012,15 +1015,15 @@ def layout(desc):
             pole = V((-0.3, 0.6, -1))
         elif side == -1 and desc.get("offhand") == "shield":
             pole = V((-0.6, 0.1, -0.8))
-        elbow = ik(shoulder, hand, reach * 0.73, reach * 0.67, pole if world else turn3 @ pole)
+        elbow = ik(shoulder, hand, reach * 0.73 * long, reach * 0.67 * long, pole if world else turn3 @ pole)
         if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "bow" and side == 1:
             # The drawing arm level at shoulder height (Ethan, Nov 9, 2026, like the haymaker): the elbow drawn back behind the
             # shoulder and out from it, the forearm running forward from it to the hand on the string.
-            elbow = shoulder + V((0.55, 0.45, 0)).normalized() * reach * 0.5
+            elbow = shoulder + V((0.55, 0.45, 0)).normalized() * reach * 0.5 * long
         if grip_of(desc["main"], desc.get("offhand"), desc.get("two", False), desc.get("caster", False)) == "haymaker" and side == 1:
             # A pulled-back haymaker (Ethan, round 5): the elbow kept back at shoulder height, the forearm level with the upper
             # arm, running forward and a little out from it, so the fist sits at shoulder height beside the shoulder.
-            hand = elbow + V((0.25, -1, 0)).normalized() * reach * 0.67
+            hand = elbow + V((0.25, -1, 0)).normalized() * reach * 0.67 * long
         pieces.append((f"hero_arm_upper_{kind}", to_full @ limb_matrix(shoulder, elbow + (elbow - shoulder).normalized() * r * 0.5, r)))
         pieces.append((f"hero_arm_fore_{kind}", to_full @ limb_matrix(elbow, hand, r * 0.86)))
         size = r * 0.98
@@ -1088,11 +1091,15 @@ def pieces():
     b = hk.Piece("hero_base")
     sm.base(b, "ring_hero")
     made.append(b)
+    import golem_kit
     for race in RACES:
         for build in BUILDS:
-            made.append(body(race, build))
+            if race != "golem":
+                made.append(body(race, build))
             made += [armour(t, race, build) for t in ARMOUR]
-        made += [head_piece(race, h) for h in HEADS]
+        if race != "golem":
+            made += [head_piece(race, h) for h in HEADS]
+    made += golem_kit.pieces()
     made += [hair_piece(s) for s in HAIRSTYLES]
     made += arm_parts()
     made += leg_parts()

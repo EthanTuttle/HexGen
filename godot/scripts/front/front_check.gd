@@ -376,6 +376,16 @@ func _game_run() -> void:
 	check(g.party.size() == 2 and g.party[1].name == "Fluffy", "the party is the hero and Fluffy")
 	check(g.run.background == "folk_hero", "the run starts from the background")
 	check(g.can_enter_town(), "town: a Folk Hero's start tile, the inn, can be entered")
+	# Each place opens its own scene (07 -> Town screen; Places): the start tile, each town variant and its landmark, and a
+	# plain village, which is the market town; every kit the list names exists.
+	check(Places.id_at(g, Rules.START_TILE) == "start_folk_hero", "places: the Folk Hero's start tile is its own place")
+	for v: String in Variants.TIER2.village + ["market_town"]:
+		check(Places.PLACES.has(v), "places: %s is a place" % v)
+	for lm: String in ["tradinghouse", "keep", "blackmarket", "college"]:
+		check(Places.PLACES.has(Variants.LANDMARKS[lm]), "places: the %s is part of its town's square" % lm)
+	for id: String in Places.PLACES:
+		var pl: Dictionary = Places.PLACES[id]
+		check(Places.KITS.has(pl.kit) and Places.KITS.has(pl.inn), "places: %s's kits exist" % id)
 	var next: Vector2i = Rules.START_TILE + Hex.NEIGHBOURS[0]
 	g.map.retile({next: "village"})
 	g.order[next] = 1
@@ -392,12 +402,13 @@ func _game_run() -> void:
 	await tap_on("Enter")
 	await _wait(1.3)
 	check(control("Shop") != null and control("Inn") != null and control("Leave") != null, "town: Shop, Inn and Leave")
+	check(Places.id_at(g, next) == "market_town", "places: a plain village opens the market town")
 	check(control("Enter") == null, "town: the map's cards are gone")
 	var town := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
 	check(not g.map.visible, "town: the scene stands alone, the map hidden")
 	check(town.stage._minis.size() == g.party.size(), "town: the party stands in the square")
 	check(town.stage._keeper != null and town.stage._keeper.name == "shopkeeper", "town: the shopkeeper is at the stall")
-	check(g.clock.environment.background_color != TownStage.INN_BACKDROP, "town: the square has the map's backdrop")
+	check(g.clock.environment.background_color != Color(Places.KITS.inn.backdrop), "town: the square has the map's backdrop")
 	await _wait(0.2)
 	print("FRONT square: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	await shot("town_square")
@@ -435,7 +446,7 @@ func _game_run() -> void:
 	check(town.stage.scene_name == "inn" and town.stage._keeper.name == "innkeeper", "inn: the interior, with the innkeeper")
 	var behind_bar: Vector3 = town.stage._keeper.position
 	check(behind_bar.z < town.stage._hex(1, -2).z, "inn: the innkeeper stands behind the bar")
-	check(g.clock.environment.background_color == TownStage.INN_BACKDROP, "inn: the flat dark backdrop")
+	check(g.clock.environment.background_color == Color(Places.KITS.inn.backdrop), "inn: the flat dark backdrop")
 	print("FRONT inn: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	await shot("town_inn")
 	g.rig.yaw_deg = -50.0
@@ -478,7 +489,7 @@ func _game_run() -> void:
 	await _wait(0.5)
 	check(not g.busy, "town: Leave hands the map back")
 	check(g.map.visible and g.party_node.visible, "town: the map and party are back")
-	check(g.clock.environment.background_color != TownStage.INN_BACKDROP, "town: the backdrop follows the clock again")
+	check(g.clock.environment.background_color != Color(Places.KITS.inn.backdrop), "town: the backdrop follows the clock again")
 	await _social(g)
 
 
@@ -595,7 +606,16 @@ func _kit_report() -> void:
 	var built := 0
 	var missing := {}
 	var kit := Kit.meshes(HeroMini.GLB)
+	# Each race, a golem once per sub-type (kit v14; golem_metal is the metal golem's own entry, read through its sub-type).
+	var shapes := []
 	for race: String in t.races:
+		if race == "golem":
+			for sub: String in t.golem_subtypes:
+				shapes.append([race, sub])
+		elif not race.begins_with("golem_"):
+			shapes.append([race, ""])
+	for shape: Array in shapes:
+		var race: String = shape[0]
 		for build: String in t.builds:
 			for main: String in t.races[race].builds[build].poses:
 				for hold: String in t.races[race].builds[build].poses[main]:
@@ -604,6 +624,8 @@ func _kit_report() -> void:
 						var d := {"race": race, "build": build, "head": "a", "hair": "long", "armour": armour, "main": main, "offhand": off,
 							"two": hold == "two", "caster": hold == "cast",
 							"colours": {"skin": "#C68E64", "hair": "#2B211C", "eyes": "#4F7A33", "cloth": "#3E6F8C"}}
+						if shape[1] != "":
+							d.subtype = shape[1]
 						for part: Array in HeroMini.parts(d):
 							if not kit.has(part[0]):
 								missing[part[0]] = true
@@ -614,10 +636,17 @@ func _kit_report() -> void:
 						times.append((Time.get_ticks_usec() - t0) / 1000.0)
 						tris.append(m.surface_get_array_index_len(0) / 3)
 						built += 1
+	# Golems -> The metal golem's own arm placements: its arms and weapon sit elsewhere, its body where the stone golem's does.
+	var g := {"race": "golem", "build": "average", "head": "a", "hair": "", "armour": "none", "main": "greatsword", "offhand": "",
+		"colours": {"skin": "#9AA3AB", "hair": "#2B211C", "eyes": "#4F7A33", "cloth": "#3E6F8C"}}
+	var metal := HeroMini.parts(g.merged({"subtype": "metal"}))
+	var stone := HeroMini.parts(g.merged({"subtype": "stone"}))
+	check(metal[1][1] == stone[1][1] and metal[-1][1] != stone[-1][1] and metal[-1][0] == "hero_greatsword",
+			"kit: the metal golem reads its own entry (its greatsword moves, its body doesn't)")
 	check(missing.is_empty(), "kit: every piece the table asks for exists %s" % [missing.keys() if not missing.is_empty() else ""])
 	times.sort()
 	print("FRONT kit: %d heroes, %d to %d triangles; rebuild median %.1f ms, worst %.1f ms" % [built, tris.min(), tris.max(), times[times.size() / 2], times[-1]])
-	check(tris.max() <= 1350, "kit: a hero stays near the hand-off's 1,342 triangles")
+	check(tris.max() <= 1360, "kit: a hero stays within the hand-off's 1,360 triangles (kit v14)")
 
 
 ## The Look step's mini for a few heroes, one per pose family (art/handoff/hero_kit.md, kit v10): [name, class, race, sub,
@@ -630,14 +659,23 @@ func _look_shots() -> void:
 			["longsword_two", "Fighter", "Human", "", "longsword", "", "armoured"], ["staff_cast", "Wizard", "Halfling", "", "staff", "", ""],
 			["wraps", "Fighter", "Dwarf", "Forge dwarf", "wraps", "", "armoured"], ["rogue_daggers", "Rogue", "Halfling", "", "dagger", "dagger", ""],
 			["rogue_rapier", "Rogue", "Tiefling", "", "rapier", "", ""], ["rogue_rapier_dagger", "Rogue", "Elf", "High elf", "rapier", "dagger", ""],
-			["rogue_scimitars", "Rogue", "Human", "", "scimitar", "scimitar", ""], ["rogue_shortbow", "Rogue", "Elf", "Wood elf", "shortbow", "", ""]]:
+			["rogue_scimitars", "Rogue", "Human", "", "scimitar", "scimitar", ""], ["rogue_shortbow", "Rogue", "Elf", "Wood elf", "shortbow", "", ""],
+			# kit v14: each golem sub-type its own shape; the metal golem's long arms on a two-handed grip and a shield
+			["golem_metal", "Fighter", "Golem", "Metal", "greatsword", "", "armoured"], ["golem_metal_shield", "Cleric", "Golem", "Metal", "mace", "shield", ""],
+			["golem_stone", "Fighter", "Golem", "Stone", "warhammer", "", ""], ["golem_wood", "Ranger", "Golem", "Wood", "longbow", "", ""]]:
 		c.cls = h[1]
 		c.race = h[2]
 		c.sub = h[3]
 		c.main = h[4]
 		c.off = h[5]
 		c.arm = h[6]
-		look._mini.show_hero(HeroMini.description(c.hero()))
+		var d := HeroMini.description(c.hero())
+		look._mini.show_hero(d)
+		if h[2] == "Golem":
+			var sub := str(h[3]).to_lower()
+			var names := HeroMini.parts(d).map(func(p): return p[0])
+			check(d.get("subtype") == sub and names.any(func(n): return n.begins_with("hero_body_golem_%s_" % sub)) and "hero_hand_golem_" + sub in names,
+					"Look: a %s golem wears its own shape (%s)" % [sub, names.filter(func(n): return "golem" in n)])
 		await _wait(0.4)
 		await shot("look_kit_" + h[0])
 

@@ -1,4 +1,4 @@
-# Ruins kit (corner halls from tiles_v92; overrun outpost on the halls from tiles_v93; Warren from tiles_v91)
+# Ruins kit (corner halls from tiles_v92; overrun outpost on the halls from tiles_v93; Warren from tiles_v91; haunted ghost town and Crypt from tiles_v94)
 
 Ruins tier 0, rebuilt as structure and approved by Ethan on Nov 9, 2026 (corner halls, take B, refined v2). It replaces tiles_v90's plaza and scattered remains. Look rules: `design/07 Presentation.md` → Ruins land. Code: `art/scripts/ruin_structure.py` (the takes study; the kit uses `KIT = "b"`) and `art/scripts/ruin_lands.py`.
 
@@ -47,3 +47,30 @@ tiles_v93 drops tiles_v90's remains props (`ruin_<kind>`) and the old goblin jun
 - **Warren routes:** `warren_centre` carries path data (also in `tiles_paths.json`): a ring 3.0 from the middle, corners on the walk lines; spokes from each edge's middle in to the ring; the approach along edge 0's line from the ring to the mouth (1.45 from the middle). The tile's own straight walks to the middle aren't used. The engine turns the Warren so edge 0 meets the region's longest trail, as for other landmarks.
 - **Ground cover:** 0.1 on `overrun_outpost` and `warren`.
 - **Triangles:** the worst outpost tile is about 2,940 of 4,816 (two burrows); the Warren tile about 3,310.
+
+## Haunted ruins: the ghost town, and the Crypt (tiles_v94)
+
+Approved by Ethan on Nov 10, 2026 (ghost town round 3). Looks: `design/07 Presentation.md` → Region variant looks (Haunted ruins) and Landmark tiles (Crypt). Code: the ghost town section of `art/scripts/ruin_structure.py`; the Crypt is `ruin_lands.crypt`. Here the base changes: no halls. At every corner of a haunted tile stand two roofless stone house shells, one fronting each street beside the corner, with a tomb between their backs. By day they're bare shells; at night a pale ghost house stands over every shell as it once was, with a ghostly roof and lit windows. Wisps and thin mist are accents. tiles_v94 drops the old loose tombs (`haunt_toppled`, `haunt_graves`, `haunt_slab`): the tombs are in the blocks now.
+
+| Piece | What |
+| --- | --- |
+| `haunted_ruins_centre`, `_edge_same`, `_edge_same_b`, `_edge_other`, `_edge_other_b` | The plain halls' ground pieces, slab for slab, so the streets carry on into plain ruins; `_b` picked as for ruins. The variant's ground colour is `gt_ground` (#AEB0AB), the engine's recolour of `base_ruins` |
+| `haunted_block_<n>_<lo><hi>` | One corner's two shells and tomb, 12 pieces: layout `n` 0–2 (sizes, one or two storeys, crumbling, and the tomb: headstones, a coffin with its lid slid off, an open grave), `lo`/`hi` as for the halls (a shell reaches 0.14 from the edge where the neighbour is a ruins look, 0.5 where not). Fronts have a door and two windows (two-storey ones upper windows too), gable ends, grass floors inside. Origin at the tile's middle, built facing +X toward the corner |
+| `haunted_ghost_<n>_<lo><hi>` | That block's ghost houses, exactly over its shells: one box and gable roof per house, and one lit quad over each door and window hole. **Night only** |
+| `haunt_wisps` | Three small pale lights in a loose column (carries `wisp` effect points in `tiles_paths.json`); the engine drifts them up |
+| `haunt_mist` | Thin low mist, alpha in the vertex colours (`mist_low`), fading to nothing at its edge |
+| `crypt_centre` | The Crypt (unchanged look): a mausoleum with a cracked dome, doors ajar, light spilling from wide stairs down, mourning statues; centre-only landmark using the ghost town's wedges. It carries path data: a ring 3.0 from the middle, spokes from each edge's middle, and the approach along edge 0 to the doors (1.95). The engine turns it so edge 0 meets the region's longest trail |
+
+- **Props:** port `ruin_structure.haunted_props(world, q, r, night)`. For each corner `c` it takes `block_props`' join flags and variant (`hash01(q * 6 + c, r, 51) * 3`) and places `haunted_block_<n>_<lo><hi>` at the middle turned `30 + 60 * c` degrees; with `night` it also places `haunted_ghost_<n>_<lo><hi>` the same way. Wisps rise over three tombs if `hash01(q, r, 57) < 0.4`, else two: the corners with the lowest `hash01(q * 6 + c, r, 56)`, at (3.6, 0) turned by the corner's spin, spun `6.283 * hash01(q * 6 + c, r, 55)`. One or two mists (two if `hash01(q, r, 58) < 0.5`) at angle `6.283 * hash01(q * 2 + k, r, 59)`, distance `1.2 + hash01(q * 2 + k, r, 60)`.
+- **Region edge:** shells stand at every haunted corner out to the region's edge. A haunted tile counts as a ruins look for its neighbours (`ruin_lands.LOOKS`), so a plain hall beside it reaches the edge and is left part-open, as beside the outpost. Re-pick a tile's blocks when a neighbour changes.
+- **Night swap (the ghost houses):** keep the shells always. Show the `haunted_ghost_*` pieces only at night, ideally fading their alpha in at dusk and out at dawn (the previews just add them). They don't change routes or cover.
+- **Ghost materials** (their own, not `kit`; in the glb they're plain colours, so the engine sets the shader):
+  - `ghost_house` (#D6F2EA): see-through (previews: alpha 0.2), a faint glow (emission 0.45), both sides drawn, no shadows cast, no depth write, so the shell shows through.
+  - `ghost_roof` (#B5DCD6): the same, alpha 0.3, emission 0.4.
+  - `ghost_window` (#F2F7C8): opaque, bright at night (emission 5). One quad per hole, facing out.
+  - A slow shimmer or upward drift on the walls and roof would help; optional.
+- **Other glows** (own materials, as before): `haunt_glow` (the open grave, the coffin's inside, the Crypt's dome cracks; previews: emission 1.4 at night, 0.4 by day), `haunt_wisp` (2.2 / 0.5), `haunt_light` (the Crypt's stairs, 1.2 / 0.2), `mist_low` (vertex alpha).
+- **Walks:** the usual straight lines; every shell and ghost roof keeps 0.62 off them (`render_ruin_structure.py -- haunted check`).
+- **Ground cover:** 0.1 on `haunted_ruins` and `crypt`, kept off the streets and plaza by `no_cover`.
+- **Triangles:** worst block 508, ghost 58. Tiles as placed (400 checked): worst about 3,920 at night with the ghosts, of 4,816; the bound of six of the biggest blocks is 3,964. The Crypt centre is 912.
+

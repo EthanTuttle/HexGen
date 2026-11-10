@@ -3,7 +3,7 @@ extends Control
 ## The town, from Town v9 (mockups/town/Town-v9-SwapDetails.dc.html; design/07 -> Town screen): a scene with Shop and Inn
 ## as option cards, each opening its own panel.
 ##
-## The square and inn are Terrain Art's scenes (TownStage), each shown on its own with the map hidden.
+## Each place opens its own scene (Places: its kit, its inn, its cards), shown on its own with the map hidden (PlaceStage).
 ##
 ## PLACEHOLDERS: every keeper's line and the town's name, as bracketed in the mockup (design/characters/Places.md has the
 ## slots, not yet written); the inn's price and the stock (TownShop). No Quest board (no quests yet), Swap party (nobody's
@@ -18,7 +18,8 @@ var game: Game
 var tile: Vector2i
 var mode := ""                         # "", "shop", "inn"
 var head := SceneUI.Head.new()
-var stage: TownStage
+var stage: PlaceStage
+var place: Dictionary                  # Places.PLACES entry
 var _row: HBoxContainer
 var _gold: Control
 var _shop: TownShop
@@ -33,6 +34,7 @@ var _mugs: Array[Control] = []
 func _init(g: Game, t: Vector2i) -> void:
 	game = g
 	tile = t
+	place = Places.at(g, t)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -44,11 +46,11 @@ func _ready() -> void:
 	game.hud.set_scene(true)
 	add_child(head)
 	head.fit(size.x - 160.0 - 96.0)
-	stage = TownStage.new(game)
+	stage = PlaceStage.new(game)
 	game.add_child(stage)
 	await _fade_cut(func():
 		stage.begin()
-		stage.show_scene("square", "none", _is_night()))
+		stage.show_scene(place.kit, "none", _is_night()))
 	_show_square()
 
 
@@ -88,19 +90,23 @@ func _refresh_gold() -> void:
 
 func _show_square() -> void:
 	if mode == "inn":
-		await _fade_cut(func(): stage.show_scene("square", "none", _is_night()))
+		await _fade_cut(func(): stage.show_scene(place.kit, "none", _is_night()))
 	elif mode == "shop":
-		stage.show_scene("square", "none", _is_night())
+		stage.show_scene(place.kit, "none", _is_night())
 	mode = ""
 	_refresh_gold()
-	head.say(town_name(), "Market town", "[Town greeting]", Color("#E2C79A"), Color("#6B4C35"), SceneUI.ICONS.house)
+	head.say(town_name(), place.sub, "[Town greeting]", Color("#E2C79A"), Color("#6B4C35"), SceneUI.ICONS.house)
 	_clear_row()
-	var shop := SceneUI.card("TOWN", SHOP_C, SceneUI.ICONS.shop, SHOP_C, "Shop")
-	shop.pressed.connect(_open_shop)
-	_row.add_child(shop)
-	var inn := SceneUI.card("TOWN", INN_C, SceneUI.ICONS.inn, INN_C, "Inn")
-	inn.pressed.connect(_open_inn)
-	_row.add_child(inn)
+	for k: String in place.cards:
+		match k:
+			"shop":
+				var shop := SceneUI.card("TOWN", SHOP_C, SceneUI.ICONS.shop, SHOP_C, "Shop")
+				shop.pressed.connect(_open_shop)
+				_row.add_child(shop)
+			"inn":
+				var inn := SceneUI.card("TOWN", INN_C, SceneUI.ICONS.inn, INN_C, "Inn")
+				inn.pressed.connect(_open_inn)
+				_row.add_child(inn)
 	var leave := SceneUI.dark_card("Leave")
 	leave.pressed.connect(_leave)
 	_row.add_child(leave)
@@ -119,7 +125,7 @@ func _leave() -> void:
 
 func _open_shop() -> void:
 	mode = "shop"
-	stage.show_scene("square", "shop", _is_night())
+	stage.show_scene(place.kit, "shop", _is_night())
 	head.say("[Shopkeeper]", "%s · Shop" % town_name(), "[Shopkeeper line]", Color("#F2D8B0"), SHOP_C, SceneUI.ICONS.person)
 	_row.queue_free()
 	_row = null
@@ -133,7 +139,7 @@ func _open_shop() -> void:
 # --- Inn: a night at the bar (v2e) -----------------------------------------------------
 
 func _open_inn() -> void:
-	await _fade_cut(func(): stage.show_scene("inn", "seats", _is_night()))
+	await _fade_cut(func(): stage.show_scene(place.inn, "seats", _is_night()))
 	mode = "inn"
 	_phase = ""
 	_inn_head("[Innkeeper morning line]" if _rested else "[Innkeeper line]")

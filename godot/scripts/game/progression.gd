@@ -194,7 +194,7 @@ const FEATS := [
 ]
 const BACKGROUND_NAMES := {"soldier": "Soldier", "acolyte": "Acolyte", "criminal": "Criminal", "sage": "Sage", "folk_hero": "Folk Hero", "noble": "Noble"}
 const PROFICIENCY_LIST := ["Athletics", "Perception", "Intimidate", "Survival", "Stealth", "Thievery", "Deceive", "Persuade", "Lore", "Nature", "Animal"]
-## The weapon categories each class can use (CreatorData.CLS), for Weapon Training's follow-up.
+## Every weapon category (Gear.WEAPONS' ids), for Weapon Training's follow-up.
 const ALL_WEAPONS := ["greatsword", "longsword", "shortsword", "rapier", "scimitar", "dagger", "battleaxe", "greataxe", "mace", "warhammer",
 	"spear", "halberd", "glaive", "staff", "wand", "shortbow", "longbow", "crossbow", "gauntlets", "knuckles", "wraps"]
 
@@ -333,10 +333,7 @@ static func follow_options(m: Dictionary, f: Dictionary) -> Array:
 		"weapon":
 			if m.get("race", "") == "Human" or klass(m) == "fighter":
 				return []
-			var own: Array = []
-			for c: Dictionary in CreatorData.CLS:
-				if String(c.id).to_lower() == klass(m):
-					own = c.w if c.w is Array else ALL_WEAPONS
+			var own: Array = Gear.weapons_for(klass(m)).map(func(w): return w.id)
 			return ALL_WEAPONS.filter(func(w): return not w in own)
 	return []
 
