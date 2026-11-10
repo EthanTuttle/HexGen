@@ -562,7 +562,7 @@ def outpost_props(world, q, r):
     return out
 
 
-# --- Haunted ruins: the ghost town (round 3, not approved) -------------------------------------
+# --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kit from tiles_v94) -------------------------------------
 # design/07 -> Region variant looks: here the base changes to stone house shells along the streets (walls with door and
 # window holes and gable ends, no roofs). By day they're bare shells; at night pale ghost houses fill them out as they once
 # stood, with ghostly roofs and lit windows (a separate piece per block, shown only at night). Tombs, wisps and mist are
@@ -678,122 +678,46 @@ def ghost(p, at, ang, w, d, h, holes):
         f.material_index = p._slot("ghost_window")
 
 
-GT_VARIANTS = 6   # ghost town corner layouts (Ethan, Nov 10: mixed per corner so the town doesn't repeat)
-# Per layout, what stands along each of the corner's two streets, edge end first: "h" a house fronting the street, "t" a
-# house turned gable-on to it, "lot" an empty lot (a low wall and rubble). The two streets swap by seed.
-GT_LAYOUTS = [(("h",), ("h",)), (("h2",), ("lot",)), (("h", "h"), ("t",)), (("t",), ("t",)), (("lot",), ("hs",)), (("h",), ("t", "t"))]
-LOT_X0 = 2.35   # houses stop short of the plaza's lanes
-
-
-def rect(at, ang, w, d):
-    e, f = Vector((math.cos(ang), math.sin(ang), 0)) * w / 2, Vector((-math.sin(ang), math.cos(ang), 0)) * d / 2
-    return [at - e - f, at + e - f, at + e + f, at - e + f]
-
-
-def overlap(a, b, pad=0.06):
-    """Two convex outlines (XY) closer than pad: no separating axis among their edges."""
-    for poly in (a, b):
-        for i in range(len(poly)):
-            e = poly[(i + 1) % len(poly)] - poly[i]
-            n = Vector((-e.y, e.x, 0)).normalized()
-            pa, pb = [n.dot(q) for q in a], [n.dot(q) for q in b]
-            if max(pa) + pad < min(pb) or max(pb) + pad < min(pa):
-                return False
-    return True
-
-
-def gt_layout(n, join, rng):
-    """(houses, lots, tomb): houses (at, ang, w, d, h, broken, mat, turned) laid along the corner's two streets as GT_LAYOUTS[n]
-    says, sizes and heights by rng; lots (at, ang, length, depth); tomb True where it fits between the backs."""
-    joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
-    rows = list(GT_LAYOUTS[n])
-    if rng.random() < 0.5:
-        rows.reverse()
-    houses, lots = [], []
-    for row, sd in zip(rows, (1, -1)):
-        edge = "hi" if sd == 1 else "lo"
-        t_end = A - (0.14 if joins[edge] else 0.5)
-        a = math.radians(30 * sd)
-        along = Vector((math.cos(a), math.sin(a), 0))
-        into = Vector((math.sin(a), -math.cos(a), 0)) if sd == 1 else Vector((-math.sin(a), math.cos(a), 0))
-        front = a if sd == -1 else a + math.pi   # an angle whose -v side faces the walk
-        specs = []
-        for kind in row:
-            if kind == "lot":
-                specs.append((kind, rng.uniform(0.8, 1.1), rng.uniform(0.5, 0.7), 0.0))
-            elif kind == "t":   # gable-on: narrow along the street, deep into the block
-                specs.append((kind, rng.uniform(0.5, 0.62), rng.uniform(0.72, 0.88), rng.choice((0.72, 0.8, 1.05))))
-            else:
-                w = {"h": rng.uniform(0.8, 1.15), "h2": rng.uniform(1.15, 1.35), "hs": rng.uniform(0.62, 0.75)}[kind]
-                hh = {"h": rng.choice((0.72, 0.78, 0.84, 1.12)), "h2": rng.uniform(1.1, 1.25), "hs": rng.uniform(0.62, 0.7)}[kind]
-                specs.append((kind, w, rng.uniform(0.56, 0.68), hh))
-        gap = 0.1
-        room = t_end - LOT_X0 - gap * (len(specs) - 1)
-        scale = min(1.0, room / sum(s_[1] for s_ in specs))
-        cursor = t_end - (rng.uniform(0.0, 0.2) if len(specs) == 1 else 0.0)
-        for kind, length, depth, hh in specs:
-            length *= scale
-            tc = cursor - length / 2
-            cursor -= length + gap
-            if kind == "lot":
-                lots.append((along * tc + into * (SHELL_KEEP + depth / 2), front, length, depth))
-            elif kind == "t":
-                houses.append([along * tc + into * (SHELL_KEEP + depth / 2), front + math.pi / 2, depth, length, hh, rng.choice((0, 1, 1)), rng.choice(WALLS), True])
-            else:
-                houses.append([along * tc + into * (SHELL_KEEP + depth / 2), front, length, depth, hh, rng.choice((0, 1, 2)), rng.choice(WALLS), False])
-    for _ in range(6):   # houses on the two streets meet toward the plaza: shrink the deeper ones back from each other
-        clash = [(i, j) for i in range(len(houses)) for j in range(i + 1, len(houses)) if overlap(rect(*houses[i][:4]), rect(*houses[j][:4]))]
-        if not clash:
-            break
-        for i, j in clash:
-            for k in (i, j):   # their depth into the block: w for a turned house, d for one fronting the street
-                houses[k][2 if houses[k][7] else 3] *= 0.88
-    houses = [h_ for k, h_ in enumerate(houses) if not any(overlap(rect(*h_[:4]), rect(*o[:4])) for o in houses[:k])]
-    tomb_rect = rect(TOMB_AT, 0.0, 0.8, 0.5)
-    has_tomb = not any(overlap(rect(*h_[:4]), tomb_rect) for h_ in houses)
-    return houses, lots, has_tomb
-
-
-def lot(p, rng, at, ang, length, depth, mat):
-    """An empty lot: a low broken wall along its back and side, rubble and a fallen stone or two."""
-    e, f = Vector((math.cos(ang), math.sin(ang), 0)), Vector((-math.sin(ang), math.cos(ang), 0))
-    p.box(at + f * (depth / 2 - SHELL_T / 2), (length * rng.uniform(0.5, 0.9), SHELL_T, rng.uniform(0.18, 0.32)), mat, spin=ang)
-    sd = rng.choice((-1, 1))
-    p.box(at + e * sd * (length / 2 - SHELL_T / 2) + f * 0.1, (SHELL_T, depth * 0.6, rng.uniform(0.15, 0.25)), mat, spin=ang)
-    for _ in range(rng.randint(2, 4)):
-        c = at + e * rng.uniform(-length / 2 + 0.15, length / 2 - 0.15) + f * rng.uniform(-depth / 2 + 0.12, depth / 2 - 0.12)
-        p.box(c, (rng.uniform(0.1, 0.2), rng.uniform(0.1, 0.18), rng.uniform(0.06, 0.12)), rng.choice(("rs_rubble", "rs_rubble_d")), spin=rng.uniform(0, 3))
-
-
 def block_houses(n, join):
-    """A ghost town corner, in the block frame, as layout n (GT_LAYOUTS): houses along the two streets beside the corner
-    (the +30 degree walk ends at the hi edge, the -30 degree one at the lo edge), empty lots, a tomb between the backs
-    where it fits. Returns (build, ghost build): the same seed lays out both, so the ghost houses sit exactly on their shells."""
+    """A ghost town corner, in the block frame: a shell fronting each of the two streets beside the corner (the +30
+    degree walk ends at the hi edge, the -30 degree one at the lo edge), a tomb between their backs. Returns (build,
+    ghost build): the same seed lays out both, so the ghost houses sit exactly on their shells."""
     seed = f"gt_block_{n}_{join}"
+
+    def layout(rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        out = []
+        sizes = [(1.1, 0.66, 0.78, 0), (1.05, 0.62, 0.74, 1)] if n == 0 else \
+                [(1.0, 0.64, 1.15, 0), (1.12, 0.62, 0.76, 2)] if n == 1 else [(1.18, 0.66, 0.8, 1), (0.95, 0.6, 1.1, 1)]
+        rng.shuffle(sizes)
+        for (w, d, h, broken), sd in zip(sizes, (1, -1)):
+            edge = "hi" if sd == 1 else "lo"
+            t_end = A - (0.14 if joins[edge] else 0.5)
+            tc = t_end - w / 2
+            a = math.radians(30 * sd)
+            along = Vector((math.cos(a), math.sin(a), 0))
+            into = Vector((math.sin(a), -math.cos(a), 0)) if sd == 1 else Vector((-math.sin(a), math.cos(a), 0))
+            at = along * tc + into * (SHELL_KEEP + d / 2)
+            ang = a if sd == -1 else a + math.pi   # its front (-v) toward its walk
+            out.append((at, ang, w, d, h, broken))
+        return out
 
     def build(p, rng):
         rng = hk.seeded(seed)
-        houses, lots, has_tomb = gt_layout(n, join, rng)
-        for at, ang, w, d, h, broken, mat, _ in houses:
+        mat = rng.choice(WALLS)
+        houses = layout(rng)
+        for at, ang, w, d, h, broken in houses:
             shell(p, rng, at, ang, w, d, h, mat, broken)
-        lrng = hk.seeded(seed + "lot")
-        for at, ang, length, depth in lots:
-            lot(p, lrng, at, ang, length, depth, lrng.choice(WALLS))
         weather(p, hk.seeded(seed + "weather"))
-        if has_tomb:
-            tomb(p, hk.seeded(seed + "tomb"), n % 3, rng.choice(WALLS))
+        tomb(p, hk.seeded(seed + "tomb"), n, mat)
 
     def build_ghost(p, rng):
         rng = hk.seeded(seed)
-        houses, _, _ = gt_layout(n, join, rng)
-        for at, ang, w, d, h, broken, mat, _ in houses:
-            holes = shell(hk.Piece("scratch"), rng, at, ang, w, d, h, mat, broken)   # the same draws, for the same holes
+        rng.choice(WALLS)
+        for at, ang, w, d, h, broken in layout(rng):
+            holes = shell(hk.Piece("scratch"), rng, at, ang, w, d, h, "rs_wall_a", broken)   # the same draws, for the same holes
             ghost(p, at, ang, w, d, h, holes)
     return build, build_ghost
-
-
-def gt_has_tomb(n, join):
-    return gt_layout(n, join, hk.seeded(f"gt_block_{n}_{join}"))[2]
 
 
 def tomb(p, rng, n, mat):
@@ -820,7 +744,7 @@ def haunted_ground(p, rng, kind):
 
 def haunted_pieces():
     out = {}
-    for n in range(GT_VARIANTS):
+    for n in range(VARIANTS_PER_TAKE):
         for j in JOINS:
             out[f"haunted_block_{n}_{j}"], out[f"haunted_ghost_{n}_{j}"] = block_houses(n, j)
     return out
@@ -831,12 +755,11 @@ def haunted_props(world, q, r, night=False):
     night; a plain hall beside them is left part-open, as beside the outpost), wisps over two or three tombs, one or two mists."""
     out, tombs = [], []
     for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
-        n, j = int(gc.hash01(q * 6 + c, r, 61) * GT_VARIANTS), piece[-2:]   # the layout by its own hash; the joins as the halls'
-        out.append((f"haunted_block_{n}_{j}", x, y, spin))
+        nj = piece[len("ruin_hall_"):]
+        out.append((f"haunted_block_{nj}", x, y, spin))
         if night:
-            out.append((f"haunted_ghost_{n}_{j}", x, y, spin))
-        if gt_has_tomb(n, j):
-            tombs.append((c, spin))
+            out.append((f"haunted_ghost_{nj}", x, y, spin))
+        tombs.append((c, spin))
     count = 3 if gc.hash01(q, r, 57) < 0.4 else 2
     for c, spin in sorted(tombs, key=lambda t: gc.hash01(q * 6 + t[0], r, 56))[:count]:
         at = TOMB_AT.copy()
