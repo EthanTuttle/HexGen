@@ -50,7 +50,7 @@ def check(take, live):
     """Raised stone (above 0.03) within WALK_HALF of a walk's line, or anything past the tile's edge; worst triangles per tile."""
     bad = []
     for name, obj in live.items():
-        if "_block_" not in name:
+        if not rs.block_name(take, 0, "00")[:-5] in name:
             continue
         for v in obj.data.vertices:
             x, y, z = v.co
@@ -63,7 +63,7 @@ def check(take, live):
                     if 0 <= t <= rs.A and abs(-x * math.sin(a) + y * math.cos(a)) < vr.rl.WALK_HALF:
                         bad.append((name, "walk", round(x, 2), round(y, 2), round(z, 2)))
     ground = max(tris(live[f"ruins_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
-    worst = max(tris(o) for n, o in live.items() if "_block_" in n)
+    worst = max(tris(o) for n, o in live.items() if rs.block_name(take, 0, "00")[:-5] in n)
     per_tile = tris(live["ruins_centre"]) + 6 * ground + 6 * worst
     print(f"CHECK {take}: {len(bad)} problems {bad[:6]}; centre {tris(live['ruins_centre'])}, wedge {ground}, worst block {worst}, "
           f"worst tile {per_tile} (budget 4816)")
@@ -77,7 +77,7 @@ def shot(take, close, dark=False):
     templates.update(live)
     templates["base_ruins"].data.materials[0] = hk.material("rs_ground")
     world = rc.world("ruins", "ruins")
-    vr.rl.tile_props = lambda name, q, r: rs.block_props(take, world, q, r) if name == "ruins" else ORIGINAL_PROPS(name, q, r)
+    vr.rl.tile_props = lambda name, q, r, w=None: rs.block_props(take, world, q, r) if name == "ruins" else ORIGINAL_PROPS(name, q, r, w)
     rp.build_map(templates, tiles=world)
     vr.rl.tile_props = ORIGINAL_PROPS
     if close:

@@ -469,8 +469,12 @@ def outpost_layout(q, r):
     return remains, burrows, junk
 
 
-def tile_props(name, q, r):
-    """Every prop a ruins tile of this look stands: (piece, x, y, spin), tile-local."""
+def tile_props(name, q, r, world=None):
+    """Every prop a ruins tile of this look stands: (piece, x, y, spin), tile-local. Plain ruins stand corner halls, which
+    need the map (world: (q, r) -> terrain or variant) to see which neighbours are ruins (ruin_structure.block_props)."""
+    if name == "ruins":
+        import ruin_structure as rs
+        return rs.block_props(rs.KIT, world or {}, q, r)
     if name in BURROWED:
         remains, burrows, junk = outpost_layout(q, r)
         return remains + burrows + junk
@@ -1061,6 +1065,8 @@ def mist(p, rng, big=1.0, z=0.18):
 
 FOOT.update({"haunt_toppled": (0.0, 0.82), "haunt_graves": (0.0, 0.8), "haunt_slab": (0.0, 0.8)})
 PROP_PIECES.update({f"haunt_{k}": haunt_piece(k) for k in TOMBS})
+# Not approved yet: variants.py leaves these out of the kit; render_ruin_variants.py builds them live.
+UNAPPROVED = {"haunted_ruins", "crypt", "haunt_wisps", "haunt_mist"} | {f"haunt_{k}" for k in TOMBS}
 PROP_PIECES.update({"haunt_wisps": wisps, "haunt_mist": lambda p, rng: mist(p, rng)})
 VARIANTS["haunted_ruins"] = ("ruins", haunted_ground, "ruin_ground", ("edge_same_b", "edge_other_b"))
 

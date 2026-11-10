@@ -51,6 +51,7 @@ TAKES = {
     "b": dict(title="B  Corner halls", sub="Open middle, wide streets; a tall hall at each corner, shared by three tiles", street=0.62, plaza=2.1),
     "c": dict(title="C  Low sprawl", sub="Overgrown footprints and rubble mounds fill the blocks; low", street=0.42, plaza=1.05),
 }
+KIT = "b"            # Ethan picked corner halls (Nov 9, 2026; refined the same day): the plain ruins in the kit
 VARIANTS_PER_TAKE = 3
 JOINS = ("00", "01", "10", "11")   # (low side, high side): 1 where that side's edge meets more ruins
 
@@ -351,15 +352,22 @@ BLOCKS = {"a": block_a, "b": block_b, "c": block_c}
 
 
 def block_piece(take, n, join):
+    seed = f"rs{take}_block_{n}_{join}"   # the study's names, so the kit's halls are the ones Ethan approved, stone for stone
+
     def build(p, rng):
         joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
-        BLOCKS[take](p, rng, joins, n)
-        weather(p, hk.seeded(p.name + "weather"))
+        BLOCKS[take](p, hk.seeded(seed), joins, n)
+        weather(p, hk.seeded(seed + "weather"))
     return build
 
 
+def block_name(take, n, join):
+    """The kit's halls are ruin_hall_<variant>_<low side><high side>; the other takes keep their study names."""
+    return f"ruin_hall_{n}_{join}" if take == KIT else f"rs{take}_block_{n}_{join}"
+
+
 def block_pieces(take):
-    return {f"rs{take}_block_{n}_{j}": block_piece(take, n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+    return {block_name(take, n, j): block_piece(take, n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
 
 
 # --- Ground: streets along the walks, a plaza at the middle ---------------------------
@@ -421,10 +429,8 @@ def ground(take):
                                 rl.slab(p, rng, rl.turn(poly, k), heave=0.03)
                     if ap < rl.X0:
                         street_slabs(p, rng, ap, rl.X0, t["street"], k=k)
-            p.hub = Vector((0, 0, 0))
             return
-        street_slabs(p, rng, rl.X0, A, t["street"], fray=kind.startswith("other"))
-        p.paths.append([Vector((rl.X0, 0, 0)), Vector((A, 0, 0))])
+        street_slabs(p, rng, rl.X0, A, t["street"], fray=kind.startswith("other"))   # walks: the usual straight lines, no path data
         if take == "b":   # ground cover stays on the yards, off the street
             x = rl.X0
             while x < A + 0.01:
@@ -450,5 +456,5 @@ def block_props(take, world, q, r):
         lo = ruin((q + hk.NEIGHBOURS[c][0], r + hk.NEIGHBOURS[c][1]))
         hi = ruin((q + hk.NEIGHBOURS[(c + 1) % 6][0], r + hk.NEIGHBOURS[(c + 1) % 6][1]))
         n = int(gc.hash01(q * 6 + c, r, 51) * VARIANTS_PER_TAKE)
-        out.append((f"rs{take}_block_{n}_{int(lo)}{int(hi)}", 0.0, 0.0, math.radians(30 + 60 * c)))
+        out.append((block_name(take, n, f"{int(lo)}{int(hi)}"), 0.0, 0.0, math.radians(30 + 60 * c)))
     return out
