@@ -36,16 +36,24 @@ hk.PALETTE.update({"pf_flag": "#C9C2B4", "pf_flag_d": "#ADA699", "pf_flag_l": "#
 SPOTS = {ID: bs.SPOTS["square"]}
 KEEPERS = {ID: bs.KEEPERS["square"]}
 PLACES = {"well": [0, 0], "shop": [-1, 0], "board": [1, 0], "inn": [1, -2], "keep": [0, -5]}
-# Everything stands on a hex: the floor runs back far enough for the Keep and out to the walls.
-FLOOR = sorted(set(HEXES) | {(q, r) for q in range(-8, 9) for r in range(-6, 3) if max(abs(q), abs(r), abs(q + r)) <= 6 and abs(hx(q, r).x) < 7.0
-                             and (r <= 0 or max(abs(q), abs(r), abs(q + r)) == 3)})
-WALL_X = 6.15          # the town wall down each side
-KEEP_AT, KEEP_SCALE = Vector((0.0, 6.5, 0)), 1.15
+# Everything stands on a hex: the floor runs back far enough for the Keep, out past the walls, and forward at the sides
+# under the side houses.
+FLOOR = sorted(set(HEXES) | {(q, r) for q in range(-12, 13) for r in range(-10, 3) if max(abs(q), abs(r), abs(q + r)) <= 10
+                             and abs(hx(q, r).x) < 8.7 and (r <= 0 or max(abs(q), abs(r), abs(q + r)) == 3 or abs(hx(q, r).x) > 4.2)})
+# Sized against the 1.3 m minis (v2, Ethan: the houses read as real houses beside the party, the Keep looms over the square).
+HOUSE_S = 1.75         # houses and their doors and windows, against the market square's
+INN_S = 2.0            # the inn
+WALL_S = 1.45          # the town wall, its towers and banners
+WALL_X = 7.6           # the town wall down each side
+WALL_YS = (-0.4, 3.4, 7.2, 11.0)
+# The Keep stands behind the back row; its gate faces the lane between the left house and the inn.
+KEEP_AT, KEEP_SCALE = Vector((-2.75, 9.4, 0)), 1.9
+GATE = KEEP_AT + Vector((0, -1.5 * KEEP_SCALE, 0))
 # Lights (Blender's frame and watts, as the town kit's): the braziers, the inn's door and the Keep's gate, at night.
-BRAZIERS = [Vector((-3.25, 2.3, 0)), Vector((hx(2, 0).x + 0.7, hx(2, 0).y + 0.6, 0)), Vector((-1.6, 4.95, 0)), Vector((1.6, 4.95, 0))]
+BRAZIERS = [Vector((-3.55, 2.55, 0)), Vector((hx(2, 0).x + 0.7, hx(2, 0).y + 0.6, 0)), Vector((-1.95, 2.55, 0))]
 LIGHTS = [(b + Vector((0, 0, 0.9)), "#FF9A4A", 0.0, 34.0, True) for b in BRAZIERS[:2]] + [
-    (hx(1, -2) + Vector((0.5, 0.2, 0.9)), "#FFC27A", 0.0, 32.0, False),
-    (Vector((0, 4.6, 1.6)), "#FF9A4A", 0.0, 40.0, True)]
+    (Vector((1.25, 3.0, 1.5)), "#FFC27A", 0.0, 32.0, False),
+    (GATE + Vector((0, -0.4, 2.6)), "#FF9A4A", 0.0, 40.0, True)]
 BACKDROP = ""
 
 
@@ -73,15 +81,28 @@ STONE = {"ts_plaster": "stone_block", "ts_plaster_w": "wall_stone_light", "ts_ro
 
 
 def town_wall(p, x):
-    """The town wall down one side, coming toward the camera, its towers and the garrison's banners on its inner face."""
+    """The town wall down one side, from the front corner back past the Keep, its towers and the garrison's banners on its
+    inner face. Built at the village kit's size round the origin, then scaled by WALL_S."""
     s = 1.0 if x > 0 else -1.0
-    ys = (1.2, 4.3, 7.4)
+    k = 1 / WALL_S
+    ys = [y * k for y in WALL_YS]
     for a, b in zip(ys, ys[1:]):
-        vr.stone_wall(p, Vector((x, a, 0)), Vector((x, b, 0)), h=1.9, thick=0.42, pitch=0.5)
+        vr.stone_wall(p, Vector((x * k, a, 0)), Vector((x * k, b, 0)), h=1.9, thick=0.42, pitch=0.5)
     for y in ys:
-        vr.wall_tower(p, Vector((x, y, 0)), r=0.48, h=2.7)
-    for y in (2.75, 5.85):
-        vr.fort_banner(p, Vector((x - s * 0.23, y, 0)), Vector((0, 1, 0)), z=0.7, h=0.95)
+        vr.wall_tower(p, Vector((x * k, y, 0)), r=0.48, h=2.7)
+    for a, b in zip(ys, ys[1:]):
+        vr.fort_banner(p, Vector((x * k - s * 0.23, (a + b) / 2, 0)), Vector((0, 1, 0)), z=0.7, h=0.95)
+
+
+def house(p, x, y, w, d, h, wall, roof):
+    """A stone house under slate, w, d, h in metres; the market square's townhouse with its door and windows, scaled up
+    by HOUSE_S so they stay in proportion."""
+    k = 1 / HOUSE_S
+
+    def make(t):
+        bs.townhouse(t, 0, 0, w * k, d * k, h * k, wall, roof, z=-0.015 * k)
+        ts.door(t, 0.15, -d * k / 2, FLOOR_Z * k, 0.3, 0.62)
+    borrow(p, make, Vector((x, y, 0)), scale=HOUSE_S)
 
 
 def square():
@@ -99,30 +120,30 @@ def square():
     borrow(p, lambda t: ts.well(t, Vector((0, 0, 0)), FLOOR_Z), hx(0, 0), remap={"ts_roof": "slate", "ts_stone": "stone_block", "ts_stone_d": "stone_block_dark"})
     borrow(p, lambda t: ts.stall(t, Vector((0, 0, 0)), FLOOR_Z), hx(-1, 0), remap={"ts_stripe_a": "banner_fort", "ts_stripe_b": "pf_flag_l", "ts_fire": "rock_light", "ts_flower": "rock_dark", "ts_blue": "garrison"})
     borrow(p, lambda t: ts.quest_post(t, Vector((0, 0, 0)), FLOOR_Z), hx(1, 0), remap={"ts_roof_b": "slate"})
-    borrow(p, lambda t: ts.inn(t, Vector((0, 0, 0)), FLOOR_Z), hx(1, -2) + Vector((0, 0.35, 0)), remap=STONE)
-    # stone houses either side of the inn and down the sides, inside the walls
-    for k, (x, y, w, d, h, wall, roof) in enumerate((
-            (hx(0, -2).x - 0.3, hx(0, -2).y + 0.75, 1.5, 1.2, 1.3, "stone_block", "slate_dark"), (hx(2, -2).x + 0.35, hx(2, -2).y + 0.72, 1.5, 1.2, 1.15, "wall_stone_light", "slate"),
-            (hx(-1, -2).x - 0.5, hx(0, -2).y + 0.55, 1.3, 1.2, 1.5, "wall_stone_light", "slate"), (hx(3, -2).x + 0.6, hx(2, -2).y + 0.3, 1.2, 1.2, 1.4, "stone_block", "slate_dark"),
-            (-4.25, 1.15, 1.2, 1.5, 1.2, "stone_block", "slate"), (-4.9, -0.85, 1.1, 1.35, 1.0, "wall_stone_light", "slate_dark"), (5.0, 0.75, 1.2, 1.5, 1.05, "wall_stone_light", "slate"))):
-        bs.townhouse(p, x, y, w, d, h, wall, roof, z=-0.015)
-        ts.door(p, x + 0.2, y - d / 2, FLOOR_Z, 0.22, 0.42)
-    # the town wall down both sides, and the Keep over the back of the square, its gate toward the square
+    # the inn at the back of the square, its door toward the party's inn spots; the lane left of it runs up to the Keep's gate
+    borrow(p, lambda t: ts.inn(t, Vector((0, 0, 0)), FLOOR_Z / INN_S), Vector((0.6, 3.9, 0)), scale=INN_S, remap=STONE)
+    # stone houses: the back row either side of the inn and the lane, and down the sides inside the walls
+    for x, y, w, d, h, wall, roof in (
+            (-5.15, 4.6, 2.5, 2.4, 2.35, "stone_block", "slate_dark"), (4.55, 4.55, 2.3, 2.3, 2.6, "wall_stone_light", "slate"),
+            (-6.05, 1.0, 2.0, 2.4, 2.1, "wall_stone_light", "slate"), (-6.1, -1.75, 1.85, 2.0, 1.9, "stone_block", "slate_dark"),
+            (6.0, 1.1, 2.0, 2.5, 2.0, "wall_stone_light", "slate_dark")):
+        house(p, x, y, w, d, h, wall, roof)
+    # the town wall down both sides, and the Keep over the back of the square, its gate toward the lane
     for x in (-WALL_X, WALL_X):
-        town_wall(p, x)
+        borrow(p, lambda t, x=x: town_wall(t, x), Vector((0, 0, 0)), scale=WALL_S)
     borrow(p, lambda t: vr.keep(t, random.Random(3), "keep"), KEEP_AT, spin=-math.pi / 2, scale=KEEP_SCALE, drop=("street",))
-    # the way up to the gate, flanked by braziers
+    # braziers at the lane's mouth and by the board; their fire is the town kit's flickering ts_fire
     for b in BRAZIERS:
-        vc.yard_brazier(p, rng, b)
+        borrow(p, lambda t: vc.yard_brazier(t, rng, Vector((0, 0, 0))), b, remap={"ember": "ts_fire"})
     # the garrison's things round the edges, on no one's spot: spears, shields, armour, arrows, a supply wagon and hay
-    vc.yard_spears(p, rng, Vector((-3.75, 0.95, 0)), 0.15)
-    vc.yard_shields(p, rng, Vector((-4.05, 0.2, 0)), 0.35)
-    vc.yard_arrows(p, rng, Vector((-3.45, 0.15, 0)))
+    vc.yard_spears(p, rng, Vector((-4.45, 1.3, 0)), 0.15)
+    vc.yard_shields(p, rng, Vector((-4.55, 0.45, 0)), 0.35)
+    vc.yard_arrows(p, rng, Vector((-4.05, 0.05, 0)))
     vc.yard_armour(p, rng, Vector((hx(2, -1).x + 1.25, hx(2, -1).y + 0.45, 0)), -0.4)
     borrow(p, lambda t: bs.cart(t, 0, 0, 0), Vector((3.95, -0.95, 0)), spin=2.6, remap={"ts_flower": "hay"})
     for x, y, sp in ((5.0, -1.9, 0.2), (5.35, -1.35, 1.4)):
         vc.bale(p, Vector((x, y, 0)), sp, z=FLOOR_Z)
-    for x, y in ((-5.1, 2.4), (-4.75, 2.65)):
+    for x, y in ((-4.6, 2.75), (-4.25, 2.95)):
         bs.barrel(p, x, y)
     return p
 
