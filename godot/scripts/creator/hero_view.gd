@@ -4,7 +4,7 @@ extends TextureRect
 ## when the mini changes or turns. Light: PLACEHOLDER, a midday sun near the map's.
 
 const TURN_SECONDS := 0.35
-const VIEW_YAW: Array[float] = [0.0, PI * 0.5, PI, -PI * 0.5]   # Front, Right side, Back, Left side
+const STEP := PI * 0.25                  # one turn, 45° (Ethan's phone note, Nov 8, 2026; was 90°)
 
 var _vp := SubViewport.new()
 var _body := MeshInstance3D.new()
@@ -14,8 +14,8 @@ var _dragging := false
 var yaw: float:                         # how far the mini is turned (the creator check reads it)
 	get: return _body.rotation.y
 
-## A drag across the mini spins it; on letting go it settles on the nearest of the four views (Ethan's phone note, Nov 5,
-## 2026: spin by touch too, not only by the arrows). Only where the step sets spinnable.
+## A drag across the mini spins it; on letting go it settles on the nearest 45° (Ethan's phone notes, Nov 5, 2026: spin
+## by touch too, not only by the arrows; Nov 9: snap to 45°). Only where the step sets spinnable.
 signal turned(view: int)
 var spinnable := false:
 	set(v):
@@ -96,7 +96,7 @@ func _gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		if not e.pressed and _dragging:
 			_dragging = false
-			var view := posmod(roundi(_body.rotation.y / (PI * 0.5)), 4)   # VIEW_YAW's order: front, right, back, left
+			var view := posmod(roundi(_body.rotation.y / STEP), 8)   # eighths of a turn from the front
 			turned.emit(view)
 			turn_to(view)
 		accept_event()
@@ -110,6 +110,6 @@ func _gui_input(e: InputEvent) -> void:
 func turn_to(view: int) -> void:
 	var tw := create_tween()
 	var from := _body.rotation.y
-	var to: float = from + wrapf(VIEW_YAW[posmod(view, 4)] - from, -PI, PI)
+	var to: float = from + wrapf(posmod(view, 8) * STEP - from, -PI, PI)
 	tw.tween_property(_body, "rotation:y", to, TURN_SECONDS).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_redraw_for(TURN_SECONDS + 0.1)

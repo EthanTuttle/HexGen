@@ -308,7 +308,10 @@ func _creator() -> void:
 	await tap_on("Cloth 2")
 	await _wait(0.05)
 	await tap_on("Turn right")
-	await _wait(0.1)
+	await _wait(0.5)
+	var spun: float = (c.find_children("*", "HeroView", true, false)[0] as HeroView).yaw
+	check(is_equal_approx(snappedf(spun, 0.001), snappedf(PI * 0.25, 0.001)), "look: Turn right turns the mini 45° (%.0f°)" % rad_to_deg(spun))
+	check(control("Front") == null and not c.find_children("*", "Label", true, false).any(func(l): return (l as Label).text in ["Front", "Right side", "Back", "Left side"]), "look: no view name under the mini")
 	await shot("look_picked")
 	if "--lookshots" in OS.get_cmdline_user_args():   # test aid: the hero kit's poses on the Look step, one hero a shot
 		await _look_shots()

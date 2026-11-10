@@ -4,7 +4,6 @@ extends Control
 ## on the left and colours on the right. The mini is the real one (HeroView), rebuilt on each pick.
 
 const D = preload("res://scripts/creator/creator_data.gd")
-const VIEWS: Array[String] = ["Front", "Right side", "Back", "Left side"]
 
 var c: Creator
 var turn := 0
@@ -160,9 +159,6 @@ func _middle(x: float, w: float) -> void:
 	var words := CUI.vbox(0)
 	words.custom_minimum_size.x = 110
 	words.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var view := UI.label(VIEWS[posmod(turn, 4)], "n900", 11, Color("#33403B"), 0, 1.2)
-	view.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	words.add_child(view)
 	var place := UI.label(b.hex, "n700", 11, CUI.SOFT_INK, 0, 1.2)
 	place.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	words.add_child(place)
