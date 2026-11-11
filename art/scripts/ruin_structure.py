@@ -19,6 +19,7 @@ nearer. Ground between the remains is a darker rubble earth, so the pale stone s
 """
 import math
 
+import bmesh
 from mathutils import Matrix, Vector
 
 import ground_cover as gc
@@ -788,6 +789,14 @@ PALETTE_BASILISK = {   # made up
     "bs_stone_d": "#73746F",
     "bs_stone_l": "#A4A49E",
     "tuft_stone": "#8C8D87",    # ground cover tufts, stone too
+    "bs_cloth_red": "#A8442F",  # half-turned explorers: their clothes, packs and faces still in colour
+    "bs_cloth_blue": "#3E6390",
+    "bs_cloth_green": "#5E7A3C",
+    "bs_trousers": "#6E5A44",
+    "bs_pack": "#845A35",
+    "bs_skin": "#D8A47F",
+    "lichen_orange": "#E08A2E", # bright lichen crusts on the stone
+    "lichen_yellow": "#E3C238",
 }
 hk.PALETTE.update(PALETTE_BASILISK)
 BASILISK_RECOLOUR = {"rs_floor": "bs_floor", "rs_yard": "bs_yard", "ruin_moss_b": "bs_moss", "ruin_ivy": "bs_ivy"}
@@ -800,36 +809,67 @@ def recolour(p, table):
     p.mats[:] = [table.get(mat, mat) for mat in p.mats]
 
 
-def explorer(p, rng, at, spin, pose, mat, crumble=False):
-    """A stone explorer about 0.85 tall facing spin: "stride" mid-step, "flee" running with an arm up against the gaze,
-    "cower" half-crouched with an arm over the head. A pack on the back. crumble: a limb or the head broken off, chips at the feet."""
+LICHEN = ("lichen_orange", "lichen_yellow")
+
+
+def lichen(p, rng, faces, chance):
+    """Bright lichen crusts: some of these faces painted orange or yellow (no new faces)."""
+    for f in faces:
+        if f.is_valid and rng.random() < chance:
+            f.material_index = p._slot(rng.choice(LICHEN))
+
+
+def new_faces(p, before):
+    return [f for f in p.bm.faces if f not in before]
+
+
+def explorer(p, rng, at, spin, pose, mat, crumble=False, half=False):
+    """An explorer about 0.85 tall facing spin: "stride" mid-step, "flee" running with an arm up against the gaze,
+    "cower" half-crouched with an arm over the head. A pack on the back. crumble: all stone, a limb or the head broken
+    off, chips at the feet. half: only half turned, clothes, pack and face in colour, stone creeping up from the feet."""
+    before = set(p.bm.faces)
+    tunic = rng.choice(("bs_cloth_red", "bs_cloth_blue", "bs_cloth_green")) if half else mat
+    legs, pack, skin = ("bs_trousers", "bs_pack", "bs_skin") if half else (mat, mat, mat)
     rot = Matrix.Rotation(spin, 3, "Z")
     lean = {"stride": 0.08, "flee": 0.3, "cower": 0.5}[pose]
     step = {"stride": 0.35, "flee": 0.6, "cower": 0.25}[pose]
     hip = 0.4 if pose != "cower" else 0.3
     for sd, a in ((1, -step), (-1, step * 0.8)):   # legs: front one forward, back one back
         r = rot @ Matrix.Rotation(a, 3, "Y")
-        p.box_rot(at + rot @ Vector((0, sd * 0.06, 0)) + r @ Vector((0, 0, hip / 2)), (0.09, 0.09, hip + 0.02), mat, r)
+        p.box_rot(at + rot @ Vector((0, sd * 0.06, 0)) + r @ Vector((0, 0, hip / 2)), (0.09, 0.09, hip + 0.02), legs, r)
     body = rot @ Matrix.Rotation(lean, 3, "Y")
     top = at + Vector((0, 0, hip)) + body @ Vector((0, 0, 0.34))
-    p.box_rot(at + Vector((0, 0, hip)) + body @ Vector((0, 0, 0.17)), (0.17, 0.25, 0.34), mat, body)
-    p.box_rot(at + Vector((0, 0, hip)) + body @ Vector((-0.13, 0, 0.18)), (0.11, 0.2, 0.22), mat, body)   # the pack
+    p.box_rot(at + Vector((0, 0, hip)) + body @ Vector((0, 0, 0.17)), (0.17, 0.25, 0.34), tunic, body)
+    p.box_rot(at + Vector((0, 0, hip)) + body @ Vector((-0.13, 0, 0.18)), (0.11, 0.2, 0.22), pack, body)   # the pack
     gone = rng.choice(("head", "arm", "arm2")) if crumble else None
     if gone != "head":
-        p.box_rot(top + body @ Vector((0.0, 0, 0.09)), (0.13, 0.13, 0.15), mat, body)
+        p.box_rot(top + body @ Vector((0.0, 0, 0.09)), (0.13, 0.13, 0.15), skin, body)
     arms = {"stride": ((0.5, 0.0), (-0.5, 0.0)), "flee": ((-2.5, 0.3), (0.9, -0.2)), "cower": ((-2.8, 0.5), (-1.2, -0.3))}[pose]
     for k, (sd, (a, roll)) in enumerate(zip((1, -1), arms)):
         if gone == ("arm" if k == 0 else "arm2"):
             continue
         r = body @ Matrix.Rotation(roll * sd, 3, "X") @ Matrix.Rotation(a, 3, "Y")
-        p.box_rot(top + body @ Vector((0, sd * 0.16, -0.03)) + r @ Vector((0, 0, -0.15)), (0.07, 0.07, 0.3), mat, r)
+        p.box_rot(top + body @ Vector((0, sd * 0.16, -0.03)) + r @ Vector((0, 0, -0.15)), (0.07, 0.07, 0.3), tunic, r)
     if crumble:
         for _ in range(2):
             p.box(at + rot @ Vector((rng.uniform(-0.25, 0.25), rng.uniform(-0.2, 0.2), 0)), (0.09, 0.08, 0.06), mat, spin=rng.uniform(0, 3))
+    made = new_faces(p, before)
+    if half:   # cut the figure where the stone has reached and turn everything below it to stone
+        cut = at.z + rng.uniform(0.3, 0.55)
+        geom = list({v for f in made for v in f.verts}) + list({e for f in made for e in f.edges}) + made
+        bmesh.ops.bisect_plane(p.bm, geom=geom, plane_co=(0, 0, cut), plane_no=(0, 0, 1))
+        made = new_faces(p, before)
+        stone = p._slot(mat)
+        for f in made:
+            if f.calc_center_median().z < cut:
+                f.material_index = stone
+    else:
+        lichen(p, rng, made, 0.06)
 
 
 def stone_tree(p, rng, at, h=None):
-    """A tree turned to stone: trunk, a broken bough or two, a lumpy crown, all grey."""
+    """A tree turned to stone: trunk, a broken bough or two, a lumpy crown, all grey, crusted with lichen."""
+    before = set(p.bm.faces)
     h = h or rng.uniform(1.5, 1.9)
     p.cylinder(at, 0.08, h * 0.55, "bs_stone_d")
     for _ in range(rng.choice((1, 2))):   # boughs reaching out, snapped
@@ -837,10 +877,13 @@ def stone_tree(p, rng, at, h=None):
         r = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(-0.9, 3, "Y")
         p.box_rot(at + Vector((0, 0, h * 0.45)) + r @ Vector((0, 0, 0.16)), (0.06, 0.06, 0.32), "bs_stone_d", r)
     p.blob(at + Vector((rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), 0)), h * 0.22, rng.choice(("bs_stone", "bs_stone_l")), z=h * 0.68, squash=1.1)
+    lichen(p, rng, new_faces(p, before), 0.1)
 
 
 def stone_bush(p, rng, at):
+    before = set(p.bm.faces)
     p.cone(at, rng.uniform(0.16, 0.24), rng.uniform(0.22, 0.32), rng.choice(PETRIFIED), segments=5, spin=rng.uniform(0, 1))
+    lichen(p, rng, new_faces(p, before), 0.1)
 
 
 def basilisk_block(n, join):
@@ -852,6 +895,10 @@ def basilisk_block(n, join):
         weather(p, hk.seeded(seed + "weather"))
         recolour(p, BASILISK_RECOLOUR)
         g = hk.seeded(seed + "basilisk")
+        crust = {p._slot(m) for m in ("bs_moss", "bs_ivy")}
+        stone = {i for i, m in enumerate(p.mats) if m.startswith("ruin_") or m.startswith("rs_wall")}
+        lichen(p, g, [f for f in p.bm.faces if f.material_index in crust], 0.16)
+        lichen(p, g, [f for f in p.bm.faces if f.material_index in stone and f.calc_center_median().z > 0.05], 0.02)
         stone_tree(p, g, TREE_AT + Vector((g.uniform(-0.1, 0.1), g.uniform(-0.15, 0.15), 0)))
         for _ in range(g.choice((1, 2))):   # bushes in the hall's floor, beside the tree
             stone_bush(p, g, TREE_AT + Vector((g.uniform(-0.35, 0.05), g.choice((-1, 1)) * g.uniform(0.3, 0.45), 0)))
@@ -859,7 +906,8 @@ def basilisk_block(n, join):
         g.shuffle(spots)
         for at in spots[:g.choice((0, 1, 1, 2))]:   # explorers fleeing from the hall toward the plaza
             away = math.atan2(at.y, at.x - CORNER)   # facing away from the hall's corner, out toward the plaza
-            explorer(p, g, at, away + g.uniform(-0.5, 0.5), g.choice(("stride", "flee", "flee", "cower")), g.choice(PETRIFIED), crumble=g.random() < 0.35)
+            crumble = g.random() < 0.3
+            explorer(p, g, at, away + g.uniform(-0.5, 0.5), g.choice(("stride", "flee", "flee", "cower")), g.choice(PETRIFIED), crumble, half=not crumble and g.random() < 0.45)
     return build
 
 
@@ -880,7 +928,7 @@ def basilisk_props(world, q, r):
 
 NEST_RING = rl.WARREN_RING   # 3.0: the ring path round the Nest, as round the Warren and the Crypt
 NEST_DOOR = 1.7              # the approach along edge 0 ends at the plinth's step, before the door
-hk.PALETTE["basilisk_eye"] = "#A9D84A"   # made up: the sickly yellow-green glint, its own material, glowing at night
+hk.PALETTE["basilisk_eye"] = "#5FCB3A"   # made up: the sickly yellow-green glint, its own material, glowing at night
 BASILISK_OWN = {"basilisk_eye"}
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | BASILISK_OWN
 
@@ -890,6 +938,7 @@ def basilisknest(p, rng, kind):
     its dark door facing edge 0 with the basilisk's eyes glinting in it, the dome's cracks glinting too; inside the
     ring path stone explorers frozen fleeing from it; outside the ring, in each of the six corners, stone trees."""
     basilisk_ground(p, hk.seeded("ruins_centre"), "centre")
+    before = set(p.bm.faces)
     c = Vector((-0.15, 0, 0))
     p.cylinder(c, 1.58, 0.22, "ruin_grey", segments=12)                 # the plinth
     p.cylinder(c, 1.38, 1.8, "bs_stone_d", segments=12, z=0.22)         # the drum
@@ -904,15 +953,16 @@ def basilisknest(p, rng, kind):
         p.box(door + Vector((0.07, sd * 0.5, 0)), (0.14, 0.14, 1.3), "ruin_grey", z=0.22)
         slant = Matrix.Rotation(sd * 0.35, 3, "X")   # the eyes slanted, narrow, a reptile's
         p.box_rot(door + Vector((0.052, sd * 0.14, 1.05)), (0.012, 0.17, 0.045), "basilisk_eye", slant)
+    lichen(p, rng, [f for f in new_faces(p, before) if p.mats[f.material_index] in ("ruin_grey", "bs_stone_d", "bs_stone")], 0.07)   # crusts on the dome and drum
     p.box(Vector((1.58, 0, 0)), (0.16, 0.9, 0.11), "ruin_grey")   # a step up to the plinth
     for x, y in ((1.55, 0.72), (1.5, -0.7)):
         p.box(Vector((x, y, 0)), (0.2, 0.16, 0.12), "bs_stone_d", spin=rng.uniform(0, 3))
     for x, y, zz in ((-0.6, 1.2, 2.02), (0.5, -1.45, 0.22), (-1.55, -0.55, 0.22)):   # bits of the dome fallen off
         p.box(Vector((x, y, 0)), (0.28, 0.24, 0.18), "bs_stone", z=zz, spin=rng.uniform(0, 3))
     # inside the ring: frozen explorers fleeing from the door, off the approach, in the ring's corners where there's room
-    for a, pose, crumble in ((60, "flee", False), (120, "stride", True), (180, "cower", False), (240, "flee", True), (300, "stride", True)):
+    for a, pose, crumble, half in ((60, "flee", False, True), (120, "stride", True, False), (180, "cower", False, False), (240, "flee", False, True), (300, "stride", True, False)):
         at = Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) * 1.78
-        explorer(p, rng, at, math.radians(a) + rng.uniform(-0.15, 0.15), pose, rng.choice(PETRIFIED), crumble)
+        explorer(p, rng, at, math.radians(a) + rng.uniform(-0.15, 0.15), pose, rng.choice(PETRIFIED), crumble, half)
     # outside the ring: the petrified garden in the corners
     for k in range(6):
         a = math.radians(30 + 60 * k)
@@ -922,7 +972,7 @@ def basilisknest(p, rng, kind):
         if rng.random() < 0.7:
             stone_bush(p, rng, d * 3.45 + side * rng.choice((-1, 1)) * 0.38)
         if rng.random() < 0.5:
-            explorer(p, rng, d * 4.0 + side * rng.choice((-1, 1)) * 0.25, a + math.pi + rng.uniform(-0.6, 0.6), rng.choice(("stride", "flee")), rng.choice(PETRIFIED), rng.random() < 0.4)
+            explorer(p, rng, d * 3.85 + side * rng.choice((-1, 1)) * 0.25, a + math.pi + rng.uniform(-0.6, 0.6), rng.choice(("stride", "flee")), rng.choice(PETRIFIED), rng.random() < 0.4)
     p.paths.append([Vector((NEST_RING, 0, 0)), Vector((NEST_DOOR, 0, 0))])
     ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * NEST_RING for i in range(6)]
     p.paths.append(ring + [ring[0]])

@@ -346,8 +346,8 @@ def basilisk_world():
 
 
 def basilisk_shot(close, dark):
-    rv.GLOW["basilisk_eye"] = 2.5       # preview stand-ins for the engine's glow: the eyes and cracks at night,
-    rv.DAY_GLOW["basilisk_eye"] = 0.6   # a faint glint by day
+    rv.GLOW["basilisk_eye"] = 1.5       # preview stand-ins for the engine's glow: the eyes and cracks at night,
+    rv.DAY_GLOW["basilisk_eye"] = 0.5   # a faint glint by day
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     templates.update(build_basilisk())
