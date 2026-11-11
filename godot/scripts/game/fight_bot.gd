@@ -85,6 +85,18 @@ func _breath_dir(f: Fight, u: Dictionary) -> int:
 	return -1
 
 
+## Where to step when nothing in reach is nearer the foe as the crow flies: along the walking route round whatever is in
+## the way (rocks, the party), as far as this turn's move reaches. u.cell if there's no way through.
+func _detour(f: Fight, u: Dictionary, foe: Dictionary, options: Dictionary) -> Vector2i:
+	var came := f._spread(u, 99, func(c): return c != u.cell and Rules.hex_distance(c, foe.cell) <= 1)
+	var at = f._stop_at
+	while at != null and at != u.cell:
+		if options.has(at):
+			return at
+		at = came[at]
+	return u.cell
+
+
 func take_turn(f: Fight, u: Dictionary) -> void:
 	var tries := 0
 	while f.active and f.phase == "allies" and f.ap_left(u) > 0 and tries < 8:
@@ -197,6 +209,8 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			for c in options:
 				if Rules.hex_distance(c, foe.cell) < Rules.hex_distance(best, foe.cell):
 					best = c
+			if best == u.cell:
+				best = _detour(f, u, foe, options)
 			if best == u.cell:
 				return
 			if _ready_card(f, u, "dancing_step"):   # a free step toward the foe after a scimitar attack

@@ -380,7 +380,7 @@ const REGION_NAMES := {
 	"farmland": ["Windmill country", "Great Windmill"], "village": ["Market town", "Trading House"],
 	"river": ["River delta", "River Port"],
 	"hills": ["Highlands", "Clan Hall"], "swamp": ["Bog/fen", "Witch's Hut"],
-	"desert": ["Dunes/wasteland", "Sandstone Sphinx"], "ruins": ["Excavation", "Dig Site"],
+	"desert": ["Dunes/wasteland", "Sandstone Sphinx"], "ruins": ["Overrun outpost", "Warren"],
 }
 
 const NAMES := {"forest": "Forest", "plains": "Plains", "farmland": "Farmland", "village": "Village", "river": "River/lake",

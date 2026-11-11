@@ -144,14 +144,18 @@ func _run() -> void:
 		h.race = game.run.race if game.run.race != "" else "Human"
 		h.klass = game.run.klass
 		h.gear = {"main": game.party[0].weapon, "off": game.party[0].off, "armour": game.party[0].armour}
-		h.appearance = {"race": h.race, "build": "Average", "head": 0, "hair": 0}
+		h.sub = game.run.sub
+		h.appearance = {"race": h.race, "sub": h.sub, "build": "Average", "head": 0, "hair": 0}
 		Hero.current = h
 		await _fight("plains_stones")
 		var me: Dictionary = f.units[0]
 		f.select(me)
 		game.rig.ease_to(f.global_position + me.mini.position + Vector3(0, 0.6, 0), 11.0, game.rig.yaw_deg + 150.0)
 		await _wait(1.2)
-		await _shot("mini_%s_%s" % [h.klass, h.gear.main])
+		var d := HeroMini.description(h)
+		if d.has("subtype"):   # kit v14: a golem in a fight wears its sub-type's shape
+			_check(HeroMini.parts(d).any(func(p): return p[0] == "hero_body_golem_%s_average" % d.subtype), "the %s golem's own shape in the fight" % d.subtype)
+		await _shot("mini_%s_%s%s" % [h.klass, h.gear.main, "_" + d.subtype if d.has("subtype") else ""])
 		Hero.current = null
 		get_tree().quit()
 		return
