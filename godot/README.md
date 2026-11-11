@@ -18,6 +18,10 @@ Before adding or keeping any sentence on screen, check it against `design/07 Pre
 - **Toasts** only give the short reason for an action that failed (e.g. a slot that clashes), plus prototype-only "Not in the prototype yet".
 - **Checks** show the docs' coin line ("3 coins · DEX · needs 1 heads") and the result, not the rule behind it.
 
+## Standing rule: check the Mac too
+
+Whenever a screen check runs at phone size, run it again full screen on Ethan's MacBook Pro 14" (1512 × 982 pt, a 16:10 shape, so the layout gets much taller than the mockups' 844 × 390): add `--fullscreen` instead of the phone `--resolution`, on the Mac's own renderer (Forward+, no `--rendering-method mobile` or `--phone`). Report what goes wrong at that size alongside the phone results (Ethan, Nov 10, 2026). The default 1688 × 780 window is close to the phone's shape, so it isn't checked separately.
+
 ## Playing the loop
 
 Open `godot/project.godot` in Godot 4.7 and press Play, or from the repo root:
