@@ -19,6 +19,7 @@ nearer. Ground between the remains is a darker rubble earth, so the pale stone s
 """
 import math
 
+import bmesh
 from mathutils import Matrix, Vector
 
 import ground_cover as gc
@@ -770,3 +771,270 @@ def haunted_props(world, q, r, night=False):
         d = 1.2 + 1.0 * gc.hash01(q * 2 + k, r, 60)
         out.append(("haunt_mist", d * math.cos(a), d * math.sin(a), a))
     return out
+
+
+# --- Basilisk ruins on the halls (approved Nov 10, 2026, round 4; in the kit from tiles_v95) ------------------------------------
+# design/07 -> Region variant looks: grass, bushes and trees turned to grey stone, with grey stone explorers frozen
+# mid-stride or mid-flight among them, some crumbling. The plain halls, stone for stone, recoloured: their grass floors,
+# yards and moss gone to grey stone; in each hall a stone tree and bushes, and stone explorers on the yard before it,
+# fleeing toward the plaza. Landmark: the Basilisk Nest, a whole petrified garden of stone trees and statues round a cracked dome.
+
+PALETTE_BASILISK = {   # made up
+    "bs_ground": "#A9A8A2",     # the paving, greyer
+    "bs_floor": "#8D8F89",      # hall floors: grass gone to stone
+    "bs_yard": "#9A9A94",
+    "bs_moss": "#A3A59D",       # moss on the tops, stone
+    "bs_ivy": "#7F817B",
+    "bs_stone": "#8E8F8A",      # the petrified things
+    "bs_stone_d": "#73746F",
+    "bs_stone_l": "#A4A49E",
+    "tuft_stone": "#8C8D87",    # ground cover tufts, stone too
+    "bs_cloth_red": "#A8442F",  # half-turned explorers: their clothes, packs and faces still in colour
+    "bs_cloth_blue": "#3E6390",
+    "bs_cloth_green": "#5E7A3C",
+    "bs_trousers": "#6E5A44",
+    "bs_pack": "#845A35",
+    "bs_skin": "#D8A47F",
+    "bs_crack": "#4F504B",      # cracks in the statues
+    "bs_hat": "#6A4A2C",        # a half-turned explorer's hat
+    "lichen_orange": "#E08A2E", # bright lichen crusts on the stone
+    "lichen_yellow": "#E3C238",
+}
+hk.PALETTE.update(PALETTE_BASILISK)
+BASILISK_RECOLOUR = {"rs_floor": "bs_floor", "rs_yard": "bs_yard", "ruin_moss_b": "bs_moss", "ruin_ivy": "bs_ivy"}
+PETRIFIED = ("bs_stone", "bs_stone_d", "bs_stone_l")
+TREE_AT = Vector((CORNER - 0.62, 0, 0))   # in a block's frame: the stone tree in the hall's floor
+PARTY_AT = Vector((3.15, 0, 0))   # a party on the yard before the hall, clear of the walks
+PARTY_CHANCE = 0.15             # a corner's chance of a party; most halls have none
+PARTY_MOST = 2                  # and never more than two on a tile
+
+
+def recolour(p, table):
+    p.mats[:] = [table.get(mat, mat) for mat in p.mats]
+
+
+LICHEN = ("lichen_orange", "lichen_yellow")
+
+
+def lichen(p, rng, faces, chance):
+    """Bright lichen crusts: some of these faces painted orange or yellow (no new faces)."""
+    for f in faces:
+        if f.is_valid and rng.random() < chance:
+            f.material_index = p._slot(rng.choice(LICHEN))
+
+
+def new_faces(p, before):
+    return [f for f in p.bm.faces if f not in before]
+
+
+def limb(p, a, b, thick, mat):
+    """A square-section limb from joint a to joint b, overlapping both a little so it stays attached."""
+    d = b - a
+    p.box_rot((a + b) / 2, (thick, thick, d.length + thick * 0.6), mat, d.to_track_quat("Z", "Y").to_matrix())
+
+
+# poses, in the figure's frame (facing +X, Y to its left): hip height, forward lean, the two feet, the two arms' directions
+POSES = {
+    "stride": (0.42, 0.08, ((0.16, 0.08), (-0.14, -0.08)), ((0.3, 0.15, -1.0), (-0.3, -0.15, -1.0))),
+    "flee": (0.42, 0.3, ((0.26, 0.08), (-0.22, -0.08)), ((-0.5, 0.25, 0.9), (0.7, -0.15, -0.4))),       # running, one arm thrown back over the head
+    "shield": (0.42, -0.05, ((0.06, 0.14), (-0.08, -0.14)), ((0.35, 0.95, 0.1), (0.35, -0.95, 0.1))),   # braced, arms spread before a friend
+    "point": (0.42, 0.0, ((0.1, 0.09), (-0.1, -0.09)), ((-0.2, 0.3, -1.0), (1.0, 0.0, 0.15))),          # pointing straight ahead
+    "cower": (0.28, 0.55, ((0.14, 0.1), (-0.04, -0.1)), ((0.45, 0.25, 0.8), (0.45, -0.25, 0.8))),       # crouched, arms over the head
+}
+
+
+def explorer(p, rng, at, spin, pose, mat, crumble=False, half=False):
+    """An explorer turned to stone, about 0.9 tall, facing spin, stiff in one of POSES, a pack on the back and a hat,
+    standing on a lump of stone fused to the ground. Full stone: mottled stone, cracks, chips at the base; crumble: the
+    head or an arm broken off. half: only half turned, clothes, pack, hat and face in colour, stone up to the waist or
+    chest with a ragged line."""
+    before = set(p.bm.faces)
+    rot = Matrix.Rotation(spin, 3, "Z")
+    hip, lean, feet, arms = POSES[pose]
+    tunic = rng.choice(("bs_cloth_red", "bs_cloth_blue", "bs_cloth_green")) if half else mat
+    legs, pack, skin, hat = ("bs_trousers", "bs_pack", "bs_skin", "bs_hat") if half else (mat, mat, mat, mat)
+    w = lambda x, y, z: at + rot @ Vector((x, y, z))
+    p.blob(at, 0.27, mat, z=0.0, squash=0.38)   # the lump it stands on, half sunk in the ground
+    hips = w(0, 0, hip)
+    for (fx, fy), sd in zip(feet, (1, -1)):
+        limb(p, hips + rot @ Vector((0, sd * 0.06, 0)), w(fx, fy, 0.03), 0.1, legs)
+    body = rot @ Matrix.Rotation(lean, 3, "Y")
+    neck = hips + body @ Vector((0, 0, 0.34))
+    p.box_rot(hips + body @ Vector((0, 0, 0.17)), (0.15, 0.24, 0.36), tunic, body)
+    p.box_rot(hips + body @ Vector((-0.13, 0, 0.19)), (0.12, 0.21, 0.24), pack, body)   # the pack
+    gone = rng.choice(("head", "arm")) if crumble else None
+    if gone != "head":
+        head = neck + body @ Vector((0.01, 0, 0.1))
+        p.blob(head, 0.085, skin, squash=1.1)
+        p.cylinder(head + Vector((0, 0, 0.05)), 0.13, 0.02, hat, segments=6)   # the hat: a brim and a crown
+        p.box(head, (0.11, 0.11, 0.07), hat, z=0.06, spin=spin)
+    for k, (d, sd) in enumerate(zip(arms, (1, -1))):
+        shoulder = neck + body @ Vector((0, sd * 0.14, -0.04))
+        length = 0.12 if (gone == "arm" and k == 0) else 0.34   # a stump where it broke off
+        limb(p, shoulder, shoulder + rot @ Vector(d).normalized() * length, 0.075, tunic)
+    made = new_faces(p, before)
+    stone = PETRIFIED
+    if half:   # stone up from the feet: everything below the line is stone, mottled; a ragged band at the line
+        cut = at.z + rng.uniform(0.5, 0.7)
+        for z in (cut, cut + 0.08):
+            geom = list({v for f in made for v in f.verts}) + list({e for f in made for e in f.edges}) + made
+            bmesh.ops.bisect_plane(p.bm, geom=geom, plane_co=(0, 0, z), plane_no=(0, 0, 1))
+            made = new_faces(p, before)
+        for f in made:
+            z = f.calc_center_median().z
+            if z < cut:
+                f.material_index = p._slot(rng.choice(stone) if rng.random() < 0.35 else "bs_stone_l")
+            elif z < cut + 0.08:   # the ragged line: dark cracked stone and light stone teeth
+                f.material_index = p._slot("bs_crack" if rng.random() < 0.5 else "bs_stone_l")
+        up = (cut - hips.z) / math.cos(lean)   # stone splinters jutting up along the line, on the chest and back
+        if 0.03 < up < 0.33:
+            for x, y in ((0.085, -0.07), (0.085, 0.06), (-0.085, 0.0)):
+                p.cone(hips + body @ Vector((x, y, up - 0.02)), 0.03, rng.uniform(0.09, 0.14), "bs_stone_l", segments=3, spin=rng.uniform(0, 2))
+    else:
+        for f in made:   # mottled stone
+            if rng.random() < 0.45:
+                f.material_index = p._slot(rng.choice(stone))
+        p.bm.normal_update()
+        lichen(p, rng, [f for f in made if f.normal.z > 0.6 or f.calc_center_median().z < 0.1], 0.2)   # crusts on the tops and the base
+        r = body @ Matrix.Rotation(rng.uniform(-0.8, 0.8), 3, "X")   # a crack across the chest or the back
+        side = rng.choice((1, -1))
+        p.box_rot(hips + body @ Vector((side * 0.077, rng.uniform(-0.05, 0.05), 0.17)), (0.01, 0.018, 0.24), "bs_crack", r)
+    for _ in range(rng.choice((1, 2))):   # chips broken off, lying by the base
+        p.box(at + rot @ Vector((rng.uniform(-0.22, 0.22), rng.choice((-1, 1)) * rng.uniform(0.16, 0.22), 0)), (0.08, 0.07, 0.05), mat, spin=rng.uniform(0, 3))
+
+
+# small parties turned to stone together: (pose, x, y, turn) in the party's frame, threat ahead along +X;
+# turn: 0 faces the threat, pi flees from it
+PARTIES = {
+    "flight": [("flee", -0.22, 0.3, math.pi), ("flee", 0.0, -0.28, math.pi + 0.3), ("point", 0.3, 0.06, 0.0)],
+    "shield": [("shield", 0.2, 0.0, 0.0), ("cower", -0.2, 0.27, 0.4)],
+    "stand": [("shield", 0.22, -0.12, 0.0), ("cower", -0.12, -0.18, 0.2), ("point", 0.1, 0.25, -0.2), ("flee", -0.32, 0.18, math.pi)],
+    "pair": [("flee", -0.12, -0.16, math.pi + 0.2), ("point", 0.15, 0.16, 0.1)],
+}
+
+
+def party(p, rng, at, toward, kind, crumble=0.25, half=0.4, spread=1.2):
+    """One of PARTIES caught in one moment at `at`, the threat in the direction `toward` (radians)."""
+    rot = Matrix.Rotation(toward, 3, "Z")
+    for pose, x, y, turn in PARTIES[kind]:
+        broken = rng.random() < crumble
+        explorer(p, rng, at + rot @ Vector((x, y, 0)) * spread, toward + turn + rng.uniform(-0.15, 0.15), pose, rng.choice(PETRIFIED),
+                 broken, half=not broken and rng.random() < half)
+
+
+def stone_tree(p, rng, at, h=None):
+    """A tree turned to stone: trunk, a broken bough or two, a lumpy crown, all grey, crusted with lichen."""
+    before = set(p.bm.faces)
+    h = h or rng.uniform(1.5, 1.9)
+    p.cylinder(at, 0.08, h * 0.55, "bs_stone_d")
+    for _ in range(rng.choice((1, 2))):   # boughs reaching out, snapped
+        a = rng.uniform(0, 6.28)
+        r = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(-0.9, 3, "Y")
+        p.box_rot(at + Vector((0, 0, h * 0.45)) + r @ Vector((0, 0, 0.16)), (0.06, 0.06, 0.32), "bs_stone_d", r)
+    p.blob(at + Vector((rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), 0)), h * 0.22, rng.choice(("bs_stone", "bs_stone_l")), z=h * 0.68, squash=1.1)
+    lichen(p, rng, new_faces(p, before), 0.1)
+
+
+def stone_bush(p, rng, at):
+    before = set(p.bm.faces)
+    p.cone(at, rng.uniform(0.16, 0.24), rng.uniform(0.22, 0.32), rng.choice(PETRIFIED), segments=5, spin=rng.uniform(0, 1))
+    lichen(p, rng, new_faces(p, before), 0.1)
+
+
+def basilisk_block(n, join, with_party=False):
+    seed = f"rsb_block_{n}_{join}"   # the plain halls' seeds: the same walls, petrified round them
+
+    def build(p, rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        block_b(p, hk.seeded(seed), joins, n)
+        weather(p, hk.seeded(seed + "weather"))
+        recolour(p, BASILISK_RECOLOUR)
+        g = hk.seeded(seed + "basilisk")
+        crust = {p._slot(m) for m in ("bs_moss", "bs_ivy")}
+        stone = {i for i, m in enumerate(p.mats) if m.startswith("ruin_") or m.startswith("rs_wall")}
+        lichen(p, g, [f for f in p.bm.faces if f.material_index in crust], 0.16)
+        lichen(p, g, [f for f in p.bm.faces if f.material_index in stone and f.calc_center_median().z > 0.05], 0.02)
+        stone_tree(p, g, TREE_AT + Vector((g.uniform(-0.1, 0.1), g.uniform(-0.15, 0.15), 0)))
+        for _ in range(g.choice((1, 2))):   # bushes in the hall's floor, beside the tree
+            stone_bush(p, g, TREE_AT + Vector((g.uniform(-0.35, 0.05), g.choice((-1, 1)) * g.uniform(0.3, 0.45), 0)))
+        if with_party:   # a party caught fleeing from the hall, on the yard before it: a last stand, a shield or a flight
+            pg = hk.seeded(seed + "party")
+            party(p, pg, PARTY_AT, 0.0, ("stand", "shield", "flight")[n])
+    return build
+
+
+def basilisk_pieces():
+    out = {f"basilisk_hall_{n}_{j}": basilisk_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+    out.update({f"basilisk_party_{n}_{j}": basilisk_block(n, j, True) for n in range(VARIANTS_PER_TAKE) for j in JOINS})
+    return out
+
+
+def basilisk_ground(p, rng, kind):
+    """The plain halls' ground, slab for slab and seeded as theirs (its ground colour is the variant's: bs_ground)."""
+    plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
+    ground(KIT)(p, hk.seeded(plain), kind)
+
+
+def basilisk_props(world, q, r):
+    """(piece, x, y, spin) for a basilisk tile: its six halls, petrified; a corner with hash 61 under PARTY_CHANCE has a
+    party on its yard, at most PARTY_MOST a tile (the first ones going round from corner 0)."""
+    out, parties = [], 0
+    for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
+        kind = "hall"
+        if parties < PARTY_MOST and gc.hash01(q * 6 + c, r, 61) < PARTY_CHANCE:
+            kind, parties = "party", parties + 1
+        out.append((f"basilisk_{kind}_{piece[len('ruin_hall_'):]}", x, y, spin))
+    return out
+
+
+NEST_RING = rl.WARREN_RING   # 3.0: the ring path round the Nest, as round the Warren and the Crypt
+NEST_PARTIES = {5: "flight", 2: "pair"}   # corner -> party: one either side of the Nest
+NEST_DOOR = 1.7              # the approach along edge 0 ends at the plinth's step, before the door
+hk.PALETTE["basilisk_eye"] = "#5FCB3A"   # made up: the sickly yellow-green glint, its own material, glowing at night
+BASILISK_OWN = {"basilisk_eye"}
+hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | BASILISK_OWN
+
+
+def basilisknest(p, rng, kind):
+    """The Basilisk Nest's centre: the plain plaza, and on it a tall cracked stone dome on a drum, as big as the Crypt,
+    its dark door facing edge 0 with the basilisk's eyes glinting in it, the dome's cracks glinting too; inside the
+    ring path stone explorers frozen fleeing from it; outside the ring, in each of the six corners, stone trees."""
+    basilisk_ground(p, hk.seeded("ruins_centre"), "centre")
+    before = set(p.bm.faces)
+    c = Vector((-0.15, 0, 0))
+    p.cylinder(c, 1.58, 0.22, "ruin_grey", segments=12)                 # the plinth
+    p.cylinder(c, 1.38, 1.8, "bs_stone_d", segments=12, z=0.22)         # the drum
+    p.cylinder(c, 1.46, 0.14, "ruin_grey", segments=12, z=2.02)         # its cornice
+    rl.dome(p, rng, c, 1.34, 2.16, "bs_stone", "basilisk_eye")          # the cracks glint
+    p.cylinder(c, 0.3, 0.38, "ruin_grey", segments=8, z=3.4)            # a broken lantern on top
+    p.blob(c, 0.2, "bs_stone_d", z=3.92, squash=0.9)
+    door = Vector((c.x + 1.38, 0, 0))   # the door: a tall dark arch in the drum, its frame, the eyes inside
+    p.box(door, (0.1, 0.86, 1.3), "crypt_dark", z=0.22)
+    p.box(door + Vector((0.07, 0, 0)), (0.14, 1.12, 0.16), "ruin_grey", z=1.52)
+    for sd in (-1, 1):
+        p.box(door + Vector((0.07, sd * 0.5, 0)), (0.14, 0.14, 1.3), "ruin_grey", z=0.22)
+        slant = Matrix.Rotation(sd * 0.35, 3, "X")   # the eyes slanted, narrow, a reptile's
+        p.box_rot(door + Vector((0.052, sd * 0.14, 1.05)), (0.012, 0.17, 0.045), "basilisk_eye", slant)
+    lichen(p, rng, [f for f in new_faces(p, before) if p.mats[f.material_index] in ("ruin_grey", "bs_stone_d", "bs_stone")], 0.07)   # crusts on the dome and drum
+    p.box(Vector((1.58, 0, 0)), (0.16, 0.9, 0.11), "ruin_grey")   # a step up to the plinth
+    for x, y in ((1.55, 0.72), (1.5, -0.7)):
+        p.box(Vector((x, y, 0)), (0.2, 0.16, 0.12), "bs_stone_d", spin=rng.uniform(0, 3))
+    for x, y, zz in ((-0.6, 1.2, 2.02), (0.5, -1.45, 0.22), (-1.55, -0.55, 0.22)):   # bits of the dome fallen off
+        p.box(Vector((x, y, 0)), (0.28, 0.24, 0.18), "bs_stone", z=zz, spin=rng.uniform(0, 3))
+    # outside the ring: the petrified garden in the corners
+    # and in two of them, outside the ring, a party caught fleeing from the Nest, one pointing back at it
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        d = Vector((math.cos(a), math.sin(a), 0))
+        side = Vector((-d.y, d.x, 0))
+        if k in NEST_PARTIES:
+            party(p, rng, d * 3.7, a + math.pi + 0.9 * (1 if k == 2 else -1), NEST_PARTIES[k], crumble=0.2, half=0.5, spread=0.85)   # turned along the corner, where there's room
+            continue
+        stone_tree(p, rng, d * 3.75 + side * rng.uniform(-0.15, 0.15))
+        if rng.random() < 0.7:
+            stone_bush(p, rng, d * 3.45 + side * rng.choice((-1, 1)) * 0.38)
+    p.paths.append([Vector((NEST_RING, 0, 0)), Vector((NEST_DOOR, 0, 0))])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * NEST_RING for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    for i, q in enumerate(ring):
+        p.spokes[i] = [q / NEST_RING * A, q]

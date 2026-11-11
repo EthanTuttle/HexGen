@@ -20,6 +20,8 @@ This repo holds the design docs for Heads or Hexes (working name HexGen, which t
 
 The most recent version of a file is the working version, unless `art/reviews.md` says Ethan rejected it. Version numbers aren't always in date order, so never pick by the highest number or from memory: `art/README.md` → Finding the current version says how to look it up.
 
+Before each new art round, set aside the non-critical context from earlier rounds and look again at the approved art for that place (map tiles, combat maps, landmark, neighbours), then build from it so the style stays consistent (`art/README.md` → Rules for the art session).
+
 ## How to work with Ethan
 
 - Content comes only from Ethan. Never invent design decisions, names, numbers or lore and present them as settled. You can propose ideas, but nothing goes into a doc until he picks or approves it.
