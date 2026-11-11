@@ -46,7 +46,7 @@ def scene(kit, when, spots, distance=21):
         o = ct.bpy_new(minis["standin_small"], col)
         o.location = ts.hx(q, r) + Vector((dy, dx, kit.FLOOR_Z))
         o.rotation_euler.z = math.pi / 2
-    rp.stage(Vector((0.3, 0.75, 0.6)), distance, 42)
+    rp.stage(Vector((0.3, 0.75, 0.6)) + getattr(kit, "VIEW_SHIFT", Vector()), distance, 42)  # a kit's view_shift, as PlaceStage
     sc = bpy.context.scene
     sc.render.resolution_x, sc.render.resolution_y = 1000, 625
     if kit.BACKDROP:

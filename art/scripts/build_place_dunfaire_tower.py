@@ -33,8 +33,12 @@ MESH = f"place_{ID}"
 R, A, hx, HEXES, FLOOR_Z = ts.R, ts.A, ts.hx, ts.HEXES, bs.FLOOR_Z
 borrow = pf.borrow
 
-# PLACEHOLDER: the tower's services aren't decided. "none" is the square's; "tower" gathers the party at the foot of the steps.
-SPOTS = {ID: {"none": bs.SPOTS["square"]["none"], "tower": [[1, -2], [0, -2], [2, -2], [1, -1]]}}
+# The view looks 2 rows further back than the town kits' (Ethan, Nov 10, 2026: here the tower is the focus, so it must be in
+# view), Blender's frame. The party's spots move back with it, so the action cards keep the room at the bottom.
+VIEW_SHIFT = Vector((0, 2 * 1.65, 0))
+# PLACEHOLDER: the tower's services aren't decided. "none" is the square's, 2 rows back ((q, r) to (q + 1, r - 2) keeps x);
+# "tower" gathers the party at the foot of the steps.
+SPOTS = {ID: {"none": [[q + 1, r - 2] for q, r in bs.SPOTS["square"]["none"]], "tower": [[1, -2], [0, -2], [2, -2], [1, -1]]}}
 KEEPERS = {ID: {}}
 PLACES = {"tower": [1, -3]}
 FLOOR = pf.FLOOR
@@ -149,6 +153,7 @@ def data():
         "hex_radius": R, "floor_z": FLOOR_Z, "board": "the party's spots stay on these 19 hexes; the floor runs on past them",
         "hexes": {f"{q},{r}": [round(hx(q, r).x, 4), round(hx(q, r).y, 4)] for q, r in HEXES},
         "spots": SPOTS, "keepers": KEEPERS, f"{ID}_places": PLACES, "backdrop": BACKDROP, "lights": lights(),
+        "view_shift": [round(VIEW_SHIFT.x, 3), round(VIEW_SHIFT.z, 3), round(-VIEW_SHIFT.y, 3)],
     }
 
 
