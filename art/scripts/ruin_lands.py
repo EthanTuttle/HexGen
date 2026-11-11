@@ -72,7 +72,7 @@ STATUE_STONES = ["ruin_marble", "ruin_bronze", "ruin_basalt", "ruin_warm"]
 OPTIONS = {"a": dict(ground="ruin_ground", cover=0.06), "b": dict(ground="ruin_rubble", cover=0.08), "c": dict(ground="ruin_ground", cover=0.05)}
 KINDS = ("centre", "same", "same_b", "other", "other_b")
 PICKED_GROWTH = "medium"
-LOOKS = {"ruins", "overrun_outpost", "haunted_ruins"}   # tiles that stand remains in their corner gaps (tile_remains)
+LOOKS = {"ruins", "overrun_outpost", "haunted_ruins", "basilisk_ruins"}   # tiles that stand remains in their corner gaps (tile_remains)
 BURROWED = {"overrun_outpost"}          # and burrows and goblin junk instead (outpost_layout)
 BURROW_TWO = 0.5      # share of outpost tiles with two burrows; the rest have one
 JUNK_FILL = 0.85      # share of remains (and of bare gaps left over) with goblin junk beside them
@@ -481,6 +481,9 @@ def tile_props(name, q, r, world=None):
     if name in HAUNTED:   # the ghost town (from tiles_v94): house shells; the engine adds their ghost houses at night
         import ruin_structure as rs
         return rs.haunted_props(world or {}, q, r)
+    if name == "basilisk_ruins":   # petrified halls (from tiles_v95), a party of stone explorers on a few yards
+        import ruin_structure as rs
+        return rs.basilisk_props(world or {}, q, r)
     return [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
 
 

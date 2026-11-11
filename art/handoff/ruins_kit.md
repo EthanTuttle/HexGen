@@ -1,4 +1,4 @@
-# Ruins kit (corner halls from tiles_v92; overrun outpost on the halls from tiles_v93; Warren from tiles_v91; haunted ghost town and Crypt from tiles_v94)
+# Ruins kit (corner halls from tiles_v92; overrun outpost on the halls from tiles_v93; Warren from tiles_v91; haunted ghost town and Crypt from tiles_v94; basilisk ruins and the Basilisk Nest from tiles_v95)
 
 Ruins tier 0, rebuilt as structure and approved by Ethan on Nov 9, 2026 (corner halls, take B, refined v2). It replaces tiles_v90's plaza and scattered remains. Look rules: `design/07 Presentation.md` → Ruins land. Code: `art/scripts/ruin_structure.py` (the takes study; the kit uses `KIT = "b"`) and `art/scripts/ruin_lands.py`.
 
@@ -74,3 +74,20 @@ Approved by Ethan on Nov 10, 2026 (ghost town round 3). Looks: `design/07 Presen
 - **Ground cover:** 0.1 on `haunted_ruins` and `crypt`, kept off the streets and plaza by `no_cover`.
 - **Triangles:** worst block 508, ghost 58. Tiles as placed (400 checked): worst about 3,920 at night with the ghosts, of 4,816; the bound of six of the biggest blocks is 3,964. The Crypt centre is 912.
 
+## Basilisk ruins and the Basilisk Nest (tiles_v95)
+
+Approved by Ethan on Nov 10, 2026 (round 4). Looks: `design/07 Presentation.md` → Region variant looks (Basilisk ruins) and Landmark tiles (Basilisk Nest). Code: the Basilisk section of `art/scripts/ruin_structure.py`. These are the plain corner halls, stone for stone, turned to stone: floors, yards and moss gone grey, a stone tree and bushes in each hall, and bright orange and yellow lichen crusts. On a few yards a party of explorers stands turned to stone together, caught in one moment. Some are full stone with cracks, chips and a stone base fused to the ground; others are half turned, still in colour above a ragged stone line at the chest.
+
+| Piece | What |
+| --- | --- |
+| `basilisk_ruins_centre`, `_edge_same`, `_edge_same_b`, `_edge_other`, `_edge_other_b` | The plain halls' ground pieces, slab for slab, as for the ghost town; `_b` picked as for ruins. The variant's ground colour is `bs_ground` (#A9A8A2), the engine's recolour of `base_ruins` |
+| `basilisk_hall_<n>_<lo><hi>` | A plain hall third (`ruin_hall_<n>_<lo><hi>`) petrified, 12 pieces: recoloured, lichen, a stone tree in its floor and stone bushes. Origin at the tile's middle, facing +X toward the corner, as the halls |
+| `basilisk_party_<n>_<lo><hi>` | The same hall with a party of stone explorers on its yard (3.15 from the middle), 12 pieces: a last stand of four (`n` 0), a shield pair (1), a flight of three, one pointing back (2) |
+| `basilisknest_centre` | The Basilisk Nest: a tall cracked stone dome on a drum (top about 4.1, the Crypt's size) on the plaza, its dark door facing edge 0 with two slit eyes in it, the dome's cracks glinting; stone trees in four of the six corners, and in corners 5 and 2 a flight and a pair of stone explorers, each with one pointing back at the Nest. Centre-only landmark using the basilisk ruins' wedges. Path data: a ring 3.0 from the middle, spokes from each edge's middle, and the approach along edge 0 to the door's step (1.7). The engine turns it so edge 0 meets the region's longest trail |
+
+- **Props:** port `ruin_structure.basilisk_props(world, q, r)`. Go round the corners `c` 0–5 with `block_props`' join flags and variant (`hash01(q * 6 + c, r, 51) * 3`), and place `basilisk_hall_<n>_<lo><hi>` at the middle turned `30 + 60 * c` degrees. A corner becomes `basilisk_party_<n>_<lo><hi>` instead where `hash01(q * 6 + c, r, 61) < 0.15`, but only while the tile has fewer than two parties (the first ones going round from corner 0). Over 400 tiles: 161 have no party, 157 one, 82 two.
+- **Region edge:** halls stand at every basilisk corner out to the region's edge. A basilisk tile counts as a ruins look for its neighbours (`ruin_lands.LOOKS`), so a plain hall beside it reaches the edge and is left part-open, as beside the outpost. Re-pick a tile's halls when a neighbour changes.
+- **Basilisk eyes:** the `basilisk_eye` faces (#5FCB3A) are their own material, not `kit`: the Nest's slit eyes in the door and the dome's cracks. Light them at night like `goblin_eye`. The previews use emission 1.5 at night (stronger washes it toward yellow) and a faint 0.5 glint by day.
+- **Walks:** the usual straight lines; every hall, tree, bush and statue keeps 0.62 off them, and the Nest's statues keep off its ring, spokes and approach (`render_ruin_structure.py -- basilisk check`).
+- **Ground cover:** 0.1 on `basilisk_ruins` and `basilisknest`, stone tufts (`tuft_stone`, #8C8D87), no flowers; kept off the streets and plaza by `no_cover`.
+- **Triangles:** worst hall 309, worst party hall 887. Tiles as placed (400 checked): worst 2,716, mean 1,925, of 4,816; the bound with two of the biggest party halls is 3,146. The Nest tile is 1,760.

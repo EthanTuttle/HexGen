@@ -1,6 +1,6 @@
 """Shared helpers for the Heads or Hexes prototype art scripts (run inside Blender).
 
-Units: 1 Blender unit = 1 glTF metre. Z is up; pivots sit at the centre, at ground level (z = 0).
+Units: cells. 1 Blender unit (a glTF metre) = one combat cell across its flats. Z is up; pivots sit at the centre, at ground level (z = 0).
 Rules and numbers: design/06 Multiplayer & tech.md -> Engine prototype.
 """
 import json
