@@ -2,7 +2,7 @@
 plan in the shared notes, place-scenes/plan.md). The fortified town's kit (build_place_fortified_town.py) for the 19 hexes,
 the floor, the checks and the sizes against the minis, built from the approved start tile (tiles_v89, start_tiles.py:
 07 -> Starting tiles, "a round guard tower on an old plinth"): the round tower with its battlements, red banner, column
-stumps and fire, on its old six-sided plinth with steps toward the camera, in a ring of old square paving on grass, with
+stumps and lit window, on its old six-sided plinth with steps toward the camera, in a ring of old square paving on grass, with
 the ruins wedges' broken walls and loose blocks round the edges, grass tufts and a few trees. How the tower sits on
 ruins land is still open (07), so the scene keeps the tile's own grass and doesn't show ruins land beyond it.
 
@@ -46,8 +46,10 @@ FLOOR = pf.FLOOR
 S = 2.4
 STEP_FOOT = 3.85       # the plinth's lowest step, clear of the "tower" spots
 AT = Vector((0, STEP_FOOT + 1.68 * S, 0))  # the tile's middle, where the plinth stands
-FIRE = AT + Vector((0.85 * S, -0.45 * S, st.PLINTH_TOP * S))
-# Lights (Blender's frame and watts, as the town kit's): the fire on the plinth, flickering, at night.
+# The tile's fire, moved off the plinth to the ground by the party (Ethan, Nov 10, 2026), on a hex no spot set uses.
+FIRE_HEX = (0, 0)
+FIRE = hx(*FIRE_HEX) + Vector((0, 0, FLOOR_Z))
+# Lights (Blender's frame and watts, as the town kit's): the campfire, flickering, at night.
 LIGHTS = [(FIRE + Vector((0, 0, 0.6)), "#FF9A4A", 0.0, 40.0, True)]
 BACKDROP = ""
 SPOT_HEXES = {tuple(s) for group in SPOTS[ID].values() for s in group}
@@ -100,6 +102,23 @@ def tree(p, h, pine):
         p.blob(o, h * 0.3, "leaf", z=h * 0.55, squash=1.15)
 
 
+def tower(p):
+    """The tile's tower (start_tiles.dunfaire_tower) without its fire, which stands by the party here, and with its window lit
+    at night (Ethan, Nov 10, 2026)."""
+    z = st.PLINTH_TOP
+    p.cylinder(Vector((0, 0.45, 0)), 0.62, 2.55, "st_stone", segments=10, z=z)
+    p.cylinder(Vector((0, 0.45, 0)), 0.76, 0.16, "st_stone_d", segments=10, z=z + 2.53)
+    for k in range(8):
+        a = k * 6.283 / 8
+        p.box(Vector((0.72 * math.cos(a), 0.45 + 0.72 * math.sin(a), 0)), (0.13, 0.13, 0.13), "st_stone_d", z=z + 2.69, spin=a)
+    st.door(p, 0, -0.17, h=0.55, z=z)
+    st.window(p, 0, -0.16, 1.7, 0.1, 0.24, "ts_glow")
+    st.banner(p, 0.15, 0.5, z + 2.69, 0.75, "st_red")
+    for x, y, h in ((-1.0, -0.15, 1.1), (1.05, 1.0, 0.6)):
+        p.box(Vector((x, y, 0)), (0.36, 0.36, 0.1), "ruins", z=z)
+        p.cylinder(Vector((x, y, 0)), 0.14, h, "rock_light", segments=8, z=z + 0.1)
+
+
 def square():
     p = hk.Piece(MESH)
     rng = random.Random(21)
@@ -108,7 +127,7 @@ def square():
         return "ts_grass"
 
     def dress(pc, c, i, q, r):  # the tile's grass tufts and yellow flowers, off the party's spots and the plinth
-        if (q, r) in SPOT_HEXES or (c - AT - Vector((0, 0.3 * S, 0))).length < 1.7 * S:
+        if (q, r) in SPOT_HEXES or (q, r) == FIRE_HEX or (c - AT - Vector((0, 0.3 * S, 0))).length < 1.7 * S:
             return
         g = random.Random(i * 7 + 3)
         for _ in range(g.randint(2, 4)):
@@ -119,9 +138,11 @@ def square():
 
     bs.floor(p, mat, "ts_base_d", "ts_base", dress, FLOOR)
     paving(p)
-    # the tile's plinth and tower: battlements, the red banner, two column stumps and the fire (its flame flickers in Godot)
+    # the tile's plinth and tower: battlements, the red banner, two column stumps and the lit window; the campfire by the
+    # party, its flame flickering in Godot
     borrow(p, plinth, AT, scale=S)
-    borrow(p, st.dunfaire_tower, AT, scale=S, remap={"st_glow": "ts_fire"})
+    borrow(p, tower, AT, scale=S)
+    borrow(p, lambda t: st.fire(t, 0, 0), FIRE, scale=S, remap={"st_glow": "ts_fire"})
     # the ruins wedges' broken walls and loose blocks round the edges, on no one's spot
     for k, (a, b) in enumerate((
             ((-6.6, -1.2), (-6.0, 1.3)), ((6.1, -2.4), (6.8, -0.2)), ((-4.6, 4.2), (-6.4, 5.4)), ((5.0, 3.9), (6.7, 5.2)),
