@@ -219,3 +219,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-10 | `art/preview/place_dunfaire_tower_compare_v2.png` | approved | Dunfaire Tower scene v2 (2-row view shift), with changes: campfire moves to the ground by the party; the tower window glows at night |
 | 2026-11-10 | `art/preview/ruins_vault_courts_sheet_v1.png` | note | Trapped vault sunken courts: parked, no verdict; come back to it later |
 | 2026-11-10 | `art/preview/place_east_rime_chapel_compare_v1.png` | note | East Rime Chapel scene: try a zoomed-in courtyard with the walls round the whole view instead of the model on a hex map; keep the hill terraces |
+| 2026-11-10 | `art/preview/ruins_stockade_sheet_v1.png` | approved | Overrun outpost as the goblin stockade: palisade rings with street gates, stilt watchtowers, hide huts, burrows in breaches; Warren unchanged. Replaces tiles_v93 outpost |
