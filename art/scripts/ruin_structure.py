@@ -563,7 +563,7 @@ def outpost_props(world, q, r):
     return out
 
 
-# --- Overrun outpost: the goblin stockade (round 1 of the rework, not approved) -------------------------------------
+# --- Overrun outpost: the goblin stockade (approved Nov 10, 2026, round 1 of the rework; in the kit from tiles_v96) -------------------------------------
 # design/07 -> Region variant looks: crooked timber-and-scrap ring walls joining the ruins, with stilt watchtowers; the
 # framed burrows, night eyes and red and yellow rags stay as accents (Ethan, Nov 10, 2026, after the variant study). No
 # halls: each tile's middle is ringed by a crooked palisade, a gate gap on every street, so a region reads as a honeycomb
