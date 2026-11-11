@@ -26,7 +26,7 @@ Open `godot/project.godot` in Godot 4.7 and press Play, or from the repo root:
 /Applications/Godot.app/Contents/MacOS/Godot --path godot
 ```
 
-**Installed Mac build:** `godot/tools/build_mac.sh` (or the `/refresh-build` skill) pulls `main`, exports with the **macOS** preset (universal, signed ad-hoc for this Mac only) and replaces `/Applications/HexGen.app`. It only runs when asked; nothing updates on its own.
+**Installed Mac build:** `godot/tools/build_mac.sh` (or the `/refresh-build` skill) pulls `main`, exports a debug build with the **macOS** preset (universal, signed ad-hoc for this Mac only; debug, so the report button and debug menu show, as on the phone; `godot/tools/collect_notes.sh mac` collects its notes) and replaces `/Applications/HexGen.app`. It only runs when asked; nothing updates on its own.
 
 The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 390 units and drawn at 2× (project stretch mode `canvas_items`), so positions, sizes and colours copy straight from the mockup CSS.
 
