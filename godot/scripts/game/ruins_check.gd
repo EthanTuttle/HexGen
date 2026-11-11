@@ -257,8 +257,8 @@ func _pictures(plain: Array, g: Dictionary, haunted: Dictionary) -> void:
 		if when[1] == "day":
 			_check(not ghosts.is_empty() and shown == 0, "by day the ghost houses are hidden, the shells bare (%d ghost pieces)" % ghosts.size())
 		else:
-			_check(shown == ghosts.size() and is_equal_approx(map._haunt.ghost_house.albedo_color.a, 0.2) and map._haunt.ghost_window.emission_energy_multiplier > 4.0,
-					"at night they stand over every shell, alpha 0.2, windows lit (%d of %d)" % [shown, ghosts.size()])
+			_check(shown == ghosts.size() and is_equal_approx(map._haunt.ghost_house.albedo_color.a, MapBoard.GHOST_HOUSE.x) and is_equal_approx(map._haunt.ghost_window.emission_energy_multiplier, MapBoard.GHOST_WINDOW.y),
+					"at night they stand over every shell, faint, windows lit softly (%d of %d)" % [shown, ghosts.size()])
 		game.rig.player_moved = false
 		game.rig.frame(_middle(plain), 34.0, 45.0)
 		await _wait(0.6)

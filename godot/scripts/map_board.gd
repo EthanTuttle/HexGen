@@ -1061,17 +1061,16 @@ func _setup_materials() -> void:
 
 
 ## The ghost town by the light (0 day, 1 night; art/handoff/ruins_kit.md -> Night swap): the ghost houses fade in at dusk and out at
-## dawn, hidden by day; the glows are lit a little by day. Strengths are the previews' (PLACEHOLDER until seen on the phone).
+## dawn, hidden by day; the glows are lit a little by day. The ghosts are fainter and the windows softer than the handoff's (Ethan,
+## Nov 10: more see-through, windows dimmer and less white); the rest are the previews' strengths (PLACEHOLDER until seen on the phone).
+const GHOST_HOUSE := Vector2(0.06, 0.15)   # alpha, emission at full night (handoff 0.2, 0.45)
+const GHOST_ROOF := Vector2(0.1, 0.12)     # (handoff 0.3, 0.4)
+const GHOST_WINDOW := Vector2(0.6, 0.8)    # (handoff opaque, 5): low enough that #F2F7C8 keeps its tint under the bloom
 func _set_haunt(night: float) -> void:
-	if _haunt.has("ghost_house"):
-		_haunt.ghost_house.albedo_color.a = 0.2 * night
-		_haunt.ghost_house.emission_energy_multiplier = 0.45 * night
-	if _haunt.has("ghost_roof"):
-		_haunt.ghost_roof.albedo_color.a = 0.3 * night
-		_haunt.ghost_roof.emission_energy_multiplier = 0.4 * night
-	if _haunt.has("ghost_window"):
-		_haunt.ghost_window.albedo_color.a = night
-		_haunt.ghost_window.emission_energy_multiplier = 5.0 * night
+	for pair in [["ghost_house", GHOST_HOUSE], ["ghost_roof", GHOST_ROOF], ["ghost_window", GHOST_WINDOW]]:
+		if _haunt.has(pair[0]):
+			_haunt[pair[0]].albedo_color.a = pair[1].x * night
+			_haunt[pair[0]].emission_energy_multiplier = pair[1].y * night
 	if _haunt.has("haunt_glow"):
 		_haunt.haunt_glow.emission_energy_multiplier = lerpf(0.4, 1.4, night)
 	if _haunt.has("haunt_light"):
