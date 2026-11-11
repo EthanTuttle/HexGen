@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, made Nov 10, 2026, waiting on Ethan's review (v1 wasn't quite right). None is in Godot yet.
+**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. None is in Godot yet.
 
 ## What each kit hands Godot
 
