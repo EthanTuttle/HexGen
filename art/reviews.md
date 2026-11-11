@@ -206,3 +206,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-10 | `art/preview/place_fortified_town_sheet_v3.png` | picked | Fortified town scene: v3 layout (Keep close behind the inn) but with the Keep at 2.4x; rescaled houses, inn and walls kept; reshow before hooking up |
 | 2026-11-10 | `art/preview/ruins_basilisk_halls_sheet_v2.png` | note | Bigger Nest good; push the eye glow greener (reads yellow at night); add colour: half-turned explorers and bright orange/yellow lichen |
 | 2026-11-10 | `haunted-nov10/ruins_haunted_close_night.png` (Godot) | note | Ghost houses in game read too solid with too-bright windows: make them more see-through and soften the windows |
+| 2026-11-10 | `art/preview/place_fortified_town_day_none_wide_v4.png` | approved | Fortified town scene v4: Keep 2.4x behind the inn as a background reference, cropped at the top by design (room kept for the action cards); hook up |
