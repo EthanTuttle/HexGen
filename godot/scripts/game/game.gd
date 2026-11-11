@@ -807,10 +807,10 @@ func _spawn_feywild(changes: Dictionary) -> void:
 	_debug_road(anchor + Vector2i(-3, 3), changes)
 
 
-## Debug: a 12-tile Overrun outpost with its Warren, a 12-tile Haunted ruins with its Crypt and two plain ruins tiles at its edge,
-## and a tier 0 ruins group, on free land out past the rest, with plains laid to them.
+## Debug: a 12-tile Overrun outpost with its Warren, a 12-tile Haunted ruins with its Crypt and a 12-tile Basilisk ruins with its
+## Nest, each of the last two with two plain ruins tiles at its edge, and a tier 0 ruins group, on free land out past the rest, with plains laid to them.
 func _spawn_ruins(changes: Dictionary) -> void:
-	for v: String in ["overrun_outpost", "haunted_ruins"]:
+	for v: String in ["overrun_outpost", "haunted_ruins", "basilisk_ruins"]:
 		var anchor := _free_spot(DEBUG_PLAINS_SHAPE, changes)
 		var tiles: Array[Vector2i] = []
 		for s: Vector2i in DEBUG_PLAINS_SHAPE:
@@ -821,7 +821,7 @@ func _spawn_ruins(changes: Dictionary) -> void:
 			changes[x] = region_look(region, x)
 			order[x] = order.size()
 		_debug_road(anchor + Vector2i(-3, 3), changes)
-		if v == "haunted_ruins":   # plain halls beside the ghost town, left part-open toward it
+		if v != "overrun_outpost":   # plain halls beside it, left part-open toward it
 			var laid := 0
 			for x in tiles:
 				for n in Hex.NEIGHBOURS:
