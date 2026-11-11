@@ -116,6 +116,10 @@ func _materials() -> void:
 		match mat.resource_name:
 			"ts_glow":
 				_glow_on(mat, _glow())
+			"lantern_red":   # the village kit's red lanterns (the slums): lit at night only
+				mat.emission_enabled = _night
+				if _night:
+					_glow_on(mat, Places.NIGHT_GLOW)
 			"ts_fire":
 				_glow_on(mat, _glow() * 1.3)
 				_fire.append(mat)

@@ -490,15 +490,16 @@ func _game_run() -> void:
 	check(not g.busy, "town: Leave hands the map back")
 	check(g.map.visible and g.party_node.visible, "town: the map and party are back")
 	check(g.clock.environment.background_color != Color(Places.KITS.inn.backdrop), "town: the backdrop follows the clock again")
-	await _fortified(g, next)
+	await _own_town(g, next + Hex.NEIGHBOURS[0], "fortified_town")
+	await _own_town(g, next + Hex.NEIGHBOURS[1], "slums")
 	await _social(g)
 
 
-## A fortified town opens its own kit (v4), at the square's camera, its lights from its JSON.
-func _fortified(g: Game, from: Vector2i) -> void:
-	var t: Vector2i = from + Hex.NEIGHBOURS[0]
-	g.map.retile({t: "fortified_town"})
-	g.order[t] = 2
+## A town variant with its own kit (fortified town v4, slums v1) opens it at the square's camera, its lights from its JSON.
+func _own_town(g: Game, t: Vector2i, id: String) -> void:
+	var who := id.replace("_", " ")
+	g.map.retile({t: id})
+	g.order[t] = g.order.size() + 1
 	g.walk_to(t)
 	while g.busy or g.party_tile != t:
 		await get_tree().process_frame
@@ -508,38 +509,53 @@ func _fortified(g: Game, from: Vector2i) -> void:
 	await tap_on("Enter")
 	await _wait(1.3)
 	var town := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
-	check(town.stage.scene_name == "fortified_town", "fortified town: its own scene")
-	check(town.stage._minis.size() == g.party.size(), "fortified town: the party stands in the square")
-	check(town.stage._keeper != null and town.stage._keeper.name == "shopkeeper", "fortified town: the shopkeeper is at the stall")
-	check(control("Shop") != null and control("Inn") != null and control("Leave") != null, "fortified town: Shop, Inn and Leave")
+	check(town.stage.scene_name == id, "%s: its own scene" % who)
+	check(town.stage._minis.size() == g.party.size(), "%s: the party stands in the square" % who)
+	check(town.stage._keeper != null and town.stage._keeper.name == "shopkeeper", "%s: the shopkeeper is at the stall" % who)
+	check(control("Shop") != null and control("Inn") != null and control("Leave") != null, "%s: Shop, Inn and Leave" % who)
 	await _wait(0.2)
-	print("FRONT fortified town: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
-	await shot("fortified_square")
+	print("FRONT %s: %d triangles, %d draw calls" % [who, RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
+	await shot(id + "_square")
 	var day_minute := g.minute
 	g.minute = 25.0
 	town.stage.set_night(true)
-	check(town.stage._lights.size() == 4, "fortified town: the kit's four lights at night")
+	check(town.stage._lights.size() == (town.stage.data.lights as Array).size(), "%s: the kit's lights at night" % who)
+	var lantern := _material(town.stage, "lantern_red")
+	if lantern:
+		check(lantern.emission_enabled, "%s: the red lanterns glow at night" % who)
 	if shots_on:
 		await _wait(3.5)
-	await shot("fortified_square_night")
+	await shot(id + "_square_night")
 	town.stage.set_night(false)
+	if lantern:
+		check(not lantern.emission_enabled, "%s: the red lanterns are dark by day" % who)
 	g.minute = day_minute
 	if shots_on:
 		await _wait(3.5)
 	await tap_on("Shop")
 	await _wait(0.3)
-	check(town.stage._minis[0].position.is_equal_approx(town.stage.spot("fortified_town", "shop", 0)), "fortified town: the party gathers by the stall")
-	await shot("fortified_shop")
+	check(town.stage._minis[0].position.is_equal_approx(town.stage.spot(id, "shop", 0)), "%s: the party gathers by the stall" % who)
+	await shot(id + "_shop")
 	await tap_on("Back")
 	await _wait(0.3)
 	await tap_on("Inn")
 	await _wait(0.6)
-	check(town.stage.scene_name == "inn", "fortified town: the shared inn")
+	check(town.stage.scene_name == "inn", "%s: the shared inn" % who)
 	await tap_on("Back")
 	await _wait(0.2)
 	await tap_on("Leave")
 	await _wait(0.8)
-	check(g.map.visible and not g.busy, "fortified town: Leave hands the map back")
+	check(g.map.visible and not g.busy, "%s: Leave hands the map back" % who)
+
+
+## The kit's material by name on a stage's scene, or null.
+func _material(stage: PlaceStage, mat_name: String) -> BaseMaterial3D:
+	var m := stage._mesh.mesh
+	for i in m.get_surface_count():
+		var mat := m.surface_get_material(i) as BaseMaterial3D
+		if mat and mat.resource_name == mat_name:
+			return mat
+	return null
 
 
 ## Taps the scene's text (to finish or turn the page) until `what` shows, so a slow page can't make the check miss it.
