@@ -13,7 +13,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `<id>_places`: where the services stand.
   - `backdrop`: `""` means the map's day and night.
   - `lights`: `[q, r, x, y, z, colour, day, night, flicker]`. The offsets are from that hex's middle in Godot's frame, the energies are in Blender watts, and 0 means off.
-  - `view_shift` (optional, new with Dunfaire Tower): `[x, y, z]` in metres, Godot's frame, added to PlaceStage's `VIEW_AT` so the scene is framed further back. Missing means `[0, 0, 0]`. The previews apply it the same way.
+  - `view` (optional, new with Dunfaire Tower; agreed with Godot Screens): `{"shift": [x, y, z], "distance": 33.0, "pitch": 42.0}`, every part optional. `shift` is metres added to PlaceStage's aim point, in Godot's frame (toward the back is -z); `distance` (capped at 42) and `pitch` default to PlaceStage's. A kit without it keeps today's framing. The previews apply `shift` the same way.
 - **Own materials:** `ts_glow` (windows, and the scholars' town's lantern pillars), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames and Dunfaire Tower's fire, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
 - **Scripts:**
   - `art/scripts/build_place_<id>.py` builds a kit.
@@ -147,7 +147,7 @@ The Soldier's starting tile, built from its approved start tile (`start_tiles_ki
 
 **Scale:** the tile's tower, plinth, walls and blocks at 2.4×, the Keep's size: the door is about 1.3 m, the minis' height, and the tower stands about 7.9 m to its battlements. The trees are 1.8×.
 
-**View** (v2, Ethan on v1: here the tower is the focus, so it must really be in view, unlike the Keep): `view_shift` `[0, 0, -3.3]`, 2 rows further back than the town kits. The party's `none` spots moved back 2 rows with it. At 33 m the door, plinth and steps are whole and the tower shows to just above its window. The battlements would need about 4.5 rows (`[0, 0, -7.43]`, with the party at the `tower` spots): `art/preview/place_dunfaire_tower_day_tower_wide_shift4_5rows_v1.png`, an option, not in the kit.
+**View** (v2, Ethan on v1: here the tower is the focus, so it must really be in view, unlike the Keep): `view` `{"shift": [0, 0, -3.3]}`, 2 rows further back than the town kits. The party's `none` spots moved back 2 rows with it. At 33 m the door, plinth and steps are whole and the tower shows to just above its window. The battlements would need about 4.5 rows (shift `[0, 0, -7.43]`, with the party at the `tower` spots): `art/preview/place_dunfaire_tower_day_tower_wide_shift4_5rows_v1.png`, an option, not in the kit.
 
 **Places and spots** (PLACEHOLDER: the tower's services aren't decided):
 
