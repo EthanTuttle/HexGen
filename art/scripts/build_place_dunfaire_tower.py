@@ -139,7 +139,7 @@ def square():
 
 def lights():
     """[q, r, x, y, z, colour, day, night, flicker] for Godot: offsets from the nearest of the 19 hexes, in its frame (y up,
-    toward the camera is minus z)."""
+    toward the back is minus z)."""
     out = []
     for at, colour, day, night, flicker in LIGHTS:
         q, r = min(HEXES, key=lambda h: (hx(*h) - Vector((at.x, at.y, 0))).length)
@@ -153,7 +153,7 @@ def data():
         "hex_radius": R, "floor_z": FLOOR_Z, "board": "the party's spots stay on these 19 hexes; the floor runs on past them",
         "hexes": {f"{q},{r}": [round(hx(q, r).x, 4), round(hx(q, r).y, 4)] for q, r in HEXES},
         "spots": SPOTS, "keepers": KEEPERS, f"{ID}_places": PLACES, "backdrop": BACKDROP, "lights": lights(),
-        "view": {"shift": [round(VIEW_SHIFT.x, 3), round(VIEW_SHIFT.z, 3), round(-VIEW_SHIFT.y, 3)]},  # PlaceStage's, Godot's frame
+        "view_shift": [round(VIEW_SHIFT.x, 3), round(VIEW_SHIFT.z, 3), round(-VIEW_SHIFT.y, 3)],  # added to PlaceStage's VIEW_AT
     }
 
 
