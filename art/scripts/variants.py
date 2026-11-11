@@ -5218,6 +5218,8 @@ VARIANTS.update({k: v for k, v in rl.VARIANTS.items() if k not in rl.UNAPPROVED}
 VARIANTS["overrun_outpost"] = ("ruins", rs.outpost_ground, "op_ground", ("edge_same_b", "edge_other_b"))
 PROP_PIECES.update(rs.haunted_pieces())       # the ghost town's shells and their night ghost houses
 VARIANTS["haunted_ruins"] = ("ruins", rs.haunted_ground, "gt_ground", ("edge_same_b", "edge_other_b"))
+PROP_PIECES.update(rs.basilisk_pieces())     # the basilisk ruins' petrified halls and their party halls
+VARIANTS["basilisk_ruins"] = ("ruins", rs.basilisk_ground, "bs_ground", ("edge_same_b", "edge_other_b"))
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | rl.OWN
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
 PROP_PIECES.update(sl.PROP_PIECES)
@@ -5226,6 +5228,7 @@ LANDMARK_CENTRES.update(sl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(fl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update(bl.LANDMARK_CENTRES)
 LANDMARK_CENTRES.update({k: v for k, v in rl.LANDMARK_CENTRES.items() if k not in rl.UNAPPROVED})
+LANDMARK_CENTRES["basilisknest"] = rs.basilisknest
 # landmark -> its variant. The Tree of Life has its own wedges: the path wedge on its edges toward heartwood,
 # and heartwood's landmark wedge on the edges touching it. The Hidden Shrine has its own wedges too. The others
 # (LANDMARK_CENTRES) are a centre only, with their variant's wedges and ground colour.
@@ -5242,6 +5245,7 @@ LANDMARKS.update(sl.LANDMARKS)
 LANDMARKS.update(fl.LANDMARKS)
 LANDMARKS.update(bl.LANDMARKS)
 LANDMARKS.update({k: v for k, v in rl.LANDMARKS.items() if k not in rl.UNAPPROVED})
+LANDMARKS["basilisknest"] = "basilisk_ruins"
 BASE = {v: t for v, (t, _, _, _) in VARIANTS.items()}  # variant -> its terrain
 BASE.update({m: BASE[LANDMARKS[m]] for m in LANDMARK_CENTRES})
 

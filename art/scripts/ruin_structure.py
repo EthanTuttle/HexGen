@@ -773,7 +773,7 @@ def haunted_props(world, q, r, night=False):
     return out
 
 
-# --- Basilisk ruins on the halls (round 1, not approved) ------------------------------------
+# --- Basilisk ruins on the halls (approved Nov 10, 2026, round 4; in the kit from tiles_v95) ------------------------------------
 # design/07 -> Region variant looks: grass, bushes and trees turned to grey stone, with grey stone explorers frozen
 # mid-stride or mid-flight among them, some crumbling. The plain halls, stone for stone, recoloured: their grass floors,
 # yards and moss gone to grey stone; in each hall a stone tree and bushes, and stone explorers on the yard before it,
