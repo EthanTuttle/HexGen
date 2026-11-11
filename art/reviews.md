@@ -217,3 +217,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-10 | `art/preview/place_dunfaire_tower_compare_v1.png` | note | Dunfaire Tower scene: the tower is the focus here and must be in view; shift the view up about 2 cells (per-scene camera). Ruins-land fit decided after |
 | 2026-11-10 | `art/preview/study_ruins_sheet_v1.png` | note | Variant study: ruins variants reworked by structure. Outpost: goblin stockade; Haunted: graveyard city; Basilisk: colonnade field; Vault: sunken courts. Supersedes the approved outpost, ghost town and Basilisk regions (landmarks kept) |
 | 2026-11-10 | `art/preview/place_dunfaire_tower_compare_v2.png` | approved | Dunfaire Tower scene v2 (2-row view shift), with changes: campfire moves to the ground by the party; the tower window glows at night |
+| 2026-11-10 | `art/preview/ruins_vault_courts_sheet_v1.png` | note | Trapped vault sunken courts: parked, no verdict; come back to it later |
