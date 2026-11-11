@@ -312,10 +312,11 @@ def block_a(p, rng, joins, n):
 HALL_R = 1.35   # the corner halls' radius: their walls reach the tile edges well short of the streets
 
 
-def block_b(p, rng, joins, n, burrow=False):
+def block_b(p, rng, joins, n, burrow=False, lot=True):
     """A corner hall's third, the plaza side's footprint or mound, and the yard. burrow (the overrun outpost): this third's
     walls are gone, a burrow dug into its floor instead (placed as its own prop, outpost_props), with the inner ring and
-    the lot before it left out so its mouth faces open ground. Returns the hall's walls' stretches."""
+    the lot before it left out so its mouth faces open ground. lot=False (the trapped vault's stairway) leaves the lot out
+    too, its rng draws kept so the walls match. Returns the hall's walls' stretches."""
     m = margins(joins)
     rl.plate(p, kite(FLAT_KEEP + 0.15, m["lo"], m["hi"], x0=TAKES["b"]["plaza"] + 0.1), 0.012, "rs_yard")
     corner = Vector((CORNER, 0, 0))
@@ -335,7 +336,7 @@ def block_b(p, rng, joins, n, burrow=False):
         inner = [corner + (q - corner) * 0.55 for q in pts]
         masonry(p, rng, inner[0], inner[1], (0.45, 0.8), mat, breach=0.3)
         masonry(p, rng, inner[1], inner[2], (0.45, 0.8), mat, breach=0.3)
-    lot = kite(RAISED_KEEP, m["lo"] + 0.1, m["hi"] + 0.1, x0=TAKES["b"]["plaza"] + 0.3, x1=pts[1].x - 0.35)
+    lot = kite(RAISED_KEEP, m["lo"] + 0.1, m["hi"] + 0.1, x0=TAKES["b"]["plaza"] + 0.3, x1=pts[1].x - 0.35) if lot else []
     if lot:
         if n == 0:
             mound(p, rng, lot, 0.35)
@@ -1038,3 +1039,226 @@ def basilisknest(p, rng, kind):
     p.paths.append(ring + [ring[0]])
     for i, q in enumerate(ring):
         p.spokes[i] = [q / NEST_RING * A, q]
+
+
+# --- Trapped vault on the halls (round 1, not approved) ------------------------------------
+# design/07 -> Region variant looks: half-buried stairways down to sealed doors among the remains, with sprung traps
+# round them: collapsed pits, jutting spikes, patterned trap tiles. The plain halls, stone for stone; in each hall's floor
+# one sprung trap; on a few yards, in place of the lot, a stairway going down into the hall's footings to a sealed door,
+# trap tiles at its mouth. Landmark: the Vault, a massive round bronze door set into a stone face, with locks and carvings.
+
+PALETTE_VAULT = {   # made up
+    "tv_ground": "#ADA595",     # the paving, dustier
+    "tv_tile_a": "#CDC2AA",     # trap tiles: a pattern of light and dark squares
+    "tv_tile_b": "#857C6B",
+    "tv_plate": "#5F584D",      # a pressed plate, sunk
+    "tv_iron": "#8E9196",       # spikes
+    "tv_rust": "#8C4F2C",       # their tips
+    "tv_earth": "#8A7559",      # the earth heaped over a stairway
+    "tv_door": "#77736A",       # a sealed door's stone
+    "tv_bronze": "#B07A35",     # the Vault's door, and a sealed door's bands and seal
+    "tv_bronze_d": "#7A5224",
+    "tv_bronze_l": "#D9A75A",   # its bolts and studs, catching the light
+    "tv_carve": "#6C675D",      # carvings cut in the stone face
+}
+hk.PALETTE.update(PALETTE_VAULT)
+TRAP_AT = (Vector((CORNER - 0.68, 0, 0)),) * 2 + (Vector((3.47, 0, 0)),)   # in a block's frame, by n: the sprung trap in the hall's floor (n 2: between its two rings)
+STAIR_X = (2.25, 3.1)           # the stairway on the yard, along the block's middle line: its mouth, the door's face
+STAIR_W = 0.5                   # its width between the side walls
+STAIR_CHANCE = 0.17             # a corner's chance of a stairway
+STAIR_MOST = 2                  # and never more than two on a tile
+TRAPS = ("tiles", "spikes", "pit")   # the hall's sprung trap, by its variant n
+
+
+def trap_tiles(p, rng, at, spin, cols=3, rows=3, size=0.2):
+    """Patterned trap tiles: a grid of light and dark squares lying flat, one or two pressed down (sprung) and dark."""
+    rot = Matrix.Rotation(spin, 3, "Z")
+    pressed = {rng.randrange(cols * rows) for _ in range(rng.choice((1, 2)))}
+    for i in range(cols):
+        for j in range(rows):
+            c = at + rot @ Vector(((i - (cols - 1) / 2) * size, (j - (rows - 1) / 2) * size, 0))
+            sq = [c + rot @ Vector((sx * size * 0.46, sy * size * 0.46, 0)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+            k = i * rows + j
+            rl.plate(p, sq, 0.024 if k in pressed else 0.029, "tv_plate" if k in pressed else ("tv_tile_a" if (i + j) % 2 == 0 else "tv_tile_b"))
+
+
+def spikes(p, rng, at, spin, n=7, spread=0.3):
+    """Jutting spikes: iron spikes sprung up out of a dark slot in the floor, a few leaning, rust at the tips."""
+    rot = Matrix.Rotation(spin, 3, "Z")
+    rl.plate(p, [at + rot @ Vector((sx * (spread + 0.08), sy * 0.15, 0)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))], 0.008, "crypt_dark")
+    for k in range(n):
+        base = at + rot @ Vector((-spread + 2 * spread * k / max(1, n - 1), rng.uniform(-0.07, 0.07), 0))
+        h = rng.uniform(0.36, 0.52)
+        lean = Matrix.Rotation(rng.uniform(-0.25, 0.25), 3, "X") @ Matrix.Rotation(rng.uniform(-0.2, 0.2), 3, "Y")
+        tip = Matrix.Translation(base) @ lean.to_4x4()
+        made = bmesh.ops.create_cone(p.bm, cap_ends=True, cap_tris=True, segments=4, radius1=0.05, radius2=0.0, depth=h,
+                                     matrix=tip @ Matrix.Translation((0, 0, h / 2)))["verts"]
+        p._paint(made, "tv_iron")
+        for f in {f for v in made for f in v.link_faces}:   # rust on the upper faces near the tip
+            if f.calc_center_median().z > base.z + h * 0.55:
+                f.material_index = p._slot("tv_rust")
+
+
+def pit(p, rng, at, r=0.28):
+    """A collapsed pit: a dark ragged hole where the floor fell in, broken slabs tipped in round its rim."""
+    pts = [at + Vector((math.cos(a), math.sin(a), 0)) * r * rng.uniform(0.8, 1.1) for a in (k * math.tau / 7 for k in range(7))]
+    rl.plate(p, pts, 0.03, "crypt_dark")
+    for k in range(5):
+        a = k * math.tau / 5 + rng.uniform(-0.3, 0.3)
+        d = Vector((math.cos(a), math.sin(a), 0))
+        tilt = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(-0.55, 3, "Y")   # tipped down into the hole
+        p.box_rot(at + d * (r * 0.92) + Vector((0, 0, 0.05)), (0.18, rng.uniform(0.16, 0.24), 0.05), rng.choice(("ruin_slab_a", "ruin_slab_b", "ruin_slab_d")), tilt)
+
+
+def trap(p, rng, kind, at):
+    if kind == "tiles":
+        trap_tiles(p, rng, at, rng.uniform(0, 1.0))
+    elif kind == "spikes":
+        spikes(p, rng, at, math.pi / 2 + rng.uniform(-0.3, 0.3))
+    else:
+        pit(p, rng, at)
+
+
+def stairway(p, rng):
+    """A half-buried stairway on the yard, going down toward the hall into its footings: low side walls rising from the
+    mouth to the door, earth heaped over the back, the steps falling away dark, and at the bottom a sealed door (stone,
+    bronze bands and a round seal) half sunk below the lintel. Trap tiles at its mouth."""
+    x0, x1 = STAIR_X
+    w = STAIR_W
+    wall = rng.choice(WALLS)
+    for sd in (-1, 1):   # the side walls: low at the mouth, as high as the lintel at the door
+        for k, (a, b, h) in enumerate(((x0, x0 + 0.28, 0.12), (x0 + 0.28, x0 + 0.56, 0.26), (x0 + 0.56, x1, 0.42))):
+            p.box(Vector(((a + b) / 2, sd * (w / 2 + 0.08), 0)), (b - a, 0.16, h), wall)
+            p.box(Vector(((a + b) / 2, sd * (w / 2 - 0.006), 0)), (b - a, 0.012, h - 0.02), ("tv_tile_b", "tv_plate", "crypt_dark")[k])   # its inside in shadow, deeper toward the door
+    # the steps: each a strip further in and darker, the last ones lost in shadow
+    shades = ("ruin_slab_a", "ruin_slab_d", "tv_tile_b", "tv_plate", "crypt_dark")
+    for j, mat in enumerate(shades):
+        a = x0 + (x1 - x0 - 0.05) * j / len(shades)
+        b = x0 + (x1 - x0 - 0.05) * (j + 1) / len(shades)
+        rl.plate(p, [Vector((a, -w / 2, 0)), Vector((b, -w / 2, 0)), Vector((b, w / 2, 0)), Vector((a, w / 2, 0))], 0.016, mat)
+        rl.plate(p, [Vector((b - 0.02, -w / 2, 0)), Vector((b, -w / 2, 0)), Vector((b, w / 2, 0)), Vector((b - 0.02, w / 2, 0))], 0.017, "crypt_dark")   # each step's shadowed lip
+    # the door's face: a lintel and posts, the sealed door sunk below it, and earth heaped over the top
+    p.box(Vector((x1, 0, 0)), (0.14, w + 0.34, 0.14), "ruin_grey", z=0.42)
+    p.box(Vector((x1 - 0.005, 0, 0)), (0.06, w, 0.42), "tv_door")
+    for z in (0.1, 0.3):   # bronze bands across it
+        p.box(Vector((x1 - 0.04, 0, 0)), (0.02, w - 0.02, 0.035), "tv_bronze_d", z=z)
+    seal = Matrix.Translation((x1 - 0.045, 0, 0.21)) @ Matrix.Rotation(math.pi / 2, 4, "Y")
+    made = bmesh.ops.create_cone(p.bm, cap_ends=True, cap_tris=False, segments=8, radius1=0.11, radius2=0.11, depth=0.02, matrix=seal)["verts"]
+    p._paint(made, "tv_bronze")
+    m = Matrix.Translation((x1 + 0.22, 0, -0.1)) @ Matrix.Diagonal((0.5, 0.72, 0.66, 1))   # earth heaped over the back
+    made = bmesh.ops.create_icosphere(p.bm, subdivisions=1, radius=1.0, matrix=m)["verts"]
+    p._paint(made, "tv_earth")
+    for f in {f for v in made for f in v.link_faces}:   # stones showing through the earth
+        if rng.random() < 0.25:
+            f.material_index = p._slot(wall)
+    for x, y in ((x1 + 0.05, 0.36), (x0 + 0.1, -0.33)):   # fallen stones from the walls
+        p.box(Vector((x, y * rng.uniform(0.9, 1.05), 0)), (0.12, 0.1, 0.07), rng.choice(("rs_rubble", "rs_rubble_d")), spin=rng.uniform(0, 3))
+    trap_tiles(p, rng, Vector((x0 - 0.2, 0, 0)), 0.0, cols=2, rows=3, size=0.17)   # sprung tiles at its mouth
+
+
+def vault_block(n, join, with_stair=False):
+    seed = f"rsb_block_{n}_{join}"   # the plain halls' seeds: the same walls
+
+    def build(p, rng):
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        block_b(p, hk.seeded(seed), joins, n, lot=not with_stair)
+        weather(p, hk.seeded(seed + "weather"))
+        g = hk.seeded(seed + "vault")
+        trap(p, g, TRAPS[n], TRAP_AT[n] + Vector((g.uniform(-0.08, 0.08), g.uniform(-0.12, 0.12), 0)))
+        if with_stair:
+            stairway(p, hk.seeded(seed + "stair"))
+    return build
+
+
+def vault_pieces():
+    out = {f"vault_hall_{n}_{j}": vault_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+    out.update({f"vault_stair_{n}_{j}": vault_block(n, j, True) for n in range(VARIANTS_PER_TAKE) for j in JOINS})
+    return out
+
+
+def vault_ground(p, rng, kind):
+    """The plain halls' ground, slab for slab and seeded as theirs (its ground colour is the variant's: tv_ground)."""
+    plain = f"ruins_{kind}" if kind not in ("same", "other") else f"ruins_edge_{kind}"
+    ground(KIT)(p, hk.seeded(plain), kind)
+
+
+def vault_props(world, q, r):
+    """(piece, x, y, spin) for a trapped vault tile: its six halls, each with a sprung trap; a corner with hash 62 under
+    STAIR_CHANCE has a stairway on its yard, at most STAIR_MOST a tile (the first ones going round from corner 0)."""
+    out, stairs = [], 0
+    for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
+        kind = "hall"
+        if stairs < STAIR_MOST and gc.hash01(q * 6 + c, r, 62) < STAIR_CHANCE:
+            kind, stairs = "stair", stairs + 1
+        out.append((f"vault_{kind}_{piece[len('ruin_hall_'):]}", x, y, spin))
+    return out
+
+
+VAULT_RING = rl.WARREN_RING   # 3.0: the ring path round the Vault, as round the other ruins landmarks
+VAULT_DOOR = 1.55             # the approach along edge 0 ends at the foot of the door's steps
+VAULT_TRAPS = {0: "pit", 1: "spikes", 2: "tiles", 3: "pit", 4: "spikes", 5: "tiles"}   # corner -> its sprung trap
+
+
+def round_x(p, at, radius, depth, mat, segments=16):
+    """A disc facing +X (its axis along X), centred at at."""
+    m = Matrix.Translation(at) @ Matrix.Rotation(math.pi / 2, 4, "Y")
+    made = bmesh.ops.create_cone(p.bm, cap_ends=True, cap_tris=False, segments=segments, radius1=radius, radius2=radius, depth=depth, matrix=m)["verts"]
+    p._paint(made, mat)
+    return made
+
+
+def vault(p, rng, kind):
+    """The Vault's centre: the plain plaza, and on it a massive stone face, a stepped block of the hall stone with carved
+    bands and pilasters, and set into its front (facing edge 0) a great round bronze door: a heavy rim with studs, rings
+    of carving, a wheel in the middle and locks round its edge. Steps up to it; sprung traps in the corners."""
+    vault_ground(p, hk.seeded("ruins_centre"), "centre")
+    wall = "rs_wall_b"
+    front, back, hw = 0.95, -1.05, 1.5   # the face's front, back and half width
+    p.box(Vector(((front + back) / 2, 0, 0)), (front - back, 2 * hw, 2.5), wall)                       # the block
+    p.box(Vector(((front + back) / 2 - 0.2, 0, 0)), (front - back - 0.5, 2 * hw - 0.6, 0.7), wall, z=2.5)   # a stepped top
+    p.box(Vector(((front + back) / 2 - 0.2, 0.3, 0)), (0.9, 1.0, 0.45), "ruin_grey", z=3.2)             # its broken crown
+    p.box(Vector((front + 0.03, 0, 0)), (0.12, 2 * hw + 0.12, 0.18), "ruin_grey", z=2.35)              # a cornice
+    for sd in (-1, 1):   # pilasters at the face's ends, carved bands between
+        p.box(Vector((front + 0.06, sd * (hw - 0.14), 0)), (0.16, 0.26, 2.35), "ruin_grey")
+        for z in (0.55, 1.15, 1.75):
+            p.box(Vector((front + 0.012, sd * (hw - 0.55), 0)), (0.03, 0.42, 0.06), "tv_carve", z=z)
+    p.box(Vector((front + 0.012, 0, 0)), (0.03, 2 * hw - 0.6, 0.06), "tv_carve", z=2.2)               # a carved frieze over the door
+    for k in range(7):
+        p.box(Vector((front + 0.014, -0.9 + 0.3 * k, 0)), (0.03, 0.12, 0.12), "tv_carve", z=2.0)
+    # the door: a ring of stone, the bronze rim and its studs, carved rings, the wheel, the locks
+    c = Vector((front, 0, 1.15))
+    round_x(p, c + Vector((0.04, 0, 0)), 1.06, 0.08, "ruin_grey", 16)          # the stone ring it's set in
+    round_x(p, c + Vector((0.1, 0, 0)), 0.94, 0.08, "tv_bronze_d", 16)         # the rim
+    round_x(p, c + Vector((0.14, 0, 0)), 0.8, 0.06, "tv_bronze", 16)           # the door's face
+    round_x(p, c + Vector((0.18, 0, 0)), 0.56, 0.03, "tv_bronze_d", 12)        # a carved ring
+    round_x(p, c + Vector((0.2, 0, 0)), 0.5, 0.03, "tv_bronze", 12)
+    for k in range(12):   # studs round the rim
+        a = k * math.tau / 12
+        p.blob(c + Vector((0.16, math.cos(a) * 0.87, 0)), 0.045, "tv_bronze_l", z=math.sin(a) * 0.87)
+    for k in range(4):   # the locks: four heavy bolts across the rim into the stone, a box on each
+        a = math.pi / 4 + k * math.pi / 2
+        d = Vector((0, math.cos(a), math.sin(a)))
+        rot = Matrix.Rotation(a, 3, "X")
+        p.box_rot(c + Vector((0.2, 0, 0)) + d * 0.86, (0.06, 0.34, 0.08), "tv_bronze_l", rot)
+        p.box_rot(c + Vector((0.23, 0, 0)) + d * 0.66, (0.07, 0.16, 0.16), "tv_bronze_d", rot)
+    p.blob(c + Vector((0.26, 0, 0)), 0.1, "tv_bronze_l")   # the wheel: its hub and four spokes and rim
+    for k in range(4):
+        a = k * math.pi / 4
+        p.box_rot(c + Vector((0.26, 0, 0)), (0.04, 0.6, 0.04), "tv_bronze_l", Matrix.Rotation(a, 3, "X"))
+    # the steps up to it, and trap tiles in the forecourt
+    for j, (x, h) in enumerate(((front + 0.2, 0.16), (front + 0.42, 0.08))):
+        p.box(Vector((x, 0, 0)), (0.22, 1.5, h), "ruin_slab_a")
+    trap_tiles(p, rng, Vector((2.05, 0, 0)), 0.0, cols=3, rows=4, size=0.2)
+    for x, y in ((1.25, 1.45), (0.6, -1.75), (-1.3, 1.3)):   # fallen stones from the crown
+        p.box(Vector((x, y, 0)), (0.3, 0.24, 0.2), rng.choice(WALLS), spin=rng.uniform(0, 3))
+    rl.overgrow_faces(p, hk.seeded(p.name + "growth"), [f for f in p.bm.faces if p.mats[f.material_index] in (wall, "ruin_grey") and f.calc_center_median().z > 0.05 and f.calc_area() < 0.25])   # small faces only: a whole side gone green reads wrong
+    # outside the ring: a sprung trap in each corner
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        d = Vector((math.cos(a), math.sin(a), 0))
+        trap(p, rng, VAULT_TRAPS[k], d * 3.7)
+    p.paths.append([Vector((VAULT_RING, 0, 0)), Vector((VAULT_DOOR, 0, 0))])
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * VAULT_RING for i in range(6)]
+    p.paths.append(ring + [ring[0]])
+    for i, q in enumerate(ring):
+        p.spokes[i] = [q / VAULT_RING * A, q]

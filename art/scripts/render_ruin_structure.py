@@ -6,6 +6,7 @@ region is render_region_compare.world("ruins"). Writes art/preview/ruins_structu
 and the sheet ruins_structure_sheet_vN.png with the forest and village maps from the comparison (same camera).
 -- outpost [check]: the overrun outpost on the corner halls round the Warren, map and close-up by day and at night.
 -- basilisk [check|quick]: basilisk ruins on the halls round the Basilisk Nest, map and close-up by day and at night.
+-- vault [check|quick]: the trapped vault on the halls round the Vault, map and close-up by day and at night.
 -- haunted [check|quick]: the ghost town round the Crypt, map and close-up by day (bare shells) and at night (ghost houses).
 -- b: that take alone, map and close-up by day and at night, sheet ruins_structure_b_sheet_vN.png.
 check: walls and raised stone off the walks, nothing past the tile edge, triangles per tile, then exit.
@@ -405,6 +406,109 @@ def basilisk_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def build_vault():
+    """The trapped vault on the halls, built live (not in the kit until approved): its ground, halls with traps, and the Vault."""
+    col = bpy.data.collections.new("live")
+    out = {}
+    for name, kind in (("centre", "centre"), ("edge_same", "same"), ("edge_same_b", "edge_same_b"), ("edge_other", "other"), ("edge_other_b", "edge_other_b")):
+        p = hk.Piece(f"trapped_vault_{name}")
+        rs.vault_ground(p, None, kind)
+        out[p.name] = p.finish(col)
+    for name, b_ in rs.vault_pieces().items():
+        p = hk.Piece(name)
+        b_(p, hk.seeded(name))
+        out[name] = p.finish(col)
+    p = hk.Piece("vault_centre")
+    rs.vault(p, hk.seeded(p.name), "centre")
+    out[p.name] = p.finish(col)
+    return out
+
+
+def check_vault(live):
+    """Each hall inside the tile and off the walks; the Vault's raised parts off its ring, spokes and approach and inside
+    the tile; triangles per tile, and as placed."""
+    bad = []
+    for name, obj in live.items():
+        if not name.startswith(("vault_hall_", "vault_stair_")):
+            continue
+        for v in obj.data.vertices:
+            x, y, z = v.co
+            if max(x * math.cos(math.radians(60 * k + 30)) + y * math.sin(math.radians(60 * k + 30)) for k in range(6)) > rs.A + 0.01:
+                bad.append((name, "edge", round(x, 2), round(y, 2)))
+            if z > 0.03 and abs(x * 0.5) - abs(y) * math.cos(math.radians(30)) < vr.rl.WALK_HALF:
+                bad.append((name, "walk", round(x, 2), round(y, 2), round(z, 2)))
+    vault = live["vault_centre"]
+    ring = [Vector((math.cos(math.radians(60 * i)), math.sin(math.radians(60 * i)), 0)) * rs.VAULT_RING for i in range(6)]
+    segs = [(ring[i], ring[(i + 1) % 6]) for i in range(6)] + [(q / rs.VAULT_RING * rs.A, q) for q in ring] + [(Vector((rs.VAULT_RING, 0, 0)), Vector((rs.VAULT_DOOR, 0, 0)))]
+    for v in vault.data.vertices:
+        x, y, z = v.co
+        if max(x * math.cos(math.radians(60 * k)) + y * math.sin(math.radians(60 * k)) for k in range(6)) > rs.A + 0.01:
+            bad.append(("vault", "edge", round(x, 2), round(y, 2)))
+        near = min(rv.seg_gap(x, y, a, b) for a, b in segs[:-1])
+        if x >= rs.VAULT_DOOR:   # the approach ends at the door's steps
+            near = min(near, rv.seg_gap(x, y, *segs[-1]))
+        if z > 0.03 and near < vr.rl.WALK_HALF:
+            bad.append(("vault", "path", round(x, 2), round(y, 2), round(z, 2)))
+    worst = max(tris(o) for n, o in live.items() if n.startswith("vault_hall_"))
+    worst_stair = max(tris(o) for n, o in live.items() if n.startswith("vault_stair_"))
+    ground = max(tris(live[f"trapped_vault_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
+    base = tris(live["trapped_vault_centre"]) + 6 * ground
+    print(f"CHECK vault: {len(bad)} problems {bad[:8]}; worst hall {worst}, worst stair hall {worst_stair}, worst tile "
+          f"{base + (6 - rs.STAIR_MOST) * worst + rs.STAIR_MOST * worst_stair} (budget 4816); Vault tile {tris(vault) + 6 * ground}")
+    counts, real = {}, []
+    for q in range(-10, 10):
+        for r in range(-10, 10):
+            props = rs.vault_props({}, q, r)
+            k = sum(p_[0].startswith("vault_stair_") for p_ in props)
+            counts[k] = counts.get(k, 0) + 1
+            real.append(base + sum(tris(live[p_[0]]) for p_ in props))
+    print(f"PLACED: stairways per tile {dict(sorted(counts.items()))}; worst tile {max(real)}, mean {sum(real) // len(real)}")
+
+
+def vault_world():
+    """The Vault, two rings of trapped vault round it, plain ruins beyond (a few plains), plains outside."""
+    return {t: ("vault" if v == "crypt" else "trapped_vault" if v == "haunted_ruins" else v) for t, v in ghost_world().items()}
+
+
+def vault_shot(close, dark):
+    hk.empty_scene()
+    templates = rp.load_templates(rp.latest("tiles", "tiles"))
+    templates.update(build_vault())
+    added = {"VARIANTS": ("trapped_vault", ("ruins", rs.vault_ground, "tv_ground", ("edge_same_b", "edge_other_b"))),
+             "LANDMARKS": ("vault", "trapped_vault"), "LANDMARK_CENTRES": ("vault", rs.vault), "BASE": ("trapped_vault", "ruins")}
+    for d, (k, v) in added.items():
+        getattr(vr, d)[k] = v
+    vr.BASE["vault"] = "ruins"
+    looks = set(vr.rl.LOOKS)
+    vr.rl.LOOKS.add("trapped_vault")   # a ruins look: its neighbours' halls join it, and it stands props
+    for t in ("trapped_vault", "vault"):   # preview stand-in for ground_cover's data, as the plain ruins
+        rp.gc.DENSITY[t] = 0.1
+    world = vault_world()
+    vr.rl.tile_props = lambda name, q, r, w=None: (rs.block_props(rs.KIT, world, q, r) if name == "ruins" else
+                                                   rs.vault_props(world, q, r) if name == "trapped_vault" else ORIGINAL_PROPS(name, q, r, w))
+    rp.build_map(templates, tiles=world)
+    vr.rl.tile_props = ORIGINAL_PROPS
+    vr.rl.LOOKS.clear()
+    vr.rl.LOOKS.update(looks)
+    for d, (k, _) in added.items():
+        getattr(vr, d).pop(k)
+    vr.BASE.pop("vault")
+    for o in bpy.data.collections["map"].objects:   # preview only: the Vault's door toward the camera
+        if o.name.startswith("vault_centre"):
+            o.rotation_euler.z = math.radians(-60)
+    if close:   # the Vault and the halls beside it
+        rp.stage(Vector((1.2, -1.2, 0)), 32, 45)
+    else:
+        rp.stage(Vector((0, -3, 0)), 92, 45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
+    rst.label("Trapped vault on the corner halls", ("Closer: the Vault and its neighbours" if close else "Two rings round the Vault") + (", night" if dark else ", day"))
+    stem = f"ruins_vault_halls_{'close' if close else 'map'}{'_night' if dark else ''}"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
 def statue_shot(title, sub, build):
     """A close model shot of explorer statues on a strip of the basilisk ground, by day."""
     hk.empty_scene()
@@ -459,6 +563,18 @@ if __name__ == "__main__":
             sys.exit(0)
         rows = [[basilisk_shot(False, False), basilisk_shot(True, False)], [basilisk_shot(False, True), basilisk_shot(True, True)]]
         rst.SHEET_STEM = "ruins_basilisk_halls_sheet"
+        rst.sheet(rows)
+        sys.exit(0)
+    if "vault" in args:
+        if "check" in args:
+            hk.empty_scene()
+            check_vault(build_vault())
+            sys.exit(0)
+        if "quick" in args:
+            print("SHOT", vault_shot(False, False), vault_shot(True, False))
+            sys.exit(0)
+        rows = [[vault_shot(False, False), vault_shot(True, False)], [vault_shot(False, True), vault_shot(True, True)]]
+        rst.SHEET_STEM = "ruins_vault_halls_sheet"
         rst.sheet(rows)
         sys.exit(0)
     if "haunted" in args:
