@@ -9,7 +9,7 @@ Scripted hero minis for the first playable (design/06 → Hero minis), replaced 
 - New grips, the two-handed and casting variants (`two`, `caster` in the description), and open palms; the wraps' open hand is its own piece, `hero_hand_open_wraps`.
 - The table: `T.races[race].builds[build].poses[main][variant]`, with `torso`, `head`, `hair`, `legs`, `arms`, `main`, `offhand`. Section "What Godot needs" has the whole recipe.
 
-**Golems (kit v14, Nov 10, 2026; waiting on Ethan's approval of the final set, so not merged):** each golem sub-type has its own shape, and the metal golem has its own long-arm placements. A description now carries `subtype` for a golem, its piece names carry the sub-type, and the table gains a `golem_metal` entry. Every other entry is unchanged, the old golem entry included. See Golems below.
+**Golems (kit v14, Nov 10, 2026; approved by Ethan and merged to main):** each golem sub-type has its own shape, and the metal golem has its own long-arm placements. A description now carries `subtype` for a golem, its piece names carry the sub-type, and the table gains a `golem_metal` entry. Every other entry is unchanged, the old golem entry included. See Golems below.
 
 **Hair fix (kit v11, from the phone test's note 071357):** the skull no longer shows through the hair at the back, on any head, race or style. The caps cover the widest of the four heads and have one more ring, so each hair piece has 16 more triangles. Elves and tieflings now get full-width hair, so only their `pose.hair` matrices changed. The table's format is the same.
 
