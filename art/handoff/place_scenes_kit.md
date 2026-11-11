@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v4 (exported), made Nov 10, 2026, waiting on Ethan's OK. v1 was too small next to the party; Ethan picked v3's layout with v2's Keep size. Not in Godot yet.
+**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, made Nov 10, 2026, waiting on Ethan's review. Neither is in Godot yet.
 
 ## What each kit hands Godot
 
@@ -13,7 +13,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `<id>_places`: where the services stand.
   - `backdrop`: `""` means the map's day and night.
   - `lights`: `[q, r, x, y, z, colour, day, night, flicker]`. The offsets are from that hex's middle in Godot's frame, the energies are in Blender watts, and 0 means off.
-- **Own materials:** `ts_glow` (windows), `ts_water` (the well), `ts_fire` (the braziers' flames, so Godot flickers them).
+- **Own materials:** `ts_glow` (windows), `ts_water` (the well), `ts_fire` (the fortified town's brazier flames, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
 - **Scripts:**
   - `art/scripts/build_place_<id>.py` builds a kit.
   - `art/scripts/render_place_scenes.py -- <id>` renders the previews. `-- <id> check` runs the checks: everything stands on the floor, every spot is clear by 0.42 or more, and the triangles are within budget. It exits 1 on a failure.
@@ -57,8 +57,43 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
 
 **Triangles:** 16,274 of the placeholder 20,000.
 
+## Slums (`slums`, v1)
+
+**Look** (07 → Region variants → Slums):
+- Lopsided, patched shacks with sagging tin roofs on warm tan dirt, with faint damp patches.
+- Around the square's edges: weeds, two vegetable plots, scraggly trees, heaps of crates with a broken cart, and barrels.
+- A washing line across the Black Market's lane, and red lanterns on posts.
+
+The Black Market, the town's landmark, stands over the back of the square: its tangle of patched awnings over a narrow lane, with red lanterns under them. The lane's mouth opens between the left back shack and the inn, where the fortified town's lane to the Keep is. The town kit's chimney smoke isn't in the kit: a place kit has no effect points yet.
+
+**Scale:** as the fortified town's. The shacks are the village kit's at 3×, with a door and one lit window each added; their walls are 1.7–2.2 m. The inn is 2×, junk, plots and weeds 2×, the Black Market 2.4×, and the trees 2.4×. Like the Keep, the Black Market is cropped above its lower awnings at 33 m.
+
+**Services:** the same places and spot sets as the market square and the fortified town.
+
+| Place | Hex | Here |
+| --- | --- | --- |
+| `well` | (0, 0) | Wooden well under tin |
+| `shop` | (-1, 0) | A stall under red-and-ochre patched cloth; the shopkeeper stands behind it |
+| `board` | (1, 0) | The notice board under tin |
+| `inn` | (1, -2) | The market square's inn in weathered planks under tin. It opens the shared `town_inn` |
+| `black_market` | (0, -3) | The Black Market's lane mouth, off the 19 hexes, for reference only: there's no card for it yet |
+
+**Spots** are the square's. The nearest anything stands to a spot is 0.87, at (1, -1), from the inn.
+
+**Props reused:**
+- From `variants.py` (the village kit): `shack`, `black_market`, `washing_line`, `lantern_post`, `junk`, `weed_patch`, `veg_plot`, `scraggly_tree`.
+- From the town kit: the well, stall, board, inn and barrels.
+- Nothing new was modelled.
+
+**Lights** (placeholders, at night only, none flickering):
+- the two red lantern posts: #E5432D, 30 W;
+- the inn's door: #FFC27A, 32 W;
+- the Black Market's lane: #E5432D, 44 W.
+
+**Triangles:** 14,458 of the placeholder 20,000.
+
 ## Not checked
 
 - Nothing has run in Godot.
-- Turned cameras: behind the back row and outside the walls is plain.
+- Turned cameras: behind the back row and outside the walls (fortified) or past the outer shacks (slums) is plain.
 - No guard minis: the only keeper is the shopkeeper. Guards would be keeper-style stand-ins, and aren't in the kit.
