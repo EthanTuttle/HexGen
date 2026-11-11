@@ -17,6 +17,10 @@ const KITS := {
 		"backdrop": "", "glow": 0.4, "night_sun": 1.0, "focus": Vector2(450, 174), "lights": [
 			[-1, -1, 0.5, 1.8, -0.2, "#FFC27A", 0.0, 32.0, false], [2, 0, 0.5, 1.8, -0.2, "#FFC27A", 0.0, 32.0, false],
 			[1, -2, 0.5, 0.9, -0.2, "#FFC27A", 0.0, 32.0, false]]},
+	# Fortified town v4 (approved Nov 10, 2026; art/handoff/place_scenes_kit.md): its JSON carries its lights and backdrop.
+	# The Keep stands cropped behind the square at this camera, as Ethan liked it. glow: the square's (PLACEHOLDER).
+	"fortified_town": {"glb": "res://art/place_fortified_town.glb", "json": "res://art/place_fortified_town.json",
+		"mesh": "place_fortified_town", "backdrop": "", "glow": 0.4, "night_sun": 1.0, "focus": Vector2(450, 174), "lights": []},
 	# The one inn every town and the roadside Inn share (Ethan, Nov 9, 2026); The Oak & Lantern gets its own.
 	"inn": {"glb": "res://art/town_scenes.glb", "json": "res://art/town_scenes.json", "mesh": "town_inn",
 		"backdrop": "#2A1C15", "glow": 0.9, "night_sun": 0.5, "focus": Vector2(450, 186), "lights": [
@@ -34,7 +38,7 @@ const KEEPER_COLOURS := {"shopkeeper": "#B0672A", "innkeeper": "#3F6FA8"}
 ## PLACEHOLDER: every town's places and services (design/07 -> open question); each has today's Shop and Inn.
 const PLACES := {
 	"market_town": {"kit": "square", "own": true, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
-	"fortified_town": {"kit": "square", "own": false, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
+	"fortified_town": {"kit": "fortified_town", "own": true, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	"slums": {"kit": "square", "own": false, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	"scholars_town": {"kit": "square", "own": false, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	# The starting tiles that are a town and an inn (design/06 -> Towns); each gets a hand-made scene.
