@@ -43,7 +43,9 @@ FLOOR = pf.FLOOR
 HALL_S = 2.3           # the village kit's scholar halls, their doors and windows
 TOWER_S = 2.4          # its towers
 INN_S = pf.INN_S
-PROP_S = 2.2           # statues, benches, lawns, hedges
+PROP_S = 2.2           # statues, benches, lawns, hedges, the quads' little fountains
+ARC_S = 3.4            # cloister arcades: columns about 2 m
+FOUNTAIN_S = 2.0       # the great fountain where the walks meet
 # The College stands behind the back row, its way in at the head of the walk between the left hall and the inn.
 COLLEGE_AT, COLLEGE_SCALE = Vector((-2.75, 9.8, 0)), 2.4
 GLOW = {"window_glow": "ts_glow", "lantern": "ts_glow"}
@@ -73,44 +75,71 @@ def tower(p, seed, x, y, top):
     borrow(p, lambda t: vr.quad_tower(t, random.Random(seed), Vector((0, 0, 0)), top), Vector((x, y, 0)), scale=TOWER_S, remap=GLOW)
 
 
+def arcade(p, a, b, posts):
+    """A cloister's covered walk from a to b (the village kit's), its wall on the left going from a to b, scaled by ARC_S."""
+    borrow(p, lambda t: vr.cloister_run(t, a / ARC_S, b / ARC_S, posts), Vector((0, 0, 0)), scale=ARC_S)
+
+
+def hedge(p, a, b):
+    """A clipped hedge from a to b, waist-high to the minis."""
+    borrow(p, lambda t: vr.clipped_hedge(t, a / PROP_S, b / PROP_S, h=0.32), Vector((0, 0, 0)), scale=PROP_S)
+
+
+def walk(q, r):
+    """The spoke walks: paving along the hex grid's three lines through the middle (and up to the inn's door), lawn between."""
+    return q == 0 or r == 0 or q + r == 0 or (q, r) == (1, -2)
+
+
 def square():
     p = hk.Piece(MESH)
 
     def mat(q, r):
-        return "quad_paving"
+        return "quad_paving" if walk(q, r) else "lawn"
 
     def dress(pc, c, i, q, r):
-        ts.stones(pc, c, i, "cream_stone" if i % 2 else "pf_flag", n=5 if (q, r) in HEXES else 2, z=FLOOR_Z)
+        if walk(q, r):
+            ts.stones(pc, c, i, "cream_stone" if i % 2 else "pf_flag", n=4 if (q, r) in HEXES else 2, z=FLOOR_Z)
 
     bs.floor(p, mat, "ts_base_d", "ts_base", dress, FLOOR)
-    # the services: the well, the stall, the board and the inn, in cream stone and slate blue
-    borrow(p, lambda t: ts.well(t, Vector((0, 0, 0)), FLOOR_Z), hx(0, 0), remap={"ts_roof": "slate_blue", "ts_stone": "cream_stone", "ts_stone_d": "stone_block"})
+    # the services: the fountain where the walks meet stands for the well, then the stall, the board and the inn
+    borrow(p, lambda t: vr.great_fountain(t, Vector((0, 0, 0))), hx(0, 0) + Vector((0, 0, FLOOR_Z)), scale=FOUNTAIN_S, remap={"water": "ts_water"})
     borrow(p, lambda t: ts.stall(t, Vector((0, 0, 0)), FLOOR_Z), hx(-1, 0), remap={"ts_stripe_a": "paint_blue", "ts_stripe_b": "awning_b"})
     borrow(p, lambda t: ts.quest_post(t, Vector((0, 0, 0)), FLOOR_Z), hx(1, 0), remap={"ts_roof_b": "slate_blue"})
     borrow(p, lambda t: ts.inn(t, Vector((0, 0, 0)), FLOOR_Z / INN_S), Vector((0.6, 3.9, 0)), scale=INN_S, remap=SCHOLARLY)
-    # halls and towers: the back row either side of the inn and the walk, down the sides, and more behind
-    for k, (x, y, w, d) in enumerate(((-5.15, 4.6, 2.5, 2.2), (4.75, 4.6, 2.4, 2.1), (-6.05, 1.0, 2.0, 2.4), (6.05, 1.1, 2.0, 2.4),
-                                      (2.6, 8.6, 2.4, 2.0), (-7.3, 8.6, 2.0, 2.0), (5.8, 11.2, 2.2, 2.0), (-6.3, 12.6, 2.0, 2.0))):
-        hall(p, 50 + k, x, y, w, d)
-    for k, (x, y, top) in enumerate(((-6.4, -1.8, "pointed"), (-7.7, 3.9, "dome"), (7.6, 3.8, "telescope"), (6.2, 7.9, "pointed"),
-                                     (7.7, -0.6, "dome"), (3.9, 11.6, "dome"))):
-        tower(p, 70 + k, x, y, top)
-    # the College over the back of the square, at the head of the walk
-    borrow(p, lambda t: vr.college(t, random.Random(6), "centre"), COLLEGE_AT, spin=-math.pi / 2, scale=COLLEGE_SCALE, drop=("quad_paving",),
-           remap=GLOW)
-    # the walk up to it, lined with clipped hedges and a statue each side, lantern pillars at its foot and by the board
+    # four quads between the walks, each a lawn edged in clipped hedge along its walk
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            hedge(p, Vector((sx * 4.9, sy * 0.98, 0)), Vector((sx * 7.5, sy * 0.98, 0)))
+    # the back quads wrapped in halls, cloister arcades and towers: a fountain in the left one, a scholar's statue in the right
+    arcade(p, Vector((-8.0, 1.35, 0)), Vector((-8.0, 4.3, 0)), 5)
+    arcade(p, Vector((8.0, 4.3, 0)), Vector((8.0, 1.35, 0)), 5)
+    hall(p, 50, -5.6, 5.0, 2.6, 2.2)
+    hall(p, 51, 5.3, 5.0, 2.4, 2.1)
+    tower(p, 70, -8.0, 5.2, "dome")
+    tower(p, 71, 8.0, 5.2, "telescope")
+    borrow(p, lambda t: vr.fountain(t, Vector((0, 0, 0))), Vector((-5.4, 2.55, FLOOR_Z)), scale=PROP_S, remap={"water": "ts_water"})
+    borrow(p, lambda t: vr.scholar_statue(t, Vector((0, 0, 0))), Vector((5.6, 2.6, 0)), scale=PROP_S)
+    borrow(p, lambda t: vr.lawn_panel(t, Vector((0, 0, 0)), 0.34), Vector((-6.85, 3.5, 0)), scale=PROP_S)
+    borrow(p, lambda t: vr.quad_bench(t, Vector((0, 0, 0)), 0.0), Vector((4.35, 2.7, 0)), scale=PROP_S)
+    # the front quads: a little stage for players on the right, the founder's statue and a tower on the left
+    borrow(p, lambda t: vr.bandstand(t, Vector((0, 0, 0))), Vector((5.75, -2.25, 0)), scale=1.35)
+    tower(p, 72, 7.9, -2.5, "dome")
+    tower(p, 73, -7.0, -2.4, "pointed")
+    borrow(p, lambda t: vr.great_statue(t, Vector((0, 0, 0))), Vector((-4.95, -2.45, 0)), scale=1.5)
+    borrow(p, lambda t: vr.lawn_panel(t, Vector((0, 0, 0)), 0.34), hx(-1, 2), scale=PROP_S)
+    # the College over the back of the square, at the head of the walk, the walk lined with hedges and a statue each side
+    borrow(p, lambda t: vr.college(t, random.Random(6), "centre"), COLLEGE_AT, spin=-math.pi / 2, scale=COLLEGE_SCALE, remap=GLOW)
     for x in (-3.75, -1.85):
-        borrow(p, lambda t: vr.clipped_hedge(t, Vector((0, 0, 0)), Vector((0, 2.2 / PROP_S, 0))), Vector((x, 3.75, 0)), scale=PROP_S)
+        hedge(p, Vector((x, 3.75, 0)), Vector((x, 5.95, 0)))
         borrow(p, lambda t: vr.scholar_statue(t, Vector((0, 0, 0))), Vector((x, 6.45, 0)), scale=PROP_S)
-    for b in PILLARS:
+    # lantern pillars: lit at the College walk's foot and by the board, in pairs at the side walks' ends
+    for b in PILLARS + [Vector((sx * 8.05, sy * 0.62, 0)) for sx in (-1, 1) for sy in (-1, 1)]:
         borrow(p, lambda t: vr.lantern_pillar(t, Vector((0, 0, 0))), b, scale=1.4, remap=GLOW)
-    # round the edges, on no one's spot: a statue, benches, lawn panels and a little stage for players
-    borrow(p, lambda t: vr.great_statue(t, Vector((0, 0, 0))), Vector((-4.45, 0.75, 0)), scale=1.5)
-    for at, spin in ((Vector((4.05, 2.3, 0)), 0.0), (Vector((-4.45, 2.85, 0)), 0.0), (Vector((-4.5, -0.85, 0)), math.pi / 2)):
-        borrow(p, lambda t: vr.quad_bench(t, Vector((0, 0, 0)), 0.0), at, spin=spin, scale=PROP_S)
-    for at in (Vector((4.2, 1.3, 0)), Vector((-0.6, 6.4, 0)), Vector((-5.2, -3.0, 0)), Vector((6.4, -2.6, 0))):
-        borrow(p, lambda t: vr.lawn_panel(t, Vector((0, 0, 0)), 0.34), at, scale=PROP_S)
-    borrow(p, lambda t: vr.bandstand(t, Vector((0, 0, 0))), Vector((5.55, -1.35, 0)), scale=1.35)
+    # more halls and towers out behind
+    for k, (x, y, w, d) in enumerate(((2.6, 8.6, 2.4, 2.0), (5.8, 10.6, 2.2, 2.0), (-7.1, 9.0, 2.0, 2.0))):
+        hall(p, 52 + k, x, y, w, d)
+    for k, (x, y, top) in enumerate(((6.4, 7.8, "pointed"), (4.0, 12.6, "dome"), (-7.6, 12.4, "pointed"))):
+        tower(p, 74 + k, x, y, top)
     return p
 
 
