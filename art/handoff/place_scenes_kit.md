@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. None is in Godot yet.
+**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. Dunfaire Tower v1, the first starting tile, made Nov 10, 2026, waiting on Ethan's review. None is in Godot yet.
 
 ## What each kit hands Godot
 
@@ -13,11 +13,11 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `<id>_places`: where the services stand.
   - `backdrop`: `""` means the map's day and night.
   - `lights`: `[q, r, x, y, z, colour, day, night, flicker]`. The offsets are from that hex's middle in Godot's frame, the energies are in Blender watts, and 0 means off.
-- **Own materials:** `ts_glow` (windows, and the scholars' town's lantern pillars), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
+- **Own materials:** `ts_glow` (windows, and the scholars' town's lantern pillars), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames and Dunfaire Tower's fire, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
 - **Scripts:**
   - `art/scripts/build_place_<id>.py` builds a kit.
   - `art/scripts/render_place_scenes.py -- <id>` renders the previews. `-- <id> check` runs the checks: everything stands on the floor, every spot is clear by 0.42 or more, and the triangles are within budget. It exits 1 on a failure.
-- **Previews:** `art/preview/place_<id>_{day,night}_none_vN.png`, `_day_shop_`, `_day_board_` (at the town kit's 21 m preview camera) and `_wide_` (at PlaceStage's 33 m), plus `place_<id>_sheet_vN.png`.
+- **Previews:** `art/preview/place_<id>_{day,night}_none_vN.png`, `_day_shop_`, `_day_board_` (a starting tile: its own spot sets instead, by day, and by night if it has one) (at the town kit's 21 m preview camera) and `_wide_` (at PlaceStage's 33 m), plus `place_<id>_sheet_vN.png`.
 
 ## Fortified town (`fortified_town`, v4)
 
@@ -133,6 +133,42 @@ The College, the town's landmark, stands over the back of the square on its own 
 **Triangles:** 11,202 of the placeholder 20,000.
 
 **Comparison:** `art/preview/place_scholars_town_compare_v2.png` puts v2 (21 m and 33 m) beside the map tile and the approved court combat map.
+
+## Dunfaire Tower (`dunfaire_tower`, v1)
+
+The Soldier's starting tile, built from its approved start tile (`start_tiles_kit.md`, tiles_v89; 07 → Starting tiles: "a round guard tower on an old plinth").
+
+**Look:**
+- The tile's round tower, with its battlements, red banner, two column stumps and fire, stands on the old six-sided plinth at the back of the square, with its steps toward the camera.
+- Old square paving round the plinth on grass, laid hex by hex so no slab crosses a joint, thinning out toward its edge.
+- Round the edges: the ruins wedges' broken walls and loose blocks, grass tufts with yellow flowers, and pines and broadleaves, as by the tile.
+- How the tower sits on ruins land is still open (07), so the scene keeps the tile's own grass and shows no ruins land beyond it.
+
+**Scale:** the tile's tower, plinth, walls and blocks at 2.4×, the Keep's size: the door is about 1.3 m, the minis' height, and the tower stands about 7.9 m to its battlements. The trees are 1.8×. As with the Keep, from PlaceStage's 33 m view the tower shows up to just above its window, with the battlements and banner out of frame.
+
+**Places and spots** (PLACEHOLDER: the tower's services aren't decided):
+
+| Place | Hex | Here |
+| --- | --- | --- |
+| `tower` | (1, -3) | The tower's steps and door, off the 19 hexes |
+
+| Spot set | Hexes |
+| --- | --- |
+| `none` | The square's: (0, 1), (-1, 1), (1, 1), (0, 2) |
+| `tower` | At the foot of the steps: (1, -2), (0, -2), (2, -2), (1, -1) |
+
+No keepers. The nearest anything stands to a spot is 0.55, at (1, -2), from the lowest step. Every other spot is clear by 1.09 or more.
+
+**Props reused:**
+- From `start_tiles.py`: `dunfaire_tower` and the plinth and paving of `dunfaire_plinth`; its fire's `st_glow` becomes `ts_fire`.
+- From `build_tiles.py`: `broken_wall` (the ruins wedges'), and its tree, copied.
+- Nothing new was modelled.
+
+**Lights** (placeholder): the fire on the plinth, #FF9A4A, 40 W, at night, flickering.
+
+**Triangles:** 10,682 of the placeholder 20,000.
+
+**Comparison:** `art/preview/place_dunfaire_tower_compare_v1.png` puts v1 (21 m with the `tower` spots, and 33 m) above the approved start tile, alone and with neighbours. No combat maps exist for the tower or for ruins.
 
 ## Not checked
 
