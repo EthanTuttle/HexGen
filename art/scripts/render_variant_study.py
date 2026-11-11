@@ -15,6 +15,7 @@ from mathutils import Vector  # noqa: E402
 import hexkit as hk  # noqa: E402
 import render_preview as rp  # noqa: E402
 import render_region_compare as rc  # noqa: E402
+import render_ruin_variants as rv  # noqa: E402
 import render_ruin_structure as rrs  # noqa: E402
 import render_start_tiles as rst  # noqa: E402
 import ruin_structure as rs  # noqa: E402
@@ -53,7 +54,7 @@ def world(region, plain):
     return w
 
 
-def shot(region, plain, title):
+def shot(region, plain, title, dark=False):
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     w = world(region, plain)
@@ -70,8 +71,10 @@ def shot(region, plain, title):
     vr.rl.tile_props = rrs.ORIGINAL_PROPS
     rp.stage(hk.tile_position(1, -1) * 0.5 + Vector((0, -2, 0)), 62, 45)
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
-    rst.label(title, "Its region, at the map camera, by day")
-    stem = f"study_{region}_map"
+    if dark:
+        rv.night()
+    rst.label(title, "Its region, at the map camera, " + ("at night" if dark else "by day"))
+    stem = f"study_{region}_map{'_night' if dark else ''}"
     rp.render(stem)
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
