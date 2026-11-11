@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Neither is in Godot yet.
+**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v1, made Nov 10, 2026, waiting on Ethan's review. None is in Godot yet.
 
 ## What each kit hands Godot
 
@@ -13,7 +13,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `<id>_places`: where the services stand.
   - `backdrop`: `""` means the map's day and night.
   - `lights`: `[q, r, x, y, z, colour, day, night, flicker]`. The offsets are from that hex's middle in Godot's frame, the energies are in Blender watts, and 0 means off.
-- **Own materials:** `ts_glow` (windows), `ts_water` (the well), `ts_fire` (the fortified town's brazier flames, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
+- **Own materials:** `ts_glow` (windows, and the scholars' town's lantern pillars), `ts_water` (the well), `ts_fire` (the fortified town's brazier flames, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
 - **Scripts:**
   - `art/scripts/build_place_<id>.py` builds a kit.
   - `art/scripts/render_place_scenes.py -- <id>` renders the previews. `-- <id> check` runs the checks: everything stands on the floor, every spot is clear by 0.42 or more, and the triangles are within budget. It exits 1 on a failure.
@@ -92,8 +92,42 @@ The Black Market, the town's landmark, stands over the back of the square: its t
 
 **Triangles:** 14,458 of the placeholder 20,000.
 
+## Scholars' town (`scholars_town`, v1)
+
+**Look** (07 → Region variants → Scholars' town):
+- Cream stone halls under slate-blue roofs, and slim towers with pointed roofs, domes or a telescope, on pale paving. There are no row houses.
+- Around the edges: a founder's statue, teal benches, lawn panels with flowers, and a little roofed stage for players.
+
+The College, the town's landmark, stands over the back of the square: its domed hall with a colonnaded front, cloister and performers' stage. Its way in is at the head of a walk between the left back hall and the inn, where the other towns' lanes are. Clipped hedges and a scholar's statue line each side of the walk, with lantern pillars at its foot (07 → College's flow: statues and hedges line the street). From PlaceStage's 33 m view, its colonnade and pediment show over the inn, with the dome out of frame.
+
+**Scale:** as the fortified town's. The halls are the village kit's at 2.3× (walls 2.1–2.6 m), the towers 2.4× (about 4.5 m to the roof), the inn 2×, the benches, lawns, hedges and walk statues 2.2×, the founder's statue 1.5×, the stage 1.35×, and the College 2.4×.
+
+**Services:** the same places and spot sets as the market square.
+
+| Place | Hex | Here |
+| --- | --- | --- |
+| `well` | (0, 0) | Cream stone well under slate blue |
+| `shop` | (-1, 0) | A stall under blue-and-cream stripes; the shopkeeper stands behind it |
+| `board` | (1, 0) | The notice board under slate blue |
+| `inn` | (1, -2) | The market square's inn in cream stone under slate blue. It opens the shared `town_inn` |
+| `college` | (0, -3) | The College's walk, off the 19 hexes, for reference only: there's no card for it yet |
+
+**Spots** are the square's. The nearest anything stands to a spot is 0.69, at (2, 0), from the lantern pillar.
+
+**Props reused:**
+- From `variants.py` (the village kit): `scholar_house`, `quad_tower`, `college`, `clipped_hedge`, `scholar_statue`, `great_statue`, `quad_bench`, `lawn_panel`, `bandstand`, `lantern_pillar`. Their `window_glow` and `lantern` become `ts_glow`.
+- From the town kit: the well, stall, board and inn.
+- Nothing new was modelled.
+
+**Lights** (placeholders, warm, at night only, none flickering):
+- the two lantern pillars: #FFD27A, 28 W;
+- the inn's door: #FFC27A, 32 W;
+- the College's front: #FFD27A, 44 W.
+
+**Triangles:** 13,230 of the placeholder 20,000.
+
 ## Not checked
 
 - Nothing has run in Godot.
-- Turned cameras: behind the back row and outside the walls (fortified) or past the outer shacks (slums) is plain.
+- Turned cameras: behind the back row and outside the walls (fortified) or past the outer shacks and halls (slums, scholars' town) is plain.
 - No guard minis: the only keeper is the shopkeeper. Guards would be keeper-style stand-ins, and aren't in the kit.
