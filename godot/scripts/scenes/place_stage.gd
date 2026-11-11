@@ -95,7 +95,10 @@ func show_scene(which: String, spot_set: String, night: bool) -> void:
 	game.clock.backdrop_lock = Color(backdrop) if backdrop != "" else Color(0, 0, 0, 0)
 	game.clock.sun_scale = float(kit.night_sun) if night else 1.0   # the kits' previews
 	game.rig.focus = kit.focus
-	game.rig.frame(to_global(VIEW_AT), VIEW_DISTANCE, VIEW_PITCH)
+	# A kit may shift its framing (`view_shift` in its JSON: metres added to the aim, Godot's frame, -z towards the back),
+	# e.g. Dunfaire Tower kept whole; the towns keep this framing, their landmarks cropped behind (Ethan, Nov 10, 2026).
+	var shift: Array = data.get("view_shift", [0.0, 0.0, 0.0])
+	game.rig.frame(to_global(VIEW_AT + Vector3(shift[0], shift[1], shift[2])), VIEW_DISTANCE, VIEW_PITCH)
 
 
 ## Rest's night fall: the kit's night lighting, without leaving the scene.

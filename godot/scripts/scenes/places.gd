@@ -24,6 +24,12 @@ const KITS := {
 	# Slums v1 (approved Nov 10, 2026): its JSON carries its lights and backdrop; its red lanterns glow at night.
 	"slums": {"glb": "res://art/place_slums.glb", "json": "res://art/place_slums.json",
 		"mesh": "place_slums", "backdrop": "", "glow": 0.4, "night_sun": 1.0, "focus": Vector2(450, 174), "lights": []},
+	# Scholars' town v2 (approved Nov 10, 2026): the well drawn as the great fountain; its JSON carries its lights.
+	"scholars_town": {"glb": "res://art/place_scholars_town.glb", "json": "res://art/place_scholars_town.json",
+		"mesh": "place_scholars_town", "backdrop": "", "glow": 0.4, "night_sun": 1.0, "focus": Vector2(450, 174), "lights": []},
+	# Dunfaire Tower v3 (approved Nov 10, 2026), the Soldier's start: its JSON shifts the view back so the tower is whole.
+	"dunfaire_tower": {"glb": "res://art/place_dunfaire_tower.glb", "json": "res://art/place_dunfaire_tower.json",
+		"mesh": "place_dunfaire_tower", "backdrop": "", "glow": 0.4, "night_sun": 1.0, "focus": Vector2(450, 174), "lights": []},
 	# The one inn every town and the roadside Inn share (Ethan, Nov 9, 2026); The Oak & Lantern gets its own.
 	"inn": {"glb": "res://art/town_scenes.glb", "json": "res://art/town_scenes.json", "mesh": "town_inn",
 		"backdrop": "#2A1C15", "glow": 0.9, "night_sun": 0.5, "focus": Vector2(450, 186), "lights": [
@@ -35,7 +41,8 @@ const NIGHT_GLOW := 1.6
 ## PLACEHOLDER: the keepers are the hero kit's minis in a keeper's colour; no keeper models yet.
 const KEEPER_COLOURS := {"shopkeeper": "#B0672A", "innkeeper": "#3F6FA8"}
 
-## Each place: its kit (the square it opens on), the inn it uses, its cards and its subtitle. own: false while it borrows
+## Each place: its kit (the square it opens on), the inn it uses, its cards ("shop", "inn", "rest": the camp's rest,
+## "swap": Swap party, shown only while companions wait) and its subtitle ("" for none). own: false while it borrows
 ## the market square (PLACEHOLDER until its kit is made). Town variants hold their landmark in the square (Ethan,
 ## Nov 9, 2026: the Trading House, Keep, Black Market and College are part of their town's square).
 ## PLACEHOLDER: every town's places and services (design/07 -> open question); each has today's Shop and Inn.
@@ -43,10 +50,14 @@ const PLACES := {
 	"market_town": {"kit": "square", "own": true, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	"fortified_town": {"kit": "fortified_town", "own": true, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	"slums": {"kit": "slums", "own": true, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
-	"scholars_town": {"kit": "square", "own": false, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
+	"scholars_town": {"kit": "scholars_town", "own": true, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	# The starting tiles that are a town and an inn (design/06 -> Towns); each gets a hand-made scene.
 	"start_criminal": {"kit": "square", "own": false, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
 	"start_folk_hero": {"kit": "square", "own": false, "inn": "inn", "cards": ["shop", "inn"], "sub": "Market town"},
+	# Dunfaire Tower (Ethan, Nov 10, 2026; design/07 -> Town screen): its name with no subtitle; Rest and Swap party, no
+	# keeper. PLACEHOLDER: its line (NPC and social moments come with the story).
+	"start_soldier": {"kit": "dunfaire_tower", "own": true, "inn": "inn", "cards": ["rest", "swap"], "sub": "",
+		"line": "[Dunfaire Tower line]"},
 }
 
 

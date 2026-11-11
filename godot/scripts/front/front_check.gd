@@ -490,19 +490,72 @@ func _game_run() -> void:
 	check(not g.busy, "town: Leave hands the map back")
 	check(g.map.visible and g.party_node.visible, "town: the map and party are back")
 	check(g.clock.environment.background_color != Color(Places.KITS.inn.backdrop), "town: the backdrop follows the clock again")
-	await _own_town(g, next + Hex.NEIGHBOURS[0], "fortified_town")
-	await _own_town(g, next + Hex.NEIGHBOURS[1], "slums")
+	for id: String in ["fortified_town", "slums", "scholars_town"]:
+		await _own_town(g, next, id)
+	g.map.retile({next: "village"})
+	g._refresh()
+	await _dunfaire(g, next)
 	await _social(g)
 
 
-## A town variant with its own kit (fortified town v4, slums v1) opens it at the square's camera, its lights from its JSON.
+## Dunfaire Tower, the Soldier's start (design/07 -> Town screen): Enter opens its own scene, framed back by its view
+## shift, with Rest and Leave (Swap party only while companions wait), and the camp's rest heals.
+func _dunfaire(g: Game, back_to: Vector2i) -> void:
+	var was: String = g.run.background
+	g.run.background = "soldier"
+	g.walk_to(Rules.START_TILE)
+	while g.busy or g.party_tile != Rules.START_TILE:
+		await get_tree().process_frame
+	await _wait(0.4)
+	g._refresh()
+	await _wait(0.1)
+	check(g.can_enter_town(), "dunfaire: the Soldier's start can be entered")
+	await tap_on("Enter")
+	await _wait(1.3)
+	var town := g.safe.get_children().filter(func(n): return n is TownScene)[0] as TownScene
+	check(town.stage.scene_name == "dunfaire_tower", "dunfaire: its own scene")
+	check(town.town_name() == "Dunfaire Tower" and town.place.sub == "", "dunfaire: its name, no subtitle")
+	check(town.stage._keeper == null, "dunfaire: no keeper")
+	check(control("Shop") == null and control("Inn") == null and control("Swap party") == null, "dunfaire: no shop, inn or swap (nobody waits)")
+	check(control("Leave") != null, "dunfaire: Leave")
+	check(is_equal_approx(town.stage.data.view_shift[2], -3.3), "dunfaire: the kit's view shift")
+	await _wait(0.2)
+	print("FRONT dunfaire: %d triangles, %d draw calls" % [RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
+	await shot("dunfaire")
+	var day_minute := g.minute
+	g.minute = 25.0
+	town.stage.set_night(true)
+	if shots_on:
+		await _wait(3.5)
+	await shot("dunfaire_night")
+	town.stage.set_night(false)
+	g.minute = day_minute
+	if shots_on:
+		await _wait(3.5)
+	g.party[0].hp = maxi(g.party[0].hp - 4, 1)
+	var rest := town._row.get_children().filter(func(n): return n is SceneUI.OptionCard)[0] as SceneUI.OptionCard
+	await tap(rest.get_global_rect().get_center())
+	await _wait(4.5)
+	check(g.party[0].hp == g.party[0].max_hp, "dunfaire: Rest heals")
+	await shot("dunfaire_rested")
+	await tap_on("Carry on")
+	await _wait(0.4)
+	check(control("Leave") != null and town._phase == "", "dunfaire: Carry on goes back to its cards")
+	await tap_on("Leave")
+	await _wait(0.8)
+	check(g.map.visible and not g.busy, "dunfaire: Leave hands the map back")
+	g.run.background = was
+	g.walk_to(back_to)
+	while g.busy or g.party_tile != back_to:
+		await get_tree().process_frame
+	await _wait(0.3)
+
+
+## A town variant with its own kit (fortified town v4, slums v1, scholars' town v2) opens it at the square's camera, its
+## lights from its JSON. The party's tile turns into it where it stands: placed town tiles side by side would make a region.
 func _own_town(g: Game, t: Vector2i, id: String) -> void:
 	var who := id.replace("_", " ")
 	g.map.retile({t: id})
-	g.order[t] = g.order.size() + 1
-	g.walk_to(t)
-	while g.busy or g.party_tile != t:
-		await get_tree().process_frame
 	await _wait(0.4)
 	g._refresh()
 	await _wait(0.1)

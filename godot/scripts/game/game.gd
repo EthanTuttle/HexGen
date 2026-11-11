@@ -1264,8 +1264,9 @@ func spend(n: int) -> bool:
 func can_enter_town() -> bool:
 	if busy:
 		return false
-	# Monto Town and The Oak & Lantern are a town and an inn, whatever their tile's terrain (design/06 -> Towns).
-	return Variants.terrain_of(map.terrains.get(party_tile)) == "village" or (party_tile == Rules.START_TILE and run.background in ["criminal", "folk_hero"])
+	# Monto Town and The Oak & Lantern are a town and an inn, whatever their tile's terrain (design/06 -> Towns); Dunfaire
+	# Tower has its own scene too (design/07 -> Town screen). Each starting tile in Places can be entered.
+	return Variants.terrain_of(map.terrains.get(party_tile)) == "village" or (party_tile == Rules.START_TILE and Places.PLACES.has("start_" + run.background))
 
 
 ## What the Enter card opens (Screens: enter_town_screen).

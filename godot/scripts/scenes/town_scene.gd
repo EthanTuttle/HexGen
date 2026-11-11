@@ -13,6 +13,7 @@ const INN_PRICE := 5                   # PLACEHOLDER: design/04 -> open question
 const SHOP_C := Color("#B0672A")
 const INN_C := Color("#3F6FA8")
 const NIGHT_C := Color("#14203A")
+const REST_C := Color("#8A6446")       # PLACEHOLDER: the map's Rest card band (the camp's brown)
 
 var game: Game
 var tile: Vector2i
@@ -67,7 +68,7 @@ func _fade_cut(swap: Callable) -> void:
 
 
 func town_name() -> String:
-	if tile == Rules.START_TILE and game.run != null and game.run.background in ["criminal", "folk_hero"]:
+	if tile == Rules.START_TILE and game.run != null and Places.PLACES.has("start_" + game.run.background):
 		return RunSetup.BACKGROUNDS[game.run.background].place
 	return "[Town name]"
 
@@ -95,10 +96,16 @@ func _show_square() -> void:
 		stage.show_scene(place.kit, "none", _is_night())
 	mode = ""
 	_refresh_gold()
-	head.say(town_name(), place.sub, "[Town greeting]", Color("#E2C79A"), Color("#6B4C35"), SceneUI.ICONS.house)
+	head.say(town_name(), place.sub, place.get("line", "[Town greeting]"), Color("#E2C79A"), Color("#6B4C35"), SceneUI.ICONS.house)
 	_clear_row()
 	for k: String in place.cards:
 		match k:
+			"rest":   # the camp's rest (design/07 -> Town screen: Dunfaire Tower), free and as often as at a camp
+				var rest := SceneUI.card("", REST_C, "camp", REST_C, "Rest")
+				rest.pressed.connect(_camp_rest)
+				_row.add_child(rest)
+			"swap":
+				pass   # Swap party shows only while companions wait (design/03); nobody waits yet
 			"shop":
 				var shop := SceneUI.card("TOWN", SHOP_C, SceneUI.ICONS.shop, SHOP_C, "Shop")
 				shop.pressed.connect(_open_shop)
@@ -182,6 +189,16 @@ func _rest_pressed() -> void:
 	_say_banter()
 
 
+## A place's own Rest (a camp's): the night and the results, without the bar.
+func _camp_rest() -> void:
+	if _phase != "":
+		return
+	_phase = "night"
+	_row.queue_free()
+	_row = null
+	_night()
+
+
 func _say_banter() -> void:
 	var b: Dictionary = _banter[_step]
 	var m: Dictionary = game.party[b.who]
@@ -243,9 +260,10 @@ func _night() -> void:
 	moon.queue_free()
 	game.rest_here()
 	stage.set_night(_is_night())
-	_rested = true
 	_phase = "results"
-	_inn_head("[Innkeeper morning line]")
+	if mode == "inn":
+		_rested = true
+		_inn_head("[Innkeeper morning line]")
 	_results(before)
 
 
@@ -297,7 +315,10 @@ func _results(before: Array) -> void:
 	on.pressed.connect(func():
 		cc.queue_free()
 		_phase = ""
-		_inn_cards())
+		if mode == "inn":
+			_inn_cards()
+		else:
+			_show_square())
 	v.add_child(on)
 	p.add_child(v)
 	cc.add_child(p)
