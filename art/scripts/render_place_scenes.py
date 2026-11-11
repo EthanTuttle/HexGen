@@ -46,7 +46,7 @@ def scene(kit, when, spots, distance=21):
         o = ct.bpy_new(minis["standin_small"], col)
         o.location = ts.hx(q, r) + Vector((dy, dx, kit.FLOOR_Z))
         o.rotation_euler.z = math.pi / 2
-    rp.stage(Vector((0.3, 0.75, 0.6)), distance, 42)
+    rp.stage(Vector((0.3, 0.75, 0.6)) + getattr(kit, "VIEW_SHIFT", Vector()), distance, 42)  # a kit's view shift, as PlaceStage
     sc = bpy.context.scene
     sc.render.resolution_x, sc.render.resolution_y = 1000, 625
     if kit.BACKDROP:
@@ -125,7 +125,11 @@ if __name__ == "__main__":
     paths = []
     sets = kit.SPOTS[kit.ID]
     # the town kit's preview camera (21 m), then Godot's PlaceStage distance (33 m), which shows the whole scene
-    for when, spot_set, distance in (("day", "none", 21), ("night", "none", 21), ("day", "shop", 21), ("day", "board", 21), ("day", "none", 33), ("night", "none", 33)):
+    # the kit's other spot sets by day (a town's shop and board; a starting tile's own)
+    others = [s for s in ("shop", "board") if s in sets] or [s for s in sets if s != "none"][:2]
+    shots = [("day", "none", 21), ("night", "none", 21)] + [("day", s, 21) for s in others] + [("night", others[0], 21)] * (len(others) % 2) + [
+        ("day", "none", 33), ("night", "none", 33)]
+    for when, spot_set, distance in shots:
         scene(kit, when, sets[spot_set], distance)
         stem = f"place_{kit.ID}_{when}_{spot_set}" + ("_wide" if distance > 21 else "")
         rp.render(stem)

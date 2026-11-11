@@ -18,6 +18,10 @@ Before adding or keeping any sentence on screen, check it against `design/07 Pre
 - **Toasts** only give the short reason for an action that failed (e.g. a slot that clashes), plus prototype-only "Not in the prototype yet".
 - **Checks** show the docs' coin line ("3 coins · DEX · needs 1 heads") and the result, not the rule behind it.
 
+## Standing rule: check the Mac too
+
+Whenever a screen check runs at phone size, run it again full screen on Ethan's MacBook Pro 14" (1512 × 982 pt, a 16:10 shape, so the layout gets much taller than the mockups' 844 × 390): add `--fullscreen` instead of the phone `--resolution`, on the Mac's own renderer (Forward+, no `--rendering-method mobile` or `--phone`). Report what goes wrong at that size alongside the phone results (Ethan, Nov 10, 2026). The default 1688 × 780 window is close to the phone's shape, so it isn't checked separately.
+
 ## Playing the loop
 
 Open `godot/project.godot` in Godot 4.7 and press Play, or from the repo root:
@@ -26,7 +30,7 @@ Open `godot/project.godot` in Godot 4.7 and press Play, or from the repo root:
 /Applications/Godot.app/Contents/MacOS/Godot --path godot
 ```
 
-**Installed Mac build:** `godot/tools/build_mac.sh` (or the `/refresh-build` skill) pulls `main`, exports with the **macOS** preset (universal, signed ad-hoc for this Mac only) and replaces `/Applications/HexGen.app`. It only runs when asked; nothing updates on its own.
+**Installed Mac build:** `godot/tools/build_mac.sh` (or the `/refresh-build` skill) pulls `main`, exports a debug build with the **macOS** preset (universal, signed ad-hoc for this Mac only; debug, so the report button and debug menu show, as on the phone; `godot/tools/collect_notes.sh mac` collects its notes) and replaces `/Applications/HexGen.app`. It only runs when asked; nothing updates on its own.
 
 The window opens at 1688 × 780. The UI is laid out in the mockups' own 844 × 390 units and drawn at 2× (project stretch mode `canvas_items`), so positions, sizes and colours copy straight from the mockup CSS.
 
