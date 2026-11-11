@@ -54,10 +54,15 @@ def world(region, plain):
     return w
 
 
-def shot(region, plain, title, dark=False):
+def shot(region, plain, title, dark=False, live=None, props=None, stem=None):
+    """live: builds extra pieces over the kit's; props: (world, q, r) -> the region's props, in place of the kit's."""
     hk.empty_scene()
     templates = rp.load_templates(rp.latest("tiles", "tiles"))
     w = world(region, plain)
+    if live:
+        templates.update(live())
+    if props:
+        vr.rl.tile_props = lambda name, q, r, ww=None: (props(w, q, r) if name == region else rrs.ORIGINAL_PROPS(name, q, r, ww))
     if region == "trapped_vault":   # live, wired as render_ruin_structure.vault_shot does
         templates.update(rrs.build_vault())
         vr.VARIANTS["trapped_vault"] = ("ruins", rs.vault_ground, "tv_ground", ("edge_same_b", "edge_other_b"))
@@ -74,7 +79,7 @@ def shot(region, plain, title, dark=False):
     if dark:
         rv.night()
     rst.label(title, "Its region, at the map camera, " + ("at night" if dark else "by day"))
-    stem = f"study_{region}_map{'_night' if dark else ''}"
+    stem = stem or f"study_{region}_map{'_night' if dark else ''}"
     rp.render(stem)
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 

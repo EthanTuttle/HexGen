@@ -6,6 +6,7 @@ region is render_region_compare.world("ruins"). Writes art/preview/ruins_structu
 and the sheet ruins_structure_sheet_vN.png with the forest and village maps from the comparison (same camera).
 -- outpost [check]: the overrun outpost on the corner halls round the Warren, map and close-up by day and at night.
 -- basilisk [check|quick]: basilisk ruins on the halls round the Basilisk Nest, map and close-up by day and at night.
+-- stockade [check|quick]: the overrun outpost as the goblin stockade round the Warren beside plain ruins, day and night.
 -- vault [check|quick]: the trapped vault's sunken courts round the Vault beside plain ruins, map and close-up by day and at night.
 -- haunted [check|quick]: the ghost town round the Crypt, map and close-up by day (bare shells) and at night (ghost houses).
 -- b: that take alone, map and close-up by day and at night, sheet ruins_structure_b_sheet_vN.png.
@@ -500,6 +501,65 @@ def vault_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def build_stockade():
+    """The goblin stockade's corner pieces, built live (not in the kit until approved); its ground, burrows and the Warren
+    are the kit's."""
+    col = bpy.data.collections.new("live")
+    out = {}
+    for name, b_ in rs.stockade_pieces().items():
+        p = hk.Piece(name)
+        b_(p, hk.seeded(name))
+        out[name] = p.finish(col)
+    return out
+
+
+def check_stockade(live, templates):
+    """Each corner piece inside the tile and off the walks, and the burrows as placed; triangles per tile, as placed."""
+    bad = []
+    for name, obj in live.items():
+        for v in obj.data.vertices:
+            x, y, z = v.co
+            if max(x * math.cos(math.radians(60 * k + 30)) + y * math.sin(math.radians(60 * k + 30)) for k in range(6)) > rs.A + 0.01:
+                bad.append((name, "edge", round(x, 2), round(y, 2)))
+            if z > 0.03 and abs(x * 0.5) - abs(y) * math.cos(math.radians(30)) < vr.rl.WALK_HALF:
+                bad.append((name, "walk", round(x, 2), round(y, 2), round(z, 2)))
+    ground = max(tris(templates[f"overrun_outpost_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
+    base = tris(templates["overrun_outpost_centre"]) + 6 * ground
+    pieces = {**templates, **live}
+    real = [base + sum(tris(pieces[pc]) for pc, *_ in rs.stockade_props({}, q, r)) for q in range(-10, 10) for r in range(-10, 10)]
+    print(f"CHECK stockade: {len(bad)} problems {bad[:8]}; worst corner {max(tris(o) for o in live.values())}; "
+          f"tiles as placed (400): worst {max(real)}, mean {sum(real) // len(real)} (budget 4816)")
+
+
+def outpost_world():
+    """The Warren, two rings of the outpost round it, plain ruins beyond (a few plains), plains outside."""
+    return {t: ("warren" if v == "crypt" else "overrun_outpost" if v == "haunted_ruins" else v) for t, v in ghost_world().items()}
+
+
+def stockade_shot(close, dark):
+    hk.empty_scene()
+    templates = rp.load_templates(rp.latest("tiles", "tiles"))
+    templates.update(build_stockade())
+    world = outpost_world()
+    vr.rl.tile_props = lambda name, q, r, w=None: (rs.stockade_props(world, q, r) if name == "overrun_outpost" else ORIGINAL_PROPS(name, q, r, w))
+    rp.build_map(templates, tiles=world)
+    vr.rl.tile_props = ORIGINAL_PROPS
+    for o in bpy.data.collections["map"].objects:   # preview only: the Warren's mouth toward the camera
+        if o.name.startswith("warren_centre"):
+            o.rotation_euler.z = math.radians(-60)
+    if close:
+        rp.stage(Vector((1.2, -1.2, 0)), 32, 45)
+    else:
+        rp.stage(Vector((0, -3, 0)), 92, 45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
+    rst.label("Overrun outpost: the goblin stockade", ("Closer: the Warren and its neighbours" if close else "Two rings round the Warren") + (", night" if dark else ", day"))
+    stem = f"ruins_stockade_{'close' if close else 'map'}{'_night' if dark else ''}"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
 def statue_shot(title, sub, build):
     """A close model shot of explorer statues on a strip of the basilisk ground, by day."""
     hk.empty_scene()
@@ -554,6 +614,21 @@ if __name__ == "__main__":
             sys.exit(0)
         rows = [[basilisk_shot(False, False), basilisk_shot(True, False)], [basilisk_shot(False, True), basilisk_shot(True, True)]]
         rst.SHEET_STEM = "ruins_basilisk_halls_sheet"
+        rst.sheet(rows)
+        sys.exit(0)
+    if "stockade" in args:
+        if "check" in args:
+            hk.empty_scene()
+            check_stockade(build_stockade(), rp.load_templates(rp.latest("tiles", "tiles")))
+            sys.exit(0)
+        if "quick" in args:
+            print("SHOT", stockade_shot(False, False), stockade_shot(True, False))
+            sys.exit(0)
+        import render_variant_study as rvs   # beside plain ruins at the comparison camera
+        sk = dict(live=build_stockade, props=rs.stockade_props)
+        rows = [[rvs.shot("ruins", "ruins", "Plain ruins"), rvs.shot("overrun_outpost", "ruins", "Overrun outpost: goblin stockade", stem="study_stockade_map", **sk), stockade_shot(True, False)],
+                [rvs.shot("ruins", "ruins", "Plain ruins", True), rvs.shot("overrun_outpost", "ruins", "Overrun outpost: goblin stockade", True, stem="study_stockade_map_night", **sk), stockade_shot(True, True)]]
+        rst.SHEET_STEM = "ruins_stockade_sheet"
         rst.sheet(rows)
         sys.exit(0)
     if "vault" in args:

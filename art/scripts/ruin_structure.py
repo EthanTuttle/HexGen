@@ -563,6 +563,188 @@ def outpost_props(world, q, r):
     return out
 
 
+# --- Overrun outpost: the goblin stockade (round 1 of the rework, not approved) -------------------------------------
+# design/07 -> Region variant looks: crooked timber-and-scrap ring walls joining the ruins, with stilt watchtowers; the
+# framed burrows, night eyes and red and yellow rags stay as accents (Ethan, Nov 10, 2026, after the variant study). No
+# halls: each tile's middle is ringed by a crooked palisade, a gate gap on every street, so a region reads as a honeycomb
+# of rings. Each corner's stretch of ring takes in a stub of the old hall stone or a run of rusty tin; outside it the
+# corner is trampled mud, with a stilt watchtower, a hide hut or old stone stubs; one or two corners a tile hold a framed
+# burrow (the approved outpost_burrow_* props) in a breach in the ring, its mouth facing the tile's middle.
+
+PALETTE_STOCKADE = {   # made up
+    "sk_stake": "#7A5A3A",      # palisade stakes
+    "sk_stake_d": "#5E4630",
+    "sk_hide": "#B08D62",       # hide roofs and huts
+    "sk_mud": "#8C7556",        # the corners, trampled to mud
+}
+hk.PALETTE.update(PALETTE_STOCKADE)
+RING_R = 2.9                    # the palisade's distance from the tile's middle
+RING_KEEP = rl.WALK_HALF + 0.2  # its ends keep this far off the streets: the gates
+RING_ARC = math.radians(30) - math.asin(RING_KEEP / RING_R)   # half the angle each corner's stretch spans
+TOWER_AT = Vector((3.58, 0, 0)) # in a block's frame: a watchtower in the corner
+CORNER_KIND = ("tower", "stones", "hut")   # what stands outside the ring, by the block's variant n
+
+
+def stake(p, rng, at, h, mat, lean_ax=0.0):
+    """One pointed palisade stake, leaning a little."""
+    rot = Matrix.Rotation(rng.uniform(-0.12, 0.12), 3, "X") @ Matrix.Rotation(rng.uniform(-0.1, 0.1) + lean_ax, 3, "Y")
+    p.box_rot(at + rot @ Vector((0, 0, h / 2)), (0.085, 0.085, h), mat, rot)
+    p.cone(at + rot @ Vector((0, 0, h)) - Vector((0, 0, 0)), 0.06, 0.13, mat, segments=4, spin=0.78)
+
+
+def palisade(p, rng, a0, a1, breach=None):
+    """A crooked run of stakes along the ring from angle a0 to a1 (in the block frame), a rail across them, rags tied on.
+    breach: (angle, half width) left open."""
+    n = max(4, int(RING_R * (a1 - a0) / 0.13))
+    pts = []
+    for k in range(n + 1):
+        a = a0 + (a1 - a0) * k / n
+        if breach and abs(a - breach[0]) < breach[1]:
+            continue
+        r = RING_R + 0.05 * math.sin(a * 23.0) + rng.uniform(-0.025, 0.025)
+        at = Vector((math.cos(a) * r, math.sin(a) * r, 0))
+        h = rng.uniform(0.85, 1.1)
+        stake(p, rng, at, h, rng.choice(("sk_stake", "sk_stake", "sk_stake_d")))
+        pts.append((a, at))
+    runs, cur = [], []
+    for a, at in pts:   # the rail, broken where the breach is
+        if cur and breach and (cur[-1][0] < breach[0] < a):
+            runs.append(cur)
+            cur = []
+        cur.append((a, at))
+    runs.append(cur)
+    for run in runs:
+        if len(run) < 2:
+            continue
+        knots = run[::3] + ([run[-1]] if (len(run) - 1) % 3 else [])   # a rail spans three stakes
+        for (_, q0), (_, q1) in zip(knots, knots[1:]):
+            d = q1 - q0
+            for zr in (0.3, 0.68):
+                p.box((q0 + q1) / 2 - (q0 + q1).normalized() * 0.055, (d.length + 0.02, 0.05, 0.07), "plank_dark", z=zr, spin=math.atan2(d.y, d.x))
+    for _ in range(rng.choice((1, 2))):   # rags tied to the stakes
+        a, at = rng.choice(pts)
+        p.box(at - at.normalized() * 0.06, (0.14, 0.02, rng.uniform(0.25, 0.4)), rng.choice(("goblin_rag_red", "goblin_rag_yellow")), z=0.25, spin=a + math.pi / 2)
+
+
+def watchtower(p, rng, at):
+    """A stilt watchtower: four leaning poles, cross braces, a plank platform with a low parapet, a hide roof, a rag flag."""
+    s, h = 0.26, rng.uniform(1.75, 2.0)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            foot = at + Vector((sx * (s + 0.05), sy * (s + 0.05), 0))
+            rot = Matrix.Rotation(sy * 0.04, 3, "X") @ Matrix.Rotation(-sx * 0.04, 3, "Y")
+            p.box_rot(foot + rot @ Vector((0, 0, h / 2)), (0.07, 0.07, h), "deadwood", rot)
+    for sd in (-1, 1):   # cross braces on two faces
+        rot = Matrix.Rotation(0.6 * sd, 3, "Y")
+        p.box_rot(at + Vector((0, sd * (s + 0.05), h * 0.45)), (0.05, 0.04, 2 * s * 1.5), "deadwood", rot)
+    p.box(at, (2 * s + 0.2, 2 * s + 0.2, 0.06), "plank", z=h)
+    for sx, sy, w, d in ((1, 0, 0.05, 2 * s + 0.2), (-1, 0, 0.05, 2 * s + 0.2), (0, 1, 2 * s + 0.2, 0.05), (0, -1, 2 * s + 0.2, 0.05)):
+        p.box(at + Vector((sx * (s + 0.075), sy * (s + 0.075), 0)), (w, d, 0.22), rng.choice(("plank", "plank_dark")), z=h + 0.06)
+    for sx in (-1, 1):   # roof posts
+        for sy in (-1, 1):
+            p.box(at + Vector((sx * s, sy * s, 0)), (0.05, 0.05, 0.42), "deadwood", z=h + 0.06)
+    p.cone(at, 0.52, 0.42, "sk_hide", segments=4, z=h + 0.48, spin=0.78)   # the hide roof
+    rl.rag_banner(p, rng, at + Vector((0.1, 0.1, 0)), 0.75, z=h + 0.8, spin=rng.uniform(0, 6.28), strips=2)
+
+
+def hide_hut(p, rng, at):
+    """A goblin hut: a cone of hides on poles, its poles poking out at the top."""
+    r, h = rng.uniform(0.34, 0.42), rng.uniform(0.6, 0.72)
+    p.cone(at, r, h, "sk_hide", segments=6, spin=rng.uniform(0, 1))
+    for k in range(3):
+        a = k * math.tau / 3 + rng.uniform(-0.2, 0.2)
+        rot = Matrix.Rotation(a, 3, "Z") @ Matrix.Rotation(0.35, 3, "Y")
+        p.box_rot(at + Vector((0, 0, h * 0.9)), (0.03, 0.03, 0.5), "deadwood", rot)
+    p.box(at + Vector((-r * 0.8, 0, 0)), (0.06, 0.2, 0.3), "crypt_dark", spin=0.0)   # its door flap, toward the ring
+
+
+def stockade_block(n, join, burrow=False):
+    """A stockade corner, in the block frame: the corner's stretch of the ring (taking in a stub of hall stone, or rusty tin;
+    a breach where a burrow sits), the corner trampled to mud, and outside the ring a watchtower, old stone stubs or a hide
+    hut by the variant n. A burrow corner leaves its corner clear: the burrow is placed on its own (stockade_props)."""
+    seed = f"sk_block_{n}_{join}"
+
+    def build(p, rng):
+        rng = hk.seeded(seed + ("_b" if burrow else ""))
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        m = margins(joins)
+        mud = kite(FLAT_KEEP + 0.15, m["lo"], m["hi"], x0=RING_R + 0.15)
+        if mud:
+            rl.plate(p, mud, 0.012, "sk_mud")
+        a0, a1 = -RING_ARC, RING_ARC
+        stone = n != 1 and not burrow and rng.random() < 0.7   # a stub of the old hall stone taken into the ring at one end
+        end = rng.choice((-1, 1))
+        span = (a0 + 0.13, a1) if stone and end < 0 else (a0, a1 - 0.13) if stone else (a0, a1)
+        palisade(p, rng, *span, breach=(0.0, 0.12) if burrow else None)
+        for sd in (-1, 1):   # the gate posts at the stretch's ends, taller, a skull or a rag on top
+            a = sd * RING_ARC
+            at = Vector((math.cos(a), math.sin(a), 0)) * RING_R
+            if stone and sd == end:
+                q = Vector((math.cos(a - sd * 0.13), math.sin(a - sd * 0.13), 0)) * RING_R
+                masonry(p, rng, at, q, (0.9, 1.25), rng.choice(WALLS), breach=0.0, tidy=True)
+                continue
+            p.box(at, (0.13, 0.13, 1.35), "sk_stake_d", spin=a)
+            if rng.random() < 0.5:
+                p.blob(at, 0.07, "bone", z=1.42)
+            else:
+                p.box(at + Vector((0, 0, 0)), (0.14, 0.02, 0.4), rng.choice(("goblin_rag_red", "goblin_rag_yellow")), z=0.95, spin=a + math.pi / 2)
+        if n == 1 and not burrow:   # rusty tin nailed over the stakes, outside
+            for k in range(rng.choice((1, 2))):
+                a = rng.uniform(a0 + 0.05, a1 - 0.08)
+                at = Vector((math.cos(a), math.sin(a), 0)) * (RING_R + 0.08)
+                rl.tin_sheet(p, rng, at + Vector((0, 0, 0.42)), (0.035, 0.42, 0.7), a, lean=rng.uniform(-0.1, 0.1))
+        if burrow:
+            return
+        kind = CORNER_KIND[n]
+        if kind == "tower":
+            watchtower(p, rng, TOWER_AT + Vector((rng.uniform(-0.08, 0.08), rng.uniform(-0.1, 0.1), 0)))
+        elif kind == "hut":
+            hide_hut(p, rng, Vector((3.65, rng.uniform(-0.3, 0.3), 0)))
+            if rng.random() < 0.6:
+                rl.rag_banner(p, rng, Vector((3.35, rng.choice((-1, 1)) * 0.55, 0)), rng.uniform(1.4, 1.8), spin=math.pi + rng.uniform(-0.5, 0.5), strips=3)
+        else:   # what's left of the hall: low stone stubs and fallen blocks in the mud
+            mat = rng.choice(WALLS)
+            for k in range(2):
+                a = math.radians(rng.choice((150, 170, 190, 210)))
+                c0 = Vector((CORNER, 0, 0)) + Vector((math.cos(a), math.sin(a), 0)) * rng.uniform(0.8, 1.05)
+                p.box(c0, (rng.uniform(0.3, 0.45), 0.16, rng.uniform(0.25, 0.5)), mat, spin=a + math.pi / 2)
+            for _ in range(2):
+                p.box(Vector((rng.uniform(3.4, 3.9), rng.uniform(-0.45, 0.45), 0)), (0.16, 0.13, 0.1), rng.choice(("rs_rubble", "rs_rubble_d")), spin=rng.uniform(0, 3))
+            rl.rag_banner(p, rng, Vector((3.75, rng.uniform(-0.2, 0.2), 0)), rng.uniform(1.7, 2.1), spin=math.pi + rng.uniform(-0.6, 0.6), strips=3)
+    return build
+
+
+def stockade_pieces():
+    out = {}
+    for n in range(VARIANTS_PER_TAKE):
+        for j in JOINS:
+            out[f"stockade_{n}_{j}"] = stockade_block(n, j)
+            out[f"stockade_{n}_{j}_burrow"] = stockade_block(n, j, True)
+    return out
+
+
+STOCKADE_BURROW_AT = Vector((3.5, 0, 0))    # a burrow outside the ring's breach, its mouth toward the tile's middle
+
+
+def stockade_props(world, q, r):
+    """(piece, x, y, spin) for a stockade tile: a stretch of ring at each corner (variant and joins as the halls'); one or two
+    corners (hashes 54 and 52, as the outpost's) breached for a framed burrow placed outside it."""
+    out = []
+    count = 2 if gc.hash01(q, r, 54) < BURROW_TWO else 1
+    dug = sorted(range(6), key=lambda c: gc.hash01(q * 6 + c, r, 52))[:count]
+    for c, (piece, _, _, spin) in enumerate(block_props(KIT, world, q, r)):
+        nj = piece[len("ruin_hall_"):]
+        if c in dug:
+            out.append((f"stockade_{nj}_burrow", 0.0, 0.0, spin))
+            at = STOCKADE_BURROW_AT.copy()
+            at.rotate(Matrix.Rotation(spin, 3, "Z"))
+            kind = "scrap" if gc.hash01(q * 6 + c, r, 53) < 0.5 else "timber"
+            out.append((f"outpost_burrow_{kind}", at.x, at.y, spin + math.pi))
+        else:
+            out.append((f"stockade_{nj}", 0.0, 0.0, spin))
+    return out
+
+
 # --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kit from tiles_v94) -------------------------------------
 # design/07 -> Region variant looks: here the base changes to stone house shells along the streets (walls with door and
 # window holes and gable ends, no roofs). By day they're bare shells; at night pale ghost houses fill them out as they once
