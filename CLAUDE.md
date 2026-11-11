@@ -1,6 +1,6 @@
 # Heads or Hexes — instructions for Claude
 
-This repo holds the design docs for Heads or Hexes (working name HexGen, which the repo and folders still use), Ethan's card-driven, D&D-style hex-crawl RPG for PC and mobile. The art style is Dorfromantik-like. It also holds the prototype art under `art/`, whose binary files need Git LFS. Players place map cards to build the world, then walk their hero through it, fight on a tactical grid with coin flips, and refresh their hand through fights, quests and finished regions.
+This repo holds the design docs for Heads or Hexes (HexGen is the old working name, which the repo, folders and code still use; players only ever see Heads or Hexes, so never put HexGen in anything player-facing), Ethan's card-driven, D&D-style hex-crawl RPG for PC and mobile. The art style is Dorfromantik-like. It also holds the prototype art under `art/`, whose binary files need Git LFS. Players place map cards to build the world, then walk their hero through it, fight on a tactical grid with coin flips, and refresh their hand through fights, quests and finished regions.
 
 ## Source of truth
 
@@ -44,4 +44,5 @@ Before each new art round, set aside the non-critical context from earlier round
 - The rules for every screen live in `design/07 Presentation.md`. Mockups only illustrate them.
 - Mockup versions are never changed or overwritten: always make a copy and bump the version (v2, v3a…). Rejected versions stay for reference.
 - The live mockups are Design canvases on claude.ai (links in `design/07 Presentation.md` → Mockup index). `mockups/` holds a copy of each canvas's source (see `mockups/README.md`). The `.dc.html` files need the canvas runtime to render, so they don't open on their own in a browser.
+- Screen checks in the game cover the Mac as well as the phone: see `godot/README.md` → Standing rule: check the Mac too.
 - Keep `mockups/` in sync: whenever you change a canvas, copy every changed file (artboards and `canvas.json`) into its folder in `mockups/` and commit it in the same turn. A new canvas gets a new folder and a row in `mockups/README.md`.

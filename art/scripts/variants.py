@@ -5213,7 +5213,7 @@ hk.PALETTE.update(st.PALETTE)
 hk.PALETTE.update(rl.PALETTE)
 PROP_PIECES.update({k: v for k, v in rl.PROP_PIECES.items() if k not in rl.UNAPPROVED | rl.RETIRED})
 PROP_PIECES.update(rs.block_pieces(rs.KIT))   # the plain ruins' corner halls
-PROP_PIECES.update(rs.outpost_pieces())       # the overrun outpost's halls
+PROP_PIECES.update(rs.stockade_pieces())      # the overrun outpost's goblin stockade (from tiles_v96; replaces its recoloured halls)
 VARIANTS.update({k: v for k, v in rl.VARIANTS.items() if k not in rl.UNAPPROVED})
 VARIANTS["overrun_outpost"] = ("ruins", rs.outpost_ground, "op_ground", ("edge_same_b", "edge_other_b"))
 PROP_PIECES.update(rs.haunted_pieces())       # the ghost town's shells and their night ghost houses
