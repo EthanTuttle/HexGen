@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. Dunfaire Tower v3, the first starting tile, approved by Ethan on Nov 10, 2026 (v2 with the 2-row view and his two changes), and on main. None is in Godot yet.
+**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. Dunfaire Tower v3, the first starting tile, approved by Ethan on Nov 10, 2026 (v2 with the 2-row view and his two changes), and on main. East Rime Chapel v1 made Nov 10, 2026, waiting on Ethan's review. None is in Godot yet.
 
 ## What each kit hands Godot
 
@@ -14,7 +14,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `backdrop`: `""` means the map's day and night.
   - `lights`: `[q, r, x, y, z, colour, day, night, flicker]`. The offsets are from that hex's middle in Godot's frame, the energies are in Blender watts, and 0 means off.
   - `view_shift` (optional, new with Dunfaire Tower; PlaceStage reads it): `[x, y, z]` in metres, added to PlaceStage's `VIEW_AT` before it frames the scene. Godot's frame, as the lights': y up, minus z toward the back, away from the camera. Missing means `[0, 0, 0]`, today's framing. The previews apply it the same way.
-- **Own materials:** `ts_glow` (windows, the scholars' town's lantern pillars, and Dunfaire Tower's window), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames and Dunfaire Tower's campfire, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
+- **Own materials:** `ts_glow` (windows, including Dunfaire Tower's and East Rime Chapel's, and the scholars' town's lantern pillars), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames and Dunfaire Tower's campfire, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
 - **Scripts:**
   - `art/scripts/build_place_<id>.py` builds a kit.
   - `art/scripts/render_place_scenes.py -- <id>` renders the previews. `-- <id> check` runs the checks: everything stands on the floor, every spot is clear by 0.42 or more, and the triangles are within budget. It exits 1 on a failure.
@@ -173,6 +173,42 @@ No keepers. The nearest anything stands to a spot is 0.55, at (1, -2), from the 
 **Triangles:** 10,702 of the placeholder 20,000.
 
 **Comparison:** `art/preview/place_dunfaire_tower_compare_v2.png`: top, v2 at 33 m by day and night; bottom, the 4.5-row option and the approved start tile. (v1's, `_compare_v1.png`, has v1 above the tile alone and with neighbours.) No combat maps exist for the tower or for ruins.
+
+## East Rime Chapel (`east_rime_chapel`, v1)
+
+The Acolyte's starting tile, built from its approved start tile (`start_tiles_kit.md`, tiles_v89; 07 → Starting tiles: "a hilltop chapel with walled graves") and the approved hills combat maps (`combat_hills_kit.md`, plain hills set).
+
+**Look:**
+- The tile's small stone chapel under slate, with its bell cote and lit side windows, stands in its low walled yard with five graves and a bench, at the back of the scene. The yard's gate faces the party.
+- The hilltop is level: the 19 hexes and the yard. Round them the floor steps down in level terraces, 0.3 m a hex and four at most, with the drops faced in grey rock, as the hills combat maps' cells are. About one hex in five is a darker green, as on those maps.
+- On the terraces: the hills' grey boulder outcrops, pines and broadleaves.
+- No peaks: the tile has none and shares none with its neighbours (`start_tiles_kit.md` → East Rime Chapel).
+
+**Scale and view:** the chapel, yard and graves are at 2.4×, as Dunfaire Tower (door about 1.2 m, the bell cote about 4 m). The trees are 1.8×. `view_shift` is `[0, 0, -3.3]`, as Dunfaire's, and the whole chapel is in view at 33 m.
+
+**Places and spots** (PLACEHOLDER: the chapel's services aren't decided):
+
+| Place | Hex | Here |
+| --- | --- | --- |
+| `chapel` | (1, -3) | The yard's gate and the chapel door, off the 19 hexes |
+
+| Spot set | Hexes |
+| --- | --- |
+| `none` | As Dunfaire's: (1, -1), (0, -1), (2, -1), (1, 0) |
+| `chapel` | At the yard's gate: (1, -2), (0, -2), (2, -2), (1, -1) |
+
+No keepers. The nearest anything stands to a spot is 0.65, at (0, -2) and (2, -2), from the yard's front wall. Every other spot is clear by 1.07 or more.
+
+**Props reused:**
+- From `start_tiles.py`: `rime_chapel`, copied without its mound, the windows `ts_glow`; `block`, `door`, `bench`.
+- From `build_tiles.py`: the outcrop's boulders (copied, standing on the terraces); Dunfaire's copy of the tiles' tree.
+- Nothing new was modelled.
+
+**Lights** (placeholder): the chapel's door, #FFD27A, 30 W, at night.
+
+**Triangles:** 6,148 of the placeholder 20,000.
+
+**Comparison:** `art/preview/place_east_rime_chapel_compare_v1.png`: top, v1 at 21 m (the `chapel` spots) and 33 m; bottom, the approved start tile and the hills combat maps beside their tile.
 
 ## Not checked
 
