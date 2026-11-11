@@ -6,7 +6,7 @@ Heroes and companions, races, ability scores, coin checks, tactical combat, clas
 
 ## Hero and companions
 
-- The player controls a hero plus companions. Up to 3 companions at once. **More can be recruited** (chosen Nov 1, 2026): a companion who doesn't fit in the party (a 4th recruit, or one dropped when a multiplayer guest joins) shows up only at inns and camps. **Party members are swapped only at inns and camps** (chosen Nov 1, 2026): a new action there opens a party screen (inn: [Presentation](07 Presentation.md) → Town screen; the camp screen isn't designed yet).
+- The player controls a hero plus companions. Up to 3 companions at once. **More can be recruited** (chosen Nov 1, 2026): a companion who doesn't fit in the party (a 4th recruit, or one dropped when a multiplayer guest joins) shows up only at inns and camps (and Dunfaire Tower). **Party members are swapped only at inns and camps** (chosen Nov 1, 2026), and at Dunfaire Tower, the Soldier's start (Ethan, Nov 10, 2026): a new action there opens a party screen (inn: [Presentation](07 Presentation.md) → Town screen; the camp screen isn't designed yet).
 - Companions are gained by recruiting in locations and as quest rewards.
 - Companions have full classes and gear, like the hero, and level up with the hero.
 - In tactical combat, the player controls companions directly.
