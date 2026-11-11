@@ -314,7 +314,7 @@ def check_basilisk(live):
     and inside the tile; triangles per tile."""
     bad = []
     for name, obj in live.items():
-        if not name.startswith("basilisk_hall_"):
+        if not name.startswith(("basilisk_hall_", "basilisk_party_")):
             continue
         for v in obj.data.vertices:
             x, y, z = v.co
@@ -335,9 +335,19 @@ def check_basilisk(live):
         if z > 0.03 and near < vr.rl.WALK_HALF:
             bad.append(("nest", "path", round(x, 2), round(y, 2), round(z, 2)))
     worst = max(tris(o) for n, o in live.items() if n.startswith("basilisk_hall_"))
+    worst_party = max(tris(o) for n, o in live.items() if n.startswith("basilisk_party_"))
     ground = max(tris(live[f"basilisk_ruins_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
-    print(f"CHECK basilisk: {len(bad)} problems {bad[:8]}; worst hall {worst}, worst tile {tris(live['basilisk_ruins_centre']) + 6 * ground + 6 * worst} "
-          f"(budget 4816); Nest tile {tris(nest) + 6 * ground}")
+    base = tris(live['basilisk_ruins_centre']) + 6 * ground
+    print(f"CHECK basilisk: {len(bad)} problems {bad[:8]}; worst hall {worst}, worst party hall {worst_party}, worst tile "
+          f"{base + (6 - rs.PARTY_MOST) * worst + rs.PARTY_MOST * worst_party} (budget 4816); Nest tile {tris(nest) + 6 * ground}")
+    counts, real = {}, []
+    for q in range(-10, 10):   # placed: 400 tiles all basilisk, how many parties each, and their triangles
+        for r in range(-10, 10):
+            props = rs.basilisk_props({}, q, r)
+            k = sum(p_[0].startswith("basilisk_party_") for p_ in props)
+            counts[k] = counts.get(k, 0) + 1
+            real.append(base + sum(tris(live[p_[0]]) for p_ in props))
+    print(f"PLACED: parties per tile {dict(sorted(counts.items()))}; worst tile {max(real)}, mean {sum(real) // len(real)}")
 
 
 def basilisk_world():
@@ -395,9 +405,51 @@ def basilisk_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def statue_shot(title, sub, build):
+    """A close model shot of explorer statues on a strip of the basilisk ground, by day."""
+    hk.empty_scene()
+    col = bpy.data.collections.new("statues")
+    bpy.context.scene.collection.children.link(col)
+    p = hk.Piece("statues")
+    p.box(Vector((0, 0, 0)), (8, 4, 0.02), "bs_ground", z=-0.02)
+    build(p)
+    p.finish(col)
+    rp.stage(Vector((0, 0, 0.45)), 7.6, 18)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    rst.label(title, sub)
+    stem = "ruins_basilisk_statues"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
+def statue_sheet():
+    poses = ("stride", "flee", "shield", "point", "cower")
+
+    def row(half):
+        def build(p):
+            for k, pose in enumerate(poses + (("flee",) if not half else ())):
+                at = Vector((-2.2 + 0.9 * k, 0, 0))
+                rs.explorer(p, hk.seeded(f"statue_{k}_{half}"), at, -math.pi / 2 + 0.5, pose, rs.PETRIFIED[k % 3], crumble=(k == 5), half=half)
+        return build
+
+    def parties(kinds):
+        def build(p):
+            for k, kind in enumerate(kinds):
+                rs.party(p, hk.seeded(f"party_{kind}"), Vector((-1.2 + 2.4 * k, 0, 0)), math.radians(-60), kind)
+        return build
+    return [[statue_shot("Explorer statues", "Full stone: stride, flee, shield, point, cower, crumbled", row(False)),
+             statue_shot("Explorer statues", "Half turned: stone creeping up from the feet", row(True))],
+            [statue_shot("Parties turned to stone", "Flight (one points back) and shield", parties(("flight", "shield"))),
+             statue_shot("Parties turned to stone", "Last stand (four) and a pair", parties(("stand", "pair")))]]
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if "basilisk" in args:
+        if "statues" in args:
+            rst.SHEET_STEM = "ruins_basilisk_statues_sheet"
+            rst.sheet(statue_sheet())
+            sys.exit(0)
         if "check" in args:
             hk.empty_scene()
             check_basilisk(build_basilisk())
