@@ -1,5 +1,6 @@
 #!/bin/zsh
-# Builds the latest main as a Mac app and installs it, from the repo root:
+# Builds the latest main as a Mac debug app (report button and debug menu on, as on the phone) and installs it,
+# from the repo root:
 #   godot/tools/build_mac.sh            # pull main, export build/mac/HexGen.app, copy it to /Applications
 #   godot/tools/build_mac.sh --no-pull  # build what's checked out, without pulling
 # Run it in the shared checkout (on main). Saves live in Godot's user folder, so they carry over to the new build.
@@ -16,7 +17,7 @@ COMMIT="$(git log -1 --format='%h %ad %s' --date=format:'%b %-d %H:%M')"
 mkdir -p build/mac
 rm -rf "$APP"
 "$GODOT" --headless --path godot --import
-"$GODOT" --headless --path godot --export-release "macOS" "../$APP"
+"$GODOT" --headless --path godot --export-debug "macOS" "../$APP"
 [[ -n "$(ls "$APP/Contents/MacOS" 2>/dev/null)" ]] || { echo "Export failed: no game in $APP"; exit 1; }
 
 osascript -e 'quit app "HexGen"' 2>/dev/null || true
