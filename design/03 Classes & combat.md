@@ -683,7 +683,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [x] ~~Which companion chimes in when several are proficient, and how it combines with Silver Tongue~~ (settled Oct 28, 2026: highest score, then party order; Silver Tongue's reflip first, automatically; see Checks outside combat)
 - [x] ~~Each story companion's 2 proficiencies~~ (settled Oct 28, 2026: [World & story](01 World & story.md) → Companion proficiencies). Still open: the coins and heads needed per dialogue check
 - [x] ~~Each background's short list of proficiencies~~ (settled Oct 30, 2026: see [World & story](01 World & story.md) → Backgrounds)
-- [ ] **New (Oct 28, 2026):** the College's skill list, since a Bard hero needs one to pick their class proficiency (05 Cards & progression → Class locations only says "learn flourishes (skills)"); the character creator mockup shows "[Bard proficiency]"
+- [x] ~~The College's skill list~~ (settled Nov 12, 2026: Persuade, Deceive, Intimidate, Lore; see [Cards & progression](05 Cards & progression.md) → Class locations)
 - [ ] **New:** can a failed social check be retried in the same conversation? (Social encounter v1 uses each option once)
 - [ ] Class and subclass cards at level 15 and later (level 15 in progress, Oct 22, 2026)
 - [ ] **New:** names for the class location upgrades at levels 10 and 20 (Training Grounds, Thieves Guild, Tree of Life) under the upgrade-name rule (weapon mastery nodes: named Oct 26, 2026)

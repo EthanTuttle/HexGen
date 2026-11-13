@@ -548,7 +548,7 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 | Tap thresholds: 8 px of movement, 350 ms | Social v9, town v4 | Playtest |
 | Night at the inn pacing (about 2.3 s of night) | Town v2d–v3 | Playtest |
 | Colour swatches per race; heads 1–4 and hairstyles 1–6 shown as numbers; the stand-in mini drawing | Character creator v1a–v15c | Final heads, hairstyles and swatches (Open questions below) |
-| [Bard proficiency] | Character creator v1a–v15c | The College's skill list ([Classes & combat](03 Classes & combat.md) → Open questions) |
+| [Bard proficiency] | Character creator v1a–v15c | Filled Nov 12, 2026: Persuade, Deceive, Intimidate, Lore ([Cards & progression](05 Cards & progression.md) → Class locations) |
 | Palette and fonts | Every screen | Final palette and fonts (Open questions below) |
 
 (The level-up's "Place [1] ability point" row was removed on Oct 27, 2026: the amount is now set at +1, at levels 8 and 16.)
