@@ -899,7 +899,12 @@ func _check_touching_both() -> void:
 ## Ringed by a river: no ledge, no route, a tap does nothing; land placed beside it... stays until there's a foot.
 func _check_no_way() -> void:
 	var map := game.map
-	var c := Vector2i(-2, -18)
+	var group: Array = []
+	for q in range(-2, 3):
+		for r in range(-2, 3):
+			if Rules.hex_distance(Vector2i(q, r), Vector2i.ZERO) <= 2:
+				group.append(Vector2i(q, r))
+	var c := game._free_spot(group, {})   # the group, its river ring and a margin round that all free, wherever the debug regions left room
 	var tiles: Array[Vector2i] = [c]
 	for n in Hex.NEIGHBOURS:
 		tiles.append(c + n)

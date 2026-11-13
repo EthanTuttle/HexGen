@@ -475,9 +475,9 @@ def tile_props(name, q, r, world=None):
     if name == "ruins":
         import ruin_structure as rs
         return rs.block_props(rs.KIT, world or {}, q, r)
-    if name in BURROWED:   # the outpost on the corner halls (from tiles_v93): recoloured halls, one or two dug with a burrow
+    if name in BURROWED:   # the outpost as the goblin stockade (from tiles_v96): a palisade ring, corners with towers, huts or stones, one or two burrows
         import ruin_structure as rs
-        return rs.outpost_props(world or {}, q, r)
+        return rs.stockade_props(world or {}, q, r)
     if name in HAUNTED:   # the ghost town (from tiles_v94): house shells; the engine adds their ghost houses at night
         import ruin_structure as rs
         return rs.haunted_props(world or {}, q, r)

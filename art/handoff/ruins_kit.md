@@ -1,4 +1,4 @@
-# Ruins kit (corner halls from tiles_v92; overrun outpost on the halls from tiles_v93; Warren from tiles_v91; haunted ghost town and Crypt from tiles_v94; basilisk ruins and the Basilisk Nest from tiles_v95)
+# Ruins kit (corner halls from tiles_v92; overrun outpost as the goblin stockade from tiles_v96; Warren from tiles_v91; haunted ghost town and Crypt from tiles_v94; basilisk ruins and the Basilisk Nest from tiles_v95)
 
 Ruins tier 0, rebuilt as structure and approved by Ethan on Nov 9, 2026 (corner halls, take B, refined v2). It replaces tiles_v90's plaza and scattered remains. Look rules: `design/07 Presentation.md` → Ruins land. Code: `art/scripts/ruin_structure.py` (the takes study; the kit uses `KIT = "b"`) and `art/scripts/ruin_lands.py`.
 
@@ -27,26 +27,31 @@ All use the shared `kit` material, and nothing glows.
 
 The worst tile is about 1,550 of 4,816 (ground plus six of the biggest blocks).
 
-## Overrun outpost (tiles_v93) and the Warren (tiles_v91)
+## Overrun outpost: the goblin stockade (tiles_v96) and the Warren (tiles_v91)
 
-The outpost on the corner halls was approved by Ethan on Nov 9, 2026; the Warren is unchanged from tiles_v91. Looks: `design/07 Presentation.md` → Region variants (Overrun outpost) and Landmark tiles (Warren). The outpost is the plain halls recoloured, per 07: hall floors dug to earth, yards gone to mud, trampled tan ground, tin or plank patches and red and yellow rags on the walls, rag poles, and one or two framed burrows a tile. Code: the outpost section of `art/scripts/ruin_structure.py`.
+The goblin stockade was approved by Ethan on Nov 10, 2026. It replaces tiles_v93's recoloured halls, after the variant study found every ruins variant shared one corner pattern. The Warren is unchanged from tiles_v91. Looks: `design/07 Presentation.md` → Region variant looks (Overrun outpost) and Landmark tiles (Warren). Code: the stockade section of `art/scripts/ruin_structure.py`.
 
-tiles_v93 drops tiles_v90's remains props (`ruin_<kind>`) and the old goblin junk (`outpost_banner`, `outpost_bones`, `outpost_crates`, `outpost_totem`): nothing approved uses them now. Stop placing them, and stop calling `outpost_layout`.
+There are no halls any more. A crooked timber palisade rings each tile's middle, 2.9 out, with a gate on every street, so a region reads as a honeycomb of rings. Each corner's stretch of ring has tall gate posts at its ends with a skull or a rag on top. It also takes in a stub of old hall stone at one end or has rusty tin nailed on outside. Outside the ring the corner is trampled mud with a stilt watchtower, old stone stubs or a hide hut. One or two corners a tile have a breach with a framed burrow behind it.
+
+tiles_v96 drops the 24 `outpost_hall_*` pieces: stop placing them and stop calling `outpost_props`. tiles_v93 already dropped tiles_v90's remains and the old goblin junk.
 
 | Piece | What |
 | --- | --- |
 | `overrun_outpost_centre`, `_edge_same`, `_edge_same_b`, `_edge_other`, `_edge_other_b` | The plain halls' ground pieces, slab for slab, under the variant's name; `_b` picked as for ruins. The variant's ground colour is `op_ground` (#B2A58F), the engine's recolour of `base_ruins` |
-| `outpost_hall_<n>_<lo><hi>` | The plain `ruin_hall_<n>_<lo><hi>` recoloured (floors `op_floor` #977C5A, yards `op_yard` #93896A) with scrap patches, rags over the wall tops and, in about 6 of 10, a rag pole. Same 12 names, origin and facing as the plain halls |
-| `outpost_hall_<n>_<lo><hi>_burrow` | The same hall with its corner third's walls fallen into the burrow's mound, a rag pole beside it in about 7 of 10. Placed with a burrow |
-| `outpost_burrow_timber`, `outpost_burrow_scrap` | A mound of earth and broken stone with one dark mouth facing +X, framed in timber with a skull, or in bent tin; two pairs of eyes in the mouth |
-| `warren_centre` | The Warren: a patched keep and broken tower filling about half the tile, the burrow at its base facing edge 0. A centre-only landmark: the tile uses the outpost's wedges |
+| `stockade_<n>_<lo><hi>` | One corner, 12 pieces: its stretch of palisade (stakes, two rails, rags, the gate posts), a stone stub or tin, the corner's mud (`sk_mud` #8C7556), and what stands outside the ring by `n` (below): a stilt watchtower (top about 2.5, hide roof, rag flag), old stone stubs, or a hide hut. `lo`/`hi` as for the halls (the mud reaches the edge where the neighbour is a ruins look). Origin at the tile's middle, built facing +X toward the corner |
+| `stockade_<n>_<lo><hi>_burrow` | The same corner with a breach in the middle of its palisade and nothing outside it: placed with a burrow |
+| `outpost_burrow_timber`, `outpost_burrow_scrap` | Unchanged: a mound of earth and broken stone with one dark mouth facing +X, framed in timber with a skull or in bent tin; two pairs of eyes in the mouth |
+| `warren_centre` | Unchanged: a patched keep and broken tower, the burrow at its base facing edge 0. A centre-only landmark using the outpost's wedges |
 
-- **Outpost props:** port `ruin_structure.outpost_props(world, q, r)`. It runs `block_props` for the tile (so the join flags and variants are the plain halls' own: an outpost tile counts as ruins for its neighbours) and swaps each `ruin_hall_` for `outpost_hall_`. The tile digs burrows at two corners if `hash01(q, r, 54) < 0.5`, else one; the corners are the ones with the lowest `hash01(q * 6 + c, r, 52)`. A dug corner places `outpost_hall_<n>_<join>_burrow` and a burrow, `scrap` if `hash01(q * 6 + c, r, 53) < 0.5` else `timber`, at (3.5, 0) turned by the hall's spin, with spin + 180 degrees so its mouth faces the tile's middle. `render_ruin_structure.py -- outpost check` checks every piece inside the tile, off the walks, and nothing in a mound or before a mouth.
-- **Re-pick on change:** as for plain ruins, when a neighbour changes, re-pick the tile's halls; the burrow corners don't change.
+What stands outside the ring, by `n`: 0 a watchtower, 1 old stone stubs, fallen blocks and a rag pole, 2 a hide hut, with a rag pole in about 6 of 10. Rusty tin on the ring comes with `n` 1; a stone stub at one end of the ring comes with `n` 0 and 2 in about 7 of 10.
+
+- **Stockade props:** port `ruin_structure.stockade_props(world, q, r)`. It runs `block_props` for the tile, so the join flags and variants are the halls' own and a stockade tile counts as ruins for its neighbours. Each corner's `ruin_hall_<n>_<lo><hi>` becomes `stockade_<n>_<lo><hi>`, placed at the middle and turned `30 + 60 * c` degrees. Burrow corners use the same hashes as tiles_v93. A tile has two if `hash01(q, r, 54) < 0.5`, else one: the corners with the lowest `hash01(q * 6 + c, r, 52)`. A burrow corner places `stockade_<n>_<lo><hi>_burrow`, plus a burrow at (3.5, 0) turned by the corner's spin, with spin + 180 degrees so its mouth faces the tile's middle. The burrow is `scrap` if `hash01(q * 6 + c, r, 53) < 0.5`, else `timber`.
+- **Region edge and re-pick:** as for the halls. A plain hall beside a stockade tile is left part-open. Re-pick a tile's corners when a neighbour changes; the burrow corners don't change.
+- **Walks:** the gates keep the palisade 0.82 off each street's line, so nothing raised comes within 0.62 (`render_ruin_structure.py -- stockade check`).
 - **Goblin eyes:** the `goblin_eye` faces (#F4E04D) are their own material, not `kit`. Light them at night: the previews use emission strength 9 as a stand-in for the engine's night.
-- **Warren routes:** `warren_centre` carries path data (also in `tiles_paths.json`): a ring 3.0 from the middle, corners on the walk lines; spokes from each edge's middle in to the ring; the approach along edge 0's line from the ring to the mouth (1.45 from the middle). The tile's own straight walks to the middle aren't used. The engine turns the Warren so edge 0 meets the region's longest trail, as for other landmarks.
+- **Warren routes:** unchanged. `warren_centre` carries path data (also in `tiles_paths.json`): a ring 3.0 from the middle with its corners on the walk lines, spokes in from each edge's middle, and the approach along edge 0's line to the mouth (1.45 from the middle). The engine turns the Warren so edge 0 meets the region's longest trail.
 - **Ground cover:** 0.1 on `overrun_outpost` and `warren`.
-- **Triangles:** the worst outpost tile is about 2,940 of 4,816 (two burrows); the Warren tile about 3,310.
+- **Triangles:** worst corner 631. Tiles as placed (400 checked): worst 3,724, mean 3,310, of 4,816. The Warren tile is about 3,310.
 
 ## Haunted ruins: the ghost town, and the Crypt (tiles_v94)
 

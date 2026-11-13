@@ -1,20 +1,23 @@
 class_name RuinHalls
 extends RefCounted
-## Port of art/scripts/ruin_structure.py's block_props, outpost_props and haunted_props (tiles v92 corner halls, v93 Overrun
-## outpost, v94 ghost town; art/handoff/ruins_kit.md): a third of a roofless hall at each of a ruins tile's six corners,
+## Port of art/scripts/ruin_structure.py's block_props, outpost_props, haunted_props and basilisk_props (tiles v92 corner halls,
+## v93 Overrun outpost, v94 ghost town, v95 basilisk ruins; art/handoff/ruins_kit.md): a third of a roofless hall at each of a ruins tile's six corners,
 ## reaching the tile's edge on a side where the ruins carry on. An outpost tile stands the same halls recoloured, with one or
 ## two dug into a burrow. A haunted tile stands two house shells and a tomb at each corner instead, their ghost houses over
-## them (shown at night by MapBoard), with wisps over a few tombs and thin mist.
+## them (shown at night by MapBoard), with wisps over a few tombs and thin mist. A basilisk tile stands the halls turned to stone,
+## with a party of stone explorers on a yard or two.
 ## Worked out from the map, so a tile re-picks its halls whenever it's rebuilt (a neighbour placed or a region finishing).
 
 ## Tiles that stand halls (or shells) and count as ruins for their neighbours (ruin_lands.LOOKS).
-const LOOKS := ["ruins", "overrun_outpost", "haunted_ruins"]
+const LOOKS := ["ruins", "overrun_outpost", "haunted_ruins", "basilisk_ruins"]
 const VARIANTS := 3          # ruin_structure.VARIANTS_PER_TAKE
 const BURROW_TWO := 0.5      # share of outpost tiles with two burrows
 const BURROW_AT := Vector2(3.5, 0.0)   # in a hall's frame; the burrow's mouth turns to face the tile's middle
 const TOMB_AT := Vector2(3.6, 0.0)     # in a block's frame: the tomb between the two shells' backs
 const WISPS_THREE := 0.4               # share of haunted tiles with wisps over three tombs, else two
 const MIST_TWO := 0.5                  # share with two mists, else one
+const PARTY_CHANCE := 0.15             # a basilisk corner's chance of a party of stone explorers
+const PARTY_MOST := 2                  # and never more than two on a tile
 
 
 ## (piece, x, y, spin) for tile t's halls, tile-local plan coordinates, or [] for a tile that stands none.
@@ -25,6 +28,8 @@ static func props(name: String, terrains: Dictionary, t: Vector2i) -> Array:
 		return outpost(terrains, t)
 	if name == "haunted_ruins":
 		return haunted(terrains, t)
+	if name == "basilisk_ruins":
+		return basilisk(terrains, t)
 	return []
 
 
@@ -82,4 +87,20 @@ static func haunted(terrains: Dictionary, t: Vector2i) -> Array:
 		var a := 6.283 * GroundCover.hash01(t.x * 2 + k, t.y, 59)
 		var d := 1.2 + GroundCover.hash01(t.x * 2 + k, t.y, 60)
 		out.append(["haunt_mist", d * cos(a), d * sin(a), a])
+	return out
+
+
+## basilisk_props: each corner's hall petrified; a corner with hash 61 under PARTY_CHANCE has a party on its yard instead, at
+## most PARTY_MOST a tile (the first ones going round from corner 0).
+static func basilisk(terrains: Dictionary, t: Vector2i) -> Array:
+	var out := []
+	var parties := 0
+	var c := 0
+	for h: Array in halls(terrains, t):
+		var kind := "hall"
+		if parties < PARTY_MOST and GroundCover.hash01(t.x * 6 + c, t.y, 61) < PARTY_CHANCE:
+			kind = "party"
+			parties += 1
+		out.append(["basilisk_%s_%s" % [kind, h[0].trim_prefix("ruin_hall_")], 0.0, 0.0, h[3]])
+		c += 1
 	return out
