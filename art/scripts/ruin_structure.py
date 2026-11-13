@@ -1100,7 +1100,7 @@ def graveyard_props(world, q, r):
     return out
 
 
-# --- Basilisk ruins on the halls (approved Nov 10, 2026, round 4; in the kit from tiles_v95) ------------------------------------
+# --- Basilisk ruins on the halls (approved Nov 10, 2026, round 4; in the kits tiles_v95-v97, replaced by the colonnade field in tiles_v98; its helpers, parties and the Nest stay in use) ------------------------------------
 # design/07 -> Region variant looks: grass, bushes and trees turned to grey stone, with grey stone explorers frozen
 # mid-stride or mid-flight among them, some crumbling. The plain halls, stone for stone, recoloured: their grass floors,
 # yards and moss gone to grey stone; in each hall a stone tree and bushes, and stone explorers on the yard before it,
@@ -1367,7 +1367,7 @@ def basilisknest(p, rng, kind):
         p.spokes[i] = [q / NEST_RING * A, q]
 
 
-# --- Basilisk ruins: the colonnade field (round 1 of the rework, not approved) -------------------------------------
+# --- Basilisk ruins: the colonnade field (approved Nov 12, 2026, round 1; in the kit from tiles_v98) -------------------------------------
 # design/07 -> Region variant looks: rows of tall columns with the approved statue parties (full stone and half turned)
 # among them; grey stone, bright orange and yellow lichen (Ethan, Nov 10, 2026, after the variant study; replaces the
 # approved stone halls). No halls: each corner's block between the streets is a grey stone floor holding a grid of tall

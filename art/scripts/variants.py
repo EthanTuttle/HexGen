@@ -5218,7 +5218,7 @@ VARIANTS.update({k: v for k, v in rl.VARIANTS.items() if k not in rl.UNAPPROVED}
 VARIANTS["overrun_outpost"] = ("ruins", rs.outpost_ground, "op_ground", ("edge_same_b", "edge_other_b"))
 PROP_PIECES.update(rs.graveyard_pieces())     # haunted ruins as the graveyard city (from tiles_v97; replaces the ghost town's shells and ghost houses)
 VARIANTS["haunted_ruins"] = ("ruins", rs.haunted_ground, "gt_ground", ("edge_same_b", "edge_other_b"))
-PROP_PIECES.update(rs.basilisk_pieces())     # the basilisk ruins' petrified halls and their party halls
+PROP_PIECES.update(rs.colonnade_pieces())     # basilisk ruins as the colonnade field (from tiles_v98; replaces the petrified halls and party halls)
 VARIANTS["basilisk_ruins"] = ("ruins", rs.basilisk_ground, "bs_ground", ("edge_same_b", "edge_other_b"))
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | rl.OWN
 hk.OWN_MATERIAL = set(hk.OWN_MATERIAL) | fl.OWN | bl.OWN | st.OWN
