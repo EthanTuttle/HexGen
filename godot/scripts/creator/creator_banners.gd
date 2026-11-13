@@ -1,6 +1,6 @@
 class_name CreatorBanners
 extends Control
-## The Class, Race and Background steps: hanging banners across the screen (Creator v4a, v5c, v8a, v11a, v13). The picked
+## The Class, God, Race and Background steps: hanging banners across the screen (Creator v4a, v5c, v8a, v11a, v13). The picked
 ## one widens and the rest narrow to their emblems with their names written down the cloth.
 ##
 ## Laid out for the phone's 734 pt (Ethan, Nov 4, 2026), where the picked banner is about 410 pt, not the mockup's 460, so
@@ -40,7 +40,7 @@ func _narrow() -> float:
 
 
 func _picked_id() -> String:
-	return {"class": c.cls, "race": c.race, "bg": c.bg}.get(c.step, "")
+	return {"class": c.cls, "god": c.god, "race": c.race, "bg": c.bg}.get(c.step, "")
 
 
 func refresh() -> void:
@@ -54,7 +54,7 @@ func refresh() -> void:
 	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	nav.offset_top = -40
 	add_child(nav)
-	_items = _class_items() if c.step == "class" else (_race_items() if c.step == "race" else _bg_items())
+	_items = {"class": _class_items, "god": _god_items, "race": _race_items}.get(c.step, _bg_items).call()
 	var fresh := _step != c.step
 	_step = c.step
 	if fresh:
@@ -80,6 +80,7 @@ func _pick(id: String) -> void:
 		"class":
 			if c.cls != id:
 				c.cls = id
+				c.god = ""
 				c.spells = []
 				c.cb = ""
 				c.pc = ""
@@ -98,6 +99,8 @@ func _pick(id: String) -> void:
 					c.main = ""
 					c.off = ""
 					c.arm = ""
+		"god":
+			c.god = id
 		"bg":
 			c.bg = id
 			c.pb = ""
@@ -183,6 +186,8 @@ func _class_items() -> Array:
 		else:
 			for _i in 2:
 				kit.append({"card": false, "n": "Spell"})
+			if k.id == "Cleric":   # plus a god's spell slot (07 -> Character creator: the class step)
+				kit.append({"card": false, "n": "God"})
 		out.append({"id": k.id, "n": k.id, "bl": x.bl, "icon": D.IC[k.i], "cloth": Color(D.TER[k.t[0]][1]), "dark": D.DARK.has(k.t[0]),
 			"chips": k.main, "lines": [["Weapons", x.wt], ["Armour", _armour_line(k.id)]], "kit": kit, "locked": not k.id in Creator.PLAYABLE})
 	return out
@@ -233,6 +238,18 @@ func _race_items() -> Array:
 		out.append({"id": r.id, "n": c.race_name() if picked and not sb.is_empty() else r.id, "bl": sx.bl if not sb.is_empty() else rx.bl,
 			"icon": D.RIC[r.id], "cloth": cloth, "dark": dark, "chips": [] if r.id == "Human" else r.b, "lines": lines, "kit": kit,
 			"passives": passives, "subs": r.get("subs", []) if picked else [], "hang_label": ""})   # no "Pick 1 elven spell": the to-do dot shows it (07 -> Screen text)
+	return out
+
+
+## The God step (Creator v9's godItems): each god's domain as its blurb, its +2 starting cards, and its free spell.
+func _god_items() -> Array:
+	var out := []
+	for g: String in Progression.GODS:
+		var ter: String = D.GX[g][0]
+		var k := Cards.get_card(Progression.GODS[g])
+		out.append({"id": g, "n": g, "bl": Progression.GOD_OF[g].left(1).to_upper() + Progression.GOD_OF[g].substr(1), "icon": D.GX[g][1], "cloth": Color(D.TER[ter][1]),
+			"dark": D.DARK.has(ter), "chips": [], "lines": [["Starting deck", "+2 %s" % D.TER[ter][0]]],
+			"kit": [{"card": true, "n": k.n, "ap": str(k.ap), "icon": k.icon, "t": k.desc.substr(k.desc.find(": ") + 2), "use": "", "tag": "Free spell · " + g}]})
 	return out
 
 

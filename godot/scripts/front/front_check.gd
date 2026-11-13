@@ -192,11 +192,62 @@ func _creator() -> void:
 	c.bg = ""
 	c.go("class")
 	await _wait(0.4)
-	# Every class can be read; Fighter, Ranger, Rogue and Wizard go on.
+	# The Cleric (06 -> Start, Nov 12, 2026): playable, a God step right after Class (07), the god's free spell and +2
+	# cards on its banner, and a Spells step with the four orders' 8 spells.
 	await tap_on("Cleric")
 	await _wait(0.6)
-	check(c.cls == "Cleric" and not c.done("class"), "class: Cleric opens to read and stays locked")
-	await shot("class_locked")
+	check(c.cls == "Cleric" and c.done("class"), "class: the Cleric is playable")
+	check(control("God") != null, "class: the Cleric's kit shows two spell slots and the god's slot")
+	check(c.steps().map(func(x): return x[0]) == ["class", "god", "race", "bg", "scores", "skills", "gear", "spells", "look", "name"], "class: a Cleric's steps add God after Class and Spells after Gear")
+	await shot("class_cleric")
+	await tap_on("Next")
+	await _wait(0.6)
+	check(c.step == "god" and not c.done("god"), "god: the God step, and Next waits")
+	await shot("god_none")
+	for g: String in Progression.GODS:
+		await tap_on(g)
+		await _wait(0.5)
+		check(c.god == g and c.done("god") and control(Cards.ALL[Progression.GODS[g]].n) != null, "god: %s shows its free spell, %s" % [g, Cards.ALL[Progression.GODS[g]].n])
+		await shot("god_%s" % g.to_lower())
+	await tap_on(Cards.ALL[Progression.GODS[c.god]].n)
+	await _wait(0.15)
+	await shot("god_card_popup")
+	c.race = "Human"
+	c.bg = "Acolyte"
+	c.go("spells")
+	await _wait(0.6)
+	for id: String in ["sacred_flame", "shadow_bolt", "bless", "hex"]:
+		check(control(Cards.ALL[id].n) != null, "spells: the Cleric's list has %s" % Cards.ALL[id].n)
+	await shot("spells_cleric")
+	await tap_on("Dread")
+	await _wait(0.2)
+	await shot("spells_cleric_popup")
+	await tap_on("Choose")
+	await _wait(0.1)
+	check(c.spells == ["dread"] and c.hero().god == c.god, "spells: a Cleric's pick, and the hero keeps the god")
+	# The Bard: playable, the College's four skills (Nov 12, 2026), the four schools' 8 spells.
+	c.go("class")
+	await _wait(0.4)
+	await tap_on("Bard")
+	await _wait(0.6)
+	check(c.cls == "Bard" and c.done("class") and c.god == "" and c.cls_data().pr == ["Persuade", "Deceive", "Intimidate", "Lore"], "class: the Bard is playable, with the College's skills")
+	await shot("class_bard")
+	c.go("spells")
+	await _wait(0.6)
+	for id: String in ["mockery", "rousing_tune", "dazzle", "war_cry"]:
+		check(control(Cards.ALL[id].n) != null, "spells: the Bard's list has %s" % Cards.ALL[id].n)
+	await shot("spells_bard")
+	await tap_on("Blade Twirl")
+	await _wait(0.2)
+	await shot("spells_bard_popup")
+	c.go("skills")
+	await _wait(0.5)
+	await shot("skills_bard")
+	c.race = ""
+	c.bg = ""
+	c.spells = []
+	c.go("class")
+	await _wait(0.4)
 	await tap_on("Fighter")
 	await _wait(0.6)
 	check(c.done("class"), "class: the Fighter is playable")
@@ -790,21 +841,23 @@ func _steady(c: Creator) -> void:
 	for key: String in groups:
 		_same("gear, weapons with %s" % key, groups[key])
 	# Spells: the pop-up's foot, with AP and Choose.
-	c.cls = "Wizard"
-	c.spells = []
-	c.go("spells")
-	await _wait(0.5)
 	seen = {}
-	for s: String in Weapons.WIZARD_SPELLS:
-		for id: String in Weapons.WIZARD_SPELLS[s]:
-			var nm := str(Cards.get_card(id).n)
-			await tap_on(nm)
-			await _wait(0.15)
-			var choose := control("Choose")
-			seen[id] = [roundi(choose.get_global_rect().position.y)] if choose else []
-			await shot("steady_spells_%s" % id)
-			await tap_on(nm)
-			await _wait(0.1)
+	for klass: String in ["Wizard", "Cleric", "Bard"]:
+		c.cls = klass
+		c.spells = []
+		c.go("spells")
+		await _wait(0.5)
+		var lists: Dictionary = Weapons.SPELLS_1[klass.to_lower()]
+		for s: String in lists:
+			for id: String in lists[s]:
+				var nm := str(Cards.get_card(id).n)
+				await tap_on(nm)
+				await _wait(0.15)
+				var choose := control("Choose")
+				seen[id] = [roundi(choose.get_global_rect().position.y)] if choose else []
+				await shot("steady_spells_%s" % id)
+				await tap_on(nm)
+				await _wait(0.1)
 	_same("spells", seen)
 	# Name: the hero's banner keeps its hexes where they were as the name grows.
 	c.cls = "Fighter"
