@@ -2,22 +2,25 @@ class_name Creator
 extends Control
 ## The character creator, from Creator v22b (mockups/character-creator/Creator-v22b-Banners.dc.html; design/07 ->
 ## Character creator screen). Guided steps with hex pips along the top; each step's view lives in its own script here.
-## God can't be reached while no Cleric is playable, so it isn't built; Spells shows for casters (the Wizard). Other classes show locked:
+## God shows for Clerics, right after Class (07 -> Character creator: God is its own step); Spells for casters. Every class is
+## playable (Cleric and Bard since Nov 12, 2026); a locked class would show:
 ## PLACEHOLDER look, no mockup (a dimmed banner with a lock; it opens to read, and Next stays off).
 
 signal finished(hero: Hero, banners: Array)
 signal cancelled
 
 const D = preload("res://scripts/creator/creator_data.gd")
-const PLAYABLE: Array[String] = ["Fighter", "Ranger", "Rogue", "Wizard"]   # DOCS (06 -> Start: Ranger added Nov 5, Rogue and Wizard Nov 6, 2026)
+const PLAYABLE: Array[String] = ["Fighter", "Ranger", "Rogue", "Wizard", "Cleric", "Bard"]   # DOCS (06 -> Start: Ranger Nov 5, Rogue and Wizard Nov 6, Cleric and Bard Nov 12, 2026)
 const LOCK_ICON := "M7 11V8a5 5 0 0 1 10 0v3 M6 11h12v9H6z"
 const STEPS := [["class", "Class"], ["race", "Race"], ["bg", "Background"], ["scores", "Scores"], ["skills", "Skills"],
 	["gear", "Gear"], ["look", "Look"], ["name", "Name"]]
 const SPELLS_STEP := ["spells", "Spells"]   # casters only, after Gear (design/07 -> Character creator v1a)
+const GOD_STEP := ["god", "God"]            # Clerics only, after Class (design/07 -> Character creator)
 
 # The picks (the mockup's state).
 var step := "class"
 var cls := ""
+var god := ""                         # a Cleric's god
 var race := ""
 var sub := ""
 var elf_spell := ""
@@ -69,7 +72,7 @@ func _layout() -> void:
 
 func render() -> void:
 	_build_bar()
-	var kind: String = {"class": "banners", "race": "banners", "bg": "banners", "scores": "train", "skills": "train",
+	var kind: String = {"class": "banners", "god": "banners", "race": "banners", "bg": "banners", "scores": "train", "skills": "train",
 		"gear": "gear", "spells": "spells", "look": "look", "name": "name"}[step]
 	if kind != _view_kind:
 		if _view:
@@ -145,6 +148,8 @@ func steps() -> Array:
 	var out := STEPS.duplicate()
 	if cls_data().has("sp"):
 		out.insert(6, SPELLS_STEP)
+	if cls == "Cleric":
+		out.insert(1, GOD_STEP)
 	return out
 
 
@@ -234,6 +239,7 @@ func race_name() -> String:
 func done(k: String) -> bool:
 	match k:
 		"class": return cls in PLAYABLE
+		"god": return god != ""
 		"race":
 			var r := race_data()
 			return not r.is_empty() and (not r.has("subs") or sub != "") and (sub != "High elf" or elf_spell != "")
@@ -331,6 +337,7 @@ func hero() -> Hero:
 	h.race_name = race_name()
 	h.elf_spell = elf_spell
 	h.spells = spells.duplicate()
+	h.god = god if cls == "Cleric" else ""
 	h.pronouns = pronouns
 	h.background = bg.to_lower().replace(" ", "_")
 	h.scores = scores()

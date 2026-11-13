@@ -122,12 +122,19 @@ static func make_hero(m: Dictionary, run: RunSetup) -> void:
 	m.off = run.off if run.main != "" else Rules.HERO_DEFAULT.off
 	m.armour = run.armour if run.main != "" else Rules.HERO_DEFAULT.armour
 	m.ability = Weapons.of(m.weapon).ab
+	if m.ability == "INT" and run.klass == "cleric":
+		m.ability = "WIS"   # a Cleric's staff flips WIS (04: INT or WIS for staves)
 	m.klass = run.klass
 	m.background = run.background
 	m.cards = Weapons.cards_for(run.klass, m.weapon, m.off)
-	for id: String in run.spells:   # a Wizard's two level-1 picks (03), class cards like the rest
+	for id: String in run.spells:   # a caster's two level-1 picks (03), class cards like the rest
 		if Cards.ALL.has(id) and not id in m.cards:
 			m.cards.append(id)
+	if run.klass == "cleric":   # the god's early spell is free (03 -> God spells)
+		m.god = run.god if run.god != "" else "Adam"
+		var gs: String = Progression.GODS[m.god]
+		if not gs in m.cards:
+			m.cards.append(gs)
 	m.hp = Weapons.CLASS_HP.get(run.klass, m.hp)
 	m.race = run.race if run.race != "" else Rules.HERO_DEFAULT.race
 	m.sub = run.sub if run.race != "" else Rules.HERO_DEFAULT.sub

@@ -300,7 +300,27 @@ const ENEMY := {"name": "[Enemy %s]", "mini": "standin_enemy", "ability": "STR",
 const ENEMY_SAVE_COINS := 2              # PLACEHOLDER (Combat v14): a foe's save flips 2 coins, 1 heads saves
 const SAVE_HEADS := 1                    # PLACEHOLDER (Combat v14): any save, a foe's or an ally's (their own score), needs 1 heads
 const SPELL_DAMAGE := 2                  # PLACEHOLDER: Sacred Flame's full damage (halved on a save)
-const HEAL := 4                          # PLACEHOLDER: Second Wind and Healing Word
+const HEAL := 4                          # PLACEHOLDER: Second Wind (spells heal their caster's score + SPELL_HEAL_PLUS)
+## Cleric and Bard level-1 placeholders (03, Ethan, Nov 12, 2026): spell damage is the casting score, as the Wizard's INT;
+## heals and temporary HP the score + 2; the conditions last until the target's next turn ends. The rest: PLACEHOLDER.
+const SPELL_HEAL_PLUS := 2               # DOCS (03): heals and temporary HP = WIS or CHA + 2
+const FEAR_COINS := 1                    # DOCS (03): Dread, Dazzle, Bane: one fewer coin
+const FAITH_COINS := 1                   # PLACEHOLDER (03: "harder to hit"): Shield of Faith, attacks on the ally flip 1 fewer coin
+const MOONVEIL_COINS := 1                # DOCS (03): Moonveil, attacks against the ally flip one fewer coin
+const TUNE_COINS := 1                    # DOCS (03): Rousing Tune, an extra coin on attacks while sustained
+const SUNSPOT_COINS := 1                 # PLACEHOLDER (03: "easier to hit"): attacks on a foe in Sunspot flip 1 extra coin
+const HEX_HEAL := 1                      # PLACEHOLDER (03: "a little"): Hex, each hit on the foe heals the attacker
+const SHADOW_DARK := 1                   # PLACEHOLDER (03: "more"): Shadow Bolt on a foe in darkness (natural night)
+const UNDEAD_MORE := 1                   # PLACEHOLDER (03: "bonus vs undead"): Searing Touch; no foe is undead yet
+const HEAT_DAMAGE := 1                   # PLACEHOLDER (03): Heat Metal, at the start of each of the foe's turns while sustained
+const THORN_COST := 1                    # PLACEHOLDER (03: "slows foes that cross it"): each Thorn Patch hex costs a foe 1 more
+const NEARBY := 2                        # PLACEHOLDER (03: "nearby"): Hymn and War Cry reach allies this near
+const TWIRL_HEXES := 2                   # PLACEHOLDER (03: "a free short move"): Blade Twirl's move after the attack
+const CLIFFHANGER_AP := 1                 # PLACEHOLDER (03: "skips its next action"): Cliffhanger, AP lost on its next turn
+const BATTLE_HYMN_MORE := 1              # PLACEHOLDER (03: "extra damage"): Battle Hymn, each hit by an ally near the Bard
+const HOLD_LINE_LESS := 1                # PLACEHOLDER (03: "less damage"): Hold the Line, each hit on an ally next to the Bard
+const SAGA_COINS := 1                    # PLACEHOLDER (03: "a buff"): Epic Saga, every ally's attacks flip 1 extra coin
+const REQUIEM_BONUS := 2                 # PLACEHOLDER (03: "heavy"): Requiem deals CHA + this
 const SNEAK_TIMES := 2                   # PLACEHOLDER (03, Ethan, Nov 6, 2026): Sneak Attack doubles the weapon's damage on a flanked foe
 ## Weapon and class card amounts (Ethan, Nov 5, 2026; placeholders in design/03 and 04 until the balance pass).
 const BACKSTAB := 2                      # PLACEHOLDER (04): the first dagger hit from behind each turn

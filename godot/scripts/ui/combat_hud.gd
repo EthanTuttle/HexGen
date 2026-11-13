@@ -388,7 +388,8 @@ func save_line(ab: String) -> String:
 ## What each modifier is called on its row (07 -> Modifier coins). Strings go through the Screen text check.
 const MOD_WORDS := {"bless": "Bless", "forge": "Forge dwarf", "glow": "Faerie Fire", "acid": "Acid", "cover": "cover",
 	"night": "night", "close": "foe next to you", "opening": "Opening Strike", "frail": "Curse of Frailty",
-	"exposed": "Exposing Disarm", "drowsy": "drowsy"}
+	"exposed": "Exposing Disarm", "drowsy": "drowsy", "fear": "Dread", "dazzled": "Dazzle", "bane": "Bane",
+	"tune": "Rousing Tune", "faith": "Shield of Faith", "veil": "Moonveil", "sun": "Sunspot", "saga": "Epic Saga"}
 
 
 ## One modifier under the check line: its chip, then "+1 Bless" or "−1 cover".
