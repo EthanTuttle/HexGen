@@ -44,10 +44,44 @@ const ALL := {
 	"phantom_ally": {"n": "Phantom Ally", "src": "klass", "ap": 2, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "phantom", "save": "INT", "icon": "M6 20V10a6 6 0 0 1 12 0v10l-2-2-2 2-2-2-2 2-2-2z M10 10h.01 M14 10h.01", "desc": "Deceiver spell: a fake party member that foes chase and attack. INT save."},
 	"blood_bolt": {"n": "Blood Bolt", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": Rules.SPELL_RANGE, "ranged": true, "ab": "INT", "bonus": 2, "hp": Rules.BLOOD_BOLT_HP, "icon": "M12 3c3 4 6 8 6 11a6 6 0 0 1-12 0c0-3 3-7 6-11z", "desc": "Ritualist spell: pay 2 HP for a strong hit."},
 	"warding_circle": {"n": "Warding Circle", "src": "klass", "ap": 2, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "circle", "conc": true, "icon": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7l4 7H8z", "desc": "Ritualist spell: a circle of 7 hexes; allies in it take 1 less damage."},
+	# The Cleric's and Bard's other level-1 spells (03 -> Cleric spells, Bard spells; numbers: Cleric and Bard level-1
+	# placeholders, Ethan, Nov 12, 2026: damage the casting score, heals and temporary HP the score + 2, range 5, conditions
+	# until the target's next turn ends).
+	"searing_touch": {"n": "Searing Touch", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "ab": "WIS", "icon": "flame", "desc": "Order of Light: melee radiant damage, bonus vs undead. Flip to hit."},
+	"shadow_bolt": {"n": "Shadow Bolt", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "ab": "WIS", "effect": "shadow", "icon": "M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z", "desc": "Order of Night: necrotic damage, more if the foe is in darkness (WIS save)."},
+	"dread": {"n": "Dread", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "effect": "fear", "icon": "eye", "desc": "Order of Night: a foe is frightened, flipping one fewer coin on its next attack (WIS save)."},
+	"shield_of_faith": {"n": "Shield of Faith", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "faith", "icon": "shield", "desc": "Order of Good: an ally is harder to hit."},
+	"bane": {"n": "Bane", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "CHA", "effect": "bane", "icon": "drop", "desc": "Order of Evil: a foe flips one fewer coin on its next check (CHA save)."},
+	"hex": {"n": "Hex", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "effect": "hex", "icon": "heart", "desc": "Order of Evil: every hit on the hexed foe heals the attacker a little (WIS save)."},
+	"mockery": {"n": "Mockery", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "ab": "CHA", "icon": "bubble", "desc": "Narrator spell: a cutting insult deals psychic damage (WIS save)."},
+	"heroic_tale": {"n": "Heroic Tale", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "ab": "CHA", "effect": "temp", "icon": "star", "desc": "Narrator spell: an ally gains temporary HP."},
+	"rousing_tune": {"n": "Rousing Tune", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "conc": true, "effect": "tune", "icon": "M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0 M20 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0", "desc": "Musician spell: an ally flips an extra coin on attacks while you sustain it."},
+	"soothing_melody": {"n": "Soothing Melody", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "ab": "CHA", "effect": "heal", "icon": "heart", "desc": "Musician spell: heal an ally a little."},
+	"dazzle": {"n": "Dazzle", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "effect": "dazzle", "icon": "sparkle", "desc": "Dancer spell: a foe is mesmerized and its attacks are harder (WIS save)."},
+	"blade_twirl": {"n": "Blade Twirl", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "weapon_reach": true, "effect": "twirl", "icon": "move", "desc": "Dancer spell: a weapon attack, then a free short move. Flip to hit."},
+	"rallying_strike": {"n": "Rallying Strike", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "weapon_reach": true, "effect": "rally", "icon": "swords", "desc": "Leader spell: a weapon attack; an ally gains temporary HP. Flip to hit."},
+	"war_cry": {"n": "War Cry", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "effect": "war_cry", "icon": "bubble", "desc": "Leader spell: nearby allies flip an extra coin on their next attack."},
+	# The Bard's level-3 and after-level-5 spells (03 -> Bard spells; numbers: Bard level-1 placeholders and Rules).
+	"cliffhanger": {"n": "Cliffhanger", "src": "klass", "ap": 2, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "effect": "cliffhanger", "icon": "eye", "desc": "Narrator spell: a foe freezes in suspense and skips its next action (WIS save)."},
+	"retell": {"n": "Retell", "src": "klass", "ap": 2, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "icon": "repeat", "built": false, "desc": "Narrator spell: an ally repeats their last action."},
+	"shatter_chord": {"n": "Shatter Chord", "src": "klass", "ap": 2, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "CON", "effect": "burst", "radius": 1, "ab": "CHA", "icon": "bolt", "desc": "Musician spell: a sonic burst in an area. Everyone in it makes a CON save."},
+	"battle_hymn": {"n": "Battle Hymn", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "conc": true, "effect": "battle_hymn", "icon": "M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0 M20 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0", "desc": "Musician spell: nearby allies deal extra damage while you sustain it."},
+	"captivate": {"n": "Captivate", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "save": "WIS", "effect": "captivate", "icon": "sparkle", "desc": "Dancer spell: nearby foes must watch you and can't target others (WIS save)."},
+	"whirlwind_dance": {"n": "Whirlwind Dance", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "effect": "whirlwind", "icon": "swords", "desc": "Dancer spell: strike every adjacent foe. Flip to hit each."},
+	"flanking_order": {"n": "Flanking Order", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "icon": "swords", "built": false, "desc": "Leader spell: you and an ally both move and attack one foe."},
+	"hold_the_line": {"n": "Hold the Line", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "conc": true, "effect": "hold_line", "icon": "shield", "desc": "Leader spell: allies next to you take less damage while you sustain it."},
+	"the_end": {"n": "The End", "src": "klass", "ap": 3, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "CHA", "effect": "the_end", "icon": "bubble", "desc": "Narrator spell: a badly hurt foe is narrated out of the fight (CHA save)."},
+	"epic_saga": {"n": "Epic Saga", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "conc": true, "effect": "saga", "icon": "star", "desc": "Narrator spell: every ally gains a buff while you sustain the tale."},
+	"requiem": {"n": "Requiem", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "save": "CON", "effect": "requiem", "ab": "CHA", "bonus": Rules.REQUIEM_BONUS, "icon": "bolt", "desc": "Musician spell: heavy sonic damage to every foe (CON save)."},
+	"song_of_rest": {"n": "Song of Rest", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "effect": "song_of_rest", "ab": "CHA", "icon": "heart", "desc": "Musician spell: heal all allies."},
+	"dance_of_blades": {"n": "Dance of Blades", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "icon": "swords", "built": false, "desc": "Dancer spell: several strikes on foes you move past."},
+	"dance_macabre": {"n": "Dance Macabre", "src": "klass", "ap": 3, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "CHA", "effect": "macabre", "radius": 1, "icon": "sparkle", "desc": "Dancer spell: foes in an area are forced to dance and can't act (CHA save)."},
+	"charge": {"n": "Charge!", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "icon": "move", "built": false, "desc": "Leader spell: every ally moves and attacks."},
+	"last_stand": {"n": "Last Stand", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "effect": "last_stand", "icon": "shield", "desc": "Leader spell: allies can't drop below 1 HP this turn."},
 	"bonebreaker": {"n": "Bonebreaker", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "mace", "rider": "slow", "slow": Rules.BONEBREAKER_SLOW, "desc": "Mace: lower enemy movement."},
-	"sacred_flame": {"n": "Sacred Flame", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": 5, "save": "DEX", "icon": "flame", "desc": "Order of Light: radiant damage. The target makes a DEX save."},
+	"sacred_flame": {"n": "Sacred Flame", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "DEX", "ab": "WIS", "icon": "flame", "desc": "Order of Light: radiant damage. The target makes a DEX save."},
 	"bless": {"n": "Bless", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": 5, "icon": "star", "effect": "bless", "desc": "Order of Good: an ally flips an extra coin on its next check."},
-	"healing_word": {"n": "Healing Word", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": 5, "icon": "heart", "effect": "heal", "desc": "Order of Good: heal an ally at range."},
+	"healing_word": {"n": "Healing Word", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "ab": "WIS", "icon": "heart", "effect": "heal", "desc": "Order of Good: heal an ally at range."},
 	"throw": {"n": "Throw", "src": "weapon", "ap": 1, "kind": "attack", "limit": "turn", "range": Weapons.THROW_RANGE, "ranged": true, "icon": "throw", "desc": "Dagger: a ranged attack with the dagger. It returns to your hand."},
 	"sneak_attack": {"n": "Sneak Attack", "src": "klass", "ap": 1, "kind": "attack", "limit": "turn", "range": 1, "icon": "eye", "effect": "sneak", "desc": "Rogue: a weapon attack with bonus damage if the foe is flanked or unaware."},
 	"duck_behind": {"n": "Duck Behind", "src": "race", "ap": 1, "kind": "ally", "limit": "turn", "range": 1, "icon": "M7 7h11l-3-3 M17 17H6l3 3", "effect": "swap", "desc": "Swap places with an adjacent ally."},
@@ -145,14 +179,14 @@ const ALL := {
 	"vampiric_aura": {"n": "Vampiric Aura", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "conc": true, "icon": "heart", "built": false, "desc": "Order of Evil: allies near you heal a little when they hit any foe."},
 	"siphon_strength": {"n": "Siphon Strength", "src": "klass", "ap": 2, "kind": "save", "limit": "turn", "range": 5, "save": "CON", "effect": "siphon_str", "icon": "drop", "desc": "Order of Evil: a foe loses STR coins for the fight, and an ally gains them (CON save)."},
 	"curse_of_ruin": {"n": "Curse of Ruin", "src": "klass", "ap": 2, "kind": "save", "limit": "turn", "range": 5, "save": "CON", "effect": "ruin", "icon": "drop", "desc": "Order of Evil: a foe takes more damage from every source until the end of its next turn (CON save)."},
-	"sunspot": {"n": "Sunspot", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "conc": true, "icon": "sparkle", "built": false, "desc": "Aurora: a patch of light; enemies in it are easier to hit."},
-	"moonveil": {"n": "Moonveil", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z", "built": false, "desc": "Selene: an ally is veiled in moonlight; attacks against it flip one fewer coin."},
-	"heat_metal": {"n": "Heat Metal", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "conc": true, "save": "CON", "icon": "fire", "built": false, "desc": "Morin: a foe's metal gear burns, dealing damage each turn (CON save)."},
-	"thorn_patch": {"n": "Thorn Patch", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "conc": true, "icon": "t_forest", "built": false, "desc": "Toyoko: slows foes that cross it."},
+	"sunspot": {"n": "Sunspot", "src": "klass", "ap": 1, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "zone", "zone": "sun", "conc": true, "icon": "sparkle", "desc": "Aurora: a patch of light; enemies in it are easier to hit."},
+	"moonveil": {"n": "Moonveil", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "veil", "icon": "M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z", "desc": "Selene: an ally is veiled in moonlight; attacks against it flip one fewer coin."},
+	"heat_metal": {"n": "Heat Metal", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "conc": true, "save": "CON", "effect": "heat", "icon": "fire", "desc": "Morin: a foe's metal gear burns, dealing damage each turn (CON save)."},
+	"thorn_patch": {"n": "Thorn Patch", "src": "klass", "ap": 1, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "effect": "zone", "zone": "thorns", "conc": true, "icon": "t_forest", "desc": "Toyoko: slows foes that cross it."},
 	"stone_skin": {"n": "Stone Skin", "src": "klass", "ap": 1, "kind": "ally", "limit": "turn", "range": 5, "effect": "stone_skin", "icon": "shield", "desc": "Adam: an ally takes less damage this turn."},
-	"hymn": {"n": "Hymn", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "star", "built": false, "desc": "Canto: nearby allies flip an extra coin on their next check."},
-	"sleight": {"n": "Sleight", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "save": "CHA", "icon": "repeat", "built": false, "desc": "Eve: swap places with an ally or foe (CHA save if a foe)."},
-	"toll_the_dead": {"n": "Toll the Dead", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": 5, "save": "WIS", "effect": "toll", "icon": "drop", "desc": "Tod: necrotic damage, more if the foe is hurt (WIS save)."},
+	"hymn": {"n": "Hymn", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "effect": "hymn", "icon": "star", "desc": "Canto: nearby allies flip an extra coin on their next check."},
+	"sleight": {"n": "Sleight", "src": "klass", "ap": 1, "kind": "cell", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "CHA", "effect": "sleight", "icon": "repeat", "desc": "Eve: swap places with an ally or foe (CHA save if a foe)."},
+	"toll_the_dead": {"n": "Toll the Dead", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "WIS", "ab": "WIS", "effect": "toll", "icon": "drop", "desc": "Tod: necrotic damage, more if the foe is hurt (WIS save)."},
 	"hunt_down": {"n": "Hunt Down", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "save": "STR", "icon": "move", "built": false, "desc": "Werewolf: dash to a foe up to 4 hexes away and knock it prone (STR save)."},
 	"thick_hide": {"n": "Thick Hide", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "shield", "built": false, "desc": "Werebear: take much less damage until your next turn."},
 	"shred": {"n": "Shred", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "drop", "built": false, "desc": "Werecat: a flurry of scratches that makes the foe bleed heavily."},
@@ -182,7 +216,7 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 		c.icon = CreatorData.PI[c.icon]
 	elif CreatorData.IC.has(c.get("icon", "")) and not Icons.PATHS.has(c.icon):
 		c.icon = CreatorData.IC[c.icon]
-	if id == "attack" or (id == "sneak_attack" and weapon != ""):   # a weapon attack's reach and ranged-ness follow the weapon (04, 03)
+	if id == "attack" or ((id == "sneak_attack" or c.get("weapon_reach", false)) and weapon != ""):   # a weapon attack's reach and ranged-ness follow the weapon (04, 03)
 		c.range = Weapons.of(weapon).range
 		c.ranged = Weapons.ranged(weapon)
 	if id == "throw":
@@ -195,7 +229,8 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 
 ## Card names whose one word is too wide for a card, and where they break instead (Ethan, Nov 5, 2026: "Glimmer / step").
 const NAME_BREAKS := {"Glimmerstep": "Glimmer step", "Bonebreaker": "Bone breaker",
-	"Hemorrhage": "Hemor rhage", "Reposition": "Re position", "Nightmare": "Night mare"}   # PLACEHOLDER breaks (Nov 9, 2026), for Ethan
+	"Hemorrhage": "Hemor rhage", "Reposition": "Re position", "Nightmare": "Night mare",
+	"Cliffhanger": "Cliff hanger", "Whirlwind": "Whirl wind"}   # PLACEHOLDER breaks (Nov 9 and 12, 2026), for Ethan
 
 
 ## A card name as the lines it's drawn in, on a card `width` wide: words, with the over-wide ones broken where NAME_BREAKS says.

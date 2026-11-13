@@ -2,16 +2,11 @@ class_name CreatorSpells
 extends Control
 ## The Spells step, for casters (design/06 -> Start, Ethan, Nov 6, 2026: it copies level-up v8a's caster pick; design/07
 ## -> Level-up screen -> Caster level 3): two slots on top that fill as you pick, tapping a filled one clears it; below,
-## the 9 level-1 spells in a column per school, as rows with AP, name and a tick once picked. Tapping a spell opens its
+## the class's level-1 spells in a column per school or order (the Wizard's 9, the Cleric's and Bard's 8; Nov 12, 2026), as rows with AP, name and a tick once picked. Tapping a spell opens its
 ## pop-up (school, text, Choose); choosing a third shows "Replaces ..." and swaps out the first pick. PLACEHOLDER look
 ## beyond the level-up mockup's: no creator mockup of this step yet.
 
 const D = preload("res://scripts/creator/creator_data.gd")
-## The schools' icons, from the level-up mockup (SCHOOL_IC).
-const SCHOOL_ICON := {"Summoner": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4 0 0 1 4 4",
-	"Blaster": "M12 2l1.8 4.6L18.5 4l-1.6 4.9 5 .9-4.2 2.7 3.4 3.7-5-.4.4 5L12.9 18 12 23l-.9-5-3.6 2.8.4-5-5 .4 3.4-3.7-4.2-2.7 5-.9L5.5 4l4.7 2.6z M12.7 8.6l-2.4 3.7h3.4l-2.4 3.7",
-	"Deceiver": "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6",
-	"Ritualist": "M12 3c3 4 6 8 6 11a6 6 0 0 1-12 0c0-3 3-7 6-11z"}
 const BAND := "#B5532F"   # class cards' band (Cards.SRC.klass)
 
 var c: Creator
@@ -53,16 +48,28 @@ func refresh() -> void:
 
 
 static func school_of(id: String) -> String:
-	for s: String in Weapons.WIZARD_SPELLS:
-		if id in Weapons.WIZARD_SPELLS[s]:
-			return s
+	for lists: Dictionary in Weapons.SPELLS_1.values():
+		for s: String in lists:
+			if id in lists[s]:
+				return s
 	return ""
+
+
+## The picked class's level-1 spells by school or order.
+func lists() -> Dictionary:
+	return Weapons.SPELLS_1.get(c.cls.to_lower(), {})
+
+
+## A pop-up's tag: "Blaster spell", or the order alone ("Order of Light").
+static func tag_of(id: String) -> String:
+	var s := school_of(id)
+	return s if s.begins_with("Order of ") else "%s spell" % s
 
 
 ## The card's text without its "Blaster spell:" lead, which the pop-up's tag already says.
 static func text_of(k: Dictionary) -> String:
 	var t: String = k.desc
-	return t.substr(t.find(": ") + 2) if t.contains(" spell: ") else t
+	return t.substr(t.find(": ") + 2) if t.contains(" spell: ") or t.begins_with("Order of ") else t
 
 
 # --- The title and the two slots ------------------------------------------------------
@@ -129,17 +136,17 @@ func _slot(i: int) -> Control:
 
 func _schools() -> Control:
 	var grid := GridContainer.new()
-	grid.columns = Weapons.WIZARD_SPELLS.size()
+	grid.columns = lists().size()
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for s: String in Weapons.WIZARD_SPELLS:
+	for s: String in lists():
 		var col := CUI.vbox(4)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var head := CUI.hbox(4)
-		head.add_child(UI.icon_rect(SCHOOL_ICON[s], Color("#5A5040"), 13, 2.2))
-		head.add_child(UI.label(s.to_upper(), "n900", 11, Color("#5A5040"), 1))
+		head.add_child(UI.icon_rect(Progression.SCHOOL_ICON[s], Color("#5A5040"), 13, 2.2))
+		head.add_child(UI.label(s.replace("Order of ", "").to_upper(), "n900", 11, Color("#5A5040"), 1))   # as level-up's columns
 		col.add_child(head)
-		for id: String in Weapons.WIZARD_SPELLS[s]:
+		for id: String in lists()[s]:
 			col.add_child(_row(id))
 		grid.add_child(col)
 	return grid
@@ -202,7 +209,7 @@ func _pop(panel: Control) -> void:
 	var top := CUI.hbox(6)
 	var names := CUI.vbox(0)
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	names.add_child(UI.label(("%s spell" % school_of(_focus)).to_upper(), "n900", 11, Color("#9A4A12"), 1))
+	names.add_child(UI.label(tag_of(_focus).to_upper(), "n900", 11, Color("#9A4A12"), 1))
 	names.add_child(UI.label(k.n, "lilita", 17, UI.INK, 0, 1.1))
 	top.add_child(names)
 	var close := HexShape.make(20, 20, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("M6 6l12 12 M18 6L6 18", CUI.SOFT_INK, 16, 2.6)
@@ -214,8 +221,8 @@ func _pop(panel: Control) -> void:
 	top.add_child(close)
 	v.add_child(top)
 	var texts := []   # room for the longest spell's text, so the foot doesn't move from one spell to the next (Nov 8 note)
-	for s: String in Weapons.WIZARD_SPELLS:
-		for id: String in Weapons.WIZARD_SPELLS[s]:
+	for s: String in lists():
+		for id: String in lists()[s]:
 			texts.append(text_of(Cards.get_card(id)))
 	v.add_child(CUI.reserve(CUI.wrap(UI.label(text_of(k), "n700", 12, Color("#33403B"), 0, 1.35), 230), texts))
 	var foot := CUI.hbox(6)

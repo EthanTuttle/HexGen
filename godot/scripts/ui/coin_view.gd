@@ -16,7 +16,7 @@ const PENALTY_RING := Color("#C62E24")
 const MOD_INK := {"bless": "#B07A12", "forge": "#5A4528", "glow": "#B07A12", "acid": "#4F7A12", "cover": "#2E6B32",
 	"close": "#B3261E", "night": "#3E5A70"}
 const MOD_ICON := {"opening": "bolt", "frail": "drop", "exposed": "parry", "drowsy": "moon", "bless": "star", "forge": "mace", "glow": "spark", "acid": "acid", "cover": "tree_fill", "close": "swords",
-	"night": "moon"}
+	"night": "moon", "fear": "eye", "dazzled": "spark", "bane": "drop", "tune": "star", "faith": "shield", "veil": "moon", "sun": "spark", "saga": "star"}
 
 
 static func make(h: bool, d := 34.0) -> CoinView:

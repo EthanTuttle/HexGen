@@ -478,12 +478,12 @@ def tile_props(name, q, r, world=None):
     if name in BURROWED:   # the outpost as the goblin stockade (from tiles_v96): a palisade ring, corners with towers, huts or stones, one or two burrows
         import ruin_structure as rs
         return rs.stockade_props(world or {}, q, r)
-    if name in HAUNTED:   # the ghost town (from tiles_v94): house shells; the engine adds their ghost houses at night
+    if name in HAUNTED:   # the graveyard city (from tiles_v97): a walled plot of headstones and cypresses at every corner, wisps, mist
         import ruin_structure as rs
-        return rs.haunted_props(world or {}, q, r)
-    if name == "basilisk_ruins":   # petrified halls (from tiles_v95), a party of stone explorers on a few yards
+        return rs.graveyard_props(world or {}, q, r)
+    if name == "basilisk_ruins":   # the colonnade field (from tiles_v98): rows of tall columns at every corner, a party of stone explorers in a few
         import ruin_structure as rs
-        return rs.basilisk_props(world or {}, q, r)
+        return rs.colonnade_props(world or {}, q, r)
     return [(f"ruin_{k}", x, y, spin) for k, x, y, spin in tile_remains(q, r)] if name in LOOKS else []
 
 

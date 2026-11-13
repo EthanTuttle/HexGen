@@ -6,6 +6,7 @@ region is render_region_compare.world("ruins"). Writes art/preview/ruins_structu
 and the sheet ruins_structure_sheet_vN.png with the forest and village maps from the comparison (same camera).
 -- outpost [check]: the overrun outpost on the corner halls round the Warren, map and close-up by day and at night.
 -- basilisk [check|quick]: basilisk ruins on the halls round the Basilisk Nest, map and close-up by day and at night.
+-- graveyard [check|quick]: haunted ruins as the graveyard city round the Crypt beside plain ruins, day and night.
 -- stockade [check|quick]: the overrun outpost as the goblin stockade round the Warren beside plain ruins, day and night.
 -- vault [check|quick]: the trapped vault's sunken courts round the Vault beside plain ruins, map and close-up by day and at night.
 -- haunted [check|quick]: the ghost town round the Crypt, map and close-up by day (bare shells) and at night (ghost houses).
@@ -407,6 +408,60 @@ def basilisk_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def build_colonnade():
+    """The colonnade field's corner pieces, built live (not in the kit until approved); its ground and the Nest are the kit's."""
+    col = bpy.data.collections.new("live")
+    out = {}
+    for name, b_ in rs.colonnade_pieces().items():
+        p = hk.Piece(name)
+        b_(p, hk.seeded(name))
+        out[name] = p.finish(col)
+    return out
+
+
+def check_colonnade(live, templates):
+    """Each corner piece inside the tile and off the walks; triangles per tile, as placed."""
+    bad = []
+    for name, obj in live.items():
+        for v in obj.data.vertices:
+            x, y, z = v.co
+            if max(x * math.cos(math.radians(60 * k + 30)) + y * math.sin(math.radians(60 * k + 30)) for k in range(6)) > rs.A + 0.01:
+                bad.append((name, "edge", round(x, 2), round(y, 2)))
+            if z > 0.03 and abs(x * 0.5) - abs(y) * math.cos(math.radians(30)) < vr.rl.WALK_HALF:
+                bad.append((name, "walk", round(x, 2), round(y, 2), round(z, 2)))
+    ground = max(tris(templates[f"basilisk_ruins_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
+    base = tris(templates["basilisk_ruins_centre"]) + 6 * ground
+    real = [base + sum(tris(live[pc]) for pc, *_ in rs.colonnade_props({}, q, r)) for q in range(-10, 10) for r in range(-10, 10)]
+    plain = max(tris(o) for n, o in live.items() if not n.startswith("colonnade_party_"))
+    print(f"CHECK colonnade: {len(bad)} problems {bad[:8]}; worst corner {plain}, worst party corner "
+          f"{max(tris(o) for n, o in live.items() if n.startswith('colonnade_party_'))}; tiles as placed (400): worst {max(real)}, "
+          f"mean {sum(real) // len(real)} (budget 4816)")
+
+
+def colonnade_shot(close, dark):
+    hk.empty_scene()
+    templates = rp.load_templates(rp.latest("tiles", "tiles"))
+    templates.update(build_colonnade())
+    world = basilisk_world()
+    vr.rl.tile_props = lambda name, q, r, w=None: (rs.colonnade_props(world, q, r) if name == "basilisk_ruins" else ORIGINAL_PROPS(name, q, r, w))
+    rp.build_map(templates, tiles=world)
+    vr.rl.tile_props = ORIGINAL_PROPS
+    for o in bpy.data.collections["map"].objects:   # preview only: the Nest's door toward the camera
+        if o.name.startswith("basilisknest_centre"):
+            o.rotation_euler.z = math.radians(-60)
+    if close:
+        rp.stage(Vector((1.2, -1.2, 0)), 32, 45)
+    else:
+        rp.stage(Vector((0, -3, 0)), 92, 45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
+    rst.label("Basilisk ruins: the colonnade field", ("Closer: the Nest and its neighbours" if close else "Two rings round the Nest") + (", night" if dark else ", day"))
+    stem = f"ruins_colonnade_{'close' if close else 'map'}{'_night' if dark else ''}"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
 def build_vault():
     """The trapped vault on the halls, built live (not in the kit until approved): its ground, halls with traps, and the Vault."""
     col = bpy.data.collections.new("live")
@@ -560,6 +615,60 @@ def stockade_shot(close, dark):
     return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
 
 
+def build_graveyard():
+    """The graveyard city's corner pieces, built live (not in the kit until approved); its ground, wisps, mist and the Crypt
+    are the kit's."""
+    col = bpy.data.collections.new("live")
+    out = {}
+    for name, b_ in rs.graveyard_pieces().items():
+        p = hk.Piece(name)
+        b_(p, hk.seeded(name))
+        out[name] = p.finish(col)
+    return out
+
+
+def check_graveyard(live, templates):
+    """Each corner piece inside the tile and off the walks; triangles per tile, as placed (with wisps and mist)."""
+    bad = []
+    for name, obj in live.items():
+        for v in obj.data.vertices:
+            x, y, z = v.co
+            if max(x * math.cos(math.radians(60 * k + 30)) + y * math.sin(math.radians(60 * k + 30)) for k in range(6)) > rs.A + 0.01:
+                bad.append((name, "edge", round(x, 2), round(y, 2)))
+            if z > 0.03 and abs(x * 0.5) - abs(y) * math.cos(math.radians(30)) < vr.rl.WALK_HALF:
+                bad.append((name, "walk", round(x, 2), round(y, 2), round(z, 2)))
+    ground = max(tris(templates[f"haunted_ruins_edge_{k}"]) for k in ("same", "same_b", "other", "other_b"))
+    base = tris(templates["haunted_ruins_centre"]) + 6 * ground
+    pieces = {**templates, **live}
+    real = [base + sum(tris(pieces[pc]) for pc, *_ in rs.graveyard_props({}, q, r)) for q in range(-10, 10) for r in range(-10, 10)]
+    print(f"CHECK graveyard: {len(bad)} problems {bad[:8]}; worst corner {max(tris(o) for o in live.values())}; "
+          f"tiles as placed (400): worst {max(real)}, mean {sum(real) // len(real)} (budget 4816)")
+
+
+def graveyard_shot(close, dark):
+    hk.empty_scene()
+    templates = rp.load_templates(rp.latest("tiles", "tiles"))
+    templates.update(build_graveyard())
+    world = ghost_world()
+    vr.rl.tile_props = lambda name, q, r, w=None: (rs.graveyard_props(world, q, r) if name == "haunted_ruins" else ORIGINAL_PROPS(name, q, r, w))
+    rp.build_map(templates, tiles=world)
+    vr.rl.tile_props = ORIGINAL_PROPS
+    for o in bpy.data.collections["map"].objects:   # preview only: the Crypt's doors toward the camera
+        if o.name.startswith("crypt_centre"):
+            o.rotation_euler.z = math.radians(-60)
+    if close:
+        rp.stage(Vector((1.2, -1.2, 0)), 32, 45)
+    else:
+        rp.stage(Vector((0, -3, 0)), 92, 45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 625
+    if dark:
+        rv.night()
+    rst.label("Haunted ruins: the graveyard city", ("Closer: the Crypt and its neighbours" if close else "Two rings round the Crypt") + (", night" if dark else ", day"))
+    stem = f"ruins_graveyard_{'close' if close else 'map'}{'_night' if dark else ''}"
+    rp.render(stem)
+    return os.path.join(hk.ART, "preview", f"{stem}_v{rp.next_n(stem) - 1}.png")
+
+
 def statue_shot(title, sub, build):
     """A close model shot of explorer statues on a strip of the basilisk ground, by day."""
     hk.empty_scene()
@@ -614,6 +723,38 @@ if __name__ == "__main__":
             sys.exit(0)
         rows = [[basilisk_shot(False, False), basilisk_shot(True, False)], [basilisk_shot(False, True), basilisk_shot(True, True)]]
         rst.SHEET_STEM = "ruins_basilisk_halls_sheet"
+        rst.sheet(rows)
+        sys.exit(0)
+    if "colonnade" in args:
+        rv.GLOW["basilisk_eye"] = 1.5       # preview stand-ins for the engine's glow, as basilisk_shot
+        rv.DAY_GLOW["basilisk_eye"] = 0.5
+        if "check" in args:
+            hk.empty_scene()
+            check_colonnade(build_colonnade(), rp.load_templates(rp.latest("tiles", "tiles")))
+            sys.exit(0)
+        if "quick" in args:
+            print("SHOT", colonnade_shot(False, False), colonnade_shot(True, False))
+            sys.exit(0)
+        import render_variant_study as rvs   # beside plain ruins at the comparison camera
+        cf = dict(live=build_colonnade, props=rs.colonnade_props)
+        rows = [[rvs.shot("ruins", "ruins", "Plain ruins"), rvs.shot("basilisk_ruins", "ruins", "Basilisk ruins: colonnade field", stem="study_colonnade_map", **cf), colonnade_shot(True, False)],
+                [rvs.shot("ruins", "ruins", "Plain ruins", True), rvs.shot("basilisk_ruins", "ruins", "Basilisk ruins: colonnade field", True, stem="study_colonnade_map_night", **cf), colonnade_shot(True, True)]]
+        rst.SHEET_STEM = "ruins_colonnade_sheet"
+        rst.sheet(rows)
+        sys.exit(0)
+    if "graveyard" in args:
+        if "check" in args:
+            hk.empty_scene()
+            check_graveyard(build_graveyard(), rp.load_templates(rp.latest("tiles", "tiles")))
+            sys.exit(0)
+        if "quick" in args:
+            print("SHOT", graveyard_shot(False, False), graveyard_shot(True, False))
+            sys.exit(0)
+        import render_variant_study as rvs   # beside plain ruins at the comparison camera
+        gy = dict(live=build_graveyard, props=rs.graveyard_props)
+        rows = [[rvs.shot("ruins", "ruins", "Plain ruins"), rvs.shot("haunted_ruins", "ruins", "Haunted ruins: graveyard city", stem="study_graveyard_map", **gy), graveyard_shot(True, False)],
+                [rvs.shot("ruins", "ruins", "Plain ruins", True), rvs.shot("haunted_ruins", "ruins", "Haunted ruins: graveyard city", True, stem="study_graveyard_map_night", **gy), graveyard_shot(True, True)]]
+        rst.SHEET_STEM = "ruins_graveyard_sheet"
         rst.sheet(rows)
         sys.exit(0)
     if "stockade" in args:

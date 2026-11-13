@@ -745,7 +745,7 @@ def stockade_props(world, q, r):
     return out
 
 
-# --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kit from tiles_v94) -------------------------------------
+# --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kits tiles_v94-v96, replaced by the graveyard city in tiles_v97) -------------------------------------
 # design/07 -> Region variant looks: here the base changes to stone house shells along the streets (walls with door and
 # window holes and gable ends, no roofs). By day they're bare shells; at night pale ghost houses fill them out as they once
 # stood, with ghostly roofs and lit windows (a separate piece per block, shown only at night). Tombs, wisps and mist are
@@ -955,7 +955,152 @@ def haunted_props(world, q, r, night=False):
     return out
 
 
-# --- Basilisk ruins on the halls (approved Nov 10, 2026, round 4; in the kit from tiles_v95) ------------------------------------
+# --- Haunted ruins: the graveyard city (approved Nov 12, 2026, round 1; in the kit from tiles_v97) -------------------------------------
+# design/07 -> Region variant looks: rows of tombs, mausolea and cypresses laid out as a city of the dead; wisps and low
+# mist as accents (Ethan, Nov 10, 2026, after the variant study; replaces the approved ghost town). No halls or shells:
+# each corner's block between the streets is a walled plot of dark turf with rows of headstones across it, cypresses
+# standing along its streets, and toward the corner a marble mausoleum, an obelisk among sarcophagi, or an open grave,
+# by the block's variant n. The wisps and mist are the approved pieces (haunt_wisps, haunt_mist); haunt_glow lights the
+# mausolea's doors and the open graves at night. The Crypt keeps its own look.
+
+PALETTE_GRAVE = {   # made up
+    "gy_turf": "#55684F",       # the plots' turf, darker and greyer than the halls' grass
+    "gy_stone": "#C9C7BE",      # headstones
+    "gy_stone_d": "#9E9C94",
+    "gy_cypress": "#2F4F38",    # cypresses
+    "gy_cypress_d": "#253F2D",
+}
+hk.PALETTE.update(PALETTE_GRAVE)
+ROW_XS = (2.55, 2.88, 3.21, 3.54)   # in a block's frame: the headstone rows, across the block
+STONE_STEP = 0.26                   # between headstones along a row
+PLOT_KEEP = RAISED_KEEP + 0.06      # raised things keep this far off the streets
+GRAVE_KIND = ("mausoleum", "obelisk", "open")   # what stands toward the corner, by the block's variant n
+
+
+def row_reach(x, m_lo, m_hi, keep):
+    """How far a row at x may reach either side of the block's middle line: off the streets by keep, inside the edges by m."""
+    walk = (x * S30 - keep) / C30
+    lo = ((A - m_lo) - x * C30) / S30   # the -30 degree edge: x cos30 - y sin30 <= A - m
+    hi = ((A - m_hi) - x * C30) / S30
+    return -min(walk, lo), min(walk, hi)
+
+
+def grave_stone(p, rng, at, mat):
+    """A plain headstone, a little askew; now and then a cross."""
+    rot = Matrix.Rotation(rng.uniform(-0.12, 0.12), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.1, 0.1), 3, "Y")
+    if rng.random() < 0.18:
+        p.box_rot(at + rot @ Vector((0, 0, 0.17)), (0.05, 0.05, 0.34), mat, rot)
+        p.box_rot(at + rot @ Vector((0, 0, 0.25)), (0.05, 0.2, 0.05), mat, rot)
+    else:
+        h = rng.uniform(0.18, 0.28)
+        p.box_rot(at + rot @ Vector((0, 0, h / 2)), (0.06, 0.17, h), mat, rot)
+
+
+def cypress(p, rng, at, h=None):
+    """A tall, narrow, dark cypress: a slim trunk and a tapering crown."""
+    h = h or rng.uniform(1.3, 1.75)
+    p.cylinder(at, 0.04, 0.2, "deadwood", segments=4)
+    p.cone(at, rng.uniform(0.16, 0.2), h, rng.choice(("gy_cypress", "gy_cypress", "gy_cypress_d")), segments=6, z=0.15, spin=rng.uniform(0, 1))
+
+
+def mausoleum(p, rng, at):
+    """A small marble mausoleum facing the plaza (-X): walls, a gable roof, pilasters, a dark door with light at its seam."""
+    w, d, h = 0.6, 0.55, 0.62
+    p.box(at, (d + 0.1, w + 0.1, 0.08), "ruin_grey")
+    p.box(at, (d, w, h), "ruin_marble", z=0.08)
+    p.gable_roof(at, d + 0.12, w + 0.12, 0.26, "ruin_grey", z=0.08 + h, spin=0.0)
+    front = at - Vector((d / 2, 0, 0))
+    p.box(front - Vector((0.005, 0, 0)), (0.02, 0.24, 0.42), "crypt_dark", z=0.08)
+    p.box(front - Vector((0.012, 0, 0)), (0.012, 0.025, 0.4), "haunt_glow", z=0.09)   # light at the doors' seam
+    for sd in (-1, 1):
+        p.box(front + Vector((-0.03, sd * (w / 2 - 0.05), 0)), (0.08, 0.08, h), "ruin_grey", z=0.08)
+    p.box(front - Vector((0.12, 0, 0)), (0.16, 0.34, 0.05), "ruin_grey")   # a step
+
+
+def graveyard_block(n, join):
+    """A graveyard corner, in the block frame: a turf plot between the streets (to the edge where the next tile is a ruins
+    look), a low wall along its streets, rows of headstones across it, cypresses along its sides, and toward the corner a
+    mausoleum, an obelisk among sarcophagi, or an open grave glowing, by n."""
+    seed = f"gy_block_{n}_{join}"
+
+    def build(p, rng):
+        rng = hk.seeded(seed)
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        m = margins(joins)
+        plot = kite(FLAT_KEEP + 0.15, m["lo"], m["hi"], x0=2.3)
+        if plot:
+            rl.plate(p, plot, 0.012, "gy_turf")
+        wall = rng.choice(WALLS)
+        for sd in (-1, 1):   # the low wall along each street side, PLOT_KEEP in from its walk, broken in places
+            a = math.radians(30 * sd)
+            along = Vector((math.cos(a), math.sin(a), 0))
+            inward = Vector((S30, -sd * C30, 0))
+            t, t1 = 2.45, A - (0.1 if joins["hi" if sd == 1 else "lo"] else 0.6) - 0.05
+            while t < t1 - 0.2:
+                seg = min(rng.uniform(0.45, 0.8), t1 - t)
+                p.box(along * (t + seg / 2) + inward * PLOT_KEEP, (seg, 0.1, rng.uniform(0.16, 0.24)), wall, spin=a)
+                t += seg + rng.uniform(0.12, 0.3)
+        kind = GRAVE_KIND[n]
+        last = 3.6 if kind == "mausoleum" else 3.9
+        for x in ROW_XS:   # the rows of headstones
+            if x > last:
+                continue
+            lo, hi = row_reach(x, m["lo"] + 0.15, m["hi"] + 0.15, PLOT_KEEP + 0.12)
+            k = int((hi - lo) / STONE_STEP)
+            for i in range(k + 1):
+                y = lo + (hi - lo) * (i / k if k else 0.5)
+                if rng.random() < 0.88:
+                    grave_stone(p, rng, Vector((x + rng.uniform(-0.02, 0.02), y, 0)), rng.choice(("gy_stone", "gy_stone", "gy_stone_d")))
+        for x in (2.42, 3.38):   # cypresses at the rows' ends, along the streets
+            lo, hi = row_reach(x, m["lo"] + 0.2, m["hi"] + 0.2, PLOT_KEEP + 0.2)
+            for y in (lo, hi):
+                if rng.random() < 0.85:
+                    cypress(p, rng, Vector((x, y, 0)))
+        if kind == "mausoleum":
+            mausoleum(p, rng, Vector((3.86, 0, 0)))
+            cypress(p, rng, Vector((4.0, 0.42, 0)), 1.5)
+        elif kind == "obelisk":
+            p.box(Vector((3.95, 0, 0)), (0.26, 0.26, 0.14), "ruin_grey")
+            p.cone(Vector((3.95, 0, 0)), 0.12, 1.25, "ruin_marble", segments=4, z=0.14, spin=0.78)
+            for y in (-0.38, 0.38):   # sarcophagi either side
+                p.box(Vector((3.75, y, 0)), (0.4, 0.2, 0.2), rng.choice(("ruin_marble", "ruin_grey")), spin=rng.uniform(-0.1, 0.1))
+                p.box(Vector((3.75, y, 0)), (0.44, 0.24, 0.04), "ruin_grey", z=0.2)
+        else:   # an open grave glowing, its slab leant up, a cypress behind
+            c = Vector((3.9, 0, 0))
+            rl.plate(p, [c + Vector((x, y, 0)) for x, y in ((-0.32, -0.16), (0.32, -0.16), (0.32, 0.16), (-0.32, 0.16))], 0.02, "crypt_dark")
+            rl.plate(p, [c + Vector((x, y, 0)) for x, y in ((-0.22, -0.08), (0.22, -0.08), (0.22, 0.08), (-0.22, 0.08))], 0.022, "haunt_glow")
+            p.box_rot(c + Vector((0.0, 0.24, 0.1)), (0.62, 0.06, 0.3), "ruin_grey", Matrix.Rotation(0.4, 3, "X"))
+            grave_stone(p, rng, c + Vector((0.36, 0, 0)), "gy_stone_d")
+    return build
+
+
+def graveyard_pieces():
+    return {f"graveyard_{n}_{j}": graveyard_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+
+
+GRAVE_WISP_AT = Vector((3.2, 0, 0))   # wisps over a corner's rows
+
+
+def graveyard_props(world, q, r):
+    """(piece, x, y, spin) for a graveyard tile: a plot at every corner (variant and joins as the halls'), wisps over two or
+    three of them and one or two mists (the ghost town's hashes, 55-60)."""
+    out, corners = [], []
+    for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
+        out.append((f"graveyard_{piece[len('ruin_hall_'):]}", x, y, spin))
+        corners.append((c, spin))
+    count = 3 if gc.hash01(q, r, 57) < 0.4 else 2
+    for c, spin in sorted(corners, key=lambda t: gc.hash01(q * 6 + t[0], r, 56))[:count]:
+        at = GRAVE_WISP_AT.copy()
+        at.rotate(Matrix.Rotation(spin, 3, "Z"))
+        out.append(("haunt_wisps", at.x, at.y, 6.283 * gc.hash01(q * 6 + c, r, 55)))
+    for k in range(2 if gc.hash01(q, r, 58) < 0.5 else 1):
+        a = 6.283 * gc.hash01(q * 2 + k, r, 59)
+        d = 1.2 + 1.0 * gc.hash01(q * 2 + k, r, 60)
+        out.append(("haunt_mist", d * math.cos(a), d * math.sin(a), a))
+    return out
+
+
+# --- Basilisk ruins on the halls (approved Nov 10, 2026, round 4; in the kits tiles_v95-v97, replaced by the colonnade field in tiles_v98; its helpers, parties and the Nest stay in use) ------------------------------------
 # design/07 -> Region variant looks: grass, bushes and trees turned to grey stone, with grey stone explorers frozen
 # mid-stride or mid-flight among them, some crumbling. The plain halls, stone for stone, recoloured: their grass floors,
 # yards and moss gone to grey stone; in each hall a stone tree and bushes, and stone explorers on the yard before it,
@@ -1220,6 +1365,115 @@ def basilisknest(p, rng, kind):
     p.paths.append(ring + [ring[0]])
     for i, q in enumerate(ring):
         p.spokes[i] = [q / NEST_RING * A, q]
+
+
+# --- Basilisk ruins: the colonnade field (approved Nov 12, 2026, round 1; in the kit from tiles_v98) -------------------------------------
+# design/07 -> Region variant looks: rows of tall columns with the approved statue parties (full stone and half turned)
+# among them; grey stone, bright orange and yellow lichen (Ethan, Nov 10, 2026, after the variant study; replaces the
+# approved stone halls). No halls: each corner's block between the streets is a grey stone floor holding a grid of tall
+# columns in rows across the block, some joined by lintels, some snapped to stumps with their drums lying beside them, a
+# stone bush or two in the gaps. A party (basilisk_ruins' PARTIES, same chance and cap) stands in a gap left in the grid.
+# The Basilisk Nest keeps its own look.
+
+COL_XS = (2.5, 3.05, 3.6, 4.15)   # in a block's frame: the rows of columns, across the block
+COL_STEP = 0.55                   # between columns along a row (the grid lines up on the block's middle line)
+COL_R = 0.11                      # a shaft's radius
+COL_KEEP = PLOT_KEEP + 0.16       # columns keep this far off the streets (their plinths and capitals too)
+COL_KIND = (                      # by the block's variant n: (share snapped to stumps, lintel chance, height)
+    (0.15, 0.75, 2.0),            # 0 grand: mostly standing, many lintels, tallest
+    (0.4, 0.45, 1.8),             # 1 fallen: many stumps and drums
+    (0.25, 0.6, 1.9),             # 2 between
+)
+COL_PARTY_GAP = 0.6               # no column this near PARTY_AT on a block with a party
+
+
+def shaft(p, at, h, mat, z=0.0):
+    """A column shaft with no end caps (its plinth and capital hide them)."""
+    m = Matrix.Translation(at + Vector((0, 0, z + h / 2)))
+    r = bmesh.ops.create_cone(p.bm, cap_ends=False, cap_tris=False, segments=6, radius1=COL_R, radius2=COL_R * 0.88, depth=h, matrix=m)
+    p._paint(r["verts"], mat)
+
+
+def column(p, rng, at, h, stump=False):
+    """A tall column: square plinth, a tapering shaft, a square capital; snapped, a stump with a jagged top."""
+    before = set(p.bm.faces)
+    stone = rng.choice(PETRIFIED)
+    p.box(at, (0.3, 0.3, 0.08), "bs_stone_d")
+    if stump:
+        sh = rng.uniform(0.35, 1.1)
+        p.cylinder(at, COL_R, sh, stone, z=0.08)
+        p.box_rot(at + Vector((0, 0, 0.08 + sh)), (0.16, 0.13, 0.1), stone,
+                  Matrix.Rotation(rng.uniform(-0.5, 0.5), 3, "X") @ Matrix.Rotation(rng.uniform(0, 1.5), 3, "Z"))
+    else:
+        shaft(p, at, h - 0.18, stone, z=0.08)
+        p.box(at, (0.32, 0.32, 0.1), "bs_stone_l", z=h - 0.1)
+    for f in new_faces(p, before):   # lichen on the plinths' and capitals' tops and the stumps' breaks, not up the shafts
+        if f.is_valid and f.normal.z > 0.5 and rng.random() < 0.22:
+            f.material_index = p._slot(rng.choice(LICHEN))
+
+
+def colonnade_block(n, join, with_party=False):
+    """A colonnade corner, in the block frame: a stone floor between the streets (to the edge where the next tile is a
+    ruins look), rows of tall columns across it on a grid, lintels joining neighbours in a row, stumps with fallen drums,
+    a stone bush or two in the gaps, and with_party a party in a gap before the corner."""
+    seed = f"cf_block_{n}_{join}"
+
+    def build(p, rng):
+        rng = hk.seeded(seed)
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        m = margins(joins)
+        floor = kite(FLAT_KEEP + 0.15, m["lo"], m["hi"], x0=2.2)
+        if floor:
+            rl.plate(p, floor, 0.012, "bs_floor")
+        broken, lintel, h = COL_KIND[n]
+        h += rng.uniform(-0.05, 0.05)
+        gaps = []
+        for x in COL_XS:
+            lo, hi = row_reach(x, m["lo"] + 0.2, m["hi"] + 0.2, COL_KEEP)
+            row = []
+            for k in range(math.ceil(lo / COL_STEP), math.floor(hi / COL_STEP) + 1):
+                at = Vector((x, k * COL_STEP, 0))
+                if with_party and (at - PARTY_AT).length < COL_PARTY_GAP:
+                    continue
+                if rng.random() < 0.1:   # a gap: a stone bush, or bare floor
+                    gaps.append(at)
+                    row.append(None)
+                    continue
+                stump = rng.random() < broken
+                column(p, rng, at, h, stump)
+                row.append(None if stump else at)
+                if stump and rng.random() < 0.6:   # its fallen drums, lying along the row toward the plaza
+                    for d in range(rng.choice((1, 2))):
+                        p.log(at + Vector((-0.24 - 0.26 * d, rng.uniform(-0.06, 0.06), 0)), COL_R, 0.22, rng.choice(PETRIFIED),
+                              spin=rng.uniform(-0.4, 0.4), segments=6)
+            for a, b in zip(row, row[1:]):   # lintels across neighbours still standing
+                if a and b and rng.random() < lintel:
+                    before = set(p.bm.faces)
+                    p.box((a + b) / 2, (0.22, COL_STEP + 0.3, 0.13), "bs_stone", z=h)
+                    lichen(p, rng, new_faces(p, before), 0.15)
+        for at in gaps[:2]:
+            stone_bush(p, rng, at)
+        if with_party:
+            party(p, hk.seeded(seed + "party"), PARTY_AT, 0.0, ("stand", "shield", "flight")[n])
+    return build
+
+
+def colonnade_pieces():
+    out = {f"colonnade_{n}_{j}": colonnade_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+    out.update({f"colonnade_party_{n}_{j}": colonnade_block(n, j, True) for n in range(VARIANTS_PER_TAKE) for j in JOINS})
+    return out
+
+
+def colonnade_props(world, q, r):
+    """(piece, x, y, spin) for a colonnade tile: a column grid at every corner (variant and joins as the halls'); a corner
+    with hash 61 under PARTY_CHANCE has a party, at most PARTY_MOST a tile (basilisk_props' rule)."""
+    out, parties = [], 0
+    for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
+        kind = "colonnade"
+        if parties < PARTY_MOST and gc.hash01(q * 6 + c, r, 61) < PARTY_CHANCE:
+            kind, parties = "colonnade_party", parties + 1
+        out.append((f"{kind}_{piece[len('ruin_hall_'):]}", x, y, spin))
+    return out
 
 
 # --- Trapped vault: sunken courts (round 2, not approved) ------------------------------------

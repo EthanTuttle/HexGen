@@ -576,6 +576,8 @@ Overlap to watch: Mass Heal and Holy Sanctum are steady healing, close to the Mu
 | Tier 2 | Harvest: foes in an area lose HP, split among allies as healing (foes only) | Drain | 3 | Each target's CON save |
 | Tier 2 | Doom: heavy damage at the end of the foe's next turn unless it's cleansed first | Curse | 3 | Target's CON save |
 
+**Cleric level-1 placeholders** (Ethan, Nov 12, 2026, for the first playable, until the balance pass; the Wizard's pattern): spell damage uses WIS, as the Wizard's uses INT; heals = WIS + 2; spell range 5. Conditions whose length the docs don't give (frightened, harder to hit, Bane's curse and the like) last until the target's next turn ends, like the breath weapon's riders. Chelmsford moves to these numbers too. Every god's early spell works in the first playable, so any god is a real pick.
+
 **God spells**
 
 Each of the eight gods has 2 spells, an early one and a later one. The early spell is granted free; the later one joins the pick pool. A stronger bond with the god unlocks or strengthens god spells. Holy Defender fighters get the same god spells: the early one free, and the later one locked behind meditations that strengthen their bond with the god (which is why they need Meditation Rock; see Half-classes).
@@ -612,6 +614,8 @@ Checked against the rebuilt orders (Oct 26, 2026): Moonveil was defined so it no
 | Level 3 | Retell: an ally repeats their last action | 2 | No save |
 | After level 5 | The End: a badly hurt foe is narrated out of the fight | 3 | Target's CHA save |
 | After level 5 | Epic Saga: every ally gains a buff while the tale is sustained (concentration) | 3 | No save |
+
+**Bard level-1 placeholders** (Ethan, Nov 12, 2026, for the first playable, until the balance pass; the Wizard's pattern): spell damage uses CHA; heals and temporary HP = CHA + 2; spell range 5. Conditions whose length the docs don't give (mesmerized, an extra coin, frozen in suspense and the like) last until the target's next turn ends.
 
 Retell can repeat an ally's expensive action at a discount. This may be a deliberate design element that rewards tricky play; check it in the balance pass.
 
@@ -683,7 +687,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [x] ~~Which companion chimes in when several are proficient, and how it combines with Silver Tongue~~ (settled Oct 28, 2026: highest score, then party order; Silver Tongue's reflip first, automatically; see Checks outside combat)
 - [x] ~~Each story companion's 2 proficiencies~~ (settled Oct 28, 2026: [World & story](01 World & story.md) → Companion proficiencies). Still open: the coins and heads needed per dialogue check
 - [x] ~~Each background's short list of proficiencies~~ (settled Oct 30, 2026: see [World & story](01 World & story.md) → Backgrounds)
-- [ ] **New (Oct 28, 2026):** the College's skill list, since a Bard hero needs one to pick their class proficiency (05 Cards & progression → Class locations only says "learn flourishes (skills)"); the character creator mockup shows "[Bard proficiency]"
+- [x] ~~The College's skill list~~ (settled Nov 12, 2026: Persuade, Deceive, Intimidate, Lore; see [Cards & progression](05 Cards & progression.md) → Class locations)
 - [ ] **New:** can a failed social check be retried in the same conversation? (Social encounter v1 uses each option once)
 - [ ] Class and subclass cards at level 15 and later (level 15 in progress, Oct 22, 2026)
 - [ ] **New:** names for the class location upgrades at levels 10 and 20 (Training Grounds, Thieves Guild, Tree of Life) under the upgrade-name rule (weapon mastery nodes: named Oct 26, 2026)

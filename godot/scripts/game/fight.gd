@@ -355,7 +355,9 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			# Strike; on foes: taunted by, Holy Brand, Curse of Frailty and of Ruin, drowsy, Exposing Disarm, Marrowbreaker
 			rage = -1, sidestep = -1, arcane_shield = false, bring_it = false, stakes = false, flowing = false, opened = false,
 			taunt = {}, taunt_until = -1, branded = false, frail = -1, ruin = -1, drowsy = -1, exposed = false, marrow = false,
-			taunts = m.get("taunt", false), temp = 0, riposte = false}
+			taunts = m.get("taunt", false), temp = 0, riposte = false,
+			# Cleric and Bard level 1 (03): Dread, Dazzle, Bane, Hex on foes; Shield of Faith, Moonveil and Blade Twirl's move on allies
+			fear = -1, dazzled = -1, bane = -1, hexed = -1, faith = -1, veil = -1, twirl = false}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -393,6 +395,8 @@ func spent(u: Dictionary, c: Dictionary) -> bool:
 ## Why u can't use card c right now, or "" (Combat v14's notes under the button).
 ## What a card costs u now: Quick Slash is free right after a shortsword hit, and moving Hunter's Mark off a downed foe is free (04, 03).
 func ap_cost(u: Dictionary, c: Dictionary) -> int:
+	if c.id == "move" and u.get("twirl", false):
+		return 0   # Blade Twirl's free short move (03)
 	if c.id == "quick_slash" and u.quick_ready:
 		return 0
 	if c.id == "hunters_mark" and not u.mark.is_empty() and u.mark.down:
@@ -475,6 +479,7 @@ func ally_in_reach(u: Dictionary, a: Dictionary, c: Dictionary) -> bool:
 func _pay(u: Dictionary, c: Dictionary) -> void:
 	var cost := ap_cost(u, c)
 	var free_mark: bool = c.id == "hunters_mark" and cost == 0
+	u.twirl = false   # Blade Twirl's move is right after its attack, or not at all
 	if c.id != "quick_slash":
 		u.quick_ready = false   # "right after" a shortsword hit
 	var from_bonus := mini(u.bonus, cost)     # bonus AP is spent first (DOCS)
@@ -550,7 +555,8 @@ func step_cost(u: Dictionary, a: Vector2i, b: Vector2i) -> int:
 		return 1 if _open(b) else -1
 	if not _open(b) or absf(rise) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
 		return -1
-	return 1 + (Rules.UPHILL_COST if rise >= Rules.UPHILL_RISE - Rules.HEIGHT_SLACK else 0)
+	var thorns: int = Rules.THORN_COST if not u.get("ally", true) and circles.values().any(func(z): return z.zone == "thorns" and b in z.cells) else 0
+	return 1 + thorns + (Rules.UPHILL_COST if rise >= Rules.UPHILL_RISE - Rules.HEIGHT_SLACK else 0)
 
 
 ## Cells within one Move of u, with the path to each (DOCS: rocks and minis block, trees don't).
@@ -621,6 +627,8 @@ func move_hexes(u: Dictionary) -> int:
 	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally and not Rules.old("move") else 0
 	if on(u, "snared"):
 		return 0   # rooted: Snare, Pinning Bolt
+	if u.get("twirl", false):
+		return Rules.TWIRL_HEXES   # Blade Twirl's free move
 	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) + (Progression.move_bonus(u.member) if u.ally else 0) - (u.slow_hexes if on(u, "slowed") else 0), 0)
 
 
@@ -814,7 +822,7 @@ func _show_overlays() -> void:
 			for cell in arc_cells(current, cell_target):
 				_overlay(cell, "target")
 	if c.kind == "cell" and not busy:
-		var ring: Array = circle_cells(cell_target) if c.get("effect", "") == "circle" and cell_target != null else []
+		var ring: Array = circle_cells(cell_target) if c.get("effect", "") in ["circle", "zone"] and cell_target != null else []
 		for cell in cell_options(current, c):
 			_overlay(cell, "target" if cell == cell_target or cell in ring else "move")
 	_overlay(current.cell, "active")
@@ -1015,6 +1023,10 @@ func press_button() -> void:
 					_summon(current, cell_target, k)
 				"circle":
 					_circle(current, cell_target)
+				"zone":
+					_circle(current, cell_target, k)
+				"sleight":
+					await _sleight(current, cell_target, k)
 				"phantom":
 					_phantom(current, cell_target)
 				_:
@@ -1067,6 +1079,16 @@ func attack_mods(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
 		out.append({n = Rules.OPENING_COINS, icon = "opening", why = "opening"})   # the first attack each fight (05)
 	if on(a, "drowsy"):
 		out.append({n = -1, icon = "drowsy", why = "drowsy"})   # Sleeping Draught (03)
+	if on(a, "fear"):
+		out.append({n = -Rules.FEAR_COINS, icon = "fear", why = "fear"})   # Dread: its next attack (03)
+	if on(a, "dazzled"):
+		out.append({n = -Rules.FEAR_COINS, icon = "dazzled", why = "dazzled"})   # Dazzle (03)
+	if on(a, "bane"):
+		out.append({n = -Rules.FEAR_COINS, icon = "bane", why = "bane"})   # Bane: its next check (03)
+	if a.ally and units.any(func(o): return o.ally and not o.down and o.conc.get("id", "") == "epic_saga"):
+		out.append({n = Rules.SAGA_COINS, icon = "saga", why = "saga"})   # Epic Saga (03)
+	if sustained("rousing_tune", a):
+		out.append({n = Rules.TUNE_COINS, icon = "tune", why = "tune"})   # Rousing Tune (03)
 	if t.is_empty():
 		return out
 	if on(t, "glow"):
@@ -1075,6 +1097,12 @@ func attack_mods(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
 		out.append({n = 1, icon = "acid", why = "acid"})
 	if on(t, "frail"):
 		out.append({n = Rules.FRAILTY_COINS, icon = "frail", why = "frail"})   # Curse of Frailty (03)
+	if on(t, "faith"):
+		out.append({n = -Rules.FAITH_COINS, icon = "faith", why = "faith"})   # Shield of Faith (03)
+	if on(t, "veil"):
+		out.append({n = -Rules.MOONVEIL_COINS, icon = "veil", why = "veil"})   # Moonveil (03)
+	if not t.ally and in_zone(t, "sun"):
+		out.append({n = Rules.SUNSPOT_COINS, icon = "sun", why = "sun"})   # Sunspot (03)
 	if t.disarmed and t.exposed:
 		out.append({n = Rules.EXPOSED_COINS, icon = "exposed", why = "exposed"})   # Exposing Disarm (04)
 	if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
@@ -1098,7 +1126,11 @@ func close_shot(a: Dictionary, k: Dictionary) -> bool:
 ## A save's coins: a foe's set number, or an ally's own score in the save's ability. Saves ignore cover (03 -> Cover,
 ## Ethan, Nov 7, 2026).
 func save_coins(t: Dictionary, ability: String) -> int:
-	return Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
+	var n: int = Races.score(t.member, ability) if t.ally else Rules.ENEMY_SAVE_COINS
+	if on(t, "bane"):   # Bane: one fewer coin on its next check, then it's spent (03)
+		t.bane = -1
+		n = maxi(n - Rules.FEAR_COINS, 0)
+	return n
 
 
 ## A flip of n coins needing `need` heads, as coins and the heads they need. Fewer coins than heads: the long shot (DOCS:
@@ -1195,6 +1227,8 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 	var mods := attack_mods(a, t, k)   # shown as coins in the flip
 	var long_shot: bool = attack_coins(a, t, k) < heads_needed(t, a, k)
 	a.blessed = false
+	a.fear = -1   # Dread and Bane: the next attack or check only (03)
+	a.bane = -1
 	var need: int = check.need
 	var shown: Array[bool] = await hud.flip_coins(a, check.coins, need, Rules.COIN_STEP if a.ally else Rules.COIN_STEP_FOE,
 			mods, long_shot)
@@ -1216,6 +1250,8 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		if k.id == "quick_slash" and a.quick_ready:
 			dmg -= Rules.QUICK_SLASH_LESS
 		dmg += _level_damage(a, t, k)
+		if k.id == "searing_touch" and t.get("member", {}).get("undead", false):
+			dmg += Rules.UNDEAD_MORE   # bonus vs undead (03); no foe is undead yet
 		if a.ally and not a.mark.is_empty() and a.mark == t:
 			dmg += Rules.MARK_DAMAGE   # Hunter's Mark (03)
 		if t.guard:
@@ -1276,6 +1312,8 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
 	if hit and a.ally and weapon_attack(k) and a.weapon == "shortsword" and k.id != "quick_slash":
 		a.quick_ready = true
+	if k.get("effect", "") == "twirl":
+		a.twirl = true   # Blade Twirl: a free short move after the attack, hit or miss (03)
 	return {hit = hit, dmg = dmg}
 
 
@@ -1284,6 +1322,15 @@ func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: i
 	hud.float_text(t, "-%d" % dmg if hit else "Miss", hit)
 	if hit:
 		await _hurt(t, dmg)
+		if on(t, "hexed") and not a.down and a.hp < a.max_hp:   # Hex: a hit on the hexed foe heals the attacker (03)
+			var was: int = a.hp
+			a.hp = mini(a.max_hp, a.hp + Rules.HEX_HEAL)
+			hud.float_text(a, "+%d" % (a.hp - was), false, true)
+		if k.get("effect", "") == "rally" and a.ally:   # Rallying Strike: an ally gains temporary HP (03)
+			var ally := _rally_target(a)
+			if not ally.is_empty():
+				ally.temp = maxi(ally.temp, spell_heal(a, "CHA"))
+				hud.float_text(ally, "+%d" % ally.temp, false, true)
 		if k.get("rider", "") == "push" and (Rules.old("bash") or Rules.bash() == "stun"):
 			t.lost_ap = Rules.AP   # test aid: Shield Bash's old stun
 		elif k.get("rider", "") == "push":
@@ -1332,6 +1379,8 @@ func _level_damage(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
 			n += Rules.HEAVY_HITTER
 		if not a.mark.is_empty() and a.mark == t and Progression.sub(m) == "Hunter" and String(t.member.get("mini", "")).begins_with("giant_"):
 			n += Rules.TROPHY_MORE   # Trophy Mark: more against large foes (03)
+	if a.ally and units.any(func(o): return o.ally and not o.down and o.conc.get("id", "") == "battle_hymn" and dist(o, a) <= Rules.NEARBY):
+		n += Rules.BATTLE_HYMN_MORE   # Battle Hymn (03)
 	if on(a, "rage"):
 		n += Rules.RAGE_MORE
 	if on(t, "rage"):
@@ -1353,6 +1402,8 @@ func _level_reduction(a: Dictionary, t: Dictionary) -> int:
 		n += Rules.BRING_IT_LESS
 	if t.ally and allies().any(func(o): return o != t and o.defending and dist(o, t) == 1 and Progression.feat(o.member) == "drilled"):
 		n += Rules.DRILLED_LESS
+	if t.ally and allies().any(func(o): return o != t and not o.down and o.conc.get("id", "") == "hold_the_line" and dist(o, t) == 1):
+		n += Rules.HOLD_LINE_LESS   # Hold the Line (03)
 	return n
 
 
@@ -1435,7 +1486,7 @@ func motion_kind(a: Dictionary, t: Dictionary, k: Dictionary) -> String:
 
 ## Whether a hits with this card's weapon (the basic attack, weapon cards, Sneak Attack).
 static func weapon_attack(k: Dictionary) -> bool:
-	return k.id in ["attack", "sneak_attack"] or k.src == "weapon"
+	return k.id in ["attack", "sneak_attack"] or k.src == "weapon" or k.get("weapon_reach", false)   # Divine Smite, Blade Twirl, Rallying Strike (03)
 
 
 ## Sneak Attack's bonus applies (03): the foe is flanked or unaware of the Rogue (03 -> Ambush).
@@ -1462,6 +1513,9 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	if k.get("effect", "") in ["burst", "chain"]:
 		await _save_area(a, _spell_targets(a, t, k), k)
 		return
+	if k.get("effect", "") == "macabre":   # foes only (03)
+		await _save_area(a, foes_of(a).filter(func(o): return Rules.hex_distance(o.cell, t.cell) <= k.radius), k)
+		return
 	busy = true
 	refresh()
 	var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
@@ -1476,12 +1530,12 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 				t.glow = phase_no + 1   # until the caster's next turn
 			elif not saved:
 				t.lull = true
-		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str":
+		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str", "fear", "dazzle", "bane", "hex", "heat", "cliffhanger", "the_end":
 			result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
 			hud.refresh()
 			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look: the save curses and riders have no motion of their own yet
 			if not saved:
-				_save_rider(a, t, k)
+				await _save_rider(a, t, k)
 		_:
 			var full := _spell_damage(a, t, k)
 			var dmg: int = full / 2 if saved else full
@@ -1503,9 +1557,12 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 ## card's bonus), Psychic Spike more on a foe unaware of you, Toll the Dead more on a hurt foe; the rest Sacred Flame's.
 func _spell_damage(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
 	var n: int = Rules.SPELL_DAMAGE
-	if k.get("ab", "") == "INT":
-		n = Races.score(a.member, "INT") + k.get("bonus", 0) + Rules.SPELL3_DAMAGE
+	if k.has("ab"):   # the caster's score: INT, WIS or CHA (03 -> Wizard, Cleric and Bard level-1 placeholders)
+		n = (Races.score(a.member, k.ab) if a.ally else a.score) + k.get("bonus", 0) + Rules.SPELL3_DAMAGE
 	match k.get("effect", ""):
+		"shadow":
+			if night:
+				n += Rules.SHADOW_DARK   # Shadow Bolt: more on a foe in darkness (03); natural night only so far
 		"psychic":
 			if not t.is_empty() and a.name in t.unaware:
 				n += Rules.PSYCHIC_UNAWARE
@@ -1536,6 +1593,23 @@ func _save_rider(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 				t.disarmed = true
 		"siphon_str":   # PLACEHOLDER: only the foe's loss; the ally's gain isn't built
 			t.score = maxi(t.score - Rules.SIPHON_STR, 0)
+		"cliffhanger":
+			t.lost_ap = maxi(t.lost_ap, Rules.CLIFFHANGER_AP)
+		"the_end":   # PLACEHOLDER: "badly hurt" is below half HP; a foe at half or more is untouched
+			if t.hp * 2 < t.max_hp:
+				hud.float_text(t, "-%d" % t.hp, true)
+				await _hurt(t, t.hp)
+		"fear":
+			t.fear = _until_next_turn_of(t)
+		"dazzle":
+			t.dazzled = _until_next_turn_of(t)
+		"bane":
+			t.bane = _until_next_turn_of(t)
+		"hex":
+			t.hexed = _until_next_turn_of(t)
+		"heat":   # concentration: it burns at the start of each of its turns while the caster keeps it going (03)
+			_concentrate(a, k)
+			a.conc.target = t
 
 
 ## Who an area or chain spell reaches (03): Flame Burst and Fireball everyone within their radius of the target, allies
@@ -1572,6 +1646,14 @@ func _save_area(a: Dictionary, targets: Array, k: Dictionary) -> void:
 			if not saved:
 				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 			continue
+		if k.get("effect", "") in ["macabre", "captivate"]:
+			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look
+			if not saved and k.effect == "macabre":
+				t.lost_ap = Rules.AP   # Dance Macabre: it can't act on its next turn (PLACEHOLDER length)
+			elif not saved:
+				t.taunt = a   # Captivate: it must attack the Bard until its next turn ends (03)
+				t.taunt_until = _until_next_turn_of(t)
+			continue
 		var full: int = maxi(_spell_damage(a, t, k) - k.get("weaken", 0) * i, 0)
 		var dmg: int = full / 2 if saved else full
 		await board.bloom(a.mini, t.mini, "flame", saved)
@@ -1590,7 +1672,7 @@ func _ally_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	match k.effect:
 		"heal", "mend":
 			var before: int = t.hp
-			var amount: int = Rules.HEAL
+			var amount: int = spell_heal(a, k.ab) if k.has("ab") else Rules.HEAL   # Healing Word, Soothing Melody: the score + 2 (03)
 			if k.effect == "mend":   # Ember Mend: more below half HP
 				amount = Rules.EMBER_MEND_LOW if t.hp * 2 < t.max_hp else Rules.EMBER_MEND
 			t.hp = mini(t.max_hp, t.hp + amount)
@@ -1603,6 +1685,20 @@ func _ally_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 			result = {coins = [], title = "Used", good = true, sub = ""}
 		"stone_skin":
 			t.defending = true   # PLACEHOLDER (03: "less damage this turn"): as Defend
+			result = {coins = [], title = "Used", good = true, sub = ""}
+		"temp":   # Heroic Tale: temporary HP, the score + 2; a new one doesn't stack on the old (PLACEHOLDER)
+			t.temp = maxi(t.temp, spell_heal(a, k.ab))
+			hud.float_text(t, "+%d" % t.temp, false, true)
+			result = {coins = [], title = "Used", good = true, sub = ""}
+		"faith":
+			t.faith = _until_next_turn_of(t)
+			result = {coins = [], title = "Used", good = true, sub = ""}
+		"veil":
+			t.veil = _until_next_turn_of(t)
+			result = {coins = [], title = "Used", good = true, sub = ""}
+		"tune":   # concentration (03)
+			_concentrate(a, k)
+			a.conc.target = t
 			result = {coins = [], title = "Used", good = true, sub = ""}
 		_:
 			t.blessed = true
@@ -1625,6 +1721,29 @@ func _swap(a: Dictionary, t: Dictionary) -> void:
 	busy = false
 	refresh()
 	_check_end()
+
+
+## Sleight: swap places with whoever stands on c; a foe gets a CHA save (03).
+func _sleight(a: Dictionary, c: Vector2i, k: Dictionary) -> void:
+	var t := unit_at(c)
+	cell_target = null
+	if t.is_empty():
+		return
+	if not t.ally:
+		busy = true
+		refresh()
+		var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
+		var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
+		var saved: bool = Coins.heads(check.coins) >= check.need
+		result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
+		busy = false
+		if saved:
+			self_done = k.id
+			refresh()
+			return
+	await _swap(a, t)
+	self_done = k.id
+	result = {coins = [], title = "Used", good = true, sub = ""} if t.ally else result
 
 
 func _use_self(a: Dictionary, k: Dictionary) -> void:
@@ -1708,6 +1827,29 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 					var before: int = o.hp
 					o.hp = mini(o.max_hp, o.hp + (Rules.HEAL if k.effect == "mass_heal" else Rules.PLENTY_HEAL))
 					hud.float_text(o, "+%d" % (o.hp - before), false, true)
+		"battle_hymn", "hold_line", "saga":   # concentration (03)
+			_concentrate(a, k)
+		"captivate":
+			await _save_area(a, foes_of(a).filter(func(e): return dist(e, a) <= Rules.NEARBY), k)
+		"whirlwind":   # a weapon attack on each adjacent foe (03)
+			for e in foes_of(a).filter(func(e): return dist(e, a) == 1):
+				if not a.down and not e.down:
+					await _one_attack(a, e, Cards.get_card("attack", a.weapon))
+		"requiem":
+			await _save_area(a, foes_of(a), k)
+		"song_of_rest":
+			for o in allies():
+				if not o.down and o.decoy == "":
+					var was: int = o.hp
+					o.hp = mini(o.max_hp, o.hp + spell_heal(a, "CHA"))
+					hud.float_text(o, "+%d" % (o.hp - was), false, true)
+		"last_stand":
+			for o in allies():
+				o.stand = phase_no + 1   # through the foes' phase
+		"hymn", "war_cry":   # nearby allies, the caster too, flip an extra coin on their next attack (03)
+			for o in allies():
+				if not o.down and o.decoy == "" and dist(o, a) <= Rules.NEARBY:
+					o.blessed = true
 		"purify":
 			for o in allies():
 				o.poison = []
@@ -1801,7 +1943,13 @@ func cell_options(u: Dictionary, k: Dictionary) -> Array[Vector2i]:
 				if Rules.hex_distance(c, u.cell) in range(1, k.range + 1) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty():
 					out.append(c)
 			return out
-		"circle":   # Warding Circle's middle hex, within 5 (03)
+		"sleight":   # Sleight: anyone else within range (03)
+			var out: Array[Vector2i] = []
+			for o: Dictionary in units:
+				if o != u and not o.down and o.decoy == "" and o.foot.size() == 1 and dist(o, u) <= k.range:
+					out.append(o.cell)
+			return out
+		"circle", "zone":   # Warding Circle's middle hex, within 5 (03); Sunspot and Thorn Patch the same
 			var out: Array[Vector2i] = []
 			for c: Vector2i in grid:
 				if Rules.hex_distance(c, u.cell) <= k.range and grid[c].kind != "blocked":
@@ -2064,6 +2212,8 @@ func _hurt(t: Dictionary, dmg: int) -> void:
 	Ambush.noticed(t, _acting)
 	if dmg > 0:
 		t.lull = false   # any damage wakes it, poison, bleed and lava too (Ethan, Nov 5, 2026)
+	if t.ally and t.get("stand", -1) >= phase_no and t.hp > 0:
+		dmg = mini(dmg, t.hp - 1)   # Last Stand: can't drop below 1 HP this turn (03)
 	t.hp -= dmg
 	if t.hp <= 0 and not t.down:
 		t.down = true
@@ -2112,6 +2262,7 @@ func _check_end() -> void:
 ## At the start of a unit's turn: poison and bleed tick (1 damage, for 2 turns), and a wood golem's Regrowth heals.
 func _turn_starts(u: Dictionary) -> void:
 	u.backstabbed = false
+	u.twirl = false
 	u.arcane_shield = false   # Arcane Shield and Bring It last until your next turn (03)
 	u.bring_it = false
 	u.flowing = false
@@ -2124,6 +2275,9 @@ func _turn_starts(u: Dictionary) -> void:
 		u.poison = u.poison.map(func(n): return n - 1).filter(func(n): return n > 0)
 		hud.float_text(u, "-%d" % dmg, true)
 		await _hurt(u, dmg)
+	if not u.down and sustained("heat_metal", u):   # Heat Metal burns while the caster keeps it going (03)
+		hud.float_text(u, "-%d" % Rules.HEAT_DAMAGE, true)
+		await _hurt(u, Rules.HEAT_DAMAGE)
 	if u.bleed_turns > 0 and not u.down:
 		u.bleed_turns -= 1
 		hud.float_text(u, "-%d" % Rules.DOT_DAMAGE, true)
@@ -2298,14 +2452,40 @@ func circle_cells(c) -> Array:
 
 
 func warded(t: Dictionary) -> bool:
-	return t.decoy == "" and circles.values().any(func(z): return t.cell in z.cells)
+	return in_zone(t, "ward")
 
 
-func _circle(u: Dictionary, c: Vector2i) -> void:
-	_concentrate(u, card("warding_circle"))
-	var node := Node3D.new()   # PLACEHOLDER look: a pale blue glow on its hexes
+## Whether t stands in a zone of this kind: Warding Circle ("ward"), Sunspot ("sun"), Thorn Patch ("thorns").
+func in_zone(t: Dictionary, kind: String) -> bool:
+	return t.decoy == "" and circles.values().any(func(z): return z.zone == kind and t.cell in z.cells)
+
+
+## Whether some caster is keeping this concentration spell going on t (Rousing Tune).
+func sustained(id: String, t: Dictionary) -> bool:
+	return units.any(func(o): return not o.down and o.conc.get("id", "") == id and o.conc.get("target", {}) == t)
+
+
+## Heals and temporary HP from a Cleric's or Bard's spell: the caster's score + 2 (03, Ethan, Nov 12, 2026).
+func spell_heal(a: Dictionary, ab: String) -> int:
+	return Races.score(a.member, ab) + Rules.SPELL_HEAL_PLUS
+
+
+## Rallying Strike's ally (PLACEHOLDER: 03 doesn't say which): the most hurt other ally within spell range, else the striker.
+func _rally_target(a: Dictionary) -> Dictionary:
+	var near := allies().filter(func(o): return o != a and not o.down and o.decoy == "" and dist(o, a) <= Rules.SPELL_RANGE)
+	if near.is_empty():
+		return a
+	near.sort_custom(func(x, y): return x.max_hp - x.hp > y.max_hp - y.hp)
+	return near[0]
+
+
+## Warding Circle, Sunspot or Thorn Patch: a hex and its neighbours, kept going by concentration (03). PLACEHOLDER looks.
+func _circle(u: Dictionary, c: Vector2i, k := {}) -> void:
+	var kind: String = k.get("zone", "ward")
+	_concentrate(u, k if not k.is_empty() else card("warding_circle"))
+	var node := Node3D.new()   # PLACEHOLDER look: a pale glow on its hexes, blue, gold or green
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("#8EC3F2", 0.5)
+	mat.albedo_color = Color({"ward": "#8EC3F2", "sun": "#F2D16B", "thorns": "#6E9A4A"}[kind], 0.5)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -2318,8 +2498,8 @@ func _circle(u: Dictionary, c: Vector2i) -> void:
 		mi.position = Hex.to3(Hex.cell_position(cell.x, cell.y), grid[cell].z + (Rules.CELL_TOP if map_id != "" else 0.0) + 0.008)
 		node.add_child(mi)
 	board.add_child(node)
-	circles[u.name] = {cells = cells, node = node}
-	self_done = "warding_circle"
+	circles[u.name] = {cells = cells, node = node, zone = kind}
+	self_done = k.get("id", "warding_circle")
 	cell_target = null
 
 
@@ -2499,6 +2679,27 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["drop", "Ruined", "Takes %d more damage from each hit" % Rules.RUIN_MORE])
 	if on(u, "drowsy"):
 		out.append(["moon", "Drowsy", "Flips 1 fewer coin"])
+	# Cleric and Bard level 1 (PLACEHOLDER icons; names and lines to the Screen text check)
+	if on(u, "fear"):
+		out.append(["eye", "Frightened", "Next attack flips %d fewer coin" % Rules.FEAR_COINS])
+	if on(u, "dazzled"):
+		out.append(["spark", "Mesmerized", "Attacks flip %d fewer coin" % Rules.FEAR_COINS])
+	if on(u, "bane"):
+		out.append(["drop", "Baned", "Next check flips %d fewer coin" % Rules.FEAR_COINS])
+	if on(u, "hexed"):
+		out.append(["heart", "Hexed", "Hits on it heal the attacker %d" % Rules.HEX_HEAL])
+	if sustained("heat_metal", u):
+		out.append(["flame", "Burning", "%d damage at the start of its turn" % Rules.HEAT_DAMAGE])
+	if on(u, "faith"):
+		out.append(["shield", "Shield of Faith", "Attacks on it flip %d fewer coin" % Rules.FAITH_COINS])
+	if on(u, "veil"):
+		out.append([Cards.ALL.moonveil.icon, "Moonveiled", "Attacks on it flip %d fewer coin" % Rules.MOONVEIL_COINS])
+	if sustained("rousing_tune", u):
+		out.append([Cards.ALL.rousing_tune.icon, "Roused", "Attacks flip %d extra coin" % Rules.TUNE_COINS])
+	if not u.ally and in_zone(u, "sun"):
+		out.append(["spark", "In sunlight", "Attacks on it flip %d extra coin" % Rules.SUNSPOT_COINS])
+	if u.temp > 0:
+		out.append(["star", "Temporary HP", "%d damage taken from this first" % u.temp])
 	return out
 
 

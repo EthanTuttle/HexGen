@@ -37,6 +37,12 @@ const CAT := {
 ## The Wizard's level-1 spells by school, in the Spells step's columns (03 -> Wizard spells).
 const WIZARD_SPELLS := {"Summoner": ["animated_blade", "wisp"], "Blaster": ["firebolt", "frost_ray", "shocking_grasp"],
 	"Deceiver": ["mirror_image", "phantom_ally"], "Ritualist": ["blood_bolt", "warding_circle"]}
+## The Cleric's level-1 spells by order and the Bard's by school (03 -> Cleric spells, Bard spells), and every caster's.
+const CLERIC_SPELLS := {"Order of Light": ["sacred_flame", "searing_touch"], "Order of Night": ["shadow_bolt", "dread"],
+	"Order of Good": ["bless", "shield_of_faith"], "Order of Evil": ["bane", "hex"]}
+const BARD_SPELLS := {"Narrator": ["mockery", "heroic_tale"], "Musician": ["rousing_tune", "soothing_melody"],
+	"Dancer": ["dazzle", "blade_twirl"], "Leader": ["rallying_strike", "war_cry"]}
+const SPELLS_1 := {"wizard": WIZARD_SPELLS, "cleric": CLERIC_SPELLS, "bard": BARD_SPELLS}
 const SPELL_PICKS := 2                   # DOCS (03): casters pick 2 spells at level 1
 const CLOTHES_HEADS := 1                # DOCS (04 -> Armour, flat since Nov 7, 2026): Clothes 1, Armoured 2, +1 with a shield
 const ARMOURED_HEADS := 2
@@ -44,7 +50,7 @@ const SHIELD_HEADS := 1
 const THROW_RANGE := 4                   # PLACEHOLDER (04): thrown daggers and spears
 const VERSATILE_TWO_HANDED := 2          # PLACEHOLDER (04): +2 damage held two-handed, with the off hand empty
 const CLASS_CARDS := {"fighter": ["second_wind"], "ranger": ["hunters_mark"], "rogue": ["sneak_attack"]}   # DOCS (06 -> Start, Nov 9, 2026: the level-3 cards come at level 3, Progression)
-const CLASS_HP := {"fighter": 12, "ranger": 10, "rogue": 8, "wizard": 6}   # PLACEHOLDER (06 -> Start)
+const CLASS_HP := {"fighter": 12, "ranger": 10, "rogue": 8, "wizard": 6, "cleric": 10, "bard": 8}   # PLACEHOLDER (06 -> Start; Cleric and Bard Nov 12, 2026)
 
 
 static func of(id: String) -> Dictionary:

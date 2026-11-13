@@ -278,7 +278,7 @@ func _run() -> void:
 		return
 
 	# Scores drive play (06): the hero's from the creator (or HERO_DEFAULT), companions' from 03.
-	_check(f.attack_score(hero, Cards.get_card("attack")) == Races.score(hero.member, Weapons.of(hero.weapon).ab), "the hero's attack flips their own %s (%s)" % [Weapons.of(hero.weapon).ab, hero.weapon])
+	_check(f.attack_score(hero, Cards.get_card("attack")) == Races.score(hero.member, hero.member.ability), "the hero's attack flips their own %s (%s)" % [hero.member.ability, hero.weapon])   # a Cleric's staff flips WIS
 	_check(f.attack_score(fluffy, Cards.get_card("firebolt")) == 3 and f.save_coins(fluffy, "DEX") == 2, "Fluffy: INT 3 on Firebolt, DEX 2 on saves")
 	_check(f.attack_score(chelm, Cards.get_card("attack")) == 2 and f.save_coins(chelm, "DEX") == 1, "Chelmsford: STR 2, DEX 1")
 	_check(f.attack_score(mel, Cards.get_card("attack")) == 2 and f.save_coins(mel, "WIS") == 2, "Mel: DEX 2, WIS 2")
@@ -463,7 +463,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	game.level = 9
 	_check(Foes.roster("enc_fight_bandits", ["soldier"], 1)[0].hp == hp1, "foes don't grow with the hero's level")
 	game.level = lv
-	_check(hero.cards.filter(func(id): return not id in Races.cards(m) and not id in game.run.spells and id != Progression.LEVEL3_CARD.get(m.klass, "")) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card and spell picks): %s vs %s" % [hero.cards, Weapons.cards_for(m.klass, hero.weapon, hero.off)])
+	_check(hero.cards.filter(func(id): return not id in Races.cards(m) and not id in game.run.spells and id != Progression.LEVEL3_CARD.get(m.klass, "") and id != Progression.GODS.get(m.get("god", ""), "")) == Weapons.cards_for(m.klass, hero.weapon, hero.off), "the hero's cards come from class and gear (plus the racial card and spell picks): %s vs %s" % [hero.cards, Weapons.cards_for(m.klass, hero.weapon, hero.off)])
 	_check(f.card("attack").range == w.range or hero != f.current, "the basic attack reaches %d with a %s" % [w.range, hero.weapon])
 	_check(hero.max_hp == Weapons.CLASS_HP[m.klass] + Races.extra_hp(m, 1), "%s HP %d" % [m.klass, hero.max_hp])
 	_clear_round(s, [])
@@ -472,7 +472,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_place(foe, s + dv)
 	f.select(hero)
 	var atk := f.card("attack")
-	var expect: int = Races.score(m, w.ab) + Races.forge_coin(m, atk)
+	var expect: int = Races.score(m, m.ability) + Races.forge_coin(m, atk)
 	var close: int = Rules.RANGED_ADJACENT if f.close_shot(hero, atk) else 0
 	_check(f.attack_coins(hero, foe, atk) == expect - close, "armour: foes wear none, so the hero flips all %d coins (less %d for a close shot)" % [expect, close])
 	_check(f.save_coins(hero, "DEX") == Races.score(m, "DEX"), "armour costs no save coins")
@@ -501,7 +501,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		await _play(hero, "hunters_mark", foe.cell, [])
 		_check(hero.mark == foe and hero.ap == Rules.AP - 1, "Hunter's Mark: marked, 1 AP")
 		var hp: int = foe.hp
-		var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+		var plain: int = Races.score(m, m.ability) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
 		await _play(hero, "attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
 		var off_marked: int = _offhand_damage(hero) + Rules.MARK_DAMAGE if Fight.dual_wields(hero) else 0   # the free offhand hit takes the Mark too
 		_check(hp - foe.hp == plain + Rules.MARK_DAMAGE + off_marked, "a hit on the marked foe deals %d (%d + %d, offhand %d)" % [hp - foe.hp, plain, Rules.MARK_DAMAGE, off_marked])
@@ -530,6 +530,10 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		await _rogue_checks(hero, fluffy, foe, s, d)
 	if m.klass == "wizard":
 		await _wizard_checks(hero, fluffy, foe, s, d)
+	if m.klass == "cleric":
+		await _cleric_checks(hero, fluffy, foe, s, d)
+	if m.klass == "bard":
+		await _bard_checks(hero, fluffy, foe, s, d)
 	if Fight.dual_wields(hero):
 		await _dual_checks(hero, fluffy, foe, s, d)
 	await _weapon_card_checks(hero, fluffy, foe, s, d)
@@ -548,7 +552,7 @@ func _rogue_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vec
 	run.klass = "rogue"
 	run.background = "noble"
 	_check(run.deck_cards().get("swamp", 0) == 6 and run.deck_cards().get("village", 0) == 6 and run.deck_cards().get("farmland", 0) == 6, "the Rogue's deck: swamp 5, village 5, plus the background's (and one of each)")
-	var plain: int = Races.score(m, w.ab)
+	var plain: int = Races.score(m, m.ability)
 	var far := 3 if w.get("ranged", false) else 1
 	var tough: int = foe.max_hp
 	_check(f.card("sneak_attack").range == w.range, "Sneak Attack reaches as far as the %s (%d)" % [hero.weapon, w.range])
@@ -831,7 +835,7 @@ func _ambush_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Ve
 		_check(hero.mark == foe and Ambush.is_unaware(foe, hero), "Hunter's Mark is quiet: the foe stays unaware")
 		hero.mark = {}
 	var hp: int = foe.hp
-	var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+	var plain: int = Races.score(m, m.ability) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
 	var id := "sneak_attack" if m.klass == "rogue" else "attack"
 	await _play(hero, id, foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
 	var off: int = hp - foe.hp - plain * (Rules.SNEAK_TIMES if m.klass == "rogue" else 1)
@@ -915,7 +919,7 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 	var dv: Vector2i = Hex.NEIGHBOURS[d]
 	var m: Dictionary = hero.member
 	var w: Dictionary = Weapons.of(hero.weapon)
-	var plain: int = Races.score(m, w.ab) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+	var plain: int = Races.score(m, m.ability) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
 	hero.mark = {}
 	_clear_round(s, [])
 	_fresh(foe)
@@ -929,7 +933,7 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 		"longsword", "spear":
 			if hero.off in ["", "none"]:
 				await _play(hero, "attack", foe.cell, [true, true, true, true, true])
-				_check(hp - foe.hp == Races.score(m, w.ab) + Weapons.VERSATILE_TWO_HANDED, "two-handed %s: +%d damage (%d)" % [hero.weapon, Weapons.VERSATILE_TWO_HANDED, hp - foe.hp])
+				_check(hp - foe.hp == Races.score(m, m.ability) + Weapons.VERSATILE_TWO_HANDED, "two-handed %s: +%d damage (%d)" % [hero.weapon, Weapons.VERSATILE_TWO_HANDED, hp - foe.hp])
 			if hero.weapon == "spear":
 				_place(foe, s + dv * 2)
 				_check(f.in_reach(hero, foe, f.card("attack")) and f.card("throw").range == Weapons.THROW_RANGE, "spear: Reach 2, Throw 4")
@@ -1002,7 +1006,7 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			_place(foe, s + dv * 4)
 			_check(f.card("attack").range == 8 and f.card("aimed_shot").ap == 3, "longbow: range 8, Aimed Shot 3 AP")
 			var n := f.attack_coins(hero, foe, f.card("aimed_shot"))
-			_check(n == Races.score(m, w.ab), "Aimed Shot ignores armour (%d coins)" % n)
+			_check(n == Races.score(m, m.ability), "Aimed Shot ignores armour (%d coins)" % n)
 			await _play(hero, "aimed_shot", foe.cell, [true, true, true, true, true])
 			_check(hp - foe.hp == mini(hp, Rules.AIMED_TIMES * plain), "Aimed Shot: %d damage (4x)" % (hp - foe.hp))
 		"crossbow":
@@ -1018,7 +1022,7 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			await f._attack(foe, hero, Cards.get_card("attack", "spear"))
 			Coins.forced.clear()
 			var hit: int = foe.damage if foe.damage >= 0 else foe.score
-			_check(hhp - hero.hp == maxi(hit - Rules.GUARD_UP_LESS - f.reduction(hero), 0) and fhp - foe.hp == Races.score(m, w.ab), "Guard Up: %d less taken, and a hit back of %d" % [Rules.GUARD_UP_LESS, fhp - foe.hp])
+			_check(hhp - hero.hp == maxi(hit - Rules.GUARD_UP_LESS - f.reduction(hero), 0) and fhp - foe.hp == Races.score(m, m.ability), "Guard Up: %d less taken, and a hit back of %d" % [Rules.GUARD_UP_LESS, fhp - foe.hp])
 		"knuckles":
 			var coins: Array = [true]
 			for i in maxi(f.attack_coins(hero, foe, Cards.get_card("haymaker")) - 1, 0):
@@ -1974,3 +1978,224 @@ func _score_step_checks() -> void:
 	_check(Races.score(late, "DEX") == 4 and late.max_hp == Rules.PARTY[3].hp + Races.level_hp(late) * 7,
 			"Mel joining at level 8: DEX 2 -> 4 from the points passed, HP %d" % late.max_hp)
 	lp.bot_pick()
+
+
+## A caster's card for the cases: given if the hero lacks it, so one run tries every level-1, level-3 and level-5 spell.
+func _give(u: Dictionary, id: String) -> void:
+	if not id in u.cards:
+		u.cards.append(id)
+
+
+## A foe with room to soak every case's damage, at c.
+func _sponge(foe: Dictionary, c: Vector2i) -> void:
+	_fresh(foe)
+	foe.max_hp = 60
+	foe.hp = 60
+	foe.fear = -1
+	foe.dazzled = -1
+	foe.bane = -1
+	foe.hexed = -1
+	foe.taunt = {}
+	_place(foe, c)
+
+
+## The Cleric (06 -> Start; 03 -> Cleric spells, God spells, Cleric level-1 placeholders, Ethan, Nov 12, 2026): 10 HP, the
+## river and village deck with the god's +2, the god's free spell, damage from WIS, heals WIS + 2, conditions until the
+## target's next turn ends, and every early god spell.
+func _cleric_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var wis: int = Races.score(m, "WIS")
+	var yes := [true, true, true, true, true, true, true, true, true, true, true, true]
+	var no := [false, false, false, false, false, false, false, false, false, false, false, false]
+	_check(Weapons.CLASS_HP.cleric == 10 and m.base_hp == 10, "the Cleric starts on 10 HP")
+	_check(Progression.GODS[m.god] in hero.cards, "the god's early spell is free: %s" % Progression.GODS[m.god])
+	var run := RunSetup.new()
+	run.klass = "cleric"
+	run.background = "noble"
+	run.god = "Aurora"
+	var deck := run.deck_cards()
+	_check(deck.get("river", 0) == 6 and deck.get("village", 0) == 6 and deck.get("plains", 0) == 3, "the Cleric's deck: river 5, village 5, Aurora's plains +2 (and one of each): %s" % deck)
+	for id in ["sacred_flame", "searing_touch", "shadow_bolt", "dread", "bless", "shield_of_faith", "bane", "hex", "healing_word",
+			"sunspot", "moonveil", "heat_metal", "thorn_patch", "stone_skin", "hymn", "sleight", "toll_the_dead"]:
+		_give(hero, id)
+	f.night = false
+	_clear_round(s, [])
+	_place(hero, s)
+	_sponge(foe, s + dv)
+	# Damage from WIS: Sacred Flame and Shadow Bolt on a failed save, Searing Touch on a hit.
+	for row: Array in [["sacred_flame", no], ["shadow_bolt", no], ["searing_touch", yes]]:
+		var hp: int = foe.hp
+		await _play(hero, row[0], foe.cell, row[1])
+		_check(hp - foe.hp == wis, "%s deals WIS: %d" % [row[0], hp - foe.hp])
+	# Dread: frightened, one fewer coin on its next attack only.
+	var spear := Cards.get_card("attack", "spear")
+	await _play(hero, "dread", foe.cell, no)
+	_check(f.attack_mods(foe, hero, spear).any(func(x): return x.why == "fear"), "Dread: the foe's next attack flips 1 fewer coin")
+	Coins.forced.assign(no)
+	await f._one_attack(foe, hero, spear)
+	Coins.forced.clear()
+	_check(not f.on(foe, "fear"), "Dread is spent by that attack")
+	_fresh(hero)
+	# Shield of Faith and Moonveil: attacks on the ally flip 1 fewer coin each.
+	await _play(hero, "shield_of_faith", hero.cell, [])
+	_check(f.attack_mods(foe, hero, spear).any(func(x): return x.why == "faith"), "Shield of Faith: attacks on the ally flip 1 fewer coin")
+	await _play(hero, "moonveil", hero.cell, [])
+	_check(f.attack_mods(foe, hero, spear).any(func(x): return x.why == "veil"), "Moonveil: attacks on the ally flip 1 fewer coin")
+	hero.faith = -1
+	hero.veil = -1
+	# Bane: one fewer coin on its next check, a save here.
+	await _play(hero, "bane", foe.cell, no)
+	var with_bane: int = f.save_coins(foe, "DEX")
+	_check(with_bane == Rules.ENEMY_SAVE_COINS - 1 and f.save_coins(foe, "DEX") == Rules.ENEMY_SAVE_COINS, "Bane: its next save flips 1 fewer coin (%d), then it's spent" % with_bane)
+	# Hex: a hit on the foe heals the attacker.
+	await _play(hero, "hex", foe.cell, no)
+	hero.hp = hero.max_hp - 3
+	var mine: int = hero.hp
+	await _play(hero, "attack", foe.cell, yes)
+	_check(hero.hp - mine == Rules.HEX_HEAL, "Hex: a hit on the hexed foe heals the attacker %d" % (hero.hp - mine))
+	# Healing Word: WIS + 2.
+	_place(fluffy, s - dv * 2)
+	fluffy.hp = 1
+	await _play(hero, "healing_word", fluffy.cell, [])
+	_check(fluffy.hp == mini(fluffy.max_hp, 1 + wis + Rules.SPELL_HEAL_PLUS), "Healing Word heals WIS + 2: %d" % (fluffy.hp - 1))
+	_fresh(fluffy)
+	# Sunspot: a foe in it is easier to hit; it's concentration.
+	await _play(hero, "sunspot", foe.cell, [])
+	_check(f.in_zone(foe, "sun") and hero.conc.get("id", "") == "sunspot" and f.attack_mods(hero, foe, f.card("attack")).any(func(x): return x.why == "sun"), "Sunspot: attacks on a foe in it flip 1 extra coin, while concentrating")
+	# Thorn Patch: each of its hexes costs a foe 1 more to enter, and replaces Sunspot.
+	await _play(hero, "thorn_patch", s + dv * 3, [])
+	_check(not f.circles.values().any(func(z): return z.zone == "sun") and f.step_cost(foe, s + dv * 2, s + dv * 3) == f.step_cost(hero, s + dv * 2, s + dv * 3) + Rules.THORN_COST, "Thorn Patch: a foe pays %d more for its hexes, an ally doesn't" % Rules.THORN_COST)
+	f._end_conc(hero)
+	# Heat Metal: burns at the start of the foe's turns while sustained.
+	await _play(hero, "heat_metal", foe.cell, no)
+	var hp1: int = foe.hp
+	await f._turn_starts(foe)
+	_check(hp1 - foe.hp == Rules.HEAT_DAMAGE and f.sustained("heat_metal", foe), "Heat Metal: %d at the start of its turn while sustained" % (hp1 - foe.hp))
+	f._end_conc(hero)
+	hp1 = foe.hp
+	await f._turn_starts(foe)
+	_check(hp1 == foe.hp, "Heat Metal stops when the concentration ends")
+	# Hymn: nearby allies flip an extra coin on their next check.
+	_place(fluffy, s - dv)
+	fluffy.blessed = false
+	await _play(hero, "hymn", null, [])
+	_check(fluffy.blessed and hero.blessed, "Hymn: allies within %d are blessed" % Rules.NEARBY)
+	fluffy.blessed = false
+	hero.blessed = false
+	# Sleight: swap with an ally freely, with a foe only on a failed CHA save.
+	var a0: Vector2i = hero.cell
+	var b0: Vector2i = fluffy.cell
+	await _play(hero, "sleight", fluffy.cell, [])
+	_check(hero.cell == b0 and fluffy.cell == a0, "Sleight swaps with an ally")
+	a0 = hero.cell
+	b0 = foe.cell
+	await _play(hero, "sleight", foe.cell, yes)
+	_check(hero.cell == a0 and foe.cell == b0, "Sleight: a foe that saves stays put")
+	await _play(hero, "sleight", foe.cell, no)
+	_check(hero.cell == b0 and foe.cell == a0, "Sleight: a foe that fails swaps")
+	_fresh(hero)
+	_fresh(foe)
+	_place(fluffy, s - dv * 3)
+
+
+## The Bard (06 -> Start; 03 -> Bard spells, Bard level-1 placeholders, Ethan, Nov 12, 2026): 8 HP, Clothes, the village
+## and plains deck, damage from CHA, heals and temporary HP CHA + 2, and the level-3 and after-level-5 spells.
+func _bard_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var m: Dictionary = hero.member
+	var cha: int = Races.score(m, "CHA")
+	var yes := [true, true, true, true, true, true, true, true, true, true, true, true]
+	var no := [false, false, false, false, false, false, false, false, false, false, false, false]
+	_check(Weapons.CLASS_HP.bard == 8 and m.base_hp == 8 and not Weapons.armoured(m.armour), "the Bard starts on 8 HP in Clothes")
+	var run := RunSetup.new()
+	run.klass = "bard"
+	run.background = "noble"
+	_check(run.deck_cards().get("village", 0) == 6 and run.deck_cards().get("plains", 0) == 6, "the Bard's deck: village 5, plains 5, plus the background's")
+	for lists: Array in Weapons.BARD_SPELLS.values() + Progression.BARD_3.values() + Progression.BARD_T1.values():
+		for id: String in lists:
+			_give(hero, id)
+	f.night = false
+	_clear_round(s, [])
+	_place(hero, s)
+	_place(fluffy, s - dv)
+	_sponge(foe, s + dv)
+	var spear := Cards.get_card("attack", "spear")
+	var hp: int = foe.hp
+	await _play(hero, "mockery", foe.cell, no)
+	_check(hp - foe.hp == cha, "Mockery deals CHA: %d" % (hp - foe.hp))
+	fluffy.temp = 0
+	await _play(hero, "heroic_tale", fluffy.cell, [])
+	_check(fluffy.temp == cha + Rules.SPELL_HEAL_PLUS, "Heroic Tale: temporary HP CHA + 2 (%d)" % fluffy.temp)
+	fluffy.temp = 0
+	fluffy.hp = 1
+	await _play(hero, "soothing_melody", fluffy.cell, [])
+	_check(fluffy.hp == mini(fluffy.max_hp, 1 + cha + Rules.SPELL_HEAL_PLUS), "Soothing Melody heals CHA + 2")
+	_fresh(fluffy)
+	await _play(hero, "rousing_tune", fluffy.cell, [])
+	_check(f.attack_mods(fluffy, foe, spear).any(func(x): return x.why == "tune"), "Rousing Tune: the ally's attacks flip 1 extra coin while sustained")
+	f._end_conc(hero)
+	_check(not f.attack_mods(fluffy, foe, spear).any(func(x): return x.why == "tune"), "and stops with the concentration")
+	await _play(hero, "dazzle", foe.cell, no)
+	_check(f.attack_mods(foe, hero, spear).any(func(x): return x.why == "dazzled"), "Dazzle: the foe's attacks flip 1 fewer coin")
+	foe.dazzled = -1
+	await _play(hero, "war_cry", null, [])
+	_check(fluffy.blessed and hero.blessed, "War Cry: nearby allies flip an extra coin on their next attack")
+	fluffy.blessed = false
+	hero.blessed = false
+	await _play(hero, "blade_twirl", foe.cell, yes)
+	_check(hero.twirl and f.ap_cost(hero, f.card("move")) == 0 and f.move_hexes(hero) == Rules.TWIRL_HEXES, "Blade Twirl: then a free Move of %d hexes" % Rules.TWIRL_HEXES)
+	hero.twirl = false
+	fluffy.hp = fluffy.max_hp - 4
+	fluffy.temp = 0
+	await _play(hero, "rallying_strike", foe.cell, yes)
+	_check(fluffy.temp == cha + Rules.SPELL_HEAL_PLUS, "Rallying Strike: the most hurt ally nearby gains CHA + 2 temporary HP")
+	_fresh(fluffy)
+	fluffy.temp = 0
+	# Level 3.
+	await _play(hero, "cliffhanger", foe.cell, no)
+	_check(foe.lost_ap == Rules.CLIFFHANGER_AP, "Cliffhanger: it loses %d AP on its next turn" % Rules.CLIFFHANGER_AP)
+	foe.lost_ap = 0
+	await _play(hero, "captivate", null, no)
+	_check(f._taunter(foe) == hero, "Captivate: a nearby foe that fails must attack the Bard")
+	foe.taunt = {}
+	hp = foe.hp
+	await _play(hero, "whirlwind_dance", null, yes)
+	_check(foe.hp < hp, "Whirlwind Dance strikes the adjacent foe")
+	await _play(hero, "battle_hymn", null, [])
+	var base: int = f._level_damage(fluffy, foe, spear)
+	_check(base >= Rules.BATTLE_HYMN_MORE and hero.conc.get("id", "") == "battle_hymn", "Battle Hymn: nearby allies deal %d more" % Rules.BATTLE_HYMN_MORE)
+	await _play(hero, "hold_the_line", null, [])
+	_check(f._level_reduction(foe, fluffy) >= Rules.HOLD_LINE_LESS and hero.conc.get("id", "") == "hold_the_line", "Hold the Line: an ally next to the Bard takes %d less, and it replaces Battle Hymn" % Rules.HOLD_LINE_LESS)
+	f._end_conc(hero)
+	_sponge(foe, s + dv * 3)
+	hp = foe.hp
+	await _play(hero, "shatter_chord", foe.cell, no)
+	_check(hp - foe.hp == cha, "Shatter Chord: CHA damage on a failed CON save")
+	# After level 5.
+	hp = foe.hp
+	await _play(hero, "requiem", null, no)
+	_check(hp - foe.hp == cha + Rules.REQUIEM_BONUS, "Requiem: CHA + %d to every foe" % Rules.REQUIEM_BONUS)
+	fluffy.hp = 1
+	await _play(hero, "song_of_rest", null, [])
+	_check(fluffy.hp == mini(fluffy.max_hp, 1 + cha + Rules.SPELL_HEAL_PLUS), "Song of Rest heals every ally CHA + 2")
+	await _play(hero, "last_stand", null, [])
+	await f._hurt(fluffy, 99)
+	_check(fluffy.hp == 1 and not fluffy.down, "Last Stand: an ally can't drop below 1 HP this turn")
+	f.phase_no += 2
+	_fresh(fluffy)
+	await _play(hero, "epic_saga", null, [])
+	_check(f.attack_mods(fluffy, foe, spear).any(func(x): return x.why == "saga"), "Epic Saga: every ally's attacks flip 1 extra coin while sustained")
+	f._end_conc(hero)
+	await _play(hero, "dance_macabre", foe.cell, no)
+	_check(foe.lost_ap == Rules.AP, "Dance Macabre: a foe that fails can't act on its next turn")
+	foe.lost_ap = 0
+	foe.hp = foe.max_hp / 2
+	await _play(hero, "the_end", foe.cell, no)
+	_check(foe.hp == foe.max_hp / 2, "The End leaves a foe at half HP or more")
+	foe.hp = foe.max_hp / 2 - 1
+	await _play(hero, "the_end", foe.cell, no)
+	_check(foe.down, "The End: a foe below half HP that fails is out of the fight")
+	_fresh(hero)
+	_fresh(foe)
+	_place(fluffy, s - dv * 3)

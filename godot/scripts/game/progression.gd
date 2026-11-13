@@ -13,7 +13,7 @@ extends RefCounted
 ## its text and can't be used ("Not built yet"), a passive or upgrade does nothing. Every one is listed in godot/README.md.
 
 const MARTIALS := ["fighter", "rogue", "ranger"]
-const CASTERS := ["wizard", "cleric"]
+const CASTERS := ["wizard", "cleric", "bard"]
 const MASTERY_LEVELS := {"fighter": [2, 6, 7, 9, 11, 13], "rogue": [2, 7, 13], "ranger": [2, 7, 13]}   # DOCS (05, Nov 9, 2026)
 const FEAT_LEVELS := [4, 12]                                    # DOCS (05 -> General feats)
 const SUBCLASS_LEVEL := 5
@@ -99,11 +99,16 @@ const WIZARD_3 := {"Summoner": ["stone_sentinel", "soul_swap"], "Blaster": ["fla
 	"Deceiver": ["mirror_burst", "whisper"], "Ritualist": ["blood_ward", "hemorrhage"]}
 const CLERIC_3 := {"Order of Light": ["holy_brand", "dawn_pulse"], "Order of Night": ["darkness", "shadow_cloak"],
 	"Order of Good": ["healing_word", "sanctuary"], "Order of Evil": ["curse_of_frailty", "life_transfer"]}
+const BARD_3 := {"Narrator": ["cliffhanger", "retell"], "Musician": ["shatter_chord", "battle_hymn"],
+	"Dancer": ["captivate", "whirlwind_dance"], "Leader": ["flanking_order", "hold_the_line"]}
 ## Tier 1 (level 5+), the level-5 pick from the new school or order (03 -> Library spell picks; Cleric orders).
 const WIZARD_T1 := {"Summoner": ["unbind", "animate_armor", "soul_jar"], "Blaster": ["fireball", "blizzard", "chain_lightning"],
 	"Deceiver": ["now_you_see_me", "psychic_spike", "nightmare"], "Ritualist": ["soul_siphon", "blood_bond", "life_tap"]}
 const CLERIC_T1 := {"Order of Light": ["burning_halo", "sunlit_ground", "lance_of_dawn"], "Order of Night": ["terror", "nightmare_shroud", "snuff_the_light"],
 	"Order of Good": ["mass_heal", "miracle_of_plenty", "purify"], "Order of Evil": ["vampiric_aura", "siphon_strength", "curse_of_ruin"]}
+## The Bard's after-level-5 spells (03 -> Bard spells: 1 per unlock after level 3, from the subclass's school).
+const BARD_T1 := {"Narrator": ["the_end", "epic_saga"], "Musician": ["requiem", "song_of_rest"], "Dancer": ["dance_of_blades", "dance_macabre"],
+	"Leader": ["charge", "last_stand"]}
 ## Level-1 spells the cleric orders give, so a cleric's level-3 list leaves out what it has (03).
 const SCHOOL_ICON := {"Summoner": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4 0 0 1 4 4",
 	"Blaster": "M12 2l1.8 4.6L18.5 4l-1.6 4.9 5 .9-4.2 2.7 3.4 3.7-5-.4.4 5L12.9 18 12 23l-.9-5-3.6 2.8.4-5-5 .4 3.4-3.7-4.2-2.7 5-.9L5.5 4l4.7 2.6z M12.7 8.6l-2.4 3.7h3.4l-2.4 3.7",
@@ -112,7 +117,11 @@ const SCHOOL_ICON := {"Summoner": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4
 	"Order of Light": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 1v2 M12 21v2 M1 12h2 M21 12h2",   # PLACEHOLDER icons (07: subclass icons open)
 	"Order of Night": "M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z",
 	"Order of Good": "M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z",
-	"Order of Evil": "M12 3l2.5 6H21l-5.2 4 2 6.5L12 15.6 6.2 19.5l2-6.5L3 9h6.5z"}
+	"Order of Evil": "M12 3l2.5 6H21l-5.2 4 2 6.5L12 15.6 6.2 19.5l2-6.5L3 9h6.5z",
+	"Narrator": "M4 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z M20 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z",   # PLACEHOLDER icons
+	"Musician": "M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0 M20 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0",
+	"Dancer": "M12 4a2 2 0 1 0 0 4a2 2 0 1 0 0-4 M12 8v6l-4 6 M12 14l4 6 M7 11l5-2 5 2",
+	"Leader": "M5 21V4 M5 4h12l-3 4 3 4H5"}
 
 ## Subclasses (03 -> Subclasses; blurbs: 03 -> Subclass blurbs). Martials: the level-5 card and the class-card upgrade
 ## (03 -> Martial class cards): of = the card it upgrades, n = its new name. Casters: their school or order.
@@ -142,6 +151,11 @@ const SUBCLASSES := {
 		"Order of Night": {"blurb": "A shadowed mystic who hides allies in darkness and sows fear."},
 		"Order of Good": {"blurb": "A humble miracle-worker whose prayers can turn the tide."},
 		"Order of Evil": {"blurb": "A grim hexer who curses foes and drains their life away."}},
+	"bard": {
+		"Narrator": {"blurb": "A master storyteller whose tales bend the battle to their telling."},
+		"Musician": {"blurb": "A virtuoso whose songs rally allies and shatter foes."},
+		"Dancer": {"blurb": "A graceful duelist who turns every fight into a performance."},
+		"Leader": {"blurb": "A born commander who leads the charge from the front line."}},
 }
 ## Story companions' default subclass (01 -> Companions: Fluffy Blaster, Mel Con Artist, Chelmsford Order of Good), which the
 ## player can change at level 5 (01); the bots keep it.
@@ -275,9 +289,18 @@ static func mastery_options(m: Dictionary) -> Array:
 	return out
 
 
+## A caster's level-3 and tier-1 spell lists by school or order.
+static func spells_3_of(k: String) -> Dictionary:
+	return {"wizard": WIZARD_3, "cleric": CLERIC_3, "bard": BARD_3}.get(k, {})
+
+
+static func tier1_of(k: String) -> Dictionary:
+	return {"wizard": WIZARD_T1, "cleric": CLERIC_T1, "bard": BARD_T1}.get(k, {})
+
+
 ## The level-3 spells a caster can pick: every school's or order's, less those it has.
 static func spell_groups_3(m: Dictionary) -> Dictionary:
-	var src: Dictionary = WIZARD_3 if klass(m) == "wizard" else CLERIC_3
+	var src: Dictionary = spells_3_of(klass(m))
 	var out := {}
 	for g: String in src:
 		out[g] = src[g].filter(func(id): return not id in m.get("cards", []) and id != LEVEL3_GRANT.get(m.get("name", ""), ""))
@@ -286,7 +309,7 @@ static func spell_groups_3(m: Dictionary) -> Dictionary:
 
 ## The level-5 spell pick: the new school's or order's tier 1.
 static func tier1(m: Dictionary) -> Array:
-	var src: Dictionary = WIZARD_T1 if klass(m) == "wizard" else CLERIC_T1
+	var src: Dictionary = tier1_of(klass(m))
 	return src.get(sub(m), []).filter(func(id): return not id in m.get("cards", []))
 
 
@@ -479,7 +502,7 @@ static func bot_follow_sub(m: Dictionary, name: String) -> String:
 static func bot_tier1(m: Dictionary, name: String) -> String:
 	if not klass(m) in CASTERS:
 		return ""
-	var src: Dictionary = WIZARD_T1 if klass(m) == "wizard" else CLERIC_T1
+	var src: Dictionary = tier1_of(klass(m))
 	var opts: Array = src.get(name, []).filter(func(id): return not id in m.get("cards", []))
 	opts.sort_custom(func(a, b): return int(Cards.ALL[a].get("built", true)) > int(Cards.ALL[b].get("built", true)))
 	return opts[0] if not opts.is_empty() else ""
