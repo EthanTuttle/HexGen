@@ -91,6 +91,7 @@ var _shape := {}                       # raised tile -> what its cliffs were bui
 var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
 var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
 var _goblin_eye: StandardMaterial3D    # the eyes in the Overrun outpost's burrows and the Warren's mouth
+var _basilisk_eye: StandardMaterial3D  # the Basilisk Nest's slit eyes in its door and its dome's cracks
 var _haunt := {}                       # the ghost town's own materials (ghost_house, ghost_roof, ghost_window, haunt_glow, haunt_light), by name
 var _haunt_wisp: ShaderMaterial         # the wisps, drifting up
 var _ghosts_shown := false              # whether the ghost houses are showing (from dusk to dawn)
@@ -1008,6 +1009,14 @@ func _setup_materials() -> void:
 						_goblin_eye.emission = c
 						_goblin_eye.resource_name = "goblin_eye"   # the meshes are shared, so a later board finds it by name too
 					mesh.surface_set_material(k, _goblin_eye)
+				"basilisk_eye":
+					if not _basilisk_eye:
+						_basilisk_eye = _glow.duplicate() as StandardMaterial3D
+						var c := (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
+						_basilisk_eye.albedo_color = c
+						_basilisk_eye.emission = c
+						_basilisk_eye.resource_name = "basilisk_eye"
+					mesh.surface_set_material(k, _basilisk_eye)
 	# Tiles v94, the ghost town (art/handoff/ruins_kit.md -> Ghost materials): see-through ghost houses and roofs over the shells,
 	# lit windows, glows, and wisps that drift up. resource_name keeps each name, since the meshes are shared between boards.
 	for mesh: Mesh in _kit.values():
@@ -2720,6 +2729,8 @@ func _process(delta: float) -> void:
 		_lantern_red.emission_energy_multiplier = 0.3 + 3.5 * night   # PLACEHOLDER: like the lanterns
 		if _goblin_eye:
 			_goblin_eye.emission_energy_multiplier = 6.0 * night   # PLACEHOLDER strength: they glint at night only (07; the previews use 9)
+		if _basilisk_eye:
+			_basilisk_eye.emission_energy_multiplier = lerpf(0.5, 1.5, night)   # the previews': a faint glint by day; stronger washes it yellow
 		_set_haunt(night)
 		for g: StandardMaterial3D in _marsh_glow.values():
 			g.emission_energy_multiplier = 0.3 + 2.5 * night   # PLACEHOLDER: lit a little by day

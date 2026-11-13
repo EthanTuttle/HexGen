@@ -17,7 +17,7 @@ const NEIGHBOURS := [Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1), Vector2i(
 
 const PALETTE := {
 	"plains": "#A8CF7E", "forest": "#5E8F5A", "farmland": "#DCC562", "river": "#86BEDB", "village": "#E6C590",
-	"hills": "#BFAE8E", "swamp": "#7F9A6E", "desert": "#EDD49A", "ruins": "#B3ADA4", "op_ground": "#B2A58F", "gt_ground": "#AEB0AB", "soil_light": "#8A6446",
+	"hills": "#BFAE8E", "swamp": "#7F9A6E", "desert": "#EDD49A", "ruins": "#B3ADA4", "op_ground": "#B2A58F", "gt_ground": "#AEB0AB", "bs_ground": "#A9A8A2", "tuft_stone": "#8C8D87", "soil_light": "#8A6446",
 	"soil_dark": "#6B4C35", "grass_ink": "#7FA95A", "leaf": "#4E8049", "leaf_dark": "#3B6A3A",
 	"trunk": "#7A5236", "field_a": "#DCC562", "field_b": "#C9A94A", "field_c": "#9DBF5E", "hedge": "#4F7A33",
 	"water": "#86BEDB", "water_deep": "#5E9CC7", "water_fast": "#6FAFC9", "fall_light": "#A8D5E2", "water_still": "#93CFC7", "foam": "#F4FAF8",

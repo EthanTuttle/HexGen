@@ -96,7 +96,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
 - [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
 - [x] ~~Each background's proficiency list~~ (settled Oct 30: 3 each; see World & story → Backgrounds)
-- [ ] New: the College's skill list for Bard heroes
+- [x] ~~The College's skill list for Bard heroes~~ (Nov 12, 2026: Persuade, Deceive, Intimidate, Lore)
 - [ ] New: can a failed social check be retried in the same conversation?
 - [ ] Class and subclass cards at level 15 and later (in progress; level 10 gives no card)
 - [x] ~~Does the player name the hero?~~ (settled Oct 30: yes, typed; pronouns are a separate pick)
