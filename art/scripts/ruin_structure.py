@@ -1367,6 +1367,115 @@ def basilisknest(p, rng, kind):
         p.spokes[i] = [q / NEST_RING * A, q]
 
 
+# --- Basilisk ruins: the colonnade field (round 1 of the rework, not approved) -------------------------------------
+# design/07 -> Region variant looks: rows of tall columns with the approved statue parties (full stone and half turned)
+# among them; grey stone, bright orange and yellow lichen (Ethan, Nov 10, 2026, after the variant study; replaces the
+# approved stone halls). No halls: each corner's block between the streets is a grey stone floor holding a grid of tall
+# columns in rows across the block, some joined by lintels, some snapped to stumps with their drums lying beside them, a
+# stone bush or two in the gaps. A party (basilisk_ruins' PARTIES, same chance and cap) stands in a gap left in the grid.
+# The Basilisk Nest keeps its own look.
+
+COL_XS = (2.5, 3.05, 3.6, 4.15)   # in a block's frame: the rows of columns, across the block
+COL_STEP = 0.55                   # between columns along a row (the grid lines up on the block's middle line)
+COL_R = 0.11                      # a shaft's radius
+COL_KEEP = PLOT_KEEP + 0.16       # columns keep this far off the streets (their plinths and capitals too)
+COL_KIND = (                      # by the block's variant n: (share snapped to stumps, lintel chance, height)
+    (0.15, 0.75, 2.0),            # 0 grand: mostly standing, many lintels, tallest
+    (0.4, 0.45, 1.8),             # 1 fallen: many stumps and drums
+    (0.25, 0.6, 1.9),             # 2 between
+)
+COL_PARTY_GAP = 0.6               # no column this near PARTY_AT on a block with a party
+
+
+def shaft(p, at, h, mat, z=0.0):
+    """A column shaft with no end caps (its plinth and capital hide them)."""
+    m = Matrix.Translation(at + Vector((0, 0, z + h / 2)))
+    r = bmesh.ops.create_cone(p.bm, cap_ends=False, cap_tris=False, segments=6, radius1=COL_R, radius2=COL_R * 0.88, depth=h, matrix=m)
+    p._paint(r["verts"], mat)
+
+
+def column(p, rng, at, h, stump=False):
+    """A tall column: square plinth, a tapering shaft, a square capital; snapped, a stump with a jagged top."""
+    before = set(p.bm.faces)
+    stone = rng.choice(PETRIFIED)
+    p.box(at, (0.3, 0.3, 0.08), "bs_stone_d")
+    if stump:
+        sh = rng.uniform(0.35, 1.1)
+        p.cylinder(at, COL_R, sh, stone, z=0.08)
+        p.box_rot(at + Vector((0, 0, 0.08 + sh)), (0.16, 0.13, 0.1), stone,
+                  Matrix.Rotation(rng.uniform(-0.5, 0.5), 3, "X") @ Matrix.Rotation(rng.uniform(0, 1.5), 3, "Z"))
+    else:
+        shaft(p, at, h - 0.18, stone, z=0.08)
+        p.box(at, (0.32, 0.32, 0.1), "bs_stone_l", z=h - 0.1)
+    for f in new_faces(p, before):   # lichen on the plinths' and capitals' tops and the stumps' breaks, not up the shafts
+        if f.is_valid and f.normal.z > 0.5 and rng.random() < 0.22:
+            f.material_index = p._slot(rng.choice(LICHEN))
+
+
+def colonnade_block(n, join, with_party=False):
+    """A colonnade corner, in the block frame: a stone floor between the streets (to the edge where the next tile is a
+    ruins look), rows of tall columns across it on a grid, lintels joining neighbours in a row, stumps with fallen drums,
+    a stone bush or two in the gaps, and with_party a party in a gap before the corner."""
+    seed = f"cf_block_{n}_{join}"
+
+    def build(p, rng):
+        rng = hk.seeded(seed)
+        joins = {"lo": join[0] == "1", "hi": join[1] == "1"}
+        m = margins(joins)
+        floor = kite(FLAT_KEEP + 0.15, m["lo"], m["hi"], x0=2.2)
+        if floor:
+            rl.plate(p, floor, 0.012, "bs_floor")
+        broken, lintel, h = COL_KIND[n]
+        h += rng.uniform(-0.05, 0.05)
+        gaps = []
+        for x in COL_XS:
+            lo, hi = row_reach(x, m["lo"] + 0.2, m["hi"] + 0.2, COL_KEEP)
+            row = []
+            for k in range(math.ceil(lo / COL_STEP), math.floor(hi / COL_STEP) + 1):
+                at = Vector((x, k * COL_STEP, 0))
+                if with_party and (at - PARTY_AT).length < COL_PARTY_GAP:
+                    continue
+                if rng.random() < 0.1:   # a gap: a stone bush, or bare floor
+                    gaps.append(at)
+                    row.append(None)
+                    continue
+                stump = rng.random() < broken
+                column(p, rng, at, h, stump)
+                row.append(None if stump else at)
+                if stump and rng.random() < 0.6:   # its fallen drums, lying along the row toward the plaza
+                    for d in range(rng.choice((1, 2))):
+                        p.log(at + Vector((-0.24 - 0.26 * d, rng.uniform(-0.06, 0.06), 0)), COL_R, 0.22, rng.choice(PETRIFIED),
+                              spin=rng.uniform(-0.4, 0.4), segments=6)
+            for a, b in zip(row, row[1:]):   # lintels across neighbours still standing
+                if a and b and rng.random() < lintel:
+                    before = set(p.bm.faces)
+                    p.box((a + b) / 2, (0.22, COL_STEP + 0.3, 0.13), "bs_stone", z=h)
+                    lichen(p, rng, new_faces(p, before), 0.15)
+        for at in gaps[:2]:
+            stone_bush(p, rng, at)
+        if with_party:
+            party(p, hk.seeded(seed + "party"), PARTY_AT, 0.0, ("stand", "shield", "flight")[n])
+    return build
+
+
+def colonnade_pieces():
+    out = {f"colonnade_{n}_{j}": colonnade_block(n, j) for n in range(VARIANTS_PER_TAKE) for j in JOINS}
+    out.update({f"colonnade_party_{n}_{j}": colonnade_block(n, j, True) for n in range(VARIANTS_PER_TAKE) for j in JOINS})
+    return out
+
+
+def colonnade_props(world, q, r):
+    """(piece, x, y, spin) for a colonnade tile: a column grid at every corner (variant and joins as the halls'); a corner
+    with hash 61 under PARTY_CHANCE has a party, at most PARTY_MOST a tile (basilisk_props' rule)."""
+    out, parties = [], 0
+    for c, (piece, x, y, spin) in enumerate(block_props(KIT, world, q, r)):
+        kind = "colonnade"
+        if parties < PARTY_MOST and gc.hash01(q * 6 + c, r, 61) < PARTY_CHANCE:
+            kind, parties = "colonnade_party", parties + 1
+        out.append((f"{kind}_{piece[len('ruin_hall_'):]}", x, y, spin))
+    return out
+
+
 # --- Trapped vault: sunken courts (round 2, not approved) ------------------------------------
 # design/07 -> Region variant looks: square pits cut into the ground with stairs down to sealed doors and trap-tile floors,
 # negative space instead of walls (Ethan, Nov 10, 2026, after the variant study). No halls: at each corner a low terrace
