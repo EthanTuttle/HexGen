@@ -745,7 +745,7 @@ def stockade_props(world, q, r):
     return out
 
 
-# --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kit from tiles_v94) -------------------------------------
+# --- Haunted ruins: the ghost town (approved Nov 10, 2026, round 3; in the kits tiles_v94-v96, replaced by the graveyard city in tiles_v97) -------------------------------------
 # design/07 -> Region variant looks: here the base changes to stone house shells along the streets (walls with door and
 # window holes and gable ends, no roofs). By day they're bare shells; at night pale ghost houses fill them out as they once
 # stood, with ghostly roofs and lit windows (a separate piece per block, shown only at night). Tombs, wisps and mist are
@@ -955,7 +955,7 @@ def haunted_props(world, q, r, night=False):
     return out
 
 
-# --- Haunted ruins: the graveyard city (round 1 of the rework, not approved) -------------------------------------
+# --- Haunted ruins: the graveyard city (approved Nov 12, 2026, round 1; in the kit from tiles_v97) -------------------------------------
 # design/07 -> Region variant looks: rows of tombs, mausolea and cypresses laid out as a city of the dead; wisps and low
 # mist as accents (Ethan, Nov 10, 2026, after the variant study; replaces the approved ghost town). No halls or shells:
 # each corner's block between the streets is a walled plot of dark turf with rows of headstones across it, cypresses
