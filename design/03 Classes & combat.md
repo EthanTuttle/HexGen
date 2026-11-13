@@ -576,6 +576,8 @@ Overlap to watch: Mass Heal and Holy Sanctum are steady healing, close to the Mu
 | Tier 2 | Harvest: foes in an area lose HP, split among allies as healing (foes only) | Drain | 3 | Each target's CON save |
 | Tier 2 | Doom: heavy damage at the end of the foe's next turn unless it's cleansed first | Curse | 3 | Target's CON save |
 
+**Cleric level-1 placeholders** (Ethan, Nov 12, 2026, for the first playable, until the balance pass; the Wizard's pattern): spell damage uses WIS, as the Wizard's uses INT; heals = WIS + 2; spell range 5. Conditions whose length the docs don't give (frightened, harder to hit, Bane's curse and the like) last until the target's next turn ends, like the breath weapon's riders. Chelmsford moves to these numbers too. Every god's early spell works in the first playable, so any god is a real pick.
+
 **God spells**
 
 Each of the eight gods has 2 spells, an early one and a later one. The early spell is granted free; the later one joins the pick pool. A stronger bond with the god unlocks or strengthens god spells. Holy Defender fighters get the same god spells: the early one free, and the later one locked behind meditations that strengthen their bond with the god (which is why they need Meditation Rock; see Half-classes).
@@ -612,6 +614,8 @@ Checked against the rebuilt orders (Oct 26, 2026): Moonveil was defined so it no
 | Level 3 | Retell: an ally repeats their last action | 2 | No save |
 | After level 5 | The End: a badly hurt foe is narrated out of the fight | 3 | Target's CHA save |
 | After level 5 | Epic Saga: every ally gains a buff while the tale is sustained (concentration) | 3 | No save |
+
+**Bard level-1 placeholders** (Ethan, Nov 12, 2026, for the first playable, until the balance pass; the Wizard's pattern): spell damage uses CHA; heals and temporary HP = CHA + 2; spell range 5. Conditions whose length the docs don't give (mesmerized, an extra coin, frozen in suspense and the like) last until the target's next turn ends.
 
 Retell can repeat an ally's expensive action at a discount. This may be a deliberate design element that rewards tricky play; check it in the balance pass.
 
