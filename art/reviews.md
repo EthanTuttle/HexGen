@@ -223,3 +223,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-12 | `art/preview/place_east_rime_chapel_compare_v2.png` | rejected | Too sparse; stop reusing map assets for the zoom: build purpose-made, densely dressed scene assets |
 | 2026-11-12 | `art/preview/ruins_graveyard_sheet_v1.png` | approved | Haunted ruins as the graveyard city: walled dark-turf plots with headstone rows, cypresses, mausolea/obelisks/open graves, wisps and mist; Crypt unchanged. Replaces the ghost town (tiles_v94) |
 | 2026-11-12 | `basilisk-nov10/ruins_nest_night.png` (Godot) | approved | Basilisk Nest in game at night: crack glow fine as is |
+| 2026-11-12 | `art/preview/place_east_rime_chapel_day_none_wide_v3.png` | note | Chapel v3 direction close; make the hexes the paths and let them shape buildings, walls and objects instead of sitting on top; statue/banners follow the player's god; plain gap, no lychgate |
