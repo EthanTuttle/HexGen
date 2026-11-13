@@ -2,7 +2,7 @@
 
 One scene kit per place you enter (design/07 → Town screen → Each place gets its own scene). Each one is a copy of the market square's kit (`town_scenes_kit.md`), with the same 19-hex board and rules: everything stands on a floor hex, the party's spots are checked clear, and the backs aren't dressed. Godot's `PlaceStage` loads a kit by its line in `Places.KITS`, so a new kit needs no code.
 
-**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. Dunfaire Tower v3, the first starting tile, approved by Ethan on Nov 10, 2026 (v2 with the 2-row view and his two changes), and on main. East Rime Chapel v2, the chapel's courtyard, made Nov 10, 2026, waiting on Ethan's review (v1 was the chapel on the hex map). None is in Godot yet.
+**Status:** fortified town v4, approved by Ethan on Nov 10, 2026, and on main. Slums v1, approved by Ethan on Nov 10, 2026, and on main. Scholars' town v2, approved by Ethan on Nov 10, 2026 (v1 wasn't quite right), and on main; the fountain standing for the well is approved. Dunfaire Tower v3, the first starting tile, approved by Ethan on Nov 10, 2026 (v2 with the 2-row view and his two changes), and on main. East Rime Chapel v4, the courtyard laid out on the hexes with its own scene-scale pieces, made Nov 12, 2026, waiting on Ethan's review (v2 was rejected as sparse; v3 was a rough pass). None is in Godot yet.
 
 ## What each kit hands Godot
 
@@ -14,7 +14,7 @@ One scene kit per place you enter (design/07 → Town screen → Each place gets
   - `backdrop`: `""` means the map's day and night.
   - `lights`: `[q, r, x, y, z, colour, day, night, flicker]`. The offsets are from that hex's middle in Godot's frame, the energies are in Blender watts, and 0 means off.
   - `view_shift` (optional, new with Dunfaire Tower; PlaceStage reads it): `[x, y, z]` in metres, added to PlaceStage's `VIEW_AT` before it frames the scene. Godot's frame, as the lights': y up, minus z toward the back, away from the camera. Missing means `[0, 0, 0]`, today's framing. The previews apply it the same way.
-- **Own materials:** `ts_glow` (windows, including Dunfaire Tower's and East Rime Chapel's, and the scholars' town's lantern pillars), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames and Dunfaire Tower's campfire, so Godot flickers them). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
+- **Own materials:** `ts_glow` (windows, including Dunfaire Tower's and East Rime Chapel's, and the chapel's lanterns and candles, and the scholars' town's lantern pillars), `ts_water` (the well, and the scholars' town's fountains), `ts_fire` (the fortified town's brazier flames and Dunfaire Tower's campfire, so Godot flickers them). East Rime Chapel adds `god_cloth`, `god_trim` and `god_symbol`, which Godot recolours per god (see its section). The slums' red lanterns are the village kit's `lantern_red`, which PlaceStage doesn't glow yet. The red light comes from the kit's lamps.
 - **Scripts:**
   - `art/scripts/build_place_<id>.py` builds a kit.
   - `art/scripts/render_place_scenes.py -- <id>` renders the previews. `-- <id> check` runs the checks: everything stands on the floor, every spot is clear by 0.42 or more, and the triangles are within budget. It exits 1 on a failure.
@@ -174,43 +174,72 @@ No keepers. The nearest anything stands to a spot is 0.55, at (1, -2), from the 
 
 **Comparison:** `art/preview/place_dunfaire_tower_compare_v2.png`: top, v2 at 33 m by day and night; bottom, the 4.5-row option and the approved start tile. (v1's, `_compare_v1.png`, has v1 above the tile alone and with neighbours.) No combat maps exist for the tower or for ruins.
 
-## East Rime Chapel (`east_rime_chapel`, v2)
+## East Rime Chapel (`east_rime_chapel`, v4)
 
 The Acolyte's starting tile, built from its approved start tile (`start_tiles_kit.md`, tiles_v89; 07 → Starting tiles: "a hilltop chapel with walled graves") and the approved hills combat maps (`combat_hills_kit.md`, plain hills set).
 
-**Look:**
-- **v2, the courtyard** (Ethan, Nov 10, 2026: a close look at the chapel's courtyard rather than the chapel on a hex map). The tile's low yard wall runs round the whole view (x ±6.2, from y -3.6 at the front to 10.2 behind the chapel), with a gate in the front wall. The party stands in the yard.
-- The tile's small stone chapel under slate, with its bell cote and lit side windows, stands at the back of the courtyard, with the tile's five graves and bench beside it. More graves stand in rows down both sides of the yard, clear of every spot.
-- The courtyard is the level hilltop. Beyond its walls the floor steps down in level terraces, 0.3 m a hex and four at most, with the drops faced in grey rock, as the hills combat maps' cells are. About one hex in five is a darker green, as on those maps.
-- On the terraces: the hills' grey boulder outcrops, pines and broadleaves.
-- v1 had the tile's own small yard round the chapel on the hilltop, the 19 hexes open in front of it.
-- No peaks: the tile has none and shares none with its neighbours (`start_tiles_kit.md` → East Rime Chapel).
+**Versions:**
+- v1 was the tile's chapel and yard on the hilltop, with the 19 hexes open in front of it.
+- v2 (Nov 10, 2026) made it the chapel's walled courtyard. Ethan rejected it as too sparse.
+- v3 (Nov 12, 2026) was a rough pass with new pieces. Ethan said it was close, but it sat on top of the grid.
+- v4 (Nov 12, 2026) is in review. It lays the yard out on the hexes (07 → Built for the zoom).
 
-**Scale and view:** the chapel, yard and graves are at 2.4×, as Dunfaire Tower (door about 1.2 m, the bell cote about 4 m). The trees are 1.8×. `view_shift` is `[0, 0, -3.3]`, as Dunfaire's, and the whole chapel is in view at 33 m.
+**Look (v4):**
+- **On the hexes.** The paths are runs of cells:
+  - worn earth from the wall's gap, with branches to the graves and the well;
+  - a paved forecourt of seven-slab cells where the party gathers.
+- **Raised and sunk cells:**
+  - two raised stone step cells at 0.22 m;
+  - the chapel's plinth, ten cells raised 0.45 m;
+  - the shrine's cell, raised 0.28 m.
+  The row in front of the wall sits a terrace lower.
+- **The wall.** A dry-stone wall runs along the yard's outer hex edges: two courses of uneven stones under coping, with a round stone post at each corner. There is a plain gap at the front, with no lychgate (Ethan, Nov 12, 2026), and a lamp post either side of it.
+- **The chapel** stands on its plinth, 4.8 × 4.4 m with 3.3 m walls:
+  - stone course bands, a stone gable, a slate roof and corner buttresses;
+  - an arched oak door with iron straps;
+  - lancet windows front and sides, and a round window over the door, all `ts_glow`;
+  - the bell cote with a bell and rope;
+  - two banners in the god's colours, a lantern at the door, and lamp posts on the plinth's corners.
+- **Cells round the yard:**
+  - ten grave cells down the left, two graves each (warm headstones, some leaning, with grass mounds and flowers or candles);
+  - a tomb cell;
+  - four raised hexagonal herb beds;
+  - the well;
+  - the god's statue on its raised cell, with offerings (bowls of fruit, flowers, candles);
+  - a woodpile under a lean-to, with a chopping block;
+  - two benches.
+- **Beyond the wall:** level terraces, 0.3 m a hex and four at most, faced in grey rock, as on the hills combat maps. Mossy boulder outcrops, three-tier pines and clustered broadleaves stand on them.
+- **Scale:** every piece is modelled in metres against the 1.3 m minis. No map tile props are reused or scaled up. No peaks: the tile has none and shares none with its neighbours.
+
+**The god's look (hook):** the statue and banners follow the god the player chose (the Acolyte's dream voice; Ethan, Nov 12, 2026). They use three own materials for Godot to recolour per god:
+- `god_cloth`: the banners' cloth (placeholder #F2EEE2);
+- `god_trim`: their stripe (placeholder #3F6C9B);
+- `god_symbol`: a disc on each banner and on the statue's breast (placeholder #E8C04A).
+The symbol is a plain disc for now. Per-god symbol shapes, and the gods' colours, aren't set yet.
+
+**View:** `view_shift` is `[0, 0, -3.3]`, as Dunfaire's. The whole chapel is in view at 33 m.
 
 **Places and spots:**
 
 | Place | Hex | Here |
 | --- | --- | --- |
-| `chapel` | (1, -3) | The chapel door, off the 19 hexes |
+| `chapel` | (1, -3) | The chapel's steps, off the 19 hexes |
 
 | Spot set | Hexes |
 | --- | --- |
 | `none` | As Dunfaire's: (1, -1), (0, -1), (2, -1), (1, 0) |
-| `chapel` | Before the chapel's door: (1, -2), (0, -2), (2, -2), (1, -1) |
+| `chapel` | On the paved forecourt before the steps: (1, -2), (0, -2), (2, -2), (1, -1) |
 
-No keepers. The cards will be Rest and Swap party (Nov 10, 2026); they aren't hooked up. The nearest anything stands to a spot is 1.32, at (2, -1), from a grave.
+No keepers. The cards will be Rest and Swap party (Nov 10, 2026); they aren't hooked up. The nearest anything stands to a spot is 0.97 m. The spots all stand on yard-level cells; the raised cells start at row -3.
 
-**Props reused:**
-- From `start_tiles.py`: `rime_chapel`, copied without its mound, its yard wall run round the view instead, the windows `ts_glow`; its graves, repeated down the yard; `block`, `door`, `bench`.
-- From `build_tiles.py`: the outcrop's boulders (copied, standing on the terraces); Dunfaire's copy of the tiles' tree.
-- Nothing new was modelled.
+**Lights** (placeholder, at night):
+- the door's lantern, #FFD27A, 30 W;
+- the two lamps at the gap, #FFD27A, 22 W each;
+- the shrine's candles, #FFB25A, 14 W, flickering.
 
-**Lights** (placeholder): the chapel's door, #FFD27A, 30 W, at night.
+**Triangles:** 19,131 of the placeholder 20,000.
 
-**Triangles:** 6,308 of the placeholder 20,000.
-
-**Comparison:** `art/preview/place_east_rime_chapel_compare_v2.png`: top, v2 at 21 m (the `chapel` spots) and 33 m; bottom, v1 the same. `_compare_v1.png` has v1 beside the approved start tile and the hills combat maps.
+**Comparison:** `art/preview/place_east_rime_chapel_compare_v4.png`. The top row is v4 at 21 m (the `chapel` spots) and 33 m; the bottom row is the rough v3 the same. `_compare_v2.png` and `_compare_v1.png` show the earlier rounds.
 
 ## Not checked
 
