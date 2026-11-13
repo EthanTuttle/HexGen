@@ -124,7 +124,13 @@ func _check_outpost(g: Dictionary) -> void:
 		if t == lm:
 			continue
 		var ps := _pieces(t)
-		var halls := ps.filter(func(p): return p.begins_with("outpost_hall_"))
+		var halls := ps.filter(func(p): return p.begins_with("stockade_"))
+		var want := RuinHalls.outpost(map.terrains, t).map(func(h): return h[0])
+		var have := ps.filter(func(p): return p.begins_with("stockade_") or p.begins_with("outpost_burrow_"))
+		want.sort()
+		have.sort()
+		if have != want or ps.any(func(p): return p.begins_with("outpost_hall_")):
+			bad += 1
 		var dug := halls.filter(func(p): return p.ends_with("_burrow")).size()
 		var holes := ps.filter(func(p): return p.begins_with("outpost_burrow_")).size()
 		counts[dug] = counts.get(dug, 0) + 1
@@ -133,7 +139,7 @@ func _check_outpost(g: Dictionary) -> void:
 			bad += 1
 		if not "overrun_outpost_centre" in ps:
 			bad += 1
-	_check(bad == 0, "outpost: six recoloured halls a tile, one or two dug with a burrow beside it (tiles by burrows: %s)" % [counts])
+	_check(bad == 0, "outpost: a stretch of stockade at each corner, one or two breached with a burrow outside (tiles by burrows: %s)" % [counts])
 	var old := 0
 	for t: Vector2i in g.tiles:
 		for p: String in _pieces(t):
