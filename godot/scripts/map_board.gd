@@ -29,7 +29,6 @@ const TERRAIN_MAP := {
 	Vector2i(3, 0): "hills",  # a lone hills tile, for its own peak
 }
 const BORDERED := ["farmland", "village"]
-const GHOSTS := "haunt_ghosts"   # the group of the ghost town's ghost-house pieces
 const BLEND_WIDTH := 1.6   # ground colour fade width; no doc value yet, matches ground cover's BLEND
 
 # render_animation.py
@@ -92,9 +91,8 @@ var _lava: StandardMaterial3D          # volcanic cracks, craters, the den
 var _lantern_red: StandardMaterial3D   # the slums' and Black Market's lanterns
 var _goblin_eye: StandardMaterial3D    # the eyes in the Overrun outpost's burrows and the Warren's mouth
 var _basilisk_eye: StandardMaterial3D  # the Basilisk Nest's slit eyes in its door and its dome's cracks
-var _haunt := {}                       # the ghost town's own materials (ghost_house, ghost_roof, ghost_window, haunt_glow, haunt_light), by name
+var _haunt := {}                       # the graveyard city's and the Crypt's own glows (haunt_glow, haunt_light), by name
 var _haunt_wisp: ShaderMaterial         # the wisps, drifting up
-var _ghosts_shown := false              # whether the ghost houses are showing (from dusk to dawn)
 ## The canyon (Canyon; art/handoff/desert_kit.md): generated once when a region finishes, and kept.
 var canyons := {}                      # canyon tile -> {openset, entrances, landmark, turn} of its region
 var canyon_stats := []                 # each generated region's triangles and times, for the check's report
@@ -1017,8 +1015,8 @@ func _setup_materials() -> void:
 						_basilisk_eye.emission = c
 						_basilisk_eye.resource_name = "basilisk_eye"
 					mesh.surface_set_material(k, _basilisk_eye)
-	# Tiles v94, the ghost town (art/handoff/ruins_kit.md -> Ghost materials): see-through ghost houses and roofs over the shells,
-	# lit windows, glows, and wisps that drift up. resource_name keeps each name, since the meshes are shared between boards.
+	# The graveyard city and the Crypt (art/handoff/ruins_kit.md -> Glows): the mausolea's doors, the open graves, the Crypt's
+	# cracks and stairs, and wisps that drift up. resource_name keeps each name, since the meshes are shared between boards.
 	for mesh: Mesh in _kit.values():
 		for k in mesh.get_surface_count():
 			var mat_name := Kit.material_name(mesh, k)
@@ -1032,20 +1030,13 @@ func _setup_materials() -> void:
 					_haunt_wisp.set_shader_parameter("colour", (had as BaseMaterial3D).albedo_color)
 					_haunt_wisp.resource_name = mat_name
 				mesh.surface_set_material(k, _haunt_wisp)
-			elif mat_name in ["ghost_house", "ghost_roof", "ghost_window", "haunt_glow", "haunt_light"]:
+			elif mat_name in ["haunt_glow", "haunt_light"]:
 				if not _haunt.has(mat_name):
 					var g := _glow.duplicate() as StandardMaterial3D
 					var c := (mesh.surface_get_material(k) as BaseMaterial3D).albedo_color
 					g.albedo_color = Color(c, 1.0)
 					g.emission = Color(c, 1.0)
 					g.resource_name = mat_name
-					if mat_name.begins_with("ghost_"):
-						# The shell shows through: no depth write, both sides, no shadows (the nodes cast none either). The window is
-						# opaque at night, but fades with the house at dusk and dawn.
-						g.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-						g.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-						g.cull_mode = BaseMaterial3D.CULL_DISABLED
-						g.disable_receive_shadows = true
 					_haunt[mat_name] = g
 				mesh.surface_set_material(k, _haunt[mat_name])
 	# The swamp kit: what glows at night.
@@ -1069,29 +1060,15 @@ func _setup_materials() -> void:
 	_mist_mat.shader = load("res://shaders/mist.gdshader")
 
 
-## The ghost town by the light (0 day, 1 night; art/handoff/ruins_kit.md -> Night swap): the ghost houses fade in at dusk and out at
-## dawn, hidden by day; the glows are lit a little by day. The ghosts are fainter and the windows softer than the handoff's (Ethan,
-## Nov 10: more see-through, windows dimmer and less white); the rest are the previews' strengths (PLACEHOLDER until seen on the phone).
-const GHOST_HOUSE := Vector2(0.06, 0.15)   # alpha, emission at full night (handoff 0.2, 0.45)
-const GHOST_ROOF := Vector2(0.1, 0.12)     # (handoff 0.3, 0.4)
-const GHOST_WINDOW := Vector2(0.6, 0.8)    # (handoff opaque, 5): low enough that #F2F7C8 keeps its tint under the bloom
+## The graveyard city's glows by the light (0 day, 1 night; art/handoff/ruins_kit.md -> Glows): lit a little by day. Strengths are
+## the previews' (PLACEHOLDER until seen on the phone).
 func _set_haunt(night: float) -> void:
-	for pair in [["ghost_house", GHOST_HOUSE], ["ghost_roof", GHOST_ROOF], ["ghost_window", GHOST_WINDOW]]:
-		if _haunt.has(pair[0]):
-			_haunt[pair[0]].albedo_color.a = pair[1].x * night
-			_haunt[pair[0]].emission_energy_multiplier = pair[1].y * night
 	if _haunt.has("haunt_glow"):
 		_haunt.haunt_glow.emission_energy_multiplier = lerpf(0.4, 1.4, night)
 	if _haunt.has("haunt_light"):
 		_haunt.haunt_light.emission_energy_multiplier = lerpf(0.2, 1.2, night)
 	if _haunt_wisp:
 		_haunt_wisp.set_shader_parameter("strength", lerpf(0.5, 2.2, night))
-	var show := night > 0.02
-	if show != _ghosts_shown:
-		_ghosts_shown = show
-		for g in get_tree().get_nodes_in_group(GHOSTS):
-			if is_ancestor_of(g):
-				(g as Node3D).visible = show
 
 
 ## A bog tile's low mist: two flat layers of drifting haze (PLACEHOLDER heights and look; three layers at
@@ -1204,11 +1181,7 @@ func _build_tile(t: Vector2i) -> void:
 	for f in _features.get(t, []):
 		Kit.place(node, _kit, f[1], Vector2(f[2], f[3]), deg_to_rad(f[4]))
 	for h: Array in RuinHalls.props(name, terrains, t):   # ruins: corner halls, re-picked as the neighbours change
-		var piece := Kit.place(node, _kit, h[0], at + Vector2(h[1], h[2]), h[3])
-		if piece and h[0].begins_with("haunted_ghost_"):   # the ghost houses: night only (_show_ghosts)
-			piece.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			piece.visible = _ghosts_shown
-			piece.add_to_group(GHOSTS)
+		Kit.place(node, _kit, h[0], at + Vector2(h[1], h[2]), h[3])
 	var fx := ForestFx.for_tile(name, at, t, landmark_turns.get(t, 0))
 	if fx:
 		node.add_child(fx)

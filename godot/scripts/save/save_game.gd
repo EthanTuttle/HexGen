@@ -22,7 +22,7 @@ const REBUILT := {
 	"MapBoard": ["water_shapes", "boats", "slot_nodes", "_kit", "_ground", "_ground_img", "_ground_tex", "_tile_nodes", "_water_node",
 		"_water_cache", "_water_mats", "_port_boats", "_still_mists", "_slots_node", "_slot_mesh", "_slot_mat", "_still_water", "_glow",
 		"_lamp", "_st_glow", "_mist_mat", "_fey", "_window", "_web", "gates", "party_walks", "lightning", "_faint", "_graphs", "raised",
-		"tiles_built", "streets", "party_at", "climbs", "_outer", "_corners", "_ledges", "_links", "_shape", "_lava", "_lantern_red", "_goblin_eye", "_basilisk_eye", "_haunt", "_haunt_wisp", "_ghosts_shown",
+		"tiles_built", "streets", "party_at", "climbs", "_outer", "_corners", "_ledges", "_links", "_shape", "_lava", "_lantern_red", "_goblin_eye", "_basilisk_eye", "_haunt", "_haunt_wisp",
 		"canyon_stats", "_canyon_meshes", "_canyon_dirty", "_canyon_mat", "_gorge_rock", "_gorge_ground", "_fall_mat",
 		"_gorge_foam_mat", "_dressing_cache", "_surface_cache", "gorge_build_us", "marsh_job_ms", "marsh_data_us", "marsh_build_us",
 		"marsh_cover_us", "gorge_job_ms", "_feywild", "fey_job_ms", "fey_build_us", "_fey_material", "_fey_portal", "_marsh",
