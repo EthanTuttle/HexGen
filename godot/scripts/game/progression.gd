@@ -117,7 +117,7 @@ const SCHOOL_ICON := {"Summoner": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 8a4 4
 	"Order of Light": "M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16 M12 1v2 M12 21v2 M1 12h2 M21 12h2",   # PLACEHOLDER icons (07: subclass icons open)
 	"Order of Night": "M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z",
 	"Order of Good": "M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z",
-	"Order of Evil": "M12 3l2.5 6H21l-5.2 4 2 6.5L12 15.6 6.2 19.5l2-6.5L3 9h6.5z",
+	"Order of Evil": "M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z M12 8.5l-1.6 4 3 2-1.4 4",   # broken heart (Ethan, Nov 16, 2026)
 	"Narrator": "M4 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z M20 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z",   # PLACEHOLDER icons
 	"Musician": "M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0 M20 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0",
 	"Dancer": "M12 4a2 2 0 1 0 0 4a2 2 0 1 0 0-4 M12 8v6l-4 6 M12 14l4 6 M7 11l5-2 5 2",

@@ -208,6 +208,7 @@ func _creator() -> void:
 		await tap_on(g)
 		await _wait(0.5)
 		check(c.god == g and c.done("god") and control(Cards.ALL[Progression.GODS[g]].n) != null, "god: %s shows its free spell, %s" % [g, Cards.ALL[Progression.GODS[g]].n])
+		check(not _marks(get_tree().root, func(n): return n is Label and n.text == CreatorData.GBL[g]).is_empty() and _marks(get_tree().root, func(n): return n is Label and n.text.to_lower() == "starting deck").is_empty(), "god: %s's banner says who the god is and who follows them, not its deck cards" % g)
 		await shot("god_%s" % g.to_lower())
 	await tap_on(Cards.ALL[Progression.GODS[c.god]].n)
 	await _wait(0.15)

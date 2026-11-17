@@ -247,8 +247,8 @@ func _god_items() -> Array:
 	for g: String in Progression.GODS:
 		var ter: String = D.GX[g][0]
 		var k := Cards.get_card(Progression.GODS[g])
-		out.append({"id": g, "n": g, "bl": Progression.GOD_OF[g].left(1).to_upper() + Progression.GOD_OF[g].substr(1), "icon": D.GX[g][1], "cloth": Color(D.TER[ter][1]),
-			"dark": D.DARK.has(ter), "chips": [], "lines": [["Starting deck", "+2 %s" % D.TER[ter][0]]],
+		out.append({"id": g, "n": g, "bl": D.GBL[g], "icon": D.GX[g][1], "cloth": Color(D.TER[ter][1]),
+			"dark": D.DARK.has(ter), "chips": [], "lines": [],
 			"kit": [{"card": true, "n": k.n, "ap": str(k.ap), "icon": k.icon, "t": k.desc.substr(k.desc.find(": ") + 2), "use": "", "tag": "Free spell · " + g}]})
 	return out
 
@@ -609,7 +609,7 @@ class Banner extends Control:
 		var subs: Array = it.get("subs", [])
 		if not subs.is_empty():
 			v.add_child(_sub_row(subs, inner, stitch, ink, view))
-		else:
+		elif not (it.chips.is_empty() and it.lines.is_empty() and it.get("passives", []).is_empty()):   # nothing under it (gods): no divider
 			v.add_child(_stitch(stitch, inner))
 		var facts := CUI.hbox(16)
 		facts.alignment = BoxContainer.ALIGNMENT_CENTER

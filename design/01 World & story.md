@@ -37,17 +37,19 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - How clerics and Holy Defenders choose gods, and how orders cut across gods: see [Classes & combat](03 Classes & combat.md) → Cleric spells.
 - The Acolyte's dream voice is the god the player chooses.
 
-| God | Domain | Notes |
-| --- | --- | --- |
-| Aurora | Goddess of the sun |  |
-| Selene | Goddess of the moon |  |
-| Morin | God of the forge | Popular among dwarves |
-| Toyoko | Goddess of bounty and harvests |  |
-| Adam | God of the earth | Popular among druids |
-| Canto | God of music |  |
-| Eve | Goddess of trickery |  |
-| Tod | God of death |  |
-| Egan | God of flame | The cast-out god |
+| God | Domain | Notes | Banner lines (who they are; who follows them) |
+| --- | --- | --- | --- |
+| Aurora | Goddess of the sun |  | The goddess of the sun, warm and fierce. For those who stand up for the weak. |
+| Selene | Goddess of the moon |  | The goddess of the moon, calm and secret. For those who walk in shadow. |
+| Morin | God of the forge | Popular among dwarves | The god of the forge, much loved by dwarves. For those who make things to last. |
+| Toyoko | Goddess of bounty and harvests |  | The goddess of harvests, generous and kind. For farmers and those who welcome strangers. |
+| Adam | God of the earth | Popular among druids | The god of the earth, much loved by druids. For those who stand steady as stone. |
+| Canto | God of music |  | The god of music, who loves harmony above all. For those who bring people together. |
+| Eve | Goddess of trickery |  | The goddess of trickery, who loves a clever lie. For those who win by wit, not strength. |
+| Tod | God of death |  | The god of death, who keeps the dead at rest. For those who face the end without fear. |
+| Egan | God of flame | The cast-out god |  |
+
+- **Banner lines** (Ethan, Nov 16, 2026): the creator's God step shows each god's two lines, the way class and background banners show a blurb (rule: [Presentation](07 Presentation.md) → Character creator).
 
 **Tieflings and the flame god's bloodlines**
 
@@ -390,7 +392,7 @@ General; specifics come once gear and inventory are fleshed out. Rewards depend 
 - [x] ~~The sword pull scene's options, text, heads and the sword's name~~ (settled Oct 28, 2026: see The sword pull scene)
 - [ ] Chapter beats for each background path (between its story cards and convergence) and for the shared main story after Gronogon
 - [ ] Background unique starter item for each background (idea parked)
-- [ ] Pantheon follow-ups: any further detail per god (symbols, personalities, what followers value). (Tiefling bloodline spells: see Classes & combat.)
+- [ ] Pantheon follow-ups: any further detail per god (symbols, personalities). Who each god is and who follows them: settled Nov 16, 2026 (Pantheon → Banner lines). (Tiefling bloodline spells: see Classes & combat.)
 - [ ] Enemy roster and bosses (including the named Hayes rivals)
 - [ ] **New (Oct 27, 2026):** a player Hayes: how NPCs and the Hayes rivals react, and why this Hayes turned from the cult
 - [ ] **New (found in the split):** three companions' homes are lairs (Kris at Lake Serpent's Lair, Dolmund at Salamander Den, Reginald at Plague Pit), but lairs are "a one-time boss fight, then a cleared landmark". What happens to the NPC there, and does the boss fight come before or after meeting them?
