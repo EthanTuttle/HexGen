@@ -256,6 +256,13 @@ Two-handed grips and fist weapons use no offhand variant. A shield or second wea
 - **Blurbs** (style set Oct 26, 2026 from Ethan's Fighter blurbs; the blurbs themselves: [Classes & combat](03 Classes & combat.md) → Subclass blurbs): one sentence of about 10–12 words. It opens with "A" plus an adjective or role and an archetype noun ("A mighty warrior", "A watchful master of war"), then a short clause on how they fight or what drives them ("who …", "whose …" or a comma and an "-ing" verb). Flavour, not mechanics: no card names, numbers or AP, and a half-class's borrowed class is hinted at, not named. Vary the archetype nouns within a class (the Cleric drafts leaned on "priest" three times).
 - Cut under these rules (in each screen's next version): fight difficulty, draw notes, the details hint and the level-up sentence on the after-combat screen (v3); its "To the shared inventory" subtitle (v4); combat's Move rule sentence; exploration's night-building toast; the level-up screen's "Milestone rewards are shared by everyone" and its doc references.
 
+**Screen sizes** (rules chosen Nov 16, 2026, after the first Mac full-screen check; every screen follows them, and the game is fixed to match)
+
+- **Shapes:** every screen works on any landscape shape from the iPhone's 19.5:9 to the Mac's 16:10, which covers 16:9 PC monitors in between. Mockups stay 844 × 390, the phone frame; the shapes beyond it are checked in the game (full screen on the Mac).
+- **UI scale: fit the frame, capped.** The whole 844 × 390 mockup frame always fits: the UI scales by whichever of the screen's width or height runs out first, so a taller screen gets extra height and a wider one extra width, never less than the mockup. It stops growing at a cap (placeholder: 2 pt per mockup point), so a big monitor shows more board instead of bigger buttons.
+- **HUD pieces pin to their edge.** Trays, the hand, the hotbar, panels and buttons on hex screens (map, combat, scenes) keep to the edge or corner they sit on in the mockup, at the mockup's distance from it: the combat hotbar stays along the bottom, the hand top right, the party tray on the left. All extra space goes to the board in the middle. They also keep out of the phone's safe area (Camera and controls → Phone screen edges).
+- **Menus cap their size and centre.** Full-screen menus (the hero creator, action cards, character and gear, after combat, level-up) grow with the extra room up to a cap (placeholder: 1.25 × the mockup's size in each direction), then stop and sit centred, with the backdrop filling the rest. Cards, tiles and buttons inside keep their own proportions rather than stretching.
+
 **Character and gear screen** (layout "A v3", chosen Oct 21, 2026)
 
 - The character model sits in a large central hex, the main focus of the screen.
@@ -605,6 +612,7 @@ The opening quest doubles as the tutorial. It teaches placing cards, combat and 
 - [x] ~~How ramps should look~~ (settled Nov 3, 2026: cut paths for canyon entrances and hills ledges, timber for the Raider Stronghold; see Region variant looks)
 - [x] ~~Combat map ways up~~ (settled Nov 3, 2026: landing with steps into every neighbouring cell; see Art direction → Combat maps)
 - [ ] Final palette and fonts for the "Game pieces" style (the mockup's colours and fonts are placeholders)
+- [ ] **New (Nov 16, 2026):** tune the screen-size caps in playtesting: the UI scale cap (2 pt per mockup point) and the menu cap (1.25 × the mockup) are placeholders (UI → Screen sizes)
 - [ ] **New (Nov 1, 2026):** landmark tile looks for every other core location (Art direction → Landmark tiles; forest, farmland, plains, hills, village, river and desert done)
 - [ ] Rarity cue that doesn't rely on colour alone, now that gear has no text labels (for colour-blind players)
 - [ ] What a short tap on a gear hex does on mobile, since long-press opens the details

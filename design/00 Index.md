@@ -16,7 +16,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 | [04 Weapons & gear](04 Weapons & gear.md) | Equipment slots, weapon and armor categories, class gear, weapon rules, weapon category cards, weapon mastery trees, loot, shared party inventory and gold |
 | [05 Cards & progression](05 Cards & progression.md) | Card types (terrain, Story; landmarks come from regions), deck and hand, hand refill and draw amounts, deck shaping, levels and milestones, general feats (levels 4 and 12), starting decks, class locations and class/subclass quests, landmark list |
 | [06 Multiplayer & tech](06 Multiplayer & tech.md) | Platform, all multiplayer rules, saving |
-| [07 Presentation](07 Presentation.md) | Art direction (including minis and their pose library), UI style ("Game pieces"), screen text rules, item display, character and gear screen, combat screen, exploration screen, after-combat and level-up screens, weapon mastery screen, action cards screen (one hotbar per weapon set), screen mockups (workflow, placeholders and index), camera and controls, audio, onboarding |
+| [07 Presentation](07 Presentation.md) | Art direction (including minis and their pose library), UI style ("Game pieces"), screen text rules, screen sizes, item display, character and gear screen, combat screen, exploration screen, after-combat and level-up screens, weapon mastery screen, action cards screen (one hotbar per weapon set), screen mockups (workflow, placeholders and index), camera and controls, audio, onboarding |
 
 **Characters** ([characters/](characters/00%20Writing%20guide.md)): how characters are written. [Writing guide](characters/00%20Writing%20guide.md) (dialogue rules, line types, tells to avoid, how we write, voice sheet template), one file per companion (voice sheet and every line they say) [Pairs](characters/Pairs.md) (inn banter between two companions) and [Places](characters/Places.md) (lines for generated places such as towns, per moment slot).
 
@@ -203,6 +203,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 **Presentation**
 
 - [ ] Final palette and fonts for the "Game pieces" UI style
+- [ ] New (Nov 16): tune the screen-size caps in playtesting (UI scale 2 pt per mockup point, menus 1.25 × the mockup; placeholders; see Presentation → Screen sizes)
 - [ ] Rarity cue that doesn't rely on colour alone (proposed in character & gear v11: 1 dot for Rare, 2 for Legendary)
 - [ ] What a short tap on a gear hex does on mobile (proposed in character & gear v11: it picks the item up)
 - [ ] New: maximum ability score (from v10 the gear screen's abilities strip keeps coins on one line, so they get hard to count past about 6)

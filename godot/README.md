@@ -20,7 +20,16 @@ Before adding or keeping any sentence on screen, check it against `design/07 Pre
 
 ## Standing rule: check the Mac too
 
-Whenever a screen check runs at phone size, run it again full screen on Ethan's MacBook Pro 14" (1512 × 982 pt, a 16:10 shape, so the layout gets much taller than the mockups' 844 × 390): add `--fullscreen` instead of the phone `--resolution`, on the Mac's own renderer (Forward+, no `--rendering-method mobile` or `--phone`). Report what goes wrong at that size alongside the phone results (Ethan, Nov 10, 2026). The default 1688 × 780 window is close to the phone's shape, so it isn't checked separately.
+Whenever a screen check runs at phone size, run it again full screen on Ethan's MacBook Pro 14" (1512 × 945 pt below the notch, which macOS keeps full-screen apps out of; 844 × 529 layout units, a 16:10 shape, so the layout gets much taller than the mockups' 844 × 390): add `--fullscreen` instead of the phone `--resolution`, on the Mac's own renderer (Forward+, no `--rendering-method mobile` or `--phone`). Report what goes wrong at that size alongside the phone results (Ethan, Nov 10, 2026). The default 1688 × 780 window is close to the phone's shape, so it isn't checked separately.
+
+## Standing rule: no fixed screen positions
+
+The screen-size rules are in `design/07 Presentation.md` → UI → Screen sizes (shapes from 19.5:9 to 16:10, UI scale capped, HUD pinned to its edge, menus capped and centred). In code:
+
+- **Never place UI at a fixed point of the 844 × 390 frame.** The frame is only where the mockup's numbers come from: a HUD piece is anchored to the edge or corner it sits on in the mockup, and its mockup distance from that edge is the offset (`UI.at_right` does this for the right edge; add the same for the bottom and corners rather than computing positions from 390 or 844).
+- **Menus** go in one capped, centred container, so a screen never stretches its own panels; cards and tiles inside keep their sizes.
+- **Check both ends** (Standing rule: check the Mac too): a layout that only works at 844 × 390 isn't done.
+- **Not yet following it** (Mac full-screen audit, Nov 10, 2026): combat (the hotbar, ally tray and details panel stay at their phone positions, so the hotbar floats over the board with a third of the screen empty below), the action cards screen (same), and the hero creator (banners and score cards stretch tall). The `--cardscheck` passed at phone size but failed 6 checks full screen, and `--front --check` got stuck on the scores step full screen (24 failed; an earlier full-screen run had passed it, so that one may be flaky). Their touch targets likely move with the size. The map, title and after-combat screens already sit right. The UI scale cap and menu cap aren't in yet.
 
 ## Playing the loop
 
