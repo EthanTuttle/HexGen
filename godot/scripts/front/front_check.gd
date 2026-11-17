@@ -545,6 +545,7 @@ func _dunfaire(g: Game, back_to: Vector2i) -> void:
 	await _wait(0.8)
 	check(g.map.visible and not g.busy, "dunfaire: Leave hands the map back")
 	g.run.background = was
+	g.encounters.clear()   # the rest's 8 hours rolled spawns, which would stop the walk back
 	g.walk_to(back_to)
 	while g.busy or g.party_tile != back_to:
 		await get_tree().process_frame
