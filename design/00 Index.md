@@ -52,7 +52,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Each companion's chime-in lines~~ (written Oct 28: in each companion's file in characters/). Still open: more lines later; a Reginald variant for heroes he doesn't serve
 - [x] ~~The Lady of the Lake's last details~~ (settled Oct 28: Sir Bedivere, a far-off chimera's lair, water spirits, she sinks for good if beaten, the old kings left vague). Still open: the chimera and water spirits in the enemy roster
 - [ ] Background unique starter item for each background (parked)
-- [ ] Pantheon follow-ups: further detail per god
+- [ ] Pantheon follow-ups: further detail per god (symbols, personalities; banner lines settled Nov 16, 2026)
 - [ ] Enemy roster and bosses
 - [ ] New (Oct 27): a player Hayes tiefling: how NPCs and the Hayes rivals react
 - [ ] New: what happens to companions whose homes are lairs (one-time boss fights)
@@ -96,7 +96,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
 - [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
 - [x] ~~Each background's proficiency list~~ (settled Oct 30: 3 each; see World & story → Backgrounds)
-- [ ] New: the College's skill list for Bard heroes
+- [x] ~~The College's skill list for Bard heroes~~ (Nov 12, 2026: Persuade, Deceive, Intimidate, Lore)
 - [ ] New: can a failed social check be retried in the same conversation?
 - [ ] Class and subclass cards at level 15 and later (in progress; level 10 gives no card)
 - [x] ~~Does the player name the hero?~~ (settled Oct 30: yes, typed; pronouns are a separate pick)
@@ -308,4 +308,5 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Readable flips~~ (Nov 7: coins = score ± modifiers as coins; heads = flat defence: heroes Clothes 1, Armoured 2, +1 shield; foes minion/soldier 1, elite 2, boss 3; see 03 → Coin checks)
 - [ ] New (Nov 6): armed or unarmed tag for each foe, for Disarm (placeholder: all but beasts; see Weapons & gear)
 - [ ] New (Nov 1): design a pause menu; where Remove guest sits and what a removed guest sees
+- [ ] New (Nov 16): rethink the spell pick so early spells aren't shown as belonging to a subclass (see Presentation)
 - [x] ~~Where the hosting switch goes~~ (settled Nov 1: v6a, Join becomes Multiplayer; v7 steadies it)

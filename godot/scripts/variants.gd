@@ -16,7 +16,7 @@ const TIER2 := {"forest": ["fey_wood", "dark_wood", "heartwood"],
 	"hills": ["snowy_peaks", "volcanic_peaks", "monastery_heights"],
 	"village": ["fortified_town", "slums", "scholars_town"],
 	"river": ["great_lake", "rapids", "still_waters"], "desert": ["badlands", "oasis", "canyon"],
-	"swamp": ["wisp_marsh", "rot_swamp", "smugglers_bayou"], "ruins": ["haunted_ruins"]}
+	"swamp": ["wisp_marsh", "rot_swamp", "smugglers_bayou"], "ruins": ["haunted_ruins", "basilisk_ruins"]}
 
 ## Display names of the tier 2 variants and their core locations (DOCS: design/02 -> Region variants and locations).
 const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark wood", "Spider Nest"],
@@ -30,7 +30,8 @@ const TIER2_NAMES := {"fey_wood": ["Fey wood", "Fey Court"], "dark_wood": ["Dark
 	"rapids": ["Rapids", "Troll Bridge"], "still_waters": ["Still waters", "Meditation Rock"], "badlands": ["Badlands", "Raider Stronghold"],
 	"oasis": ["Oasis", "Oasis Bazaar"], "canyon": ["Canyon", "Echo Cave"], "wisp_marsh": ["Will-o'-wisp marsh", "Wisp Hollow"],
 	"rot_swamp": ["Rot swamp", "Plague Pit"], "smugglers_bayou": ["Smugglers' bayou", "Thieves Guild"],
-	"feywild_crossing": ["Feywild crossing", "Fey Gate"], "haunted_ruins": ["Haunted ruins", "Crypt"]}
+	"feywild_crossing": ["Feywild crossing", "Fey Gate"], "haunted_ruins": ["Haunted ruins", "Crypt"],
+	"basilisk_ruins": ["Basilisk ruins", "Basilisk Nest"]}
 
 ## Each variant's core landmark piece (variants.LANDMARKS, inverted). Variants not listed have no landmark art yet.
 const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "dark_wood": "spidernest",
@@ -42,7 +43,7 @@ const LANDMARK_OF := {"deep_forest": "hiddenshrine", "fey_wood": "feycourt", "da
 	"scholars_town": "college", "delta": "riverport", "great_lake": "serpentlair", "rapids": "trollbridge",
 	"still_waters": "meditationrock", "wasteland": "sandstonesphinx", "badlands": "raiderstronghold", "oasis": "oasisbazaar",
 	"canyon": "echocave", "bog": "witchhut", "wisp_marsh": "wisphollow", "rot_swamp": "plaguepit", "smugglers_bayou": "thievesguild", "feywild_crossing": "feygate",
-	"overrun_outpost": "warren", "haunted_ruins": "crypt"}
+	"overrun_outpost": "warren", "haunted_ruins": "crypt", "basilisk_ruins": "basilisknest"}
 
 ## Landmark -> its variant (variants.LANDMARKS).
 const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood",
@@ -54,13 +55,13 @@ const LANDMARKS := {"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "f
 	"college": "scholars_town", "riverport": "delta", "serpentlair": "great_lake", "trollbridge": "rapids",
 	"meditationrock": "still_waters", "sandstonesphinx": "wasteland", "raiderstronghold": "badlands", "oasisbazaar": "oasis",
 	"oasispool": "oasis", "echocave": "canyon", "witchhut": "bog", "wisphollow": "wisp_marsh", "plaguepit": "rot_swamp",
-	"thievesguild": "smugglers_bayou", "feygate": "feywild_crossing", "warren": "overrun_outpost", "crypt": "haunted_ruins"}
+	"thievesguild": "smugglers_bayou", "feygate": "feywild_crossing", "warren": "overrun_outpost", "crypt": "haunted_ruins", "basilisknest": "basilisk_ruins"}
 
 ## Landmarks that are a centre piece only: their tile uses the variant's wedges (variants.LANDMARK_CENTRES).
 const LANDMARK_CENTRES := ["feycourt", "spidernest", "greatwindmill", "abandonedbarn", "militiabarn", "harvestfestival",
 	"nomadcamp", "oldbattlefield", "thunderbirdnest", "traininggrounds", "clanhall", "yeticave", "salamanderden",
 	"library", "tradinghouse", "keep", "blackmarket", "college", "riverport", "serpentlair", "trollbridge", "meditationrock",
-	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild", "feygate", "warren", "crypt"]
+	"sandstonesphinx", "raiderstronghold", "oasisbazaar", "oasispool", "echocave", "witchhut", "wisphollow", "thievesguild", "feygate", "warren", "crypt", "basilisknest"]
 
 ## How much higher a raised region's pieces stand (variants.RAISE), and where a ledge's top path comes out.
 const RAISE := 5.0
@@ -77,6 +78,7 @@ const MILL_HUB := Vector3(0.8, 0, 3.15)
 const GROUND := {"deep_forest": "deep_forest", "meadows": "plains", "highlands": "highland_grass",
 	"windmill_country": "plains", "market_town": "cobble", "delta": "plains", "bog": "bog",
 	"wasteland": "wasteland", "overrun_outpost": "op_ground", "warren": "op_ground", "haunted_ruins": "gt_ground", "crypt": "gt_ground",
+	"basilisk_ruins": "bs_ground", "basilisknest": "bs_ground",
 	"fey_wood": "fey_wood", "dark_wood": "dark_wood", "heartwood": "heartwood",
 	"treeoflife": "heartwood", "hiddenshrine": "deep_forest", "feycourt": "fey_wood", "spidernest": "dark_wood",
 	"haunted_homesteads": "haunted", "raided_farms": "raided", "cider_orchards": "orchard_grass",

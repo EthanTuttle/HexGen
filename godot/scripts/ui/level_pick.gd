@@ -177,7 +177,7 @@ func _done(st: Array) -> bool:
 
 
 func _tier1_of(m: Dictionary, sub: String) -> Array:
-	var src: Dictionary = Progression.WIZARD_T1 if Progression.klass(m) == "wizard" else Progression.CLERIC_T1
+	var src: Dictionary = Progression.tier1_of(Progression.klass(m))
 	return src.get(sub, []).filter(func(id): return not id in m.get("cards", []))
 
 
@@ -582,7 +582,7 @@ func _spell_columns(m: Dictionary, groups: Dictionary, chosen: Array) -> Array:
 					if picks[i].spells.size() >= Progression.SPELL_PICKS_3:
 						picks[i].spells.pop_front()
 					picks[i].spells.append(id)
-			var tag := "%s spell" % g if Progression.klass(m) == "wizard" else g
+			var tag := g if Progression.klass(m) == "cleric" else "%s spell" % g
 			rows.append(_card_row(id, tag, on, choose, note))
 		cols.append({"title": g.replace("Order of ", ""), "icon": Progression.SCHOOL_ICON.get(g, ""), "rows": rows})
 	return cols

@@ -15,7 +15,9 @@ const BACKGROUNDS := {
 	"folk_hero": {"terrain": "forest", "place": "The Oak & Lantern"},
 	"noble": {"terrain": "farmland", "place": "Weizenhof Estate"},
 }
-const CLASS_TERRAINS := {"fighter": ["plains", "desert"], "ranger": ["forest", "plains"], "rogue": ["swamp", "village"], "wizard": ["hills", "ruins"]}   # DOCS (05 -> Starting decks)
+const CLASS_TERRAINS := {"fighter": ["plains", "desert"], "ranger": ["forest", "plains"], "rogue": ["swamp", "village"], "wizard": ["hills", "ruins"],
+	"cleric": ["river", "village"], "bard": ["village", "plains"]}   # DOCS (05 -> Starting decks)
+const GOD_CARDS := 2                     # DOCS (05 -> Starting decks): a Cleric's god adds 2 of its terrain
 const CARDS_EACH := 5
 const ONE_OF_EACH := ["forest", "plains", "farmland", "village", "river", "hills", "swamp", "desert", "ruins"]   # design/06: so all can be built
 
@@ -24,7 +26,8 @@ var klass := "fighter"
 var race := ""                 # "" with no creator: Rules.HERO_DEFAULT
 var sub := ""                  # the race's sub-type: "Wood elf", "Metal", "Blue", "Hayes"
 var elf_spell := ""            # a high elf's pick: "Lull"
-var spells: Array = []         # a Wizard's two level-1 picks, as card ids: ["firebolt", "wisp"]
+var spells: Array = []         # a caster's two level-1 picks, as card ids: ["firebolt", "wisp"]
+var god := ""                  # a Cleric's god: "Aurora"
 var scores := {}               # STR .. CHA from the creator; empty: Rules.HERO_DEFAULT's
 var proficiencies: Array = []
 var main := ""                 # the creator's weapons and armour (Gear ids; "shield", "none"; "armoured"); "": HERO_DEFAULT's
@@ -71,7 +74,9 @@ static func for_launch() -> RunSetup:
 			run.sub = a.split("=")[1]
 		if a.begins_with("--spell="):
 			run.elf_spell = a.split("=")[1]
-		if a.begins_with("--spells="):   # test aid: a Wizard's picks ("--spells=firebolt,wisp")
+		if a.begins_with("--god="):   # test aid: a Cleric's god ("--god=Selene")
+			run.god = a.split("=")[1]
+		if a.begins_with("--spells="):   # test aid: a caster's picks ("--spells=firebolt,wisp")
 			run.spells = Array(a.trim_prefix("--spells=").split(","))
 		# Test aid: the hero's class and gear ("--class=ranger --main=shortbow --armour=Light").
 		if a.begins_with("--class="):
@@ -97,6 +102,7 @@ static func from_hero(hero: Hero) -> RunSetup:
 	run.sub = hero.sub
 	run.elf_spell = hero.elf_spell
 	run.spells = hero.spells.duplicate()
+	run.god = hero.god
 	run.scores = hero.scores.duplicate()
 	run.proficiencies = hero.proficiencies.duplicate()
 	run.main = hero.gear.get("main", "")
@@ -127,6 +133,9 @@ func deck_cards() -> Dictionary:
 	var terrains: Array = CLASS_TERRAINS[klass] + [BACKGROUNDS[background].terrain]
 	for t: String in terrains:
 		cards[t] = cards.get(t, 0) + CARDS_EACH
+	if god != "":   # clerics start with 17 (05)
+		var gt: String = CreatorData.GX[god][0]
+		cards[gt] = cards.get(gt, 0) + GOD_CARDS
 	for t: String in ONE_OF_EACH:
 		cards[t] = cards.get(t, 0) + 1
 	return cards

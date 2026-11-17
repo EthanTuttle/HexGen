@@ -107,7 +107,7 @@ func _levels() -> void:
 					if s.has("card"):
 						_check(s.card in m.cards, "%s: gains %s" % [m.name, Cards.ALL[s.card].n])
 					else:
-						_check(gained.size() == 1 and gained[0] in (Progression.WIZARD_T1 if Progression.klass(m) == "wizard" else Progression.CLERIC_T1)[sub],
+						_check(gained.size() == 1 and gained[0] in Progression.tier1_of(Progression.klass(m))[sub],
 								"%s: a tier-1 spell of %s (%s)" % [m.name, sub, gained])
 	var mel := game.party.filter(func(m): return m.name == "Mel")
 	if not mel.is_empty():

@@ -1,6 +1,6 @@
 # Heads or Hexes — instructions for Claude
 
-This repo holds the design docs for Heads or Hexes (working name HexGen, which the repo and folders still use), Ethan's card-driven, D&D-style hex-crawl RPG for PC and mobile. The art style is Dorfromantik-like. It also holds the prototype art under `art/`, whose binary files need Git LFS. Players place map cards to build the world, then walk their hero through it, fight on a tactical grid with coin flips, and refresh their hand through fights, quests and finished regions.
+This repo holds the design docs for Heads or Hexes (HexGen is the old working name, which the repo, folders and code still use; players only ever see Heads or Hexes, so never put HexGen in anything player-facing), Ethan's card-driven, D&D-style hex-crawl RPG for PC and mobile. The art style is Dorfromantik-like. It also holds the prototype art under `art/`, whose binary files need Git LFS. Players place map cards to build the world, then walk their hero through it, fight on a tactical grid with coin flips, and refresh their hand through fights, quests and finished regions.
 
 ## Source of truth
 

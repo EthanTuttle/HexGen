@@ -1,6 +1,6 @@
 ---
 name: refresh-build
-description: Rebuild the game from the latest main and install it as /Applications/HexGen.app on this Mac. Use only when Ethan asks to refresh, rebuild or update the installed Mac build.
+description: Rebuild the game from the latest main and install it as /Applications/Heads or Hexes.app on this Mac. Use only when Ethan asks to refresh, rebuild or update the installed Mac build.
 disable-model-invocation: true
 ---
 
@@ -14,7 +14,7 @@ Ethan runs this by hand when he wants the installed game brought up to date. Not
    godot/tools/build_mac.sh
    ```
 
-   It pulls `main` (fast-forward only), imports, exports a debug `build/mac/HexGen.app` (report button and debug menu on) with the **macOS** preset in `godot/export_presets.cfg`, quits HexGen if it's open, and replaces `/Applications/HexGen.app`.
+   It pulls `main` (fast-forward only), imports, exports a debug `build/mac/Heads or Hexes.app` (report button and debug menu on) with the **macOS** preset in `godot/export_presets.cfg`, quits the game if it's open, and replaces `/Applications/Heads or Hexes.app`.
 
 2. When it finishes, tell Ethan the last line (`Installed … from <commit>`), so he knows which commit he's playing.
 
