@@ -22,7 +22,7 @@ This rebuilds `gallery.js` and the thumbnails (`thumbs/`, not committed; needs a
 
 | Section | Comes from |
 | --- | --- |
-| What you do | Written in `index.html`, from the design docs (draft copy; not yet approved by Ethan) |
+| What you do | Written in `index.html`. Top line and the six blurbs picked by Ethan, Nov 20, 2026. Blurb 4 mentions high ground before its rule is settled (uphill cost is an open question in 03), on purpose |
 | In the game | Every image or video in `site/shots/` |
 | The world | Every **approved** file in `art/reviews.md` that's on disk, newest first |
 | Combat maps | The in-use maps in `art/combat/maps/README.md`, with their tactical idea |
