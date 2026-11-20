@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heads or Hexes</title>
+<meta name="description" content="A card-driven hex-crawl RPG for PC and mobile. Build the world from map cards, walk your party through it, and settle every fight with a flip of the coin.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="wordmark" href="#top">Heads <span>or</span> Hexes</a>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#game">In the game</a>
+    <a href="#world">The world</a>
+    <a href="#combat">Combat maps</a>
+    <a href="#evolution">How it grew</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">In development · PC and mobile</p>
+      <h1>Heads <span>or</span> Hexes</h1>
+      <p class="lede">Build the world one map card at a time, walk your party through the land you made, and settle every fight with a flip of the coin.</p>
+      <div class="actions">
+        <a class="token primary" href="#world">See the world</a>
+        <a class="token" href="#evolution">How it grew</a>
+      </div>
+    </div>
+    <div class="hero-art" id="hero-art"></div>
+  </section>
+
+  <section id="features" class="band">
+    <h2>What you do</h2>
+    <div class="features">
+      <article class="feature">
+        <div class="hex-icon">1</div>
+        <h3>Place the map</h3>
+        <p>Every map card you play becomes land. Forests merge into woods, fields into patchwork farmland, rivers into lakes and houses into towns. The map never ends, and a placed card stays for good.</p>
+      </article>
+      <article class="feature">
+        <div class="hex-icon">2</div>
+        <h3>Grow regions</h3>
+        <p>Grow a cluster to its goal and it transforms: your first big forest becomes deep, old forest, later ones fey wood or dark wood. Each finished region raises a landmark, like a heartwood's Tree of Life.</p>
+      </article>
+      <article class="feature">
+        <div class="hex-icon">3</div>
+        <h3>Heads, not dice</h3>
+        <p>Checks and attacks flip coins. Your score is how many coins you flip, the target's defence is how many heads you need, and cover, night and blessings add or take away coins you can see.</p>
+      </article>
+      <article class="feature">
+        <div class="hex-icon">4</div>
+        <h3>Fight on hexes</h3>
+        <p>Fights zoom into the hex where they start. Your whole party acts, then the foes. Every action is a card on a 7-slot hotbar paid for in action points: no cooldowns, spell slots or mana.</p>
+      </article>
+      <article class="feature">
+        <div class="hex-icon">5</div>
+        <h3>Day and night</h3>
+        <p>The day clock moves as you build and travel. The pastel sky drifts from peach at dawn to rose at dusk, and after dark you can only build where your party can see.</p>
+      </article>
+      <article class="feature">
+        <div class="hex-icon">6</div>
+        <h3>Play together</h3>
+        <p>Up to four players drop in and out of the host's world with a 6-letter code, each bringing their own hero, on PC and mobile with cross-play.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="game" class="band">
+    <h2>In the game</h2>
+    <p class="section-lede">Screenshots from the playable prototype.</p>
+    <div class="grid shots" id="shots"></div>
+  </section>
+
+  <section id="world" class="band">
+    <h2>The world</h2>
+    <p class="section-lede">Approved art from the prototype, newest first.</p>
+    <div class="chips" id="world-filters" role="tablist"></div>
+    <div class="grid" id="world-grid"></div>
+  </section>
+
+  <section id="combat" class="band">
+    <h2>Combat maps</h2>
+    <p class="section-lede">Each region has its own hand-built battlefields, each with its own tactical idea.</p>
+    <div class="chips" id="combat-filters" role="tablist"></div>
+    <div class="grid" id="combat-grid"></div>
+  </section>
+
+  <section id="evolution" class="band">
+    <h2>How it grew</h2>
+    <p class="section-lede">Every render gets a verdict. Drag the slider to compare a first try with the version that was approved.</p>
+    <div class="evo-picker chips" id="evo-picker"></div>
+    <div class="evo" id="evo"></div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>Heads or Hexes is in development. Everything shown is prototype art and may change.</p>
+</footer>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" aria-label="Close">×</button>
+  <button class="lb-nav lb-prev" aria-label="Previous">‹</button>
+  <figure>
+    <div class="lb-media"></div>
+    <figcaption><strong class="lb-title"></strong><span class="lb-meta"></span><p class="lb-note"></p></figcaption>
+  </figure>
+  <button class="lb-nav lb-next" aria-label="Next">›</button>
+</div>
+
+<script src="gallery.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

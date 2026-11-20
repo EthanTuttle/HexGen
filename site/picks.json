@@ -1,0 +1,35 @@
+{
+  "featured": [
+    "art/preview/village_scholars_map_v8.png",
+    "art/preview/swamp_smugglers_bayou_map_v4.png",
+    "art/preview/river_rapids_parties_map_v1.png",
+    "art/preview/place_fortified_town_day_none_wide_v4.png",
+    "art/preview/canyon_maze_map_v6.png",
+    "art/preview/oasis_map_v4.png"
+  ],
+  "hide": [
+    "art/preview/cover_data_v2.png",
+    "art/preview/cover_data_v2_monastery.png",
+    "art/preview/encounter_badge_curve_v1.png",
+    "art/preview/hero_hair_worst_v2.png",
+    "art/preview/pose_check_round5_1_v2.png",
+    "art/preview/pose_check_round6_1_v1.png",
+    "art/preview/allround_compare_close_v1.png",
+    "art/preview/ramp_study_game_v5.png"
+  ],
+  "titles": {
+    "art/preview/ruins_t0_growth_medium_map_v1.png": "Ruins",
+    "art/preview/lava_shot_volcanic_peaks_fissures_channel_front_v1.png": "Volcanic peaks",
+    "art/preview/hills_map_snowy_peaks_shelf_long_steps_v1.png": "Snowy peaks shelf",
+    "art/preview/river_pool_river_v4.png": "River pool",
+    "art/preview/encounters_x1_day_58m_v1.png": "Encounters on the map",
+    "art/preview/golem_final_set_v1.png": "Golems",
+    "art/preview/hero_kit_dragon_look_v1.png": "Dragonborn hero",
+    "art/preview/badlands_stronghold_alone_ramp_v2.png": "Badlands stronghold",
+    "site/shots/01_title_screen.jpg": "Title screen",
+    "site/shots/02_new_hero.jpg": "Making a hero",
+    "site/shots/03_farmland_encounter.jpg": "Farmland with an encounter",
+    "site/shots/04_deep_forest_landmark.jpg": "A finished deep forest and its landmark",
+    "site/shots/05_highlands.jpg": "Highlands"
+  }
+}
