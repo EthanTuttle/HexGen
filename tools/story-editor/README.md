@@ -24,3 +24,16 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 Every change saves on its own within a second ("Saved" in the top right). If the server stops, the status turns red and edits are kept in the browser. Next time the editor opens, it offers to restore them.
 
 The editor doesn't commit: commit `design/scenes/` like any other doc change.
+
+## Planned features
+
+Picked by Ethan, Nov 21, 2026, in this order of value. Not built yet.
+
+- **Play-through preview:** pick a hero (background, class, subclass, race, party, flags) and click through a scene with real coin flips. Shows which options appear, pass and fail, chime-ins on a miss by exactly 1, and the flags that get set.
+- **Voice sheet side panel:** while you edit a line, shows the speaker's voice sheet (from `design/characters/`) and the tells-to-avoid list beside it.
+- **Character view:** every line one character says, across all scenes, in one list.
+- **Flags & quests overview:** every flag, which scenes set it and which read it, with a note on what it means.
+- **Jump links and shared bits:** link to a node in another scene, and reuse small pieces (a haggle, a farewell) in many scenes instead of copying them.
+- **Later: Godot scene loader** that runs scene files on the social encounter screen (also in [design/scenes](../../design/scenes/README.md) → Open questions).
+
+Not picked for now: blind test mode, draft/approved line status, script export, fill-in token checks, stronger tell checks, canvas notes and groups, tidy layout and minimap, markdown lines in the tool, and importing the sword pull scene.
