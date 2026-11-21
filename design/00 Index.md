@@ -18,7 +18,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 | [06 Multiplayer & tech](06 Multiplayer & tech.md) | Platform, all multiplayer rules, saving |
 | [07 Presentation](07 Presentation.md) | Art direction (including minis and their pose library), UI style ("Game pieces"), screen text rules, screen sizes, item display, character and gear screen, combat screen, exploration screen, after-combat and level-up screens, weapon mastery screen, action cards screen (one hotbar per weapon set), screen mockups (workflow, placeholders and index), camera and controls, audio, onboarding |
 
-**Characters** ([characters/](characters/00%20Writing%20guide.md)): how characters are written. [Writing guide](characters/00%20Writing%20guide.md) (dialogue rules, line types, tells to avoid, how we write, voice sheet template), one file per companion (voice sheet and every line they say) [Pairs](characters/Pairs.md) (inn banter between two companions) and [Places](characters/Places.md) (lines for generated places such as towns, per moment slot).
+**Characters** ([characters/](characters/00%20Writing%20guide.md)): how characters are written. [Writing guide](characters/00%20Writing%20guide.md) (dialogue rules, line types, tells to avoid, how we write, voice sheet template), one file per character, covering companions, mentors, story NPCs and villains (profile, background, personality, personal quest, relationships, voice sheet and every line they say; moved there from World & story Nov 21, 2026), [Pairs](characters/Pairs.md) (inn banter between two companions) and [Places](characters/Places.md) (lines for generated places such as towns, per moment slot).
 
 **Scenes** ([scenes/](scenes/README.md)): branching scenes as JSON files, one per scene, canon for social encounters and narration tied to places and people (Nov 21, 2026). Written in the offline story editor (`tools/story-editor/`).
 
@@ -96,7 +96,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [ ] New: each companion's ability scores and gear at each stage of the game (mockups use placeholders)
 - [x] ~~Who flips a non-social check in an encounter scene~~ (settled Oct 28: the player picks)
 - [x] ~~Companion chime-in: who steps in; order with Silver Tongue~~ (settled Oct 28: highest score, then party order; Silver Tongue reflips first, automatically)
-- [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; World & story → Companion proficiencies). Still open: the size of dialogue checks
+- [x] ~~Story companions' proficiencies~~ (settled Oct 28: 2 each; each companion's profile in characters/). Still open: the size of dialogue checks
 - [x] ~~Each background's proficiency list~~ (settled Oct 30: 3 each; see World & story → Backgrounds)
 - [x] ~~The College's skill list for Bard heroes~~ (Nov 12, 2026: Persuade, Deceive, Intimidate, Lore)
 - [ ] New: can a failed social check be retried in the same conversation?

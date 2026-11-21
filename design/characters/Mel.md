@@ -1,10 +1,33 @@
 # Mel
 
-Soldier path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Soldier
+- **Race:** wood elf
+- **Class:** Rogue
+- **Subclass:** Con Artist
+- **Home:** Black Market (slums)
+- **Proficiencies:** Deceive, Thievery
+- **Status:** Voice sheet approved, Oct 28, 2026
+
+## Background
+
+Orphaned when cultists burned her wood elf village; she survives by cons.
+
+## Personality
+
+A small elf girl, lost and scared, who tries to steal food from the hero.
+
+## Personal quest
+
+Find what's left of her people.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 28, 2026. From the bio: a small wood elf girl, lost and scared, who tries to steal food from the hero; orphaned when cultists burned her village; survives by cons (rogue, Con Artist). Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 28, 2026. From the bio: a small wood elf girl, lost and scared, who tries to steal food from the hero; orphaned when cultists burned her village; survives by cons (rogue, Con Artist). Full bio: Background, above.
 
 - **Flavour:** she should be pretty funny (Ethan, Oct 28, 2026).
 - **How she talks:** fast, then deadpan. A quick patter when she's working a con, flat and dry the rest of the time; the jokes come from excuses delivered straight and lies that fall apart as she tells them. Earnest only when it slips out.

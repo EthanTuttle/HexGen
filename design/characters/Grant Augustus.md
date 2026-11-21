@@ -1,10 +1,33 @@
 # Grant Augustus
 
-Soldier path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Soldier
+- **Race:** human
+- **Class:** Bard
+- **Subclass:** Narrator
+- **Home:** Clan Hall (highlands), performing at clan feasts
+- **Proficiencies:** Lore, Perception
+- **Status:** Voice sheet approved, Oct 28, 2026
+
+## Background
+
+A failed bard who needs one great hero's tale to make his name.
+
+## Personality
+
+Enraptured by the hero; decides to follow them and sing their praises.
+
+## Personal quest
+
+Perform the hero's epic at a grand venue, where it goes wrong in a fun way.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 28, 2026. From the bio: a human bard (Narrator), enraptured by the hero, who follows them to sing their praises; a failed bard who needs one great hero's tale to make his name; plays clan feasts at the Clan Hall. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 28, 2026. From the bio: a human bard (Narrator), enraptured by the hero, who follows them to sing their praises; a failed bard who needs one great hero's tale to make his name; plays clan feasts at the Clan Hall. Full bio: Background, above.
 
 - **Why he's failed so far:** too much. He over-embellishes: every tale grows ten verses and three dragons. (He can rhyme; that isn't the problem.)
 - **How he talks:** always performing. Longer, flowing sentences that fit a narrator bard; every sentence is a little performance, even "pass the bread", building to an image or a flourish.

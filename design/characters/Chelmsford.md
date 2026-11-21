@@ -1,10 +1,33 @@
 # Chelmsford
 
-Folk Hero path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Folk Hero
+- **Race:** blue (lightning) dragonborn
+- **Class:** Cleric
+- **Subclass:** Order of Good
+- **Home:** Keep (fortified town)
+- **Proficiencies:** Persuade, Athletics
+- **Status:** Voice sheet approved, Oct 28, 2026
+
+## Background
+
+An Order of Good cleric of Aurora.
+
+## Personality
+
+A British chap whose mother the hero saved years ago; swears loyalty to the hero.
+
+## Personal quest
+
+For heroes of other paths, meeting him unlocks a quest to save his mother from cultists, who took her for her faith in Aurora (in the Folk Hero path, the hero saved her from early cultists years ago), which earns his loyalty the way the Folk Hero earned it years ago.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 28, 2026. From the bio: a British chap; a blue (lightning) dragonborn cleric of Aurora (the sun) in the Order of Good, sworn to the hero, who saved his mum from cultists (years ago in the Folk Hero path, or during the game in other paths). Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 28, 2026. From the bio: a British chap; a blue (lightning) dragonborn cleric of Aurora (the sun) in the Order of Good, sworn to the hero, who saved his mum from cultists (years ago in the Folk Hero path, or during the game in other paths). Full bio: Background, above.
 
 - **Flavour:** a British village vicar: gentle, apologetic, endlessly kind, very English politeness, offers tea in a crisis. His lines use British spelling and terms (Writing guide → Accents and dialect spelling).
 - **How he talks:** a gentle rambler. Longish, softened sentences that apologise before they ask; he trails off, corrects himself, and gets to the point eventually.

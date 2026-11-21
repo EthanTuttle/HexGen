@@ -1,10 +1,33 @@
 # Leo Conley
 
-Noble path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Noble
+- **Race:** tiefling of the Conley bloodline
+- **Class:** Ranger
+- **Subclass:** Companion (wolf companion)
+- **Home:** Nomad Camp (rolling meadows), keeping his distance at the edge of the camp
+- **Proficiencies:** Animal, Intimidate
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+Abandoned as a child for his bloodline and raised by wolves; his wolf is family.
+
+## Personality
+
+Australian accent; not a big fan of people. Met at the first hex, then helps the Noble fight off cultists.
+
+## Personal quest
+
+The Conley reckoning, finding the Conleys who abandoned him and learning the cult wants to use their bloodline. The Hayes are hunting the Conleys for the cult, so the quest pits Leo against them.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a tiefling ranger (Companion subclass, wolf companion) of the Conley bloodline; Australian accent; not a big fan of people; abandoned as a child for his bloodline and raised by wolves; his wolf is family. Home: Nomad Camp (rolling meadows), keeping his distance at the edge of the camp. Personal quest: the Conley reckoning. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a tiefling ranger (Companion subclass, wolf companion) of the Conley bloodline; Australian accent; not a big fan of people; abandoned as a child for his bloodline and raised by wolves; his wolf is family. Home: Nomad Camp (rolling meadows), keeping his distance at the edge of the camp. Personal quest: the Conley reckoning. Full bio: Background, above.
 
 - **How he talks:** friendly and wary. Chatty and matey on the surface, but he never quite lets you in.
 - **Accent:** heavy Aussie slang in most lines ("mate", "reckon", "yeah, nah", "heaps", "crook", "fair dinkum", "no worries", "she'll be right"), with the game's normal spelling. Not the same word in every line (Writing guide → Tells to avoid).

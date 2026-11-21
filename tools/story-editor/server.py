@@ -24,7 +24,11 @@ from urllib.parse import unquote, urlparse
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DEFAULT_DATA = os.path.join(REPO, "design", "scenes")
+DEFAULT_CHARS = os.path.join(REPO, "design", "characters")
 LISTS_FILE = "_lists.json"
+# files in design/characters/ that aren't characters
+NOT_CHARACTERS = {"00 Writing guide.md", "Pairs.md", "Places.md"}
+CHAR_RE = re.compile(r"^[^/\\.\x00][^/\\\x00]{0,79}$")
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,80}$")
 last_seen = [time.time()]  # last request from an open editor tab
 
@@ -42,8 +46,16 @@ def read_json(path):
         return json.load(f)
 
 
+def write_text(path, text):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
 class Handler(SimpleHTTPRequestHandler):
     data_dir = DEFAULT_DATA
+    chars_dir = DEFAULT_CHARS
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=HERE, **kwargs)
@@ -83,6 +95,11 @@ class Handler(SimpleHTTPRequestHandler):
             return None
         return os.path.join(self.data_dir, scene_id + ".json")
 
+    def char_path(self, name):
+        if not name or not CHAR_RE.match(name) or (name + ".md") in NOT_CHARACTERS:
+            return None
+        return os.path.join(self.chars_dir, name + ".md")
+
     # --- verbs ---
     def do_GET(self):
         kind, arg = self.route()
@@ -109,6 +126,20 @@ class Handler(SimpleHTTPRequestHandler):
             if kind == "lists":
                 p = os.path.join(self.data_dir, LISTS_FILE)
                 return self.send_json(read_json(p) if os.path.exists(p) else {})
+            if kind == "characters":
+                out = []
+                for name in sorted(os.listdir(self.chars_dir)):
+                    if name.endswith(".md") and name not in NOT_CHARACTERS:
+                        with open(os.path.join(self.chars_dir, name), encoding="utf-8") as f:
+                            out.append({"file": name[:-3], "text": f.read()})
+                return self.send_json(out)
+            if kind == "chardoc":  # read-only docs beside the characters (Pairs, Writing guide)
+                name = {"pairs": "Pairs.md", "guide": "00 Writing guide.md"}.get(arg)
+                p = name and os.path.join(self.chars_dir, name)
+                if not p or not os.path.exists(p):
+                    return self.send_json({"text": ""})
+                with open(p, encoding="utf-8") as f:
+                    return self.send_json({"text": f.read()})
             if kind == "ping":
                 return self.send_json({"ok": True, "data": self.data_dir})
         except Exception as e:  # keep the editor alive on any read error
@@ -126,6 +157,12 @@ class Handler(SimpleHTTPRequestHandler):
                 data["id"] = arg
                 write_json(p, data)
                 return self.send_json({"ok": True})
+            if kind == "characters":
+                p = self.char_path(arg)
+                if not p:
+                    return self.send_json({"error": "bad character name"}, 400)
+                write_text(p, data["text"])
+                return self.send_json({"ok": True})
             if kind == "lists":
                 write_json(os.path.join(self.data_dir, LISTS_FILE), data)
                 return self.send_json({"ok": True})
@@ -141,6 +178,12 @@ class Handler(SimpleHTTPRequestHandler):
                 os.remove(p)
                 return self.send_json({"ok": True})
             return self.send_json({"error": "not found"}, 404)
+        if kind == "characters":
+            p = self.char_path(arg)
+            if p and os.path.exists(p):
+                os.remove(p)
+                return self.send_json({"ok": True})
+            return self.send_json({"error": "not found"}, 404)
         self.send_json({"error": "unknown"}, 404)
 
 
@@ -148,12 +191,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=47380)
     ap.add_argument("--data", default=DEFAULT_DATA)
+    ap.add_argument("--chars", default=DEFAULT_CHARS)
     ap.add_argument("--no-browser", action="store_true")
     ap.add_argument("--idle-exit", type=int, default=0,
                     help="stop after this many seconds with no editor tab open (0 = never)")
     args = ap.parse_args()
 
     Handler.data_dir = os.path.abspath(args.data)
+    Handler.chars_dir = os.path.abspath(args.chars)
     os.makedirs(Handler.data_dir, exist_ok=True)
     try:
         server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
@@ -172,6 +217,7 @@ def main():
     url = "http://127.0.0.1:%d" % args.port
     print("Story editor: %s" % url)
     print("Scenes folder: %s" % Handler.data_dir)
+    print("Characters folder: %s" % Handler.chars_dir)
     print("Press Ctrl+C to stop.")
     if not args.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()

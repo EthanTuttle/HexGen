@@ -1,6 +1,6 @@
 # Story editor
 
-A local tool for writing the branching scenes in `design/scenes/`. It runs offline: a small Python server (standard library only, macOS already has it) serves the page and saves each change into the repo. The scene format is in [design/scenes/README.md](../../design/scenes/README.md).
+A local tool for writing the branching scenes in `design/scenes/` and keeping the character files in `design/characters/`. It runs offline: a small Python server (standard library only, macOS already has it) serves the page and saves each change into the repo. The scene format is in [design/scenes/README.md](../../design/scenes/README.md).
 
 ## Start it
 
@@ -11,6 +11,18 @@ A local tool for writing the branching scenes in `design/scenes/`. It runs offli
 Each way opens http://127.0.0.1:47380 in the browser. If the editor is already running, starting it again just opens the page.
 
 ## Using it
+
+**Scenes** and **Characters** are the two tabs at the top.
+
+### Characters
+
+- **The list** groups characters by role (companions, mentors, story NPCs, villains). Search covers everything in their files.
+- **A character's page** edits their file in `design/characters/`: profile (role, background path, race, class, subclass, home, proficiencies, voice sheet status), background, personality, personal quest, relationships, voice sheet, notes and their non-scene lines. Click the name to rename them. **Insert template** fills an empty voice sheet with the template from the Writing guide.
+- **Used in** (right) lists the scenes they're in (as a speaker, a Person trigger, a chime-in or a party condition), every line they say in scenes (click one to jump to it), their inn banter from Pairs.md, and who names them as a relationship.
+- **+ Character** makes a new file. Renaming updates the scenes and relationships that use the old name; links to the file in the design docs need updating by hand (or by Claude).
+- Sections the editor doesn't know about are kept as they are, and a file nobody edits is never rewritten.
+
+### Scenes
 
 - **Scenes** are on the left. Search covers titles, triggers and every line. The Places and People tabs group scenes by what starts them and who speaks in them.
 - **The canvas** holds the nodes. Drag a node by its coloured header. Drag on empty space, or scroll with two fingers, to move around; pinch (or ⌘ + scroll) to zoom. **F** fits the scene in view.
@@ -31,9 +43,10 @@ Picked by Ethan, Nov 21, 2026, in this order of value. Not built yet.
 
 - **Play-through preview:** pick a hero (background, class, subclass, race, party, flags) and click through a scene with real coin flips. Shows which options appear, pass and fail, chime-ins on a miss by exactly 1, and the flags that get set.
 - **Voice sheet side panel:** while you edit a line, shows the speaker's voice sheet (from `design/characters/`) and the tells-to-avoid list beside it.
-- **Character view:** every line one character says, across all scenes, in one list.
 - **Flags & quests overview:** every flag, which scenes set it and which read it, with a note on what it means.
 - **Jump links and shared bits:** link to a node in another scene, and reuse small pieces (a haggle, a farewell) in many scenes instead of copying them.
 - **Later: Godot scene loader** that runs scene files on the social encounter screen (also in [design/scenes](../../design/scenes/README.md) → Open questions).
+
+Built Nov 21, 2026: the character view (every line a character says), as part of the Characters tab.
 
 Not picked for now: blind test mode, draft/approved line status, script export, fill-in token checks, stronger tell checks, canvas notes and groups, tidy layout and minimap, markdown lines in the tool, and importing the sword pull scene.

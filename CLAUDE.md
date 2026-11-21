@@ -37,7 +37,7 @@ Before each new art round, set aside the non-critical context from earlier round
 - Write each rule in one place only. Other docs link to it rather than restating it.
 - Each doc ends with its own open questions, and the index keeps the master list.
 - Production briefs live in `design/briefs/`.
-- Character writing lives in `design/characters/`: `00 Writing guide.md` (rules, tells to avoid, how we write, voice sheet template), one file per character (voice sheet, then every line they say) `Pairs.md` for lines shared by two companions, and `Places.md` for lines in generated places (towns), written per moment slot. Read the guide and the character's voice sheet before drafting any line.
+- Character writing lives in `design/characters/`: `00 Writing guide.md` (rules, tells to avoid, how we write, voice sheet template), one file per character (profile, background, personality, personal quest, relationships, voice sheet, notes, then every line they say; edited in the story editor's Characters tab), `Pairs.md` for lines shared by two companions, and `Places.md` for lines in generated places (towns), written per moment slot. Read the guide and the character's voice sheet before drafting any line.
 - Branching scenes (social encounters, narration tied to places and people) live as JSON in `design/scenes/`, one file per scene, and those files are canon for them. Write them with the story editor (`tools/story-editor/`, runs offline). Format: `design/scenes/README.md`.
 
 ## Mockups

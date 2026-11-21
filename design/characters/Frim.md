@@ -1,10 +1,33 @@
 # Frim
 
-Sage path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Sage
+- **Race:** wood elf
+- **Class:** Rogue
+- **Subclass:** Gambler
+- **Home:** Sandstone Sphinx (dunes), betting on the sphinx's riddles
+- **Proficiencies:** Perception, Nature
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+Has never lost a big bet, and suspects something is behind the luck.
+
+## Personality
+
+Follows their gut; takes a gamble on the hero because something about them says to follow.
+
+## Personal quest
+
+Discover the source of the luck: Eve, the trickster god, has been quietly favouring Frim for her own amusement and wants something back.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a wood elf rogue (Gambler) who follows their gut, and takes a gamble on the hero because something about them says to follow; has never lost a big bet, and suspects something is behind the luck. Home: Sandstone Sphinx (dunes), betting on the sphinx's riddles. Personal quest: discover the source of the luck: Eve, the trickster god, has been quietly favouring Frim for her own amusement and wants something back. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a wood elf rogue (Gambler) who follows their gut, and takes a gamble on the hero because something about them says to follow; has never lost a big bet, and suspects something is behind the luck. Home: Sandstone Sphinx (dunes), betting on the sphinx's riddles. Personal quest: discover the source of the luck: Eve, the trickster god, has been quietly favouring Frim for her own amusement and wants something back. Full bio: Background, above.
 
 - **How Frim talks:** easy and breezy. Relaxed and chatty, jumps to the next thing, and everything turns into odds or a bet.
 - **Never:** turns down a bet; plans ahead (Frim follows their gut).

@@ -120,66 +120,59 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 - Every path NPC has a unique personality and role.
 - All routes converge on Gronogon, a named city Story card.
 - Each path's companions are balanced around the classes most likely to take that background, but any class can take any background.
-- Each companion has a default subclass (listed in its cast table), which the player can change when it unlocks at level 5.
+- Each companion has a default subclass (in its character file's profile), which the player can change when it unlocks at level 5.
 - NPC companions' restriction, which keeps their power level distinct from the hero's: they get no class or subclass quests. Their NPC-related personal quests are their power-up instead.
 - General companion rules: see [Classes & combat](03 Classes & combat.md) → Hero and companions.
 
-**Mentor details**
+**Mentors:** each path's mentor has a file in characters/ with their background and how they leave (moved there Nov 21, 2026): [The innkeeper](characters/The%20innkeeper.md) (Folk Hero), [The tower's commander](characters/The%20tower%27s%20commander.md) (Soldier), [The dream voice](characters/The%20dream%20voice.md) (Acolyte), [The client](characters/The%20client.md) (Criminal), [The wizard tower's master](characters/The%20wizard%20tower%27s%20master.md) (Sage), [The noble's parent](characters/The%20noble%27s%20parent.md) (Noble).
 
-- Innkeeper (Folk Hero): dies holding the door against the cultists so the hero can escape.
-- Commander (Soldier): a true believer, secretly a cultist all along.
-- Tower master (Sage): the teleport went wrong and the tower is trapped in the rift; a late-game reunion.
-- Parent (Noble): the estate falls to curses after they stay behind, and the parent is lost.
-- Dream voice (Acolyte): the rift is draining the gods' reach; all eight are weakening, and the Acolyte is the first to notice when their god goes silent at Gronogon. This is story only: cleric and Holy Defender power works normally in play.
-- The client (Criminal): the cult's high priest. Like a cleric's bond, he is helping Egan the most, so Egan grants him the most power, which is what makes him the avatar.
+**Folk Hero path cast** (class, race, personality and more: each character's file)
 
-**Folk Hero path cast**
-
-| NPC | Role | Personality / notes |
-| --- | --- | --- |
-| The innkeeper | Mentor | An old friend of the hero; mentors in an "oh, you know about this, right?" way. Killed by cultists right before convergence, which sends the Folk Hero to Gronogon to learn why a banned religion is on the rise. |
-| Fluffy (the cat) | Companion: wizard (Blaster), special race | Snooty; insists his real name is King Alexander the All Conquering Legend and He Who Rules, but no one calls him that |
-| Chelmsford | Companion: cleric (Order of Good), blue (lightning) dragonborn | A British chap whose mother the hero saved years ago; swears loyalty to the hero |
+| NPC | Role |
+| --- | --- |
+| [The innkeeper](characters/The%20innkeeper.md) | Mentor |
+| [Fluffy](characters/Fluffy.md) | Companion |
+| [Chelmsford](characters/Chelmsford.md) | Companion |
 
 **Soldier path cast**
 
-| NPC | Role | Personality / notes |
-| --- | --- | --- |
-| The tower's commander | Mentor | Revealed as a traitor. While the hero is away tracking the attackers, he lets more cultists into the guard tower and they kill most of the guards. He did not expect the hero to return alive. After killing him, the Soldier travels to Gronogon. |
-| Mel | Companion: rogue (Con Artist), wood elf | A small elf girl, lost and scared, who tries to steal food from the hero |
-| Grant Augustus | Companion: bard (Narrator), human | Enraptured by the hero; decides to follow them and sing their praises |
+| NPC | Role |
+| --- | --- |
+| [The tower's commander](characters/The%20tower%27s%20commander.md) | Mentor |
+| [Mel](characters/Mel.md) | Companion |
+| [Grant Augustus](characters/Grant%20Augustus.md) | Companion |
 
 **Acolyte path cast**
 
-| NPC | Role | Personality / notes |
-| --- | --- | --- |
-| Dream voice (the Acolyte's own god, chosen by the player) | Mentor | Appears in the hero's dreams and speaks in their mind, telling them to follow a trail to a cultist dungeon (a Story card), then to go to Gronogon. There the voice is cut off by the rift and stops appearing; the reason stays unexplained to the player until later. |
-| Kris Huntington | Companion: ranger (Hunter), wood golem | Wears animal pelts, has an Austrian accent; her mind is always on the next hunt |
-| Timothy | Companion: bard (Musician), halfling | From the Acolyte's church choir; timid, except when he gets to singing |
+| NPC | Role |
+| --- | --- |
+| [The dream voice](characters/The%20dream%20voice.md) | Mentor |
+| [Kris Huntington](characters/Kris%20Huntington.md) | Companion |
+| [Timothy](characters/Timothy.md) | Companion |
 
 **Criminal path cast**
 
-| NPC | Role | Personality / notes |
-| --- | --- | --- |
-| The client (the future avatar) | Mentor | Hired the hero to steal the artifact, a key to the cast-out god's prison. Exits by consuming the artifact, which opens the rift, then teleporting away. Later returns as the avatar of the force. |
-| Dolmund | Companion: fighter (Brawler), shield dwarf | Just wants to keep people safe |
-| Lilian | Companion: bard (Dancer), human | Seduces the hero |
+| NPC | Role |
+| --- | --- |
+| [The client](characters/The%20client.md) | Mentor |
+| [Dolmund](characters/Dolmund.md) | Companion |
+| [Lilian](characters/Lilian.md) | Companion |
 
 **Sage path cast**
 
-| NPC | Role | Personality / notes |
-| --- | --- | --- |
-| The wizard tower's master | Mentor | When cultists attack the tower, the master force-teleports the whole tower away, leaving the hero outside. A story event that removes the starting hex; the hex reverts to desert (Nov 4, 2026; it starts on desert) (see [Map & exploration](02 Map & exploration.md) → Placement). |
-| Frim | Companion: rogue (Gambler), wood elf | Follows their gut; takes a gamble on the hero because something about them says to follow |
-| Grimhold | Companion: cleric (Order of Evil), human, from the cultists | Also wants to know what's in the tome and helps the Sage; they get along over a shared interest in knowledge. Initially draws his power from Egan; this may become part of his personal quest |
+| NPC | Role |
+| --- | --- |
+| [The wizard tower's master](characters/The%20wizard%20tower%27s%20master.md) | Mentor |
+| [Frim](characters/Frim.md) | Companion |
+| [Grimhold](characters/Grimhold.md) | Companion |
 
 **Noble path cast**
 
-| NPC | Role | Personality / notes |
-| --- | --- | --- |
-| The noble's parent | Mentor | Exits by staying behind to hold the estate. |
-| Leo Conley | Companion: ranger (Companion subclass, wolf companion), tiefling of the Conley bloodline | Australian accent; not a big fan of people. Met at the first hex, then helps the Noble fight off cultists. |
-| Reginald | Companion: wizard (Ritualist), human | The Noble's butler, the oldest member of the estate and long trusted by the family. Starts in the party with the Noble; plays a subservient role. |
+| NPC | Role |
+| --- | --- |
+| [The noble's parent](characters/The%20noble%27s%20parent.md) | Mentor |
+| [Leo Conley](characters/Leo%20Conley.md) | Companion |
+| [Reginald](characters/Reginald.md) | Companion |
 
 **Routes to convergence (Gronogon)**
 
@@ -192,24 +185,7 @@ Updated Oct 30, 2026. **Inspiration, not a rule:** names lean on **Irish, Gaelic
 | Folk Hero | Rescues the cat → cultists kill the innkeeper → goes to Gronogon to learn why a banned religion is on the rise |
 | Noble | Investigates corrupted hexes disrupting merchant lines → traveling merchant Story card → instructed to go to Gronogon to alert the nobility to a rise in curses, and is roped into the main plot there |
 
-**Companion proficiencies** (decided Oct 28, 2026: 2 each, hand-picked to fit who they are; rule: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies)
-
-| Companion | Proficiencies |
-| --- | --- |
-| Fluffy | Persuade, Lore |
-| Chelmsford | Persuade, Athletics |
-| Mel | Deceive, Thievery |
-| Grant Augustus | Lore, Perception |
-| Kris Huntington | Survival, Animal |
-| Timothy | Persuade, Stealth |
-| Dolmund | Athletics, Intimidate |
-| Lilian | Deceive, Perception |
-| Frim | Perception, Nature |
-| Grimhold | Lore, Intimidate |
-| Leo Conley | Animal, Intimidate |
-| Reginald | Lore, Persuade |
-
-Every proficiency is covered at least once. Persuade and Lore are the most common (4 each); Stealth, Survival, Nature and Thievery have one companion each (Timothy, Kris, Frim, Mel).
+**Companion proficiencies** (decided Oct 28, 2026: 2 each, hand-picked to fit who they are; rule: [Classes & combat](03 Classes & combat.md) → Skills → Starting proficiencies): in each companion's profile in their file in characters/ (moved Nov 21, 2026). Every proficiency is covered at least once. Persuade and Lore are the most common (4 each); Stealth, Survival, Nature and Thievery have one companion each (Timothy, Kris, Frim, Mel).
 
 **Companion chime-in lines:** in each companion's file in characters/ ([Writing guide](characters/00%20Writing%20guide.md) → Line types).
 
@@ -217,23 +193,11 @@ Every proficiency is covered at least once. Persuade and Lore are the most commo
 
 Heroes from other paths find each path NPC at one home location, grown by a region (see [Map & exploration](02 Map & exploration.md) → Region variants and locations).
 
-- Fluffy (Folk Hero): a fey creature who chose to be a cat; his royal title comes from the fey court. In the Folk Hero path he lives at the innkeeper's inn as the innkeeper's 'pet', which ties him to the innkeeper's death. Home: Fey Court (fey wood). Personal quest: a rival at the Fey Court disputes his title, and he must win it back by fey trickery.
-- Chelmsford (Folk Hero): an Order of Good cleric of Aurora. Home: Keep (fortified town). For heroes of other paths, meeting him unlocks a quest to save his mother from cultists, who took her for her faith in Aurora (in the Folk Hero path, the hero saved her from early cultists years ago), which earns his loyalty the way the Folk Hero earned it years ago.
-- Mel (Soldier): orphaned when cultists burned her wood elf village; she survives by cons. Home: Black Market (slums). Personal quest: find what's left of her people.
-- Grant Augustus (Soldier): a failed bard who needs one great hero's tale to make his name. Home: Clan Hall (highlands), performing at clan feasts. Personal quest: perform the hero's epic at a grand venue, where it goes wrong in a fun way.
-- Kris Huntington (Acolyte): carved by a druid to guard the forest from beasts, and has taken it a little far. Home: Lake Serpent's Lair (great lake). Personal quest: the great hunt for a unique legendary beast no one has caught; the lake serpent is just practice. The beast is the White Stag, a ghostly stag said to be Adam's own beast; catching it may anger the god.
-- Timothy (Acolyte): his singing has real divine power, which frightens him. Home: Hidden Shrine (deep forest), singing alone where no one can hear. Personal quest: the cultists want his voice to sing a hymn that weakens Egan's prison.
-- Dolmund (Criminal): believes the hero is better than their crimes and sticks around to keep them honest. Home: Salamander Den (volcanic peaks), keeping miners safe from fire creatures. Personal quest: make right the time he failed to protect a noble's child, taken by cultists on his watch and maybe still alive.
-- Lilian (Criminal): uses her charm to escape a life she's trapped in. Home: Oasis Bazaar (oasis), dancing for travelling merchants. Personal quest: cut the strings and break free from the merchant prince who owns the Oasis Bazaar and holds her contract and her debts.
-- Frim (Sage): has never lost a big bet, and suspects something is behind the luck. Home: Sandstone Sphinx (dunes), betting on the sphinx's riddles. Personal quest: discover the source of the luck: Eve, the trickster god, has been quietly favouring Frim for her own amusement and wants something back.
-- Grimhold (Sage): joined the cultists for the forbidden knowledge, not the faith, and Egan's return scares him. Home: Old Battlefield (steppe/battlefield), studying the restless dead. Personal quest: cut his bond with Egan and find a new source of power, or a new god.
-- Leo Conley (Noble): abandoned as a child for his bloodline and raised by wolves; his wolf is family. Home: Nomad Camp (rolling meadows), keeping his distance at the edge of the camp. Personal quest: the Conley reckoning, finding the Conleys who abandoned him and learning the cult wants to use their bloodline. The Hayes are hunting the Conleys for the cult, so the quest pits Leo against them.
-- Reginald (Noble): the family's wards and barriers have quietly been his work for decades. In other paths the noble family has fallen to curses, and he is found warding a region location against a threat. Home: Plague Pit (rot swamp), holding back the rot from spreading. Personal quest: the old ritual, his oldest ward is failing and what it has held back for decades is getting out: a demon (fiend) the family bound long ago, tied to Egan.
+Each path NPC's background, home and personal quest are in their file in characters/ (moved Nov 21, 2026; profile: Home; sections: Background, Personal quest).
 
 ## Other story NPCs
 
-- King Grel: a wise scholar-king who keeps the realm's histories.
-- Elf hermit: elves live long, and he fought when the eight gods cast Egan out, which is why he remembers the god and knows where the prison lies.
+Each has a file in characters/ (moved Nov 21, 2026): [King Grel](characters/King%20Grel.md), the [Elf hermit](characters/Elf%20hermit.md), the [Lady of the Lake](characters/Lady%20of%20the%20Lake.md) (her voice and lines stay with her scene: The Lady of the Lake, below) and the villain [Egan](characters/Egan.md).
 
 ## Shared main story (after Gronogon)
 

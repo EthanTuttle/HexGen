@@ -3,12 +3,12 @@
 How the characters of Heads or Hexes are written (set up Oct 28, 2026, after the first bar lines read as "AI written"). Each character's voice sheet and lines live in this folder, one file per character, so writing for someone means opening one file.
 
 - **This guide:** the rules for dialogue and narration, the line types, the tells to avoid, how we write, and the voice sheet template.
-- **One file per companion:** [Fluffy](Fluffy.md), [Chelmsford](Chelmsford.md), [Mel](Mel.md), [Grant Augustus](Grant%20Augustus.md), [Kris Huntington](Kris%20Huntington.md), [Timothy](Timothy.md), [Dolmund](Dolmund.md), [Lilian](Lilian.md), [Frim](Frim.md), [Grimhold](Grimhold.md), [Leo Conley](Leo%20Conley.md), [Reginald](Reginald.md). Each holds their voice sheet, then every line they say, grouped by where it's said.
+- **One file per character** (Nov 21, 2026: every character's full record, edited in the story editor's Characters tab or by hand): companions, mentors, story NPCs and villains. Each file has the same sections in this order: **Profile** (role, background path, race, class, subclass, home, proficiencies, voice sheet status), **Background**, **Personality**, **Personal quest**, **Relationships** (one bullet per character: `- **Name:** how they relate`), **Voice sheet**, **Notes**, then **Lines** (every non-scene line they say, grouped by where it's said). Empty sections are left out. Companions: [Fluffy](Fluffy.md), [Chelmsford](Chelmsford.md), [Mel](Mel.md), [Grant Augustus](Grant%20Augustus.md), [Kris Huntington](Kris%20Huntington.md), [Timothy](Timothy.md), [Dolmund](Dolmund.md), [Lilian](Lilian.md), [Frim](Frim.md), [Grimhold](Grimhold.md), [Leo Conley](Leo%20Conley.md), [Reginald](Reginald.md). Mentors, story NPCs and villains: one file each too (the story editor lists them all).
 - **[Pairs](Pairs.md):** inn banter between two companions. A line that belongs to two characters is written there, once.
 - **[Places](Places.md):** what gets said in generated places (towns first), written per moment slot and per place type (Oct 30, 2026).
-- **[Scenes](../scenes/README.md)** (Nov 21, 2026): branching scenes, such as social encounters, are JSON files written in the story editor, and they are canon for their lines. A character's file keeps their voice sheet and their non-branching lines.
-- **Story NPCs** get a file when they have enough lines. Until then their lines stay with their scene in [World & story](../01%20World%20%26%20story.md) (e.g. The Lady of the Lake).
-- Bios, homes and personal quests stay in [World & story](../01%20World%20%26%20story.md) → NPC homes and stories; proficiencies in World & story → Companion proficiencies.
+- **[Scenes](../scenes/README.md)** (Nov 21, 2026): branching scenes, such as social encounters, are JSON files written in the story editor, and they are canon for their lines. A character's file keeps their record and their non-branching lines.
+- **Story NPCs** have a file for their profile and background. Lines written into a doc scene before the story editor stay with that scene (e.g. The Lady of the Lake, in [World & story](../01%20World%20%26%20story.md)).
+- Bios, homes, personal quests and companion proficiencies moved from World & story into each character's file (Nov 21, 2026). World & story keeps the path cast tables (name and role), with links.
 
 ## Dialogue rules
 
