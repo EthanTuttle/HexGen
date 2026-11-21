@@ -20,6 +20,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Characters** ([characters/](characters/00%20Writing%20guide.md)): how characters are written. [Writing guide](characters/00%20Writing%20guide.md) (dialogue rules, line types, tells to avoid, how we write, voice sheet template), one file per companion (voice sheet and every line they say) [Pairs](characters/Pairs.md) (inn banter between two companions) and [Places](characters/Places.md) (lines for generated places such as towns, per moment slot).
 
+**Scenes** ([scenes/](scenes/README.md)): branching scenes as JSON files, one per scene, canon for social encounters and narration tied to places and people (Nov 21, 2026). Written in the offline story editor (`tools/story-editor/`).
+
 **Briefs** (production hand-offs, built from these docs)
 
 | Brief | For |
@@ -292,6 +294,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Opened camera buttons covering the cards~~ (settled Oct 28: v6c, nav between Quests and equipment with the fan; standard everywhere)
 - [ ] New: town NPCs (keepers settled Oct 30: generic by type; townsfolk? rumours?) and inn services besides resting
 - [ ] Companion writing: all 12 voice sheets done and their lines reviewed (Oct 29, 2026). Repass for clipped sentence chains done too. Still open: cross-path inn pairs: characters → Writing guide
+- [ ] New (Nov 21, 2026): scenes: how the game loads scene files; whether the sword pull scene moves into one (scenes → Open questions)
 - [ ] New: towns: shop stock, quest board quests; town lines and name parts per slot and type (characters → Places, set up Oct 30)
 - [x] ~~Social encounter rewards~~ (settled Oct 28: v3a's reveal, flying to homes shared with the map)
 - [ ] New: feedback on exploration v7 and social v4 (Quests, equipment, passives on screen; camera behind a nav button)

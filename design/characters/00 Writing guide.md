@@ -6,6 +6,7 @@ How the characters of Heads or Hexes are written (set up Oct 28, 2026, after the
 - **One file per companion:** [Fluffy](Fluffy.md), [Chelmsford](Chelmsford.md), [Mel](Mel.md), [Grant Augustus](Grant%20Augustus.md), [Kris Huntington](Kris%20Huntington.md), [Timothy](Timothy.md), [Dolmund](Dolmund.md), [Lilian](Lilian.md), [Frim](Frim.md), [Grimhold](Grimhold.md), [Leo Conley](Leo%20Conley.md), [Reginald](Reginald.md). Each holds their voice sheet, then every line they say, grouped by where it's said.
 - **[Pairs](Pairs.md):** inn banter between two companions. A line that belongs to two characters is written there, once.
 - **[Places](Places.md):** what gets said in generated places (towns first), written per moment slot and per place type (Oct 30, 2026).
+- **[Scenes](../scenes/README.md)** (Nov 21, 2026): branching scenes, such as social encounters, are JSON files written in the story editor, and they are canon for their lines. A character's file keeps their voice sheet and their non-branching lines.
 - **Story NPCs** get a file when they have enough lines. Until then their lines stay with their scene in [World & story](../01%20World%20%26%20story.md) (e.g. The Lady of the Lake).
 - Bios, homes and personal quests stay in [World & story](../01%20World%20%26%20story.md) → NPC homes and stories; proficiencies in World & story → Companion proficiencies.
 
