@@ -87,184 +87,7 @@ async function saveStory() {
   setStatus();
 }
 
-// ---------- markdown toolbar (story and character text) ----------
-// Edits go through execCommand so the browser's own undo (⌘Z) keeps working.
-function replaceRange(ta, a, b, text, selA, selB) {
-  ta.focus();
-  ta.setSelectionRange(a, b);
-  if (!document.execCommand('insertText', false, text)) {
-    ta.setRangeText(text, a, b, 'end');
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-  if (selA != null) ta.setSelectionRange(selA, selB == null ? selA : selB);
-}
-function wrapSel(ta, mark) {
-  const a = ta.selectionStart, b = ta.selectionEnd, v = ta.value;
-  const n = mark.length;
-  if (v.slice(a - n, a) === mark && v.slice(b, b + n) === mark) {
-    replaceRange(ta, a - n, b + n, v.slice(a, b), a - n, b - n);
-  } else {
-    const inner = v.slice(a, b) || (mark === '**' ? 'bold' : 'italic');
-    replaceRange(ta, a, b, mark + inner + mark, a + n, a + n + inner.length);
-  }
-}
-function lineBounds(v, a, b) {
-  const start = v.lastIndexOf('\n', a - 1) + 1;
-  let end = v.indexOf('\n', b);
-  if (end < 0) end = v.length;
-  return [start, end];
-}
-function toggleHeading(ta, level) {
-  const v = ta.value;
-  const [s, e] = lineBounds(v, ta.selectionStart, ta.selectionStart);
-  const line = v.slice(s, e);
-  const prefix = '#'.repeat(level) + ' ';
-  const bare = line.replace(/^#{1,6}\s+/, '');
-  const next = line.startsWith(prefix) ? bare : prefix + (bare || (level === 2 ? 'New chapter' : 'Heading'));
-  // a fresh heading selects its placeholder, so typing replaces it
-  if (!bare && !line.startsWith(prefix)) replaceRange(ta, s, e, next, s + prefix.length, s + next.length);
-  else replaceRange(ta, s, e, next, s + next.length);
-}
-function toggleList(ta) {
-  const v = ta.value;
-  const [s, e] = lineBounds(v, ta.selectionStart, ta.selectionEnd);
-  const lines = v.slice(s, e).split('\n');
-  const all = lines.every((l) => /^- /.test(l) || !l.trim());
-  const out = lines.map((l) => (all ? l.replace(/^- /, '') : l.trim() && !/^- /.test(l) ? '- ' + l : l)).join('\n');
-  replaceRange(ta, s, e, out, s, s + out.length);
-}
-function startLink(ta, kind) {
-  const a = ta.selectionStart, b = ta.selectionEnd;
-  const sel = ta.value.slice(a, b);
-  replaceRange(ta, a, b, '[[' + sel, a + 2 + sel.length);
-  openLinkPop(ta, kind);
-}
-function mdToolbar(getTa, opts = {}) {
-  const act = (fn) => (e) => { e.preventDefault(); const ta = getTa(); if (ta) fn(ta); };
-  const btn = (label, title, fn, style) => h('button', { class: 'small', title, style: style || null, onmousedown: (e) => e.preventDefault(), onclick: act(fn) }, label);
-  return h('div', { class: 'md-toolbar' },
-    opts.chapters ? btn('Chapter', 'Start a chapter here (shows in the outline and the branch map)', (ta) => toggleHeading(ta, 2)) : null,
-    btn('Heading', 'A smaller heading', (ta) => toggleHeading(ta, 3)),
-    btn('B', 'Bold (⌘B)', (ta) => wrapSel(ta, '**'), 'font-weight:700'),
-    btn('I', 'Italic (⌘I)', (ta) => wrapSel(ta, '*'), 'font-style:italic'),
-    btn('• List', 'Bullet list', toggleList),
-    h('span', { class: 'tb-gap' }),
-    btn('Link scene', 'Link a scene, or name one to write later (⌘K, or type [[)', (ta) => startLink(ta, 'scenes')),
-    btn('Link character', 'Link a character', (ta) => startLink(ta, 'characters')));
-}
-// shortcuts and the [[ picker for any textarea that uses the toolbar
-function mdKeys(ta) {
-  ta.addEventListener('keydown', (e) => {
-    if (linkPopKeys(e, ta)) return;
-    const mod = e.metaKey || e.ctrlKey;
-    if (!mod) return;
-    const k = e.key.toLowerCase();
-    if (k === 'b') { e.preventDefault(); wrapSel(ta, '**'); }
-    else if (k === 'i') { e.preventDefault(); wrapSel(ta, '*'); }
-    else if (k === 'k') { e.preventDefault(); startLink(ta, null); }
-  });
-  ta.addEventListener('input', () => {
-    const before = ta.value.slice(0, ta.selectionStart);
-    if (/\[\[[^\]\n]*$/.test(before)) openLinkPop(ta, S.linkPop && S.linkPop.ta === ta ? S.linkPop.kind : null);
-    else closeLinkPop();
-  });
-  ta.addEventListener('blur', () => setTimeout(closeLinkPop, 150));
-  ta.addEventListener('click', (e) => {
-    if (!(e.metaKey || e.ctrlKey)) return;
-    const at = ta.selectionStart;
-    const l = links(ta.value).find((x) => x.index <= at && at <= x.end);
-    if (l) followLink(l);
-  });
-}
-
-// ---------- [[ link picker ----------
-function caretXY(ta) {
-  const cs = getComputedStyle(ta);
-  const div = document.createElement('div');
-  for (const p of ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingTop', 'paddingLeft', 'paddingRight', 'borderTopWidth', 'borderLeftWidth', 'boxSizing', 'whiteSpace', 'wordWrap', 'tabSize'])
-    div.style[p] = cs[p];
-  div.style.position = 'absolute'; div.style.visibility = 'hidden'; div.style.whiteSpace = 'pre-wrap'; div.style.overflowWrap = 'break-word';
-  div.style.width = ta.clientWidth + 'px';
-  div.textContent = ta.value.slice(0, ta.selectionStart);
-  const span = document.createElement('span');
-  span.textContent = '​';
-  div.append(span);
-  document.body.append(div);
-  const r = ta.getBoundingClientRect();
-  const x = r.left + span.offsetLeft - ta.scrollLeft;
-  const y = r.top + span.offsetTop - ta.scrollTop + parseFloat(cs.lineHeight || 20);
-  div.remove();
-  return { x, y };
-}
-function linkChoices(q, kind) {
-  const ql = q.toLowerCase().trim();
-  const out = [];
-  if (kind !== 'characters') {
-    for (const sc of Object.values(S.scenes)) if (!ql || (sc.title || sc.id).toLowerCase().includes(ql))
-      out.push({ kind: 'scenes', label: sc.title || sc.id, sub: 'scene', target: sc.id });
-  }
-  if (kind !== 'scenes') {
-    for (const c of Object.values(S.chars)) if (!ql || c.name.toLowerCase().includes(ql))
-      out.push({ kind: 'characters', label: c.name, sub: 'character', target: c.name });
-  }
-  out.sort((a, b) => a.label.localeCompare(b.label));
-  const exact = Object.values(S.scenes).some((sc) => (sc.title || '').toLowerCase() === ql);
-  if (ql && kind !== 'characters' && !exact) out.push({ kind: 'scenes', label: q.trim(), sub: 'new scene to write', target: null });
-  return out.slice(0, 40);
-}
-function openLinkPop(ta, kind) {
-  const before = ta.value.slice(0, ta.selectionStart);
-  const m = /\[\[([^\]\n]*)$/.exec(before);
-  if (!m) return closeLinkPop();
-  const items = linkChoices(m[1], kind);
-  S.linkPop = { ta, kind, start: ta.selectionStart - m[0].length, items, i: Math.min((S.linkPop && S.linkPop.i) || 0, Math.max(0, items.length - 1)) };
-  let pop = $('#link-pop');
-  if (!pop) { pop = h('div', { id: 'link-pop', class: 'link-pop' }); document.body.append(pop); }
-  pop.innerHTML = '';
-  pop.append(h('div', { class: 'hint', style: 'padding:3px 8px', text: kind === 'characters' ? 'Link a character' : kind === 'scenes' ? 'Link a scene (type a new name to plan one)' : 'Link a scene or character' }));
-  if (!items.length) pop.append(h('div', { class: 'hint', style: 'padding:3px 8px', text: 'Type a name…' }));
-  items.forEach((it, i) => pop.append(h('div', {
-    class: 'pop-item' + (i === S.linkPop.i ? ' on' : ''),
-    onmousedown: (e) => { e.preventDefault(); S.linkPop.i = i; pickLink(); },
-  }, h('span', { text: it.label }), h('span', { class: 'sub', text: it.sub }))));
-  const { x, y } = caretXY(ta);
-  pop.style.left = Math.min(x, innerWidth - 300) + 'px';
-  pop.style.top = Math.min(y + 4, innerHeight - 260) + 'px';
-  pop.classList.remove('hidden');
-}
-function closeLinkPop() { const p = $('#link-pop'); if (p) p.classList.add('hidden'); S.linkPop = null; }
-function linkPopKeys(e, ta) {
-  const lp = S.linkPop;
-  if (!lp || lp.ta !== ta || $('#link-pop').classList.contains('hidden')) return false;
-  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-    e.preventDefault();
-    lp.i = (lp.i + (e.key === 'ArrowDown' ? 1 : -1) + lp.items.length) % Math.max(1, lp.items.length);
-    openLinkPop(ta, lp.kind);
-    return true;
-  }
-  if (e.key === 'Enter' || e.key === 'Tab') { if (lp.items.length) { e.preventDefault(); pickLink(); return true; } }
-  if (e.key === 'Escape') { e.preventDefault(); closeLinkPop(); return true; }
-  return false;
-}
-function pickLink() {
-  const lp = S.linkPop;
-  const it = lp.items[lp.i];
-  if (!it) return;
-  let text;
-  if (it.kind === 'characters') text = charLink(it.label);
-  else if (it.target) text = sceneLink(it.label, it.target);
-  else {
-    // a scene to write later: the link names a file that doesn't exist yet
-    const taken = new Set(Object.keys(S.scenes));
-    for (const f in S.story) for (const l of links(S.story[f].text)) if (l.kind === 'scenes') taken.add(l.target);
-    let id = slug(it.label), n = 2;
-    while (taken.has(id)) id = slug(it.label) + '-' + n++;
-    text = sceneLink(it.label, id);
-  }
-  const ta = lp.ta;
-  closeLinkPop();
-  replaceRange(ta, lp.start, ta.selectionStart, text, lp.start + text.length);
-}
+// ---------- following links ----------
 function followLink(l) {
   if (l.kind === 'characters') { if (S.chars[l.target]) { setMode('characters'); openChar(l.target); } return; }
   if (S.scenes[l.target]) goToNode(l.target);
@@ -276,7 +99,7 @@ function createLinkedScene(id, title, open) {
   makeNode(sc, 'line', 0, 0);
   S.scenes[id] = sc;
   markDirty(id);
-  if (open) goToNode(id); else { renderStorySide(); if (S.storyView === 'read') renderStoryPage(); }
+  if (open) goToNode(id); else { renderStorySide(); refreshChips(); }
 }
 
 // ---------- story tab ----------
@@ -288,6 +111,18 @@ function openStory(file, index) {
   if (index != null && file !== '__map') jumpTo(index);
 }
 function jumpTo(index) {
+  const ed = $('#story-rich');
+  if (ed) {
+    const k = chapters(S.story[S.scur].text).filter((c) => c.index <= index).length - 1;
+    const target = k >= 0 ? ed.querySelectorAll('h2')[k] : ed.firstElementChild;
+    if (target) {
+      ed.scrollTop = target.offsetTop - ed.offsetTop - 10;
+      const r = document.createRange(); r.selectNodeContents(target); r.collapse(false);
+      ed.focus({ preventScroll: true });
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }
+    return;
+  }
   const ta = $('#story-text');
   if (!ta) return;
   // measure where that line sits, then scroll the box to it
@@ -320,97 +155,38 @@ function renderStoryList() {
       box.append(h('div', { class: 'outline-item', title: 'Jump to this chapter', onclick: () => jumpTo(c.index) }, c.title));
   }
 }
-// ---------- read view: the markdown shown as finished text ----------
-function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-function inlineMd(text) {
-  const parts = [];
-  let last = 0, m;
-  const re = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
-  while ((m = re.exec(text))) {
-    parts.push(fmt(text.slice(last, m.index)));
-    const l = links(m[0])[0];
-    if (l) {
-      const exists = l.kind === 'scenes' ? !!S.scenes[l.target] : !!S.chars[l.target];
-      const cls = 'chip-link ' + l.kind + (exists ? '' : ' todo');
-      parts.push(`<a class="${cls}" data-kind="${l.kind}" data-target="${esc(l.target)}" data-label="${esc(l.label)}" title="${exists ? 'Open' : 'Not written yet: click to create'}">${fmt(l.label)}</a>`);
-    } else parts.push(`<span class="doc-link">${fmt(m[1])}</span>`);
-    last = m.index + m[0].length;
-  }
-  parts.push(fmt(text.slice(last)));
-  return parts.join('');
-}
-function fmt(s) {
-  return esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
-}
-function renderRead(text) {
-  const out = h('div', { class: 'story-read' });
-  const lines = text.split('\n');
-  let i = 0, offset = 0;
-  const offs = [];
-  for (const l of lines) { offs.push(offset); offset += l.length + 1; }
-  while (i < lines.length) {
-    const line = lines[i];
-    const at = offs[i];
-    let el = null;
-    const hm = /^(#{1,3}) (.*)$/.exec(line);
-    if (!line.trim()) { i++; continue; }
-    if (hm) { el = document.createElement('h' + hm[1].length); el.innerHTML = inlineMd(hm[2]); i++; }
-    else if (/^\s*- /.test(line)) {
-      el = document.createElement('ul');
-      while (i < lines.length && /^\s*- /.test(lines[i])) {
-        const li = document.createElement('li');
-        li.innerHTML = inlineMd(lines[i].replace(/^\s*- /, ''));
-        li.dataset.at = offs[i];
-        el.append(li); i++;
-      }
-    } else {
-      const para = [];
-      while (i < lines.length && lines[i].trim() && !/^(#{1,3} |\s*- )/.test(lines[i])) para.push(lines[i++]);
-      el = document.createElement('p'); el.innerHTML = inlineMd(para.join(' '));
-    }
-    el.dataset.at = el.dataset.at || at;
-    out.append(el);
-  }
-  out.addEventListener('click', (e) => {
-    const a = e.target.closest('.chip-link');
-    if (a) { followLink({ kind: a.dataset.kind, target: a.dataset.target, label: a.dataset.label }); return; }
-    // clicking the text switches to Write at that spot
-    const blk = e.target.closest('[data-at]');
-    if (blk) { S.storyView = 'write'; renderStoryPage(); jumpTo(+blk.dataset.at); }
-  });
-  return out;
-}
-
 function renderStoryPage() {
   const page = $('#story-page');
   page.innerHTML = '';
+  closeLinkPop();
   if (S.scur === '__map' || !S.story[S.scur]) { renderBranchMap(page); renderStorySide(); return; }
   const f = S.scur;
-  const viewTabs = h('div', { class: 'mode-tabs view-tabs' }, ['write', 'read'].map((v) => h('button', {
-    class: S.storyView === v ? 'active' : '', text: v === 'write' ? 'Write' : 'Read',
+  const raw = S.storyView === 'markdown';
+  const viewTabs = h('div', { class: 'mode-tabs view-tabs' }, [['edit', 'Formatted'], ['markdown', 'Markdown']].map(([v, label]) => h('button', {
+    class: (raw ? 'markdown' : 'edit') === v ? 'active' : '', text: label,
+    title: v === 'edit' ? 'Write with chapters, bold and links shown as they look' : 'The same text as raw markdown',
     onclick: () => { S.storyView = v; try { localStorage.setItem('se-storyview', v); } catch (e) {} renderStoryPage(); },
   })));
-  if (S.storyView === 'read') {
-    page.append(h('div', { class: 'story-head' }, h('h2', { text: f === MAIN_FILE ? 'Main campaign' : f + ' path' }), viewTabs,
-      h('span', { class: 'hint', text: 'Click a link to open it, or any text to edit it' })), renderRead(S.story[f].text));
-    renderStorySide();
-    return;
+  const changed = (text) => {
+    S.story[f].text = text;
+    storyChanged(f);
+    clearTimeout(S.storyRender);
+    S.storyRender = setTimeout(() => { renderStoryList(); renderStorySide(); }, 300);
+  };
+  let box;
+  if (raw) {
+    box = h('textarea', { id: 'story-text', class: 'story-text', spellcheck: 'true', value: S.story[f].text, oninput: (e) => changed(e.target.value) });
+    mdKeys(box);
+  } else {
+    box = richEditor(S.story[f].text, (md) => changed(md + '\n'), {
+      id: 'story-rich', cls: 'story-rich',
+      placeholder: 'Write the story here. Start a chapter with the Chapter button; link scenes and characters with the link buttons, ⌘K or [[.',
+    });
   }
-  const ta = h('textarea', {
-    id: 'story-text', class: 'story-text', spellcheck: 'true', value: S.story[f].text,
-    placeholder: 'Write the story here. Start a chapter with the Chapter button; link scenes and characters with the link buttons or by typing [[.',
-    oninput: (e) => {
-      S.story[f].text = e.target.value;
-      storyChanged(f);
-      clearTimeout(S.storyRender);
-      S.storyRender = setTimeout(() => { renderStoryList(); renderStorySide(); }, 300);
-    },
-  });
-  mdKeys(ta);
   page.append(h('div', { class: 'story-head' },
     h('h2', { text: f === MAIN_FILE ? 'Main campaign' : f + ' path' }), viewTabs,
-    h('span', { class: 'hint', text: '⌘-click a link to open it' })),
-  mdToolbar(() => $('#story-text'), { chapters: true }), ta);
+    h('span', { class: 'hint', text: raw ? '⌘-click a link to open it' : 'Click a link to open it' })),
+  mdToolbar(() => $('#story-rich') || $('#story-text'), { chapters: true }), box);
   renderStorySide();
 }
 function renderStorySide() {
@@ -506,8 +282,8 @@ function renderBranchMap(page) {
 
 // ---------- boot ----------
 async function initStory() {
-  S.story = {}; S.sdirty = new Set(); S.scur = '__map'; S.storyView = 'write';
-  try { S.storyView = localStorage.getItem('se-storyview') || 'write'; } catch (e) {}
+  S.story = {}; S.sdirty = new Set(); S.scur = '__map'; S.storyView = 'edit';
+  try { S.storyView = localStorage.getItem('se-storyview') === 'markdown' ? 'markdown' : 'edit'; } catch (e) {}
   try { for (const f of await api('GET', 'story')) S.story[f.file] = { file: f.file, text: f.text }; } catch (e) {}
   try { const f = localStorage.getItem('se-story'); if (f && (f === '__map' || S.story[f])) S.scur = f; } catch (e) {}
 }

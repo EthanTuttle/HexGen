@@ -155,14 +155,19 @@ function openChar(file) {
 // ---------- page ----------
 function autoGrow(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
 function charArea(c, h2, opts = {}) {
-  const ta = h('textarea', {
-    class: opts.cls || '', placeholder: opts.placeholder || '', value: getSec(c, h2),
-    oninput: (e) => { autoGrow(e.target); setSec(c, h2, e.target.value); charChanged(c); renderCharUsed(); },
-    onfocus: (e) => { S.lastCharTa = e.target; },
-  });
-  mdKeys(ta);
-  requestAnimationFrame(() => autoGrow(ta));
-  return ta;
+  const changed = (md) => { setSec(c, h2, md); charChanged(c); renderCharUsed(); };
+  if (opts.raw) {
+    // Lines hold markdown tables, so they stay as raw text
+    const ta = h('textarea', {
+      class: opts.cls || '', placeholder: opts.placeholder || '', value: getSec(c, h2),
+      oninput: (e) => { autoGrow(e.target); changed(e.target.value); },
+      onfocus: (e) => { S.lastCharTa = e.target; },
+    });
+    mdKeys(ta);
+    requestAnimationFrame(() => autoGrow(ta));
+    return ta;
+  }
+  return richEditor(getSec(c, h2), changed, { placeholder: opts.placeholder, onFocus: (el) => { S.lastCharTa = el; } });
 }
 function sec(title, ...kids) {
   return h('div', { class: 'char-sec' }, h('h2', {}, ...(Array.isArray(title) ? title : [title])), ...kids);
@@ -250,7 +255,7 @@ function renderCharPage() {
 
   wrap.append(sec('Notes', charArea(c, 'Notes', { placeholder: 'Open points, ideas, things to check.' })));
   wrap.append(sec('Lines', h('p', { class: 'hint', text: 'Lines outside scenes (chime-ins, inn bar lines), as markdown. Scene lines are listed on the right.' }),
-    charArea(c, 'Lines', { cls: 'lines' })));
+    charArea(c, 'Lines', { cls: 'lines', raw: true })));
 
   const extra = c.sections.filter((s) => !SECTION_ORDER.includes(s.h));
   for (const s of extra) wrap.append(sec(s.h, charArea(c, s.h)));

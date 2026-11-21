@@ -18,13 +18,13 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 
 - **Branch map** (top of the list): the six background paths as lanes, each chapter a box, all flowing into Gronogon and on through the main campaign's chapters. Each box counts its linked scenes and the ones still to write. Click a box to write that chapter.
 - **A path or the main campaign** opens as one big text field. Its chapters show under it in the list; click one to jump there.
-- **Write / Read:** Write is the text field. Read shows it as finished text, with links as chips: green for a scene, blue for a character, dashed orange for a scene still to write. Click a chip to open it, or click any text to go back to writing at that spot.
-- **Links:** **Link scene** / **Link character** (or ⌘K, or type `[[`) open a picker. Type to filter; Enter picks. Type a name that isn't a scene yet to plan it as **to write**. ⌘-click a link in Write to open it.
+- **Formatted / Markdown:** Formatted (the default) shows the text as it reads: chapters as big headings, bold and italic as they look, and links as chips (green for a scene, blue for a character, dashed orange for a scene still to write, grey for a link to a design doc). Click a chip to open it; Backspace removes it. Markdown shows the same text raw, for anyone who wants to see what's saved.
+- **Links:** **Link scene** / **Link character** (or ⌘K, or type `[[`) open a picker. Type to filter; Enter picks. Type a name that isn't a scene yet to plan it as **to write**. In Markdown view, ⌘-click a link to open it.
 - **Links in this file** (right) lists every link by chapter, with **Create scene** for the ones still to write. On the branch map it lists everything still to write.
 
 ### Formatting
 
-The story and the character page's text boxes have a toolbar, so there's no need to type markdown (it's saved as markdown underneath): **Chapter** (story only), **Heading**, **B**, *I*, **• List**, **Link scene**, **Link character**. Shortcuts: ⌘B bold, ⌘I italic, ⌘K link. On a character page the toolbar formats the box you were last in. ⌘Z undoes formatting too.
+The story and the character page's text boxes are formatted editors: you see the text as it reads and never type markdown, though it's saved as markdown underneath. Tables (a character's **Lines**) stay as raw text. The toolbar: **Chapter** (story only), **Heading**, **B**, *I*, **• List**, **Link scene**, **Link character**. Shortcuts: ⌘B bold, ⌘I italic, ⌘K link, ⌘Z undo. On a character page the toolbar formats the box you were last in. Pasted text comes in plain. A box is only written back to its file once you change something in it, so opening a page never rewrites anything.
 
 ### Characters
 
