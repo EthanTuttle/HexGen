@@ -1,6 +1,8 @@
 # Sage path
 
-The Sage's opening, from the start to Gronogon. Starting hex, gear and quest: [World & story](../01%20World%20%26%20story.md) → Backgrounds. Mentor: [The wizard tower's master](../characters/The%20wizard%20tower%27s%20master.md). Companions: [Frim](../characters/Frim.md) and [Grimhold](../characters/Grimhold.md).
+Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card).
+
+Mentor: [The wizard tower's master](../characters/The%20wizard%20tower%27s%20master.md). Companions: [Frim](../characters/Frim.md) and [Grimhold](../characters/Grimhold.md).
 
 ## Route to Gronogon
 

@@ -245,12 +245,12 @@ Region locations per variant: see [Map & exploration](02 Map & exploration.md) �
 | Church | Church or other minor place of worship (part of the pantheon; see [World & story](01 World & story.md) → Pantheon) | Both: towns have churches, and lone chapels roll as minor landmarks |
 | Druid enclave | A druid enclave | Minor landmark |
 
-**Legendaries** (re-set Oct 24, 2026; how each quest starts: [World & story](01 World & story.md) → Other Legendary quests)
+**Legendaries** (re-set Oct 24, 2026; how each quest starts: [story → Legendary quests](story/Legendary%20quests.md))
 
 | Legendary | What it is | How it reaches the map |
 | --- | --- | --- |
 | Lady of the Lake | The water maiden who starts the Sword in the Stone quest | Location of the enchanted lake (river/lake tier 3) |
-| Sword in the stone | Excalibur, a legendary sword ([World & story](01 World & story.md) → The sword pull scene) | Placed by the Lady of the Lake's quest |
+| Sword in the stone | Excalibur, a legendary sword ([World & story](01 World & story.md) → Sword in the Stone: rules) | Placed by the Lady of the Lake's quest |
 | Named cities | Cities with names, separate from the Story-tier city Gronogon. E.g. Hoboken, a merchant town with all sorts of shops and high-level gear to buy | Location of the great city (village tier 3); a Trading House quest guarantees it |
 | The Circus | The circus | Location of the fairgrounds (plains tier 3); a Farm landmark quest guarantees it |
 | Legendary dwarf forge | Epic side quest that rewards an epic forged weapon | Location of the dwarven hold (hills tier 3); a Clan Hall quest guarantees it |

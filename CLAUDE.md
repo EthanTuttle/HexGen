@@ -5,6 +5,7 @@ This repo holds the design docs for Heads or Hexes (HexGen is the old working na
 ## Source of truth
 
 - The design docs in `design/` are the canon. Before answering or proposing anything, read the relevant doc. If something isn't in the docs, it hasn't been decided.
+- **The story editor's files are the source of truth for story, scenes and characters** (Ethan, Nov 21, 2026): `design/story/`, `design/scenes/` and `design/characters/`, which Ethan edits in the story editor (`tools/story-editor/`). The other docs keep rules only and link to those files; they never copy or summarise story, lines or character details, since copies drift. A summary a doc needs is part of the file itself, so Ethan can keep it up to date in the editor (e.g. a path file's intro is that path's summary).
 - When a decision is made, write it into the right doc in the same turn. Update every place it touches so nothing contradicts it, and tick it off or add it to the Open questions list.
 - Commit finished doc changes and push them. Don't just paste the text into chat.
 

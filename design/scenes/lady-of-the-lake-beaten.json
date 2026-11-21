@@ -1,0 +1,33 @@
+{
+  "id": "lady-of-the-lake-beaten",
+  "title": "The Lady of the Lake: beaten",
+  "notes": "After the party beats her in the fight. She yields and tells them where the sword is, but curses it: the pull flips fewer coins. Then she sinks into the lake for good: she never speaks again, and that enchanted lake loses its resting blessing.",
+  "triggers": [
+    {
+      "kind": "person",
+      "value": "Lady of the Lake"
+    },
+    {
+      "kind": "quest",
+      "value": "Sword in the Stone"
+    }
+  ],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "line",
+      "x": 0,
+      "y": 0,
+      "speaker": "Lady of the Lake",
+      "text": "Go, then. Find your stone. But the hand that struck me will find it heavier than any stone in the world.",
+      "next": "n2"
+    },
+    "n2": {
+      "type": "end",
+      "x": 320,
+      "y": 0,
+      "outcome": "leave",
+      "reward": "Curse on the pull"
+    }
+  }
+}

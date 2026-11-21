@@ -1,6 +1,8 @@
 # Criminal path
 
-The Criminal's opening, from the start to Gronogon. Starting hex, gear and quest: [World & story](../01%20World%20%26%20story.md) → Backgrounds. Mentor: [The client](../characters/The%20client.md). Companions: [Dolmund](../characters/Dolmund.md) and [Lilian](../characters/Lilian.md).
+Steals an artifact important to the cast-out god: a key to the god's prison.
+
+Mentor: [The client](../characters/The%20client.md). Companions: [Dolmund](../characters/Dolmund.md) and [Lilian](../characters/Lilian.md).
 
 ## Route to Gronogon
 

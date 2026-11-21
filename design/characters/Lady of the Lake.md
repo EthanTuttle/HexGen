@@ -10,8 +10,14 @@ How to write: [Writing guide](00%20Writing%20guide.md).
 
 ## Background
 
-The water maiden who starts the Sword in the Stone quest. Her quest, deed and fight: [World & story](../01%20World%20%26%20story.md) → How hand-crafted quests play out on the map.
+The water maiden who starts the Sword in the Stone quest. Her quest, her champion and the deed: [story → Legendary quests](../story/Legendary%20quests.md) → Sword in the Stone.
+
+## Personality
+
+**What she judges:** worthiness, meaning honour and truth.
 
 ## Voice sheet
 
-Her voice, what she judges and all her lines stay with her scene: [World & story](../01%20World%20%26%20story.md) → The Lady of the Lake.
+Decided Oct 28, 2026 (moved from World & story, Nov 21, 2026). Her lines are in her scenes (listed under Used in).
+
+- **How she talks:** ancient and formal, like an Arthurian legend.

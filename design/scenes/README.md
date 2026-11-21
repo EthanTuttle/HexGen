@@ -59,5 +59,5 @@ An option without a check links with `next`. An option with a check links with `
 ## Open questions
 
 - [ ] How the game loads scene files (Godot reads the JSON; not built yet)
-- [ ] Move the existing sword pull scene ([World & story](../01%20World%20%26%20story.md) → The sword pull scene) into a scene file?
+- [x] ~~Move the existing sword pull scene into a scene file?~~ (done Nov 21, 2026: [sword-pull](sword-pull.json), plus the Lady of the Lake's three scenes)
 - Already open elsewhere, and the format leaves room for both: whether a failed social check can be retried in the same conversation ([Classes & combat](../03%20Classes%20%26%20combat.md) → Open questions), and the coins and heads needed per dialogue check.

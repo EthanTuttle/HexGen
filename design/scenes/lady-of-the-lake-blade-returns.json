@@ -1,0 +1,42 @@
+{
+  "id": "lady-of-the-lake-blade-returns",
+  "title": "The Lady of the Lake: the blade returns",
+  "notes": "The deed done: the party brings Sir Bedivere's Blade home to her lake.",
+  "triggers": [
+    {
+      "kind": "person",
+      "value": "Lady of the Lake"
+    },
+    {
+      "kind": "quest",
+      "value": "Sword in the Stone"
+    }
+  ],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "line",
+      "x": 0,
+      "y": 0,
+      "speaker": "Lady of the Lake",
+      "stage": "to the blade, as it sinks",
+      "text": "Rest now, old friend.",
+      "next": "n2"
+    },
+    "n2": {
+      "type": "line",
+      "x": 320,
+      "y": 0,
+      "speaker": "Lady of the Lake",
+      "text": "And you: you have my blessing, and my thanks.",
+      "next": "n3"
+    },
+    "n3": {
+      "type": "end",
+      "x": 640,
+      "y": 0,
+      "outcome": "leave",
+      "reward": "The Lady's blessing"
+    }
+  }
+}

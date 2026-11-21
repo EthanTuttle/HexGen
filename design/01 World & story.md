@@ -74,16 +74,16 @@ Moved Nov 21, 2026 to [story → Main campaign](story/Main%20campaign.md), writt
 
 ## Backgrounds
 
-6 backgrounds at launch: Soldier, Acolyte, Criminal, Sage, Folk Hero, Noble. A background sets the starting hex, starting gear, starting quest, and one of the starting deck's terrains (see [Cards & progression](05 Cards & progression.md) → Starting decks; decided Oct 24, 2026).
+6 backgrounds at launch: Soldier, Acolyte, Criminal, Sage, Folk Hero, Noble. A background sets the starting hex, starting gear, its story path (a summary and the full path: each path's file in [story/](story/README.md), moved Nov 21, 2026), and one of the starting deck's terrains (see [Cards & progression](05 Cards & progression.md) → Starting decks; decided Oct 24, 2026).
 
-| Background | Starting hex | Starting gear | Starting quest | Proficiency list (pick 1) |
+| Background | Starting hex | Starting gear | Story path | Proficiency list (pick 1) |
 | --- | --- | --- | --- | --- |
-| Soldier | Dunfaire Tower (guard tower) | TBD | The guard tower is attacked by cultists; the hero is tasked with tracking down the attackers | Athletics, Intimidate, Perception |
-| Acolyte | East Rime Chapel (church) | TBD | Sees the earliest sign of the cultists; tasked with tracking down worshippers of a banned religion | Lore, Nature, Survival |
-| Criminal | Monto Town (town) | TBD | Steals an artifact important to the cast-out god: a key to the god's prison | Thievery, Stealth, Deceive |
-| Sage | Sternbrunn Spire (wizard tower) | TBD | Catches wind of a mysterious magical tome of great power, which holds the cast-out god's history, and is tasked with hunting it down; the hunt leads to a different wizard tower (a Story card) | Lore, Nature, Perception |
-| Folk Hero | The Oak & Lantern (inn) | TBD | The innkeeper asks them to save his pet cat, snatched by cultists who sensed fey magic they could use; the cat becomes one of the path's 2 companions (a special companion-only race with its own trait and racial card, like other races: see [Classes & combat](03 Classes & combat.md) → Races; wizard class) | Animal, Survival, Athletics |
-| Noble | Weizenhof Estate (the family estate) | TBD | Merchant lines have been disrupted by corrupted hexes; sent as an envoy to investigate. The investigation leads to a traveling merchant Story card. These corrupted hexes are a special early case, appearing before the rift: the story places them at fixed locations. | Persuade, Deceive, Lore |
+| Soldier | Dunfaire Tower (guard tower) | TBD | [Soldier path](story/Soldier.md) | Athletics, Intimidate, Perception |
+| Acolyte | East Rime Chapel (church) | TBD | [Acolyte path](story/Acolyte.md) | Lore, Nature, Survival |
+| Criminal | Monto Town (town) | TBD | [Criminal path](story/Criminal.md) | Thievery, Stealth, Deceive |
+| Sage | Sternbrunn Spire (wizard tower) | TBD | [Sage path](story/Sage.md) | Lore, Nature, Perception |
+| Folk Hero | The Oak & Lantern (inn) | TBD | [Folk Hero path](story/Folk%20Hero.md) | Animal, Survival, Athletics |
+| Noble | Weizenhof Estate (the family estate) | TBD | [Noble path](story/Noble.md) | Persuade, Deceive, Lore |
 
 - **Background blurbs** (chosen Oct 30, 2026 by Ethan; present tense, since the hero still holds that role when the story starts; shown on the character creator's background step: [Presentation](07%20Presentation.md) → Character creator screen):
 
@@ -210,92 +210,50 @@ Generally, a quest's start names the landmark or region it begins on. Some quest
 
 **Legendary quests are shortcuts** (decided Oct 24, 2026). Most Legendaries are now tier 3 regions (see [Map & exploration](02 Map & exploration.md) → Tier 3 variants), which players can reach by working up through the tiers or by finding a quest that guarantees the region, like the class quests guarantee class variants. Quest starts are set case by case: an ordinary landmark event (a regular landmark offers the quest), or the Legendary location itself (e.g. Lady of the Lake starts the Sword in the Stone quest).
 
-**Example: Sword in the Stone** (confirmed Oct 24, 2026)
+**Example: Sword in the Stone:** the quest's story is in [story → Legendary quests](story/Legendary%20quests.md) (moved Nov 21, 2026).
 
-1. A river/lake region becomes an enchanted lake (tier 3), whose location is Lady of the Lake. Meeting her starts the quest.
-2. A social encounter with the water maiden: she tells the player where the sword is, and the quest places Sword in the Stone on the map.
-3. Optionally, the player can win the Lady's blessing (ways to win it: The Lady of the Lake, below). Pulling the sword out is a STR coin check; the blessing adds coins to it. Without the blessing, the player can still try with brute force.
-4. Reaching Sword in the Stone and pulling the sword out completes the quest. A failed pull locks the sword out for good, adding stakes and repercussions to the choice of whether to seek the blessing first. The pull plays out in the same zoomed-hex scene as the talk with the Lady.
+**Sword in the Stone: rules** (decided Oct 28, 2026; the pull itself, its options and narration: the scene [The sword pull](scenes/sword-pull.json), moved Nov 21, 2026)
 
-**The sword pull scene** (decided Oct 28, 2026)
-
-- **Options:** "Pull the sword" (STR + Athletics, so a proficient companion can chime in), "Read the runes on the stone" (a Lore check: a pass adds 1 coin to the pull; a fail loses nothing), and Leave to come back later.
 - **The sword is Excalibur** (decided Oct 28, 2026), and the pull needs 2 heads.
 - **Coin amounts** (decided Oct 28, 2026): the Lady's blessing adds 2 coins to the pull and her curse takes 2 away; the runes add 1. Balance risk, accepted: with a typical 4-coin puller and the 2-heads pull, a plain pull passes 69%, blessed 89% (94% with the runes) and cursed 25%. A failed pull loses the sword for good, so threatening her nearly costs the sword.
 - **The pull's name shows its bonuses,** like upgraded cards: each bonus adds a "+" and the curse takes one away. Pull++ with the blessing and the runes; Pull+ with one of them; Pull with neither, or with the curse and one bonus; Pull− when cursed with no bonus.
-- **Its text** (written Oct 28, 2026, picked by Ethan from drafts; narration, since nobody speaks here: see [characters → Writing guide](characters/00%20Writing%20guide.md)):
-
-| Moment | Narration |
-| --- | --- |
-| Arriving | "The stone stands alone beneath an open sky, the blade sunk in it to the hilt. Runes circle its base, worn almost smooth." |
-| Runes read | "The runes name the old kings, one after another, each hand the stone let go." |
-| Runes not read | "The runes are too worn to read. Whatever they once said, they keep to themselves." |
-| The pull passes | "Steel sings against stone, and the blade comes free. Excalibur is yours." |
-| The pull fails | "You pull until your arms shake, and the stone does not give. The sword is lost to you." |
-
 - **Anyone in the party can pull** (who flips: [Classes & combat](03 Classes & combat.md) → Checks outside combat), and the blessing and the runes help whoever pulls.
-
-**The Lady of the Lake** (decided Oct 28, 2026)
-
-- **Voice:** ancient and formal, like an Arthurian legend.
-- **What she judges:** worthiness, meaning honour and truth.
-- **Ways to win her blessing:**
-  - **Persuade:** a light cost on a fail: she refuses her blessing.
-  - **Intimidate:** a heavy cost on a fail: she fights back, which starts a fight, with water spirits (fey) rising from the lake beside her. If the party wins, she yields and tells them where the sword is, but curses it: the pull flips fewer coins. Then she sinks into the lake for good (decided Oct 28, 2026): she never speaks again, and that enchanted lake loses its resting blessing.
-  - **Offer a deed** (no check): she asks the hero to bring her fallen champion's blade home to rest in her lake. Bringing it back wins the blessing.
-- **Her champion and the deed** (decided Oct 28, 2026): Sir Bedivere was her sworn knight, who guarded the lake for her and rode out to face something he couldn't beat; she mourns him. He fell far from the lake, in a chimera's lair, which the quest places on the map far away (matching her line "He fell far from these waters"). The chimera still dens there with his blade. She never says his name: the player learns it from the blade they carry back, the item "Sir Bedivere's Blade". (In the legend, Bedivere is the knight who returned Excalibur to the Lady.)
-- **The old kings** (decided Oct 28, 2026: left vague): a legend only. Their names are cut in the stone, but they have no set history.
-- **Her lines** (written Oct 28, 2026, picked by Ethan from drafts):
-
-| Moment | Hero's card (intent) | The Lady |
-| --- | --- | --- |
-| Greeting | — | "Long have these waters waited, traveller. Few come seeking me, and fewer still come worthy. Speak, and let the lake hear what manner of soul you are." |
-| The sword (no check) | Ask about the sword | "It lies far from here, bound in stone beneath an open sky. I will show you the way. But mark me: the stone yields only once. Fail it, and the blade is lost to you forever." |
-| Persuade passes | Swear you are true | "There is truth in you. I feel it as I feel the rain. Take my blessing, and let the stone know you come in my name." |
-| Persuade fails | Swear you are true | "Not today. Prove yourself in deed, not word, and perhaps the lake will think again." |
-| Intimidate passes | Draw your weapon | "Boldly spoken. The old kings were bold too, and the stone answered them. Go, with what blessing a threat can buy." |
-| Intimidate fails (the fight starts) | Draw your weapon | "You dare threaten me at my own waters? Then let the lake answer you." |
-| She is beaten (curse) | — | "Go, then. Find your stone. But the hand that struck me will find it heavier than any stone in the world." |
-| The deed is set (no check) | Ask how to prove it | "A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died. Bring it home to me, and I will know your worth." |
-| The blade comes back | — | "Rest now, old friend." (to the blade, as it sinks) "And you: you have my blessing, and my thanks." |
-
-  Companion chime-ins with her: in each companion's file in characters/ (Fluffy has a special one).
 
 ### Other Legendary quests
 
-Re-set Oct 24, 2026. Region: the tier 3 variant the Legendary belongs to. Every tier 3 gets a shortcut quest (decided Oct 24, 2026); each appears once per campaign. Shortcut quests are also where lore threads get tied in (Ethan, Oct 24, 2026).
+Re-set Oct 24, 2026. Region: the tier 3 variant the Legendary belongs to. Every tier 3 gets a shortcut quest (decided Oct 24, 2026); each appears once per campaign. Each quest's start and chain: [story → Legendary quests](story/Legendary%20quests.md) (moved Nov 21, 2026).
 
-| Legendary | Region | Quest start | Chain |
-| --- | --- | --- | --- |
-| Hoboken | Great city (village) | A merchant at a Trading House (market town) offers a merchant charter | Escort a caravan along a dangerous route; the quest places towns on the map to bring the merchant to. Completing it guarantees the great city |
-| The Circus | Fairgrounds (plains) | A ringmaster's lost animal shows up at a Farm landmark | Return the animal; this guarantees the fairgrounds |
-| Legendary dwarf forge | Dwarven hold (hills) | A smith at a highlands Clan Hall tells of a lost forge | Gather rare ore from a Legendary dungeon (a step the quest places), then relight the forge (rewards an epic forged weapon); guarantees the dwarven hold |
-| Ancient library | Buried city (desert) | The Sandstone Sphinx (dunes) tells of the buried city as a riddle reward | Dig it out (steps: open) |
-| Named castles | Occupied realm (hills, plains or village) | Shortcut: a dispossessed noble at a fortified town's Keep asks for help (shared pattern for every castle) | Rally allies, then assault the castle; retaking it frees the region. Who holds it varies per castle |
-| Grand temples (8) | Holy lands in each god's terrain | Shortcut: a pilgrimage from a priest at a Church landmark (shared pattern for every god); each temple then grants its own quest | Each temple's own quest |
-| Sword in the Stone | Placed by the Lady of the Lake's quest (enchanted lake, river/lake) | Meeting Lady of the Lake. Enchanted lake shortcut: a bard at an Inn landmark sings of the Lady | See the example above |
-| Dragon mountain | Dragon mountain (hills); location: Redbone's Lair | Cultists court Redbone, the fire-dragon king, for Egan; find him first (ties to the main story) | — |
-| Fey Gate | Feywild crossing (forest) | As the rift grows it thins the veil; a fey creature slips through and begs you to open a way home (ties to the main story) | — |
-| Royal Granary | Breadbasket kingdom (farmland) | A priest of Toyoko at a Great Windmill wants to raise a realm of plenty | — |
-| Titan's Skull | Titan's grave (ruins) | Saved for a later campaign beat (open) | — |
-| Named dungeon variants | Dungeon of the Mad King (swamp); Lost City of Azelheim (ruins) | Both saved for later campaign beats (open) | — |
+| Legendary | Region |
+| --- | --- |
+| Hoboken | Great city (village) |
+| The Circus | Fairgrounds (plains) |
+| Legendary dwarf forge | Dwarven hold (hills) |
+| Ancient library | Buried city (desert) |
+| Named castles | Occupied realm (hills, plains or village) |
+| Grand temples (8) | Holy lands in each god's terrain |
+| Sword in the Stone | Placed by the Lady of the Lake's quest (enchanted lake, river/lake) |
+| Dragon mountain | Dragon mountain (hills); location: Redbone's Lair |
+| Fey Gate | Feywild crossing (forest) |
+| Royal Granary | Breadbasket kingdom (farmland) |
+| Titan's Skull | Titan's grave (ruins) |
+| Named dungeon variants | Dungeon of the Mad King (swamp); Lost City of Azelheim (ruins) |
 
 How the guarantee works (decided Oct 24, 2026): building the region is part of the quest, and the next region of that terrain the player finishes for it becomes the guaranteed tier 3 variant.
 
 ### Grand temple quests
 
-Changed Oct 24, 2026: each grand temple is the location of its god's holy land, a tier 3 region of the god's terrain (the same terrains as the cleric god leans: [Cards & progression](05 Cards & progression.md) → Starting decks; [Map & exploration](02 Map & exploration.md) → Tier 3 variants). The temple is active from the start, so its cleansing and healing services work right away, and it grants its quest, which now gives a different reward, set per god (open). The old starts (a Church, Dungeon, Farm, Druid enclave or Inn landmark; night or a party wipe for Selene and Tod) are replaced. Eve's old quest (her temple moves) is dropped; her temple is fixed like the others and needs a new quest (open).
+Changed Oct 24, 2026: each grand temple is the location of its god's holy land, a tier 3 region of the god's terrain (the same terrains as the cleric god leans: [Cards & progression](05 Cards & progression.md) → Starting decks; [Map & exploration](02 Map & exploration.md) → Tier 3 variants). The temple is active from the start, so its cleansing and healing services work right away, and it grants its quest, which now gives a different reward, set per god (open). The old starts (a Church, Dungeon, Farm, Druid enclave or Inn landmark; night or a party wipe for Selene and Tod) are replaced. Eve's old quest (her temple moves) is dropped; her temple is fixed like the others and needs a new quest (open). Each temple's quest: [story → Grand temple quests](story/Grand%20temple%20quests.md) (moved Nov 21, 2026).
 
-| God | Holy land terrain | Quest |
-| --- | --- | --- |
-| Aurora (sun) | Plains | Relight sun shrines at dawn across several hexes |
-| Selene (moon) | River/lake | Follow a moonlit path that only appears at night |
-| Morin (forge) | Hills/mountains | Reforge Morin's broken hammer from scattered pieces |
-| Toyoko (bounty and harvests) | Farmland | Cleanse corrupted fields blighting the land |
-| Adam (earth) | Forest | Calm an earthquake-causing spirit deep underground |
-| Canto (music) | Village | Collect lost verses of Canto's hymn across towns |
-| Eve (trickery) | Desert | New quest needed (the moving-temple quest was dropped Oct 24, 2026) |
-| Tod (death) | Swamp | Survive a journey through the land of the dead |
+| God | Holy land terrain |
+| --- | --- |
+| Aurora (sun) | Plains |
+| Selene (moon) | River/lake |
+| Morin (forge) | Hills/mountains |
+| Toyoko (bounty and harvests) | Farmland |
+| Adam (earth) | Forest |
+| Canto (music) | Village |
+| Eve (trickery) | Desert |
+| Tod (death) | Swamp |
 
 ### Quest rewards
 
