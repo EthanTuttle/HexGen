@@ -19,7 +19,7 @@ import threading
 import time
 import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -52,6 +52,48 @@ def write_text(path, text):
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
     os.replace(tmp, path)
+
+
+LINK_RE = re.compile(r"\[([^\]\n]+)\]\(((?:\.\./)*)(scenes|characters)/([^)\s]+)\.(json|md)\)")
+
+
+def relink_docs(chars_dir, d):
+    """After a rename, fixes links in the design docs the editor doesn't hold itself.
+
+    A link's target follows the rename; its text follows too when it was the old name.
+    The editor's own folders (story, scenes, characters) are left to the editor.
+    """
+    design = os.path.dirname(os.path.abspath(chars_dir))
+    skip = {os.path.join(design, x) for x in ("story", "scenes", "characters")}
+    kind, old, new = d["kind"], d["old"], d["new"]
+    old_label, new_label = d.get("oldLabel"), d.get("newLabel") or new
+    ext = "json" if kind == "scenes" else "md"
+    changed = []
+
+    def fix(m):
+        label, up, k, path, e = m.groups()
+        if k != kind or e != ext or unquote(path) != old:
+            return m.group(0)
+        if old_label is not None and label == old_label:
+            label = new_label
+        target = new if kind == "scenes" else quote(new, safe="")
+        return "[%s](%s%s/%s.%s)" % (label, up, k, target, e)
+
+    for root, dirs, files in os.walk(design):
+        if root in skip or any(root.startswith(s + os.sep) for s in skip):
+            dirs[:] = []
+            continue
+        for name in files:
+            if not name.endswith(".md"):
+                continue
+            p = os.path.join(root, name)
+            with open(p, encoding="utf-8") as f:
+                text = f.read()
+            out = LINK_RE.sub(fix, text)
+            if out != text:
+                write_text(p, out)
+                changed.append(os.path.relpath(p, design))
+    return changed
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -189,6 +231,16 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as e:
             return self.send_json({"error": str(e)}, 500)
         self.send_json({"error": "unknown"}, 404)
+
+    def do_POST(self):
+        kind, arg = self.route()
+        if kind != "relink":
+            return self.send_json({"error": "unknown"}, 404)
+        try:
+            d = self.read_body()
+            return self.send_json({"changed": relink_docs(self.chars_dir, d)})
+        except Exception as e:
+            return self.send_json({"error": str(e)}, 500)
 
     def do_DELETE(self):
         kind, arg = self.route()

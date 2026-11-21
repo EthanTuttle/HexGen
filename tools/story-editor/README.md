@@ -21,7 +21,7 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 - **Branch map** (top of the list): the six background paths as lanes, each chapter a box, all flowing into Gronogon and on through the main campaign's chapters. Each box counts its linked scenes and the ones still to write. Click a box to write that chapter.
 - **A path or the main campaign** opens as one big text field. Its chapters show under it in the list; click one to jump there.
 - **Formatted / Markdown:** Formatted (the default) shows the text as it reads: chapters as big headings, bold and italic as they look, and links as chips (green for a scene, blue for a character, dashed orange for a scene still to write, grey for a link to a design doc). Click a chip to open it; Backspace removes it. Markdown shows the same text raw, for anyone who wants to see what's saved.
-- **Links:** **Link scene** / **Link character** (or ⌘K, or type `[[`) open a picker. Type to filter; Enter picks. Type a name that isn't a scene yet to plan it as **to write**. In Markdown view, ⌘-click a link to open it.
+- **Links:** a link always shows the current name of what it points to, and renaming a character or retitling a scene rewrites the saved name too (in the story, the character files and the design docs). **Link scene** / **Link character** (or ⌘K, or type `[[`) open a picker. Type to filter; Enter picks. Type a name that isn't a scene yet to plan it as **to write**. In Markdown view, ⌘-click a link to open it.
 - **Links in this file** (right) lists every link by chapter, with **Create scene** for the ones still to write. On the branch map it lists everything still to write.
 
 ### Formatting
@@ -33,7 +33,7 @@ The story and the character page's text boxes are formatted editors: you see the
 - **The list** groups characters by role (companions, mentors, story NPCs, villains). Search covers everything in their files.
 - **A character's page** edits their file in `design/characters/`: profile (role, background path, race, class, subclass, home, proficiencies, voice sheet status), background, personality, personal quest, relationships, voice sheet, notes and their non-scene lines. Click the name to rename them. **Insert template** fills an empty voice sheet with the template from the Writing guide.
 - **Used in** (right) lists the scenes they're in (as a speaker, a Person trigger, a chime-in or a party condition), every line they say in scenes (click one to jump to it), their inn banter from Pairs.md, the story chapters that link to them, and who names them as a relationship.
-- **+ Character** makes a new file. Renaming updates the scenes and relationships that use the old name; links to the file in the design docs need updating by hand (or by Claude).
+- **+ Character** makes a new file. Renaming updates everything that uses the old name: scenes, relationships, and links in the story, in other characters' files and in the design docs.
 - Sections the editor doesn't know about are kept as they are, and a file nobody edits is never rewritten.
 
 ### Scenes

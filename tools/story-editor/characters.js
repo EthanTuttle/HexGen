@@ -411,7 +411,7 @@ async function renameChar(oldFile, raw) {
   if (!c || name === c.name) return;
   const err = badName(name, oldFile);
   if (err) { alert(err); renderCharPage(); return; }
-  if (!confirm(`Rename ${c.name} to ${name}? The file becomes ${name}.md, and scenes, story links and relationships that use the old name are updated. Links to the old file in the design docs need updating too (ask Claude).`)) { renderCharPage(); return; }
+  if (!confirm(`Rename ${c.name} to ${name}? The file becomes ${name}.md, and scenes, story links and relationships that use the old name are updated. Links to them in the story, other characters and the design docs are updated too.`)) { renderCharPage(); return; }
   const old = c.name;
   c.name = name; c.file = name;
   delete S.chars[oldFile]; S.chars[name] = c;
@@ -440,7 +440,7 @@ async function renameChar(oldFile, raw) {
       charChanged(o);
     }
   }
-  relinkStory('characters', old, name);
+  relinkStory('characters', old, name, name, old);
   charChanged(c);
   await saveChars();
   try { await api('DELETE', 'characters/' + encodeURIComponent(oldFile)); } catch (e) {}

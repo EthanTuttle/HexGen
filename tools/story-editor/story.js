@@ -64,13 +64,37 @@ function storyRefs(kind, target) {
   return out;
 }
 // keeps story links working after a scene or character is renamed
-function relinkStory(kind, oldTarget, newTarget) {
-  const from = kind === 'scenes' ? `../scenes/${oldTarget}.json)` : `../characters/${encName(oldTarget)}.md)`;
-  const to = kind === 'scenes' ? `../scenes/${newTarget}.json)` : `../characters/${encName(newTarget)}.md)`;
-  for (const f in S.story) if (S.story[f].text.includes(from)) {
-    S.story[f].text = S.story[f].text.split(from).join(to);
-    storyChanged(f);
+// the name a link should show: the character's name or the scene's current title
+function linkLabel(kind, target, fallback) {
+  if (kind === 'characters' && S.chars[target]) return S.chars[target].name;
+  if (kind === 'scenes' && S.scenes[target]) return S.scenes[target].title || fallback;
+  return fallback;
+}
+// rewrites every link to one scene or character: where it points and the name it shows
+function relinkText(text, kind, oldTarget, newTarget, newLabel) {
+  const re = /\[([^\]\n]+)\]\(\.\.\/(scenes|characters)\/([^)\s]+)\)/g;
+  return text.replace(re, (all, label, k, path) => {
+    if (k !== kind) return all;
+    const t = k === 'scenes' ? path.replace(/\.json$/, '') : decName(path.replace(/\.md$/, ''));
+    if (t !== oldTarget) return all;
+    return k === 'scenes' ? `[${newLabel}](../scenes/${newTarget}.json)` : `[${newLabel}](../characters/${encName(newTarget)}.md)`;
+  });
+}
+function relinkStory(kind, oldTarget, newTarget, newLabel, oldLabel) {
+  for (const f in S.story) {
+    const next = relinkText(S.story[f].text, kind, oldTarget, newTarget, newLabel);
+    if (next !== S.story[f].text) { S.story[f].text = next; storyChanged(f); }
   }
+  for (const c of Object.values(S.chars)) {
+    let hit = false;
+    for (const s of c.sections) {
+      const next = relinkText(s.body, kind, oldTarget, newTarget, newLabel);
+      if (next !== s.body) { s.body = next; hit = true; }
+    }
+    if (hit) charChanged(c);
+  }
+  // the design docs outside the editor's folders are rewritten by the server
+  api('POST', 'relink', { kind, old: oldTarget, new: newTarget, oldLabel: oldLabel || null, newLabel }).catch(() => {});
 }
 
 // ---------- saving ----------
@@ -222,7 +246,7 @@ function renderStorySide() {
       const exists = l.kind === 'scenes' ? !!S.scenes[l.target] : !!S.chars[l.target];
       const tag = l.kind === 'characters' ? (exists ? 'character' : 'no such character') : exists ? 'scene' : 'to write';
       body.append(h('div', { class: 'used-line', onclick: () => { if (S.scur === '__map') openStory(f, l.index); else jumpTo(l.index); } },
-        h('div', {}, h('span', { text: l.label }), ' ', h('span', { class: 'status-badge ' + (exists ? 'approved' : 'draft'), text: tag })),
+        h('div', {}, h('span', { text: linkLabel(l.kind, l.target, l.label) }), ' ', h('span', { class: 'status-badge ' + (exists ? 'approved' : 'draft'), text: tag })),
         h('div', { class: 'btn-row', style: 'margin-top:4px' },
           exists ? h('button', { class: 'small', text: 'Open', onclick: (e) => { e.stopPropagation(); followLink(l); } }) : null,
           !exists && l.kind === 'scenes' ? h('button', { class: 'small primary', text: 'Create scene', onclick: (e) => { e.stopPropagation(); createLinkedScene(l.target, l.label, false); } }) : null)));

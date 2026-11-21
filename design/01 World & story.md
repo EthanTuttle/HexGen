@@ -111,7 +111,7 @@ Moved Nov 21, 2026 to [story → Main campaign](story/Main%20campaign.md), writt
 - NPC companions' restriction, which keeps their power level distinct from the hero's: they get no class or subclass quests. Their NPC-related personal quests are their power-up instead.
 - General companion rules: see [Classes & combat](03 Classes & combat.md) → Hero and companions.
 
-**Mentors:** each path's mentor has a file in characters/ with their background and how they leave (moved there Nov 21, 2026): [The innkeeper](characters/The%20innkeeper.md) (Folk Hero), [The tower's commander](characters/The%20tower%27s%20commander.md) (Soldier), [The dream voice](characters/The%20dream%20voice.md) (Acolyte), [The client](characters/The%20client.md) (Criminal), [The wizard tower's master](characters/The%20wizard%20tower%27s%20master.md) (Sage), [The noble's parent](characters/The%20noble%27s%20parent.md) (Noble).
+**Mentors:** each path's mentor has a file in characters/ with their background and how they leave (moved there Nov 21, 2026): [The innkeeper](characters/The%20innkeeper.md) (Folk Hero), [Old Man Jenkins](characters/Old%20Man%20Jenkins.md) (Soldier), [The dream voice](characters/The%20dream%20voice.md) (Acolyte), [The client](characters/The%20client.md) (Criminal), [The wizard tower's master](characters/The%20wizard%20tower%27s%20master.md) (Sage), [The noble's parent](characters/The%20noble%27s%20parent.md) (Noble).
 
 **Folk Hero path cast** (class, race, personality and more: each character's file)
 
@@ -125,7 +125,7 @@ Moved Nov 21, 2026 to [story → Main campaign](story/Main%20campaign.md), writt
 
 | NPC | Role |
 | --- | --- |
-| [The tower's commander](characters/The%20tower%27s%20commander.md) | Mentor |
+| [Old Man Jenkins](characters/Old%20Man%20Jenkins.md) | Mentor |
 | [Mel](characters/Mel.md) | Companion |
 | [Grant Augustus](characters/Grant%20Augustus.md) | Companion |
 
