@@ -8,7 +8,7 @@ A local tool for writing the branching scenes in `design/scenes/`. It runs offli
 - **Or** double-click **Start Story Editor.command** in Finder (the first time, macOS may ask you to allow it: right-click → Open). This one runs in a Terminal window: close it, or press Ctrl+C, to stop.
 - **Or** in a terminal: `python3 tools/story-editor/server.py`
 
-Each way opens http://127.0.0.1:8765 in the browser. If the editor is already running, starting it again just opens the page.
+Each way opens http://127.0.0.1:47380 in the browser. If the editor is already running, starting it again just opens the page.
 
 ## Using it
 
