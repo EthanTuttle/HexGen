@@ -1,10 +1,33 @@
 # Grimhold
 
-Sage path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Sage
+- **Race:** human, from the cultists
+- **Class:** Cleric
+- **Subclass:** Order of Evil
+- **Home:** Old Battlefield (steppe/battlefield), studying the restless dead
+- **Proficiencies:** Lore, Intimidate
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+Joined the cultists for the forbidden knowledge, not the faith, and Egan's return scares him.
+
+## Personality
+
+Also wants to know what's in the tome and helps the Sage; they get along over a shared interest in knowledge. Initially draws his power from Egan; this may become part of his personal quest.
+
+## Personal quest
+
+Cut his bond with Egan and find a new source of power, or a new god.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a human cleric (Order of Evil) from the cultists; joined for the forbidden knowledge, not the faith, and Egan's return scares him; wants to know what's in the tome and gets along with the Sage over a shared interest in knowledge; draws his power from Egan. Home: Old Battlefield (steppe/battlefield), studying the restless dead. Personal quest: cut his bond with Egan and find a new source of power, or a new god. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a human cleric (Order of Evil) from the cultists; joined for the forbidden knowledge, not the faith, and Egan's return scares him; wants to know what's in the tome and gets along with the Sage over a shared interest in knowledge; draws his power from Egan. Home: Old Battlefield (steppe/battlefield), studying the restless dead. Personal quest: cut his bond with Egan and find a new source of power, or a new god. Full bio: Background, above.
 
 - **How he talks:** eager bookworm. Usually quiet, but he lights up and rambles when knowledge comes up.
 - **Never:** speaks well of Egan or prays out loud; leaves a book or scroll unread.

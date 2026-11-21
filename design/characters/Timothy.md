@@ -1,10 +1,33 @@
 # Timothy
 
-Acolyte path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Acolyte
+- **Race:** halfling
+- **Class:** Bard
+- **Subclass:** Musician
+- **Home:** Hidden Shrine (deep forest), singing alone where no one can hear
+- **Proficiencies:** Persuade, Stealth
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+His singing has real divine power, which frightens him.
+
+## Personality
+
+From the Acolyte's church choir; timid, except when he gets to singing.
+
+## Personal quest
+
+The cultists want his voice to sing a hymn that weakens Egan's prison.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a halfling bard (Musician) from the Acolyte's church choir; timid, except when he gets to singing; his singing has real divine power, which frightens him. Home: Hidden Shrine (deep forest), singing alone where no one can hear. Personal quest: the cultists want his voice to sing a hymn that weakens Egan's prison. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a halfling bard (Musician) from the Acolyte's church choir; timid, except when he gets to singing; his singing has real divine power, which frightens him. Home: Hidden Shrine (deep forest), singing alone where no one can hear. Personal quest: the cultists want his voice to sing a hymn that weakens Egan's prison. Full bio: Background, above.
 
 - **How he talks:** small and polite. Short, asks permission, trails off and plays things down.
 - **Never:** brags, even about his singing; swears or speaks ill of anyone.

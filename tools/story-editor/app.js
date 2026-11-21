@@ -14,6 +14,7 @@ const S = {
   tab: 'edit',
   undo: [], redo: [], lastKey: null, lastTime: 0,
   dirty: new Set(), saving: false, saveTimer: null, offline: false,
+  mode: 'scenes', chars: {}, cdirty: new Set(), ccur: null, csearch: '',
 };
 
 const NODE_TYPES = {
@@ -50,6 +51,7 @@ function h(tag, attrs, ...kids) {
   return el;
 }
 const clone = (o) => JSON.parse(JSON.stringify(o));
+const uniq = (a) => a.filter((v, i) => v && a.indexOf(v) === i);
 const slug = (t) => (t || 'scene').toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'scene';
 const scene = () => S.scenes[S.cur];
 const listOf = (k) => S.lists[k] || [];
@@ -164,7 +166,7 @@ async function saveNow() {
 function setStatus() {
   const el = $('#save-status');
   el.classList.toggle('bad', S.offline);
-  el.textContent = S.offline ? 'Not saved: start the server' : S.dirty.size ? 'Saving…' : 'Saved';
+  el.textContent = S.offline ? 'Not saved: start the server' : S.dirty.size || S.cdirty.size ? 'Saving…' : 'Saved';
 }
 
 // ---------- scene list ----------
@@ -536,13 +538,14 @@ function datalists() {
   if (old) old.remove();
   const flags = allFlags();
   const sets = {
-    'dl-speakers': [...listOf('companions'), ...listOf('npcs')],
-    'dl-people': [...listOf('companions'), ...listOf('npcs')],
+    'dl-speakers': uniq([...charNames(), ...listOf('companions'), ...listOf('npcs')]),
+    'dl-people': uniq([...charNames(), ...listOf('companions'), ...listOf('npcs')]),
+    'dl-allchars': charNames(),
     'dl-places': listOf('places'),
     'dl-encounters': listOf('encounters'),
     'dl-flags': [...flags.set, ...flags.used].filter((v, i, a) => a.indexOf(v) === i).sort(),
     'dl-background': listOf('backgrounds'), 'dl-class': listOf('classes'), 'dl-subclass': listOf('subclasses'),
-    'dl-race': listOf('races'), 'dl-companion': listOf('companions'),
+    'dl-race': listOf('races'), 'dl-companion': uniq([...charNames('Companion'), ...listOf('companions')]),
   };
   const wrap = h('div', { id: 'datalists', class: 'hidden' });
   for (const id in sets) wrap.append(h('datalist', { id }, sets[id].map((v) => h('option', { value: v }))));
@@ -751,7 +754,7 @@ function newScene() {
         S.sel = sc.start; renderAll();
       } }),
       h('button', { text: 'Cancel', onclick: closeModal }))));
-  setTimeout(() => $('#new-title').focus(), 0);
+  $('#new-title').focus();
 }
 async function renameScene(oldId, raw) {
   const id = slug(raw);
@@ -935,7 +938,7 @@ function initKeys() {
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
     const mod = e.metaKey || e.ctrlKey;
     if (e.key === 'Escape') { hideDropMenu(); closeModal(); if (!typing && S.sel) { S.sel = null; renderCanvas(); renderInspector(); } }
-    if (typing) { if (mod && e.key === 's') { e.preventDefault(); saveNow(); } return; }
+    if (typing || S.mode !== 'scenes') { if (mod && e.key === 's') { e.preventDefault(); saveNow(); saveChars(); } return; }
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(!e.shiftKey); }
     else if (mod && e.key === 'y') { e.preventDefault(); undo(false); }
     else if (mod && e.key === 's') { e.preventDefault(); saveNow(); }
@@ -943,7 +946,7 @@ function initKeys() {
     else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { e.preventDefault(); deleteNode(S.sel); }
     else if (e.key === 'f' && !mod) fitView();
   });
-  window.addEventListener('beforeunload', (e) => { if (S.dirty.size) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', (e) => { if (S.dirty.size || S.cdirty.size) { e.preventDefault(); e.returnValue = ''; } });
 }
 
 // ---------- boot ----------
@@ -975,6 +978,7 @@ async function boot() {
       sc.nodes = sc.nodes || {}; sc.triggers = sc.triggers || [];
       S.scenes[sc.id] = sc;
     }
+    await initCharacters();
   } catch (e) {
     S.offline = true;
     $('#empty-hint').textContent = 'Can\'t reach the editor server. Start it with "Start Story Editor.command" (or python3 tools/story-editor/server.py), then reload.';
@@ -985,26 +989,33 @@ async function boot() {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (k && k.startsWith('se-backup-')) backups.push(JSON.parse(localStorage.getItem(k)));
+      if (k && k.startsWith('se-cbackup-')) backups.push(JSON.parse(localStorage.getItem(k)));
     }
   } catch (e) {}
   if (backups.length && !S.offline) {
     modal(h('div', {},
       h('h2', { text: 'Unsaved edits found' }),
       h('p', { text: 'These scenes had edits that never reached disk (the server was stopped):' }),
-      h('ul', {}, backups.map((b) => h('li', { text: `${b.scene.title || b.scene.id} — ${new Date(b.t).toLocaleString()}` }))),
+      h('ul', {}, backups.map((b) => h('li', { text: `${b.scene ? b.scene.title || b.scene.id : b.file + ' (character)'} — ${new Date(b.t).toLocaleString()}` }))),
       h('div', { class: 'btn-row' },
         h('button', { class: 'primary', text: 'Restore them', onclick: () => {
-          for (const b of backups) { S.scenes[b.scene.id] = b.scene; markDirty(b.scene.id); }
-          closeModal(); renderAll();
+          for (const b of backups) {
+            if (b.scene) { S.scenes[b.scene.id] = b.scene; markDirty(b.scene.id); }
+            else { S.chars[b.file] = parseChar(b.file, b.text); charChanged(S.chars[b.file]); }
+          }
+          closeModal(); renderAll(); if (S.mode === 'characters') setMode('characters');
         } }),
         h('button', { text: 'Discard', onclick: () => {
-          for (const b of backups) try { localStorage.removeItem('se-backup-' + b.scene.id); } catch (e) {}
+          for (const b of backups) try { localStorage.removeItem(b.scene ? 'se-backup-' + b.scene.id : 'se-cbackup-' + b.file); } catch (e) {}
           closeModal();
         } }))));
   }
   let last = null;
   try { last = localStorage.getItem('se-last'); } catch (e) {}
   if (last && S.scenes[last]) openScene(last); else renderAll();
+  let mode = 'scenes';
+  try { mode = localStorage.getItem('se-mode') || 'scenes'; } catch (e) {}
+  if (mode === 'characters') setMode('characters');
   setStatus();
 }
-boot();
+// boot() runs at the end of characters.js, once both scripts are loaded

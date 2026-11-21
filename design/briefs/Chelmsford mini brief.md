@@ -14,7 +14,7 @@ Heads or Hexes is a card-driven, D&D-style hex-crawl RPG for PC and mobile. The 
 
 | | |
 | --- | --- |
-| Role | Companion on the Folk Hero path ([World & story](../01 World & story.md) → Folk Hero path cast) |
+| Role | Companion on the Folk Hero path ([characters → Chelmsford](../characters/Chelmsford.md)) |
 | Race | Blue (lightning) dragonborn ([Classes & combat](../03 Classes & combat.md) → Races) |
 | Class | Cleric, default subclass Order of Good (support: buffs, healing, protection) |
 | God | Aurora, the sun goddess; her sun is his emblem |

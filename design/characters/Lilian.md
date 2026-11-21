@@ -1,10 +1,33 @@
 # Lilian
 
-Criminal path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Criminal
+- **Race:** human
+- **Class:** Bard
+- **Subclass:** Dancer
+- **Home:** Oasis Bazaar (oasis), dancing for travelling merchants
+- **Proficiencies:** Deceive, Perception
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+Uses her charm to escape a life she's trapped in.
+
+## Personality
+
+Seduces the hero.
+
+## Personal quest
+
+Cut the strings and break free from the merchant prince who owns the Oasis Bazaar and holds her contract and her debts.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a human bard (Dancer) who seduces the hero; uses her charm to escape a life she's trapped in. Home: Oasis Bazaar (oasis), dancing for travelling merchants. Personal quest: cut the strings and break free from the merchant prince who owns the Oasis Bazaar and holds her contract and her debts. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a human bard (Dancer) who seduces the hero; uses her charm to escape a life she's trapped in. Home: Oasis Bazaar (oasis), dancing for travelling merchants. Personal quest: cut the strings and break free from the merchant prince who owns the Oasis Bazaar and holds her contract and her debts. Full bio: Background, above.
 
 - **How she talks:** warm and teasing. Easy, flowing and affectionate; she teases and touches, and makes everyone feel noticed. Pet names ("darling", "sweetheart") are part of her voice, just not in every line.
 - **Never:** mentions her debts or the contract unless she's serious; plays the victim. She's working her way out.

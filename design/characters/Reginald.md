@@ -1,10 +1,33 @@
 # Reginald
 
-Noble path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Noble
+- **Race:** human
+- **Class:** Wizard
+- **Subclass:** Ritualist
+- **Home:** Plague Pit (rot swamp), holding back the rot from spreading
+- **Proficiencies:** Lore, Persuade
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+The family's wards and barriers have quietly been his work for decades. In other paths the noble family has fallen to curses, and he is found warding a region location against a threat.
+
+## Personality
+
+The Noble's butler, the oldest member of the estate and long trusted by the family. Starts in the party with the Noble; plays a subservient role.
+
+## Personal quest
+
+The old ritual, his oldest ward is failing and what it has held back for decades is getting out: a demon (fiend) the family bound long ago, tied to Egan.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a human wizard (Ritualist), the Noble's butler, the oldest member of the estate and long trusted by the family; starts in the party with the Noble and plays a subservient role; the family's wards and barriers have quietly been his work for decades. In other paths the noble family has fallen to curses, and he is found warding a region location. Home: Plague Pit (rot swamp), holding back the rot. Personal quest: the old ritual, his oldest ward failing on a demon the family bound long ago, tied to Egan. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a human wizard (Ritualist), the Noble's butler, the oldest member of the estate and long trusted by the family; starts in the party with the Noble and plays a subservient role; the family's wards and barriers have quietly been his work for decades. In other paths the noble family has fallen to curses, and he is found warding a region location. Home: Plague Pit (rot swamp), holding back the rot. Personal quest: the old ritual, his oldest ward failing on a demon the family bound long ago, tied to Egan. Full bio: Background, above.
 
 - **How he talks:** formal and dry. Perfectly formal and correct; the humour comes out as understatement.
 - **Addressing the hero:** by the hero's title, "sir" or "madam" to match the hero (written "sir/madam" in his lines). Lines about the hero's family (such as their grandmother) only show on the Noble path.

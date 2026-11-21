@@ -1,10 +1,33 @@
 # Dolmund
 
-Criminal path companion. Bio, home and personal quest: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories. Proficiencies: World & story → Companion proficiencies. How to write: [Writing guide](00%20Writing%20guide.md).
+How to write: [Writing guide](00%20Writing%20guide.md).
+
+## Profile
+
+- **Role:** Companion
+- **Path:** Criminal
+- **Race:** shield dwarf
+- **Class:** Fighter
+- **Subclass:** Brawler
+- **Home:** Salamander Den (volcanic peaks), keeping miners safe from fire creatures
+- **Proficiencies:** Athletics, Intimidate
+- **Status:** Voice sheet approved, Oct 29, 2026
+
+## Background
+
+Believes the hero is better than their crimes and sticks around to keep them honest.
+
+## Personality
+
+Just wants to keep people safe.
+
+## Personal quest
+
+Make right the time he failed to protect a noble's child, taken by cultists on his watch and maybe still alive.
 
 ## Voice sheet
 
-Approved by Ethan, Oct 29, 2026. From the bio: a shield dwarf fighter (Brawler) who just wants to keep people safe; believes the hero is better than their crimes and sticks around to keep them honest. Home: Salamander Den (volcanic peaks), keeping miners safe from fire creatures. Personal quest: make right the time he failed to protect a noble's child, taken by cultists on his watch and maybe still alive. Full bio: [World & story](../01%20World%20%26%20story.md) → NPC homes and stories.
+Approved by Ethan, Oct 29, 2026. From the bio: a shield dwarf fighter (Brawler) who just wants to keep people safe; believes the hero is better than their crimes and sticks around to keep them honest. Home: Salamander Den (volcanic peaks), keeping miners safe from fire creatures. Personal quest: make right the time he failed to protect a noble's child, taken by cultists on his watch and maybe still alive. Full bio: Background, above.
 
 - **How he talks:** gruff and direct. Short and plain, gives orders, repeats himself when he means it. Warm under the growl.
 - **Never:** leaves anyone behind; gives up on the hero, however bad the job.
