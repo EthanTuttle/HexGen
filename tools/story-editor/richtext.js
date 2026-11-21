@@ -23,6 +23,8 @@ function chipTitle(href) {
   return chipClass(href).includes('todo') ? (li.kind === 'scenes' ? 'Not written yet: click to create' : 'No character file with this name') : 'Click to open';
 }
 function chipHtml(label, href) {
+  const li = linkInfo(href);
+  if (li.kind !== 'doc') label = linkLabel(li.kind, li.target, label);
   return `<a class="${chipClass(href)}" contenteditable="false" data-href="${escHtml(href)}" title="${escHtml(chipTitle(href))}">${escHtml(label)}</a>`;
 }
 function inlineToHtml(md) {
@@ -184,7 +186,11 @@ function richEditor(md, onChange, opts = {}) {
 }
 // after a scene or character is created, chips that pointed at nothing update
 function refreshChips() {
-  document.querySelectorAll('.rich .chip-link').forEach((a) => { a.className = chipClass(a.dataset.href); a.title = chipTitle(a.dataset.href); });
+  document.querySelectorAll('.rich .chip-link').forEach((a) => {
+    a.className = chipClass(a.dataset.href); a.title = chipTitle(a.dataset.href);
+    const li = linkInfo(a.dataset.href);
+    if (li.kind !== 'doc') a.textContent = linkLabel(li.kind, li.target, a.textContent);
+  });
 }
 const isRich = (el) => el && el.tagName !== 'TEXTAREA';
 function richBlock(el) {

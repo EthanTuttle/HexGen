@@ -14,5 +14,5 @@ The campaign story, set up Nov 21, 2026: one file per background path (from the 
 - **Links** are ordinary markdown links, so they also work when reading the files anywhere else:
   - a scene: `[Ambush at the ford](../scenes/ambush-at-the-ford.json)`. If that scene file doesn't exist yet, the scene is **to write**: the editor lists it and can create it with one click.
   - a character: `[Mel](../characters/Mel.md)`.
-- Renaming a scene or a character in the editor updates the links here.
+- Links show the current name of what they point to. Renaming a character, or changing a scene's title or file name, in the editor rewrites the links here and in the design docs.
 - Scenes and characters show which chapters link to them (their **In the story** list).

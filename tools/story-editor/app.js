@@ -748,7 +748,14 @@ function optionCard(sc, nid, o, i, count) {
 
 function sceneInspector(box, sc) {
   box.append(h('h3', { text: 'Scene' }), h('p', { class: 'hint', text: 'Click a node to edit it. Double-click empty space to add one.' }));
-  box.append(...textField('Title', sc.title, (s, v) => { s.title = v; }, { relist: true }));
+  const titleField = textField('Title', sc.title, (s, v) => { s.title = v; }, { relist: true });
+  // once the title is done (leaving the box), links to the scene take the new name
+  let titleBefore = sc.title;
+  titleField[1].addEventListener('change', () => {
+    const now = scene().title;
+    if (now && now !== titleBefore) { relinkStory('scenes', sc.id, sc.id, now, titleBefore); titleBefore = now; }
+  });
+  box.append(...titleField);
   const idInput = h('input', { value: sc.id });
   box.append(h('label', { text: 'File name (design/scenes/…json)' }), h('div', { class: 'row' }, idInput,
     h('button', { class: 'small', text: 'Rename', onclick: () => renameScene(sc.id, idInput.value) })));
@@ -818,7 +825,7 @@ async function renameScene(oldId, raw) {
     const n = S.scenes[sid].nodes[nid];
     if (n.type === 'end' && n.scene === oldId) { n.scene = id; markDirty(sid); }
   }
-  relinkStory('scenes', oldId, id);
+  relinkStory('scenes', oldId, id, sc.title || id, sc.title || oldId);
   S.cur = id;
   S.dirty.delete(oldId);
   markDirty(id);
