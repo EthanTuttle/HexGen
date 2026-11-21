@@ -49,7 +49,7 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=HERE, **kwargs)
 
     def log_message(self, fmt, *args):
-        if "/api/" in (args[0] if args else ""):
+        if "/api/" in (str(args[0]) if args else ""):
             return  # autosave would flood the terminal
         super().log_message(fmt, *args)
 
@@ -159,7 +159,13 @@ def main():
         server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     except OSError:
         url = "http://127.0.0.1:%d" % args.port
-        print("Port %d is busy; the editor is probably already running at %s" % (args.port, url))
+        try:
+            from urllib.request import urlopen
+            json.load(urlopen(url + "/api/ping", timeout=2))["ok"]
+        except Exception:
+            print("Port %d is used by another program. Try --port with another number." % args.port)
+            sys.exit(1)
+        print("The editor is already running at %s" % url)
         if not args.no_browser:
             webbrowser.open(url)
         sys.exit(0)
