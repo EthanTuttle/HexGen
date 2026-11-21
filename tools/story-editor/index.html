@@ -12,6 +12,7 @@
   <div class="mode-tabs" id="mode-tabs">
     <button data-mode="scenes" class="active">Scenes</button>
     <button data-mode="characters">Characters</button>
+    <button data-mode="story">Story</button>
   </div>
   <div id="scene-title" class="scene-title"></div>
   <div class="spacer"></div>
@@ -25,6 +26,10 @@
 </header>
 
 <main id="layout">
+  <aside id="story-sidebar" class="hidden">
+    <div id="story-list"></div>
+  </aside>
+
   <aside id="char-sidebar" class="hidden">
     <div class="side-head">
       <input id="char-search" type="search" placeholder="Search characters…">
@@ -65,6 +70,10 @@
     <div id="drop-menu" class="drop-menu hidden"></div>
   </section>
 
+  <section id="story-page" class="hidden"></section>
+
+  <aside id="story-side" class="hidden"></aside>
+
   <section id="char-page" class="hidden"></section>
 
   <aside id="char-used" class="hidden"></aside>
@@ -83,5 +92,6 @@
 
 <script src="app.js"></script>
 <script src="characters.js"></script>
+<script src="story.js"></script>
 </body>
 </html>

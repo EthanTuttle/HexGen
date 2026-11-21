@@ -169,7 +169,7 @@ Each terrain has 3 tier 2 variants including its class variant; desert has 3 and
 - Corrupted hexes come from corrupted cards entering the draw pool. They can be cleansed at a church or temple, or with cleric abilities; a cleansed hex becomes its uncorrupted version. (Cleansing corrupted cards in the deck at druid enclaves: see [Cards & progression](05 Cards & progression.md) → Deck shaping.)
 - Corrupted zones do not limit placement or sight.
 - A corrupted hex counts as its normal terrain for clusters and terrain pairing (decided Oct 23, 2026).
-- When corruption spreads in the story: see [World & story](01 World & story.md) → Main story outline.
+- When corruption spreads in the story: see [story → Main campaign](story/Main%20campaign.md).
 
 ## Camps and rest
 

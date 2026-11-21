@@ -105,14 +105,20 @@ async function saveChars() {
 function setMode(m) {
   S.mode = m;
   try { localStorage.setItem('se-mode', m); } catch (e) {}
-  const chars = m === 'characters';
-  for (const id of ['#sidebar', '#canvas', '#inspector']) $(id).classList.toggle('hidden', chars);
-  for (const id of ['#char-sidebar', '#char-page', '#char-used']) $(id).classList.toggle('hidden', !chars);
-  document.querySelector('.scene-only').classList.toggle('hidden', chars);
-  $('#scene-title').classList.toggle('hidden', chars);
+  const parts = {
+    scenes: ['#sidebar', '#canvas', '#inspector'],
+    characters: ['#char-sidebar', '#char-page', '#char-used'],
+    story: ['#story-sidebar', '#story-page', '#story-side'],
+  };
+  for (const k in parts) for (const id of parts[k]) $(id).classList.toggle('hidden', k !== m);
+  document.querySelector('.scene-only').classList.toggle('hidden', m !== 'scenes');
+  $('#scene-title').classList.toggle('hidden', m !== 'scenes');
   document.querySelectorAll('#mode-tabs button').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
   hideDropMenu();
-  if (chars) { renderCharList(); renderCharPage(); } else { renderAll(); }
+  closeLinkPop();
+  if (m === 'characters') { renderCharList(); renderCharPage(); }
+  else if (m === 'story') { renderStoryList(); renderStoryPage(); }
+  else renderAll();
 }
 
 // ---------- list ----------
@@ -152,7 +158,9 @@ function charArea(c, h2, opts = {}) {
   const ta = h('textarea', {
     class: opts.cls || '', placeholder: opts.placeholder || '', value: getSec(c, h2),
     oninput: (e) => { autoGrow(e.target); setSec(c, h2, e.target.value); charChanged(c); renderCharUsed(); },
+    onfocus: (e) => { S.lastCharTa = e.target; },
   });
+  mdKeys(ta);
   requestAnimationFrame(() => autoGrow(ta));
   return ta;
 }
@@ -177,6 +185,9 @@ function renderCharPage() {
   const p = profile(c).map;
   const vs = voiceStatus(c);
   const wrap = h('div', { class: 'char-wrap' });
+  S.lastCharTa = null;
+  page.append(h('div', { class: 'char-toolbar' }, mdToolbar(() => (S.lastCharTa && document.body.contains(S.lastCharTa) ? S.lastCharTa : null)),
+    h('span', { class: 'hint', text: 'Formats the text box you were last in.' })));
   const nameInput = h('input', {
     class: 'char-name', value: c.name, title: 'Click to rename',
     onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { e.target.value = c.name; e.target.blur(); } },
@@ -339,6 +350,12 @@ function renderCharUsed() {
     body.append(h('h3', { text: 'Inn banter (Pairs)' }));
     for (const p of pairs) body.append(h('div', { class: 'used-line', style: 'cursor:default' }, h('div', { class: 'where', text: p.pair }), h('div', { text: p.text })));
   }
+  const refs = storyRefs('characters', c.name);
+  if (refs.length) {
+    body.append(h('h3', { text: 'In the story' }));
+    for (const r of refs) body.append(h('div', { class: 'used-line', onclick: () => { setMode('story'); openStory(r.file, r.index); } },
+      h('div', { text: r.chapter }), h('div', { class: 'where', text: r.file === MAIN_FILE ? 'Main campaign' : r.file + ' path' })));
+  }
   const rel = Object.values(S.chars).filter((o) => o !== c && parseBullets(getSec(o, 'Relationships')).items.some((r) => r.k === c.name));
   if (rel.length) {
     body.append(h('h3', { text: 'Named by' }));
@@ -387,7 +404,7 @@ async function renameChar(oldFile, raw) {
   if (!c || name === c.name) return;
   const err = badName(name, oldFile);
   if (err) { alert(err); renderCharPage(); return; }
-  if (!confirm(`Rename ${c.name} to ${name}? The file becomes ${name}.md, and scenes and relationships that use the old name are updated. Links to the old file in the design docs need updating too (ask Claude).`)) { renderCharPage(); return; }
+  if (!confirm(`Rename ${c.name} to ${name}? The file becomes ${name}.md, and scenes, story links and relationships that use the old name are updated. Links to the old file in the design docs need updating too (ask Claude).`)) { renderCharPage(); return; }
   const old = c.name;
   c.name = name; c.file = name;
   delete S.chars[oldFile]; S.chars[name] = c;
@@ -416,6 +433,7 @@ async function renameChar(oldFile, raw) {
       charChanged(o);
     }
   }
+  relinkStory('characters', old, name);
   charChanged(c);
   await saveChars();
   try { await api('DELETE', 'characters/' + encodeURIComponent(oldFile)); } catch (e) {}
@@ -444,4 +462,3 @@ async function initCharacters() {
   document.querySelectorAll('#mode-tabs button').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
   try { const f = localStorage.getItem('se-char'); if (f && S.chars[f]) S.ccur = f; } catch (e) {}
 }
-boot();

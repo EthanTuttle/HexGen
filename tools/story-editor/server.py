@@ -25,6 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DEFAULT_DATA = os.path.join(REPO, "design", "scenes")
 DEFAULT_CHARS = os.path.join(REPO, "design", "characters")
+DEFAULT_STORY = os.path.join(REPO, "design", "story")
 LISTS_FILE = "_lists.json"
 # files in design/characters/ that aren't characters
 NOT_CHARACTERS = {"00 Writing guide.md", "Pairs.md", "Places.md"}
@@ -56,6 +57,7 @@ def write_text(path, text):
 class Handler(SimpleHTTPRequestHandler):
     data_dir = DEFAULT_DATA
     chars_dir = DEFAULT_CHARS
+    story_dir = DEFAULT_STORY
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=HERE, **kwargs)
@@ -95,6 +97,11 @@ class Handler(SimpleHTTPRequestHandler):
             return None
         return os.path.join(self.data_dir, scene_id + ".json")
 
+    def story_path(self, name):
+        if not name or not CHAR_RE.match(name) or name == "README":
+            return None
+        return os.path.join(self.story_dir, name + ".md")
+
     def char_path(self, name):
         if not name or not CHAR_RE.match(name) or (name + ".md") in NOT_CHARACTERS:
             return None
@@ -133,6 +140,13 @@ class Handler(SimpleHTTPRequestHandler):
                         with open(os.path.join(self.chars_dir, name), encoding="utf-8") as f:
                             out.append({"file": name[:-3], "text": f.read()})
                 return self.send_json(out)
+            if kind == "story":
+                out = []
+                for name in sorted(os.listdir(self.story_dir)):
+                    if name.endswith(".md") and name != "README.md":
+                        with open(os.path.join(self.story_dir, name), encoding="utf-8") as f:
+                            out.append({"file": name[:-3], "text": f.read()})
+                return self.send_json(out)
             if kind == "chardoc":  # read-only docs beside the characters (Pairs, Writing guide)
                 name = {"pairs": "Pairs.md", "guide": "00 Writing guide.md"}.get(arg)
                 p = name and os.path.join(self.chars_dir, name)
@@ -161,6 +175,12 @@ class Handler(SimpleHTTPRequestHandler):
                 p = self.char_path(arg)
                 if not p:
                     return self.send_json({"error": "bad character name"}, 400)
+                write_text(p, data["text"])
+                return self.send_json({"ok": True})
+            if kind == "story":
+                p = self.story_path(arg)
+                if not p:
+                    return self.send_json({"error": "bad story file name"}, 400)
                 write_text(p, data["text"])
                 return self.send_json({"ok": True})
             if kind == "lists":
@@ -192,6 +212,7 @@ def main():
     ap.add_argument("--port", type=int, default=47380)
     ap.add_argument("--data", default=DEFAULT_DATA)
     ap.add_argument("--chars", default=DEFAULT_CHARS)
+    ap.add_argument("--story", default=DEFAULT_STORY)
     ap.add_argument("--no-browser", action="store_true")
     ap.add_argument("--idle-exit", type=int, default=0,
                     help="stop after this many seconds with no editor tab open (0 = never)")
@@ -199,6 +220,8 @@ def main():
 
     Handler.data_dir = os.path.abspath(args.data)
     Handler.chars_dir = os.path.abspath(args.chars)
+    Handler.story_dir = os.path.abspath(args.story)
+    os.makedirs(Handler.story_dir, exist_ok=True)
     os.makedirs(Handler.data_dir, exist_ok=True)
     try:
         server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
@@ -218,6 +241,7 @@ def main():
     print("Story editor: %s" % url)
     print("Scenes folder: %s" % Handler.data_dir)
     print("Characters folder: %s" % Handler.chars_dir)
+    print("Story folder: %s" % Handler.story_dir)
     print("Press Ctrl+C to stop.")
     if not args.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()

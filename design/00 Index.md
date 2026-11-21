@@ -20,6 +20,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 **Characters** ([characters/](characters/00%20Writing%20guide.md)): how characters are written. [Writing guide](characters/00%20Writing%20guide.md) (dialogue rules, line types, tells to avoid, how we write, voice sheet template), one file per character, covering companions, mentors, story NPCs and villains (profile, background, personality, personal quest, relationships, voice sheet and every line they say; moved there from World & story Nov 21, 2026), [Pairs](characters/Pairs.md) (inn banter between two companions) and [Places](characters/Places.md) (lines for generated places such as towns, per moment slot).
 
+**Story** ([story/](story/README.md)): the campaign story, one file per background path plus the main campaign, with chapters and links to scenes and characters (Nov 21, 2026; the main story outline, routes to convergence and shared main story moved there from World & story). Written in the story editor's Story tab.
+
 **Scenes** ([scenes/](scenes/README.md)): branching scenes as JSON files, one per scene, canon for social encounters and narration tied to places and people (Nov 21, 2026). Written in the offline story editor (`tools/story-editor/`).
 
 **Briefs** (production hand-offs, built from these docs)

@@ -1,6 +1,6 @@
 # Story editor
 
-A local tool for writing the branching scenes in `design/scenes/` and keeping the character files in `design/characters/`. It runs offline: a small Python server (standard library only, macOS already has it) serves the page and saves each change into the repo. The scene format is in [design/scenes/README.md](../../design/scenes/README.md).
+A local tool for writing the branching scenes in `design/scenes/`, keeping the character files in `design/characters/` and writing the campaign story in `design/story/`. It runs offline: a small Python server (standard library only, macOS already has it) serves the page and saves each change into the repo. The scene format is in [design/scenes/README.md](../../design/scenes/README.md).
 
 ## Start it
 
@@ -12,13 +12,25 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 
 ## Using it
 
-**Scenes** and **Characters** are the two tabs at the top.
+**Scenes**, **Characters** and **Story** are the three tabs at the top.
+
+### Story
+
+- **Branch map** (top of the list): the six background paths as lanes, each chapter a box, all flowing into Gronogon and on through the main campaign's chapters. Each box counts its linked scenes and the ones still to write. Click a box to write that chapter.
+- **A path or the main campaign** opens as one big text field. Its chapters show under it in the list; click one to jump there.
+- **Write / Read:** Write is the text field. Read shows it as finished text, with links as chips: green for a scene, blue for a character, dashed orange for a scene still to write. Click a chip to open it, or click any text to go back to writing at that spot.
+- **Links:** **Link scene** / **Link character** (or ⌘K, or type `[[`) open a picker. Type to filter; Enter picks. Type a name that isn't a scene yet to plan it as **to write**. ⌘-click a link in Write to open it.
+- **Links in this file** (right) lists every link by chapter, with **Create scene** for the ones still to write. On the branch map it lists everything still to write.
+
+### Formatting
+
+The story and the character page's text boxes have a toolbar, so there's no need to type markdown (it's saved as markdown underneath): **Chapter** (story only), **Heading**, **B**, *I*, **• List**, **Link scene**, **Link character**. Shortcuts: ⌘B bold, ⌘I italic, ⌘K link. On a character page the toolbar formats the box you were last in. ⌘Z undoes formatting too.
 
 ### Characters
 
 - **The list** groups characters by role (companions, mentors, story NPCs, villains). Search covers everything in their files.
 - **A character's page** edits their file in `design/characters/`: profile (role, background path, race, class, subclass, home, proficiencies, voice sheet status), background, personality, personal quest, relationships, voice sheet, notes and their non-scene lines. Click the name to rename them. **Insert template** fills an empty voice sheet with the template from the Writing guide.
-- **Used in** (right) lists the scenes they're in (as a speaker, a Person trigger, a chime-in or a party condition), every line they say in scenes (click one to jump to it), their inn banter from Pairs.md, and who names them as a relationship.
+- **Used in** (right) lists the scenes they're in (as a speaker, a Person trigger, a chime-in or a party condition), every line they say in scenes (click one to jump to it), their inn banter from Pairs.md, the story chapters that link to them, and who names them as a relationship.
 - **+ Character** makes a new file. Renaming updates the scenes and relationships that use the old name; links to the file in the design docs need updating by hand (or by Claude).
 - Sections the editor doesn't know about are kept as they are, and a file nobody edits is never rewritten.
 
@@ -28,7 +40,7 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 - **The canvas** holds the nodes. Drag a node by its coloured header. Drag on empty space, or scroll with two fingers, to move around; pinch (or ⌘ + scroll) to zoom. **F** fits the scene in view.
 - **Adding nodes:** use the bar at the bottom, or double-click empty space. With a node selected, a new node is placed to its right and linked from its first free output.
 - **Linking:** drag from a dot on the right of a node onto another node. Drop on empty space to make a new node that's already linked. Click a link to remove it.
-- **Editing:** click a node to edit it on the right. With nothing selected, the right panel edits the scene (title, triggers, notes, file name).
+- **Editing:** click a node to edit it on the right. With nothing selected, the right panel edits the scene (title, triggers, notes, file name) and lists the story chapters that link to it.
 - **Problems** lists what needs a look: dead ends, unreachable nodes, checks without a fail branch, hero options written as speech, narration in the first person, "(a beat)", and flags that nothing sets.
 - **Keys:** ⌘Z / ⇧⌘Z undo and redo, Delete removes the selected node, ⌘D duplicates it, Esc deselects.
 - **Lists** edits the names in the dropdowns (`design/scenes/_lists.json`). Speaker, person and companion suggestions come from the character files, plus the list's generic speakers (the innkeeper, the trader…), which have no file.

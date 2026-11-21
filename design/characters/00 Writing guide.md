@@ -15,7 +15,7 @@ How the characters of Heads or Hexes are written (set up Oct 28, 2026, after the
 Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat. How it shows: [Presentation](../07%20Presentation.md) → Social encounter screen.
 
 - **The hero speaks as intent only.** A hero option names what the hero wants or does ("Ask about the sword"); the hero's own words are never written out. Every other character, NPCs and companions alike, speaks in written lines.
-- **The hero's voice is neutral.** Options fit any hero. Backgrounds add flavour where it matters: an extra option for that background, or an NPC reacting to who the hero is (see Background variances under Shared main story).
+- **The hero's voice is neutral.** Options fit any hero. Backgrounds add flavour where it matters: an extra option for that background, or an NPC reacting to who the hero is (see Background variances in [story → Main campaign](../story/Main%20campaign.md) → After Gronogon).
 - **NPC lines have no set length.** Write what the moment needs; long speeches page with a tap.
 - **A tagged option names the angle.** The text says what the hero leans on ("Appeal to her honour", "Claim a knight's right", "Threaten the lake"), and the tag names the approach (Persuade, Deceive, Intimidate).
 - **Replies show the consequence.** After a check, pass or fail, the NPC reacts in character and says what changes in the world ("Then the sword stays hidden from you"), so the cost of failing is clear in the story. Rewards also show as chips on screen.

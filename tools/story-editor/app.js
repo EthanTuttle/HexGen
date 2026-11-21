@@ -15,6 +15,7 @@ const S = {
   undo: [], redo: [], lastKey: null, lastTime: 0,
   dirty: new Set(), saving: false, saveTimer: null, offline: false,
   mode: 'scenes', chars: {}, cdirty: new Set(), ccur: null, csearch: '',
+  story: {}, sdirty: new Set(), scur: '__map', linkPop: null,
 };
 
 const NODE_TYPES = {
@@ -166,7 +167,7 @@ async function saveNow() {
 function setStatus() {
   const el = $('#save-status');
   el.classList.toggle('bad', S.offline);
-  el.textContent = S.offline ? 'Not saved: start the server' : S.dirty.size || S.cdirty.size ? 'Saving…' : 'Saved';
+  el.textContent = S.offline ? 'Not saved: start the server' : S.dirty.size || S.cdirty.size || S.sdirty.size ? 'Saving…' : 'Saved';
 }
 
 // ---------- scene list ----------
@@ -726,6 +727,11 @@ function sceneInspector(box, sc) {
     box.append(h('label', { text: 'Flags set here' }), h('div', { class: 'pill-list' }, [...f.set].map((w) => h('span', { class: 'pill', text: w }))));
     box.append(h('label', { text: 'Flags read here' }), h('div', { class: 'pill-list' }, [...f.used].map((w) => h('span', { class: 'pill', text: w }))));
   }
+  const refs = storyRefs('scenes', sc.id);
+  box.append(h('label', { text: 'In the story' }));
+  if (!refs.length) box.append(h('p', { class: 'hint', text: 'No story chapter links here yet (Story tab → Link scene).' }));
+  for (const r of refs) box.append(h('div', { class: 'used-line', onclick: () => { setMode('story'); openStory(r.file, r.index); } },
+    h('div', { text: r.chapter }), h('div', { class: 'where', text: r.file === MAIN_FILE ? 'Main campaign' : r.file + ' path' })));
   box.append(h('div', { class: 'btn-row' },
     h('button', { text: 'Duplicate scene', onclick: duplicateScene }),
     h('button', { class: 'danger', text: 'Delete scene', onclick: deleteScene })));
@@ -768,6 +774,7 @@ async function renameScene(oldId, raw) {
     const n = S.scenes[sid].nodes[nid];
     if (n.type === 'end' && n.scene === oldId) { n.scene = id; markDirty(sid); }
   }
+  relinkStory('scenes', oldId, id);
   S.cur = id;
   S.dirty.delete(oldId);
   markDirty(id);
@@ -939,7 +946,7 @@ function initKeys() {
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
     const mod = e.metaKey || e.ctrlKey;
     if (e.key === 'Escape') { hideDropMenu(); closeModal(); if (!typing && S.sel) { S.sel = null; renderCanvas(); renderInspector(); } }
-    if (typing || S.mode !== 'scenes') { if (mod && e.key === 's') { e.preventDefault(); saveNow(); saveChars(); } return; }
+    if (typing || S.mode !== 'scenes') { if (mod && e.key === 's') { e.preventDefault(); saveNow(); saveChars(); saveStory(); } return; }
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(!e.shiftKey); }
     else if (mod && e.key === 'y') { e.preventDefault(); undo(false); }
     else if (mod && e.key === 's') { e.preventDefault(); saveNow(); }
@@ -947,7 +954,7 @@ function initKeys() {
     else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { e.preventDefault(); deleteNode(S.sel); }
     else if (e.key === 'f' && !mod) fitView();
   });
-  window.addEventListener('beforeunload', (e) => { if (S.dirty.size || S.cdirty.size) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', (e) => { if (S.dirty.size || S.cdirty.size || S.sdirty.size) { e.preventDefault(); e.returnValue = ''; } });
 }
 
 // ---------- boot ----------
@@ -980,6 +987,7 @@ async function boot() {
       S.scenes[sc.id] = sc;
     }
     await initCharacters();
+    await initStory();
   } catch (e) {
     S.offline = true;
     $('#empty-hint').textContent = 'Can\'t reach the editor server. Start it with "Start Story Editor.command" (or python3 tools/story-editor/server.py), then reload.';
@@ -991,23 +999,25 @@ async function boot() {
       const k = localStorage.key(i);
       if (k && k.startsWith('se-backup-')) backups.push(JSON.parse(localStorage.getItem(k)));
       if (k && k.startsWith('se-cbackup-')) backups.push(JSON.parse(localStorage.getItem(k)));
+      if (k && k.startsWith('se-sbackup-')) backups.push(JSON.parse(localStorage.getItem(k)));
     }
   } catch (e) {}
   if (backups.length && !S.offline) {
     modal(h('div', {},
       h('h2', { text: 'Unsaved edits found' }),
       h('p', { text: 'These scenes had edits that never reached disk (the server was stopped):' }),
-      h('ul', {}, backups.map((b) => h('li', { text: `${b.scene ? b.scene.title || b.scene.id : b.file + ' (character)'} — ${new Date(b.t).toLocaleString()}` }))),
+      h('ul', {}, backups.map((b) => h('li', { text: `${b.scene ? b.scene.title || b.scene.id : b.storyFile ? b.storyFile + ' (story)' : b.file + ' (character)'} — ${new Date(b.t).toLocaleString()}` }))),
       h('div', { class: 'btn-row' },
         h('button', { class: 'primary', text: 'Restore them', onclick: () => {
           for (const b of backups) {
             if (b.scene) { S.scenes[b.scene.id] = b.scene; markDirty(b.scene.id); }
+            else if (b.storyFile) { S.story[b.storyFile] = { file: b.storyFile, text: b.text }; storyChanged(b.storyFile); }
             else { S.chars[b.file] = parseChar(b.file, b.text); charChanged(S.chars[b.file]); }
           }
-          closeModal(); renderAll(); if (S.mode === 'characters') setMode('characters');
+          closeModal(); renderAll(); if (S.mode !== 'scenes') setMode(S.mode);
         } }),
         h('button', { text: 'Discard', onclick: () => {
-          for (const b of backups) try { localStorage.removeItem(b.scene ? 'se-backup-' + b.scene.id : 'se-cbackup-' + b.file); } catch (e) {}
+          for (const b of backups) try { localStorage.removeItem(b.scene ? 'se-backup-' + b.scene.id : b.storyFile ? 'se-sbackup-' + b.storyFile : 'se-cbackup-' + b.file); } catch (e) {}
           closeModal();
         } }))));
   }
@@ -1016,7 +1026,7 @@ async function boot() {
   if (last && S.scenes[last]) openScene(last); else renderAll();
   let mode = 'scenes';
   try { mode = localStorage.getItem('se-mode') || 'scenes'; } catch (e) {}
-  if (mode === 'characters') setMode('characters');
+  if (mode === 'characters' || mode === 'story') setMode(mode);
   setStatus();
 }
-// boot() runs at the end of characters.js, once both scripts are loaded
+// boot() runs at the end of story.js, once every script is loaded
