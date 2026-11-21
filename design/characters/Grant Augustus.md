@@ -6,7 +6,7 @@ How to write: [Writing guide](00%20Writing%20guide.md).
 
 - **Role:** Companion
 - **Path:** Soldier
-- **Race:** human
+- **Race:** Human
 - **Class:** Bard
 - **Subclass:** Narrator
 - **Home:** Clan Hall (highlands), performing at clan feasts
