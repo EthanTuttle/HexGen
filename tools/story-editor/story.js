@@ -109,6 +109,7 @@ function openStory(file, index) {
   renderStoryList();
   renderStoryPage();
   if (index != null && file !== '__map') jumpTo(index);
+  pushNav();
 }
 function jumpTo(index) {
   const ed = $('#story-rich');
