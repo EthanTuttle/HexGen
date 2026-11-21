@@ -12,10 +12,12 @@ const sceneLink = (title, id) => `[${title}](../scenes/${id}.json)`;
 const charLink = (name) => `[${name}](../characters/${encName(name)}.md)`;
 
 // ---------- model ----------
+// 'Soldier path' for a background, the file's own name for anything else
+const storyLabel = (f) => (listOf('backgrounds').includes(f) ? f + ' path' : f);
 function storyOrder() {
   const paths = listOf('backgrounds');
   const files = Object.keys(S.story);
-  const rank = (f) => (f === MAIN_FILE ? 1000 : paths.includes(f) ? paths.indexOf(f) : 500);
+  const rank = (f) => (paths.includes(f) ? paths.indexOf(f) : f === MAIN_FILE ? 100 : 500);
   return files.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 function chapters(text) {
@@ -24,6 +26,12 @@ function chapters(text) {
   let m;
   while ((m = re.exec(text))) out.push({ title: m[1].trim(), index: m.index });
   return out;
+}
+// the intro (text above the first chapter, minus the # title) is the file's summary
+function summaryOf(text) {
+  const chs = chapters(text);
+  const intro = (chs.length ? text.slice(0, chs[0].index) : text).replace(/^# .*$/m, '').trim();
+  return intro.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*?/g, '');
 }
 function chapterAt(chs, index) {
   let cur = null;
@@ -48,7 +56,9 @@ function storyRefs(kind, target) {
     const chs = chapters(text);
     for (const l of links(text)) if (l.kind === kind && l.target === target) {
       const ch = chapterAt(chs, l.index);
-      out.push({ file: f, chapter: ch ? ch.title : '(intro)', index: l.index });
+      const chapter = ch ? ch.title : '(intro)';
+      // one entry per chapter, however often it links
+      if (!out.some((r) => r.file === f && r.chapter === chapter)) out.push({ file: f, chapter, index: l.index });
     }
   }
   return out;
@@ -147,7 +157,7 @@ function renderStoryList() {
   const paths = listOf('backgrounds');
   let head = null;
   for (const f of storyOrder()) {
-    const group = f === MAIN_FILE ? 'Campaign' : paths.includes(f) ? 'Background paths' : 'Other';
+    const group = f === MAIN_FILE ? 'Campaign' : paths.includes(f) ? 'Background paths' : 'Quests and more';
     if (group !== head) { box.append(h('div', { class: 'group-head', text: group })); head = group; }
     const chs = chapters(S.story[f].text);
     box.append(h('div', { class: 'scene-item' + (f === S.scur ? ' active' : ''), onclick: () => openStory(f) },
@@ -185,7 +195,7 @@ function renderStoryPage() {
     });
   }
   page.append(h('div', { class: 'story-head' },
-    h('h2', { text: f === MAIN_FILE ? 'Main campaign' : f + ' path' }), viewTabs,
+    h('h2', { text: storyLabel(f) }), viewTabs,
     h('span', { class: 'hint', text: raw ? '⌘-click a link to open it' : 'Click a link to open it' })),
   mdToolbar(() => $('#story-rich') || $('#story-text'), { chapters: true }), box);
   renderStorySide();
@@ -254,7 +264,7 @@ function renderBranchMap(page) {
   canvas.append(h('div', { class: 'map-head', style: `left:${gx + 150}px`, text: 'Main campaign' }));
   paths.forEach((p, i) => {
     const y = TOP + i * LANE;
-    canvas.append(h('div', { class: 'map-lane', style: `top:${y}px;height:${BH}px;width:${LABEL - 10}px`, text: p, onclick: () => openStory(p) }));
+    canvas.append(h('div', { class: 'map-lane', style: `top:${y}px;height:${BH}px;width:${LABEL - 10}px`, text: p, title: summaryOf(S.story[p].text) || 'No summary yet', onclick: () => openStory(p) }));
     const chs = chapters(S.story[p].text);
     let lastX = LABEL - 10;
     if (!chs.length) { box(LABEL, y, 'No chapters yet', 'Open to write', () => openStory(p), 'empty'); lastX = LABEL + BW; }

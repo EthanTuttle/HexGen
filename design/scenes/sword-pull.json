@@ -1,0 +1,109 @@
+{
+  "id": "sword-pull",
+  "title": "The sword pull",
+  "notes": "The pull at Sword in the Stone (moved from World & story, Nov 21, 2026). Rules for it (Excalibur, 2 heads, the blessing, curse and runes coins, the pull's +/− name, who can pull): World & story → Sword in the Stone. The story around it: story → Legendary quests → Sword in the Stone.",
+  "triggers": [
+    {
+      "kind": "place",
+      "value": "Sword in the stone"
+    },
+    {
+      "kind": "quest",
+      "value": "Sword in the Stone"
+    }
+  ],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "narration",
+      "x": 0,
+      "y": 0,
+      "text": "The stone stands alone beneath an open sky, the blade sunk in it to the hilt. Runes circle its base, worn almost smooth.",
+      "next": "n2"
+    },
+    "n2": {
+      "type": "choice",
+      "x": 300,
+      "y": 0,
+      "options": [
+        {
+          "id": "o1",
+          "intent": "Pull the sword",
+          "check": {
+            "type": "proficiency",
+            "skill": "Athletics",
+            "failCost": "The sword is lost for good."
+          },
+          "pass": "n3",
+          "fail": "n4"
+        },
+        {
+          "id": "o2",
+          "intent": "Read the runes on the stone",
+          "once": true,
+          "check": {
+            "type": "proficiency",
+            "skill": "Lore",
+            "failCost": "Nothing is lost. A pass adds 1 coin to the pull."
+          },
+          "pass": "n5",
+          "fail": "n6"
+        },
+        {
+          "id": "o3",
+          "intent": "Leave",
+          "next": "n9"
+        }
+      ]
+    },
+    "n3": {
+      "type": "narration",
+      "x": 600,
+      "y": -120,
+      "text": "Steel sings against stone, and the blade comes free. Excalibur is yours.",
+      "next": "n7"
+    },
+    "n4": {
+      "type": "narration",
+      "x": 600,
+      "y": 20,
+      "text": "You pull until your arms shake, and the stone does not give. The sword is lost to you.",
+      "next": "n8"
+    },
+    "n5": {
+      "type": "narration",
+      "x": 600,
+      "y": 160,
+      "text": "The runes name the old kings, one after another, each hand the stone let go.",
+      "next": "n2"
+    },
+    "n6": {
+      "type": "narration",
+      "x": 600,
+      "y": 300,
+      "text": "The runes are too worn to read. Whatever they once said, they keep to themselves.",
+      "next": "n2"
+    },
+    "n7": {
+      "type": "end",
+      "x": 900,
+      "y": -120,
+      "outcome": "leave",
+      "reward": "Excalibur"
+    },
+    "n8": {
+      "type": "end",
+      "x": 900,
+      "y": 20,
+      "outcome": "leave",
+      "notes": "The sword is lost for good."
+    },
+    "n9": {
+      "type": "end",
+      "x": 600,
+      "y": 440,
+      "outcome": "leave",
+      "notes": "Come back later."
+    }
+  }
+}

@@ -361,7 +361,7 @@ function renderCharUsed() {
   if (refs.length) {
     body.append(h('h3', { text: 'In the story' }));
     for (const r of refs) body.append(h('div', { class: 'used-line', onclick: () => { setMode('story'); openStory(r.file, r.index); } },
-      h('div', { text: r.chapter }), h('div', { class: 'where', text: r.file === MAIN_FILE ? 'Main campaign' : r.file + ' path' })));
+      h('div', { text: r.chapter }), h('div', { class: 'where', text: storyLabel(r.file) })));
   }
   const rel = Object.values(S.chars).filter((o) => o !== c && parseBullets(getSec(o, 'Relationships')).items.some((r) => r.k === c.name));
   if (rel.length) {

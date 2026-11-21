@@ -775,7 +775,7 @@ function sceneInspector(box, sc) {
   box.append(h('label', { text: 'In the story' }));
   if (!refs.length) box.append(h('p', { class: 'hint', text: 'No story chapter links here yet (Story tab → Link scene).' }));
   for (const r of refs) box.append(h('div', { class: 'used-line', onclick: () => { setMode('story'); openStory(r.file, r.index); } },
-    h('div', { text: r.chapter }), h('div', { class: 'where', text: r.file === MAIN_FILE ? 'Main campaign' : r.file + ' path' })));
+    h('div', { text: r.chapter }), h('div', { class: 'where', text: storyLabel(r.file) })));
   box.append(h('div', { class: 'btn-row' },
     h('button', { text: 'Duplicate scene', onclick: duplicateScene }),
     h('button', { class: 'danger', text: 'Delete scene', onclick: deleteScene })));

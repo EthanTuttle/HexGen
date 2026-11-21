@@ -7,7 +7,7 @@ How the characters of Heads or Hexes are written (set up Oct 28, 2026, after the
 - **[Pairs](Pairs.md):** inn banter between two companions. A line that belongs to two characters is written there, once.
 - **[Places](Places.md):** what gets said in generated places (towns first), written per moment slot and per place type (Oct 30, 2026).
 - **[Scenes](../scenes/README.md)** (Nov 21, 2026): branching scenes, such as social encounters, are JSON files written in the story editor, and they are canon for their lines. A character's file keeps their record and their non-branching lines.
-- **Story NPCs** have a file for their profile and background. Lines written into a doc scene before the story editor stay with that scene (e.g. The Lady of the Lake, in [World & story](../01%20World%20%26%20story.md)).
+- **Story NPCs** have a file for their profile, background and voice sheet. Their lines are in the scenes they speak in (Nov 21, 2026: the Lady of the Lake's lines moved from World & story into her scenes).
 - Bios, homes, personal quests and companion proficiencies moved from World & story into each character's file (Nov 21, 2026). World & story keeps the path cast tables (name and role), with links.
 
 ## Dialogue rules
@@ -27,7 +27,7 @@ Patterns for writing social encounters (decided Oct 28, 2026). Check rules: [Cla
 
 ## Line types
 
-- **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs (e.g. Chelmsford with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
+- **Companion chime-ins:** each companion has a generic line per approach they're proficient in, said in any conversation, plus hand-written special lines for big story NPCs, written on the check in that NPC's scene (e.g. Fluffy with the Lady of the Lake). For now, one generic line per approach; more can be added later so they repeat less.
 - **Place lines** (decided Oct 30, 2026): generated places such as towns get lines per moment slot (arrive, shop: buy, inn: rest…), 3 per slot per place type, from generic keepers and narration: [Places](Places.md).
 - **Inn banter** (decided Oct 28, 2026; how it shows: [Presentation](../07%20Presentation.md) → Town screen): a night at an inn's bar is where the party's personality shows. Companions talk to each other in **pair banter**, short written exchanges for particular pairs ([Pairs](Pairs.md)), with one **fallback bar line** per companion (in their file) for pairs that have no exchange. **Which pairs:** the six path pairs first (the two companions each background brings), then cross-path pairs that clash or click; lines can't lean on shared history, since outside their own path the two meet separately. The night ends with **the toast as a choice**: the hero picks an intent option and a narration beat answers it, with no companion line.
 

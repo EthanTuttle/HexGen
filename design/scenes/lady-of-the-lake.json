@@ -1,0 +1,145 @@
+{
+  "id": "lady-of-the-lake",
+  "title": "The Lady of the Lake",
+  "notes": "Meeting the Lady at the enchanted lake starts the Sword in the Stone quest (moved from World & story, Nov 21, 2026). The story around it: story → Legendary quests → Sword in the Stone. Open: whether a failed check can be tried again here (Classes & combat → Open questions); the links back to the choice after a reply are a first layout, not a decision.",
+  "triggers": [
+    {
+      "kind": "place",
+      "value": "Lady of the Lake"
+    },
+    {
+      "kind": "person",
+      "value": "Lady of the Lake"
+    },
+    {
+      "kind": "quest",
+      "value": "Sword in the Stone"
+    }
+  ],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "line",
+      "x": 0,
+      "y": 0,
+      "speaker": "Lady of the Lake",
+      "text": "Long have these waters waited, traveller. Few come seeking me, and fewer still come worthy. Speak, and let the lake hear what manner of soul you are.",
+      "next": "n2"
+    },
+    "n2": {
+      "type": "choice",
+      "x": 320,
+      "y": 0,
+      "options": [
+        {
+          "id": "o1",
+          "intent": "Ask about the sword",
+          "next": "n3"
+        },
+        {
+          "id": "o2",
+          "intent": "Swear you are true",
+          "check": {
+            "type": "approach",
+            "skill": "Persuade",
+            "failCost": "A light cost: she refuses her blessing.",
+            "chimeIns": [
+              {
+                "who": "Fluffy",
+                "text": "I am King Alexander the All Conquering Legend and He Who Rules, and I vouch for them."
+              }
+            ]
+          },
+          "pass": "n4",
+          "fail": "n5"
+        },
+        {
+          "id": "o3",
+          "intent": "Draw your weapon",
+          "check": {
+            "type": "approach",
+            "skill": "Intimidate",
+            "failCost": "A heavy cost: she fights back, which starts a fight, with water spirits (fey) rising from the lake beside her.",
+            "fight": true
+          },
+          "pass": "n6",
+          "fail": "n7"
+        },
+        {
+          "id": "o4",
+          "intent": "Ask how to prove it",
+          "next": "n8"
+        }
+      ]
+    },
+    "n3": {
+      "type": "line",
+      "x": 680,
+      "y": -260,
+      "speaker": "Lady of the Lake",
+      "text": "It lies far from here, bound in stone beneath an open sky. I will show you the way. But mark me: the stone yields only once. Fail it, and the blade is lost to you forever.",
+      "next": "n2"
+    },
+    "n4": {
+      "type": "line",
+      "x": 680,
+      "y": -100,
+      "speaker": "Lady of the Lake",
+      "text": "There is truth in you. I feel it as I feel the rain. Take my blessing, and let the stone know you come in my name.",
+      "next": "n10"
+    },
+    "n5": {
+      "type": "line",
+      "x": 680,
+      "y": 60,
+      "speaker": "Lady of the Lake",
+      "text": "Not today. Prove yourself in deed, not word, and perhaps the lake will think again.",
+      "next": "n2"
+    },
+    "n6": {
+      "type": "line",
+      "x": 680,
+      "y": 220,
+      "speaker": "Lady of the Lake",
+      "text": "Boldly spoken. The old kings were bold too, and the stone answered them. Go, with what blessing a threat can buy.",
+      "next": "n10"
+    },
+    "n7": {
+      "type": "line",
+      "x": 680,
+      "y": 380,
+      "speaker": "Lady of the Lake",
+      "text": "You dare threaten me at my own waters? Then let the lake answer you.",
+      "next": "n11"
+    },
+    "n8": {
+      "type": "line",
+      "x": 680,
+      "y": 540,
+      "speaker": "Lady of the Lake",
+      "text": "A knight once knelt where you stand. He fell far from these waters, and his blade lies where he died. Bring it home to me, and I will know your worth.",
+      "next": "n12"
+    },
+    "n10": {
+      "type": "end",
+      "x": 1000,
+      "y": 60,
+      "outcome": "leave",
+      "reward": "The Lady's blessing"
+    },
+    "n11": {
+      "type": "end",
+      "x": 1000,
+      "y": 380,
+      "outcome": "fight",
+      "notes": "Water spirits (fey) rise from the lake beside her. If the party wins: the scene The Lady of the Lake: beaten."
+    },
+    "n12": {
+      "type": "end",
+      "x": 1000,
+      "y": 540,
+      "outcome": "leave",
+      "notes": "The deed: bring Sir Bedivere's Blade back from the chimera's lair (story → Legendary quests → Sword in the Stone). Then: the scene The Lady of the Lake: the blade returns."
+    }
+  }
+}
