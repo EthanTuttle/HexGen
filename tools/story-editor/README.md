@@ -49,7 +49,7 @@ The story and the character page's text boxes are formatted editors: you see the
 
 Every change saves on its own within a second ("Saved" in the top right). If the server stops, the status turns red and edits are kept in the browser. Next time the editor opens, it offers to restore them.
 
-The editor doesn't commit: commit `design/scenes/` like any other doc change.
+**Commit:** when there's writing that isn't in git yet, a **Commit (n)** button shows beside "Saved". It lists the changed files (story, characters, scenes, and docs a rename touched), with a description written for you that you can change, and commits them to `main` in the shared checkout (HexGen/HexGen), on this Mac only. It works offline. Claude sessions pull `main` before they merge, so they pick up your commits and push them to GitHub with theirs. It only ever commits the `design/` folder.
 
 ## Planned features
 

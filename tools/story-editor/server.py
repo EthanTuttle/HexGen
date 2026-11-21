@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -94,6 +95,38 @@ def relink_docs(chars_dir, d):
                 write_text(p, out)
                 changed.append(os.path.relpath(p, design))
     return changed
+
+
+def git(cwd, *args, raw=False):
+    r = subprocess.run(["git", "-C", cwd] + list(args), capture_output=True, text=True)
+    out = r.stdout + r.stderr
+    return r.returncode, out if raw else out.strip()
+
+
+def design_repo(chars_dir):
+    """The git checkout and the design folder inside it, or None when not in git."""
+    design = os.path.dirname(os.path.abspath(chars_dir))
+    code, top = git(design, "rev-parse", "--show-toplevel")
+    if code != 0:
+        return None
+    return top, os.path.relpath(design, top)
+
+
+def git_changes(chars_dir):
+    """Files changed under design/ since the last commit: what the Commit button would save."""
+    repo = design_repo(chars_dir)
+    if not repo:
+        return None
+    top, rel = repo
+    # raw: a status can start with a space, so the output must not be trimmed
+    code, out = git(top, "status", "--porcelain", "-uall", "-z", "--", rel, raw=True)
+    if code != 0:
+        return None
+    files = []
+    for entry in out.split("\0"):
+        if len(entry) > 3:
+            files.append({"status": entry[:2].strip() or "M", "path": os.path.relpath(entry[3:], rel)})
+    return files
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -196,6 +229,12 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.send_json({"text": ""})
                 with open(p, encoding="utf-8") as f:
                     return self.send_json({"text": f.read()})
+            if kind == "git":
+                files = git_changes(self.chars_dir)
+                repo = design_repo(self.chars_dir)
+                branch = git(repo[0], "branch", "--show-current")[1] if repo else ""
+                return self.send_json({"git": files is not None, "files": files or [], "branch": branch,
+                                       "folder": os.path.basename(os.path.dirname(repo[0])) + "/" + os.path.basename(repo[0]) if repo else ""})
             if kind == "ping":
                 return self.send_json({"ok": True, "data": self.data_dir})
         except Exception as e:  # keep the editor alive on any read error
@@ -234,6 +273,22 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         kind, arg = self.route()
+        if kind == "git" and arg == "commit":
+            # commits only the design folder, on whatever branch the checkout is on (main)
+            try:
+                msg = (self.read_body().get("message") or "").strip()
+                repo = design_repo(self.chars_dir)
+                if not repo or not msg:
+                    return self.send_json({"error": "Nothing to commit, or no message."}, 400)
+                top, rel = repo
+                code, out = git(top, "add", "-A", "--", rel)
+                if code == 0:
+                    code, out = git(top, "commit", "-m", msg, "--", rel)
+                if code != 0:
+                    return self.send_json({"error": out}, 500)
+                return self.send_json({"ok": True, "output": out.splitlines()[0] if out else ""})
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 500)
         if kind != "relink":
             return self.send_json({"error": "unknown"}, 404)
         try:

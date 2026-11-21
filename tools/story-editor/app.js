@@ -167,7 +167,67 @@ async function saveNow() {
 function setStatus() {
   const el = $('#save-status');
   el.classList.toggle('bad', S.offline);
-  el.textContent = S.offline ? 'Not saved: start the server' : S.dirty.size || S.cdirty.size || S.sdirty.size ? 'Saving…' : 'Saved';
+  const saving = S.dirty.size || S.cdirty.size || S.sdirty.size;
+  el.textContent = S.offline ? 'Not saved: start the server' : saving ? 'Saving…' : 'Saved';
+  // once everything is on disk, see what's waiting to be committed
+  if (!saving && !S.offline) { clearTimeout(S.gitTimer); S.gitTimer = setTimeout(refreshGit, 400); }
+}
+
+// ---------- commit ----------
+async function refreshGit() {
+  const btn = $('#btn-commit');
+  try {
+    const g = await api('GET', 'git');
+    S.gitFiles = g.files;
+    S.gitBranch = g.branch; S.gitFolder = g.folder;
+    btn.classList.toggle('hidden', !g.git || !g.files.length);
+    btn.textContent = 'Commit (' + g.files.length + ')';
+  } catch (e) { btn.classList.add('hidden'); }
+}
+// what a changed file is, in the editor's words
+function gitName(path) {
+  const m = /^(story|characters|scenes)\/(.+)\.(md|json)$/.exec(path);
+  if (!m) return { kind: 'Doc', name: path.replace(/\.md$/, '') };
+  if (m[1] === 'story') return { kind: 'Story', name: storyLabel(m[2]) };
+  if (m[1] === 'characters') return { kind: 'Character', name: m[2] };
+  if (m[2] === '_lists') return { kind: 'Lists', name: 'name lists' };
+  return { kind: 'Scene', name: (S.scenes[m[2]] && S.scenes[m[2]].title) || m[2] };
+}
+async function openCommit() {
+  await Promise.all([saveNow(), saveChars(), saveStory()]);
+  await refreshGit();
+  const files = S.gitFiles || [];
+  if (!files.length) return;
+  const names = files.map((f) => gitName(f.path).name);
+  const shown = names.slice(0, 5).join(', ') + (names.length > 5 ? ' and ' + (names.length - 5) + ' more' : '');
+  const status = { M: 'changed', A: 'new', '??': 'new', D: 'deleted', R: 'renamed' };
+  const msg = h('textarea', { id: 'commit-msg', rows: 3, value: "Ethan's edits in the story editor: " + shown });
+  modal(h('div', {},
+    h('h2', { text: 'Commit your writing' }),
+    h('p', { class: 'hint', text: 'Saves a snapshot of these files in git on this Mac, so you can always get this version back. Claude sessions push it to GitHub when they merge.' }),
+    h('p', { class: 'hint' }, 'Commits to ', h('b', { text: S.gitBranch || '?' }), ' in ' + (S.gitFolder || 'the repo') + '.'),
+    S.gitBranch && S.gitBranch !== 'main' ? h('p', { class: 'hint', style: 'color:var(--err)', text: 'This folder should always be on main, but it is on ' + S.gitBranch + '. Ask Claude before committing.' }) : null,
+    h('div', { class: 'commit-files' }, files.map((f) => {
+      const n = gitName(f.path);
+      return h('div', { class: 'commit-file' }, h('span', { class: 'status-badge', text: status[f.status] || f.status }), ' ', h('b', { text: n.kind + ': ' }), n.name);
+    })),
+    h('label', { text: 'Description' }), msg,
+    h('p', { class: 'hint', id: 'commit-err' }),
+    h('div', { class: 'btn-row' },
+      h('button', { class: 'primary', text: 'Commit', onclick: async (e) => {
+        e.target.disabled = true;
+        try {
+          await api('POST', 'git/commit', { message: msg.value });
+          closeModal();
+          await refreshGit();
+          const st = $('#save-status');
+          st.textContent = 'Committed';
+          setTimeout(setStatus, 2500);
+        } catch (err) { $('#commit-err').textContent = 'Could not commit: ' + err.message; e.target.disabled = false; }
+      } }),
+      h('button', { text: 'Cancel', onclick: closeModal }))));
+  msg.focus();
+  msg.setSelectionRange(msg.value.length, msg.value.length);
 }
 
 // ---------- scene list ----------
@@ -1018,6 +1078,8 @@ async function boot() {
   $('#btn-redo').onclick = () => undo(false);
   $('#btn-fit').onclick = fitView;
   $('#btn-lists').onclick = editLists;
+  $('#btn-commit').onclick = openCommit;
+  setInterval(refreshGit, 30000);
   $('#search').oninput = (e) => { S.search = e.target.value; renderSceneList(); };
   document.querySelectorAll('#group-tabs button').forEach((b) => b.onclick = () => {
     S.group = b.dataset.group;
