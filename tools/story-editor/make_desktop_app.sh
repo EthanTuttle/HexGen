@@ -16,7 +16,8 @@ TMP="$(mktemp -d)"
 
 cat > "$TMP/main.applescript" <<EOF
 set repo to "$REPO"
-do shell script "cd " & quoted form of repo & " && /usr/bin/python3 tools/story-editor/server.py --idle-exit 600 >> \$HOME/Library/Logs/StoryEditor.log 2>&1 &"
+-- the whole group goes to the log, so nothing holds the applet's output open and it quits at once
+do shell script "(cd " & quoted form of repo & " && exec /usr/bin/python3 tools/story-editor/server.py --idle-exit 600) >> \$HOME/Library/Logs/StoryEditor.log 2>&1 < /dev/null &"
 EOF
 
 rm -rf "$DEST"
