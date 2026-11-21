@@ -4,7 +4,7 @@
 Serves the editor page and reads/writes scene files in design/scenes/.
 Runs fully offline with only the Python standard library.
 
-    python3 tools/story-editor/server.py            # opens http://127.0.0.1:8765
+    python3 tools/story-editor/server.py            # opens http://127.0.0.1:47380
     python3 tools/story-editor/server.py --port 9000 --no-browser
     python3 tools/story-editor/server.py --data /some/other/folder
     python3 tools/story-editor/server.py --idle-exit 600   # stop 10 min after the last tab closes
@@ -146,7 +146,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--port", type=int, default=47380)
     ap.add_argument("--data", default=DEFAULT_DATA)
     ap.add_argument("--no-browser", action="store_true")
     ap.add_argument("--idle-exit", type=int, default=0,
