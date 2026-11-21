@@ -15,6 +15,7 @@ This repo holds the design docs for Heads or Hexes (HexGen is the old working na
 - Work on your own branch per session (e.g. `claude/<topic>`), commit small, and merge back to `main` often. Don't leave branches open for days on docs another session is editing.
 - Sessions share one checkout folder (`HexGen/HexGen`), which stays on `main`: never switch branches in it. Give your branch its own git worktree beside it, named after the branch with slashes turned into dashes (`git worktree add ../HexGen-claude-<topic> -b claude/<topic>`), commit there, and merge to `main` from there.
 - Before merging, pull `main` again. If there's a conflict, merge both sides by hand so neither session's decisions are lost, and tell Ethan what you merged. Never resolve a conflict by throwing one side away.
+- Ethan's story editor saves into the shared checkout, and he commits that writing onto `main` there with the editor's Commit button (Nov 21, 2026). Before merging, check `git status` in `HexGen/HexGen` for his uncommitted edits; commit them as his (saying so), then merge, keeping his changes.
 - The master open-questions list in `design/00 Index.md` is touched by most decisions, so expect conflicts there and merge them line by line.
 
 ## Finding current art
