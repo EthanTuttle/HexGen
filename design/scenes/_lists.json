@@ -10,14 +10,7 @@
     "Narrator", "Musician", "Dancer", "Leader"
   ],
   "races": ["Human", "Elf", "Dwarf", "Halfling", "Golem", "Dragonborn", "Tiefling"],
-  "companions": [
-    "Fluffy", "Chelmsford", "Mel", "Grant Augustus", "Kris Huntington", "Timothy",
-    "Dolmund", "Lilian", "Frim", "Grimhold", "Leo Conley", "Reginald"
-  ],
-  "npcs": [
-    "King Grel", "Elf hermit", "Lady of the Lake",
-    "the shopkeeper", "the innkeeper", "the trader"
-  ],
+  "generic": ["the shopkeeper", "the innkeeper", "the trader"],
   "places": [
     "Dunfaire Tower", "East Rime Chapel", "Monto Town", "Sternbrunn Spire", "The Oak & Lantern", "Weizenhof Estate", "Gronogon",
     "Abandoned Barn", "Basilisk Nest", "Black Market", "Clan Hall", "Crypt", "Echo Cave", "Fey Court", "Great Windmill",

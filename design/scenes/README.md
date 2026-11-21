@@ -10,7 +10,7 @@ Branching scenes: social encounters, narration tied to places and people, and an
 ## Files
 
 - One `<scene-id>.json` per scene, named in lowercase with dashes (`lady-of-the-lake.json`).
-- `_lists.json` holds the names that fill the editor's dropdowns (companions, places, backgrounds, classes, proficiencies…). They're copied from the docs, so update them when the docs change (the editor's **Lists** button).
+- `_lists.json` holds the names that fill the editor's dropdowns (generic speakers such as the innkeeper, places, backgrounds, classes, proficiencies…). Named speakers and companions come from the character files in `design/characters/` instead (Nov 21, 2026). They're copied from the docs, so update them when the docs change (the editor's **Lists** button).
 
 ## Scene format
 

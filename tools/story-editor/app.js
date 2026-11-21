@@ -538,14 +538,15 @@ function datalists() {
   if (old) old.remove();
   const flags = allFlags();
   const sets = {
-    'dl-speakers': uniq([...charNames(), ...listOf('companions'), ...listOf('npcs')]),
-    'dl-people': uniq([...charNames(), ...listOf('companions'), ...listOf('npcs')]),
+    // named characters come from design/characters/; the lists only add generic speakers
+    'dl-speakers': uniq([...charNames(), ...listOf('generic')]),
+    'dl-people': uniq([...charNames(), ...listOf('generic')]),
     'dl-allchars': charNames(),
     'dl-places': listOf('places'),
     'dl-encounters': listOf('encounters'),
     'dl-flags': [...flags.set, ...flags.used].filter((v, i, a) => a.indexOf(v) === i).sort(),
     'dl-background': listOf('backgrounds'), 'dl-class': listOf('classes'), 'dl-subclass': listOf('subclasses'),
-    'dl-race': listOf('races'), 'dl-companion': uniq([...charNames('Companion'), ...listOf('companions')]),
+    'dl-race': listOf('races'), 'dl-companion': charNames('Companion'),
   };
   const wrap = h('div', { id: 'datalists', class: 'hidden' });
   for (const id in sets) wrap.append(h('datalist', { id }, sets[id].map((v) => h('option', { value: v }))));
@@ -904,7 +905,7 @@ function switchTab(t) {
 
 // ---------- lists editor ----------
 const LIST_LABELS = {
-  companions: 'Companions', npcs: 'Other speakers (story NPCs, keepers)', places: 'Places', backgrounds: 'Backgrounds',
+  generic: 'Generic speakers (no character file, e.g. the innkeeper)', places: 'Places', backgrounds: 'Backgrounds',
   classes: 'Classes', subclasses: 'Subclasses', races: 'Races', approaches: 'Social approaches',
   proficiencies: 'Other proficiencies', abilities: 'Abilities', encounters: 'Encounter kinds',
 };
@@ -917,7 +918,7 @@ function editLists() {
   }
   modal(h('div', {},
     h('h2', { text: 'Name lists' }),
-    h('p', { class: 'hint', text: 'One per line. These fill the suggestion dropdowns; they come from the design docs, so keep them in step when the docs change. Saved to design/scenes/_lists.json.' }),
+    h('p', { class: 'hint', text: 'One per line. These fill the suggestion dropdowns; they come from the design docs, so keep them in step when the docs change. Named characters come from the Characters tab instead. Saved to design/scenes/_lists.json.' }),
     grid,
     h('div', { class: 'btn-row' },
       h('button', { class: 'primary', text: 'Save', onclick: async () => {

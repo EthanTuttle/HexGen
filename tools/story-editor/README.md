@@ -31,7 +31,7 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 - **Editing:** click a node to edit it on the right. With nothing selected, the right panel edits the scene (title, triggers, notes, file name).
 - **Problems** lists what needs a look: dead ends, unreachable nodes, checks without a fail branch, hero options written as speech, narration in the first person, "(a beat)", and flags that nothing sets.
 - **Keys:** ⌘Z / ⇧⌘Z undo and redo, Delete removes the selected node, ⌘D duplicates it, Esc deselects.
-- **Lists** edits the names in the dropdowns (`design/scenes/_lists.json`).
+- **Lists** edits the names in the dropdowns (`design/scenes/_lists.json`). Speaker, person and companion suggestions come from the character files, plus the list's generic speakers (the innkeeper, the trader…), which have no file.
 
 Every change saves on its own within a second ("Saved" in the top right). If the server stops, the status turns red and edits are kept in the browser. Next time the editor opens, it offers to restore them.
 
