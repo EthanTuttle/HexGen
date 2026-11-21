@@ -965,6 +965,8 @@ async function boot() {
   document.querySelectorAll('#insp-tabs button').forEach((b) => b.onclick = () => switchTab(b.dataset.tab));
   $('#modal').addEventListener('mousedown', (e) => { if (e.target.id === 'modal') closeModal(); });
   window.addEventListener('resize', drawEdges);
+  // tells a background server (Desktop app) that a tab is still open
+  setInterval(() => fetch('/api/ping').catch(() => {}), 30000);
 
   try {
     S.lists = await api('GET', 'lists');

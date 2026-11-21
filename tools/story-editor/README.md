@@ -4,10 +4,11 @@ A local tool for writing the branching scenes in `design/scenes/`. It runs offli
 
 ## Start it
 
-- Double-click **Start Story Editor.command** in Finder. The first time, macOS may ask you to allow it (right-click → Open).
-- Or in a terminal: `python3 tools/story-editor/server.py`
+- **Desktop app:** double-click **Story Editor** on the Desktop. It starts the editor in the background (no Terminal window) and stops on its own 10 minutes after you close the last editor tab. Its log is `~/Library/Logs/StoryEditor.log`. To make the app (again, or after the repo moves), run `bash tools/story-editor/make_desktop_app.sh` from the shared checkout.
+- **Or** double-click **Start Story Editor.command** in Finder (the first time, macOS may ask you to allow it: right-click → Open). This one runs in a Terminal window: close it, or press Ctrl+C, to stop.
+- **Or** in a terminal: `python3 tools/story-editor/server.py`
 
-It opens http://127.0.0.1:8765 in the browser. Leave the terminal window open while you write, and close it (or press Ctrl+C) to stop. If the editor is already running, starting it again just opens the page.
+Each way opens http://127.0.0.1:8765 in the browser. If the editor is already running, starting it again just opens the page.
 
 ## Using it
 
