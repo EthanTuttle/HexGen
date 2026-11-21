@@ -7,6 +7,7 @@ Runs fully offline with only the Python standard library.
     python3 tools/story-editor/server.py            # opens http://127.0.0.1:8765
     python3 tools/story-editor/server.py --port 9000 --no-browser
     python3 tools/story-editor/server.py --data /some/other/folder
+    python3 tools/story-editor/server.py --idle-exit 600   # stop 10 min after the last tab closes
 """
 
 import argparse
@@ -15,6 +16,7 @@ import os
 import re
 import sys
 import threading
+import time
 import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
@@ -24,6 +26,7 @@ REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DEFAULT_DATA = os.path.join(REPO, "design", "scenes")
 LISTS_FILE = "_lists.json"
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,80}$")
+last_seen = [time.time()]  # last request from an open editor tab
 
 
 def write_json(path, data):
@@ -68,6 +71,7 @@ class Handler(SimpleHTTPRequestHandler):
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
     def route(self):
+        last_seen[0] = time.time()
         path = unquote(urlparse(self.path).path)
         if not path.startswith("/api/"):
             return None, None
@@ -145,6 +149,8 @@ def main():
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--data", default=DEFAULT_DATA)
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--idle-exit", type=int, default=0,
+                    help="stop after this many seconds with no editor tab open (0 = never)")
     args = ap.parse_args()
 
     Handler.data_dir = os.path.abspath(args.data)
@@ -163,6 +169,15 @@ def main():
     print("Press Ctrl+C to stop.")
     if not args.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+    if args.idle_exit:
+        def watch():
+            while True:
+                time.sleep(15)
+                if time.time() - last_seen[0] > args.idle_exit:
+                    print("No editor tab open for %ds; stopping." % args.idle_exit)
+                    server.shutdown()
+                    return
+        threading.Thread(target=watch, daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

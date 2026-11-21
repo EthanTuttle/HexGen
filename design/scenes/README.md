@@ -2,7 +2,7 @@
 
 Branching scenes: social encounters, narration tied to places and people, and any conversation with choices (set up Nov 21, 2026). **The scene files here are canon for those scenes.** Docs link to a scene instead of copying its lines.
 
-- **Write them in the story editor:** double-click `tools/story-editor/Start Story Editor.command` (or run `python3 tools/story-editor/server.py`). It opens in the browser, runs offline, and saves each change straight into this folder. How it works: [tools/story-editor/README.md](../../tools/story-editor/README.md).
+- **Write them in the story editor:** double-click **Story Editor** on the Desktop, or `tools/story-editor/Start Story Editor.command` (or run `python3 tools/story-editor/server.py`). It opens in the browser, runs offline, and saves each change straight into this folder. How it works: [tools/story-editor/README.md](../../tools/story-editor/README.md).
 - **The rules still live in the docs.** Dialogue rules and tells to avoid: [characters → Writing guide](../characters/00%20Writing%20guide.md). Check rules (approaches, who flips, chime-ins, failure): [Classes & combat](../03%20Classes%20%26%20combat.md) → Checks outside combat. How scenes show: [Presentation](../07%20Presentation.md) → Social encounter screen.
 - **What stays in markdown:** voice sheets, generic chime-in lines, inn banter ([Pairs](../characters/Pairs.md)) and place slot lines ([Places](../characters/Places.md)). Those are lists, not trees.
 - **Lines come from Ethan**, as everywhere else: a scene file holds approved lines only. Drafts go in the scene's notes, or in chat until Ethan picks them.
