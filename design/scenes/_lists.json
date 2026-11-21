@@ -1,0 +1,37 @@
+{
+  "backgrounds": ["Soldier", "Acolyte", "Criminal", "Sage", "Folk Hero", "Noble"],
+  "classes": ["Fighter", "Rogue", "Wizard", "Cleric", "Ranger", "Bard"],
+  "subclasses": [
+    "Brawler", "Holy Defender", "Tactician", "Arcane Knight",
+    "Con Artist", "Assassin", "Gambler", "Arcane Trickster",
+    "Summoner", "Blaster", "Deceiver", "Ritualist",
+    "Order of Light", "Order of Night", "Order of Good", "Order of Evil",
+    "Hunter", "Shifter", "Companion", "Elementalist",
+    "Narrator", "Musician", "Dancer", "Leader"
+  ],
+  "races": ["Human", "Elf", "Dwarf", "Halfling", "Golem", "Dragonborn", "Tiefling"],
+  "companions": [
+    "Fluffy", "Chelmsford", "Mel", "Grant Augustus", "Kris Huntington", "Timothy",
+    "Dolmund", "Lilian", "Frim", "Grimhold", "Leo Conley", "Reginald"
+  ],
+  "npcs": [
+    "King Grel", "Elf hermit", "Lady of the Lake",
+    "the shopkeeper", "the innkeeper", "the trader"
+  ],
+  "places": [
+    "Dunfaire Tower", "East Rime Chapel", "Monto Town", "Sternbrunn Spire", "The Oak & Lantern", "Weizenhof Estate", "Gronogon",
+    "Abandoned Barn", "Basilisk Nest", "Black Market", "Clan Hall", "Crypt", "Echo Cave", "Fey Court", "Great Windmill",
+    "Harvest Festival", "Hidden Shrine", "Keep", "Lake Serpent's Lair", "Militia Barn", "Nomad Camp", "Oasis Bazaar",
+    "Old Battlefield", "Plague Pit", "Raider Stronghold", "River Port", "Salamander Den", "Sandstone Sphinx", "Spider Nest",
+    "Thunderbird Nest", "Trading House", "Troll Bridge", "Vault", "Warren", "Wisp Hollow", "Witch's Hut", "Yeti Cave",
+    "Training Grounds", "Thieves Guild", "Library", "Meditation Rock", "Tree of Life", "College",
+    "Pool of life", "Teleportation rune", "Stronghold", "Guard tower", "Wizard tower", "Druid enclave", "Inn", "Church",
+    "Lady of the Lake", "Sword in the stone", "The Circus", "Legendary dwarf forge", "Ancient library", "Grand temple",
+    "Dragon mountain", "Fey Gate",
+    "market town", "fortified town", "slums", "scholars' town", "Great city"
+  ],
+  "approaches": ["Persuade", "Deceive", "Intimidate"],
+  "proficiencies": ["Perception", "Stealth", "Athletics", "Survival", "Nature", "Animal", "Thievery", "Lore"],
+  "abilities": ["STR", "DEX", "CON", "INT", "WIS", "CHA"],
+  "encounters": ["Fight", "Social", "Discovery", "Hex event"]
+}
