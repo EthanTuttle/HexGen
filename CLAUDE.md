@@ -38,6 +38,7 @@ Before each new art round, set aside the non-critical context from earlier round
 - Each doc ends with its own open questions, and the index keeps the master list.
 - Production briefs live in `design/briefs/`.
 - Character writing lives in `design/characters/`: `00 Writing guide.md` (rules, tells to avoid, how we write, voice sheet template), one file per character (profile, background, personality, personal quest, relationships, voice sheet, notes, then every line they say; edited in the story editor's Characters tab), `Pairs.md` for lines shared by two companions, and `Places.md` for lines in generated places (towns), written per moment slot. Read the guide and the character's voice sheet before drafting any line.
+- The campaign story lives in `design/story/`: one markdown file per background path plus `Main campaign.md`, canon for the story, with `## ` chapters and links to scenes and characters (format: `design/story/README.md`). Written in the story editor's Story tab.
 - Branching scenes (social encounters, narration tied to places and people) live as JSON in `design/scenes/`, one file per scene, and those files are canon for them. Write them with the story editor (`tools/story-editor/`, runs offline). Format: `design/scenes/README.md`.
 
 ## Mockups
