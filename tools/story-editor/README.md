@@ -14,6 +14,8 @@ Each way opens http://127.0.0.1:47380 in the browser. If the editor is already r
 
 **Scenes**, **Characters** and **Story** are the three tabs at the top.
 
+**Back and forward:** ‹ and › at the top left, the browser's Back button, a mouse's back button or ⌘[ / ⌘] step through the screens you've opened (a scene, a character, a story file, the branch map), across tabs. Following a link from one tab to another counts as one step.
+
 ### Story
 
 - **Branch map** (top of the list): the six background paths as lanes, each chapter a box, all flowing into Gronogon and on through the main campaign's chapters. Each box counts its linked scenes and the ones still to write. Click a box to write that chapter.

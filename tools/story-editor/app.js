@@ -222,7 +222,51 @@ function openScene(id) {
   try { localStorage.setItem('se-last', id); } catch (e) {}
   renderAll();
   fitView();
+  pushNav();
 }
+
+// ---------- back / forward ----------
+// Each screen (a scene, a character, a story file, the branch map) is one step in the
+// browser's history, so Back, the mouse's back button and ⌘[ all work.
+function navState() { return { mode: S.mode, scene: S.cur, sel: S.sel, char: S.ccur, story: S.scur }; }
+const sameScreen = (a, b) => a && b && a.mode === b.mode &&
+  (a.mode === 'scenes' ? a.scene === b.scene : a.mode === 'characters' ? a.char === b.char : a.story === b.story);
+function pushNav() {
+  if (S.restoring || !S.booted) return;
+  // one click can open several things (tab, then scene, then node): record only where it lands
+  clearTimeout(S.navTimer);
+  S.navTimer = setTimeout(() => {
+    const st = navState();
+    const cur = history.state;
+    if (sameScreen(cur, st)) { history.replaceState(Object.assign(st, { depth: cur.depth }), ''); return; }
+    st.depth = ((cur && cur.depth) || 0) + 1;
+    S.navMax = st.depth;
+    history.pushState(st, '');
+    navButtons();
+  }, 0);
+}
+function restoreNav(st) {
+  if (!st) return;
+  S.restoring = true;
+  try {
+    if (st.mode !== S.mode) setMode(st.mode);
+    if (st.mode === 'scenes') {
+      if (st.scene && S.scenes[st.scene] && st.scene !== S.cur) openScene(st.scene);
+      if (st.sel && scene() && scene().nodes[st.sel]) { S.sel = st.sel; renderCanvas(); renderInspector(); focusNode(st.sel); }
+    } else if (st.mode === 'characters') {
+      if (st.char && S.chars[st.char] && st.char !== S.ccur) openChar(st.char);
+    } else if (st.mode === 'story') {
+      if (st.story && (st.story === '__map' || S.story[st.story]) && st.story !== S.scur) openStory(st.story);
+    }
+  } finally { S.restoring = false; }
+  navButtons();
+}
+function navButtons() {
+  const d = (history.state && history.state.depth) || 0;
+  $('#btn-back').disabled = d <= 0;
+  $('#btn-fwd').disabled = d >= (S.navMax || 0);
+}
+window.addEventListener('popstate', (e) => restoreNav(e.state));
 
 // ---------- canvas ----------
 function applyView() {
@@ -1028,5 +1072,11 @@ async function boot() {
   try { mode = localStorage.getItem('se-mode') || 'scenes'; } catch (e) {}
   if (mode === 'characters' || mode === 'story') setMode(mode);
   setStatus();
+  history.replaceState(Object.assign(navState(), { depth: 0 }), '');
+  S.navMax = 0;
+  S.booted = true;
+  $('#btn-back').onclick = () => history.back();
+  $('#btn-fwd').onclick = () => history.forward();
+  navButtons();
 }
 // boot() runs at the end of story.js, once every script is loaded

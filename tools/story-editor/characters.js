@@ -119,6 +119,7 @@ function setMode(m) {
   if (m === 'characters') { renderCharList(); renderCharPage(); }
   else if (m === 'story') { renderStoryList(); renderStoryPage(); }
   else renderAll();
+  pushNav();
 }
 
 // ---------- list ----------
@@ -150,6 +151,7 @@ function openChar(file) {
   renderCharList();
   renderCharPage();
   $('#char-page').scrollTop = 0;
+  pushNav();
 }
 
 // ---------- page ----------
