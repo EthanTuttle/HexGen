@@ -305,6 +305,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Title screen backdrop~~ (settled Nov 1: v1b, your last save)
 - [x] ~~Title screen~~ (final Nov 1: v11)
 - [x] ~~App icon~~ (final Nov 1: v8) (Home-screen name settled Nov 1: Heads/Hexes.)
+- [ ] **New (Nov 22, 2026):** the Godot builds still show the placeholder hex icon; swap in the designed icon v8 ([Presentation](07 Presentation.md) → Title screen, name and app icon)
 - [x] ~~Autosaves with several heroes~~ (settled Nov 1: per hero, slots too)
 - [x] ~~What a save shows; the settings list; the join code~~ (settled Nov 1: name and level, place, save time; Audio and Accessibility, plus Multiplayer in a game; a 6-letter code shown there; 3 slots per hero)
 - [x] ~~Settings contents; taken codes; removing a guest; who's connected~~ (settled Nov 1: Audio sliders, Accessibility text size / reduced motion / hold timing; codes rolled when hosting is switched on; the host can remove a guest; party panel tags, plus a pause menu panel later)
