@@ -39,6 +39,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [ ] **New (Nov 22, 2026):** the Shifter's Shift and werebeast forms: Ethan is rethinking them; unbuilt until then ([Classes & combat](03 Classes & combat.md))
+- [x] ~~Element pick pop-up for Infuse and Primal Snare~~ (approved Nov 22, 2026: [Presentation](07 Presentation.md) → Combat screen)
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: Buried city: storm timing, quests when the library is buried, walking on the changing sand (see Map & exploration)
 - [ ] New (Nov 8): ruins rethought as dungeon terrain: every landmark a dungeon, Fight and Discovery encounters only; variants now Overrun outpost → Warren, Haunted ruins → Crypt, basilisk ruins → Basilisk Nest, trapped vault → Vault (see Map & exploration → Region variants). Still open: each dungeon's rooms, the ruins encounter entries, looks for the three new variants and landmarks (see Presentation)

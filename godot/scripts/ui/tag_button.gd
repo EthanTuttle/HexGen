@@ -63,8 +63,9 @@ func _draw() -> void:
 		draw_circle(c, 9, UI.GOLD_EDGE)
 		draw_circle(c - Vector2(0, 1), 8, UI.GOLD)
 		x += 26
-	if icon:
-		draw_texture_rect(icon, Rect2(Vector2(x, size.y * 0.5 - 8), Vector2(16, 16)), false)
+	if icon:   # level with the label, which a small line under it lifts
+		var iy := y - asc * 0.5 - 8 if sub != "" else size.y * 0.5 - 8
+		draw_texture_rect(icon, Rect2(Vector2(x, iy), Vector2(16, 16)), false)
 		x += 22
 	draw_string(f, Vector2(x, y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, k)
 

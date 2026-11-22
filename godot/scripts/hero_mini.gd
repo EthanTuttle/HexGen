@@ -17,6 +17,13 @@ static var _t := {}
 static var _pieces := {}               # piece -> its arrays and marks, read once
 static var _material: Material
 static var _mesh_for := {}             # description's text -> the mesh, so the map and fights share one
+static var _converted := {}            # glb -> true once its materials are the combat ones
+const BEAST_GLB := "res://art/beasts.glb"
+## The Companion ranger's beasts (art/handoff/beasts_kit.md): each beast's first coat and markings, as the kit lists them.
+## PLACEHOLDER: there's no colour pick for a beast yet, so every beast wears these, with gold eyes.
+const BEAST_COATS := {"wolf": ["#8E8A84", "#E4DDD0"], "bear": ["#6B4A32", "#B08A62"], "panther": ["#2A282E", "#45414A"],
+	"hawk": ["#7A5234", "#E9DCC2"]}
+const BEAST_EYES := "#C9A24A"
 
 
 static func table() -> Dictionary:
@@ -127,12 +134,13 @@ static func parts(d: Dictionary) -> Array:
 
 
 ## A piece's arrays, with where its marks are, worked out once (the hand-off's step 2).
-static func _piece(piece: String) -> Dictionary:
+static func _piece(piece: String, glb := GLB) -> Dictionary:
 	if _pieces.has(piece):
 		return _pieces[piece]
-	var kit := Kit.meshes(GLB)
-	if _material == null:
+	var kit := Kit.meshes(glb)
+	if not _converted.has(glb):
 		Kit.combat_materials(kit)
+		_converted[glb] = true
 	var mesh: Mesh = kit[piece]
 	if _material == null:
 		_material = mesh.surface_get_material(0)
@@ -154,6 +162,21 @@ static func _piece(piece: String) -> Dictionary:
 
 
 static func build(d: Dictionary) -> ArrayMesh:
+	return _assemble(d, parts(d), GLB)
+
+
+## A beast as one mesh: its one piece with its colours swapped in, the cloth the ranger's (beasts_kit.md -> Colours).
+static func beast_mesh(beast: String, cloth: String) -> ArrayMesh:
+	var key := "beast %s %s" % [beast, cloth]
+	if not _mesh_for.has(key):
+		var coat: Array = BEAST_COATS[beast]
+		_mesh_for[key] = _assemble({colours = {skin = coat[0], hair = coat[1], eyes = BEAST_EYES, cloth = cloth}},
+				[["beast_" + beast, null]], BEAST_GLB)
+	return _mesh_for[key]
+
+
+## The pieces placed and merged, with the marked vertex colours swapped for the description's.
+static func _assemble(d: Dictionary, list: Array, glb: String) -> ArrayMesh:
 	var swatch: Array[Color] = [Color.WHITE]
 	for z in range(1, 5):
 		swatch.append(Color.from_string(d.colours[ZONES[z]], Color.BLACK).srgb_to_linear())   # a race with no hair has no hair colour ("")
@@ -161,8 +184,8 @@ static func build(d: Dictionary) -> ArrayMesh:
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
 	var index := PackedInt32Array()
-	for part: Array in parts(d):
-		var p := _piece(part[0])
+	for part: Array in list:
+		var p := _piece(part[0], glb)
 		var at := verts.size()
 		var src_colors: PackedColorArray = (p.colors as PackedColorArray).duplicate()   # packed arrays are shared, not copied
 		var marks: PackedInt32Array = p.marks

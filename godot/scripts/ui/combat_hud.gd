@@ -20,6 +20,8 @@ var _all_grid := GridContainer.new()
 var _all_title: Label
 var _confirm: ColorRect
 var _confirm_rows := VBoxContainer.new()
+var _element: ColorRect           # Infuse's and Primal Snare's element pick (Ethan, Nov 22, 2026)
+signal element_picked(id: String)
 var _enemy_pill: PanelContainer
 var _bars := Control.new()
 var _bar_nodes := {}
@@ -40,6 +42,7 @@ func _ready() -> void:
 	_build_hotbar()
 	_build_all()
 	_build_confirm()
+	_build_element()
 	_build_enemy_pill()
 
 
@@ -75,14 +78,17 @@ func _refresh_tray() -> void:
 	for c in _portraits.get_children():
 		_portraits.remove_child(c)
 		c.queue_free()
-	var party := fight.allies().filter(func(u): return not Fight.is_summon(u))
-	var tight: bool = party.size() >= 4 and party.any(func(u): return not fight.summon_of(u).is_empty())
+	var party := fight.allies().filter(func(u): return not Fight.is_summon(u) and u.beast_of == "")
+	var tight: bool = party.size() >= 4 and party.any(func(u): return not fight.summon_of(u).is_empty() or not fight.beast_for(u).is_empty())
 	_portraits.add_theme_constant_override("separation", 1 if tight else 4)   # a full party and a summon still fit the phone's height
 	for u in party:
 		_portrait(u, tight)
 		var s := fight.summon_of(u)
 		if not s.is_empty():   # a summon's small portrait hex under its caster's (03, Ethan, Nov 6, 2026)
 			_summon_portrait(s)
+		var b := fight.beast_for(u)
+		if not b.is_empty():   # the Companion ranger's beast, the same way (PLACEHOLDER: 07 doesn't place it)
+			_summon_portrait(b)
 
 
 ## One portrait: hex, HP bar and AP pips; tight, a little closer together.
@@ -133,6 +139,8 @@ func _summon_portrait(u: Dictionary) -> void:
 	h.pressed.connect(func():
 		fight.select(u)
 		_recentre(u))
+	if u.down:
+		h.modulate.a = 0.5
 	row.add_child(h)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 3)
@@ -775,6 +783,66 @@ func hide_confirm() -> void:
 
 func confirm_open() -> bool:
 	return _confirm.visible
+
+
+## Infuse and Primal Snare: a pop-up with the three elements (Ethan, Nov 22, 2026: a three-button pop-up, not mocked yet;
+## the End pop-up's panel). Each button: the element's icon, its name and its rider (03). The X hex cancels the card.
+func _build_element() -> void:
+	_element = ColorRect.new()
+	_element.color = Color(0.141, 0.188, 0.172, 0.55)
+	_element.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_element.mouse_filter = Control.MOUSE_FILTER_STOP
+	_element.visible = false
+	add_child(_element)
+
+
+## Opens the pop-up titled with the card's name; the element's id, or "" when it's closed. snare: Primal Snare's riders.
+func pick_element(title: String, snare := false) -> String:
+	for c in _element.get_children():
+		_element.remove_child(c)
+		c.queue_free()
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_element.add_child(cc)
+	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(16, 16, 16, 16))
+	p.custom_minimum_size.x = 300
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	var head := HBoxContainer.new()
+	var t := UI.label(title, "lilita", 20)
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(t)
+	var close := HexShape.make(30, 30, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("close", UI.INK_SOFT, 16, 2.6)   # as All actions': closing doesn't use the card (Ethan, Nov 22, 2026)
+	close.name = "close"
+	close.clickable = true
+	close.accessibility_name = "Close"
+	close.pressed.connect(func(): element_picked.emit(""))
+	head.add_child(close)
+	v.add_child(head)
+	for id: String in Rules.ELEMENTS:
+		var e: Dictionary = Rules.ELEMENTS[id]
+		var b := TagButton.make(e.n, 268, 50, 16)   # Cast's and Flip coins' button, in the element's colour (Ethan, Nov 22, 2026)
+		b.name = id
+		b.bg = Color(ELEMENT_COLOURS[id][0])
+		b.shadow = Color(ELEMENT_COLOURS[id][1])
+		b.icon = UI.icon(e.icon, UI.WHITE_WARM, 16)
+		b.sub = e.snare if snare else e.rider
+		b.pressed.connect(func(): element_picked.emit(id))
+		v.add_child(b)
+	p.add_child(v)
+	cc.add_child(p)
+	_element.visible = true
+	var id: String = await element_picked
+	_element.visible = false
+	return id
+
+
+## Each element's button and its hard shadow. PLACEHOLDER colours: fire red-orange, ice blue, lightning gold.
+const ELEMENT_COLOURS := {"fire": ["#C4532B", "#8E3A1E"], "ice": ["#4C8FBF", "#33698F"], "lightning": ["#C9961C", "#8F6A12"]}
+
+
+func element_open() -> bool:
+	return _element.visible
 
 
 ## While the foes act, a pill at the top says so (the mockup shows a modal "Enemies' phase" card with

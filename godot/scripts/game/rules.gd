@@ -232,6 +232,23 @@ const STAKES_TIMES := 2                  # PLACEHOLDER (03): Raise the Stakes, t
 const KILLING_TIMES := 3                 # PLACEHOLDER (03): Killing Shot
 const POISON_PLUS := 2                   # PLACEHOLDER (03): Poison Blade+, each poison's damage a tick
 const TROPHY_MORE := 1                   # PLACEHOLDER (03): Trophy Mark, more against giants
+const MAGIC_BLADE := 2                   # Magical Blade (Ethan, Nov 22, 2026): each hit deals the poison's damage (1 x 2 ticks) at once, as magic
+const INFUSE_FIRE := 1                   # PLACEHOLDER (03): Infuse fire, a hit deals this much more; Primal Snare fire burns for it too
+const INFUSE_JUMP := 1                   # PLACEHOLDER (03): Infuse lightning, damage that jumps to the nearest other foe within CHAIN_RANGE
+const ELEMENTS := {                      # DOCS (03 -> Elementalist): the three elements and their riders, on Infuse and on Primal Snare
+	"fire": {"n": "Fire", "icon": "fire", "rider": "Hits harder", "snare": "Burns the trapped foe"},
+	"ice": {"n": "Ice", "icon": "snow", "rider": "Slows", "snare": "Also slows foes nearby"},
+	"lightning": {"n": "Lightning", "icon": "bolt", "rider": "Jumps to a second foe", "snare": "Jumps to a second foe"}}
+## The Companion ranger's beast (03): on the board beside the ranger from the fight's start, the player's to act with (2 AP, like
+## summons), downed like an ally and back after the fight. Flips the ranger's DEX. PLACEHOLDER stats, for Ethan.
+const BEAST_STATS := {
+	"Wolf": {"hp": 8, "damage": 2, "weapon": "beast_bite", "move": 1, "rider": "prone"},   # fast, knocks foes down
+	"Bear": {"hp": 12, "damage": 2, "weapon": "beast_bite"},                               # sturdy
+	"Hawk": {"hp": 5, "damage": 1, "weapon": "beast_talons", "flies": true},               # flies, attacks at range
+	"Panther": {"hp": 8, "damage": 2, "weapon": "beast_bite", "behind": 2}}                # bonus damage from behind
+const BEAST_HP_PER_LEVEL := 1            # PLACEHOLDER (03: it levels with the ranger): max HP for each level above 5
+const DIVE_TIMES := 2                    # PLACEHOLDER (03): Dive's big hit, ignoring cover
+const AMBUSH_TIMES := 2                  # PLACEHOLDER (03): Ambush's big strike from hiding, counted as from behind
 
 ## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
 ## place (04 -> Shields), and Backstab is a dagger modifier, not a card (04 -> Weapon rules): [Hero name] the Fighter (longsword and

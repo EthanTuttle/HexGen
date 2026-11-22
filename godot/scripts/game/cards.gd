@@ -153,8 +153,8 @@ const ALL := {
 	"mage_hand": {"n": "Mage Hand", "src": "klass", "ap": 1, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "STR", "effect": "mage_hand", "icon": "sparkle", "desc": "Arcane Trickster: disarm a foe at range (STR save)."},
 	"killing_shot": {"n": "Killing Shot", "src": "klass", "ap": 3, "kind": "attack", "limit": "turn", "range": 1, "weapon_reach": true, "effect": "killing", "times": Rules.KILLING_TIMES, "icon": "eye", "desc": "Hunter: huge damage to a marked foe below half HP."},
 	"shift": {"n": "Shift", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "M12 3c3 4 6 8 6 11a6 6 0 0 1-12 0c0-3 3-7 6-11z", "built": false, "desc": "Shifter: take your werebeast hybrid form for the rest of the fight (1 AP to shift back)."},
-	"command_beast": {"n": "Command Beast", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "icon": "star", "built": false, "desc": "Companion: your beast makes its signature move."},
-	"infuse": {"n": "Infuse", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "bolt", "built": false, "desc": "Elementalist: for the rest of the fight your attacks deal the chosen element's damage, with its rider: fire hits harder, ice slows, lightning jumps to a second foe."},
+	"command_beast": {"n": "Command Beast", "src": "klass", "ap": 2, "kind": "self", "limit": "turn", "icon": "star", "effect": "command", "desc": "Companion: your beast makes its signature move."},
+	"infuse": {"n": "Infuse", "src": "klass", "ap": 1, "kind": "self", "limit": "turn", "icon": "bolt", "effect": "infuse", "desc": "Elementalist: for the rest of the fight your attacks deal the chosen element's damage, with its rider: fire hits harder, ice slows, lightning jumps to a second foe."},
 	"fireball": {"n": "Fireball", "src": "klass", "ap": 3, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "DEX", "effect": "burst", "radius": 2, "ab": "INT", "bonus": Rules.FIREBALL_BONUS, "icon": "fire", "desc": "Blaster spell: big area fire damage. Everyone in it makes a DEX save."},
 	"blizzard": {"n": "Blizzard", "src": "klass", "ap": 3, "kind": "self", "limit": "turn", "conc": true, "icon": "snow", "built": false, "desc": "Blaster spell: an ice zone that slows everything inside and deals cold damage each turn (CON save)."},
 	"chain_lightning": {"n": "Chain Lightning", "src": "klass", "ap": 3, "kind": "save", "limit": "turn", "range": Rules.SPELL_RANGE, "save": "DEX", "effect": "chain", "jumps": 3, "weaken": 1, "ab": "INT", "icon": "bolt", "desc": "Blaster spell: a bolt that jumps from foe to foe, weakening with each jump, up to 4 foes."},
@@ -207,7 +207,7 @@ static func get_card(id: String, weapon := "", sub := "") -> Dictionary:
 	if id == "attack":
 		c.icon = WEAPON_ICON.get(weapon, "w_" + weapon if CreatorData.IC.has("w_" + weapon) else "sword")   # the creator's weapon icon otherwise
 		c.desc = c.desc % weapon
-		if weapon.begins_with("summon_"):   # a summon's own attack (03), not gear
+		if weapon.begins_with("summon_") or weapon.begins_with("beast_"):   # a summon's or beast's own attack (03), not gear
 			c.desc = "Basic attack."
 		if weapon == "wand":   # a wand's basic attack is Magic Bolt, a basic ranged spell (04)
 			c.n = "Magic Bolt"

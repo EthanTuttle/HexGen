@@ -165,6 +165,10 @@ func _ready() -> void:
 		var lc := LevelCheck.new()
 		lc.game = self
 		add_child(lc)
+	elif "--rangercheck" in OS.get_cmdline_user_args():
+		var rg := RangerCheck.new()
+		rg.game = self
+		add_child(rg)
 	elif "--racecheck" in OS.get_cmdline_user_args():
 		var rc := RaceCheck.new()
 		rc.game = self

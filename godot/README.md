@@ -449,6 +449,7 @@ Scope: 06 → First playable → Levels. Rules: 05 → Levels and milestones, Ge
   - `-- --levelcheck` levels the party from 2 to 5 through the screen, checks each gain, plays every new built card once with set coins, then lets the fight bot play a fight.
   - `--shots` saves each new step and one pop-up to `screens/levels/`.
   - `--class=` and gear try other heroes.
+  - `-- --rangercheck --class=ranger --subclass=Elementalist` (or `--subclass=Companion --beast=Wolf|Bear|Panther|Hawk`, or `--class=rogue "--subclass=Arcane Trickster"`) levels the hero to 5 with that subclass and plays its cards with set coins, the pop-up included (Back and a pick), then lets the fight bot play the fight out. `--shots` saves the pop-ups and each beast to `screens/ranger/`. Prints `RANGER OK` / `RANGER FAIL`, then `RANGER DONE`. `--subclass=` and `--beast=` also steer the bots' picks in any run (test aids).
 
 **Built:**
 
@@ -456,7 +457,9 @@ Scope: 06 → First playable → Levels. Rules: 05 → Levels and milestones, Ge
 - Level-3 spells: Stone Sentinel (taunts foes within 2), Soul Swap, Flame Burst, Chain Spark, Blood Ward, Hemorrhage, Holy Brand, Dawn Pulse and Curse of Frailty.
 - Feats: Tough, Opening Strike, Speedy, Heavy Hitter, Keen Eye (anyone in the party), Skilled (proficiency), Rallying Presence, Light Step, Born Lucky, Deep Breath and Drilled.
 - Subclass cards: Bring It, Divine Smite, Reposition (the swap), Arcane Shield, Fake Surrender, Vanish (hidden counts as unaware), Raise the Stakes, Mage Hand and Killing Shot (a marked foe below half HP).
-- Upgrades: Second Wind+, Blessed Wind, Battle Surge, Second Ward, Sleeping Draught, Poison Blade+, Wild Card and Trophy Mark.
+- Upgrades: Second Wind+, Blessed Wind, Battle Surge, Second Ward, Sleeping Draught, Poison Blade+, Wild Card, Trophy Mark, Magical Blade (each hit deals the poison's damage at once, no ticks: Ethan, Nov 22, 2026), Primal Snare and Pack Mark.
+- **Elementalist** (Nov 22, 2026): Infuse and Primal Snare open the element pop-up (07 → Combat screen → Element pick, approved by Ethan Nov 22, 2026): `TagButton`s in the element's colour (`CombatHud.ELEMENT_COLOURS`, PLACEHOLDER), on the End pop-up's panel: Fire, Ice or Lightning; the X closes it at no cost. Infuse lasts the fight and shows as a status. Fire: +1 on each attack that hits; ice: slows; lightning: 1 damage to the nearest other foe within 3. Primal Snare's ring takes the element's colour; when it springs, fire burns for 1 more, ice slows foes within 2 of the trapped one, lightning jumps as Infuse's.
+- **Companion ranger** (Nov 22, 2026): the beast from `art/export/beasts.glb` (beasts kit, approved Nov 5), built by `HeroMini.beast_mesh` with the kit's colour swap, in the hero's cloth. It stands on the free cell nearest its ranger at the start of every fight, full HP each time, doesn't take a companion's place, gets 2 AP a turn like summons, flips its ranger's DEX, and shows as a small portrait under its ranger in the tray. Downed, it lies there till the fight ends; the fight is lost when the party is down, whatever the beast. Its own traits: the wolf moves 1 hex more and knocks foes down (prone) when its bite hits; the panther deals more from behind; the hawk flies and attacks at range. Command Beast (2 AP, the ranger's) takes the beast's move as its name and text: Howl, foes within 2 of the wolf save (WIS) or are frightened; Roar, foes within 2 of the bear must attack it; Ambush, the panther hides and its next strike is ×2 and counts as from behind; Dive, a ×2 hit from the hawk at its range, ignoring cover, aimed from where the hawk is. It dims while the beast is down. Pack Mark: the beast's hits on its ranger's marked foe deal the Mark's +1 too.
 - Tier 1: Fireball, Chain Lightning, Unbind, Psychic Spike, Soul Siphon, Life Tap, Mass Heal, Miracle of Plenty (the heal), Purify, Siphon Strength (the foe's loss), Curse of Ruin.
 - God spells: all eight (Nov 12, 2026; see the Cleric row above).
 - Bard level 3: Cliffhanger (loses 1 AP on its next turn), Shatter Chord (CHA, everyone within 1, CON save), Battle Hymn (allies within 2 of the Bard +1 damage; concentration), Captivate (foes within 2, WIS save, must attack the Bard until their next turn ends), Whirlwind Dance (a weapon attack on each adjacent foe), Hold the Line (allies next to the Bard take 1 less; concentration).
@@ -470,10 +473,8 @@ Scope: 06 → First playable → Levels. Rules: 05 → Levels and milestones, Ge
 - **Bard after level 5:** Dance of Blades and Charge!
 - **Feats:** Weapon Training (no gear changes in play), Forager, Surveyor, Silver Tongue, Quick Study, Unmovable (no foe pushes yet), Unsettling, Forest Rest, Devout, Fence, Tower Ties, Local Hero and Merchant Ties.
 - **Subclasses:**
-  - Shifter: Shift, the forms and Pounce.
-  - Companion ranger: Command Beast, the beast and Pack Mark. The beast can't be named yet.
-  - Elementalist: Infuse and Primal Snare.
-  - Arcane Trickster: Magical Blade (no damage types).
+  - Shifter: Shift, the forms and Pounce (on hold: Ethan is rethinking the forms, Nov 22, 2026; Pounce's no-prompt leap is decided, design/03).
+  - Companion ranger: the beast can't be named or recoloured yet; every beast wears its kit's first coat with gold eyes (`HeroMini.BEAST_COATS`).
 - **Tier 1:** Blizzard, Animate Armor, Soul Jar, Now You See Me, Nightmare, Blood Bond, Burning Halo, Sunlit Ground, Lance of Dawn, Terror, Nightmare Shroud, Snuff the Light and Vampiric Aura. Miracle of Plenty has no free consumable yet, and Siphon Strength gives the ally nothing yet.
 
 **Placeholders** (`rules.gd`, after `XP_MORE_EACH`): every amount the docs leave as "more" or "a little":
@@ -489,6 +490,8 @@ Scope: 06 → First playable → Levels. Rules: 05 → Levels and milestones, Ge
   - Psychic Spike +2 on a foe unaware of you, Life Tap 3 HP, Mass Heal within 2, Plenty 1, Toll +2, Siphon −1 STR.
 - **Subclass cards:** Divine Smite +3, Bring It −1, Arcane Shield −2, Second Ward 2, Reposition within 3, Raise the Stakes ×2, Killing Shot ×3, Poison Blade+ 2 a tick, Trophy Mark +1.
 - **Stone Sentinel:** 8 HP, 1 damage, the blade's stand-in.
+- **Elementalist:** Infuse fire +1 (`INFUSE_FIRE`), ice the Frost Ray slow, lightning 1 jumping damage (`INFUSE_JUMP`) within `CHAIN_RANGE`; Primal Snare's fire burns for `INFUSE_FIRE`, ice slows within `NEARBY`.
+- **Companion's beast** (`BEAST_STATS`): wolf 8 HP, 2 damage, +1 hex a Move, prone on a hit; bear 12 HP, 2 damage; hawk 5 HP, 1 damage, range 4, flies; panther 8 HP, 2 damage, +2 from behind. +1 max HP for each level past 5. Dive ×2, Ambush ×2, Howl and Roar reach 2 hexes. The hawk's attack plays the spear's thrust lunge.
 - **Card name breaks:** Hemor/rhage, Re/position, Night/mare.
 
 ## Placeholders
