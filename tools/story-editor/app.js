@@ -705,7 +705,13 @@ function renderInspector() {
   if (n.type === 'line') {
     box.append(...textField('Speaker', n.speaker, (s, v) => { N(s).speaker = v; }, { list: 'dl-speakers', placeholder: 'Who talks', relist: true }));
     box.append(...textField('Stage note (shows small and italic above the line)', n.stage, (s, v) => { N(s).stage = v; }, { placeholder: 'cracks his knuckles' }));
-    box.append(...textField('Line', n.text, (s, v) => { N(s).text = v; }, { area: true, rows: 7 }));
+    const lineField = textField('Line', n.text, (s, v) => { N(s).text = v; }, { area: true, rows: 7 });
+    // the game shows lines as speech, so quote marks around the whole line come off
+    lineField[1].addEventListener('change', (e) => {
+      const bare = unquoteLine(e.target.value);
+      if (bare !== e.target.value) { e.target.value = bare; mutate((s) => { N(s).text = bare; }, { inspector: false }); }
+    });
+    box.append(...lineField);
   }
   if (n.type === 'narration') box.append(...textField('Narration', n.text, (s, v) => { N(s).text = v; }, { area: true, rows: 7, placeholder: 'The stone stands alone beneath an open sky.' }));
 
@@ -912,6 +918,11 @@ async function deleteScene() {
 // ---------- problems (light checks) ----------
 const FIRST_PERSON = /\b(I|I'm|I'll|I've|I'd|me|my|mine|we|we're|our|us)\b/;
 const QUOTES = /["“”]/;
+// a line wrapped in one pair of quote marks, without others inside, loses them
+function unquoteLine(t) {
+  const m = /^\s*["“]([^"“”]*)["”]\s*$/.exec(t || '');
+  return m ? m[1] : t;
+}
 function sceneFlags(sc) {
   const set = new Set(), used = new Set();
   for (const id in sc.nodes || {}) {
@@ -930,9 +941,10 @@ function allFlags() {
 }
 function problems(sc) {
   const out = [];
-  const P = (level, node, msg) => out.push({ level, node, msg });
+  const P = (level, node, msg, fixes) => out.push({ level, node, msg, fixes });
   const nodes = sc.nodes || {};
   if (!sc.start || !nodes[sc.start]) P('error', null, 'The scene has no start node.');
+  if (!(sc.triggers || []).some((t) => t.value)) P('info', null, 'Nothing starts this scene yet. Add a trigger (a place, a person, a quest) in the scene settings.');
   // reachability
   const seen = new Set();
   const stack = sc.start && nodes[sc.start] ? [sc.start] : [];
@@ -956,6 +968,20 @@ function problems(sc) {
     if (n.type === 'line') {
       if (!n.speaker) P('warn', id, 'NPC line has no speaker.');
       if (!(n.text || '').trim()) P('warn', id, `${label} is empty.`);
+      if (unquoteLine(n.text) !== n.text)
+        P('warn', id, `${label} is wrapped in quote marks. The game shows lines as speech, so they don't need them.`,
+          [{ label: 'Remove quotes', run: (s) => { s.nodes[id].text = unquoteLine(s.nodes[id].text); } }]);
+      const who = n.speaker && S.chars[n.speaker];
+      if (who && voiceStatus(who).state !== 'approved' && !out.some((x) => x.speaker === n.speaker && x.voice))
+        P('warn', id, `${n.speaker} has no approved voice sheet yet. Writing guide: voice sheet first, then lines.`,
+          [{ label: 'Open ' + n.speaker, open: () => { setMode('characters'); openChar(who.file); } }]);
+      if (out.length && out[out.length - 1].msg.startsWith(`${n.speaker} has no approved`)) Object.assign(out[out.length - 1], { speaker: n.speaker, voice: true });
+      if (n.speaker && !who && !listOf('generic').includes(n.speaker) && !out.some((x) => x.speaker === n.speaker))
+        P('info', id, `"${n.speaker}" isn't a character or a generic speaker yet.`, [
+          { label: 'Add as generic speaker', lists: (l) => { l.generic = (l.generic || []).concat([n.speaker]); } },
+          { label: 'Make a character', open: () => { setMode('characters'); quickChar(n.speaker); } },
+        ]);
+      if (out.length && out[out.length - 1].msg.startsWith(`"${n.speaker}" isn't`)) out[out.length - 1].speaker = n.speaker;
     }
     if (n.type === 'narration') {
       if (!(n.text || '').trim()) P('warn', id, 'Narration is empty.');
@@ -971,6 +997,12 @@ function problems(sc) {
         if (!t.trim()) P('warn', id, 'A hero option is empty.');
         if (QUOTES.test(t) || FIRST_PERSON.test(t)) P('warn', id, `Option "${preview(t, 40)}" reads like speech. Hero options name the intent ("Ask about the sword"), never the hero's words.`);
         if (o.check && !(o.check.failCost || '').trim()) P('info', id, `Option "${preview(t, 30)}" has no cost of failing written.`);
+        // Writing guide: after a check, pass or fail, the NPC reacts in character
+        if (o.check) for (const slot of ['pass', 'fail']) {
+          const to = o[slot] && nodes[o[slot]];
+          if (to && to.type !== 'line' && to.type !== 'narration')
+            P('warn', id, `Option "${preview(t, 30)}" ${slot === 'pass' ? 'passing' : 'failing'} goes straight to ${NODE_TYPES[to.type].label.toLowerCase()}. Writing guide: after a check, the NPC reacts in character and says what changes.`);
+        }
         for (const c of o.conditions || []) if (!c.value) P('warn', id, `Option "${preview(t, 30)}" has a condition with no value.`);
       }
     }
@@ -1004,7 +1036,20 @@ function renderProblems() {
     box.append(h('div', {
       class: 'problem ' + p.level,
       onclick: () => { if (p.node) { S.sel = p.node; focusNode(p.node); switchTab('edit'); renderCanvas(); renderInspector(); } },
-    }, h('span', { class: 'lvl', text: p.level === 'warn' ? 'check' : p.level }), p.msg));
+    }, h('span', { class: 'lvl', text: p.level === 'warn' ? 'check' : p.level }), p.msg,
+    p.fixes ? h('div', { class: 'btn-row', style: 'margin-top:4px' }, p.fixes.map((f) => h('button', {
+      class: 'small', text: f.label,
+      onclick: async (e) => {
+        e.stopPropagation();
+        if (f.run) mutate(f.run);
+        else if (f.open) f.open();
+        else if (f.lists) {
+          f.lists(S.lists);
+          try { await api('PUT', 'lists', S.lists); } catch (err) {}
+          renderProblems(); renderInspector();
+        }
+      },
+    }))) : null));
   }
 }
 function focusNode(id) {

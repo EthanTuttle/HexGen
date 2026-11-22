@@ -381,6 +381,18 @@ function badName(name, except) {
   if (Object.keys(S.chars).some((f) => f !== except && f.toLowerCase() === name.toLowerCase())) return 'There is already a character called ' + name + '.';
   return null;
 }
+// a character file straight from a scene's speaker name
+function quickChar(name) {
+  if (S.chars[name]) { openChar(name); return; }
+  const err = badName(name);
+  if (err) { alert(err); return; }
+  const c = { file: name, name, intro: CHAR_INTRO, sections: [] };
+  setProfile(c, 'Role', 'Story NPC');
+  setProfile(c, 'Status', 'Voice sheet not started');
+  S.chars[name] = c;
+  charChanged(c);
+  openChar(name);
+}
 function newChar() {
   modal(h('div', {},
     h('h2', { text: 'New character' }),
