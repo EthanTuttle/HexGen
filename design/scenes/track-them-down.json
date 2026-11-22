@@ -1,0 +1,76 @@
+{
+  "id": "track-them-down",
+  "title": "Track Them Down!",
+  "notes": "Old Man Jenkins tells the Soldier to head out, setting them off on their adventure",
+  "triggers": [],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "line",
+      "x": 0,
+      "y": 0,
+      "speaker": "Old Man Jenkins",
+      "text": "Drat! One of them ran off! Quick, you better get after them. Rats always scurry back to their nest. Do you need anything before you set out?",
+      "next": "n2"
+    },
+    "n2": {
+      "type": "choice",
+      "x": 300,
+      "y": 0,
+      "options": [
+        {
+          "id": "o2",
+          "intent": "Ask for water",
+          "next": "n5"
+        },
+        {
+          "id": "o3",
+          "intent": "Ask for money",
+          "next": "n6"
+        },
+        {
+          "id": "o4",
+          "intent": "Ask for a kiss",
+          "next": "n7"
+        }
+      ]
+    },
+    "n5": {
+      "type": "line",
+      "x": 612,
+      "y": -67,
+      "speaker": "Old Man Jenkins",
+      "text": "Good thinking, take this water pouch. ",
+      "next": "n8"
+    },
+    "n6": {
+      "type": "line",
+      "x": 615,
+      "y": 32,
+      "speaker": "Old Man Jenkins",
+      "text": "Sure, take some coins",
+      "next": "n8"
+    },
+    "n7": {
+      "type": "narration",
+      "x": 614,
+      "y": 132,
+      "text": "Old Man Jenkins gives you a kiss on the forehead",
+      "next": "n8"
+    },
+    "n8": {
+      "type": "line",
+      "x": 933,
+      "y": 34,
+      "speaker": "Old Man Jenkins",
+      "text": "Now get out there! And get back before I croak, it get's lonely in this tower",
+      "next": "n9"
+    },
+    "n9": {
+      "type": "end",
+      "x": 1219,
+      "y": 83,
+      "outcome": "leave"
+    }
+  }
+}

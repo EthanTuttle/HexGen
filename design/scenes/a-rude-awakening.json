@@ -1,0 +1,76 @@
+{
+  "id": "a-rude-awakening",
+  "title": "A Rude Awakening",
+  "notes": "The first scene upon waking as a Soldier background",
+  "triggers": [],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "line",
+      "x": 0,
+      "y": 0,
+      "speaker": "Bandit A",
+      "text": "Hey! You gimps! My buddy said he knows a guy who knows a guy who knows a guy who knows there's a bunch of weapons and gear here!",
+      "stage": "Shouting up at the tower",
+      "next": "n2"
+    },
+    "n2": {
+      "type": "choice",
+      "x": 304,
+      "y": -6,
+      "options": [
+        {
+          "id": "o2",
+          "intent": "Offer them everything you have",
+          "next": "n7"
+        },
+        {
+          "id": "o3",
+          "intent": "Tell them to go fuck themselves",
+          "next": "n9"
+        },
+        {
+          "id": "o4",
+          "intent": "Brandish your weapon",
+          "check": {
+            "type": "approach",
+            "skill": "Intimidate",
+            "failCost": "",
+            "fight": true
+          },
+          "pass": "n5",
+          "fail": "n8"
+        }
+      ]
+    },
+    "n5": {
+      "type": "end",
+      "x": 641,
+      "y": 170,
+      "outcome": "fight",
+      "notes": "Fewer enemies (some run off)"
+    },
+    "n7": {
+      "type": "line",
+      "x": 643,
+      "y": -147,
+      "speaker": "Old Man Jenkins",
+      "text": "No! We must stand up to these ne-er do wells! Take arm!",
+      "next": "n8"
+    },
+    "n8": {
+      "type": "end",
+      "x": 1028,
+      "y": 78,
+      "outcome": "fight"
+    },
+    "n9": {
+      "type": "line",
+      "x": 642,
+      "y": -25,
+      "speaker": "Bandit A",
+      "text": "The only thing getting fucked here will be you! Get em' boys!",
+      "next": "n8"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "oak-tavern",
+  "title": "Oak & Tavern",
+  "notes": "",
+  "triggers": [],
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "type": "line",
+      "x": 0,
+      "y": 0,
+      "speaker": "",
+      "text": ""
+    }
+  }
+}
