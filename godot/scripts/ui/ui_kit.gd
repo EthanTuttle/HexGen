@@ -216,3 +216,16 @@ static func at_right(c: Control, x: float, y: float) -> Control:
 	c.offset_right = x - 844.0 + w
 	c.offset_top = y
 	return c
+
+
+## The same, for a piece along the bottom of the mockup: it keeps its distance from the bottom edge, so on a taller
+## screen it stays at the bottom and the board gets the extra height (design/07 -> UI -> Screen sizes).
+static func at_bottom(c: Control, x: float, y: float) -> Control:
+	var h := maxf(c.size.y, c.custom_minimum_size.y)
+	c.anchor_top = 1.0
+	c.anchor_bottom = 1.0
+	c.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	c.offset_left = x
+	c.offset_top = y - 390.0
+	c.offset_bottom = y - 390.0 + h
+	return c

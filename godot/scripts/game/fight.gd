@@ -103,7 +103,7 @@ func run(g: Game, terrain: String, tile: Vector2i, foes: int, id := "") -> bool:
 	hud.visible = true
 	await get_tree().process_frame   # the panels' places, for the framing
 	var view := opening()
-	game.rig.focus = open_area().get_center()
+	game.rig.focus = _focus()
 	open_distance = view.distance
 	game.rig.limits = _pan_limits()
 	game.rig.frame(view.target, open_distance * Rules.ZOOM_IN_FROM, 52.0)
@@ -181,6 +181,13 @@ func open_area() -> Rect2:
 	var r: Rect2 = hud.open_rect()
 	var k := 844.0 / game.get_viewport().get_visible_rect().size.x
 	return Rect2(r.position * k, r.size * k)
+
+
+## The open area's middle as the rig's focus. The rig measures focus from the middle of an 844 x 390 screen, so on a
+## taller screen (the Mac's 844 x 529) the open area's middle moves up by half the extra height.
+func _focus() -> Vector2:
+	var s := game.get_viewport().get_visible_rect().size
+	return open_area().get_center() - Vector2(0, (s.y * 844.0 / s.x - 390.0) * 0.5)
 
 
 ## Where p shows on the opening's ground plane at height y: higher things look further up the screen at this tilt.
