@@ -196,7 +196,9 @@ func _run() -> void:
 		if from_card:
 			var p := _centre(from_card)
 			await _touch(p, Vector2(p.x, maxf(r.position.y + 4, p.y - 80)))
-	_check(sc.scroll_vertical > 0 and screen.sel == sel_was and screen.slots() == bar_was, "a swipe up scrolls the list (to %d) and picks nothing" % sc.scroll_vertical)
+	var fits := sc.get_v_scroll_bar().max_value <= sc.size.y + 1.0   # a tall screen (the Mac) shows every card at once
+	_check((fits or sc.scroll_vertical > 0) and screen.sel == sel_was and screen.slots() == bar_was,
+		"a swipe up %s and picks nothing" % ("leaves a list that fits" if fits else "scrolls the list (to %d)" % sc.scroll_vertical))
 	_check(sc.get_global_rect().has_point(_centre(_tile("second_wind"))) or not hidden, "Second Wind comes into view")
 	t = _tile("second_wind")
 	await _touch(_centre(t), Vector2.INF, 0.6)
