@@ -11,7 +11,7 @@ const MAX_BYTES := 150 * 1024 * 1024
 const SHOT_SCALE := 0.5
 const FLAG_ICON := "M6 21V4 M6 4h11l-3 4 3 4H6"
 ## Runs that aren't play keep their screens and numbers as they were.
-const PLAY_ARGS: Array[String] = ["--front", "--direct", "--phone", "--touch", "--check", "--shots", "--flag"]
+const PLAY_ARGS: Array[String] = ["--front", "--direct", "--phone", "--touch", "--check", "--shots", "--flag", "--quit"]   # --quit: StallWatch ends a stuck run
 
 static var dir := "user://test_notes"   # FrontCheck uses its own, so checks never mix with real notes
 static var _instance: TestNotes
