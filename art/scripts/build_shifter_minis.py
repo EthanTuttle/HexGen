@@ -52,17 +52,23 @@ def werewolf(col, build="average"):
 
     def coat(c, n):
         """Darker along the back and shoulders, paler down the chest and belly, the fur between."""
-        if n.z > 0.5 or n.y > 0.55:
-            return back
-        if n.y < -0.5 and c.z < Z0 + 1.0:
+        if n.y < -0.3 and abs(c.x) < 0.13 and Z0 + 0.66 < c.z < Z0 + 1.06:
             return pale
+        if n.z > 0.5 or n.y > 0.45:
+            return back
         return fur
 
     # The torso: pelvis up through a narrow waist to a deep chest and broad shoulders, hunched forward.
     lean = V((0, -0.42, 1)).normalized()
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
-                ((0.06, 0.6, 0.14, 0.12), (0.03, 0.7, 0.15, 0.13), (-0.02, 0.8, 0.16, 0.14), (-0.07, 0.92, 0.23, 0.18),
-                 (-0.11, 1.03, 0.26, 0.18), (-0.15, 1.1, 0.19, 0.14))], coat)
+                ((0.06, 0.6, 0.14, 0.12), (0.03, 0.7, 0.15, 0.13), (-0.03, 0.8, 0.18, 0.16), (-0.08, 0.92, 0.25, 0.2),
+                 (-0.1, 1.04, 0.28, 0.19), (-0.13, 1.12, 0.2, 0.15))], coat)
+    p.blob(at(0, 0.02, 1.08), 0.15, back, squash=0.8)  # the hunch: a mass of muscle and fur behind the shoulders
+    for x in SIDE:  # heavy shoulders
+        p.blob(at(x * 0.23, -0.08, 1.05), 0.1, back, squash=0.85)
+        for k in range(3):  # shaggy flanks
+            q = at(x * 0.17, 0.0 - k * 0.02, 0.92 - k * 0.1)
+            vr.spike(p, q, q + V((x * 0.08, 0.04, -0.05)), 0.045, (fur, back)[k % 2], segments=3)
     # A shaggy ruff: tufts over the shoulders and down the hunched back, and a pale bib on the chest.
     for k, (x, y, z, dx, dy, dz) in enumerate(((0.0, -0.06, 1.13, 0.0, 0.09, 0.08), (0.1, -0.06, 1.1, 0.06, 0.08, 0.06),
                                                 (-0.1, -0.06, 1.1, -0.06, 0.08, 0.06), (0.17, -0.1, 1.06, 0.09, 0.05, 0.04),
@@ -132,8 +138,8 @@ def werewolf(col, build="average"):
 
     # Arms: long, out from the shoulders, elbows back, hands forward and low with the claws spread.
     for x in SIDE:
-        s, e, w_ = at(x * 0.22, -0.11, 1.03), at(x * 0.32, -0.02, 0.82), at(x * 0.3, -0.2, 0.68)
-        em.limb(p, [s, e, w_], [0.095, 0.07, 0.055], [fur, fur], sides=6)
+        s, e, w_ = at(x * 0.25, -0.1, 1.04), at(x * 0.34, -0.03, 0.82), at(x * 0.29, -0.26, 0.7)
+        em.limb(p, [s, e, w_], [0.1, 0.078, 0.06], [fur, fur], sides=6)
         for k in range(2):  # shaggy fur down the forearm
             q = e.lerp(w_, 0.35 + k * 0.3)
             vr.spike(p, q, q + V((x * 0.06, 0.05, -0.03)), 0.04, back, segments=3)
@@ -151,18 +157,22 @@ def werewolf(col, build="average"):
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
                 ((0.06, 0.585, 0.145, 0.125), (0.05, 0.66, 0.15, 0.13))], lambda c, n: cloth)
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
-                ((0.045, 0.665, 0.152, 0.132), (0.04, 0.7, 0.152, 0.132))], lambda c, n: "belt")
-    p.box(at(0.0, -0.095, 0.66), (0.05, 0.02, 0.04), "buckle")
+                ((0.045, 0.66, 0.158, 0.138), (0.04, 0.71, 0.158, 0.138))], lambda c, n: "belt")
+    p.box(at(0.0, -0.105, 0.66), (0.07, 0.025, 0.055), "buckle")
 
     # Legs: a wolf's, bent: thigh forward to the knee, shin back to a high hock, a long foot to the toes. Front foot forward.
     for x, step in ((-1, -0.06), (1, 0.05)):
         hip, knee = at(x * 0.1, 0.06 + step, 0.6), at(x * 0.14, -0.06 + step, 0.4)
         hock, ball = at(x * 0.145, 0.1 + step, 0.17), at(x * 0.145, 0.0 + step, 0.035)
-        em.limb(p, [hip, knee, hock, ball], [0.1, 0.075, 0.045, 0.038], [cloth, fur, fur], sides=6)
+        em.limb(p, [hip, knee, hock, ball], [0.12, 0.085, 0.05, 0.04], [cloth, fur, fur], sides=6)
+        p.blob(knee.lerp(hock, 0.3) + V((0, 0.03, 0)), 0.07, fur, squash=1.3)  # the calf
+        for k in range(2):  # fur tufts at the back of the leg
+            q = knee.lerp(hock, 0.25 + k * 0.35)
+            vr.spike(p, q, q + V((x * 0.03, 0.07, -0.04)), 0.035, back, segments=3)
         # ragged hems: a few strips hanging off the trouser leg just above the knee
         for k in range(3):
             a = math.radians(70 + k * 70) * x
-            q = hip.lerp(knee, 0.62) + V((math.sin(a) * 0.08 * x, -math.cos(a) * 0.06, 0))
+            q = hip.lerp(knee, 0.62) + V((math.sin(a) * 0.1 * x, -math.cos(a) * 0.075, 0))
             vr.spike(p, q, q + V((0, 0, -0.07)), 0.03, cloth_d, segments=3)
         bb.paw(p, at(x * 0.145, -0.03 + step, 0.025), V((0, -1, 0)), 0.055, 0.028, fur)
         for k in (-1, 0, 1):
