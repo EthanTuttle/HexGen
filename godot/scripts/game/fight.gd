@@ -2172,7 +2172,7 @@ func _pounce(s: Dictionary, t: Dictionary) -> void:
 	refresh()
 
 
-## Shift into the Shifter's form or back (03). The mini doesn't change yet: the beast parts are Ethan's art session's (07).
+## Shift into the Shifter's form or back (03). The mini doesn't change yet: the werebeast minis are Ethan's modelling session's (07 -> Shifter forms).
 func _shift(u: Dictionary, into: bool) -> void:
 	u.shifted = into
 

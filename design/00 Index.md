@@ -40,7 +40,6 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 ## Master open questions
 
 - [x] ~~The Shifter's Shift and werebeast forms~~ (settled Nov 22, 2026: kept as written; [Classes & combat](03 Classes & combat.md))
-- [ ] **New (Nov 22, 2026):** art for the Shifter's beast parts (ears, claws, mane or fur ruff for each form) in the hero kit ([Presentation](07 Presentation.md) → Art direction)
 - [x] ~~Element pick pop-up for Infuse and Primal Snare~~ (approved Nov 22, 2026: [Presentation](07 Presentation.md) → Combat screen)
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: Buried city: storm timing, quests when the library is buried, walking on the changing sand (see Map & exploration)

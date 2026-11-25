@@ -400,7 +400,7 @@ Balance flag: at 0 AP, Shrug It Off clears every status on the Brawler each turn
 
 Balance flag: at 1 AP, Command Beast's signature move (e.g. Roar, Ambush) can be used every turn alongside two other actions; check it in the balance pass.
 
-**Shifter forms** (decided Oct 22, 2026): werebeast hybrids, half-person and half-beast, chosen at level 5. Each form has its own signature card, usable only while shifted. Losing weapon cards while shifted (including the Shifter's weapon mastery) is balanced by the form's abilities. Ethan looked again on Nov 22, 2026 and kept Shift, the weapon swap and all three forms as written. Balance flag: a Shifter with a bow, or with mastery in their weapon, gives all of it up while shifted; check it in the balance pass. How a shifted hero looks: [Presentation](07 Presentation.md) → Art direction.
+**Shifter forms** (decided Oct 22, 2026): werebeast hybrids, half-person and half-beast, chosen at level 5. Each form has its own signature card, usable only while shifted. Losing weapon cards while shifted (including the Shifter's weapon mastery) is balanced by the form's abilities. Ethan looked again on Nov 22, 2026 and kept Shift, the weapon swap and all three forms as written. Balance flag: a Shifter with a bow, or with mastery in their weapon, gives all of it up while shifted; check it in the balance pass. How a shifted hero looks: [Presentation](07 Presentation.md) → Art direction → Shifter forms.
 
 | Form | Feel | Signature card | AP |
 | --- | --- | --- | --- |
