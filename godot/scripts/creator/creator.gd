@@ -57,13 +57,15 @@ func _ready() -> void:
 	render()
 
 
-## The mockup's padding (12 18 14). Inside a phone's safe area the inset already leaves room at the sides.
+## The mockup's padding (12 18 14). Inside a phone's safe area the inset already leaves room at the sides. On a bigger
+## screen the creator grows up to the menu cap, then sits centred (UI.menu_frame).
 func _layout() -> void:
-	var pad := 6.0 if size.x < 800.0 else 18.0
-	_bar.position = Vector2(pad, 12)
-	_bar.size = Vector2(size.x - pad * 2.0, 52)
-	_body.position = Vector2(pad, 72)
-	_body.size = Vector2(size.x - pad * 2.0, size.y - 72 - 14)
+	var f := UI.menu_frame(size)
+	var pad := 6.0 if f.size.x < 800.0 else 18.0
+	_bar.position = f.position + Vector2(pad, 12)
+	_bar.size = Vector2(f.size.x - pad * 2.0, 52)
+	_body.position = f.position + Vector2(pad, 72)
+	_body.size = Vector2(f.size.x - pad * 2.0, f.size.y - 72 - 14)
 	if _view:   # the safe area changed
 		_view.size = _body.size
 		_view.position = Vector2.ZERO

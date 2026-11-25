@@ -229,3 +229,14 @@ static func at_bottom(c: Control, x: float, y: float) -> Control:
 	c.offset_top = y - 390.0
 	c.offset_bottom = y - 390.0 + h
 	return c
+
+
+## DOCS (design/07 -> UI -> Screen sizes; the number is a placeholder there): a full-screen menu grows with the extra
+## room up to this many times the mockup's 844 x 390 each way, then stops and sits centred.
+const MENU_CAP := 1.25
+
+
+## Where a full-screen menu goes in an area of this size: the whole area up to the cap, centred past it.
+static func menu_frame(area: Vector2) -> Rect2:
+	var s := area.min(Vector2(844.0, 390.0) * MENU_CAP)
+	return Rect2(((area - s) * 0.5).floor(), s)

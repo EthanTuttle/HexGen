@@ -113,29 +113,31 @@ func _draw() -> void:
 			draw_line(o + Vector2(13, 30), o + Vector2(13, 45), line, 1.0)
 
 
-# --- Layout: the mockup's 844 x 390, fitted to the safe area. The top bar keeps to the top and the tray to the bottom, at
-# the mockup's distances; on a taller screen the list and the details panel take the extra height (design/07 -> Screen sizes).
+# --- Layout: the mockup's 844 x 390, fitted to the safe area. On a bigger screen it grows up to the menu cap, then sits
+# centred (UI.menu_frame); the list and the details panel take the extra height (design/07 -> Screen sizes).
 
 func _layout() -> void:
-	var w := _root.size.x
-	var tall := maxf(0.0, _root.size.y - 390.0)
+	var f := UI.menu_frame(_root.size)
+	var w := f.size.x
+	var o := f.position
+	var tall := maxf(0.0, f.size.y - 390.0)
 	var m := 18.0 if w >= 844.0 else 12.0
 	var dw := DETAILS_W
 	var lw := w - m * 2.0 - dw - 12.0
-	_top.position = Vector2(m, 12)
+	_top.position = o + Vector2(m, 12)
 	_top.size = Vector2(w - m * 2.0, 54)
 	_place_party()
 	_tabs.position = Vector2(_top.size.x - _tabs.get_combined_minimum_size().x, 7)
-	_list_panel.position = Vector2(m, 76)
+	_list_panel.position = o + Vector2(m, 76)
 	_list_panel.size = Vector2(lw, 192 + tall)
-	_tray.position = Vector2(m, 282 + tall)
+	_tray.position = o + Vector2(m, 282 + tall)
 	_tray.size = Vector2(lw, 94)
 	var n := Rules.HOTBAR_SLOTS
 	var gap := clampf((lw - 16.0 - n * SLOT.x) / (n - 1), 3.0, SLOT_GAP)
 	var row := n * SLOT.x + (n - 1) * gap
 	for i in n:
 		_slots[i].position = Vector2((lw - row) * 0.5 + i * (SLOT.x + gap), 9)
-	_details_panel.position = Vector2(w - m - dw, 76)
+	_details_panel.position = o + Vector2(w - m - dw, 76)
 	_details_panel.size = Vector2(dw, 300 + tall)
 	_details_panel.custom_minimum_size = Vector2(dw, 300 + tall)
 	_fill_list()
