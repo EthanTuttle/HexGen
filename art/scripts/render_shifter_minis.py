@@ -1,0 +1,91 @@
+"""Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the ally wolf, from three
+sides; the form in three heroes' colours; the form alone, large; and the line-up at the combat camera.
+
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf]
+Uses the latest shifter_minis, hero_kit and beast_minis. Writes art/preview/shifter_<form>_*_vN.png and the sheets
+shifter_<form>_vN.png (line-ups and colours) and shifter_<form>_solo_vN.png.
+"""
+import math
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bpy  # noqa: E402
+from mathutils import Vector  # noqa: E402
+
+import build_hero_kit as hb  # noqa: E402
+import hexkit as hk  # noqa: E402
+import render_beast_minis as rb  # noqa: E402
+import render_forest_maps as fm  # noqa: E402
+import render_hero_kit as rh  # noqa: E402
+import render_preview as rp  # noqa: E402
+
+S = hb.SWATCHES
+# The Shifter: a human ranger with a shortbow in light armour, brown hair, so their wolf is brown.
+SHIFTER = rh.hero("human", "average", "a", "short", S["skin"]["human"][1], S["hair"][1], S["eyes"][3], S["cloth"][2], "light", "shortbow")
+# Three more heroes' colours for the form: black hair, blond, grey; each with their own cloth and eyes.
+OTHERS = [dict(skin=S["skin"]["human"][3], hair=S["hair"][0], eyes=S["eyes"][0], cloth=S["cloth"][0]),
+          dict(skin=S["skin"]["elf"][0], hair=S["hair"][3], eyes=S["eyes"][1], cloth=S["cloth"][1]),
+          dict(skin=S["skin"]["human"][0], hair=S["hair"][4], eyes=S["eyes"][2], cloth=S["cloth"][3])]
+
+
+def start():
+    t, col = rb.start()
+    t.update(rp.load_templates(rp.latest(os.path.join("minis", "heroes"), "shifter_minis")))
+    for o in t.values():
+        o.hide_render = True
+    return t, col
+
+
+def line_up(form, spin):
+    t, col = start()
+    rh.stand(t, col, SHIFTER, "hero", at=(-1.15, 0, 0), spin=spin)
+    _, n = rb.beast(t, f"shifter_{form}_average", SHIFTER["colours"], form, col, (0, 0, 0), spin)
+    rb.beast(t, "beast_wolf", rb.looks("wolf")[0], "ally_wolf", col, (1.15, 0, 0), spin)
+    return t, col, n
+
+
+def render(form):
+    stems = []
+    for spin, tag in ((-28, "front"), (152, "back"), (-90, "side")):
+        _, _, n = line_up(form, spin)
+        stem = f"shifter_{form}_{tag}"
+        rh.shot(stem, Vector((0, 0, 0.6)), 5.6, 12, (1500, 760))
+        stems.append(stem)
+    print("FORMTRIS", form, n)
+    t, col = start()
+    for i, c in enumerate([SHIFTER["colours"]] + OTHERS):
+        rb.beast(t, f"shifter_{form}_average", c, f"{form}_{i}", col, (1.0 * (i - 1.5), 0, 0), -28)
+    stem = f"shifter_{form}_colours"
+    rh.shot(stem, Vector((0, 0, 0.6)), 6.6, 12, (1500, 760))
+    stems.append(stem)
+    fm.sheet(stems, f"shifter_{form}", cols=2)
+    # The combat camera, about 50 degrees down: close, then at 18 m.
+    line_up(form, 0)
+    rh.shot(f"shifter_{form}_combat_close", Vector((0, 0, 0.5)), 8, 50, (1500, 600))
+    rh.shot(f"shifter_{form}_combat_18m", Vector((0, 0, 0.5)), 18, 50, (1500, 700))
+    solo(form)
+
+
+def solo(form):
+    """The form alone in the Shifter's colours, large: front, three-quarter, side, back, the combat camera, and its face."""
+    stems = []
+    for spin, tag, pitch in ((0, "front", 12), (-35, "three", 12), (-90, "side", 12), (180, "back", 12), (-30, "combat", 50), (-25, "face", 6)):
+        t, col = start()
+        ob, _ = rb.beast(t, f"shifter_{form}_average", SHIFTER["colours"], form, col, (0, 0, 0), spin)
+        pts = [ob.matrix_world @ v.co for v in ob.data.vertices if (ob.matrix_world @ v.co).z > 0.12]
+        top = max(q.z for q in pts)
+        target, distance = Vector((0, 0, top * 0.5)), {"side": 2.8, "combat": 2.7}.get(tag, 2.5)
+        if tag == "face":
+            high = [q for q in pts if q.z > top * 0.72] or pts
+            ahead = sorted(high, key=lambda q: (ob.matrix_world.inverted() @ q).y)[:max(6, len(high) // 4)]
+            target, distance = sum(ahead, Vector()) / len(ahead), 1.0
+        stem = f"shifter_{form}_solo_{tag}"
+        rh.shot(stem, target, distance, pitch, (900, 900))
+        stems.append(stem)
+    rb.sheet_full(stems, f"shifter_{form}_solo", cols=3)
+
+
+if __name__ == "__main__":
+    for name in (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["werewolf"]):
+        render(name)
