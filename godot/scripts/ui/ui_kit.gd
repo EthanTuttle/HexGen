@@ -216,3 +216,27 @@ static func at_right(c: Control, x: float, y: float) -> Control:
 	c.offset_right = x - 844.0 + w
 	c.offset_top = y
 	return c
+
+
+## The same, for a piece along the bottom of the mockup: it keeps its distance from the bottom edge, so on a taller
+## screen it stays at the bottom and the board gets the extra height (design/07 -> UI -> Screen sizes).
+static func at_bottom(c: Control, x: float, y: float) -> Control:
+	var h := maxf(c.size.y, c.custom_minimum_size.y)
+	c.anchor_top = 1.0
+	c.anchor_bottom = 1.0
+	c.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	c.offset_left = x
+	c.offset_top = y - 390.0
+	c.offset_bottom = y - 390.0 + h
+	return c
+
+
+## DOCS (design/07 -> UI -> Screen sizes; the number is a placeholder there): a full-screen menu grows with the extra
+## room up to this many times the mockup's 844 x 390 each way, then stops and sits centred.
+const MENU_CAP := 1.25
+
+
+## Where a full-screen menu goes in an area of this size: the whole area up to the cap, centred past it.
+static func menu_frame(area: Vector2) -> Rect2:
+	var s := area.min(Vector2(844.0, 390.0) * MENU_CAP)
+	return Rect2(((area - s) * 0.5).floor(), s)

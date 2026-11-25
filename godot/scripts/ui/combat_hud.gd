@@ -477,14 +477,15 @@ func _layout_bar() -> void:
 	var width: float = Rules.HOTBAR_SLOTS * CARD_W + Rules.HOTBAR_SLOTS * gap + 56.0
 	_hotbar.add_theme_constant_override("separation", int(gap))
 	_hotbar_row.add_theme_constant_override("separation", int(gap))
-	_hotbar_row.position = Vector2(BAR_LEFT + maxf(0.0, (right - BAR_LEFT - width) * 0.5), BAR_TOP)
+	_hotbar_row.position.x = BAR_LEFT + maxf(0.0, (right - BAR_LEFT - width) * 0.5)
 
 
+## Pinned to the bottom edge (design/07 -> UI -> Screen sizes): on a taller screen the board gets the extra height.
 func _build_hotbar() -> void:
 	var row := HBoxContainer.new()
 	_hotbar_row = row
-	UI.at(row, BAR_LEFT, BAR_TOP)
 	row.custom_minimum_size = Vector2(0, 92)
+	UI.at_bottom(row, BAR_LEFT, BAR_TOP)
 	row.add_child(_hotbar)
 	var all := UI.FingerButton.new()
 	all.text = "All actions"
@@ -862,7 +863,8 @@ func _build_enemy_pill() -> void:
 func _process(_delta: float) -> void:
 	if not visible:
 		return
-	_enemy_pill.position = Vector2(368 - _enemy_pill.size.x * 0.5, 14)
+	var open := open_rect()   # centred between the tray and the details panel (368 in the mockup)
+	_enemy_pill.position = Vector2(open.get_center().x - global_position.x - _enemy_pill.size.x * 0.5, 14)
 	_layout_bar()
 	var cam := fight.game.rig.camera
 	for u in fight.units:
