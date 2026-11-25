@@ -4,7 +4,8 @@ extends RaceCheck
 ## Companion; design/03 -> Martial class cards): levels the hero to 5 the bots' way with that subclass, then plays its cards with
 ## set coins. Elementalist: Infuse's pop-up (closing it cancels), each element's rider, Primal Snare's element when set and sprung.
 ## Arcane Trickster (`--class=rogue`): Magical Blade's damage at once. Companion: the beast on the board, its attack, Command
-## Beast's signature move and Pack Mark. `--shots` saves the pop-ups and boards to screens/ranger/. Prints RANGER OK /
+## Beast's signature move and Pack Mark. Shifter (`--form=`): Shift's swap of the hotbar, Rending Claws, the form's card,
+## shifting back and Pounce. `--shots` saves the pop-ups and boards to screens/ranger/. Prints RANGER OK /
 ## RANGER FAIL lines, then RANGER DONE. A test aid only.
 
 
@@ -52,6 +53,8 @@ func _run() -> void:
 			await _trickster(hero, foe, s, dv)
 		"Companion":
 			await _companion(hero, foe, foe2, s, dv)
+		"Shifter":
+			await _shifter(hero, foe, foe2, s, dv)
 		_:
 			_check(false, "a subclass this check covers (got %s)" % sub)
 	print("RANGER DONE: %d failed" % failed)
@@ -254,6 +257,86 @@ func _companion(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i
 	_turn(hero)
 	_check(f.cant_use(hero, cmd) == "_no_beast", "Command Beast dims while the beast is down")
 	_fresh(b)
+	await _bot_fight_here()
+
+
+## `--shots`: the camera close on u, then the screen.
+func _close(u: Dictionary, name: String) -> void:
+	if not "--shots" in OS.get_cmdline_user_args():
+		return
+	game.rig.player_moved = true
+	game.rig.ease_to(f.global_position + u.mini.position, 11.0, game.rig.yaw_deg)
+	await _wait(0.9)
+	await _shot(name)
+
+
+func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, dv: Vector2i) -> void:
+	var form: String = hero.member.get("form", "")
+	_check(form == Progression.bot_follow_sub(hero.member, "Shifter"), "Shifter: picked the %s" % form)
+	if not Progression.FORMS.has(form):
+		return
+	var fc: String = Progression.FORMS[form].card
+	_check("shift" in hero.cards and "rending_claws" in hero.cards and fc in hero.cards, "Shifter: gains Shift, Rending Claws and %s" % fc)
+	_check(Progression.card_for(hero.member, Cards.get_card("snare")).n == "Pounce", "Snare shows as Pounce")
+	# Out of form: the claws and the form's card dim and stay off the hotbar.
+	_stage(hero, foe, foe2, s, dv)
+	_turn(hero)
+	_check(f.cant_use(hero, Cards.get_card("rending_claws")) == "_not_shifted" and f.cant_use(hero, Cards.get_card(fc)) == "_not_shifted", "out of form: Rending Claws and %s dim" % fc)
+	_check(not "rending_claws" in f.hot_slots(hero) and f.sel == "attack", "out of form: the weapon's attack, no claws on the hotbar")
+	await _close(hero, "shifter_%s_1_out" % form.to_lower())
+	# Shift: 1 AP; the weapon cards go, the claws and the form's card come.
+	_turn(hero)
+	f.pick_card("shift")
+	await f.press_button()
+	_check(hero.shifted and f.ap_left(hero) == Rules.AP - 1, "Shift: in form for 1 AP")
+	var slots := f.hot_slots(hero)
+	_check("rending_claws" in slots and fc in slots and not slots.any(func(id): return id != "" and Fight.weapon_attack(Cards.get_card(id))), "in form: Rending Claws and %s on the hotbar, no weapon cards" % fc)
+	_check(f.cant_use(hero, Cards.get_card("attack", hero.weapon)) == "_shifted" and not "attack" in f.cards_of(hero) and fc in f.cards_of(hero), "in form: the basic attack is off, All actions swaps too")
+	_turn(hero)
+	_check(f.sel == "rending_claws", "in form: Rending Claws is the picked card")
+	await _close(hero, "shifter_%s_2_in" % form.to_lower())
+	_stage(hero, foe, foe2, s, dv)
+	var claws := await _hit(hero, foe, "rending_claws")
+	_check(claws > 0 and f.cant_use(hero, Cards.get_card("rending_claws")) == "", "Rending Claws: hits (%d) and can go again" % claws)
+	# The form's card.
+	_stage(hero, foe, foe2, s, dv)
+	var tails: Array = []
+	tails.resize(12)
+	tails.fill(false)
+	match form:
+		"Werewolf":
+			_place(foe, s + dv * 3)
+			await _play(hero, "hunt_down", foe.cell, tails)
+			_check(f.dist(hero, foe) == 1 and foe.lost_ap >= Rules.PRONE_AP, "Hunt Down: dashes to the foe and knocks it down")
+		"Werebear":
+			await _play(hero, "thick_hide", null, [])
+			_check(hero.thick_hide and f._level_reduction(foe, hero) >= Rules.THICK_HIDE_LESS, "Thick Hide: takes %d less" % Rules.THICK_HIDE_LESS)
+			f._turn_starts(hero)
+			_check(not hero.thick_hide, "Thick Hide: ends at its next turn")
+		"Werecat":
+			var heads: Array = []
+			heads.resize(12)
+			heads.fill(true)
+			await _play(hero, "shred", foe.cell, heads)
+			var hp: int = foe.hp
+			await f._turn_starts(foe)
+			_check(hp - foe.hp == Rules.SHRED_BLEED, "Shred: the foe bleeds %d a turn (%d)" % [Rules.SHRED_BLEED, hp - foe.hp])
+	await _close(hero, "shifter_%s_3_card" % form.to_lower())
+	# Shift back: 1 AP, weapons again.
+	_turn(hero)
+	f.pick_card("shift")
+	await f.press_button()
+	await _wait(0.4)
+	_check(not hero.shifted and f.cant_use(hero, Cards.get_card("attack", hero.weapon)) == "", "Shift again: back to the weapon")
+	# Pounce: the Snare springs and the Shifter leaps beside the foe.
+	_stage(hero, foe, foe2, s, dv)
+	_place(hero, s + dv * 4)
+	f._set_snare(hero, s, "")
+	_place(foe, s + dv)
+	_place(foe2, s + dv * 3)
+	await f._walk(foe, [s])
+	_check(f.on(foe, "snared") and f.dist(hero, foe) == 1, "Pounce: the Snare springs and the Shifter leaps to the foe")
+	await _close(hero, "shifter_%s_4_pounce" % form.to_lower())
 	await _bot_fight_here()
 
 

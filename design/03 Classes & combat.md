@@ -400,7 +400,7 @@ Balance flag: at 0 AP, Shrug It Off clears every status on the Brawler each turn
 
 Balance flag: at 1 AP, Command Beast's signature move (e.g. Roar, Ambush) can be used every turn alongside two other actions; check it in the balance pass.
 
-**Shifter forms** (decided Oct 22, 2026): werebeast hybrids, half-person and half-beast, chosen at level 5. Each form has its own signature card, usable only while shifted. Losing weapon cards while shifted (including the Shifter's weapon mastery) is balanced by the form's abilities.
+**Shifter forms** (decided Oct 22, 2026): werebeast hybrids, half-person and half-beast, chosen at level 5. Each form has its own signature card, usable only while shifted. Losing weapon cards while shifted (including the Shifter's weapon mastery) is balanced by the form's abilities. Ethan looked again on Nov 22, 2026 and kept Shift, the weapon swap and all three forms as written. Balance flag: a Shifter with a bow, or with mastery in their weapon, gives all of it up while shifted; check it in the balance pass. How a shifted hero looks: [Presentation](07 Presentation.md) → Art direction.
 
 | Form | Feel | Signature card | AP |
 | --- | --- | --- | --- |
@@ -675,7 +675,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 
 ## Open questions
 
-- [ ] **New (Nov 22, 2026):** the Shifter: how Shift and the werebeast forms should work in play. Ethan is rethinking them, so the Shifter stays unbuilt in the prototype until then (Pounce's no-prompt leap is decided)
+- [x] ~~The Shifter: how Shift and the werebeast forms work in play~~ (settled Nov 22, 2026: kept as written, all three forms too; see Shifter forms)
 - [ ] **New (Nov 3, 2026):** on sloped combat maps, moving uphill costs more movement (Ethan's call): for now +1 for a rise of 0.3 or more, smaller rises free, downhill normal, in whole numbers (placeholder, Nov 3, 2026). Rises up to 0.45 are ordinary moves; 0.9 or more can't be crossed without stairs. Stepping on or off a way-up landing (a 0.45 rise with steps) is an ordinary move too, costing the +1 going up (Ethan, Nov 4, 2026). Tall cliffs are climbed by a lift: hex cells rising 0.45 each, each an ordinary move (Nov 4, 2026). High ground's range bonus needs a full step up, one raised level (0.9 in the art); a half-height rise doesn't count
 - [x] ~~Sight on combat maps: low hedges and fences against town walls~~ (settled Nov 5, 2026: see Combat → Cover)
 - [x] ~~Cover on combat maps: crops and forest brush~~ (settled Nov 5, 2026: partial cover; see Combat → Cover). Whether they hide anyone stays open

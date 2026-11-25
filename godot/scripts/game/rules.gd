@@ -249,6 +249,9 @@ const BEAST_STATS := {
 const BEAST_HP_PER_LEVEL := 1            # PLACEHOLDER (03: it levels with the ranger): max HP for each level above 5
 const DIVE_TIMES := 2                    # PLACEHOLDER (03): Dive's big hit, ignoring cover
 const AMBUSH_TIMES := 2                  # PLACEHOLDER (03): Ambush's big strike from hiding, counted as from behind
+const HUNT_DOWN_DASH := 4                # DOCS (03 -> Shifter forms): Hunt Down's dash, up to 4 hexes
+const THICK_HIDE_LESS := 3               # PLACEHOLDER (03): Thick Hide's "much less damage" until your next turn
+const SHRED_BLEED := 2                   # PLACEHOLDER (03): Shred's heavy bleed, a tick, for DOT_TURNS
 
 ## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
 ## place (04 -> Shields), and Backstab is a dagger modifier, not a card (04 -> Weapon rules): [Hero name] the Fighter (longsword and

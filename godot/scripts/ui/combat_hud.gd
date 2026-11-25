@@ -336,7 +336,7 @@ func _refresh_details() -> void:
 		if k.kind == "ally":
 			label = "Cast again" if not fight.result.is_empty() else "Cast"
 		elif k.kind == "save":
-			label = "Cast"
+			label = "Use" if k.has("step") else "Cast"   # Hunt Down is a dash, not a spell (03)
 		elif k.kind == "mark":
 			label = "Use"
 		elif not fight.target.is_empty():   # the coin count on the button, before and after a flip (07)
@@ -536,7 +536,7 @@ func _refresh_hotbar() -> void:
 		return
 	# Each card keeps its slot: Edit hotbar's `hot_slots` ("" for a cleared slot) when there are any, else `hot` in order;
 	# empty slots draw as a faint outline, so the bar always has Rules.HOTBAR_SLOTS places.
-	var slots: Array = fight.current.member.get("hot_slots", fight.current.hot)
+	var slots: Array = fight.hot_slots(fight.current)   # a shifted Shifter's swap in form (03)
 	for i in Rules.HOTBAR_SLOTS:
 		var id: String = slots[i] if i < slots.size() else ""
 		_hotbar.add_child(_card_button(id, true) if id != "" else _EmptySlot.new())
@@ -700,7 +700,7 @@ func _refresh_all() -> void:
 	if fight.current.is_empty():
 		return
 	_all_title.text = "All actions · " + fight.current.name
-	for id in fight.current.cards:
+	for id in fight.cards_of(fight.current):
 		_all_grid.add_child(_card_button(id, false))
 
 

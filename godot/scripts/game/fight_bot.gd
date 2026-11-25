@@ -195,6 +195,21 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 				used["command_beast"] = used.get("command_beast", 0) + 1
 				await _settle(f)
 				continue
+		# The Shifter (03): shift once a foe is within Hunt Down's dash; Thick Hide with a foe next to it.
+		if _ready_card(f, u, "shift") and not u.shifted and f.dist(foe, u) <= Rules.HUNT_DOWN_DASH + 1:
+			f.pick_card("shift")
+			await _wait(0.05)
+			await f.press_button()
+			used["shift"] = used.get("shift", 0) + 1
+			await _settle(f)
+			continue
+		if _ready_card(f, u, "thick_hide") and f.dist(foe, u) == 1 and f.ap_left(u) == 1:
+			f.pick_card("thick_hide")
+			await _wait(0.05)
+			await f.press_button()
+			used["thick_hide"] = used.get("thick_hide", 0) + 1
+			await _settle(f)
+			continue
 		if _ready_card(f, u, "snare") and f.dist(foe, u) > 1:
 			var spots := f.cell_options(u, Cards.get_card("snare"))
 			spots.sort_custom(func(a, b): return Rules.hex_distance(a, foe.cell) < Rules.hex_distance(b, foe.cell))
@@ -222,7 +237,7 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			picked = "use_item"
 			drunk += 1
 		else:
-			var order: Array = ["faerie_fire", "lull", "firebolt", "frost_ray", "blood_bolt", "shocking_grasp", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
+			var order: Array = ["hunt_down", "shred", "rending_claws", "faerie_fire", "lull", "firebolt", "frost_ray", "blood_bolt", "shocking_grasp", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
 					"pinning_bolt", "double_shot", "haymaker", "disarm", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
 			if f.ap_left(u) >= 3 and u.ap == Rules.AP:
 				order.push_front("aimed_shot")   # a whole turn's shot, only at the start of a turn
