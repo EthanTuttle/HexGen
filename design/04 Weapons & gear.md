@@ -33,7 +33,7 @@ Armour column updated to Clothes or Armoured (Ethan, Nov 9, 2026): anyone who ha
 
 ## Armour
 
-**Reworked Nov 5, 2026 (Ethan), replacing the tiers below for heroes:** a hero is either **Armoured** or in **Clothes** (no armour). Armour sets the hero's defence, the heads foes need to hit them. **Flat since Nov 7, 2026 (Ethan)**, so players never work out halves: Clothes 1, Armoured 2, +1 with a shield. Rare armour and the feats Plate Master and Nimble add +1. (Nov 5: 1 + half CON for Armoured, half DEX in Clothes.) Armoured flips 1 fewer coin on Stealth; light, medium and heavy and their other costs are gone. Foes don't wear armour: their heads target comes from role and distance ([Classes & combat](03 Classes & combat.md) → Hit chance scaling), and those +1s are the knobs for tuning fights. How feats, Rare armour, Sunder, Fortress, armour-skipping cards and each class's armour list fit this is open. The tier rules below stand only until those are redone.
+**Reworked Nov 5, 2026 (Ethan), replacing the tiers below for heroes:** a hero is either **Armoured** or in **Clothes** (no armour). Armour sets the hero's defence, the heads foes need to hit them. **Flat since Nov 7, 2026 (Ethan)**, so players never work out halves: Clothes 1, Armoured 2, +1 with a shield. Rare armour and the feats Plate Master and Nimble add +1. (Nov 5: 1 + half CON for Armoured, half DEX in Clothes.) Armoured flips 1 fewer coin on Stealth; light, medium and heavy and their other costs are gone. Foes don't wear armour: their heads target comes from role and distance ([Classes & combat](03 Classes & combat.md) → Hit chance scaling), and those +1s are the knobs for tuning fights. How feats, Rare armour, Fortress, armour-skipping cards and each class's armour list fit this is open (Sunder and Piercing Shot were redone Nov 26, 2026: see their mastery trees). The tier rules below stand only until those are redone.
 
 How armour worked in a fight (decided Nov 1, 2026, superseded Nov 5, 2026 for heroes). Armour makes you harder to hit by taking coins away from attackers. It doesn't change the heads target, which comes from the foe's role and distance or the hero's level (see [Classes & combat](03 Classes & combat.md) → Hit chance scaling). Why coins and not heads targets: one extra heads costs about as much as losing two coins, so heads-target steps swing hit chances by 25–40 points with only 3–5 coins, while coin steps stay steady as coin counts grow. The 0-coin rule (the long shot): [Classes & combat](03 Classes & combat.md) → Coin checks.
 
@@ -50,7 +50,7 @@ How armour worked in a fight (decided Nov 1, 2026, superseded Nov 5, 2026 for he
 - **Shields** don't change hit chance (decided Nov 1, 2026). Their value is Block, which reduces damage, plus the shield cards (Fortress's "one fewer coin" stacks with armour as a card effect).
 - **Growing your defence** (decided Nov 1, 2026): some Rare or Legendary armour takes 1 more coin than its tier (e.g. heavy −4); a feat can add another −1 (Plate Master in heavy armour, CON; Nimble with no armour, DEX: [Cards & progression](05 Cards & progression.md) → General feats; mastery: open); better armour can also give damage reduction, so you still get hit but take less. There's no cap: heavy, Rare armour and a feat stack to −5. Which feat or mastery, and the damage reduction amounts: open.
 - **Enemies** use the same tiers and pay the same costs. Beasts and monsters have natural armour that counts as a tier (e.g. thick hide is light or medium; scales or stone are heavy).
-- **Cards that beat armour** (decided Nov 1, 2026): "pierces" or "ignores armour" (Piercing Shot, Heavy Bolt) means the attack skips the armour penalty entirely. "Lowers armour" (Sunder) drops the foe one tier for the rest of the fight. It stacks, each Sunder dropping another tier, down to none.
+- **Cards that beat armour** (decided Nov 1, 2026): "pierces" or "ignores armour" (Piercing Shot, Heavy Bolt) means the attack skips the armour penalty entirely. "Lowers armour" (Sunder) drops the foe one tier for the rest of the fight. It stacks, each Sunder dropping another tier, down to none. (Superseded Nov 26, 2026: Sunder now gives +1 coin on attacks against the foe for the fight, and Piercing Shot pierces a line: see Warhammer and Longbow.)
 - **Balance risk, accepted (Nov 1, 2026):** heavy takes a level-1 attacker (3 coins) to 0 coins, so heavy foes and heavy Fighters are hit only on the long shot (25%), against 88% unarmoured. That's about 3× less damage taken, which heavy pays for with movement, Stealth and DEX saves. Watch it in playtest, together with how many coins enemies flip.
 
 ## Starting gear
@@ -130,7 +130,7 @@ Training at Training Grounds (a class location: see [Cards & progression](05 Car
 
 | Node | Executioner (single target) | Sweeper (crowd) |
 | --- | --- | --- |
-| 1 | **Heavy Blade** (passive): greatsword basic attacks deal more damage | **Cleave+**: Cleave deals more damage for each extra foe it hits |
+| 1 | **Heavy Blade** (passive): greatsword basic attacks deal more damage | **Cleave+**: Cleave deals more damage for each extra foe it hits (Ethan, Nov 26, 2026: every hit deals +1 for each foe hit beyond the first, counting hits after the flips) |
 | 2 | New card: Pommel Strike (1 AP): a small hit that staggers | New card: Spinning Slash (2 AP): move and Cleave along the way |
 | 3 (capstone) | New card: Execute (2 AP): massive damage to a foe below half HP | New card: Whirlwind (3 AP): spin through a line of foes, hitting each |
 
@@ -166,7 +166,7 @@ The Volley branch (raining arrows on areas) moved to the shortbow.
 
 | Node | Sniper (range and positioning) | Deadeye (Aimed Shot upgrades) |
 | --- | --- | --- |
-| 1 | **High Ground** (passive): shooting from high ground flips an extra coin | **Piercing Shot**: Aimed Shot pierces armor (skips the armour penalty: see Armour) |
+| 1 | **High Ground** (passive): shooting from high ground flips an extra coin (Ethan, Nov 26, 2026: when you stand at least one full raised level above the target, longbow shots flip 1 extra coin and reach 2 more hexes; the general high-ground range idea in 03 stays open for everyone else) | **Piercing Shot**: Aimed Shot pierces through its target and keeps going in a line, one flip at each foe in the line, each taking the full 4× on a hit (Ethan, Nov 26, 2026; was "pierces armour", which Aimed Shot already does) |
 | 2 | New card: Overwatch (1 AP): shoot the first foe that moves in your sight next round | **Piercing Shot+**: a kill with it refunds 1 AP |
 | 3 (capstone) | **Overwatch+**: Overwatch triggers on every foe that moves | **Piercing Shot++**: it pierces through and hits every foe in a line |
 
@@ -174,7 +174,7 @@ The Volley branch (raining arrows on areas) moved to the shortbow.
 
 | Node | Volley (raining arrows on areas) | Rapid Shot (many quick shots, building on Double Shot) |
 | --- | --- | --- |
-| 1 | New card: Volley (1 AP): arrows rain on a small area | **Triple Shot**: Double Shot becomes Triple Shot |
+| 1 | New card: Volley (1 AP): arrows rain on a small area (Ethan, Nov 26, 2026: pick a hex within range; it and the 6 hexes around it are hit, one flip per foe inside, normal damage each; allies inside are safe) | **Triple Shot**: Double Shot becomes Triple Shot |
 | 2 | **Volley+**: Volley's area grows | New card: Point Blank Flurry (1 AP): no adjacent penalty for this turn's shots |
 | 3 (capstone) | New card: Blot Out the Sun (3 AP): a huge area; foes inside are blinded | New card: Barrage (2 AP): fire five arrows at one or more foes |
 
@@ -208,7 +208,7 @@ Its identity is many quick chops, often dual-wielded, in contrast to the greatax
 
 | Node | Raider (hacking) | Thrower (hurling axes) | Headsman (two-handed only: huge overhead executions) |
 | --- | --- | --- | --- |
-| 1 | **Relentless Hack**: Hack's bonus stacks with each hit on the same foe | **Throw+**: thrown axes deal more damage | **Headhunter** (passive): two-handed attacks deal bonus damage to wounded foes |
+| 1 | **Relentless Hack**: Hack's bonus stacks with each hit on the same foe (Ethan, Nov 26, 2026: the bonus is no longer spent; it lasts the fight and each Hack on that foe adds another +2 to every hit on it, by anyone) | **Throw+**: thrown axes deal more damage | **Headhunter** (passive): two-handed attacks deal bonus damage to wounded foes |
 | 2 | **Bloodrush** (passive): a kill lets you make a free move | **Throw++**: a thrown axe knocks the foe back | **Dread Reaper** (passive): a two-handed kill frightens nearby foes; WIS save |
 | 3 (capstone) | New card: Hack Apart (2 AP): consume all stacked Hack bonus for one massive chop | New card: Throw and Follow (2 AP): throw, then leap to the target and chop | New card: Behead (2 AP): instantly defeat a foe below a quarter HP; CON save to survive at 1 HP |
 
@@ -236,7 +236,7 @@ Identity: the dedicated armor and shield breaker.
 
 | Node | Siegebreaker (smashing armor, shields and cover) | Earthshaker (ground slams and knockdowns) |
 | --- | --- | --- |
-| 1 | **Sunder**: Shatter also lowers the foe's armor for the fight (one tier per Sunder, stacking: see Armour) | New card: Ground Pound (1 AP): slam the ground; adjacent foes are knocked prone; DEX save |
+| 1 | **Sunder**: Shatter also leaves the foe Sundered for the fight: every attack on it flips 1 extra coin (Ethan, Nov 26, 2026, replacing "lowers armour one tier, stacking", since foes have no armour; more Shatters don't add more) | New card: Ground Pound (1 AP): slam the ground; adjacent foes are knocked prone; DEX save |
 | 2 | New card: Breach (1 AP): smash through a wall or obstacle to open a path | **Downfall** (passive): prone foes take more damage from your hits |
 | 3 (capstone) | New card: Ram (2 AP): charge through cover and foes in a line, breaking both | New card: Cataclysm (2 AP): a huge slam; all foes nearby are knocked prone and stunned; DEX save |
 
@@ -244,7 +244,7 @@ Identity: the dedicated armor and shield breaker.
 
 | Node | Harrier (pulling, tripping and dragging foes) | Warden (controlling space and zoning) |
 | --- | --- | --- |
-| 1 | **Gaffing Hook**: a hooked foe is easier to hit this turn | **Sentinel** (passive): foes that enter your reach provoke a free attack |
+| 1 | **Gaffing Hook**: a hooked foe is easier to hit this turn (Ethan, Nov 26, 2026: every attack on it, by anyone, flips 1 extra coin until your turn ends) | **Sentinel** (passive): foes that enter your reach provoke a free attack |
 | 2 | New card: Trip (1 AP): hook a foe's legs so it falls prone; DEX save | **Thicket of Steel** (passive): foes in your reach are slowed |
 | 3 (capstone) | New card: Into the Fray (2 AP): hook a foe into your allies; each adjacent ally gets a free attack | New card: Iron Perimeter (2 AP): every foe entering your reach this round is struck and stopped |
 
