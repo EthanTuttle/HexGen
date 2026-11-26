@@ -181,8 +181,8 @@ def golems(material="stone"):
     k = (hb.RACES["golem"]["k"] + 1) / 2
     z0 = sm.BASE_H + 0.005
 
-    def form(t, col, name, at, spin):
-        ob, _ = rb.beast(t, f"shifter_{name}_golem_{material}_average", hero["colours"], name, col, at, spin)
+    def form(t, col, name, at, spin, build="average"):
+        ob, _ = rb.beast(t, f"shifter_{name}_golem_{material}_{build}", hero["colours"], f"{name}_{build}", col, at, spin)
         for v in ob.data.vertices:
             if v.co.z > sm.BASE_H + 0.004:
                 v.co = Vector((v.co.x * k, v.co.y * k, z0 + (v.co.z - z0) * k))
@@ -207,7 +207,12 @@ def golems(material="stone"):
     for i, name in enumerate(ALLY):
         form(t, col, name, (1.1 * i - 0.45, 0, 0), 0)
     rh.shot(f"shifter_golem_{material}_combat", Vector((0, 0, 0.5)), 9, 50, (1800, 700))
-    fm.sheet(stems[:2] + [f"shifter_golem_{material}_combat"], f"shifter_golem_{material}", cols=1)
+    t, col = start()  # the builds: each form slim, average and broad
+    for j, name in enumerate(ALLY):
+        for i, b in enumerate(hb.BUILDS):
+            form(t, col, name, (0.95 * (i - 1) + 3.1 * (j - 1), 0, 0), -28, b)
+    rh.shot(f"shifter_golem_{material}_builds", Vector((0, 0, 0.6)), 14.5, 12, (1800, 700))
+    fm.sheet(stems[:2] + [f"shifter_golem_{material}_builds", f"shifter_golem_{material}_combat"], f"shifter_golem_{material}", cols=1)
     rb.sheet_full(stems[2:], f"shifter_golem_{material}_close", cols=3)
 
 

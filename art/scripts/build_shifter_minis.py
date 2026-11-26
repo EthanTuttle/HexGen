@@ -92,11 +92,13 @@ def warp_build(p, build, head_at, head_r=0.2):
 # Golem forms (07 -> Shifter forms -> Golems, Ethan, Nov 26, 2026): the same wolf, bear or cat shape rebuilt in the golem's
 # own material, as the golem kit's golems are (golem_kit.py, kit v14). The shape is the approved form's; golem_dress swaps its
 # paints for the material's and adds the material's own pieces.
-def golem_dress(p, material, head_at, joints, size=1.0):
+def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
+    leaves = 8 if lean else 14
     """Stone, the cairn: the fur's shades become the stone swatch (skin zone), so the coat reads as grey stone lit from
     above; the eyes and the mouth glow in the eyes swatch, as the golems' do; claws and fangs are pale stone chips; the
-    torn trousers become a stone hip band. The scarf stays in the ranger's cloth. A rounded stone sits at every shoulder,
-    elbow, hip and knee, like the cairn's stacked joints, and moss grows on the head, the shoulders and the hump."""
+    torn trousers become a stone hip band, with no hems. v2 (Ethan, Nov 26, 2026): the scarf is a sash of moss and vine
+    in the hero's cloth; shards only on the back and shoulders; a rounded stone at each shoulder and knee, like the
+    cairn's stacked joints, and flat clumps of moss on the head and shoulders, trimmed to the fur forms' count."""
     if material != "stone":
         raise ValueError(material)
     for i, m in enumerate(p.mats):
@@ -126,12 +128,24 @@ def golem_dress(p, material, head_at, joints, size=1.0):
         tone = rnd.Random(hash(cell)).choice((0.8, 0.88, 0.94, 1.0, 1.06))
         lit = 1.06 if face.normal.z > 0.4 else 0.9 if face.normal.z > -0.3 else 0.74
         face.material_index = p._slot(zone("skin", round(tone * lit, 2)))
+    # The ranger's scarf becomes a sash of moss and vine in the hero's cloth colour (Ethan, Nov 26, 2026): the band keeps
+    # its shape, sprouting leaves along it.
+    scarf_slots = {i for i, m in enumerate(p.mats) if m.startswith("hz_") and int(m[3:5], 16) // 20 == hb.ZONES["cloth"]
+                   and int(m[5:7], 16) / 100 >= 0.7}
+    sash = [f for f in p.bm.faces if f.material_index in scarf_slots]
+    for k, face in enumerate(sash[::max(1, len(sash) // leaves)]):
+        c, n = face.calc_center_median(), face.normal
+        tip = c + n * 0.04 + V((0, 0, 0.012 * (k % 2)))
+        vr.spike(p, c, tip, 0.014, zone("cloth", (0.8, 1.15)[k % 2]), segments=3)
+    # A joint stone at each shoulder and knee only (trimmed to the fur forms' triangle count), moss in flat clumps.
     for k, q in enumerate(joints):
-        r = (0.11 if k % 2 == 0 else 0.085) * size
-        gk.pebble(p, q - V((0, 0, r * 0.7)), r * 1.25, r * 1.2, r * 1.5, sides=6, rings=3)
-    for q, r in ((head_at + V((0.02, 0.04, 0.09)), 0.05), (joints[0] + V((0, 0.02, 0.07)), 0.045), (joints[2] + V((0, 0.02, 0.07)), 0.045),
-                 (V((-0.06, joints[0].y + 0.12, joints[0].z + 0.08)), 0.055)):
-        p.blob(q, r, "gl_moss", squash=0.42)
+        if k % 2 == 1 and k < 4 or k % 2 == 0 and k >= 4 or (lean and k >= 4):
+            continue  # elbows and hips go without (and a lean form's knees)
+        r = 0.1 * size
+        gk.pebble(p, q - V((0, 0, r * 0.7)), r * 1.25, r * 1.2, r * 1.5, sides=5, rings=3)
+    moss = [(head_at + V((0.02, 0.04, 0.09)), 0.05), (joints[0] + V((0, 0.02, 0.07)), 0.045), (joints[2] + V((0, 0.02, 0.07)), 0.045)]
+    for q, r in moss[:1] if lean else moss:
+        gk.pebble(p, q, r * 1.2, r * 1.1, r * 0.5, paint=lambda c, n: "gl_moss", sides=5, rings=3)
 
 
 def werewolf(col, build="average", material=None):
@@ -159,6 +173,8 @@ def werewolf(col, build="average", material=None):
         return fur
 
     def tuft(q, d, r=0.05, paint=None):
+        if material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.85):  # a golem keeps shards on its back and shoulders only
+            return
         vr.spike(p, q, q + d, r, paint or back, segments=3)
 
     # The torso, hunched hard forward: hips, a narrow waist, a barrel chest, the shoulders broad and high.
@@ -292,7 +308,8 @@ def werewolf(col, build="average", material=None):
         for k in range(4):  # the trouser leg torn off high, ragged strips hanging from it
             a = math.radians(40 + k * 70) * x
             q = hem + V((math.sin(a) * 0.12 * x, -math.cos(a) * 0.1, 0))
-            vr.spike(p, q, q + V((0, 0, -0.09 + 0.02 * (k % 2))), 0.035, cloth_d, segments=3)
+            if not material:  # the ragged hems; a golem has none
+                vr.spike(p, q, q + V((0, 0, -0.09 + 0.02 * (k % 2))), 0.035, cloth_d, segments=3)
         shin = (hock - knee).normalized()
         calf = knee.lerp(hock, 0.28) + shin.cross(V((x, 0, 0))).normalized() * 0.035  # behind the shin
         p.blob(calf, 0.09, fur, squash=1.15)
@@ -338,6 +355,8 @@ def werebear(col, build="average", material=None):
         return fur
 
     def tuft(q, d, r=0.05, paint=None):
+        if material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.9):  # a golem keeps shards on its back and shoulders only
+            return
         vr.spike(p, q, q + d, r, paint or back, segments=3)
 
     # The torso, upright and leaning in a little: wide hips, a heavy belly, a barrel chest, massive shoulders.
@@ -450,7 +469,8 @@ def werebear(col, build="average", material=None):
         for k in range(4):  # the trouser leg torn off, ragged strips
             a = math.radians(40 + k * 70) * x
             q = hem + V((math.sin(a) * 0.15 * x, -math.cos(a) * 0.13, 0))
-            vr.spike(p, q, q + V((0, 0, -0.09 + 0.02 * (k % 2))), 0.04, cloth_d, segments=3)
+            if not material:  # the ragged hems; a golem has none
+                vr.spike(p, q, q + V((0, 0, -0.09 + 0.02 * (k % 2))), 0.04, cloth_d, segments=3)
         tuft(knee.lerp(ankle, 0.4) + V((0, 0.07, 0)), V((x * 0.03, 0.07, -0.05)), 0.045)
         foot = at(x * 0.19, -0.03 + step, 0.04)
         em.loft(p, [em.section(foot + V((0, 0.08, 0)), 0.075, 0.045, sides=6), em.section(foot, 0.09, 0.05, sides=6),
@@ -490,6 +510,8 @@ def werecat(col, build="average", material=None):
         return fur
 
     def tuft(q, d, r=0.035, paint=None):
+        if material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.7):  # a golem keeps shards on its back and shoulders only
+            return
         vr.spike(p, q, q + d, r, paint or back, segments=3)
 
     def stripe(a, b_, r=0.012):
@@ -613,7 +635,8 @@ def werecat(col, build="average", material=None):
         for k in range(3):
             a = math.radians(50 + k * 80) * x
             q = hem + V((math.sin(a) * 0.09 * x, -math.cos(a) * 0.08, 0))
-            vr.spike(p, q, q + V((0, 0, -0.06)), 0.025, cloth_d, segments=3)
+            if not material:  # the ragged hems; a golem has none
+                vr.spike(p, q, q + V((0, 0, -0.06)), 0.025, cloth_d, segments=3)
         stripe(knee.lerp(hock, 0.3) + V((x * 0.04, 0, 0)), knee.lerp(hock, 0.3) + V((-x * 0.01, 0.04, 0.02)))
         # v5 (Ethan, Nov 26, 2026: the feet were off): big soft cat paws like the ally panther's, four rounded toes,
         # the claws tucked in.
@@ -625,7 +648,7 @@ def werecat(col, build="average", material=None):
     pts = [at(0, 0.1, 0.5), at(0.06, 0.24, 0.47), at(0.16, 0.32, 0.56), at(0.21, 0.3, 0.7), at(0.2, 0.24, 0.82), at(0.16, 0.2, 0.86)]
     em.limb(p, pts, [0.04, 0.038, 0.035, 0.032, 0.028, 0.0], [fur, fur, dark, fur, dark], sides=6)
     if material:
-        golem_dress(p, material, hc, joints, size=0.8)
+        golem_dress(p, material, hc, joints, size=0.8, lean=True)
     warp_build(p, build, hc)
     return p.finish(col)
 
@@ -634,7 +657,7 @@ def build():
     hk.empty_scene()
     col = hk.new_collection("shifter_minis")
     for make in (werewolf, werebear, werecat):
-        for build, material in [(b, None) for b in hb.BUILDS] + [("average", "stone")]:
+        for build, material in [(b, m) for m in (None, "stone") for b in hb.BUILDS]:
             ob = make(col, build, material)
             ob.data.calc_loop_triangles()
             print("TRIS", ob.name, len(ob.data.loop_triangles))
