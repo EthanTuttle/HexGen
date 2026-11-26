@@ -475,10 +475,10 @@ def werecat(col, build="average"):
     em.limb(p, [at(-0.07, -0.2, 0.92), at(-0.1, -0.08, 0.94), at(-0.12, 0.04, 0.9), at(-0.12, 0.14, 0.82)], [0.032, 0.03, 0.025, 0.0],
             [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
-    # Arms (v2, Ethan, Nov 26, 2026): wide, both upper arms out to the sides about 7 degrees below level, the elbows bent
-    # to 100 degrees so the forearms reach forward, the palms facing in toward each other and turned about 7 degrees up,
+    # Arms (v2-v3, Ethan, Nov 26, 2026): an A pose, both upper arms out and angled 40 degrees down, the elbows bent to
+    # 100 degrees so the forearms reach forward, the palms facing in toward each other and turned about 7 degrees up,
     # thumbs on top, claws out.
-    drop = math.radians(7.5)
+    drop, tilt = math.radians(40), math.radians(7.5)
     for x in SIDE:
         s = at(x * 0.18, -0.2, 0.85)
         upper = V((x * math.cos(drop), 0, -math.sin(drop)))
@@ -489,7 +489,7 @@ def werecat(col, build="average"):
         tuft(e, V((x * 0.03, 0.05, -0.04)), 0.032)
         stripe(s.lerp(e, 0.6) + V((0, 0, 0.05)), s.lerp(e, 0.6) + V((0, 0.04, -0.03)))
         stripe(e.lerp(w_, 0.45) + V((0, 0, 0.04)), e.lerp(w_, 0.45) + V((x * 0.04, 0, -0.02)))
-        hand(w_, fore, V((-x * math.cos(drop), 0, math.sin(drop))), V((0, 0, 1)))
+        hand(w_, fore, V((-x * math.cos(tilt), 0, math.sin(tilt))), V((0, 0, 1)))
 
     # Torn trousers in the ranger's cloth and a belt (07: torn remnants of gear).
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
