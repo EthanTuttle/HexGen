@@ -225,3 +225,7 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-12 | `basilisk-nov10/ruins_nest_night.png` (Godot) | approved | Basilisk Nest in game at night: crack glow fine as is |
 | 2026-11-12 | `art/preview/place_east_rime_chapel_day_none_wide_v3.png` | note | Chapel v3 direction close; make the hexes the paths and let them shape buildings, walls and objects instead of sitting on top; statue/banners follow the player's god; plain gap, no lychgate |
 | 2026-11-12 | `art/preview/ruins_colonnade_sheet_v1.png` | approved | Basilisk ruins as the colonnade field: column grids with lintels and stumps, statue parties in gaps, lichen on tops; Nest unchanged. Replaces tiles_v95 halls |
+| 2026-11-25 | `art/preview/shifter_werewolf_v2.png` | note | Werewolf: head far too big for the torso, legs off; rebuild from his reference (sculpted werewolf: small low head under a big mane, long arms, heavy legs) |
+| 2026-11-25 | `art/preview/shifter_werewolf_v4.png` | note | Torso and head much better; tweak the legs and the hands |
+| 2026-11-26 | `art/preview/shifter_werewolf_solo_v5.png` | note | Hands inverted (palm out, thumb inside): turn them so the palm faces the body, angled slightly down |
+| 2026-11-26 | `art/preview/shifter_werewolf_v6.png`, `shifter_werewolf_solo_v6.png` | approved | Werewolf form (average build), hands turned as real hands rest. Next: the werebear |
