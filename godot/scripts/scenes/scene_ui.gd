@@ -200,7 +200,7 @@ class DarkCard extends Control:
 	func _draw() -> void:
 		draw_style_box(UI.box(UI.DARK_EDGE, 12), Rect2(Vector2(0, 4), size))
 		draw_style_box(UI.box(UI.DARK, 12), Rect2(Vector2.ZERO, size))
-		draw_texture_rect(UI.icon(ICONS.back, UI.CREAM, 22, 2.6), Rect2(size.x * 0.5 - 11, 34, 22, 22), false)
+		draw_texture_rect(UI.sharp_icon(ICONS.back, UI.CREAM, 22, 2.6), Rect2(size.x * 0.5 - 11, 34, 22, 22), false)
 		var f := UI.font("n900")
 		var w := f.get_string_size(words, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 		draw_string(f, Vector2((size.x - w) * 0.5, 76), words, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UI.CREAM)

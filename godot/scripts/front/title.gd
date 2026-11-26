@@ -49,12 +49,13 @@ func _ready() -> void:
 
 ## Title v11's buttons: Continue (the latest autosave, with its hero, level, place and time under it), New campaign, then Load
 ## and Multiplayer in a row. With no save, New campaign is the main button and Continue and Load stay hidden (DOCS: first
-## launch). Built again when Load deletes a hero's saves.
-func _build_buttons(rise := false) -> void:
+## launch). Built again when Load deletes a hero's saves. heroes: in place of the saves on disk (the front check's
+## title with a save).
+func _build_buttons(rise := false, heroes: Array = Saves.heroes()) -> void:
 	for b in _buttons:
 		b.queue_free()
 	_buttons.clear()
-	var heroes := Saves.heroes().filter(func(h): return not h.autos.is_empty() or h.slots.any(func(s): return not s.is_empty()))
+	heroes = heroes.filter(func(h): return not h.autos.is_empty() or h.slots.any(func(s): return not s.is_empty()))
 	var latest: Dictionary = heroes[0] if not heroes.is_empty() else {}
 	var last := 390.0 - 22.0 - 38.0
 	if latest.is_empty():
@@ -79,19 +80,14 @@ func _build_buttons(rise := false) -> void:
 		cont.add_child(lines)
 		_add(cont, last - 10 - 38 - 10 - 62, func(): _continue(latest), rise, 0.15)
 	_add(_button("New campaign", 38, false), last - 10 - 38, func(): new_campaign.emit(), rise, 0.25)
-	var load := _button("Load", 38, false)
-	load.custom_minimum_size.x = 230 - 10 - 142
-	load.size.x = load.custom_minimum_size.x
-	_add(load, last, _open_load, rise, 0.35)
-	var mp := _button("Multiplayer", 38, false)
-	mp.custom_minimum_size.x = 142
-	mp.size.x = 142
-	_add(mp, last, _not_yet, rise, 0.35)
-	mp.position.x = 230 - 142
+	_add(_button("Load", 38, false, 230 - 10 - 142), last, _open_load, rise, 0.35)
+	_add(_button("Multiplayer", 38, false, 142), last, _not_yet, rise, 0.35, 230 - 142)
 
 
-func _add(b: TagButton, y: float, on_press: Callable, rise: bool, delay: float) -> void:
-	UI.at(b, 0, y)
+## y in the mockup's 844 x 390: the buttons keep their distance from the bottom edge, so on a taller screen they stay
+## at the bottom (design/07 -> Screen sizes).
+func _add(b: TagButton, y: float, on_press: Callable, rise: bool, delay: float, x := 0.0) -> void:
+	UI.at_bottom(b, x, y)
 	b.accessibility_name = b.text if b.text != "" else "Continue"
 	b.pressed.connect(on_press)
 	_left.add_child(b)
@@ -123,8 +119,8 @@ func _place_left() -> void:
 	_left.position.x = maxf(LEFT - inset, LEFT_IN_SAFE)
 
 
-func _button(text: String, h: float, primary: bool) -> TagButton:
-	var b := TagButton.make(text, 230, h, 20 if primary else 16)
+func _button(text: String, h: float, primary: bool, w := 230.0) -> TagButton:
+	var b := TagButton.make(text, w, h, 20 if primary else 16)
 	b.cut = 16.0 if primary else 13.0
 	if primary:
 		b.ink = UI.CREAM_LIGHT
@@ -139,12 +135,17 @@ func _button(text: String, h: float, primary: bool) -> TagButton:
 
 
 ## CSS rise: up 14 px and fading in, after a delay.
+## Fades c in as it rises 14 into place. It moves the offsets, not the position, so a piece pinned to the bottom edge
+## lands right even if the screen's size isn't known yet.
 func _rise(c: Control, seconds: float, delay: float) -> void:
-	var y := c.position.y
-	c.position.y = y + 14.0
+	var top := c.offset_top
+	var bottom := c.offset_bottom
+	c.offset_top = top + 14.0
+	c.offset_bottom = bottom + 14.0
 	c.modulate.a = 0.0
 	var tw := c.create_tween().set_parallel().set_ease(Tween.EASE_OUT)
-	tw.tween_property(c, "position:y", y, seconds).set_delay(delay)
+	tw.tween_property(c, "offset_top", top, seconds).set_delay(delay)
+	tw.tween_property(c, "offset_bottom", bottom, seconds).set_delay(delay)
 	tw.tween_property(c, "modulate:a", 1.0, seconds).set_delay(delay)
 
 
