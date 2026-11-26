@@ -46,6 +46,48 @@ zone = hb.zone
 hk.PALETTE.update({"claw": "#E6DCC6", "fang": "#F4F0E6", "belt": "#5B4634", "buckle": "#B8A06A"})
 
 
+# The builds (07 -> Shifter forms: one body per form in each build). Each form is modelled in the average build; slim and
+# broad are warped from it by the hero kit's build factors (build_hero_kit.BUILDS), softened for a beast: wider or narrower
+# and deeper or shallower through the body, a little taller or shorter, the head scaled on its own so it keeps its shape.
+# Past the shoulders the widening eases off, so the arms move with the body but stay over the base. The average build is
+# left exactly as approved.
+BUILD_WARP = {b: dict(width=1 + (f["sw"] - 1) * 0.8, depth=1 + (f["depth"] - 1) * 0.6, up=f["up"], head=f["head"])
+              for b, f in hb.BUILDS.items() if b != "average"}
+
+
+def warp_build(p, build, head_at, head_r=0.2):
+    w = BUILD_WARP.get(build)
+    if not w:
+        return
+    top = sm.BASE_H + 0.004
+    body = [v for v in p.bm.verts if v.co.z > top]
+    bins = {}
+    for v in body:
+        if abs(v.co.x) < 0.12 and (v.co - head_at).length > head_r * 1.4:
+            bins.setdefault(round(v.co.z / 0.05), []).append(v.co.y)
+    centre = {k: sum(ys) / len(ys) for k, ys in bins.items()}
+    keys = sorted(centre)
+
+    def centre_y(z):
+        k = round(z / 0.05)
+        near = min(keys, key=lambda j: abs(j - k))
+        return centre[near]
+
+    def warp(c):
+        ax = abs(c.x)
+        x = (ax * w["width"] if ax < 0.22 else 0.22 * w["width"] + (ax - 0.22) * (1 + (w["width"] - 1) * 0.4)) * (1 if c.x >= 0 else -1)
+        cy = centre_y(c.z)
+        return V((x, cy + (c.y - cy) * w["depth"], Z0 + (c.z - Z0) * w["up"]))
+    new_head = warp(head_at)
+    for v in body:
+        d = (v.co - head_at).length
+        t = 1.0 if d < head_r else 0.0 if d > head_r * 1.4 else 1 - (d - head_r) / (head_r * 0.4)
+        moved = warp(v.co)
+        if t > 0:
+            moved = moved.lerp(new_head + (v.co - head_at) * w["head"], t)
+        v.co = moved
+
+
 def werewolf(col, build="average"):
     """v3 (Ethan, Nov 25, 2026: the head was far too big for the torso, and the legs were off; his reference: a sculpted
     werewolf statue, for proportion and mood only). A small, low head with a short broad snarling muzzle, jutting forward
@@ -219,6 +261,7 @@ def werewolf(col, build="average"):
     # Tail: a thick brush low behind, swept out to the side, clear of the back leg, a dark tip.
     em.limb(p, [at(0, 0.14, 0.56), at(0.07, 0.24, 0.5), at(0.15, 0.31, 0.38), at(0.19, 0.33, 0.27)], [0.05, 0.08, 0.065, 0.0],
             [fur, fur, dark], sides=6)
+    warp_build(p, build, hc)
     return p.finish(col)
 
 
@@ -364,6 +407,7 @@ def werebear(col, build="average"):
 
     # A stub of a tail.
     p.blob(at(0, 0.2, 0.58), 0.06, back, squash=0.8)
+    warp_build(p, build, hc)
     return p.finish(col)
 
 
@@ -521,6 +565,7 @@ def werecat(col, build="average"):
     # The tail: long, out behind and curling up, dark rings toward a dark tip.
     pts = [at(0, 0.1, 0.5), at(0.06, 0.24, 0.47), at(0.16, 0.32, 0.56), at(0.21, 0.3, 0.7), at(0.2, 0.24, 0.82), at(0.16, 0.2, 0.86)]
     em.limb(p, pts, [0.04, 0.038, 0.035, 0.032, 0.028, 0.0], [fur, fur, dark, fur, dark], sides=6)
+    warp_build(p, build, hc)
     return p.finish(col)
 
 
@@ -528,9 +573,10 @@ def build():
     hk.empty_scene()
     col = hk.new_collection("shifter_minis")
     for make in (werewolf, werebear, werecat):
-        ob = make(col)
-        ob.data.calc_loop_triangles()
-        print("TRIS", ob.name, len(ob.data.loop_triangles))
+        for build in hb.BUILDS:
+            ob = make(col, build)
+            ob.data.calc_loop_triangles()
+            print("TRIS", ob.name, len(ob.data.loop_triangles))
     path = hk.next_version(os.path.join(hk.ART, "minis", "heroes"), "shifter_minis")
     bpy.ops.wm.save_as_mainfile(filepath=path)
     print("SAVED", path)

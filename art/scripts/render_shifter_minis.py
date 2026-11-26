@@ -1,7 +1,7 @@
 """Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the matching ally beast, from three
 sides; the form in three heroes' colours; the form alone, large; and the line-up at the combat camera.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf | builds | races]
 Uses the latest shifter_minis, hero_kit and beast_minis. Writes art/preview/shifter_<form>_*_vN.png and the sheets
 shifter_<form>_vN.png (line-ups and colours) and shifter_<form>_solo_vN.png.
 """
@@ -14,6 +14,7 @@ import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
 import build_hero_kit as hb  # noqa: E402
+import build_standin_minis as sm  # noqa: E402
 import hexkit as hk  # noqa: E402
 import render_beast_minis as rb  # noqa: E402
 import render_forest_maps as fm  # noqa: E402
@@ -91,6 +92,87 @@ def solo(form):
     rb.sheet_full(stems, f"shifter_{form}_solo", cols=3)
 
 
+def builds():
+    """Each form in the slim, average and broad builds, beside the human hero in the same three builds, three-quarter
+    and side on, and the whole set at the combat camera: shifter_builds_vN.png."""
+    stems = []
+    for form in ALLY:
+        for spin, tag in ((-28, "three"), (-90, "side")):
+            t, col = start()
+            for i, b in enumerate(hb.BUILDS):
+                if tag == "three":  # the hero in the same build beside each form; side on, the forms alone
+                    rh.stand(t, col, dict(SHIFTER, build=b), f"hero_{b}", at=(2.3 * (i - 1) - 0.55, 0.0, 0), spin=spin)
+                    at_ = (2.3 * (i - 1) + 0.55, 0, 0)
+                else:
+                    at_ = (1.3 * (i - 1), 0, 0)
+                rb.beast(t, f"shifter_{form}_{b}", SHIFTER["colours"], f"{form}_{b}", col, at_, spin)
+            stem = f"shifter_builds_{form}_{tag}"
+            rh.shot(stem, Vector((0, 0, 0.6)), 10.5 if tag == "three" else 7.0, 12, (1800, 700))
+            stems.append(stem)
+    fm.sheet(stems, "shifter_builds", cols=2)
+    t, col = start()
+    for j, form in enumerate(ALLY):
+        for i, b in enumerate(hb.BUILDS):
+            rb.beast(t, f"shifter_{form}_{b}", SHIFTER["colours"], f"{form}_{b}", col, (1.0 * (i - 1) + 3.3 * (j - 1), 0, 0), 0)
+    rh.shot("shifter_builds_combat", Vector((0, 0, 0.5)), 14, 50, (1800, 600))
+
+
+# The races from shortest to tallest (build_hero_kit.RACES k), each hero as a light-armoured ranger with a shortbow.
+RACE_ORDER = sorted(hb.RACES, key=lambda r: (hb.RACES[r]["k"], r))
+
+
+def race_hero(race):
+    skin = hb.DRAGON_TYPES["red"] if race == "dragonborn" else S["skin"]["golem_stone"][0] if race == "golem" else S["skin"][race][1]
+    hair = None if race in hb.HAIRLESS else "short"
+    desc = rh.hero(race, "average", "a", hair, skin, S["hair"][1], S["eyes"][3], S["cloth"][2], "light", "shortbow")
+    if race == "golem":
+        desc["subtype"] = "stone"
+    return desc
+
+
+def form_at_race(t, col, form, race, name, at, spin):
+    """The average form in the race's hero's colours, scaled to the race's height as the hero kit scales its bodies
+    (build_hero_kit.full: everything above the base, k times about the base's top). Dragonborn fur takes the dragon type's
+    colour (07); golems use the furred form as a stand-in until their material forms exist."""
+    desc = race_hero(race)
+    colours = dict(desc["colours"])
+    if race == "dragonborn":
+        colours["hair"] = colours["skin"]
+    elif race == "golem":
+        colours["skin"] = S["skin"]["human"][1]
+    ob, _ = rb.beast(t, f"shifter_{form}_average", colours, name, col, at, spin)
+    top, k = sm.BASE_H + 0.004, (hb.RACES[race]["k"] + 1) / 2  # eased halfway toward human (Ethan, Nov 26, 2026); shifter_races_v1 used the full factor
+    z0 = sm.BASE_H + 0.005
+    for v in ob.data.vertices:
+        if v.co.z > top:
+            v.co = Vector((v.co.x * k, v.co.y * k, z0 + (v.co.z - z0) * k))
+    return ob
+
+
+def races():
+    """Each form's average build at every race's height, beside that race's hero, shortest to tallest, then the werebear
+    (the biggest) at every race from the combat camera: shifter_races_vN.png."""
+    stems = []
+    for form in ALLY:
+        t, col = start()
+        for i, race in enumerate(RACE_ORDER):
+            x = 1.75 * (i - (len(RACE_ORDER) - 1) / 2)
+            rh.stand(t, col, race_hero(race), f"hero_{race}", at=(x - 0.45, 0.0, 0), spin=-28)
+            form_at_race(t, col, form, race, f"{form}_{race}", (x + 0.45, 0, 0), -28)
+        stem = f"shifter_races_{form}"
+        rh.shot(stem, Vector((0, 0, 0.6)), 17.5, 8, (2400, 560))
+        stems.append(stem)
+    t, col = start()
+    for i, race in enumerate(RACE_ORDER):
+        x = 1.75 * (i - (len(RACE_ORDER) - 1) / 2)
+        rh.stand(t, col, race_hero(race), f"hero_{race}", at=(x - 0.45, 0.0, 0), spin=0)
+        form_at_race(t, col, "werebear", race, f"werebear_{race}", (x + 0.45, 0, 0), 0)
+    rh.shot("shifter_races_combat", Vector((0, 0, 0.5)), 19, 50, (2400, 560))
+    stems.append("shifter_races_combat")
+    fm.sheet(stems, "shifter_races", cols=1)
+    print("RACES", RACE_ORDER)
+
+
 if __name__ == "__main__":
     for name in (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["werewolf"]):
-        render(name)
+        {"builds": builds, "races": races}.get(name, lambda: render(name))()

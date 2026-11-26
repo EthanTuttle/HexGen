@@ -236,3 +236,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-26 | `art/preview/shifter_werecat_v3.png` | note | Close; angle the forearms up too |
 | 2026-11-26 | `art/preview/shifter_werecat_v4.png` | note | Feet a little off; picked big soft cat paws with the claws tucked in |
 | 2026-11-26 | `art/preview/shifter_werecat_v5.png`, `shifter_werecat_solo_v5.png` | approved | Werecat form (average build): A-pose arms, forearms 30 degrees up, big soft paws. Commit and merge |
+| 2026-11-26 | `art/preview/shifter_builds_v1.png`, `shifter_builds_combat_v1.png` | approved | Shifter slim and broad builds of all three forms (shifter_minis_v14, nine pieces). Merge |
+| 2026-11-26 | `art/preview/shifter_races_v1.png` | note | Race heights should differ, but ease them halfway toward human: scale = (race factor + 1) / 2 (halfling ~0.87, dwarf 0.92, dragonborn 1.04). Red dragonborn whole coat kept |

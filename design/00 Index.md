@@ -41,7 +41,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 - [x] ~~The Shifter's Shift and werebeast forms~~ (settled Nov 22, 2026: kept as written; [Classes & combat](03 Classes & combat.md))
 - [x] ~~Element pick pop-up for Infuse and Primal Snare~~ (approved Nov 22, 2026: [Presentation](07 Presentation.md) → Combat screen)
-- [ ] New (Nov 25): Shifter forms' look is chosen (upright werebeasts in the hero's colours, bigger on one cell, torn gear remnants). Still open: fur for races without hair (dragonborn, golems), how shifting shows on the board, each form's pose (see Presentation → Shifter forms)
+- [x] ~~New (Nov 25): Shifter forms' open points~~ (settled Nov 26, 2026: dragonborn fur in the dragon type's colour, golem forms rebuilt in their material, shifting grows with a puff, poses from the approved minis; see Presentation → Shifter forms)
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: Buried city: storm timing, quests when the library is buried, walking on the changing sand (see Map & exploration)
 - [ ] New (Nov 8): ruins rethought as dungeon terrain: every landmark a dungeon, Fight and Discovery encounters only; variants now Overrun outpost → Warren, Haunted ruins → Crypt, basilisk ruins → Basilisk Nest, trapped vault → Vault (see Map & exploration → Region variants). Still open: each dungeon's rooms, the ruins encounter entries, looks for the three new variants and landmarks (see Presentation)
@@ -93,7 +93,7 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 - [x] ~~Teleportation rune vs "no fast travel"~~ (settled Oct 23: "the party walks" rule dropped)
 
 **Classes & combat**
-- [ ] New (Nov 5, 2026): armour reworked to Armoured (2 heads, 3 with a shield) or Clothes (heads = DEX). Redo to fit it: Plate Master and Nimble, Rare armour's extra coin, Sunder, Fortress, armour-skipping cards, each class's armour list (light, medium, heavy), and the hit chance tables in 03
+- [ ] New (Nov 5, 2026): armour reworked to Armoured (2 heads, 3 with a shield) or Clothes (heads = DEX). Redo to fit it: Plate Master and Nimble, Rare armour's extra coin, Fortress, armour-skipping cards (Sunder and Piercing Shot redone Nov 26), each class's armour list (light, medium, heavy), and the hit chance tables in 03
 - [ ] New (Nov 5, 2026): Companion ranger's beast in the prototype: stats (HP, damage, Move), how it levels, and the level-5 subclass pick; four ally beast minis are being drafted
 - [ ] New (Nov 5, 2026): check the combat details panel fits everything it can show at its shorter height (7 slots, shorter panel and starting hotbar chosen Nov 5, 2026: see Presentation → Combat screen and Action cards screen)
 - [ ] New (Nov 5, 2026): cover: do crops and brush hide anyone? (Below 1 coin: the long shot, settled Nov 5, 2026.) Combat map art needs per-cell data for fences and walls
