@@ -370,7 +370,7 @@ def werebear(col, build="average"):
 def werecat(col, build="average"):
     """The burst form (Shred): a lean, low big cat on its hind legs, crouched to spring. A round cat's head with big
     upright ears, slit pupils and a short muzzle, hissing, on a slim neck; narrow shoulders and a deep, narrow chest over
-    a tight waist; both arms held wide, forearms reaching forward, palms in and claws out; slim crouched hind legs on light feet; a long tail curling up behind. Short sleek fur,
+    a tight waist; both arms held wide, forearms reaching forward, palms in and claws out; slim crouched hind legs on big soft paws; a long tail curling up behind. Short sleek fur,
     a few tufts at the cheeks and elbows, dark tabby stripes on the back and limbs."""
     p = hk.Piece(f"shifter_werecat_{build}")
     sm.base(p, "ring_hero")
@@ -504,7 +504,7 @@ def werecat(col, build="average"):
             (-1, at(-0.09, 0.05, 0.48), at(-0.15, -0.18, 0.35), at(-0.13, 0.0, 0.15), at(-0.13, -0.12, 0.035)))
     for x, hip, knee, hock, ball in legs:
         hem = hip.lerp(knee, 0.35)
-        em.limb(p, [hip, hem, knee, knee.lerp(hock, 0.4), hock, ball], [0.11, 0.105, 0.072, 0.055, 0.034, 0.03], [cloth, fur, fur, fur, fur], sides=6)
+        em.limb(p, [hip, hem, knee, knee.lerp(hock, 0.4), hock, ball], [0.11, 0.105, 0.072, 0.058, 0.045, 0.042], [cloth, fur, fur, fur, fur], sides=6)
         p.blob(hip.lerp(knee, 0.6), 0.088, fur, squash=0.9)
         p.blob(knee.lerp(hock, 0.3) + (hock - knee).normalized().cross(V((x, 0, 0))) * 0.025, 0.055, fur, squash=1.2)  # the calf
         for k in range(3):
@@ -512,12 +512,11 @@ def werecat(col, build="average"):
             q = hem + V((math.sin(a) * 0.09 * x, -math.cos(a) * 0.08, 0))
             vr.spike(p, q, q + V((0, 0, -0.06)), 0.025, cloth_d, segments=3)
         stripe(knee.lerp(hock, 0.3) + V((x * 0.04, 0, 0)), knee.lerp(hock, 0.3) + V((-x * 0.01, 0.04, 0.02)))
-        p.blob(V((ball.x, ball.y, Z0 + 0.025)), 0.035, fur, squash=0.6)
+        # v5 (Ethan, Nov 26, 2026: the feet were off): big soft cat paws like the ally panther's, four rounded toes,
+        # the claws tucked in.
+        bb.paw(p, V((ball.x, ball.y - 0.02, Z0 + 0.035)), V((0, -1, 0)), 0.068, 0.036, fur)
         for k in (-1.5, -0.5, 0.5, 1.5):
-            root = V((ball.x + k * 0.018, ball.y - 0.025, Z0 + 0.022))
-            tip = root + V((k * 0.006, -0.035, -0.005))
-            em.limb(p, [root, tip], [0.013, 0.011], [fur], sides=4)
-            vr.spike(p, tip, tip + V((0, -0.02, -0.01)), 0.006, "claw", segments=3)
+            p.blob(V((ball.x + k * 0.03, ball.y - 0.085 + abs(k) * 0.012, Z0 + 0.025)), 0.026, light if abs(k) < 1 else fur, squash=0.8)
 
     # The tail: long, out behind and curling up, dark rings toward a dark tip.
     pts = [at(0, 0.1, 0.5), at(0.06, 0.24, 0.47), at(0.16, 0.32, 0.56), at(0.21, 0.3, 0.7), at(0.2, 0.24, 0.82), at(0.16, 0.2, 0.86)]
