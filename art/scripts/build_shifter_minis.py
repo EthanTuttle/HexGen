@@ -35,6 +35,7 @@ import build_beast_minis as bb  # noqa: E402
 import build_enemy_minis as em  # noqa: E402
 import build_hero_kit as hb  # noqa: E402
 import build_standin_minis as sm  # noqa: E402
+import golem_kit as gk  # noqa: E402
 import hexkit as hk  # noqa: E402
 import variants as vr  # noqa: E402
 
@@ -88,13 +89,59 @@ def warp_build(p, build, head_at, head_r=0.2):
         v.co = moved
 
 
-def werewolf(col, build="average"):
+# Golem forms (07 -> Shifter forms -> Golems, Ethan, Nov 26, 2026): the same wolf, bear or cat shape rebuilt in the golem's
+# own material, as the golem kit's golems are (golem_kit.py, kit v14). The shape is the approved form's; golem_dress swaps its
+# paints for the material's and adds the material's own pieces.
+def golem_dress(p, material, head_at, joints, size=1.0):
+    """Stone, the cairn: the fur's shades become the stone swatch (skin zone), so the coat reads as grey stone lit from
+    above; the eyes and the mouth glow in the eyes swatch, as the golems' do; claws and fangs are pale stone chips; the
+    torn trousers become a stone hip band. The scarf stays in the ranger's cloth. A rounded stone sits at every shoulder,
+    elbow, hip and knee, like the cairn's stacked joints, and moss grows on the head, the shoulders and the hump."""
+    if material != "stone":
+        raise ValueError(material)
+    for i, m in enumerate(p.mats):
+        if m.startswith("hz_"):
+            zone_id, shade = int(m[3:5], 16) // 20, int(m[5:7], 16) / 100
+            if zone_id == hb.ZONES["hair"] or (zone_id == hb.ZONES["cloth"] and shade < 0.7):
+                p.mats[i] = zone("skin", min(shade * 0.95 + 0.04, 1.2))
+            elif zone_id == hb.ZONES["eyes"]:
+                p.mats[i] = zone("eyes", 1.3)
+        elif m == "hero_pupil":
+            p.mats[i] = zone("skin", 0.45)
+        elif m == "hero_mouth":
+            p.mats[i] = zone("eyes", 1.15)
+        elif m in ("claw", "fang"):
+            p.mats[i] = zone("skin", 1.2)
+    # Stacked stones: the coat breaks into blocks of uneven grey, each block one stone, lit from above like the cairn's.
+    import random as rnd
+    stone_slots = {i for i, m in enumerate(p.mats) if m.startswith("hz_") and int(m[3:5], 16) // 20 == hb.ZONES["skin"]}
+    top = sm.BASE_H + 0.004
+    for face in p.bm.faces:
+        if face.material_index not in stone_slots:
+            continue
+        c = face.calc_center_median()
+        if c.z < top:
+            continue
+        cell = (round(c.x / 0.085), round(c.y / 0.085), round(c.z / 0.075))
+        tone = rnd.Random(hash(cell)).choice((0.8, 0.88, 0.94, 1.0, 1.06))
+        lit = 1.06 if face.normal.z > 0.4 else 0.9 if face.normal.z > -0.3 else 0.74
+        face.material_index = p._slot(zone("skin", round(tone * lit, 2)))
+    for k, q in enumerate(joints):
+        r = (0.11 if k % 2 == 0 else 0.085) * size
+        gk.pebble(p, q - V((0, 0, r * 0.7)), r * 1.25, r * 1.2, r * 1.5, sides=6, rings=3)
+    for q, r in ((head_at + V((0.02, 0.04, 0.09)), 0.05), (joints[0] + V((0, 0.02, 0.07)), 0.045), (joints[2] + V((0, 0.02, 0.07)), 0.045),
+                 (V((-0.06, joints[0].y + 0.12, joints[0].z + 0.08)), 0.055)):
+        p.blob(q, r, "gl_moss", squash=0.42)
+
+
+def werewolf(col, build="average", material=None):
     """v3 (Ethan, Nov 25, 2026: the head was far too big for the torso, and the legs were off; his reference: a sculpted
     werewolf statue, for proportion and mood only). A small, low head with a short broad snarling muzzle, jutting forward
     beneath a huge shaggy mane and shoulder hump; a barrel chest over a narrow waist; long arms hanging to the knees with
     big long-fingered hands; heavy muscled wolf legs in a stalking lunge, the front knee high and forward, the back leg
     driving; fur hanging from the forearms, flanks, elbows and calves."""
-    p = hk.Piece(f"shifter_werewolf_{build}")
+    p = hk.Piece(f"shifter_werewolf_golem_{material}_{build}" if material else f"shifter_werewolf_{build}")
+    joints = []  # shoulders, elbows, hips and knees, for a golem's stones
     sm.base(p, "ring_hero")
     fur, back, pale, dark = zone("hair"), zone("hair", 0.78), zone("hair", 1.22), zone("hair", 0.55)
     light = zone("hair", 1.1)
@@ -192,6 +239,7 @@ def werewolf(col, build="average"):
     # Arms: long and heavy, elbows out and back, hanging to the knees, big hands with long fingers and claws.
     for x, reach in ((-1, -0.04), (1, 0.04)):
         s, e, w_ = at(x * 0.27, -0.13, 0.98), at(x * 0.36, -0.06, 0.74), at(x * 0.32, -0.2 + reach, 0.5)
+        joints += [s, e]
         em.limb(p, [s, e, w_], [0.1, 0.078, 0.058], [fur, fur], sides=6)
         tuft(e, V((x * 0.05, 0.09, -0.03)), 0.05)
         for k in range(3):  # long fur hanging from the forearm
@@ -237,6 +285,7 @@ def werewolf(col, build="average"):
     )
     for x, hip, knee, hock, ball in legs:
         hem = hip.lerp(knee, 0.3)
+        joints += [hip, knee]
         em.limb(p, [hip, hem, hip.lerp(knee, 0.6), knee, knee.lerp(hock, 0.45), hock, ball],
                 [0.13, 0.13, 0.125, 0.095, 0.078, 0.045, 0.038], [cloth, fur, fur, fur, fur, fur], sides=6)
         p.blob(hip.lerp(knee, 0.6), 0.11, fur, squash=0.9)  # the thigh's muscle, furred
@@ -261,17 +310,20 @@ def werewolf(col, build="average"):
     # Tail: a thick brush low behind, swept out to the side, clear of the back leg, a dark tip.
     em.limb(p, [at(0, 0.14, 0.56), at(0.07, 0.24, 0.5), at(0.15, 0.31, 0.38), at(0.19, 0.33, 0.27)], [0.05, 0.08, 0.065, 0.0],
             [fur, fur, dark], sides=6)
+    if material:
+        golem_dress(p, material, hc, joints)
     warp_build(p, build, hc)
     return p.finish(col)
 
 
-def werebear(col, build="average"):
+def werebear(col, build="average", material=None):
     """The tough form (Thick Hide): a towering upright bear, far broader than the werewolf. A small rounded head with
     small round ears and a short pale muzzle, snarling, set low in front of a massive hump; a barrel chest and a heavy
     belly; huge arms held out from the body, the paws turned palm in and a little down like the werewolf's, short thick
     fingers and heavy claws; thick pillar legs planted wide, broad flat feet; a stub of a tail. Coarse, shorter fur than
     the wolf's, in shaggy tufts at the shoulders, elbows, flanks and the backs of the legs."""
-    p = hk.Piece(f"shifter_werebear_{build}")
+    p = hk.Piece(f"shifter_werebear_golem_{material}_{build}" if material else f"shifter_werebear_{build}")
+    joints = []  # shoulders, elbows, hips and knees, for a golem's stones
     sm.base(p, "ring_hero")
     fur, back, pale, dark = zone("hair"), zone("hair", 0.8), zone("hair", 1.25), zone("hair", 0.55)
     light = zone("hair", 1.12)
@@ -357,6 +409,7 @@ def werebear(col, build="average"):
     # Arms: huge, out from the body, elbows bent, the paws hanging forward at hip height, turned palm in and down.
     for x in SIDE:
         s, e, w_ = at(x * 0.3, -0.13, 0.98), at(x * 0.39, -0.08, 0.76), at(x * 0.33, -0.3, 0.66)
+        joints += [s, e]
         em.limb(p, [s, s.lerp(e, 0.5), e, w_], [0.12, 0.115, 0.095, 0.085], [fur, fur, fur], sides=8)
         tuft(e, V((x * 0.05, 0.1, -0.04)), 0.065)
         for k in range(3):  # shaggy fur under the forearm
@@ -391,6 +444,7 @@ def werebear(col, build="average"):
         hip, knee = at(x * 0.13, 0.06, 0.56), at(x * 0.19, -0.04 + step, 0.32)
         ankle = at(x * 0.19, 0.03 + step, 0.1)
         hem = hip.lerp(knee, 0.35)
+        joints += [hip, knee]
         em.limb(p, [hip, hem, knee, ankle], [0.16, 0.155, 0.12, 0.09], [cloth, fur, fur], sides=6)
         p.blob(knee.lerp(ankle, 0.35) + V((0, 0.04, 0)), 0.1, fur, squash=1.3)  # the calf
         for k in range(4):  # the trouser leg torn off, ragged strips
@@ -407,16 +461,19 @@ def werebear(col, build="average"):
 
     # A stub of a tail.
     p.blob(at(0, 0.2, 0.58), 0.06, back, squash=0.8)
+    if material:
+        golem_dress(p, material, hc, joints, size=1.3)
     warp_build(p, build, hc)
     return p.finish(col)
 
 
-def werecat(col, build="average"):
+def werecat(col, build="average", material=None):
     """The burst form (Shred): a lean, low big cat on its hind legs, crouched to spring. A round cat's head with big
     upright ears, slit pupils and a short muzzle, hissing, on a slim neck; narrow shoulders and a deep, narrow chest over
     a tight waist; both arms held wide, forearms reaching forward, palms in and claws out; slim crouched hind legs on big soft paws; a long tail curling up behind. Short sleek fur,
     a few tufts at the cheeks and elbows, dark tabby stripes on the back and limbs."""
-    p = hk.Piece(f"shifter_werecat_{build}")
+    p = hk.Piece(f"shifter_werecat_golem_{material}_{build}" if material else f"shifter_werecat_{build}")
+    joints = []  # shoulders, elbows, hips and knees, for a golem's stones
     sm.base(p, "ring_hero")
     fur, back, pale, dark = zone("hair"), zone("hair", 0.82), zone("hair", 1.25), zone("hair", 0.55)
     light = zone("hair", 1.12)
@@ -530,6 +587,7 @@ def werecat(col, build="average"):
         fore = (upper * math.cos(math.radians(80)) + V((0, -1, 0)) * math.sin(math.radians(80))).normalized()
         fore = (V((fore.x, fore.y, 0)).normalized() * math.cos(rise) + V((0, 0, math.sin(rise)))).normalized()  # v4: angled up
         w_ = e + fore * 0.18
+        joints += [s, e]
         em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
         tuft(e, V((x * 0.03, 0.05, -0.04)), 0.032)
         stripe(s.lerp(e, 0.6) + V((0, 0, 0.05)), s.lerp(e, 0.6) + V((0, 0.04, -0.03)))
@@ -548,6 +606,7 @@ def werecat(col, build="average"):
             (-1, at(-0.09, 0.05, 0.48), at(-0.15, -0.18, 0.35), at(-0.13, 0.0, 0.15), at(-0.13, -0.12, 0.035)))
     for x, hip, knee, hock, ball in legs:
         hem = hip.lerp(knee, 0.35)
+        joints += [hip, knee]
         em.limb(p, [hip, hem, knee, knee.lerp(hock, 0.4), hock, ball], [0.11, 0.105, 0.072, 0.058, 0.045, 0.042], [cloth, fur, fur, fur, fur], sides=6)
         p.blob(hip.lerp(knee, 0.6), 0.088, fur, squash=0.9)
         p.blob(knee.lerp(hock, 0.3) + (hock - knee).normalized().cross(V((x, 0, 0))) * 0.025, 0.055, fur, squash=1.2)  # the calf
@@ -565,6 +624,8 @@ def werecat(col, build="average"):
     # The tail: long, out behind and curling up, dark rings toward a dark tip.
     pts = [at(0, 0.1, 0.5), at(0.06, 0.24, 0.47), at(0.16, 0.32, 0.56), at(0.21, 0.3, 0.7), at(0.2, 0.24, 0.82), at(0.16, 0.2, 0.86)]
     em.limb(p, pts, [0.04, 0.038, 0.035, 0.032, 0.028, 0.0], [fur, fur, dark, fur, dark], sides=6)
+    if material:
+        golem_dress(p, material, hc, joints, size=0.8)
     warp_build(p, build, hc)
     return p.finish(col)
 
@@ -573,8 +634,8 @@ def build():
     hk.empty_scene()
     col = hk.new_collection("shifter_minis")
     for make in (werewolf, werebear, werecat):
-        for build in hb.BUILDS:
-            ob = make(col, build)
+        for build, material in [(b, None) for b in hb.BUILDS] + [("average", "stone")]:
+            ob = make(col, build, material)
             ob.data.calc_loop_triangles()
             print("TRIS", ob.name, len(ob.data.loop_triangles))
     path = hk.next_version(os.path.join(hk.ART, "minis", "heroes"), "shifter_minis")

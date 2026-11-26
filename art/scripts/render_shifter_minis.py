@@ -1,7 +1,7 @@
 """Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the matching ally beast, from three
 sides; the form in three heroes' colours; the form alone, large; and the line-up at the combat camera.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf | builds | races]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf | builds | races | golems]
 Uses the latest shifter_minis, hero_kit and beast_minis. Writes art/preview/shifter_<form>_*_vN.png and the sheets
 shifter_<form>_vN.png (line-ups and colours) and shifter_<form>_solo_vN.png.
 """
@@ -173,6 +173,44 @@ def races():
     print("RACES", RACE_ORDER)
 
 
+def golems(material="stone"):
+    """The golem forms in one material: the golem hero beside each form at the golem's eased height, three-quarter and side
+    on, each form close up, and the line-up from the combat camera: shifter_golem_<material>_vN.png."""
+    hero = dict(race_hero("golem"), subtype=material)
+    hero["colours"]["skin"] = S["skin"][f"golem_{material}"][0]
+    k = (hb.RACES["golem"]["k"] + 1) / 2
+    z0 = sm.BASE_H + 0.005
+
+    def form(t, col, name, at, spin):
+        ob, _ = rb.beast(t, f"shifter_{name}_golem_{material}_average", hero["colours"], name, col, at, spin)
+        for v in ob.data.vertices:
+            if v.co.z > sm.BASE_H + 0.004:
+                v.co = Vector((v.co.x * k, v.co.y * k, z0 + (v.co.z - z0) * k))
+        return ob
+    stems = []
+    for spin, tag in ((-28, "three"), (-90, "side")):
+        t, col = start()
+        rh.stand(t, col, hero, "golem", at=(-1.65, 0, 0), spin=spin)
+        for i, name in enumerate(ALLY):
+            form(t, col, name, (1.1 * i - 0.45, 0, 0), spin)
+        stem = f"shifter_golem_{material}_{tag}"
+        rh.shot(stem, Vector((0, 0, 0.6)), 7.0, 12, (1800, 700))
+        stems.append(stem)
+    for name in ALLY:
+        t, col = start()
+        form(t, col, name, (0, 0, 0), -30)
+        stem = f"shifter_golem_{material}_{name}_close"
+        rh.shot(stem, Vector((0, 0, 0.7)), 2.8, 14, (900, 900))
+        stems.append(stem)
+    t, col = start()
+    rh.stand(t, col, hero, "golem", at=(-1.65, 0, 0), spin=0)
+    for i, name in enumerate(ALLY):
+        form(t, col, name, (1.1 * i - 0.45, 0, 0), 0)
+    rh.shot(f"shifter_golem_{material}_combat", Vector((0, 0, 0.5)), 9, 50, (1800, 700))
+    fm.sheet(stems[:2] + [f"shifter_golem_{material}_combat"], f"shifter_golem_{material}", cols=1)
+    rb.sheet_full(stems[2:], f"shifter_golem_{material}_close", cols=3)
+
+
 if __name__ == "__main__":
     for name in (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["werewolf"]):
-        {"builds": builds, "races": races}.get(name, lambda: render(name))()
+        {"builds": builds, "races": races, "golems": golems}.get(name, lambda: render(name))()
