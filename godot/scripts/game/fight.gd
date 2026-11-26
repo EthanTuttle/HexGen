@@ -2306,9 +2306,10 @@ func _pounce(s: Dictionary, t: Dictionary) -> void:
 	await _attack(s, t, k)
 
 
-## Shift into the Shifter's form or back (03). The mini doesn't change yet: the werebeast minis are Ethan's modelling session's (07 -> Shifter forms).
+## Shift into the Shifter's form or back (03); the mini swaps to the form's werebeast (07 -> Shifter forms).
 func _shift(u: Dictionary, into: bool) -> void:
 	u.shifted = into
+	board.shift_form(u.mini, u.member.get("form", "") if into else "")   # the hero's werebeast mini, or back (07)
 
 
 ## Lightning's jump (Infuse, Primal Snare): dmg to the nearest other standing foe within CHAIN_RANGE of t, if any.

@@ -9,6 +9,10 @@ extends RaceCheck
 ## RANGER FAIL lines, then RANGER DONE. A test aid only.
 
 
+## The Shifter's test hero per form: hair (the fur) and cloth, from the kit's swatches.
+const SHIFTER_LOOKS := {"Werewolf": ["#5A3A26", "#5E8F5A"], "Werebear": ["#9A6A3A", "#3E6F8C"], "Werecat": ["#D9B26A", "#B5532F"]}
+
+
 func _check(ok: bool, what: String) -> void:
 	print("RANGER %s: %s" % ["OK" if ok else "FAIL", what])
 	if not ok:
@@ -38,6 +42,15 @@ func _run() -> void:
 	var hero_m: Dictionary = game.party[0]
 	var sub := Progression.sub(hero_m)
 	print("RANGER hero: %s %s, level %d" % [Progression.klass(hero_m), sub, game.level])
+	if sub == "Shifter":   # a hero from the creator, so the forms wear the hero kit's colours; each form a different one
+		var h := Hero.new()
+		h.race = game.run.race if game.run.race != "" else "Human"
+		h.klass = game.run.klass
+		h.sub = game.run.sub
+		h.gear = {"main": hero_m.weapon, "off": hero_m.off, "armour": hero_m.armour}
+		var look: Array = SHIFTER_LOOKS.get(hero_m.get("form", ""), SHIFTER_LOOKS.Werewolf)
+		h.appearance = {"race": h.race, "sub": h.sub, "build": "Average", "head": 0, "hair": 0, "hair_colour": look[0], "cloth": look[1]}
+		Hero.current = h
 	await _fight("plains_stones")
 	var hero: Dictionary = f.units[0]
 	var line := _free_line(4)
@@ -270,6 +283,36 @@ func _close(u: Dictionary, name: String) -> void:
 	await _shot(name)
 
 
+## The Shifter's shots by day and then at night (the light only: the fight's own night rule stays as it started).
+func _close_day_night(u: Dictionary, name: String) -> void:
+	await _close(u, name + "_day")
+	if not "--shots" in OS.get_cmdline_user_args():
+		return
+	for when: Array in [[Rules.NIGHT_AT + 4.0, "_night"], [Rules.START_MINUTE, ""]]:
+		game.minute = when[0]
+		game._shown_minute = -1.0   # straight there, not eased
+		await _wait(0.4)
+		if when[1] != "":
+			await _shot(name + when[1])
+
+
+## The hero's mini: the form's werebeast in form, taller than the hero, on one cell; the hero again out of it (07).
+func _check_mini(hero: Dictionary, form: String, shifted: bool) -> void:
+	var body := hero.mini.get_node("body") as MeshInstance3D
+	var own := HeroMini.mesh_for(Hero.current)
+	var beast := HeroMini.form_mesh(HeroMini.description(Hero.current), form)
+	if not shifted:
+		_check(body.mesh == own, "out of form: the hero's own mini")
+		return
+	var tall: float = beast.get_aabb().end.y
+	var tris := beast.surface_get_array_index_len(0) / 3
+	print("RANGER %s mini: %d triangles (the hero %d), %.2f tall (the hero %.2f)" % [form, tris, own.surface_get_array_index_len(0) / 3, tall, HeroMini.race_tall(HeroMini.description(Hero.current).race)])
+	_check(body.mesh == beast and tall > HeroMini.race_tall(HeroMini.description(Hero.current).race), "in form: the %s mini, taller than the hero (%.2f)" % [form, tall])
+	_check(absf(tall - HeroMini.FORM_TALL[form.to_lower()] * HeroMini.race_tall(HeroMini.description(Hero.current).race) / HeroMini.race_tall("human")) < 0.01, "the %s stands its size for the race" % form)
+	var box := beast.get_aabb()
+	_check(maxf(absf(box.position.x), box.end.x) <= 0.6 and maxf(absf(box.position.z), box.end.z) <= 0.6, "the %s keeps to its cell (%.2f x %.2f)" % [form, box.size.x, box.size.z])
+
+
 func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, dv: Vector2i) -> void:
 	var form: String = hero.member.get("form", "")
 	_check(form == Progression.bot_follow_sub(hero.member, "Shifter"), "Shifter: picked the %s" % form)
@@ -283,7 +326,8 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	_turn(hero)
 	_check(f.cant_use(hero, Cards.get_card("rending_claws")) == "_not_shifted" and f.cant_use(hero, Cards.get_card(fc)) == "_not_shifted", "out of form: Rending Claws and %s dim" % fc)
 	_check(not "rending_claws" in f.hot_slots(hero) and f.sel == "attack", "out of form: the weapon's attack, no claws on the hotbar")
-	await _close(hero, "shifter_%s_1_out" % form.to_lower())
+	_check_mini(hero, form, false)
+	await _close_day_night(hero, "shifter_%s_1_out" % form.to_lower())
 	# Shift: 1 AP; the weapon cards go, the claws and the form's card come.
 	_turn(hero)
 	f.pick_card("shift")
@@ -294,7 +338,8 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	_check(f.cant_use(hero, Cards.get_card("attack", hero.weapon)) == "_shifted" and not "attack" in f.cards_of(hero) and fc in f.cards_of(hero), "in form: the basic attack is off, All actions swaps too")
 	_turn(hero)
 	_check(f.sel == "rending_claws", "in form: Rending Claws is the picked card")
-	await _close(hero, "shifter_%s_2_in" % form.to_lower())
+	_check_mini(hero, form, true)
+	await _close_day_night(hero, "shifter_%s_2_in" % form.to_lower())
 	_stage(hero, foe, foe2, s, dv)
 	var claws := await _hit(hero, foe, "rending_claws")
 	_check(claws > 0 and f.cant_use(hero, Cards.get_card("rending_claws")) == "", "Rending Claws: hits (%d) and can go again" % claws)
@@ -306,6 +351,7 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	match form:
 		"Werewolf":
 			_place(foe, s + dv * 3)
+			foe.hp = maxi(foe.hp, claws * Rules.HUNT_DOWN_TIMES + 1)   # still standing for the save
 			var hp: int = foe.hp
 			var coins: Array = []   # heads for the claw hit, then tails for the foe's save
 			for i in 12:
@@ -332,6 +378,7 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	await f.press_button()
 	await _wait(0.4)
 	_check(not hero.shifted and f.cant_use(hero, Cards.get_card("attack", hero.weapon)) == "", "Shift again: back to the weapon")
+	_check_mini(hero, form, false)
 	# Pounce: the Snare springs, the Shifter leaps beside the foe and attacks it for double damage.
 	_stage(hero, foe, foe2, s, dv)
 	var plain := await _hit(hero, foe)

@@ -158,6 +158,21 @@ var _clock := 0.0   # frame time, so a fixed-rate capture plays at real speed
 var _glows := {}    # mini -> [hull, motes (AttackMotions.Fx), started]
 
 
+## A Shifter's mini swaps to its form's (Minis.set_form; "" swaps back) and grows into it from 80%. PLACEHOLDER: how
+## shifting shows on the board is open (07 -> Open questions), so it's a plain swap and grow.
+func shift_form(mini: Node3D, form: String) -> void:
+	var body := mini.get_node("body") as MeshInstance3D
+	var was := body.mesh
+	Minis.set_form(mini, form)
+	if body.mesh == was:
+		return
+	if _glows.has(mini):   # the outline follows the new shape
+		_drop_glow(mini)
+		glow(mini, true)
+	body.scale = Vector3.ONE * 0.8
+	create_tween().tween_property(body, "scale", Vector3.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 ## Turns a mini's glow on (from now) or off.
 func glow(mini: Node3D, on: bool) -> void:
 	if on and not _glows.has(mini):

@@ -14,7 +14,18 @@ static func make(name: String, at_plan: Vector2, facing_plan: Vector2) -> Node3D
 	body.name = "body"
 	body.mesh = _mesh(name)
 	root.add_child(body)
+	root.set_meta("mini", name)
 	return root
+
+
+## The Shifter's mini in form (03 -> Shifter forms): the hero's werebeast for form ("Werewolf"), or back to the mini it was
+## made as for "". Only the hero from the creator can be a Shifter, so another mini keeps its mesh.
+static func set_form(mini: Node3D, form: String) -> void:
+	var name: String = mini.get_meta("mini", "")
+	if name != "standin_hero" or Hero.current == null:
+		return
+	var body := mini.get_node("body") as MeshInstance3D
+	body.mesh = HeroMini.form_mesh(HeroMini.description(Hero.current), form) if form != "" else _mesh(name)
 
 
 static func _mesh(name: String) -> Mesh:
