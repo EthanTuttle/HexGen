@@ -138,7 +138,7 @@ const SUBCLASSES := {
 		"Arcane Trickster": {"blurb": "A sly thief who uses magic to gain the advantage.", "card": "mage_hand", "of": "poison_blade", "n": "Magical Blade", "text": "Poison Blade's hits this turn deal magic damage instead of poison.", "up_built": true}},
 	"ranger": {
 		"Hunter": {"blurb": "A relentless tracker who always brings down the biggest prey.", "card": "killing_shot", "of": "hunters_mark", "n": "Trophy Mark", "text": "Hunter's Mark's extra damage grows against large foes.", "up_built": true},
-		"Shifter": {"blurb": "A wild warrior who unleashes the beast within.", "card": "shift", "of": "snare", "n": "Pounce", "text": "When your Snare springs, you may leap to the trapped foe for free.", "up_built": true, "follow": "form"},
+		"Shifter": {"blurb": "A wild warrior who unleashes the beast within.", "card": "shift", "of": "snare", "n": "Pounce", "text": "When your Snare springs, you may leap to the trapped foe for free and attack it for double damage.", "up_built": true, "follow": "form"},
 		"Companion": {"blurb": "A loyal beast-friend who fights side by side with an animal ally.", "card": "command_beast", "of": "hunters_mark", "n": "Pack Mark", "text": "Hunter's Mark also boosts your beast's damage.", "up_built": true, "follow": "beast"},
 		"Elementalist": {"blurb": "A nature-touched warrior whose every strike carries the elements.", "card": "infuse", "of": "snare", "n": "Primal Snare", "text": "Snare takes an element chosen when it's set: fire burns the trapped foe, ice also slows nearby foes, lightning jumps to a second foe.", "up_built": true}},
 	"wizard": {

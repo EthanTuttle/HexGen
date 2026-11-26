@@ -306,8 +306,12 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	match form:
 		"Werewolf":
 			_place(foe, s + dv * 3)
-			await _play(hero, "hunt_down", foe.cell, tails)
-			_check(f.dist(hero, foe) == 1 and foe.lost_ap >= Rules.PRONE_AP, "Hunt Down: dashes to the foe and knocks it down")
+			var hp: int = foe.hp
+			var coins: Array = []   # heads for the claw hit, then tails for the foe's save
+			for i in 12:
+				coins.append(i < f.attack_coins(hero, foe, Cards.get_card("rending_claws")))
+			await _play(hero, "hunt_down", foe.cell, coins)
+			_check(f.dist(hero, foe) == 1 and hp - foe.hp == claws * Rules.HUNT_DOWN_TIMES and foe.lost_ap >= Rules.PRONE_AP, "Hunt Down: dashes to the foe, claws it for %d (%dx) and knocks it down" % [hp - foe.hp, Rules.HUNT_DOWN_TIMES])
 		"Werebear":
 			await _play(hero, "thick_hide", null, [])
 			_check(hero.thick_hide and f._level_reduction(foe, hero) >= Rules.THICK_HIDE_LESS, "Thick Hide: takes %d less" % Rules.THICK_HIDE_LESS)
@@ -328,14 +332,22 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	await f.press_button()
 	await _wait(0.4)
 	_check(not hero.shifted and f.cant_use(hero, Cards.get_card("attack", hero.weapon)) == "", "Shift again: back to the weapon")
-	# Pounce: the Snare springs and the Shifter leaps beside the foe.
+	# Pounce: the Snare springs, the Shifter leaps beside the foe and attacks it for double damage.
+	_stage(hero, foe, foe2, s, dv)
+	var plain := await _hit(hero, foe)
 	_stage(hero, foe, foe2, s, dv)
 	_place(hero, s + dv * 4)
 	f._set_snare(hero, s, "")
 	_place(foe, s + dv)
 	_place(foe2, s + dv * 3)
+	var hp0: int = foe.hp
+	var all_heads: Array = []
+	all_heads.resize(12)
+	all_heads.fill(true)
+	Coins.forced.assign(all_heads)
 	await f._walk(foe, [s])
-	_check(f.on(foe, "snared") and f.dist(hero, foe) == 1, "Pounce: the Snare springs and the Shifter leaps to the foe")
+	Coins.forced.clear()
+	_check(f.on(foe, "snared") and f.dist(hero, foe) == 1 and hp0 - foe.hp == Rules.SNARE_DAMAGE + plain * Rules.POUNCE_TIMES, "Pounce: the Snare springs, the Shifter leaps to the foe and hits for %d (Snare %d + %d x%d)" % [hp0 - foe.hp, Rules.SNARE_DAMAGE, plain, Rules.POUNCE_TIMES])
 	await _close(hero, "shifter_%s_4_pounce" % form.to_lower())
 	await _bot_fight_here()
 

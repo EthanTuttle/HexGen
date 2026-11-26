@@ -1680,8 +1680,16 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		return
 	busy = true
 	refresh()
-	if k.has("step") and dist(a, t) > 1:   # Hunt Down: the dash first (03)
-		await _walk(a, _step_path(a, t, k.step))
+	if k.has("step"):   # Hunt Down: the dash, then a claw hit at double damage, then the save for prone (03, Ethan, Nov 25, 2026)
+		if dist(a, t) > 1:
+			await _walk(a, _step_path(a, t, k.step))
+		var claw := Cards.get_card("rending_claws")
+		claw.times = Rules.HUNT_DOWN_TIMES
+		await _attack(a, t, claw)
+		if t.down or not active:
+			return
+		busy = true
+		refresh()
 	var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
 	var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
 	var saved: bool = Coins.heads(check.coins) >= check.need
@@ -2165,18 +2173,25 @@ func _clear_snare(owner: String) -> void:
 
 
 ## Pounce (03 -> Shifter): when the Snare springs, its Shifter leaps to the free hex next to the trapped foe nearest them,
-## for free and with no prompt (Ethan, Nov 22, 2026). No leap if the Shifter is down or no hex next to the foe is free.
+## for free and with no prompt (Ethan, Nov 22, 2026), then makes a free basic attack at double damage: claws in form, the
+## weapon out of it (Nov 25). Nothing if the Shifter is down; no attack if no hex next to the foe is free.
 func _pounce(s: Dictionary, t: Dictionary) -> void:
 	if s.down:
 		return
 	var spots: Array = Hex.NEIGHBOURS.map(func(d): return t.cell + d).filter(func(c): return grid.has(c) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty())
-	if spots.is_empty() or Rules.hex_distance(s.cell, t.cell) == 1:
+	if Rules.hex_distance(s.cell, t.cell) > 1:
+		if spots.is_empty():
+			return
+		spots.sort_custom(func(a, b): return Rules.hex_distance(a, s.cell) < Rules.hex_distance(b, s.cell))
+		s.cell = spots[0]
+		s.facing = _dir_toward(s.cell, t.cell)
+		await board.step_along(s.mini, [s.cell])   # PLACEHOLDER motion: a slide, no leap arc yet
+		refresh()
+	if t.down:
 		return
-	spots.sort_custom(func(a, b): return Rules.hex_distance(a, s.cell) < Rules.hex_distance(b, s.cell))
-	s.cell = spots[0]
-	s.facing = _dir_toward(s.cell, t.cell)
-	await board.step_along(s.mini, [s.cell])   # PLACEHOLDER motion: a slide, no leap arc yet
-	refresh()
+	var k := Cards.get_card("rending_claws" if s.shifted else "attack", s.weapon)   # then a free basic attack at double damage (Ethan, Nov 25, 2026)
+	k.times = Rules.POUNCE_TIMES
+	await _attack(s, t, k)
 
 
 ## Shift into the Shifter's form or back (03). The mini doesn't change yet: the werebeast minis are Ethan's modelling session's (07 -> Shifter forms).

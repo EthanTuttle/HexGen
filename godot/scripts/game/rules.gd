@@ -247,9 +247,11 @@ const BEAST_STATS := {
 	"Hawk": {"hp": 5, "damage": 1, "weapon": "beast_talons", "flies": true},               # flies, attacks at range
 	"Panther": {"hp": 8, "damage": 2, "weapon": "beast_bite", "behind": 2}}                # bonus damage from behind
 const BEAST_HP_PER_LEVEL := 1            # PLACEHOLDER (03: it levels with the ranger): max HP for each level above 5
-const DIVE_TIMES := 2                    # PLACEHOLDER (03): Dive's big hit, ignoring cover
+const DIVE_TIMES := 4                    # DOCS (03: Ethan, Nov 25, 2026): Dive, the hawk's damage x4
 const AMBUSH_TIMES := 2                  # PLACEHOLDER (03): Ambush's big strike from hiding, counted as from behind
 const HUNT_DOWN_DASH := 4                # DOCS (03 -> Shifter forms): Hunt Down's dash, up to 4 hexes
+const HUNT_DOWN_TIMES := 2               # DOCS (03: Ethan, Nov 25, 2026): its claw hit on arrival, double damage
+const POUNCE_TIMES := 2                  # DOCS (03: Ethan, Nov 25, 2026): Pounce's free basic attack, double damage
 const THICK_HIDE_LESS := 3               # PLACEHOLDER (03): Thick Hide's "much less damage" until your next turn
 const SHRED_BLEED := 2                   # PLACEHOLDER (03): Shred's heavy bleed, a tick, for DOT_TURNS
 
@@ -349,7 +351,7 @@ const FROST_SLOW := 1                    # PLACEHOLDER (03): Frost Ray, the same
 const WHITE_SLOW := 1                    # PLACEHOLDER (06): white breath, the same
 const PUSH_HEXES := 1                    # DOCS (04): Shield Bash pushes the foe 1 hex
 const SNARE_RANGE := 3                   # PLACEHOLDER (03): an empty walkable hex up to 3 away
-const SNARE_DAMAGE := 1                  # PLACEHOLDER (03)
+const SNARE_DAMAGE := 2                  # DOCS (03: Ethan, Nov 25, 2026)
 const MARK_DAMAGE := 1                   # PLACEHOLDER (03): Hunter's Mark, on every hit you land on the marked foe
 const DANCE_HEXES := 2                   # PLACEHOLDER (04): Dancing Step
 const STEP_STRIKE_HEXES := 2             # PLACEHOLDER (04): Step and Strike
