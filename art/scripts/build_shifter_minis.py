@@ -248,7 +248,7 @@ def werebear(col, build="average"):
                  (-0.14, 1.03, 0.29, 0.2), (-0.19, 1.1, 0.2, 0.16))], coat)
     p.blob(at(0, -0.02, 1.1), 0.22, back, squash=0.72)  # the hump
     for x in SIDE:
-        p.blob(at(x * 0.27, -0.12, 0.99), 0.11, back, squash=0.9)  # heavy shoulders, into the arms
+        p.blob(at(x * 0.25, -0.12, 1.0), 0.1, back, squash=0.9)  # heavy shoulders, into the arms
         for k in range(4):  # coarse fur on the flanks and belly
             tuft(at(x * 0.24, 0.04 - k * 0.03, 0.92 - k * 0.09), V((x * 0.08, 0.04, -0.07)), 0.055, (fur, back)[k % 2])
     for k in range(5):  # shaggy fur down the back and over the rump
@@ -256,12 +256,17 @@ def werebear(col, build="average"):
         tuft(q, V((0, 0.08, -0.08)), 0.06, (dark, back)[k % 2])
     for k in range(12):  # a short shaggy ruff round the neck
         a = 2 * math.pi * k / 12
-        c0 = at(math.sin(a) * 0.17, -0.16 - math.cos(a) * 0.1, 1.1)
+        c0 = at(math.sin(a) * 0.17, -0.17 - math.cos(a) * 0.1, 1.06)
         tuft(c0, V((math.sin(a) * 0.07, 0.03 + math.cos(a) * 0.06, -0.04)), 0.06, (back, fur, dark)[k % 3])
 
     # The head: small for the body, rounded, low in front of the hump; a short broad muzzle, paler, snarling.
     fwd = V((0, -1, -0.12)).normalized()
-    hc = at(0, -0.31, 1.15)
+    hc = at(0, -0.3, 1.12)
+    # v2 (Ethan, Nov 26, 2026: the head didn't connect): a thick neck from the top of the chest into the back of the
+    # skull, so the head grows out of the shoulders instead of floating in front of them.
+    neck_up = (hc - at(0, -0.12, 1.0)).normalized()
+    em.loft(p, [em.section(at(0, y, z), w, d, along=neck_up, up=V((0, 1, 0)), sides=8) for y, z, w, d in
+                ((-0.12, 0.99, 0.2, 0.17), (-0.18, 1.06, 0.17, 0.15), (-0.24, 1.11, 0.13, 0.12))], coat)
 
     def h(y, z, x=0.0):
         return hc + fwd * y + V((x, 0, z))
@@ -269,7 +274,7 @@ def werebear(col, build="average"):
     def head_fur(c, n):
         ahead = (c - hc).dot(fwd)
         rise = (c - (hc + fwd * ahead)).z
-        if ahead > 0.122 and rise > -0.045:
+        if ahead > 0.132 and rise > -0.05:
             return "hero_pupil"
         if ahead > 0.055 and rise < 0.0:
             return pale
@@ -295,17 +300,17 @@ def werebear(col, build="average"):
             tuft(h(-0.02 - k * 0.04, -0.04, x * 0.13), V((x * 0.07, 0.06, -0.03)), 0.04, fur)
 
     # The ranger's scarf round the thick neck under the ruff, its knot at the throat, a tail over the shoulder.
-    em.loft(p, [em.section(q, 0.17, 0.14, along=V((0, -0.4, 1)), sides=8) for q in (at(0, -0.19, 1.04), at(0, -0.23, 1.11))],
+    em.loft(p, [em.section(q, 0.215, 0.185, along=V((0, -0.6, 1)), sides=8) for q in (at(0, -0.15, 1.0), at(0, -0.19, 1.06))],
             lambda c, n: zone("cloth"))
-    p.blob(at(0.05, -0.37, 1.03), 0.045, zone("cloth", 0.9))
-    em.limb(p, [at(0.05, -0.38, 1.01), at(0.07, -0.41, 0.92), at(0.06, -0.4, 0.83)], [0.045, 0.038, 0.0], [zone("cloth"), zone("cloth", 0.85)], sides=4)
+    p.blob(at(0.12, -0.31, 1.01), 0.045, zone("cloth", 0.9))  # knotted at the side of the throat, so it doesn't read as a tie
+    em.limb(p, [at(0.13, -0.32, 0.99), at(0.17, -0.33, 0.93), at(0.18, -0.31, 0.87)], [0.045, 0.038, 0.0], [zone("cloth"), zone("cloth", 0.85)], sides=4)
     em.limb(p, [at(-0.15, -0.04, 1.2), at(-0.18, 0.08, 1.2), at(-0.18, 0.2, 1.12), at(-0.15, 0.3, 1.0)], [0.045, 0.04, 0.034, 0.0],
             [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
     # Arms: huge, out from the body, elbows bent, the paws hanging forward at hip height, turned palm in and down.
     for x in SIDE:
         s, e, w_ = at(x * 0.3, -0.13, 0.98), at(x * 0.39, -0.08, 0.76), at(x * 0.33, -0.3, 0.66)
-        em.limb(p, [s, e, w_], [0.13, 0.105, 0.085], [fur, fur], sides=6)
+        em.limb(p, [s, s.lerp(e, 0.5), e, w_], [0.12, 0.115, 0.095, 0.085], [fur, fur, fur], sides=8)
         tuft(e, V((x * 0.05, 0.1, -0.04)), 0.065)
         for k in range(3):  # shaggy fur under the forearm
             q = e.lerp(w_, 0.2 + k * 0.28) + V((x * 0.04, 0.02, -0.03))
