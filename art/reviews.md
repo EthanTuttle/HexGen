@@ -231,3 +231,8 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-26 | `art/preview/shifter_werewolf_v6.png`, `shifter_werewolf_solo_v6.png` | approved | Werewolf form (average build), hands turned as real hands rest. Next: the werebear |
 | 2026-11-26 | `art/preview/shifter_werebear_solo_v1.png` | note | Werebear: keep iterating; the head doesn't connect to the body |
 | 2026-11-26 | `art/preview/shifter_werebear_v2.png`, `shifter_werebear_solo_v2.png` | approved | Werebear form (average build), a thick neck joining the head to the chest. Next: the werecat |
+| 2026-11-26 | `art/preview/shifter_werecat_v1.png` | note | Werecat: the raised slashing arm reads odd; try both arms wide, upper arms 5–10 degrees below level, elbows at 100 degrees, palms 5–10 degrees up |
+| 2026-11-26 | `art/preview/shifter_werecat_v2.png` | note | Arms angled down more: an A pose, not a T pose |
+| 2026-11-26 | `art/preview/shifter_werecat_v3.png` | note | Close; angle the forearms up too |
+| 2026-11-26 | `art/preview/shifter_werecat_v4.png` | note | Feet a little off; picked big soft cat paws with the claws tucked in |
+| 2026-11-26 | `art/preview/shifter_werecat_v5.png`, `shifter_werecat_solo_v5.png` | approved | Werecat form (average build): A-pose arms, forearms 30 degrees up, big soft paws. Commit and merge |
