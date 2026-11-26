@@ -141,10 +141,11 @@ def form_at_race(t, col, form, race, name, at, spin):
     elif race == "golem":
         colours["skin"] = S["skin"]["human"][1]
     ob, _ = rb.beast(t, f"shifter_{form}_average", colours, name, col, at, spin)
-    top = sm.BASE_H + 0.004
+    top, k = sm.BASE_H + 0.004, (hb.RACES[race]["k"] + 1) / 2  # eased halfway toward human (Ethan, Nov 26, 2026); shifter_races_v1 used the full factor
+    z0 = sm.BASE_H + 0.005
     for v in ob.data.vertices:
         if v.co.z > top:
-            v.co = hb.full(race, v.co)
+            v.co = Vector((v.co.x * k, v.co.y * k, z0 + (v.co.z - z0) * k))
     return ob
 
 
