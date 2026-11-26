@@ -1,4 +1,4 @@
-"""Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the ally wolf, from three
+"""Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the matching ally beast, from three
 sides; the form in three heroes' colours; the form alone, large; and the line-up at the combat camera.
 
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf]
@@ -29,6 +29,10 @@ OTHERS = [dict(skin=S["skin"]["human"][3], hair=S["hair"][0], eyes=S["eyes"][0],
           dict(skin=S["skin"]["human"][0], hair=S["hair"][4], eyes=S["eyes"][2], cloth=S["cloth"][3])]
 
 
+# The ally beast each form stands beside, so the two read apart.
+ALLY = {"werewolf": "wolf", "werebear": "bear", "werecat": "panther"}
+
+
 def start():
     t, col = rb.start()
     t.update(rp.load_templates(rp.latest(os.path.join("minis", "heroes"), "shifter_minis")))
@@ -41,7 +45,8 @@ def line_up(form, spin):
     t, col = start()
     rh.stand(t, col, SHIFTER, "hero", at=(-1.15, 0, 0), spin=spin)
     _, n = rb.beast(t, f"shifter_{form}_average", SHIFTER["colours"], form, col, (0, 0, 0), spin)
-    rb.beast(t, "beast_wolf", rb.looks("wolf")[0], "ally_wolf", col, (1.15, 0, 0), spin)
+    ally = ALLY[form]
+    rb.beast(t, f"beast_{ally}", rb.looks(ally)[0], "ally", col, (1.15, 0, 0), spin)
     return t, col, n
 
 
