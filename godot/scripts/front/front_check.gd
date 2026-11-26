@@ -546,8 +546,14 @@ func _game_run() -> void:
 		await _own_town(g, next, id)
 	g.map.retile({next: "village"})
 	g._refresh()
+	# No spawn rolls on the clock from here: Dunfaire's rest makes the next one due, and a roll on a later step put an
+	# encounter on (1, 0), the tile the walk back ends on and Social's second event uses, so the walk stopped on a pop-up
+	# nobody answers. These sections place their own encounters.
+	var rolls := g.run.spawn_rolls
+	g.run.spawn_rolls = false
 	await _dunfaire(g, next)
 	await _social(g)
+	g.run.spawn_rolls = rolls
 
 
 ## Dunfaire Tower, the Soldier's start (design/07 -> Town screen): Enter opens its own scene, framed back by its view
@@ -597,7 +603,7 @@ func _dunfaire(g: Game, back_to: Vector2i) -> void:
 	await _wait(0.8)
 	check(g.map.visible and not g.busy, "dunfaire: Leave hands the map back")
 	g.run.background = was
-	g.encounters.clear()   # the rest's 8 hours rolled spawns, which would stop the walk back
+	g.encounters.clear()   # nothing left on the walk back from earlier in the run
 	g.walk_to(back_to)
 	while g.busy or g.party_tile != back_to:
 		await get_tree().process_frame
