@@ -370,8 +370,7 @@ def werebear(col, build="average"):
 def werecat(col, build="average"):
     """The burst form (Shred): a lean, low big cat on its hind legs, crouched to spring. A round cat's head with big
     upright ears, slit pupils and a short muzzle, hissing, on a slim neck; narrow shoulders and a deep, narrow chest over
-    a tight waist; the front arm raised beside the head to slash, palm forward and claws out, the other low and ready,
-    palm in like the werewolf's; slim crouched hind legs on light feet; a long tail curling up behind. Short sleek fur,
+    a tight waist; both arms held wide, forearms reaching forward, palms in and claws out; slim crouched hind legs on light feet; a long tail curling up behind. Short sleek fur,
     a few tufts at the cheeks and elbows, dark tabby stripes on the back and limbs."""
     p = hk.Piece(f"shifter_werecat_{build}")
     sm.base(p, "ring_hero")
@@ -476,18 +475,21 @@ def werecat(col, build="average"):
     em.limb(p, [at(-0.07, -0.2, 0.92), at(-0.1, -0.08, 0.94), at(-0.12, 0.04, 0.9), at(-0.12, 0.14, 0.82)], [0.032, 0.03, 0.025, 0.0],
             [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
-    # Arms: the right raised beside the head to slash, palm forward; the left low and forward, palm in.
-    s, e, w_ = at(0.18, -0.2, 0.85), at(0.32, -0.08, 1.0), at(0.25, -0.26, 1.12)
-    em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
-    tuft(e, V((0.04, 0.07, -0.02)), 0.032)
-    stripe(e.lerp(w_, 0.35) + V((0.035, 0, 0)), e.lerp(w_, 0.35) + V((-0.02, 0.0, 0.04)))
-    hand(w_, V((0, -1, -0.45)).normalized(), V((0, -0.25, -1)), V((-1, 0, 0)))
-    s, e, w_ = at(-0.18, -0.2, 0.83), at(-0.24, -0.14, 0.64), at(-0.2, -0.33, 0.55)
-    em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
-    tuft(e, V((-0.04, 0.06, -0.03)), 0.03)
-    stripe(e.lerp(w_, 0.4) + V((-0.03, 0, 0)), e.lerp(w_, 0.4) + V((0.02, -0.03, -0.02)))
-    down = ((w_ - e).normalized() + V((0, 0, -1))).normalized()
-    hand(w_, down, V((1, 0, -0.18)), V((0, -1, 0)))
+    # Arms (v2, Ethan, Nov 26, 2026): wide, both upper arms out to the sides about 7 degrees below level, the elbows bent
+    # to 100 degrees so the forearms reach forward, the palms facing in toward each other and turned about 7 degrees up,
+    # thumbs on top, claws out.
+    drop = math.radians(7.5)
+    for x in SIDE:
+        s = at(x * 0.18, -0.2, 0.85)
+        upper = V((x * math.cos(drop), 0, -math.sin(drop)))
+        e = s + upper * 0.24
+        fore = (upper * math.cos(math.radians(80)) + V((0, -1, 0)) * math.sin(math.radians(80))).normalized()
+        w_ = e + fore * 0.18
+        em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
+        tuft(e, V((x * 0.03, 0.05, -0.04)), 0.032)
+        stripe(s.lerp(e, 0.6) + V((0, 0, 0.05)), s.lerp(e, 0.6) + V((0, 0.04, -0.03)))
+        stripe(e.lerp(w_, 0.45) + V((0, 0, 0.04)), e.lerp(w_, 0.45) + V((x * 0.04, 0, -0.02)))
+        hand(w_, fore, V((-x * math.cos(drop), 0, math.sin(drop))), V((0, 0, 1)))
 
     # Torn trousers in the ranger's cloth and a belt (07: torn remnants of gear).
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
