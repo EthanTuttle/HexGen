@@ -20,6 +20,8 @@ var _all_grid := GridContainer.new()
 var _all_title: Label
 var _confirm: ColorRect
 var _confirm_rows := VBoxContainer.new()
+var _element: ColorRect           # Infuse's and Primal Snare's element pick (Ethan, Nov 22, 2026)
+signal element_picked(id: String)
 var _enemy_pill: PanelContainer
 var _bars := Control.new()
 var _bar_nodes := {}
@@ -40,6 +42,7 @@ func _ready() -> void:
 	_build_hotbar()
 	_build_all()
 	_build_confirm()
+	_build_element()
 	_build_enemy_pill()
 
 
@@ -75,14 +78,17 @@ func _refresh_tray() -> void:
 	for c in _portraits.get_children():
 		_portraits.remove_child(c)
 		c.queue_free()
-	var party := fight.allies().filter(func(u): return not Fight.is_summon(u))
-	var tight: bool = party.size() >= 4 and party.any(func(u): return not fight.summon_of(u).is_empty())
+	var party := fight.allies().filter(func(u): return not Fight.is_summon(u) and u.beast_of == "")
+	var tight: bool = party.size() >= 4 and party.any(func(u): return not fight.summon_of(u).is_empty() or not fight.beast_for(u).is_empty())
 	_portraits.add_theme_constant_override("separation", 1 if tight else 4)   # a full party and a summon still fit the phone's height
 	for u in party:
 		_portrait(u, tight)
 		var s := fight.summon_of(u)
 		if not s.is_empty():   # a summon's small portrait hex under its caster's (03, Ethan, Nov 6, 2026)
 			_summon_portrait(s)
+		var b := fight.beast_for(u)
+		if not b.is_empty():   # the Companion ranger's beast, the same way (PLACEHOLDER: 07 doesn't place it)
+			_summon_portrait(b)
 
 
 ## One portrait: hex, HP bar and AP pips; tight, a little closer together.
@@ -133,6 +139,8 @@ func _summon_portrait(u: Dictionary) -> void:
 	h.pressed.connect(func():
 		fight.select(u)
 		_recentre(u))
+	if u.down:
+		h.modulate.a = 0.5
 	row.add_child(h)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 3)
@@ -158,7 +166,7 @@ class _EndHex extends Control:
 		var r := Rect2(Vector2.ZERO, Vector2(38, 44))
 		draw_colored_polygon(UI.hex_points(Rect2(Vector2(0, 3), r.size)), UI.ORANGE_EDGE)
 		draw_colored_polygon(UI.hex_points(r), UI.ORANGE)
-		draw_texture_rect(UI.icon("chevron", UI.WHITE_WARM, 12, 3), Rect2(Vector2(13, 9), Vector2(12, 12)), false)
+		draw_texture_rect(UI.sharp_icon("chevron", UI.WHITE_WARM, 12, 3), Rect2(Vector2(13, 9), Vector2(12, 12)), false)
 		var f := UI.font("lilita")
 		var w := f.get_string_size("End", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 		draw_string(f, Vector2(19 - w * 0.5, 32), "End", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.WHITE_WARM)
@@ -328,7 +336,7 @@ func _refresh_details() -> void:
 		if k.kind == "ally":
 			label = "Cast again" if not fight.result.is_empty() else "Cast"
 		elif k.kind == "save":
-			label = "Cast"
+			label = "Use" if k.has("step") else "Cast"   # Hunt Down is a dash, not a spell (03)
 		elif k.kind == "mark":
 			label = "Use"
 		elif not fight.target.is_empty():   # the coin count on the button, before and after a flip (07)
@@ -529,7 +537,7 @@ func _refresh_hotbar() -> void:
 		return
 	# Each card keeps its slot: Edit hotbar's `hot_slots` ("" for a cleared slot) when there are any, else `hot` in order;
 	# empty slots draw as a faint outline, so the bar always has Rules.HOTBAR_SLOTS places.
-	var slots: Array = fight.current.member.get("hot_slots", fight.current.hot)
+	var slots: Array = fight.hot_slots(fight.current)   # a shifted Shifter's swap in form (03)
 	for i in Rules.HOTBAR_SLOTS:
 		var id: String = slots[i] if i < slots.size() else ""
 		_hotbar.add_child(_card_button(id, true) if id != "" else _EmptySlot.new())
@@ -575,25 +583,21 @@ class _HotCard extends Control:
 		var y := 0.0 if on else 8.0           # the picked card lifts 8 px
 		var r := Rect2(Vector2(0, y), Vector2(74, 84))
 		draw_style_box(UI.box(UI.HEX_SHADOW, 10), Rect2(r.position + Vector2(0, 4), r.size))
-		var face := UI.box(UI.CREAM_LIGHT, 10)
-		face.border_color = UI.ORANGE if on else Color(src.band)
-		face.set_border_width_all(3 if on else 2)
-		draw_style_box(face, r)
-		draw_rect(Rect2(r.position + Vector2(2.5, 2.5), Vector2(69, 6)), Color(src.band))
+		UI.card_face(self, r, UI.ORANGE if on else Color(src.band), 3 if on else 2, Color(src.band))
 		draw_colored_polygon(UI.hex_points(Rect2(r.position + Vector2(4, 9), Vector2(20, 23))), UI.DARK)
 		var f := UI.font("n900")
 		var ap := Cards.ap_text(k)
 		draw_string(f, r.position + Vector2(14 - f.get_string_size(ap, 0, -1, 11).x * 0.5, 25), ap, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
 		if k.limit == "":
-			draw_texture_rect(UI.icon("repeat", Color("#2E6B3A"), 16, 2.6), Rect2(r.position + Vector2(54, 10), Vector2(16, 16)), false)
+			draw_texture_rect(UI.sharp_icon("repeat", Color("#2E6B3A"), 16, 2.6), Rect2(r.position + Vector2(54, 10), Vector2(16, 16)), false)
 		elif k.limit == "fight":
 			draw_style_box(UI.box(Color("#843E0E"), 8), Rect2(r.position + Vector2(44, 9), Vector2(27, 16)))   # 7.4:1 under the 11 pt "1"
 			draw_string(f, r.position + Vector2(48, 21), "1", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.WHITE_WARM)
-			draw_texture_rect(UI.icon("fight_once", UI.WHITE_WARM, 10, 2.6), Rect2(r.position + Vector2(57, 12), Vector2(10, 10)), false)
+			draw_texture_rect(UI.sharp_icon("fight_once", UI.WHITE_WARM, 10, 2.6), Rect2(r.position + Vector2(57, 12), Vector2(10, 10)), false)
 		if k.get("hp", 0) > 0:   # a blood art's HP cost: a small heart with the number, beside the AP hex (Ethan, Nov 6, 2026)
-			draw_texture_rect(UI.icon(HP_HEART, UI.RED, 14, 2.4), Rect2(r.position + Vector2(25, 12), Vector2(14, 14)), false)
+			draw_texture_rect(UI.sharp_icon(HP_HEART, UI.RED, 14, 2.4), Rect2(r.position + Vector2(25, 12), Vector2(14, 14)), false)
 			draw_string(f, r.position + Vector2(40, 24), str(k.hp), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.RED)
-		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
+		draw_texture_rect(UI.sharp_icon(k.icon, Color(src.icon_ink), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
 		var parts := Cards.name_lines(k.n, f, 11, 64)
 		var text_y := 60.0 if parts.size() == 1 else 56.0
 		for i in parts.size():
@@ -640,7 +644,7 @@ class _AllCard extends Control:
 		var f := UI.font("n900")
 		var ap := Cards.ap_text(k)
 		draw_string(f, Vector2(18 - f.get_string_size(ap, 0, -1, 11).x * 0.5, 28), ap, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
-		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 20, 2), Rect2(Vector2(36, 14), Vector2(20, 20)), false)
+		draw_texture_rect(UI.sharp_icon(k.icon, Color(src.icon_ink), 20, 2), Rect2(Vector2(36, 14), Vector2(20, 20)), false)
 		draw_string(f, Vector2(64, 22), k.n, HORIZONTAL_ALIGNMENT_LEFT, size.x - 70, 12, UI.INK)
 		draw_string(UI.font("n700"), Vector2(64, 37), src.label + note, HORIZONTAL_ALIGNMENT_LEFT, size.x - 70, 11, UI.INK_SOFT)
 
@@ -693,7 +697,7 @@ func _refresh_all() -> void:
 	if fight.current.is_empty():
 		return
 	_all_title.text = "All actions · " + fight.current.name
-	for id in fight.current.cards:
+	for id in fight.cards_of(fight.current):
 		_all_grid.add_child(_card_button(id, false))
 
 
@@ -776,6 +780,66 @@ func hide_confirm() -> void:
 
 func confirm_open() -> bool:
 	return _confirm.visible
+
+
+## Infuse and Primal Snare: a pop-up with the three elements (Ethan, Nov 22, 2026: a three-button pop-up, not mocked yet;
+## the End pop-up's panel). Each button: the element's icon, its name and its rider (03). The X hex cancels the card.
+func _build_element() -> void:
+	_element = ColorRect.new()
+	_element.color = Color(0.141, 0.188, 0.172, 0.55)
+	_element.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_element.mouse_filter = Control.MOUSE_FILTER_STOP
+	_element.visible = false
+	add_child(_element)
+
+
+## Opens the pop-up titled with the card's name; the element's id, or "" when it's closed. snare: Primal Snare's riders.
+func pick_element(title: String, snare := false) -> String:
+	for c in _element.get_children():
+		_element.remove_child(c)
+		c.queue_free()
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_element.add_child(cc)
+	var p := UI.panel(UI.CREAM, 18, UI.CREAM_EDGE, 5, Vector4(16, 16, 16, 16))
+	p.custom_minimum_size.x = 300
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	var head := HBoxContainer.new()
+	var t := UI.label(title, "lilita", 20)
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(t)
+	var close := HexShape.make(30, 30, Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0).with_icon("close", UI.INK_SOFT, 16, 2.6)   # as All actions': closing doesn't use the card (Ethan, Nov 22, 2026)
+	close.name = "close"
+	close.clickable = true
+	close.accessibility_name = "Close"
+	close.pressed.connect(func(): element_picked.emit(""))
+	head.add_child(close)
+	v.add_child(head)
+	for id: String in Rules.ELEMENTS:
+		var e: Dictionary = Rules.ELEMENTS[id]
+		var b := TagButton.make(e.n, 268, 50, 16)   # Cast's and Flip coins' button, in the element's colour (Ethan, Nov 22, 2026)
+		b.name = id
+		b.bg = Color(ELEMENT_COLOURS[id][0])
+		b.shadow = Color(ELEMENT_COLOURS[id][1])
+		b.icon = UI.icon(e.icon, UI.WHITE_WARM, 16)
+		b.sub = e.snare if snare else e.rider
+		b.pressed.connect(func(): element_picked.emit(id))
+		v.add_child(b)
+	p.add_child(v)
+	cc.add_child(p)
+	_element.visible = true
+	var id: String = await element_picked
+	_element.visible = false
+	return id
+
+
+## Each element's button and its hard shadow. PLACEHOLDER colours: fire red-orange, ice blue, lightning gold.
+const ELEMENT_COLOURS := {"fire": ["#C4532B", "#8E3A1E"], "ice": ["#4C8FBF", "#33698F"], "lightning": ["#C9961C", "#8F6A12"]}
+
+
+func element_open() -> bool:
+	return _element.visible
 
 
 ## While the foes act, a pill at the top says so (the mockup shows a modal "Enemies' phase" card with

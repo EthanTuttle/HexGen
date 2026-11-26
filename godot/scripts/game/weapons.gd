@@ -33,6 +33,8 @@ const CAT := {
 	# A summon's own attack (03 -> Wizard level-1 placeholders): not gear, so the creator never offers them.
 	"summon_blade": {"ab": "INT", "hands": "1", "range": 1, "cards": []},
 	"summon_wisp": {"ab": "INT", "hands": "1", "range": 4, "ranged": true, "cards": []},
+	"beast_bite": {"ab": "DEX", "hands": "1", "range": 1, "cards": []},   # the Companion ranger's beast (03)
+	"beast_talons": {"ab": "DEX", "hands": "1", "range": 4, "ranged": true, "cards": []},   # PLACEHOLDER: the hawk's range
 }
 ## The Wizard's level-1 spells by school, in the Spells step's columns (03 -> Wizard spells).
 const WIZARD_SPELLS := {"Summoner": ["animated_blade", "wisp"], "Blaster": ["firebolt", "frost_ray", "shocking_grasp"],

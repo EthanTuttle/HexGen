@@ -44,6 +44,8 @@ var cell_target = null           # Glimmerstep's empty hex, or null
 var cover := {}                  # cell -> "partial" or "full" (design/03 -> Combat -> Cover); missing: none
 var snares := {}                 # owner's name -> the hidden Snare's cell (03 -> Ranger)
 var _snare_marks := {}           # owner's name -> its marker, which only the party sees (PLACEHOLDER look)
+var snare_elements := {}         # owner's name -> Primal Snare's element (03 -> Elementalist)
+var auto_pick := ""              # test aid: the bots' and checks' element, so Infuse and Primal Snare skip the pop-up
 var edge_cover := {}             # [cell, cell] sorted -> "partial": a low edge between two cells (plot edges, terrace curbs)
 var circles := {}                # caster's name -> Warding Circle {cells, node} (03 -> Ritualist)
 var night := false               # a night fight: natural night, 1 fewer coin on every attack (03 -> Darkness); no light gear yet
@@ -246,6 +248,7 @@ func _setup_board(terrain: String, tile: Vector2i, foes: int) -> void:
 			cover[c] = "full" if c in rocks else "partial"
 	for i in game.party.size():
 		_add_unit(game.party[i], PARTY_CELLS[i], true, "")
+	_add_beasts()
 	for i in (roster.size() if not roster.is_empty() else foes):
 		_add_unit(_foe(i), ENEMY_CELLS[i], false, LABELS[i])
 
@@ -286,6 +289,7 @@ func _setup_map(id: String) -> void:
 			_add_unit(m, Vector2i(int(at[0].q), int(at[0].r)), true, "", foes_at)
 	for m: Dictionary in waiting:
 		_add_unit(m, _free_near(party_at, units[0] if not units.is_empty() else {}), true, "", foes_at)
+	_add_beasts(foes_at)
 	if roster.is_empty():
 		var n := 0
 		for st: Dictionary in starts:
@@ -300,6 +304,65 @@ func _setup_map(id: String) -> void:
 			var at := Vector2i(int(slots[k].q), int(slots[k].r)) if k < slots.size() else _free_near(foes_at, {})
 			_add_unit(_foe(k), at, false, LABELS[k], party_at)
 	map_build_ms = (Time.get_ticks_usec() - t0) / 1000.0
+
+
+## The Companion ranger's beast (03): on the free cell nearest its ranger, at full HP every fight (it comes back after one).
+## It doesn't take a companion's place. Stats: Rules.BEAST_STATS (PLACEHOLDER); it flips its ranger's DEX.
+func _add_beasts(look_at_plan := Vector2.INF) -> void:
+	for r in units.duplicate():
+		if not r.ally or Progression.sub(r.member) != "Companion" or not Rules.BEAST_STATS.has(r.member.get("beast", "")):
+			continue
+		var kind: String = r.member.beast
+		var st: Dictionary = Rules.BEAST_STATS[kind]
+		var hp: int = st.hp + Rules.BEAST_HP_PER_LEVEL * maxi(game.level - Progression.SUBCLASS_LEVEL, 0)
+		var m := {name = kind, initial = kind.left(1), color = r.color, mini = "beast_" + kind.to_lower(), ability = "DEX",
+				hp = hp, max_hp = hp, damage = st.damage, weapon = st.weapon, armour = "none", flies = st.get("flies", false),
+				beast_of = r.name, beast = kind, scores = {"DEX": Races.score(r.member, "DEX")},
+				cards = ["move", "attack"], hot = ["move", "attack"]}
+		_add_unit(m, _free_near(Hex.cell_position(r.cell.x, r.cell.y), r), true, m.initial, look_at_plan)
+
+
+## The Companion ranger's beast in this fight, standing or downed, or {}.
+func beast_for(u: Dictionary) -> Dictionary:
+	if u.is_empty() or not u.get("ally", false):
+		return {}
+	for o in units:
+		if o.get("beast_of", "") == u.name and o.ally:
+			return o
+	return {}
+
+
+## The ranger a beast belongs to, or {}.
+func _caster_of_beast(b: Dictionary) -> Dictionary:
+	for o in units:
+		if o.ally and o.name == b.get("beast_of", "") and o.get("beast_of", "") == "":
+			return o
+	return {}
+
+
+## Command Beast's signature moves that aren't a hit (03): Howl, nearby foes frightened (WIS save); Roar, nearby foes must
+## attack the bear on their next turn; Ambush, the panther hides, and its next strike is big and counts as from behind.
+## "Nearby": Rules.NEARBY of the beast (PLACEHOLDER, as Hymn's). Dive is an attack (press_button).
+func _command_beast(a: Dictionary) -> void:
+	var b := beast_for(a)
+	if b.is_empty() or b.down:
+		return
+	match b.beast:
+		"Wolf":
+			for e in foes_of(b).filter(func(e): return dist(e, b) <= Rules.NEARBY):
+				var save := flip_check(save_coins(e, "WIS"), Rules.SAVE_HEADS)
+				await hud.flip_coins(e, save.coins, save.need, Rules.COIN_STEP_FOE)
+				if Coins.heads(save.coins) < save.need:
+					e.fear = _until_next_turn_of(e)
+		"Bear":
+			for e in foes_of(b).filter(func(e): return dist(e, b) <= Rules.NEARBY):
+				e.taunt = b
+				e.taunt_until = _until_next_turn_of(e)
+		"Panther":
+			b.lurking = true
+			for e in foes_of(b):
+				if not b.name in e.unaware:
+					e.unaware.append(b.name)
 
 
 func _foe(k: int) -> Dictionary:
@@ -364,7 +427,11 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			taunt = {}, taunt_until = -1, branded = false, frail = -1, ruin = -1, drowsy = -1, exposed = false, marrow = false,
 			taunts = m.get("taunt", false), temp = 0, riposte = false,
 			# Cleric and Bard level 1 (03): Dread, Dazzle, Bane, Hex on foes; Shield of Faith, Moonveil and Blade Twirl's move on allies
-			fear = -1, dazzled = -1, bane = -1, hexed = -1, faith = -1, veil = -1, twirl = false}
+			fear = -1, dazzled = -1, bane = -1, hexed = -1, faith = -1, veil = -1, twirl = false,
+			# the Ranger's subclasses (03): Infuse's element; the Companion's beast (whose ranger it is), and Ambush's hiding
+			infuse = "", beast_of = m.get("beast_of", ""), beast = m.get("beast", ""), lurking = false,
+			# the Shifter (03 -> Shifter forms): in form; Thick Hide; Shred's heavy bleed
+			shifted = false, thick_hide = false, bleed_heavy = false}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -382,6 +449,40 @@ func foes_of(u: Dictionary) -> Array:
 
 static func is_summon(u: Dictionary) -> bool:
 	return u.summon_of != ""
+
+
+## The hotbar's slots for u: Edit hotbar's `hot_slots` when there are any, else `hot`. In form (03 -> Shifter forms) the
+## weapon cards' slots empty, Rending Claws takes the basic attack's, and the form's card and Shift take the first free ones.
+func hot_slots(u: Dictionary) -> Array:
+	var slots: Array = u.get("member", {}).get("hot_slots", u.hot).duplicate()
+	if not u.get("shifted", false):
+		return slots
+	slots = slots.map(func(id): return "rending_claws" if id == "attack" else ("" if id != "" and weapon_attack(Cards.get_card(id)) else id))
+	while slots.size() < Rules.HOTBAR_SLOTS:
+		slots.append("")
+	for id: String in form_cards(u) + ["shift"]:   # Shift too, to shift back
+		if not id in slots and "" in slots:
+			slots[slots.find("")] = id
+	return slots
+
+
+## u's cards for All actions: in form, the weapon cards and basic attack go, Rending Claws and the form's card come.
+func cards_of(u: Dictionary) -> Array:
+	if not u.get("shifted", false):
+		return u.cards
+	var out: Array = u.cards.filter(func(id): return not weapon_attack(Cards.get_card(id)))
+	for id: String in form_cards(u):
+		if not id in out:
+			out.append(id)
+	return out
+
+
+## Rending Claws and the Shifter's form card, or [] for anyone else.
+func form_cards(u: Dictionary) -> Array:
+	var form: String = u.get("member", {}).get("form", "") if u.ally else ""
+	if form == "":
+		return []
+	return ["rending_claws", Progression.FORMS.get(form, {}).get("card", "")].filter(func(id): return id != "")
 
 
 func card(id := "") -> Dictionary:
@@ -422,6 +523,12 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 		return "_two_handed"   # Blademaster cards work only two-handed (04); no note, the card dims
 	if c.get("effect", "") == "unbind" and u.conc.get("unit", {}).is_empty():
 		return "_no_summon"
+	if u.get("shifted", false) and weapon_attack(c):
+		return "_shifted"   # in form, weapon cards and the basic attack switch off (03); no note
+	if c.get("form", false) and not u.get("shifted", false):
+		return "_not_shifted"   # Rending Claws and the form's card work only in form (03); no note, the card dims
+	if c.id == "command_beast" and (beast_for(u).is_empty() or beast_for(u).down):
+		return "_no_beast"   # the card dims while the beast is down (03); no note
 	if c.id == "hunters_mark" and not u.mark.is_empty() and u.mark.down and not u.used.has(c.id + "_free"):
 		pass   # moving the mark off a downed foe is free, and doesn't count as the turn's use
 	elif spent(u, c):
@@ -440,6 +547,10 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 func in_reach(u: Dictionary, foe: Dictionary, c: Dictionary) -> bool:
 	if foe.down or foe.ally:
 		return false
+	if c.get("effect", "") == "dive":   # Command Beast, hawk: the hawk's reach, from where the hawk is (03)
+		u = beast_for(u)
+		if u.is_empty() or u.down:
+			return false
 	if c.kind == "mark":   # any foe you can see (03)
 		return cover_between(u, foe) != "full"
 	if c.kind not in ["attack", "save"]:
@@ -636,7 +747,8 @@ func move_hexes(u: Dictionary) -> int:
 		return 0   # rooted: Snare, Pinning Bolt
 	if u.get("twirl", false):
 		return Rules.TWIRL_HEXES   # Blade Twirl's free move
-	return maxi(Rules.MOVE_HEXES + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) + (Progression.move_bonus(u.member) if u.ally else 0) - (u.slow_hexes if on(u, "slowed") else 0), 0)
+	var fast: int = Rules.BEAST_STATS[u.beast].get("move", 0) if u.get("beast", "") != "" else 0   # the wolf is fast (03)
+	return maxi(Rules.MOVE_HEXES + fast + Rules.MOVE_PER_DEX * dex + Races.move_bonus(u.member) + (Progression.move_bonus(u.member) if u.ally else 0) - (u.slow_hexes if on(u, "slowed") else 0), 0)
 
 
 ## Which of Hex.NEIGHBOURS points most nearly along a plan direction.
@@ -879,7 +991,7 @@ func _start_allies() -> void:
 	for u in units:
 		if u.ally:
 			u.lockdown = false   # Lockdown lasts until your next turn
-			u.ap = 0 if u.down or u.decoy != "" else (Rules.SUMMON_AP if is_summon(u) else Rules.AP)
+			u.ap = 0 if u.down or u.decoy != "" else (Rules.SUMMON_AP if is_summon(u) or u.beast_of != "" else Rules.AP)   # a beast: 2 AP, like summons (03)
 			u.bonus = 0
 			u.used = {}
 			u.defending = false      # Defend lasts until your next turn
@@ -906,7 +1018,7 @@ func select(u: Dictionary) -> void:
 	if busy or u.down or not u.ally or u.decoy != "" or phase != "allies":
 		return
 	current = u
-	sel = "attack"
+	sel = "rending_claws" if u.shifted else "attack"
 	target = {}
 	ally_target = {}
 	breath_dir = -1
@@ -998,7 +1110,7 @@ func press_button() -> void:
 			if target.is_empty():
 				return
 			_pay(current, k)
-			await _attack(current, target, k)
+			await _attack(beast_for(current) if k.get("effect", "") == "dive" else current, target, k)   # Dive: the hawk strikes (03)
 		"save":
 			if target.is_empty():
 				return
@@ -1010,7 +1122,15 @@ func press_button() -> void:
 			_pay(current, k)
 			_ally_spell(current, ally_target, k)
 		"self":
+			var element := ""
+			if k.get("effect", "") == "infuse":   # Infuse: the element first; Back cancels the card (03)
+				element = await _pick_element(k.n)
+				if element == "":
+					_acting = {}
+					return
 			_pay(current, k)
+			if element != "":
+				current.infuse = element
 			await _use_self(current, k)
 		"breath":
 			if breath_dir < 0:
@@ -1020,10 +1140,16 @@ func press_button() -> void:
 		"cell":
 			if cell_target == null:
 				return
+			var element := ""
+			if k.get("effect", "") == "snare" and current.ally and Progression.sub(current.member) == "Elementalist":
+				element = await _pick_element(k.n, true)   # Primal Snare: the element when it's set (03)
+				if element == "":
+					_acting = {}
+					return
 			_pay(current, k)
 			match k.get("effect", ""):
 				"snare":
-					_set_snare(current, cell_target)
+					_set_snare(current, cell_target, element)
 				"dance":
 					await _dance(current, cell_target)
 				"summon":
@@ -1252,6 +1378,8 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
 		if a.stakes:
 			dmg *= Rules.STAKES_TIMES   # Raise the Stakes (03)
+		if a.get("lurking", false):
+			dmg *= Rules.AMBUSH_TIMES   # Ambush: the panther's strike from hiding (03)
 		if k.get("effect", "") == "sneak" and sneak_applies(a, t):   # not on the offhand's free hit (04)
 			dmg *= Rules.SNEAK_TIMES   # Sneak Attack doubles the weapon's damage, before the flat bonuses (Backstab, the Mark) (03)
 		if k.id == "quick_slash" and a.quick_ready:
@@ -1296,6 +1424,9 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 			"bleed":
 				t.bleed_turns = Rules.DOT_TURNS
+			"shred":
+				t.bleed_turns = Rules.DOT_TURNS
+				t.bleed_heavy = true
 			"snare":
 				t.snared = _until_next_turn_of(t)   # Pinning Bolt roots (04)
 			"disarm":
@@ -1303,12 +1434,18 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 					t.lost_ap = maxi(t.lost_ap, Rules.DISARM_AP)
 					t.disarmed = true
 					t.exposed = a.ally and Progression.trained(a.member, "exposing_disarm")
+		if a.get("beast", "") == "Wolf" and k.id == "attack":
+			t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)   # the wolf knocks foes down (03)
+		if a.get("infuse", "") == "ice" and k.kind == "attack":
+			_slow(t, Rules.FROST_SLOW)   # Infuse: ice slows (03)
 		if a.poison_blade and not Rules.old("poison"):   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
-			_blade_hit(a, t)
+			dmg += _blade_hit(a, t)
 	if a.ally:
 		result = {coins = shown, title = "Hit!" if hit else "Miss", good = hit, lucky = lucked,
 				sub = "Damage: %d [placeholder]" % dmg if hit else ""}   # the coins show the heads
 		hud.refresh()
+	if a.get("lurking", false):
+		a.lurking = false   # Ambush: out of hiding once it strikes, hit or miss
 	if a.ally and k.kind != "save":
 		a.opened = true   # Opening Strike: only the fight's first attack
 		a.stakes = false   # Raise the Stakes: the next attack, hit or miss
@@ -1333,6 +1470,8 @@ func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: i
 			var was: int = a.hp
 			a.hp = mini(a.max_hp, a.hp + Rules.HEX_HEAL)
 			hud.float_text(a, "+%d" % (a.hp - was), false, true)
+		if a.get("infuse", "") == "lightning" and k.kind == "attack":
+			await _jump(t, Rules.INFUSE_JUMP)   # Infuse: lightning jumps to a second foe (03)
 		if k.get("effect", "") == "rally" and a.ally:   # Rallying Strike: an ally gains temporary HP (03)
 			var ally := _rally_target(a)
 			if not ally.is_empty():
@@ -1396,6 +1535,14 @@ func _level_damage(a: Dictionary, t: Dictionary, k: Dictionary) -> int:
 		n += Rules.BRAND_DAMAGE
 	if on(t, "ruin"):
 		n += Rules.RUIN_MORE
+	if a.get("infuse", "") == "fire" and k.kind == "attack":
+		n += Rules.INFUSE_FIRE   # Infuse: fire hits harder (03)
+	if a.get("beast", "") != "":
+		if behind(a, t) or a.lurking:
+			n += Rules.BEAST_STATS[a.beast].get("behind", 0)   # the panther: more from behind; Ambush counts as behind (03)
+		var ranger := _caster_of_beast(a)
+		if not ranger.is_empty() and ranger.mark == t and Progression.sub(ranger.member) == "Companion":
+			n += Rules.MARK_DAMAGE   # Pack Mark: Hunter's Mark boosts the beast's damage too (03)
 	return n
 
 
@@ -1405,6 +1552,8 @@ func _level_reduction(a: Dictionary, t: Dictionary) -> int:
 	var n := 0
 	if t.arcane_shield:
 		n += Rules.ARCANE_SHIELD_LESS
+	if t.thick_hide:
+		n += Rules.THICK_HIDE_LESS
 	if t.bring_it and a.get("taunt", {}) == t:
 		n += Rules.BRING_IT_LESS
 	if t.ally and allies().any(func(o): return o != t and o.defending and dist(o, t) == 1 and Progression.feat(o.member) == "drilled"):
@@ -1415,9 +1564,12 @@ func _level_reduction(a: Dictionary, t: Dictionary) -> int:
 
 
 ## A hit under Poison Blade, as the Rogue's subclass has it (03): poison (Poison Blade+ deadlier), drowsy (Sleeping Draught),
-## or a random status (Wild Card: poison, bleed or slow; blind isn't built, PLACEHOLDER).
-func _blade_hit(a: Dictionary, t: Dictionary) -> void:
+## a random status (Wild Card: poison, bleed or slow; blind isn't built, PLACEHOLDER), or magic damage at once (Magical Blade,
+## Ethan, Nov 22, 2026). Returns the damage it adds to the hit.
+func _blade_hit(a: Dictionary, t: Dictionary) -> int:
 	match Progression.sub(a.member):
+		"Arcane Trickster":
+			return Rules.MAGIC_BLADE
 		"Con Artist":
 			t.drowsy = _until_next_turn_of(t)
 		"Gambler":
@@ -1433,6 +1585,7 @@ func _blade_hit(a: Dictionary, t: Dictionary) -> void:
 				t.poison.append(Rules.DOT_TURNS)
 		_:
 			t.poison.append(Rules.DOT_TURNS)
+	return 0
 
 
 ## Whether a foe holds a weapon to knock away (Disarm, 04). PLACEHOLDER: every foe but beasts (wolves).
@@ -1483,6 +1636,8 @@ func motion_kind(a: Dictionary, t: Dictionary, k: Dictionary) -> String:
 		return "thrust" if dist(a, t) >= 2 else "melee"
 	var w := Weapons.of(a.weapon)
 	if k.get("ranged", false) or (weapon_attack(k) and w.get("ranged", false)):
+		if a.weapon == "beast_talons":
+			return "thrust"   # PLACEHOLDER: the hawk lunges at its target
 		return "darts" if a.weapon in ["wand", "summon_wisp"] else "shot"
 	if weapon_attack(k) and a.weapon in ["spear", "halberd", "glaive"]:
 		return "thrust"
@@ -1525,6 +1680,16 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		return
 	busy = true
 	refresh()
+	if k.has("step"):   # Hunt Down: the dash, then a claw hit at double damage, then the save for prone (03, Ethan, Nov 25, 2026)
+		if dist(a, t) > 1:
+			await _walk(a, _step_path(a, t, k.step))
+		var claw := Cards.get_card("rending_claws")
+		claw.times = Rules.HUNT_DOWN_TIMES
+		await _attack(a, t, claw)
+		if t.down or not active:
+			return
+		busy = true
+		refresh()
 	var check := flip_check(save_coins(t, k.save), Rules.SAVE_HEADS)
 	var coins: Array[bool] = await hud.flip_coins(t, check.coins, check.need, Rules.COIN_STEP_FOE)
 	var saved: bool = Coins.heads(check.coins) >= check.need
@@ -1537,7 +1702,7 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 				t.glow = phase_no + 1   # until the caster's next turn
 			elif not saved:
 				t.lull = true
-		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str", "fear", "dazzle", "bane", "hex", "heat", "cliffhanger", "the_end":
+		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str", "fear", "dazzle", "bane", "hex", "heat", "cliffhanger", "the_end", "prone":
 			result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
 			hud.refresh()
 			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look: the save curses and riders have no motion of their own yet
@@ -1602,6 +1767,8 @@ func _save_rider(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 			t.score = maxi(t.score - Rules.SIPHON_STR, 0)
 		"cliffhanger":
 			t.lost_ap = maxi(t.lost_ap, Rules.CLIFFHANGER_AP)
+		"prone":   # Hunt Down knocks it down (03)
+			t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 		"the_end":   # PLACEHOLDER: "badly hurt" is below half HP; a foe at half or more is untouched
 			if t.hp * 2 < t.max_hp:
 				hud.float_text(t, "-%d" % t.hp, true)
@@ -1804,6 +1971,10 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.rage = _until_next_turn_of(a)
 		"arcane_shield":
 			a.arcane_shield = true
+		"shift":
+			_shift(a, not a.shifted)
+		"thick_hide":
+			a.thick_hide = true
 		"stakes":
 			a.stakes = true
 		"bring_it":   # adjacent foes must attack you until their next turn ends (03)
@@ -1857,6 +2028,10 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			for o in allies():
 				if not o.down and o.decoy == "" and dist(o, a) <= Rules.NEARBY:
 					o.blessed = true
+		"infuse":
+			pass   # the element is set as it's paid for (press_button)
+		"command":
+			await _command_beast(a)
 		"purify":
 			for o in allies():
 				o.poison = []
@@ -1965,16 +2140,18 @@ func cell_options(u: Dictionary, k: Dictionary) -> Array[Vector2i]:
 	return blink_cells(u)
 
 
-func _set_snare(u: Dictionary, c: Vector2i) -> void:
+func _set_snare(u: Dictionary, c: Vector2i, element := "") -> void:
 	_clear_snare(u.name)   # one at a time: setting another moves it (03)
 	snares[u.name] = c
+	if element != "":
+		snare_elements[u.name] = element
 	var ring := MeshInstance3D.new()   # PLACEHOLDER look: a dark ring on the hex, which only the party sees
 	var mesh := TorusMesh.new()
 	mesh.inner_radius = 0.22
 	mesh.outer_radius = 0.3
 	ring.mesh = mesh
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("#4A3A28")
+	mat.albedo_color = Color(SNARE_TINTS.get(element, "#4A3A28"))   # PLACEHOLDER: Primal Snare's ring takes the element's colour
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	ring.material_override = mat
 	ring.position = cell_point(c) + Vector3(0, Rules.CELL_TOP + 0.03, 0)
@@ -1984,11 +2161,59 @@ func _set_snare(u: Dictionary, c: Vector2i) -> void:
 	cell_target = null
 
 
+const SNARE_TINTS := {"fire": "#B4532A", "ice": "#7FB2CF", "lightning": "#D6A52C"}
+
+
 func _clear_snare(owner: String) -> void:
 	snares.erase(owner)
+	snare_elements.erase(owner)
 	if _snare_marks.has(owner):
 		_snare_marks[owner].queue_free()
 		_snare_marks.erase(owner)
+
+
+## Pounce (03 -> Shifter): when the Snare springs, its Shifter leaps to the free hex next to the trapped foe nearest them,
+## for free and with no prompt (Ethan, Nov 22, 2026), then makes a free basic attack at double damage: claws in form, the
+## weapon out of it (Nov 25). Nothing if the Shifter is down; no attack if no hex next to the foe is free.
+func _pounce(s: Dictionary, t: Dictionary) -> void:
+	if s.down:
+		return
+	var spots: Array = Hex.NEIGHBOURS.map(func(d): return t.cell + d).filter(func(c): return grid.has(c) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty())
+	if Rules.hex_distance(s.cell, t.cell) > 1:
+		if spots.is_empty():
+			return
+		spots.sort_custom(func(a, b): return Rules.hex_distance(a, s.cell) < Rules.hex_distance(b, s.cell))
+		s.cell = spots[0]
+		s.facing = _dir_toward(s.cell, t.cell)
+		await board.step_along(s.mini, [s.cell])   # PLACEHOLDER motion: a slide, no leap arc yet
+		refresh()
+	if t.down:
+		return
+	var k := Cards.get_card("rending_claws" if s.shifted else "attack", s.weapon)   # then a free basic attack at double damage (Ethan, Nov 25, 2026)
+	k.times = Rules.POUNCE_TIMES
+	await _attack(s, t, k)
+
+
+## Shift into the Shifter's form or back (03). The mini doesn't change yet: the werebeast minis are Ethan's modelling session's (07 -> Shifter forms).
+func _shift(u: Dictionary, into: bool) -> void:
+	u.shifted = into
+
+
+## Lightning's jump (Infuse, Primal Snare): dmg to the nearest other standing foe within CHAIN_RANGE of t, if any.
+func _jump(t: Dictionary, dmg: int) -> void:
+	var next := units.filter(func(o): return o != t and o.ally == t.ally and not o.down and o.decoy == "" and dist(o, t) <= Rules.CHAIN_RANGE)
+	if next.is_empty():
+		return
+	next.sort_custom(func(a, b): return dist(a, t) < dist(b, t))
+	hud.float_text(next[0], "-%d" % dmg, true)
+	await _hurt(next[0], dmg)
+
+
+## The element for Infuse or Primal Snare: the pop-up's pick, or the test aid's.
+func _pick_element(title: String, snare := false) -> String:
+	if auto_pick != "":
+		return auto_pick
+	return await hud.pick_element(title, snare)
 
 
 ## Dancing Step: a free short move after a scimitar attack.
@@ -2173,14 +2398,25 @@ func _walk(u: Dictionary, path: Array) -> void:
 			path = path.slice(0, stop + 1)
 	if sprung != "":
 		await _walk_on(u, path)
+		var element: String = snare_elements.get(sprung, "")
 		_clear_snare(sprung)
 		var setter := allies().filter(func(a): return a.name == sprung)
 		if not setter.is_empty():
 			Ambush.noticed(u, setter[0])   # the Snare's damage is the Ranger's hostile action (03 -> Ambush)
 		if not u.down:
 			u.snared = _until_next_turn_of(u)
-			hud.float_text(u, "-%d" % Rules.SNARE_DAMAGE, true)
-			await _hurt(u, Rules.SNARE_DAMAGE)
+			var dmg: int = Rules.SNARE_DAMAGE + (Rules.INFUSE_FIRE if element == "fire" else 0)   # Primal Snare: fire burns it (03)
+			hud.float_text(u, "-%d" % dmg, true)
+			await _hurt(u, dmg)
+		match element:   # Primal Snare (03): ice also slows nearby foes; lightning jumps to a second foe
+			"ice":
+				for e in foes_of(setter[0] if not setter.is_empty() else u):
+					if e != u and dist(e, u) <= Rules.NEARBY:
+						_slow(e, Rules.FROST_SLOW)
+			"lightning":
+				await _jump(u, Rules.INFUSE_JUMP)
+		if not setter.is_empty() and Progression.sub(setter[0].member) == "Shifter":
+			await _pounce(setter[0], u)
 		return
 	await _walk_on(u, path)
 
@@ -2255,7 +2491,7 @@ func confirm_end() -> void:
 func _check_end() -> void:
 	if not active:
 		return
-	var allies_up := units.any(func(u): return u.ally and not u.down and u.decoy == "" and not is_summon(u))
+	var allies_up := units.any(func(u): return u.ally and not u.down and u.decoy == "" and not is_summon(u) and u.beast_of == "")
 	var foes_up := units.any(func(u): return not u.ally and not u.down)
 	if not foes_up or not allies_up:
 		busy = true
@@ -2270,7 +2506,8 @@ func _check_end() -> void:
 func _turn_starts(u: Dictionary) -> void:
 	u.backstabbed = false
 	u.twirl = false
-	u.arcane_shield = false   # Arcane Shield and Bring It last until your next turn (03)
+	u.arcane_shield = false   # Arcane Shield, Bring It and Thick Hide last until your next turn (03)
+	u.thick_hide = false
 	u.bring_it = false
 	u.flowing = false
 	u.guard = false
@@ -2287,8 +2524,10 @@ func _turn_starts(u: Dictionary) -> void:
 		await _hurt(u, Rules.HEAT_DAMAGE)
 	if u.bleed_turns > 0 and not u.down:
 		u.bleed_turns -= 1
-		hud.float_text(u, "-%d" % Rules.DOT_DAMAGE, true)
-		await _hurt(u, Rules.DOT_DAMAGE)
+		var bled: int = Rules.SHRED_BLEED if u.bleed_heavy else Rules.DOT_DAMAGE   # Shred bleeds heavily (03)
+		u.bleed_heavy = u.bleed_heavy and u.bleed_turns > 0
+		hud.float_text(u, "-%d" % bled, true)
+		await _hurt(u, bled)
 	var heal := Races.regrowth(u.member, game.level) if u.ally else 0
 	if heal > 0 and not u.down and u.hp < u.max_hp:
 		var before: int = u.hp
@@ -2632,6 +2871,8 @@ func effects(u: Dictionary) -> Array:
 		fx.append(["Poison Blade", "hits this turn poison"])
 	if is_summon(u):
 		fx.append(["Summoned", "Summoned by %s" % u.summon_of])
+	if u.get("beast_of", "") != "":
+		fx.append(["Beast", "%s's beast" % u.beast_of])   # PLACEHOLDER line (Screen text check)
 	for s in status_icons(u):
 		fx.append([s[1], s[2]])
 	return fx
@@ -2646,7 +2887,7 @@ func status_icons(u: Dictionary) -> Array:
 	if u.lull:
 		out.append(["moon", "Dozing", "loses its next attack; any damage wakes it"])
 	if u.bleed_turns > 0:
-		out.append(["drop", "Bleeding", "%d damage at the start of its turn" % Rules.DOT_DAMAGE])
+		out.append(["drop", "Bleeding", "%d damage at the start of its turn" % (Rules.SHRED_BLEED if u.bleed_heavy else Rules.DOT_DAMAGE)])
 	if not u.poison.is_empty():
 		out.append(["skull", "Poisoned", "%d damage at the start of its turn" % Rules.DOT_DAMAGE])
 	if on(u, "slowed"):
@@ -2674,6 +2915,10 @@ func status_icons(u: Dictionary) -> Array:
 		out.append([CreatorData.IC.w_rapier, "Sidestepping", "Harder to hit"])
 	if u.arcane_shield:
 		out.append(["ward", "Arcane Shield", "Takes %d less damage" % Rules.ARCANE_SHIELD_LESS])
+	if u.get("shifted", false):
+		out.append([Cards.ALL.shift.icon, "Shifted", u.member.get("form", "")])   # PLACEHOLDER icon and line (Screen text check)
+	if u.thick_hide:
+		out.append(["shield", "Thick Hide", "Takes %d less damage" % Rules.THICK_HIDE_LESS])
 	if u.stakes:
 		out.append(["fight_once", "Raised stakes", "Next attack: 1 more heads, %dx damage" % Rules.STAKES_TIMES])
 	if not u.ally and not _taunter(u).is_empty():
@@ -2707,6 +2952,11 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["spark", "In sunlight", "Attacks on it flip %d extra coin" % Rules.SUNSPOT_COINS])
 	if u.temp > 0:
 		out.append(["star", "Temporary HP", "%d damage taken from this first" % u.temp])
+	if u.get("lurking", false):   # PLACEHOLDER line (Screen text check)
+		out.append(["eye", "Lurking", "Next strike: %dx damage, from behind" % Rules.AMBUSH_TIMES])
+	if u.get("infuse", "") != "":   # PLACEHOLDER line (Screen text check): the element's icon and its rider
+		var e: Dictionary = Rules.ELEMENTS[u.infuse]
+		out.append([e.icon, "Infused: %s" % e.n, e.rider])
 	return out
 
 

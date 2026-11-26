@@ -39,6 +39,8 @@ A D&D-esque RPG hex crawler in a classic high-fantasy setting, for PC and mobile
 
 ## Master open questions
 
+- [x] ~~The Shifter's Shift and werebeast forms~~ (settled Nov 22, 2026: kept as written; [Classes & combat](03 Classes & combat.md))
+- [x] ~~Element pick pop-up for Infuse and Primal Snare~~ (approved Nov 22, 2026: [Presentation](07 Presentation.md) → Combat screen)
 - [ ] New (Nov 25): Shifter forms' look is chosen (upright werebeasts in the hero's colours, bigger on one cell, torn gear remnants). Still open: fur for races without hair (dragonborn, golems), how shifting shows on the board, each form's pose (see Presentation → Shifter forms)
 - [ ] New: how much extra moving uphill costs on sloped combat maps (see Classes & combat)
 - [ ] New: Buried city: storm timing, quests when the library is buried, walking on the changing sand (see Map & exploration)

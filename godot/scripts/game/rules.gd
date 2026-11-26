@@ -232,6 +232,28 @@ const STAKES_TIMES := 2                  # PLACEHOLDER (03): Raise the Stakes, t
 const KILLING_TIMES := 3                 # PLACEHOLDER (03): Killing Shot
 const POISON_PLUS := 2                   # PLACEHOLDER (03): Poison Blade+, each poison's damage a tick
 const TROPHY_MORE := 1                   # PLACEHOLDER (03): Trophy Mark, more against giants
+const MAGIC_BLADE := 2                   # Magical Blade (Ethan, Nov 22, 2026): each hit deals the poison's damage (1 x 2 ticks) at once, as magic
+const INFUSE_FIRE := 1                   # PLACEHOLDER (03): Infuse fire, a hit deals this much more; Primal Snare fire burns for it too
+const INFUSE_JUMP := 1                   # PLACEHOLDER (03): Infuse lightning, damage that jumps to the nearest other foe within CHAIN_RANGE
+const ELEMENTS := {                      # DOCS (03 -> Elementalist): the three elements and their riders, on Infuse and on Primal Snare
+	"fire": {"n": "Fire", "icon": "fire", "rider": "Hits harder", "snare": "Burns the trapped foe"},
+	"ice": {"n": "Ice", "icon": "snow", "rider": "Slows", "snare": "Also slows foes nearby"},
+	"lightning": {"n": "Lightning", "icon": "bolt", "rider": "Jumps to a second foe", "snare": "Jumps to a second foe"}}
+## The Companion ranger's beast (03): on the board beside the ranger from the fight's start, the player's to act with (2 AP, like
+## summons), downed like an ally and back after the fight. Flips the ranger's DEX. PLACEHOLDER stats, for Ethan.
+const BEAST_STATS := {
+	"Wolf": {"hp": 8, "damage": 2, "weapon": "beast_bite", "move": 1, "rider": "prone"},   # fast, knocks foes down
+	"Bear": {"hp": 12, "damage": 2, "weapon": "beast_bite"},                               # sturdy
+	"Hawk": {"hp": 5, "damage": 1, "weapon": "beast_talons", "flies": true},               # flies, attacks at range
+	"Panther": {"hp": 8, "damage": 2, "weapon": "beast_bite", "behind": 2}}                # bonus damage from behind
+const BEAST_HP_PER_LEVEL := 1            # PLACEHOLDER (03: it levels with the ranger): max HP for each level above 5
+const DIVE_TIMES := 4                    # DOCS (03: Ethan, Nov 25, 2026): Dive, the hawk's damage x4
+const AMBUSH_TIMES := 2                  # PLACEHOLDER (03): Ambush's big strike from hiding, counted as from behind
+const HUNT_DOWN_DASH := 4                # DOCS (03 -> Shifter forms): Hunt Down's dash, up to 4 hexes
+const HUNT_DOWN_TIMES := 2               # DOCS (03: Ethan, Nov 25, 2026): its claw hit on arrival, double damage
+const POUNCE_TIMES := 2                  # DOCS (03: Ethan, Nov 25, 2026): Pounce's free basic attack, double damage
+const THICK_HIDE_LESS := 3               # PLACEHOLDER (03): Thick Hide's "much less damage" until your next turn
+const SHRED_BLEED := 2                   # PLACEHOLDER (03): Shred's heavy bleed, a tick, for DOT_TURNS
 
 ## The party and their cards as in the combat mockup (Combat v14), with 04's corrections: with a shield, Block takes Defend's
 ## place (04 -> Shields), and Backstab is a dagger modifier, not a card (04 -> Weapon rules): [Hero name] the Fighter (longsword and
@@ -329,7 +351,7 @@ const FROST_SLOW := 1                    # PLACEHOLDER (03): Frost Ray, the same
 const WHITE_SLOW := 1                    # PLACEHOLDER (06): white breath, the same
 const PUSH_HEXES := 1                    # DOCS (04): Shield Bash pushes the foe 1 hex
 const SNARE_RANGE := 3                   # PLACEHOLDER (03): an empty walkable hex up to 3 away
-const SNARE_DAMAGE := 1                  # PLACEHOLDER (03)
+const SNARE_DAMAGE := 2                  # DOCS (03: Ethan, Nov 25, 2026)
 const MARK_DAMAGE := 1                   # PLACEHOLDER (03): Hunter's Mark, on every hit you land on the marked foe
 const DANCE_HEXES := 2                   # PLACEHOLDER (04): Dancing Step
 const STEP_STRIKE_HEXES := 2             # PLACEHOLDER (04): Step and Strike

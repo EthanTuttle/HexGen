@@ -118,6 +118,34 @@ func _title() -> void:
 	await _cost("title")
 	await _wait(1.5)
 	text_sizes("title", front.title)
+	_title_layout("no save")
+	# With a save: Continue, New campaign, then Load and Multiplayer in a row (a made-up hero, so no save is written)
+	front.title._build_buttons(false, [{id = "check", name = "Checkhero", slots = [],
+		autos = [{level = 2, place = "Dunes/wasteland", time = "Nov 10, 10:11 pm", file = ""}]}])
+	await _wait(0.2)
+	check(control("Continue") != null and control("Load") != null, "title: Continue and Load show with a save")
+	_title_layout("a save")
+	await shot("title_save")
+	front.title._build_buttons()
+	await _wait(0.2)
+
+
+## The title's buttons don't overlap, each label fits its button, and all of them are on screen.
+func _title_layout(where: String) -> void:
+	var bs: Array = front.title._buttons
+	var screen := get_viewport().get_visible_rect()
+	var bad := []
+	for i in bs.size():
+		var r: Rect2 = bs[i].get_global_rect()
+		if not screen.encloses(r):
+			bad.append("%s off screen" % bs[i].accessibility_name)
+		var words: float = UI.font(bs[i].font_kind).get_string_size(bs[i].text, HORIZONTAL_ALIGNMENT_LEFT, -1, bs[i].text_size).x
+		if words + bs[i].cut * 2.0 > r.size.x:
+			bad.append("%s's label doesn't fit" % bs[i].accessibility_name)
+		for j in range(i + 1, bs.size()):
+			if r.grow(-1.0).intersects(bs[j].get_global_rect()):
+				bad.append("%s overlaps %s" % [bs[i].accessibility_name, bs[j].accessibility_name])
+	check(bad.is_empty(), "title (%s): %d buttons in place %s" % [where, bs.size(), bad])
 
 
 func _creator() -> void:
@@ -546,8 +574,14 @@ func _game_run() -> void:
 		await _own_town(g, next, id)
 	g.map.retile({next: "village"})
 	g._refresh()
+	# No spawn rolls on the clock from here: Dunfaire's rest makes the next one due, and a roll on a later step put an
+	# encounter on (1, 0), the tile the walk back ends on and Social's second event uses, so the walk stopped on a pop-up
+	# nobody answers. These sections place their own encounters.
+	var rolls := g.run.spawn_rolls
+	g.run.spawn_rolls = false
 	await _dunfaire(g, next)
 	await _social(g)
+	g.run.spawn_rolls = rolls
 
 
 ## Dunfaire Tower, the Soldier's start (design/07 -> Town screen): Enter opens its own scene, framed back by its view
@@ -597,7 +631,7 @@ func _dunfaire(g: Game, back_to: Vector2i) -> void:
 	await _wait(0.8)
 	check(g.map.visible and not g.busy, "dunfaire: Leave hands the map back")
 	g.run.background = was
-	g.encounters.clear()   # the rest's 8 hours rolled spawns, which would stop the walk back
+	g.encounters.clear()   # nothing left on the walk back from earlier in the run
 	g.walk_to(back_to)
 	while g.busy or g.party_tile != back_to:
 		await get_tree().process_frame

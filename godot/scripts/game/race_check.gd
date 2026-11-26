@@ -446,7 +446,7 @@ func _gear_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 		"XP grows with the region tier and the foe's role")
 	_check(Foes.tier(game, Vector2i(99, 99)) == 1, "a tile outside any finished region counts as tier 1")
 	var gear_ids := Gear.WEAPONS.map(func(w): return w.id)
-	var fight_ids := Weapons.CAT.keys().filter(func(k): return not k.begins_with("summon_"))
+	var fight_ids := Weapons.CAT.keys().filter(func(k): return not k.begins_with("summon_") and not k.begins_with("beast_"))
 	gear_ids.sort()
 	fight_ids.sort()
 	_check(gear_ids == fight_ids, "the gear reference and the fight numbers list the same weapons (Gear, Weapons.CAT)")

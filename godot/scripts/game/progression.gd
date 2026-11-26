@@ -135,12 +135,12 @@ const SUBCLASSES := {
 		"Con Artist": {"blurb": "A silver-tongued swindler who talks foes into dropping their guard.", "card": "fake_surrender", "of": "poison_blade", "n": "Sleeping Draught", "text": "Hits this turn make foes drowsy: they flip one fewer coin.", "up_built": true},
 		"Assassin": {"blurb": "A patient killer who strikes from the shadows, then vanishes.", "card": "vanish", "of": "poison_blade", "n": "Poison Blade+", "text": "Poison Blade's poison is deadlier.", "up_built": true},
 		"Gambler": {"blurb": "A reckless risk-taker who bets everything on the flip of a coin.", "card": "raise_the_stakes", "of": "poison_blade", "n": "Wild Card", "text": "Every hit for the rest of this turn applies a random status (poison, bleed, slow or blind).", "up_built": true},
-		"Arcane Trickster": {"blurb": "A sly thief who uses magic to gain the advantage.", "card": "mage_hand", "of": "poison_blade", "n": "Magical Blade", "text": "Poison Blade's hits this turn deal magic damage instead of poison.", "up_built": false}},
+		"Arcane Trickster": {"blurb": "A sly thief who uses magic to gain the advantage.", "card": "mage_hand", "of": "poison_blade", "n": "Magical Blade", "text": "Poison Blade's hits this turn deal magic damage instead of poison.", "up_built": true}},
 	"ranger": {
 		"Hunter": {"blurb": "A relentless tracker who always brings down the biggest prey.", "card": "killing_shot", "of": "hunters_mark", "n": "Trophy Mark", "text": "Hunter's Mark's extra damage grows against large foes.", "up_built": true},
-		"Shifter": {"blurb": "A wild warrior who unleashes the beast within.", "card": "shift", "of": "snare", "n": "Pounce", "text": "When your Snare springs, you may leap to the trapped foe for free.", "up_built": false, "follow": "form"},
-		"Companion": {"blurb": "A loyal beast-friend who fights side by side with an animal ally.", "card": "command_beast", "of": "hunters_mark", "n": "Pack Mark", "text": "Hunter's Mark also boosts your beast's damage.", "up_built": false, "follow": "beast"},
-		"Elementalist": {"blurb": "A nature-touched warrior whose every strike carries the elements.", "card": "infuse", "of": "snare", "n": "Primal Snare", "text": "Snare takes an element chosen when it's set: fire burns the trapped foe, ice also slows nearby foes, lightning jumps to a second foe.", "up_built": false}},
+		"Shifter": {"blurb": "A wild warrior who unleashes the beast within.", "card": "shift", "of": "snare", "n": "Pounce", "text": "When your Snare springs, you may leap to the trapped foe for free and attack it for double damage.", "up_built": true, "follow": "form"},
+		"Companion": {"blurb": "A loyal beast-friend who fights side by side with an animal ally.", "card": "command_beast", "of": "hunters_mark", "n": "Pack Mark", "text": "Hunter's Mark also boosts your beast's damage.", "up_built": true, "follow": "beast"},
+		"Elementalist": {"blurb": "A nature-touched warrior whose every strike carries the elements.", "card": "infuse", "of": "snare", "n": "Primal Snare", "text": "Snare takes an element chosen when it's set: fire burns the trapped foe, ice also slows nearby foes, lightning jumps to a second foe.", "up_built": true}},
 	"wizard": {
 		"Summoner": {"blurb": "A binder of souls who calls spirits and steel to fight beside them."},
 		"Blaster": {"blurb": "A volatile spellcaster who unleashes fire, ice and lightning."},
@@ -163,7 +163,7 @@ const DEFAULT_SUBCLASS := {"Fluffy": "Blaster", "Mel": "Con Artist", "Chelmsford
 const COMPANION_GOD := {"Chelmsford": "Aurora"}   # DOCS (01: an Order of Good cleric of Aurora)
 
 ## The Shifter's forms (03 -> Shifter forms), the Companion ranger's beasts (03 -> Companion ranger's beast) and the gods
-## (03 -> God spells) with the follow-up's card. Forms and beasts need their own rules (built = false).
+## (03 -> God spells) with the follow-up's card.
 const FORMS := {
 	"Werewolf": {"feel": "Fast", "card": "hunt_down"},
 	"Werebear": {"feel": "Tough", "card": "thick_hide"},
@@ -417,8 +417,11 @@ static func apply_subclass(m: Dictionary, name: String, follow := "", spell := "
 				m.renames = {}
 			m.renames[s.of] = s.n
 	match s.get("follow", ""):
-		"form":
+		"form":   # in form only (03): Rending Claws and the form's card wait in All actions; the hotbar swaps in form (Fight.hot_slots)
 			m.form = follow
+			for id: String in ["rending_claws", FORMS.get(follow, {}).get("card", "")]:
+				if id != "" and not id in m.cards:
+					m.cards.append(id)
 		"beast":
 			m.beast = follow
 		"god":
@@ -484,6 +487,9 @@ static func bot_subclass(m: Dictionary) -> String:
 	if DEFAULT_SUBCLASS.has(m.get("name", "")):
 		return DEFAULT_SUBCLASS[m.name]
 	var names: Array = SUBCLASSES[klass(m)].keys()
+	var asked := _test_arg("--subclass=")   # test aid: the hero's subclass ("--subclass=Elementalist")
+	if asked in names:
+		return asked
 	var built := names.filter(func(n): return SUBCLASSES[klass(m)][n].get("up_built", true) and Cards.ALL.get(SUBCLASSES[klass(m)][n].get("card", ""), {}).get("built", true))
 	return built[0] if not built.is_empty() else names[0]
 
@@ -491,9 +497,9 @@ static func bot_subclass(m: Dictionary) -> String:
 static func bot_follow_sub(m: Dictionary, name: String) -> String:
 	match SUBCLASSES[klass(m)][name].get("follow", ""):
 		"form":
-			return FORMS.keys()[0]
+			return _test_arg("--form=") if _test_arg("--form=") in FORMS else FORMS.keys()[0]   # test aid: "--form=Werecat"
 		"beast":
-			return BEASTS.keys()[0]
+			return _test_arg("--beast=") if _test_arg("--beast=") in BEASTS else BEASTS.keys()[0]   # test aid: "--beast=Hawk"
 		"god":
 			return COMPANION_GOD.get(m.get("name", ""), "Adam")   # Adam's Stone Skin is built
 	return ""
@@ -549,8 +555,28 @@ static func card_for(m: Dictionary, c: Dictionary) -> Dictionary:
 		"attack":
 			if trained(m, "reach_plus") and m.get("weapon", "") == "spear" and m.get("off", "") in ["", "none"]:
 				c.range = 3
+		"command_beast":   # the beast's own move (03 -> Companion ranger's beast): its name and text show on the card
+			if BEASTS.has(m.get("beast", "")):
+				var move: Dictionary = Cards.ALL[BEASTS[m.beast].card]
+				c.desc = "%s: %s" % [move.n, move.desc.get_slice(": ", 1)]
+				c.icon = move.icon
+				if m.beast == "Hawk":   # Dive is a hit from the hawk, at the hawk's range, ignoring cover
+					c.kind = "attack"
+					c.effect = "dive"
+					c.range = Weapons.of("beast_talons").range
+					c.ranged = true
+					c.pierce = true
+					c.times = Rules.DIVE_TIMES
 		"poison_blade":
 			var s := sub(m)
-			if s in ["Con Artist", "Gambler"]:
+			if s in ["Con Artist", "Gambler", "Arcane Trickster"]:
 				c.desc = "Rogue: " + SUBCLASSES.rogue[s].text
 	return c
+
+
+## A test aid's value from the command line ("--subclass=Companion" -> "Companion"), or "".
+static func _test_arg(key: String) -> String:
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with(key):
+			return a.substr(key.length())
+	return ""

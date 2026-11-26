@@ -22,6 +22,11 @@ static func _mesh(name: String) -> Mesh:
 		return HeroMini.mesh_for(Hero.current)
 	if name.begins_with("summon_"):
 		return _summon_mesh(name)
+	if name.begins_with("beast_"):   # the Companion ranger's beast, in the ranger's cloth (art/handoff/beasts_kit.md)
+		var cloth := "#5E7A4A"   # PLACEHOLDER when there's no hero from the creator
+		if Hero.current != null:
+			cloth = HeroMini.description(Hero.current).colours.cloth
+		return HeroMini.beast_mesh(name.trim_prefix("beast_"), cloth)
 	if name.begins_with("standin_"):
 		var standins := Kit.meshes("res://art/standin_minis.glb")
 		Kit.combat_materials(standins)   # their colours are in the vertices too, since the art's facing fix
