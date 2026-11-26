@@ -1,7 +1,7 @@
 """Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the matching ally beast, from three
 sides; the form in three heroes' colours; the form alone, large; and the line-up at the combat camera.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf | builds]
 Uses the latest shifter_minis, hero_kit and beast_minis. Writes art/preview/shifter_<form>_*_vN.png and the sheets
 shifter_<form>_vN.png (line-ups and colours) and shifter_<form>_solo_vN.png.
 """
@@ -91,6 +91,31 @@ def solo(form):
     rb.sheet_full(stems, f"shifter_{form}_solo", cols=3)
 
 
+def builds():
+    """Each form in the slim, average and broad builds, beside the human hero in the same three builds, three-quarter
+    and side on, and the whole set at the combat camera: shifter_builds_vN.png."""
+    stems = []
+    for form in ALLY:
+        for spin, tag in ((-28, "three"), (-90, "side")):
+            t, col = start()
+            for i, b in enumerate(hb.BUILDS):
+                if tag == "three":  # the hero in the same build beside each form; side on, the forms alone
+                    rh.stand(t, col, dict(SHIFTER, build=b), f"hero_{b}", at=(2.3 * (i - 1) - 0.55, 0.0, 0), spin=spin)
+                    at_ = (2.3 * (i - 1) + 0.55, 0, 0)
+                else:
+                    at_ = (1.3 * (i - 1), 0, 0)
+                rb.beast(t, f"shifter_{form}_{b}", SHIFTER["colours"], f"{form}_{b}", col, at_, spin)
+            stem = f"shifter_builds_{form}_{tag}"
+            rh.shot(stem, Vector((0, 0, 0.6)), 10.5 if tag == "three" else 7.0, 12, (1800, 700))
+            stems.append(stem)
+    fm.sheet(stems, "shifter_builds", cols=2)
+    t, col = start()
+    for j, form in enumerate(ALLY):
+        for i, b in enumerate(hb.BUILDS):
+            rb.beast(t, f"shifter_{form}_{b}", SHIFTER["colours"], f"{form}_{b}", col, (1.0 * (i - 1) + 3.3 * (j - 1), 0, 0), 0)
+    rh.shot("shifter_builds_combat", Vector((0, 0, 0.5)), 14, 50, (1800, 600))
+
+
 if __name__ == "__main__":
     for name in (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["werewolf"]):
-        render(name)
+        builds() if name == "builds" else render(name)
