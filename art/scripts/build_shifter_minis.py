@@ -17,7 +17,11 @@ a form takes the hero's own swatches (07: every hero gets their own wolf):
                              gear). Taller and much broader than a human hero. Approved (Ethan, Nov 26, 2026: v6).
   shifter_werebear_average   the tough form: a towering upright bear, small round head and pale snarling muzzle low under a
                              massive hump, barrel chest and belly, huge arms with paws turned palm in, thick pillar legs
-                             planted wide, broad flat feet, a stub tail, the scarf, torn trousers and a belt.
+                             planted wide, broad flat feet, a stub tail, the scarf, torn trousers and a belt. Approved
+                             (Ethan, Nov 26, 2026: v2).
+  shifter_werecat_average    the burst form: a lean big cat crouched to spring, round head with big ears and slit eyes,
+                             one arm raised to slash, the other low, slim hind legs, a long curling tail, tabby stripes,
+                             the scarf, torn trousers and a belt.
 """
 import math
 import os
@@ -363,10 +367,165 @@ def werebear(col, build="average"):
     return p.finish(col)
 
 
+def werecat(col, build="average"):
+    """The burst form (Shred): a lean, low big cat on its hind legs, crouched to spring. A round cat's head with big
+    upright ears, slit pupils and a short muzzle, hissing, on a slim neck; narrow shoulders and a deep, narrow chest over
+    a tight waist; the front arm raised beside the head to slash, palm forward and claws out, the other low and ready,
+    palm in like the werewolf's; slim crouched hind legs on light feet; a long tail curling up behind. Short sleek fur,
+    a few tufts at the cheeks and elbows, dark tabby stripes on the back and limbs."""
+    p = hk.Piece(f"shifter_werecat_{build}")
+    sm.base(p, "ring_hero")
+    fur, back, pale, dark = zone("hair"), zone("hair", 0.82), zone("hair", 1.25), zone("hair", 0.55)
+    light = zone("hair", 1.12)
+    cloth, cloth_d = zone("cloth", 0.62), zone("cloth", 0.5)
+
+    def at(x, y, z):
+        return V((x, y, Z0 + z))
+
+    def coat(c, n):
+        if n.y < -0.35 and abs(c.x) < 0.09 and Z0 + 0.55 < c.z < Z0 + 0.85:
+            return pale
+        if n.z > 0.5 or n.y > 0.45:
+            return back
+        return fur
+
+    def tuft(q, d, r=0.035, paint=None):
+        vr.spike(p, q, q + d, r, paint or back, segments=3)
+
+    def stripe(a, b_, r=0.012):
+        em.limb(p, [a, b_], [r, r * 0.6], [dark], sides=3)
+
+    def hand(w_, fingers, palm_side, thumb_hint, k=1.0):
+        """A cat's hand: a slim palm, four fingers curling toward the palm side, long hooked claws, a thumb on the
+        thumb side."""
+        inward = (palm_side - fingers * palm_side.dot(fingers)).normalized()
+        across = fingers.cross(inward).normalized()
+        thumb = across if across.dot(thumb_hint) > 0 else -across
+        palm = w_ + fingers * 0.065 * k
+        em.loft(p, [em.section(w_, 0.035, 0.028, along=fingers, up=inward, sides=6),
+                    em.section(palm, 0.05, 0.026, along=fingers, up=inward, sides=6)], lambda c, n: fur)
+        for j in range(4):
+            spread = (1.5 - j) * 0.026
+            root = palm + thumb * spread
+            mid = root + fingers * 0.04 + thumb * spread * 0.3 + inward * 0.008
+            tip = mid + fingers * 0.03 + inward * 0.02
+            em.limb(p, [root, mid, tip], [0.014, 0.012, 0.01], [fur, dark], sides=4)
+            vr.spike(p, tip, tip + inward * 0.03 + fingers * 0.045, 0.01, "claw", segments=3)
+        t0 = w_.lerp(palm, 0.5) + thumb * 0.045
+        t1 = t0 + thumb * 0.015 + inward * 0.03 + fingers * 0.025
+        em.limb(p, [t0, t1], [0.014, 0.011], [fur], sides=4)
+        vr.spike(p, t1, t1 + inward * 0.025 + fingers * 0.03, 0.009, "claw", segments=3)
+
+    # The torso, leaning far forward in a crouch: tight hips and waist, a deep narrow chest, slim shoulders.
+    lean = V((0, -0.75, 1)).normalized()
+    em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
+                ((0.07, 0.5, 0.125, 0.11), (0.02, 0.58, 0.11, 0.1), (-0.05, 0.67, 0.14, 0.125), (-0.12, 0.76, 0.18, 0.135),
+                 (-0.18, 0.83, 0.19, 0.12), (-0.22, 0.87, 0.13, 0.1))], coat)
+    for x in SIDE:
+        p.blob(at(x * 0.17, -0.19, 0.84), 0.08, back, squash=0.9)  # the shoulders
+    for k in range(4):  # tabby stripes over the back
+        y, z = 0.0 - k * 0.06, 0.62 + k * 0.06
+        for x in SIDE:
+            stripe(at(0.0, y + 0.06, z + 0.06), at(x * 0.11, y + 0.02, z - 0.02), 0.014)
+
+    # The neck and head: a slim neck rising to a round skull, big ears, a short muzzle, hissing.
+    fwd = V((0, -1, -0.05)).normalized()
+    hc = at(0, -0.3, 0.98)
+    em.loft(p, [em.section(at(0, y, z), w, d, along=V((0, -0.5, 1)), up=V((0, 1, 0)), sides=8) for y, z, w, d in
+                ((-0.2, 0.84, 0.1, 0.085), (-0.24, 0.9, 0.08, 0.07), (-0.27, 0.95, 0.07, 0.065))], coat)
+
+    def h(y, z, x=0.0):
+        return hc + fwd * y + V((x, 0, z))
+
+    def head_fur(c, n):
+        ahead = (c - hc).dot(fwd)
+        rise = (c - (hc + fwd * ahead)).z
+        if ahead > 0.1 and rise > -0.02:
+            return zone("skin", 0.75)  # the nose pad
+        if ahead > 0.045 and rise < -0.01:
+            return pale
+        return back if rise > 0.04 else fur
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, ridge=r, sides=8) for y, z, w, d, r in
+                ((-0.075, 0.0, 0.07, 0.07, 1.0), (-0.025, 0.008, 0.1, 0.088, 1.0), (0.03, 0.0, 0.094, 0.078, 1.0),
+                 (0.06, -0.025, 0.062, 0.05, 0.8), (0.09, -0.03, 0.05, 0.04, 0.75), (0.108, -0.028, 0.032, 0.028, 0.7))], head_fur)
+    em.loft(p, [em.section(h(y, z), w, d, along=fwd, sides=6) for y, z, w, d in
+                ((0.02, -0.068, 0.058, 0.026), (0.07, -0.078, 0.042, 0.02), (0.095, -0.076, 0.028, 0.014))], lambda c, n: pale)
+    em.loft(p, [em.section(h(y, -0.064), w, 0.014, along=fwd, sides=6) for y, w in ((0.04, 0.05), (0.095, 0.03))],
+            lambda c, n: "hero_mouth")
+    for x in SIDE:
+        root = h(0.088, -0.05, x * 0.022)
+        vr.spike(p, root, root + V((0, 0, -0.03)), 0.007, "fang", segments=3)
+    bb.face(p, h, fwd, eye=(0.035, 0.028, 0.05, 0.03, 0.02), brow=((0.045, 0.052, 0.022), (0.025, 0.05, 0.065)), dark=dark,
+            slit=True, splay=0.55)
+    for x in SIDE:  # big upright ears, skin inside, dark tips
+        root = h(-0.035, 0.06, x * 0.058)
+        tip = root + V((x * 0.035, 0.02, 0.105))
+        vr.spike(p, root, tip, 0.045, back, segments=3)
+        vr.spike(p, tip - V((x * 0.006, 0.0, 0.03)), tip + V((0, 0, 0.012)), 0.012, dark, segments=3)
+        vr.spike(p, root + fwd * 0.012 + V((0, 0, 0.01)), root + fwd * 0.012 + V((x * 0.028, 0.012, 0.08)), 0.026, zone("skin", 0.85), segments=3)
+        for k in range(3):  # cheek ruff
+            tuft(h(-0.005 - k * 0.03, -0.035, x * 0.085), V((x * 0.055, 0.04, -0.03)), 0.028, fur)
+        for k in range(2):  # whiskers
+            q = h(0.085, -0.04 - k * 0.012, x * 0.035)
+            em.limb(p, [q, q + V((x * 0.09, 0.02, -0.01 + k * 0.012))], [0.003, 0.0], ["fang"], sides=3)
+
+    # The ranger's scarf round the slim neck, knotted at the side, its tail streaming back.
+    em.loft(p, [em.section(q, 0.11, 0.095, along=V((0, -0.5, 1)), sides=8) for q in (at(0, -0.22, 0.85), at(0, -0.245, 0.9))],
+            lambda c, n: zone("cloth"))
+    p.blob(at(0.08, -0.3, 0.86), 0.032, zone("cloth", 0.9))
+    em.limb(p, [at(-0.07, -0.2, 0.92), at(-0.1, -0.08, 0.94), at(-0.12, 0.04, 0.9), at(-0.12, 0.14, 0.82)], [0.032, 0.03, 0.025, 0.0],
+            [zone("cloth"), zone("cloth", 0.88)], sides=4)
+
+    # Arms: the right raised beside the head to slash, palm forward; the left low and forward, palm in.
+    s, e, w_ = at(0.18, -0.2, 0.85), at(0.32, -0.08, 1.0), at(0.25, -0.26, 1.12)
+    em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
+    tuft(e, V((0.04, 0.07, -0.02)), 0.032)
+    stripe(e.lerp(w_, 0.35) + V((0.035, 0, 0)), e.lerp(w_, 0.35) + V((-0.02, 0.0, 0.04)))
+    hand(w_, V((0, -1, -0.45)).normalized(), V((0, -0.25, -1)), V((-1, 0, 0)))
+    s, e, w_ = at(-0.18, -0.2, 0.83), at(-0.24, -0.14, 0.64), at(-0.2, -0.33, 0.55)
+    em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
+    tuft(e, V((-0.04, 0.06, -0.03)), 0.03)
+    stripe(e.lerp(w_, 0.4) + V((-0.03, 0, 0)), e.lerp(w_, 0.4) + V((0.02, -0.03, -0.02)))
+    down = ((w_ - e).normalized() + V((0, 0, -1))).normalized()
+    hand(w_, down, V((1, 0, -0.18)), V((0, -1, 0)))
+
+    # Torn trousers in the ranger's cloth and a belt (07: torn remnants of gear).
+    em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
+                ((0.085, 0.46, 0.12, 0.11), (0.055, 0.55, 0.115, 0.105))], lambda c, n: cloth)
+    em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
+                ((0.05, 0.55, 0.12, 0.11), (0.035, 0.59, 0.12, 0.11))], lambda c, n: "belt")
+    p.box(at(0.0, -0.06, 0.55), (0.05, 0.02, 0.04), "buckle")
+
+    # Hind legs: slim and crouched to spring, the right a step back, light feet with small claws.
+    legs = ((1, at(0.09, 0.07, 0.48), at(0.15, -0.12, 0.34), at(0.13, 0.08, 0.15), at(0.13, -0.03, 0.035)),
+            (-1, at(-0.09, 0.05, 0.48), at(-0.15, -0.18, 0.35), at(-0.13, 0.0, 0.15), at(-0.13, -0.12, 0.035)))
+    for x, hip, knee, hock, ball in legs:
+        hem = hip.lerp(knee, 0.35)
+        em.limb(p, [hip, hem, knee, knee.lerp(hock, 0.4), hock, ball], [0.11, 0.105, 0.072, 0.055, 0.034, 0.03], [cloth, fur, fur, fur, fur], sides=6)
+        p.blob(hip.lerp(knee, 0.6), 0.088, fur, squash=0.9)
+        p.blob(knee.lerp(hock, 0.3) + (hock - knee).normalized().cross(V((x, 0, 0))) * 0.025, 0.055, fur, squash=1.2)  # the calf
+        for k in range(3):
+            a = math.radians(50 + k * 80) * x
+            q = hem + V((math.sin(a) * 0.09 * x, -math.cos(a) * 0.08, 0))
+            vr.spike(p, q, q + V((0, 0, -0.06)), 0.025, cloth_d, segments=3)
+        stripe(knee.lerp(hock, 0.3) + V((x * 0.04, 0, 0)), knee.lerp(hock, 0.3) + V((-x * 0.01, 0.04, 0.02)))
+        p.blob(V((ball.x, ball.y, Z0 + 0.025)), 0.035, fur, squash=0.6)
+        for k in (-1.5, -0.5, 0.5, 1.5):
+            root = V((ball.x + k * 0.018, ball.y - 0.025, Z0 + 0.022))
+            tip = root + V((k * 0.006, -0.035, -0.005))
+            em.limb(p, [root, tip], [0.013, 0.011], [fur], sides=4)
+            vr.spike(p, tip, tip + V((0, -0.02, -0.01)), 0.006, "claw", segments=3)
+
+    # The tail: long, out behind and curling up, dark rings toward a dark tip.
+    pts = [at(0, 0.1, 0.5), at(0.06, 0.24, 0.47), at(0.16, 0.32, 0.56), at(0.21, 0.3, 0.7), at(0.2, 0.24, 0.82), at(0.16, 0.2, 0.86)]
+    em.limb(p, pts, [0.04, 0.038, 0.035, 0.032, 0.028, 0.0], [fur, fur, dark, fur, dark], sides=6)
+    return p.finish(col)
+
+
 def build():
     hk.empty_scene()
     col = hk.new_collection("shifter_minis")
-    for make in (werewolf, werebear):
+    for make in (werewolf, werebear, werecat):
         ob = make(col)
         ob.data.calc_loop_triangles()
         print("TRIS", ob.name, len(ob.data.loop_triangles))
