@@ -79,6 +79,10 @@ static func cells() -> Array[Vector2i]:
 	return out
 
 
+const SHIFT_TIME := 0.5    # DOCS (07 -> Shifter forms): about half a second
+const SHIFT_PUFFS := 10   # PLACEHOLDER: how many puffs
+
+
 func add_mini(name: String, c: Vector2i, facing: Vector2) -> Node3D:
 	var mini := Minis.make(name, Hex.cell_position(c.x, c.y), facing)
 	add_child(mini)
@@ -158,8 +162,9 @@ var _clock := 0.0   # frame time, so a fixed-rate capture plays at real speed
 var _glows := {}    # mini -> [hull, motes (AttackMotions.Fx), started]
 
 
-## A Shifter's mini swaps to its form's (Minis.set_form; "" swaps back) and grows into it from 80%. PLACEHOLDER: how
-## shifting shows on the board is open (07 -> Open questions), so it's a plain swap and grow.
+## A Shifter's mini swaps to its form's (Minis.set_form; "" swaps back) and grows into it from the hero's height over about
+## half a second, with a burst of puffs in the fur's colour; shifting back shrinks from the beast's height the same way
+## (07 -> Shifter forms, Ethan, Nov 26, 2026).
 func shift_form(mini: Node3D, form: String) -> void:
 	var body := mini.get_node("body") as MeshInstance3D
 	var was := body.mesh
@@ -169,8 +174,25 @@ func shift_form(mini: Node3D, form: String) -> void:
 	if _glows.has(mini):   # the outline follows the new shape
 		_drop_glow(mini)
 		glow(mini, true)
-	body.scale = Vector3.ONE * 0.8
-	create_tween().tween_property(body, "scale", Vector3.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	body.scale = Vector3.ONE * clampf(was.get_aabb().end.y / body.mesh.get_aabb().end.y, 0.5, 2.0)
+	create_tween().tween_property(body, "scale", Vector3.ONE, SHIFT_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var fur := Color(HeroMini.form_fur(Hero.current)) if Hero.current != null else Color("#8E7A62")
+	var puffs: Array = []
+	for n in SHIFT_PUFFS:
+		puffs.append([AttackMotions.Fx.new(self, AttackMotions.ico(0.07, 1), fur.lightened(0.15 * (n % 3))), n * 360.0 / SHIFT_PUFFS + 20.0 * (n % 2)])
+	var spin := func(t: float) -> void:
+		for p: Array in puffs:
+			var fx: AttackMotions.Fx = p[0]
+			if not is_instance_valid(mini) or not is_instance_valid(fx.node):
+				continue
+			var u := AttackMotions.out(t)
+			fx.show(mini.global_position + AttackMotions.dir_at(p[1]) * (0.2 + 0.45 * u) + Vector3.UP * (0.35 + 0.5 * u + 0.12 * sin(p[1])), 0.7 + 0.9 * u, Basis.IDENTITY, 1.0 - t)
+	var tw := create_tween()
+	tw.tween_method(spin, 0.0, 1.0, SHIFT_TIME)
+	tw.tween_callback(func():
+		for p: Array in puffs:
+			if is_instance_valid(p[0].node):
+				p[0].node.queue_free())
 
 
 ## Turns a mini's glow on (from now) or off.

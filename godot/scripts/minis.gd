@@ -25,7 +25,7 @@ static func set_form(mini: Node3D, form: String) -> void:
 	if name != "standin_hero" or Hero.current == null:
 		return
 	var body := mini.get_node("body") as MeshInstance3D
-	body.mesh = HeroMini.form_mesh(HeroMini.description(Hero.current), form) if form != "" else _mesh(name)
+	body.mesh = HeroMini.form_mesh(HeroMini.description(Hero.current), form, HeroMini.form_fur(Hero.current)) if form != "" else _mesh(name)
 
 
 static func _mesh(name: String) -> Mesh:

@@ -49,7 +49,7 @@ func _run() -> void:
 		h.sub = game.run.sub
 		h.gear = {"main": hero_m.weapon, "off": hero_m.off, "armour": hero_m.armour}
 		var look: Array = SHIFTER_LOOKS.get(hero_m.get("form", ""), SHIFTER_LOOKS.Werewolf)
-		h.appearance = {"race": h.race, "sub": h.sub, "build": "Average", "head": 0, "hair": 0, "hair_colour": look[0], "cloth": look[1]}
+		h.appearance = {"race": h.race, "sub": h.sub, "build": Progression._test_arg("--build=") if Progression._test_arg("--build=") != "" else "Average", "head": 0, "hair": 0, "hair_colour": look[0], "cloth": look[1]}
 		Hero.current = h
 	await _fight("plains_stones")
 	var hero: Dictionary = f.units[0]
@@ -296,19 +296,34 @@ func _close_day_night(u: Dictionary, name: String) -> void:
 			await _shot(name + when[1])
 
 
+## Presses Shift; with `--shots`, a shot mid-way through the grow (or shrink) and its puffs.
+func _press_shift(hero: Dictionary, name: String) -> void:
+	if not "--shots" in OS.get_cmdline_user_args():
+		await f.press_button()
+		return
+	f.press_button.call_deferred()
+	await get_tree().process_frame
+	await _wait(0.18)
+	game.get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path("res://screens/ranger").path_join(name + ".png"))
+	while f.busy:
+		await get_tree().process_frame
+
+
 ## The hero's mini: the form's werebeast in form, taller than the hero, on one cell; the hero again out of it (07).
 func _check_mini(hero: Dictionary, form: String, shifted: bool) -> void:
 	var body := hero.mini.get_node("body") as MeshInstance3D
 	var own := HeroMini.mesh_for(Hero.current)
-	var beast := HeroMini.form_mesh(HeroMini.description(Hero.current), form)
+	var d := HeroMini.description(Hero.current)
+	var beast := HeroMini.form_mesh(d, form, HeroMini.form_fur(Hero.current))
 	if not shifted:
 		_check(body.mesh == own, "out of form: the hero's own mini")
 		return
 	var tall: float = beast.get_aabb().end.y
-	var tris := beast.surface_get_array_index_len(0) / 3
-	print("RANGER %s mini: %d triangles (the hero %d), %.2f tall (the hero %.2f)" % [form, tris, own.surface_get_array_index_len(0) / 3, tall, HeroMini.race_tall(HeroMini.description(Hero.current).race)])
-	_check(body.mesh == beast and tall > HeroMini.race_tall(HeroMini.description(Hero.current).race), "in form: the %s mini, taller than the hero (%.2f)" % [form, tall])
-	_check(absf(tall - HeroMini.FORM_TALL[form.to_lower()] * HeroMini.race_tall(HeroMini.description(Hero.current).race) / HeroMini.race_tall("human")) < 0.01, "the %s stands its size for the race" % form)
+	var raw: Mesh = Kit.meshes(HeroMini.SHIFTER_GLB)["shifter_%s_%s" % [form.to_lower(), d.build]]
+	var want: float = HeroMini.FORM_BASE_TOP + (raw.get_aabb().end.y - HeroMini.FORM_BASE_TOP) * HeroMini.form_scale(d.race)
+	print("RANGER %s mini (%s %s): %d triangles (the hero %d), %.2f tall" % [form, d.race, d.build, beast.surface_get_array_index_len(0) / 3, own.surface_get_array_index_len(0) / 3, tall])
+	_check(body.mesh == beast, "in form: the %s mini (%s build)" % [form, d.build])
+	_check(absf(tall - want) < 0.01, "the %s stands its race's height (%.2f, x%.2f)" % [form, tall, HeroMini.form_scale(d.race)])
 	var box := beast.get_aabb()
 	_check(maxf(absf(box.position.x), box.end.x) <= 0.6 and maxf(absf(box.position.z), box.end.z) <= 0.6, "the %s keeps to its cell (%.2f x %.2f)" % [form, box.size.x, box.size.z])
 
@@ -331,7 +346,7 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	# Shift: 1 AP; the weapon cards go, the claws and the form's card come.
 	_turn(hero)
 	f.pick_card("shift")
-	await f.press_button()
+	await _press_shift(hero, "shifter_%s_1b_growing" % form.to_lower())
 	_check(hero.shifted and f.ap_left(hero) == Rules.AP - 1, "Shift: in form for 1 AP")
 	var slots := f.hot_slots(hero)
 	_check("rending_claws" in slots and fc in slots and not slots.any(func(id): return id != "" and Fight.weapon_attack(Cards.get_card(id))), "in form: Rending Claws and %s on the hotbar, no weapon cards" % fc)
@@ -375,7 +390,7 @@ func _shifter(hero: Dictionary, foe: Dictionary, foe2: Dictionary, s: Vector2i, 
 	# Shift back: 1 AP, weapons again.
 	_turn(hero)
 	f.pick_card("shift")
-	await f.press_button()
+	await _press_shift(hero, "shifter_%s_3c_shrinking" % form.to_lower())
 	await _wait(0.4)
 	_check(not hero.shifted and f.cant_use(hero, Cards.get_card("attack", hero.weapon)) == "", "Shift again: back to the weapon")
 	_check_mini(hero, form, false)

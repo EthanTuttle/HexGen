@@ -25,35 +25,51 @@ const BEAST_COATS := {"wolf": ["#8E8A84", "#E4DDD0"], "bear": ["#6B4A32", "#B08A
 	"hawk": ["#7A5234", "#E9DCC2"]}
 const BEAST_EYES := "#C9A24A"
 const SHIFTER_GLB := "res://art/shifters.glb"
-## The Shifter's forms (art/README.md -> shifter_minis_v13; 07 -> Art direction -> Shifter forms): how tall each stands for a
-## human hero, in cells (07's guide). The body grows about the base, which stays one cell; other races scale by their hero's
-## height against a human's.
-const FORM_TALL := {"werewolf": 1.5, "werebear": 1.7, "werecat": 1.3}
-const FORM_FEET := 0.097               # the forms' feet, just over the base (build_shifter_minis.Z0)
-static var _race_tall := {}
+## The Shifter's forms (art/README.md -> shifter_minis_v14; 07 -> Art direction -> Shifter forms): shifter_<form>_<build>,
+## at human height. Everything above the base grows about its top by (race factor + 1) / 2 (Ethan, Nov 26, 2026), the race
+## factor being the hero kit's height k (build_hero_kit.RACES), which is the creator's "h" (CreatorData.RACES).
+const FORM_BASE_TOP := 0.092           # the hero base's top (build_standin_minis.BASE_H)
 
 
-## The hero's Shifter form as one mesh, in their own colours: fur = hair, skin = inner ears and pads, cloth = scarf and
-## trousers (07). PLACEHOLDER: only the average build exists, so every build wears it; a race with no hair (dragonborn,
-## golem) takes its skin colour as the fur, and a golem's form is the same beast (07's open question).
-static func form_mesh(d: Dictionary, form: String) -> ArrayMesh:
+## The hero's fur in form (07 -> Shifter forms): their hair colour; a dragonborn's dragon type's colour, as on its creator
+## banner. PLACEHOLDER: a golem's form is the fur beast in its material's colour until Combat Art's golem forms exist.
+static func form_fur(h: Hero) -> String:
+	var d := description(h)
+	if d.race == "dragonborn":
+		return CreatorData.SX.get(h.sub, {}).get("c", d.colours.skin)
+	if d.race == "golem" or str(d.colours.hair) == "":
+		return d.colours.skin
+	return d.colours.hair
+
+
+## How much a race's form grows: (race factor + 1) / 2.
+static func form_scale(race: String) -> float:
+	for r: Dictionary in CreatorData.RACES:
+		if String(r.id).to_lower() == race:
+			return (float(r.h) + 1.0) / 2.0
+	return 1.0
+
+
+## The hero's Shifter form as one mesh, in their own colours: fur (form_fur), skin = inner ears and pads, cloth = scarf and
+## torn trousers (07). The form's build is the hero's.
+static func form_mesh(d: Dictionary, form: String, fur: String) -> ArrayMesh:
 	var form_key := form.to_lower()
-	var key := "form %s %s" % [form_key, JSON.stringify(d)]
+	var key := "form %s %s %s" % [form_key, fur, JSON.stringify(d)]
 	if _mesh_for.has(key):
 		return _mesh_for[key]
 	var fd := d.duplicate(true)
-	if fd.race in table().hairless or str(fd.colours.hair) == "":
-		fd.colours.hair = fd.colours.skin
-	var mesh := _assemble(fd, [["shifter_%s_average" % form_key, null]], SHIFTER_GLB)
+	fd.colours.hair = fur
+	var build: String = d.build if d.build in table().builds else "average"
+	var mesh := _assemble(fd, [["shifter_%s_%s" % [form_key, build], null]], SHIFTER_GLB)
+	var s := form_scale(d.race)
+	if is_equal_approx(s, 1.0):
+		_mesh_for[key] = mesh
+		return mesh
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	var top := 0.0
-	for v in verts:
-		top = maxf(top, v.y)
-	var s: float = (FORM_TALL[form_key] * race_tall(fd.race, fd.get("subtype", "")) / race_tall("human") - FORM_FEET) / (top - FORM_FEET)
 	for i in verts.size():
-		if verts[i].y > FORM_FEET - 0.003:   # the body, not the base
-			verts[i] = Vector3(verts[i].x * s, FORM_FEET + (verts[i].y - FORM_FEET) * s, verts[i].z * s)
+		if verts[i].y > FORM_BASE_TOP + 0.001:   # the body, not the base
+			verts[i] = Vector3(verts[i].x * s, FORM_BASE_TOP + (verts[i].y - FORM_BASE_TOP) * s, verts[i].z * s)
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	var out := ArrayMesh.new()
 	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -63,24 +79,6 @@ static func form_mesh(d: Dictionary, form: String) -> ArrayMesh:
 	out.custom_aabb = AABB(Vector3(base.position.x, box.position.y, base.position.z), Vector3(base.size.x, box.size.y, base.size.z))
 	_mesh_for[key] = out
 	return out
-
-
-## A race's hero height in the average build (head top, no hair or weapon), which the forms scale by.
-static func race_tall(race: String, sub := "") -> float:
-	var k := race + sub
-	if not _race_tall.has(k):
-		var d := {"race": race, "build": "average", "head": "a", "hair": "none", "armour": "none", "main": "dagger", "offhand": "",
-				"colours": {"skin": "#FFFFFF", "hair": "#FFFFFF", "eyes": "#FFFFFF", "cloth": "#FFFFFF"}}
-		if race == "golem":
-			d.subtype = sub if sub != "" else "metal"
-		var top := 0.0
-		for part: Array in parts(d):
-			if String(part[0]).begins_with("hero_head_"):
-				var p := _piece(part[0])
-				for v in _matrix(part[1]) * (p.verts as PackedVector3Array):
-					top = maxf(top, v.y)
-		_race_tall[k] = top
-	return _race_tall[k]
 
 
 static func table() -> Dictionary:
