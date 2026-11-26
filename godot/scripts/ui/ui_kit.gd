@@ -292,3 +292,33 @@ static func _top_band(r: Rect2, rad: float, h: float) -> PackedVector2Array:
 	pts.append(Vector2(r.end.x, bottom))
 	pts.append(Vector2(r.position.x, bottom))
 	return pts
+
+
+## DOCS (design/07 -> UI -> Screen sizes; the number is a placeholder there): the UI fits the frame but never draws bigger
+## than this many points per mockup point. Past it (a big monitor or a large window) the layout gets more room instead.
+const UI_SCALE_CAP := 2.0
+
+static var _capping := false
+static var _cap := UI_SCALE_CAP   # `-- --uicap=<pt>` sets a lower one, to see a big screen's layout in a window
+
+
+## Keeps the UI scale under the cap for the rest of the run; called by every SafeArea, works once.
+static func cap_scale(tree: SceneTree) -> void:
+	if _capping:
+		return
+	_capping = true
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--uicap="):
+			_cap = float(a.split("=")[1])
+	var root := tree.root
+	root.size_changed.connect(func(): root.content_scale_size = capped_layout(Vector2(root.size), DisplayServer.screen_get_scale(root.current_screen)))
+	root.content_scale_size = capped_layout(Vector2(root.size), DisplayServer.screen_get_scale(root.current_screen))
+
+
+## The layout size for a window of px pixels on a screen of dpi pixels per point: the mockup's 844 x 390, unless that
+## would draw the UI at more than the cap's points per mockup point, then as many units as the cap leaves room for.
+static func capped_layout(px: Vector2, dpi: float) -> Vector2i:
+	var cap := _cap * maxf(dpi, 1.0)   # pixels per unit
+	if minf(px.x / 844.0, px.y / 390.0) <= cap:
+		return Vector2i(844, 390)
+	return Vector2i((px / cap).round())

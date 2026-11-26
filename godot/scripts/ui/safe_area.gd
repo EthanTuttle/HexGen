@@ -22,6 +22,7 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--safe="):
 			_fake = a.split("=")[1]
+	UI.cap_scale(get_tree())
 	get_tree().root.size_changed.connect(_update)
 	_update()
 

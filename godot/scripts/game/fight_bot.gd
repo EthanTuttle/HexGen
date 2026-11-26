@@ -216,6 +216,13 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			if not spots.is_empty():
 				await _aim(f, u, "snare", spots[0])
 				continue
+		if _ready_card(f, u, "cleave"):   # Cleave: whenever a foe stands next to it (04)
+			f.pick_card("cleave")
+			await _wait(0.05)
+			await f.press_button()
+			used["cleave"] = used.get("cleave", 0) + 1
+			await _settle(f)
+			continue
 		if _ready_card(f, u, "sweeping_arc"):
 			var best_c = null
 			var most := 0
@@ -238,7 +245,7 @@ func take_turn(f: Fight, u: Dictionary) -> void:
 			drunk += 1
 		else:
 			var order: Array = ["hunt_down", "shred", "rending_claws", "faerie_fire", "lull", "firebolt", "frost_ray", "blood_bolt", "shocking_grasp", "scorch", "stone_throw", "sacred_flame", "claw_swipe", "sneak_attack",
-					"pinning_bolt", "double_shot", "haymaker", "disarm", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
+					"hook", "reckless_swing", "hack", "shatter", "pinning_bolt", "double_shot", "haymaker", "disarm", "step_strike", "quick_slash", "throw", "shield_bash", "bonebreaker", "attack"]
 			if f.ap_left(u) >= 3 and u.ap == Rules.AP:
 				order.push_front("aimed_shot")   # a whole turn's shot, only at the start of a turn
 			for id: String in order:

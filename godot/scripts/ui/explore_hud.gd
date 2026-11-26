@@ -97,7 +97,7 @@ const HEX_GAP := 3.0
 func _build_buttons() -> void:
 	var cluster := Control.new()
 	cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.at(cluster, 22, 275)
+	UI.at_bottom(cluster, 22, 275)   # keeps to the bottom edge on a taller screen (design/07 -> Screen sizes)
 	var spots := [Vector2(0, 37), Vector2(20 + HEX_GAP * 0.5, 0), Vector2(40 + HEX_GAP, 37)]   # Quests, menu, equipment
 	var quests := _hex_button("quests", "Quests", func(): game.toast("Not in the prototype yet", false))
 	var menu := _hex_button(SavePopups.MENU_ICON, "Menu", func(): PauseMenu.open(game))
@@ -291,7 +291,6 @@ func _build_rest() -> void:
 	_rest = _RestCard.new()
 	_rest.accessibility_name = "Rest"
 	_rest.pressed.connect(game.rest)
-	UI.at(_rest, 378 - 37, 390 - 92 - 6)
 	add_child(_rest)
 	_enter = _RestCard.new()
 	_enter.word = "Enter"
@@ -534,13 +533,18 @@ func refresh() -> void:
 	# The Rest card shows while the party stands on a camp (DOCS: Exploration screen -> Resting).
 	_rest.visible = game.party_tile == Rules.START_TILE and not game.busy and not _in_scene
 	_enter.visible = game.can_enter_town() and not _in_scene
-	UI.at(_enter, 378 - 37 + (82 if _rest.visible else 0), 390 - 92 - 6)
 	var held := game.held_terrain()
 	# The banner shows only while a card is held, and names it (DOCS: UI -> Screen text).
 	_banner.visible = held != ""
 	if held != "":
 		_banner_text.text = "Place %s" % Rules.NAMES[held]
 	_banner.reset_size()
+
+
+## The middle of the open area between the party tray and the hand column: 378 in the mockup, moving by half as much
+## as the column does on a wider screen.
+func _open_middle() -> float:
+	return 378.0 + (_hand_panel.position.x - 680.0) * 0.5
 
 
 func _process(_delta: float) -> void:
@@ -551,10 +555,14 @@ func _process(_delta: float) -> void:
 	_clock_dial.night = night
 	_clock_dial.queue_redraw()
 	_clock_title.text = "Day %d · %s" % [game.day, Rules.phase_name(m)]
-	# Banner and toast stay centred on x = 378 (the open area left of the hand column)
-	_banner.position = Vector2(378 - _banner.size.x * 0.5, 14)
+	# Banner, toast and the Rest and Enter cards stay centred in the open area left of the hand column (x = 378 in the
+	# mockup); the cards and toast keep to the bottom edge (design/07 -> Screen sizes)
+	var mid := _open_middle()
+	_banner.position = Vector2(mid - _banner.size.x * 0.5, 14)
+	_rest.position = Vector2(mid - 37, size.y - 92 - 6)
+	_enter.position = Vector2(mid - 37 + (82 if _rest.visible else 0), size.y - 92 - 6)
 	if _toast.visible:
-		_toast.position = Vector2(378 - _toast.size.x * 0.5, 390 - 16 - _toast.size.y)
+		_toast.position = Vector2(mid - _toast.size.x * 0.5, size.y - 16 - _toast.size.y)
 		if game.real_time > _toast_until:
 			_toast.visible = false
 	_place_marks()

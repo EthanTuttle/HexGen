@@ -431,7 +431,9 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			# the Ranger's subclasses (03): Infuse's element; the Companion's beast (whose ranger it is), and Ambush's hiding
 			infuse = "", beast_of = m.get("beast_of", ""), beast = m.get("beast", ""), lurking = false,
 			# the Shifter (03 -> Shifter forms): in form; Thick Hide; Shred's heavy bleed
-			shifted = false, thick_hide = false, bleed_heavy = false}
+			shifted = false, thick_hide = false, bleed_heavy = false,
+			# the Fighter weapons' cards (04): Hack's mark on a foe, Reckless Swing's opening, Shatter's broken guard
+			hacked = false, reckless = -1, shattered = -1}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -533,6 +535,8 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 		pass   # moving the mark off a downed foe is free, and doesn't count as the turn's use
 	elif spent(u, c):
 		return "Once per fight: already used" if c.limit == "fight" else "Once per turn: already used"
+	if c.get("effect", "") == "cleave" and not foes_of(u).any(func(e): return dist(e, u) == 1):
+		return "_no_foe"   # Cleave needs a foe next to you; no note, the card dims
 	if c.id == "dancing_step" and not u.dance_ready:
 		return "_scimitar"   # only after a scimitar attack this turn; no note (the card shows it)
 	if ap_left(u) < ap_cost(u, c):
@@ -940,6 +944,13 @@ func _show_overlays() -> void:
 		if cell_target != null:
 			for cell in arc_cells(current, cell_target):
 				_overlay(cell, "target")
+	if c.get("effect", "") == "cleave" and not busy:   # Cleave: the foes next to you, all of them hit (04)
+		for e in foes_of(current):
+			if dist(e, current) == 1:
+				_overlay(e.cell, "target")
+	if c.get("effect", "") == "shatter" and not busy:
+		for cell in shatter_cells(current):
+			_overlay(cell, "target" if cell == cell_target else "reach")
 	if c.kind == "cell" and not busy:
 		var ring: Array = circle_cells(cell_target) if c.get("effect", "") in ["circle", "zone"] and cell_target != null else []
 		for cell in cell_options(current, c):
@@ -1056,6 +1067,17 @@ func click_cell(c: Vector2i) -> void:
 		self_done = ""
 		refresh()
 		return
+	if k.get("effect", "") == "shatter" and u.is_empty() and c in shatter_cells(current):   # Shatter aimed at cover (04)
+		cell_target = c
+		target = {}
+		result = {}
+		refresh()
+		return
+	if k.get("effect", "") == "dance" and c in cell_options(current, k):   # Dancing Step is a move: a tap on a lit hex goes, as Move does (07)
+		if cant_use(current, k) == "":
+			cell_target = c
+			await press_button()
+		return
 	if (k.kind == "cell" and c in cell_options(current, k)) or (k.kind == "arc" and Rules.hex_distance(c, current.cell) in range(1, k.range + 1)):
 		cell_target = c
 		self_done = ""
@@ -1107,7 +1129,13 @@ func press_button() -> void:
 	var aimed := target
 	match k.kind:
 		"attack":
+			if target.is_empty() and k.get("effect", "") == "shatter" and cell_target != null:
+				_pay(current, k)
+				await _shatter_cover(current, cell_target, k)
 			if target.is_empty():
+				_acting = {}
+				if active:
+					refresh()
 				return
 			_pay(current, k)
 			await _attack(beast_for(current) if k.get("effect", "") == "dive" else current, target, k)   # Dive: the hawk strikes (03)
@@ -1236,6 +1264,10 @@ func attack_mods(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
 		out.append({n = -Rules.MOONVEIL_COINS, icon = "veil", why = "veil"})   # Moonveil (03)
 	if not t.ally and in_zone(t, "sun"):
 		out.append({n = Rules.SUNSPOT_COINS, icon = "sun", why = "sun"})   # Sunspot (03)
+	if on(t, "reckless"):
+		out.append({n = Rules.RECKLESS_COINS, icon = "reckless", why = "reckless"})   # Reckless Swing (04)
+	if on(t, "shattered"):
+		out.append({n = Rules.SHATTER_COINS, icon = "shatter", why = "shatter"})   # Shatter (04)
 	if t.disarmed and t.exposed:
 		out.append({n = Rules.EXPOSED_COINS, icon = "exposed", why = "exposed"})   # Exposing Disarm (04)
 	if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
@@ -1375,6 +1407,9 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		dmg = k.dmg if k.has("dmg") else (a.damage if a.damage >= 0 else attack_score(a, k) + k.get("bonus", 0))
 		if a.ally and weapon_attack(k) and Weapons.of(a.weapon).hands == "v" and a.off in ["", "none"]:
 			dmg += Weapons.VERSATILE_TWO_HANDED   # a versatile weapon held two-handed (04)
+		if t.hacked and k.id != "hack":
+			dmg += Rules.HACK_MORE   # Hack: anyone's next hit on it hits harder, then it's spent (04, Ethan, Nov 26, 2026)
+			t.hacked = false
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
 		if a.stakes:
 			dmg *= Rules.STAKES_TIMES   # Raise the Stakes (03)
@@ -1424,6 +1459,8 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
 			"bleed":
 				t.bleed_turns = Rules.DOT_TURNS
+			"hack":
+				t.hacked = true
 			"shred":
 				t.bleed_turns = Rules.DOT_TURNS
 				t.bleed_heavy = true
@@ -1452,6 +1489,10 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 	if hit and a.ally and k.id == "step_strike" and Progression.trained(a.member, "flowing_strike"):
 		a.flowing = true
 	a.facing = _dir_toward(a.cell, t.cell)   # it faces whoever it last attacked
+	if k.get("effect", "") == "reckless":
+		a.reckless = _until_next_turn_of(a)   # Reckless Swing: foes flip 1 more coin on you until your next turn, hit or miss (04)
+	if hit and k.get("effect", "") == "shatter" and not t.down:
+		t.shattered = phase_no   # Shatter: every attack on it this round flips 1 more coin (04, Ethan, Nov 26, 2026)
 	if a.ally and a.weapon == "scimitar" and weapon_attack(k):
 		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
 	if hit and a.ally and weapon_attack(k) and a.weapon == "shortsword" and k.id != "quick_slash":
@@ -1483,6 +1524,8 @@ func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: i
 			await _push(a, t, 2 if Rules.bash() == "push2" else Rules.PUSH_HEXES)
 			if Rules.bash() == "hold" and not t.down:   # test aid: the push, and the foe loses its next Move
 				t.snared = _until_next_turn_of(t)
+		if k.get("rider", "") == "hook":
+			await _pull(a, t)   # Hook: pulled next to you after the hit (04)
 		if k.get("rider", "") == "rend" and not t.down:   # Rend: a failed CON save and it bleeds (04)
 			var rend := flip_check(save_coins(t, "CON"), Rules.SAVE_HEADS)
 			await hud.flip_coins(t, rend.coins, rend.need, Rules.COIN_STEP_FOE)
@@ -1973,6 +2016,8 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			a.arcane_shield = true
 		"shift":
 			_shift(a, not a.shifted)
+		"cleave":
+			await _cleave(a, k)
 		"thick_hide":
 			a.thick_hide = true
 		"stakes":
@@ -2170,6 +2215,73 @@ func _clear_snare(owner: String) -> void:
 	if _snare_marks.has(owner):
 		_snare_marks[owner].queue_free()
 		_snare_marks.erase(owner)
+
+
+## Cleave (04): one flip at each foe next to the attacker, normal damage each (Ethan, Nov 26, 2026: like Sweeping Arc).
+func _cleave(a: Dictionary, k: Dictionary) -> void:
+	busy = true
+	var flips := []   # [foe, {hit, dmg}]
+	for t in foes_of(a).filter(func(e): return dist(e, a) == 1):
+		flips.append([t, await _attack_flip(a, t, k)])
+	if not flips.is_empty():
+		a.facing = _dir_toward(a.cell, flips[0][0].cell)
+		await board.sweep(a.mini, flips.map(func(f): return f[0].mini), flips.map(func(f): return f[1].hit))
+	for f: Array in flips:
+		if not f[0].down:
+			await _attack_land(a, f[0], k, f[1].hit, f[1].dmg)
+	busy = false
+	refresh()
+	_check_end()
+
+
+## Hook (04): a hit pulls the foe to the free hex next to the attacker nearest it (Ethan, Nov 26, 2026). Not a giant, and
+## not if no hex next to the attacker is free.
+func _pull(a: Dictionary, t: Dictionary) -> void:
+	if t.foot.size() > 1 or t.down or dist(a, t) <= 1:
+		return
+	var spots: Array = Hex.NEIGHBOURS.map(func(d): return a.cell + d).filter(func(c): return grid.has(c) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty())
+	if spots.is_empty():
+		return
+	spots.sort_custom(func(x, y): return Rules.hex_distance(x, t.cell) < Rules.hex_distance(y, t.cell))
+	t.cell = spots[0]
+	t.facing = _dir_toward(t.cell, a.cell)
+	await board.step_along(t.mini, [t.cell])
+	refresh()
+
+
+## Where Shatter can aim at cover (04): a hex within the weapon's reach that gives partial cover (a fence, hedge, low wall,
+## brush), or a hex next to you across a partial edge (plot fences, terrace curbs). Full cover (rocks, walls) doesn't break.
+func shatter_cells(u: Dictionary) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var reach: int = Weapons.of(u.weapon).range if u.ally else 1
+	for c: Vector2i in grid:
+		var d := Rules.hex_distance(c, u.cell)
+		if d < 1 or d > reach or not unit_at(c).is_empty():
+			continue
+		if cover.get(c, "") == "partial" or (d == 1 and edge_cover.get([u.cell, c] if u.cell < c else [c, u.cell], "") == "partial"):
+			out.append(c)
+	return out
+
+
+## Shatter on cover (04, Ethan, Nov 26, 2026): an attack flip; on a hit the cover there is gone for the fight. PLACEHOLDER
+## look: the piece still stands on the board.
+func _shatter_cover(a: Dictionary, c: Vector2i, k: Dictionary) -> void:
+	busy = true
+	self_done = k.id
+	refresh()
+	var check := flip_check(attack_score(a, k), Rules.HEADS_TO_HIT)
+	var coins: Array[bool] = await hud.flip_coins(a, check.coins, check.need, Rules.COIN_STEP)
+	var hit: bool = Coins.heads(coins) >= check.need
+	if hit:
+		if cover.get(c, "") == "partial":
+			cover.erase(c)
+		var e: Array = [a.cell, c] if a.cell < c else [c, a.cell]
+		if edge_cover.get(e, "") == "partial":
+			edge_cover.erase(e)
+	result = {coins = coins, title = "Hit!" if hit else "Miss", good = hit, sub = ""}
+	cell_target = null
+	busy = false
+	refresh()
 
 
 ## Pounce (03 -> Shifter): when the Snare springs, its Shifter leaps to the free hex next to the trapped foe nearest them,
@@ -2915,6 +3027,12 @@ func status_icons(u: Dictionary) -> Array:
 		out.append([CreatorData.IC.w_rapier, "Sidestepping", "Harder to hit"])
 	if u.arcane_shield:
 		out.append(["ward", "Arcane Shield", "Takes %d less damage" % Rules.ARCANE_SHIELD_LESS])
+	if u.hacked:
+		out.append([CreatorData.IC.w_battleaxe, "Hacked", "Takes %d more from the next hit" % Rules.HACK_MORE])   # PLACEHOLDER icon and line (Screen text check)
+	if on(u, "reckless"):
+		out.append([CreatorData.IC.w_greataxe, "Reckless", "Attacks on them flip %d extra coin" % Rules.RECKLESS_COINS])
+	if on(u, "shattered"):
+		out.append([CreatorData.IC.w_warhammer, "Shattered", "Attacks on it flip %d extra coin this round" % Rules.SHATTER_COINS])
 	if u.get("shifted", false):
 		out.append([Cards.ALL.shift.icon, "Shifted", u.member.get("form", "")])   # PLACEHOLDER icon and line (Screen text check)
 	if u.thick_hide:

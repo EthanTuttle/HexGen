@@ -292,7 +292,8 @@ func _refresh_details() -> void:
 
 	var targeting: bool = k.kind in ["attack", "save", "ally", "mark"]
 	var has_target: bool = not (fight.ally_target if k.kind == "ally" else fight.target).is_empty()
-	var aimed: bool = (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind in ["cell", "arc"] and fight.cell_target != null)
+	var aimed: bool = (k.kind == "breath" and fight.breath_dir >= 0) or (k.kind in ["cell", "arc"] and fight.cell_target != null) \
+			or (k.get("effect", "") == "shatter" and fight.cell_target != null)   # Shatter aimed at cover (04)
 	# Screen text (DOCS: UI -> Screen text): no Move rule sentence and no "pick a target" prompts; the lit
 	# hexes, gold rings and AP pips show them. A check shows only the check line.
 	if targeting and not fight.result.is_empty():
@@ -332,7 +333,10 @@ func _refresh_details() -> void:
 
 	# The button (and the note under it when the card can't be used)
 	var label := ""
-	if targeting and (has_target or not fight.result.is_empty()):
+	var at_cover: bool = k.get("effect", "") == "shatter" and fight.cell_target != null and not has_target
+	if at_cover:
+		label = "Flip coins"   # Shatter on cover flips to break it (04)
+	elif targeting and (has_target or not fight.result.is_empty()):
 		if k.kind == "ally":
 			label = "Cast again" if not fight.result.is_empty() else "Cast"
 		elif k.kind == "save":
@@ -344,12 +348,12 @@ func _refresh_details() -> void:
 		else:   # the target went down in the flip: no count to give, and the note asks for a new target
 			label = "Flip again"
 	elif k.kind == "self":
-		label = "Use"
+		label = "Flip coins" if k.get("effect", "") == "cleave" else "Use"   # Cleave flips at each foe next to you (04)
 	elif aimed:   # spells cast; Sweeping Arc flips (its foes' counts differ, so no count: 07); the Snare and Dancing Step are used
 		label = "Flip coins" if k.kind == "arc" else ("Cast" if k.src in ["elven", "bloodline", "race"] else "Use")
 	if label != "":
 		var note := fight.cant_use(u, k)
-		if (k.kind in ["attack", "save", "mark"] and fight.target.is_empty()) or (k.kind == "ally" and fight.ally_target.is_empty()):
+		if (k.kind in ["attack", "save", "mark"] and fight.target.is_empty() and not at_cover) or (k.kind == "ally" and fight.ally_target.is_empty()):
 			note = note if note != "" else "Pick a target again"
 		var b := TagButton.make(label, 146, 36, 15, true)   # drawn 36 high; taps still get the 44 pt finger area
 		b.disabled = note != "" or fight.busy
@@ -397,7 +401,8 @@ func save_line(ab: String) -> String:
 const MOD_WORDS := {"bless": "Bless", "forge": "Forge dwarf", "glow": "Faerie Fire", "acid": "Acid", "cover": "cover",
 	"night": "night", "close": "foe next to you", "opening": "Opening Strike", "frail": "Curse of Frailty",
 	"exposed": "Exposing Disarm", "drowsy": "drowsy", "fear": "Dread", "dazzled": "Dazzle", "bane": "Bane",
-	"tune": "Rousing Tune", "faith": "Shield of Faith", "veil": "Moonveil", "sun": "Sunspot", "saga": "Epic Saga"}
+	"tune": "Rousing Tune", "faith": "Shield of Faith", "veil": "Moonveil", "sun": "Sunspot", "saga": "Epic Saga",
+	"reckless": "Reckless Swing", "shatter": "Shatter"}
 
 
 ## One modifier under the check line: its chip, then "+1 Bless" or "−1 cover".
@@ -514,7 +519,7 @@ func _card_button(id: String, big: bool) -> Control:
 	var k := Progression.card_for(u.get("member", {}), Cards.get_card(id, u.weapon))   # upgrades show their new names (03)
 	var src: Dictionary = Cards.SRC[k.src]
 	var on: bool = id == fight.sel
-	var dim := fight.spent(u, k)
+	var dim := fight.spent(u, k) or fight.cant_use(u, k).begins_with("_")   # used up, or waiting on something the card shows (Dancing Step before a scimitar attack)
 	if big:
 		var c := _HotCard.new()
 		c.setup(k, src, on, dim)
