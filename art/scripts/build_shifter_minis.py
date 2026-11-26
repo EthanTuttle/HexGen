@@ -475,15 +475,16 @@ def werecat(col, build="average"):
     em.limb(p, [at(-0.07, -0.2, 0.92), at(-0.1, -0.08, 0.94), at(-0.12, 0.04, 0.9), at(-0.12, 0.14, 0.82)], [0.032, 0.03, 0.025, 0.0],
             [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
-    # Arms (v2-v3, Ethan, Nov 26, 2026): an A pose, both upper arms out and angled 40 degrees down, the elbows bent to
-    # 100 degrees so the forearms reach forward, the palms facing in toward each other and turned about 7 degrees up,
+    # Arms (v2-v4, Ethan, Nov 26, 2026): an A pose, both upper arms out and angled 40 degrees down, the elbows bent so
+    # the forearms reach forward and angle 30 degrees up, the palms facing in toward each other and turned about 7 degrees up,
     # thumbs on top, claws out.
-    drop, tilt = math.radians(40), math.radians(7.5)
+    drop, tilt, rise = math.radians(40), math.radians(7.5), math.radians(30)
     for x in SIDE:
         s = at(x * 0.18, -0.2, 0.85)
         upper = V((x * math.cos(drop), 0, -math.sin(drop)))
         e = s + upper * 0.24
         fore = (upper * math.cos(math.radians(80)) + V((0, -1, 0)) * math.sin(math.radians(80))).normalized()
+        fore = (V((fore.x, fore.y, 0)).normalized() * math.cos(rise) + V((0, 0, math.sin(rise)))).normalized()  # v4: angled up
         w_ = e + fore * 0.18
         em.limb(p, [s, e, w_], [0.072, 0.056, 0.042], [fur, fur], sides=6)
         tuft(e, V((x * 0.03, 0.05, -0.04)), 0.032)
