@@ -148,17 +148,25 @@ def werewolf(col, build="average"):
         for k in range(3):  # long fur hanging from the forearm
             q = e.lerp(w_, 0.2 + k * 0.28) + V((x * 0.03, 0.03, 0))
             tuft(q, V((x * 0.04, 0.06, -0.08)), 0.04, (back, fur)[k % 2])
-        hand = w_ + V((0, -0.05, -0.05))
-        em.loft(p, [em.section(w_, 0.06, 0.045, along=hand - w_, sides=6), em.section(hand, 0.075, 0.04, along=hand - w_, sides=6)],
-                lambda c, n: fur)
-        for k in range(4):  # long curled fingers, a claw on each
-            spread = (k - 1.5) * 0.036
-            root = hand + V((spread, -0.03, -0.01))
-            knuckle = root + V((spread * 0.4, -0.05, -0.03))
-            em.limb(p, [root, knuckle], [0.016, 0.013], [fur], sides=4)
-            vr.spike(p, knuckle, knuckle + V((spread * 0.3, -0.03, -0.07)), 0.013, "claw", segments=3)
-        thumb = hand + V((-x * 0.06, -0.01, 0.0))
-        vr.spike(p, thumb, thumb + V((-x * 0.03, -0.06, -0.04)), 0.014, "claw", segments=3)
+        # The hand hangs on from the forearm: a broad, deep palm, four long fingers in two joints curling forward at
+        # the ends, a hooked claw on each, and a thumb on the inside.
+        down = ((w_ - e).normalized() + V((0, 0, -1))).normalized()
+        side = V((1, 0, 0))
+        palm = w_ + down * 0.09
+        em.loft(p, [em.section(w_, 0.052, 0.04, along=down, up=V((0, -1, 0)), sides=6),
+                    em.section(w_.lerp(palm, 0.5), 0.07, 0.042, along=down, up=V((0, -1, 0)), sides=6),
+                    em.section(palm, 0.068, 0.034, along=down, up=V((0, -1, 0)), sides=6)], lambda c, n: fur)
+        for k in range(4):
+            spread = (k - 1.5) * 0.034
+            root = palm + side * spread + down * -0.01
+            mid = root + down * 0.055 + side * spread * 0.35 + V((0, -0.012, 0))
+            tip = mid + down * 0.035 + V((0, -0.03, 0))
+            em.limb(p, [root, mid, tip], [0.019, 0.016, 0.013], [fur, dark], sides=4)
+            vr.spike(p, tip, tip + V((spread * 0.2, -0.045, -0.035)), 0.012, "claw", segments=3)
+        t0 = w_.lerp(palm, 0.55) + side * (-x * 0.065) + V((0, -0.02, 0))
+        t1 = t0 + V((-x * 0.02, -0.045, -0.03))
+        em.limb(p, [t0, t1], [0.02, 0.015], [fur], sides=4)
+        vr.spike(p, t1, t1 + V((0, -0.035, -0.03)), 0.012, "claw", segments=3)
 
     # Torn trousers in the ranger's cloth and a belt (07: torn remnants of gear).
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
@@ -167,30 +175,35 @@ def werewolf(col, build="average"):
                 ((0.068, 0.62, 0.155, 0.135), (0.06, 0.67, 0.155, 0.135))], lambda c, n: "belt")
     p.box(at(0.0, -0.09, 0.62), (0.07, 0.025, 0.055), "buckle")
 
-    # Legs: a stalking lunge. The front leg's knee high and forward, its foot planted ahead; the back leg driving, its
-    # hock lifted. Heavy thighs and calves, long wolf feet with claws.
+    # Legs: a stalking lunge, the knees turned a little out. The front leg's knee high and forward, its foot planted
+    # ahead; the back leg driving, its hock lifted. A heavy thigh into a thick calf high at the back of the shin, which
+    # tapers hard to a slim hock and a long foot: a heel off the ground, a pad, three long toes with claws.
     legs = (
-        (1, at(0.1, 0.04, 0.56), at(0.15, -0.21, 0.47), at(0.15, -0.1, 0.17), at(0.15, -0.22, 0.035)),   # front
-        (-1, at(-0.1, 0.1, 0.55), at(-0.15, 0.05, 0.3), at(-0.15, 0.3, 0.17), at(-0.15, 0.22, 0.035)),   # back
+        (1, at(0.1, 0.04, 0.56), at(0.19, -0.26, 0.45), at(0.17, -0.11, 0.2), at(0.16, -0.24, 0.05)),   # front
+        (-1, at(-0.1, 0.1, 0.55), at(-0.19, 0.04, 0.31), at(-0.17, 0.3, 0.2), at(-0.16, 0.19, 0.05)),    # back
     )
     for x, hip, knee, hock, ball in legs:
         hem = hip.lerp(knee, 0.3)
-        em.limb(p, [hip, hem, hip.lerp(knee, 0.6), knee, hock, ball], [0.13, 0.13, 0.12, 0.085, 0.06, 0.042], [cloth, fur, fur, fur, fur], sides=6)
+        em.limb(p, [hip, hem, hip.lerp(knee, 0.6), knee, knee.lerp(hock, 0.45), hock, ball],
+                [0.13, 0.13, 0.125, 0.095, 0.078, 0.045, 0.038], [cloth, fur, fur, fur, fur, fur], sides=6)
         p.blob(hip.lerp(knee, 0.6), 0.11, fur, squash=0.9)  # the thigh's muscle, furred
         for k in range(4):  # the trouser leg torn off high, ragged strips hanging from it
             a = math.radians(40 + k * 70) * x
             q = hem + V((math.sin(a) * 0.12 * x, -math.cos(a) * 0.1, 0))
             vr.spike(p, q, q + V((0, 0, -0.09 + 0.02 * (k % 2))), 0.035, cloth_d, segments=3)
-        p.blob(knee.lerp(hock, 0.35) + (hock - knee).cross(V((1, 0, 0))).normalized() * -0.02, 0.08, fur, squash=1.5)  # the calf
-        tuft(knee, V((x * 0.04, -0.06, -0.05)), 0.04)  # fur at the knee
-        for k in range(2):
-            q = knee.lerp(hock, 0.3 + k * 0.35)
-            tuft(q, V((x * 0.03, 0.07, -0.03)), 0.035)
-        foot = V((ball.x, ball.y, Z0 + 0.025))
-        bb.paw(p, foot, V((0, -1, 0)), 0.058, 0.03, fur)
+        shin = (hock - knee).normalized()
+        calf = knee.lerp(hock, 0.28) + shin.cross(V((x, 0, 0))).normalized() * 0.035  # behind the shin
+        p.blob(calf, 0.09, fur, squash=1.15)
+        tuft(knee + V((x * 0.03, -0.02, 0)), V((x * 0.06, -0.04, -0.06)), 0.045)  # fur at the knee
+        tuft(calf, V((x * 0.02, 0.08, -0.06)), 0.04, back)
+        tuft(hock, V((0, 0.05, -0.03)), 0.025, back)  # a spur of fur at the hock
+        # the foot: a pad under the ball, three toes forward, a claw on each
+        p.blob(V((ball.x, ball.y, Z0 + 0.03)), 0.045, fur, squash=0.6)
         for k in (-1, 0, 1):
-            root = foot + V((k * 0.026, -0.055, 0))
-            vr.spike(p, root, root + V((k * 0.01, -0.04, -0.02)), 0.01, "claw", segments=3)
+            root = V((ball.x + k * 0.028, ball.y - 0.02, Z0 + 0.03))
+            tip = root + V((k * 0.014, -0.065, -0.012))
+            em.limb(p, [root, tip], [0.02, 0.016], [fur], sides=4)
+            vr.spike(p, tip, tip + V((k * 0.006, -0.035, -0.012)), 0.011, "claw", segments=3)
 
     # Tail: a thick brush low behind, swept out to the side, clear of the back leg, a dark tip.
     em.limb(p, [at(0, 0.14, 0.56), at(0.07, 0.24, 0.5), at(0.15, 0.31, 0.38), at(0.19, 0.33, 0.27)], [0.05, 0.08, 0.065, 0.0],
