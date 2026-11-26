@@ -92,10 +92,43 @@ def warp_build(p, build, head_at, head_r=0.2):
 # Golem forms (07 -> Shifter forms -> Golems, Ethan, Nov 26, 2026): the same wolf, bear or cat shape rebuilt in the golem's
 # own material, as the golem kit's golems are (golem_kit.py, kit v14). The shape is the approved form's; golem_dress swaps its
 # paints for the material's and adds the material's own pieces.
+# Golem materials whose sash is a vine growing on the golem rather than the scarf with leaves on it (Ethan, Nov 26, 2026:
+# wood v1 still read as a scarf). Stone keeps its v2 sash until his verdict on it.
+VINE_SASH = {"wood"}
+
+
+def vine_sash(p, joints, leaves, size):
+    """The ranger's colour as a living sash: a vine in the hero's cloth growing from behind the left shoulder, over it and
+    diagonally down across the chest to the right hip, with leaves along it and clumps of moss, all in cloth shades."""
+    from mathutils.bvhtree import BVHTree
+    tree = BVHTree.FromBMesh(p.bm)
+    shoulder = joints[0]
+    hip = next(q for q in joints[4:] if q.x > 0)
+    pts = [shoulder + V((0.03, 0.12, 0.02)), shoulder + V((0.03, 0.02, 0.08))]
+    for k in range(1, 7):
+        t = k / 7
+        x = shoulder.x * 0.8 * (1 - t) + hip.x * 0.9 * t
+        z = shoulder.z - 0.04 + (hip.z + 0.06 - (shoulder.z - 0.04)) * t
+        inside = V((x, shoulder.y + 0.12, z))
+        hit = tree.ray_cast(inside, V((0, -1, 0)), 0.6)
+        if hit[0] is not None:
+            pts.append(hit[0] + hit[1] * 0.018)
+    pts.append(hip + V((0.06, 0.0, 0.0)))
+    em.limb(p, pts, [0.024 * size] * len(pts), [zone("cloth", 0.7)], sides=5)
+    for k, (a, b_) in enumerate(zip(pts, pts[1:])):
+        c = a.lerp(b_, 0.5)
+        side = (b_ - a).cross(V((0, -1, 0))).normalized() * (1 if k % 2 else -1)
+        vr.spike(p, c, c + side * 0.05 + V((0, -0.02, 0.012)), 0.022, zone("cloth", (0.9, 1.15)[k % 2]), segments=3)
+    for k in (1, 4, 7):
+        if k < len(pts):
+            gk.pebble(p, pts[k], 0.05 * size, 0.045 * size, 0.03, paint=lambda c, n: zone("cloth", 0.85), sides=5, rings=3)
+
+
 def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
     """The golem kit's materials on a form's shape (kit v14). Every material: the fur's shades become the material swatch
     (skin zone), the eyes glow in the eyes swatch, the torn trousers become a band of the material with no hems, and the
-    ranger's scarf is a sash of moss and vine in the hero's cloth (Ethan, Nov 26, 2026), the band sprouting leaves.
+    ranger's scarf is a sash of moss and vine in the hero's cloth (Ethan, Nov 26, 2026): on stone (v2) the band sprouting
+    leaves; on wood (v2) the scarf gone and a vine growing across the body instead (vine_sash).
       stone (the cairn): the coat broken into blocks of uneven grey lit from above, the mouth glowing, pale stone claws, a
         rounded stone at each shoulder and knee, flat clumps of moss; shards only on the back and shoulders (v2).
       wood (the folk carving, still alive, no paint): smooth carved wood lit from above, the mouth a carved line, claws and
@@ -143,10 +176,12 @@ def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
                 face.material_index = p._slot(zone("skin", 1.05 if n.z > 0.1 or n.y < -0.5 else 0.82))
                 if (top + 0.06 < c.z < knee_z or on_forearm) and face.calc_area() > 0.0004:
                     ivy.append((c, n.copy()))
+    if material in VINE_SASH:
+        vine_sash(p, joints, leaves, size)
     # The sash: the scarf's band sprouting leaves in the hero's cloth.
     scarf_slots = {i for i, m in enumerate(p.mats) if m.startswith("hz_") and int(m[3:5], 16) // 20 == hb.ZONES["cloth"]
                    and int(m[5:7], 16) / 100 >= 0.7}
-    sash = [f for f in p.bm.faces if f.material_index in scarf_slots]
+    sash = [] if material in VINE_SASH else [f for f in p.bm.faces if f.material_index in scarf_slots]
     for k, face in enumerate(sash[::max(1, len(sash) // leaves)]):
         c, n = face.calc_center_median(), face.normal
         tip = c + n * 0.04 + V((0, 0, 0.012 * (k % 2)))
@@ -276,12 +311,13 @@ def werewolf(col, build="average", material=None):
             tuft(c0, V((x * 0.07, 0.07, -0.02)), 0.032, fur)
 
     # The ranger's scarf round the neck under the mane, its knot at the throat, a tail flying back.
-    em.loft(p, [em.section(q, 0.14, 0.12, along=V((0, -0.6, 1)), sides=8) for q in (at(0, -0.2, 1.02), at(0, -0.24, 1.08))],
-            lambda c, n: zone("cloth"))
-    p.blob(at(0.04, -0.35, 1.0), 0.04, zone("cloth", 0.9))
-    em.limb(p, [at(0.04, -0.36, 0.98), at(0.06, -0.38, 0.9), at(0.05, -0.37, 0.82)], [0.04, 0.034, 0.0], [zone("cloth"), zone("cloth", 0.85)], sides=4)
-    em.limb(p, [at(-0.13, -0.1, 1.12), at(-0.15, 0.04, 1.12), at(-0.15, 0.16, 1.06), at(-0.13, 0.27, 0.96)], [0.04, 0.036, 0.03, 0.0],
-            [zone("cloth"), zone("cloth", 0.88)], sides=4)
+    if material not in VINE_SASH:  # a golem material with the vine sash has no scarf
+        em.loft(p, [em.section(q, 0.14, 0.12, along=V((0, -0.6, 1)), sides=8) for q in (at(0, -0.2, 1.02), at(0, -0.24, 1.08))],
+                lambda c, n: zone("cloth"))
+        p.blob(at(0.04, -0.35, 1.0), 0.04, zone("cloth", 0.9))
+        em.limb(p, [at(0.04, -0.36, 0.98), at(0.06, -0.38, 0.9), at(0.05, -0.37, 0.82)], [0.04, 0.034, 0.0], [zone("cloth"), zone("cloth", 0.85)], sides=4)
+        em.limb(p, [at(-0.13, -0.1, 1.12), at(-0.15, 0.04, 1.12), at(-0.15, 0.16, 1.06), at(-0.13, 0.27, 0.96)], [0.04, 0.036, 0.03, 0.0],
+                [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
     # Arms: long and heavy, elbows out and back, hanging to the knees, big hands with long fingers and claws.
     for x, reach in ((-1, -0.04), (1, 0.04)):
@@ -449,12 +485,13 @@ def werebear(col, build="average", material=None):
             tuft(h(-0.02 - k * 0.04, -0.04, x * 0.13), V((x * 0.07, 0.06, -0.03)), 0.04, fur)
 
     # The ranger's scarf round the thick neck under the ruff, its knot at the throat, a tail over the shoulder.
-    em.loft(p, [em.section(q, 0.215, 0.185, along=V((0, -0.6, 1)), sides=8) for q in (at(0, -0.15, 1.0), at(0, -0.19, 1.06))],
-            lambda c, n: zone("cloth"))
-    p.blob(at(0.12, -0.31, 1.01), 0.045, zone("cloth", 0.9))  # knotted at the side of the throat, so it doesn't read as a tie
-    em.limb(p, [at(0.13, -0.32, 0.99), at(0.17, -0.33, 0.93), at(0.18, -0.31, 0.87)], [0.045, 0.038, 0.0], [zone("cloth"), zone("cloth", 0.85)], sides=4)
-    em.limb(p, [at(-0.15, -0.04, 1.2), at(-0.18, 0.08, 1.2), at(-0.18, 0.2, 1.12), at(-0.15, 0.3, 1.0)], [0.045, 0.04, 0.034, 0.0],
-            [zone("cloth"), zone("cloth", 0.88)], sides=4)
+    if material not in VINE_SASH:  # a golem material with the vine sash has no scarf
+        em.loft(p, [em.section(q, 0.215, 0.185, along=V((0, -0.6, 1)), sides=8) for q in (at(0, -0.15, 1.0), at(0, -0.19, 1.06))],
+                lambda c, n: zone("cloth"))
+        p.blob(at(0.12, -0.31, 1.01), 0.045, zone("cloth", 0.9))  # knotted at the side of the throat, so it doesn't read as a tie
+        em.limb(p, [at(0.13, -0.32, 0.99), at(0.17, -0.33, 0.93), at(0.18, -0.31, 0.87)], [0.045, 0.038, 0.0], [zone("cloth"), zone("cloth", 0.85)], sides=4)
+        em.limb(p, [at(-0.15, -0.04, 1.2), at(-0.18, 0.08, 1.2), at(-0.18, 0.2, 1.12), at(-0.15, 0.3, 1.0)], [0.045, 0.04, 0.034, 0.0],
+                [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
     # Arms: huge, out from the body, elbows bent, the paws hanging forward at hip height, turned palm in and down.
     for x in SIDE:
@@ -623,11 +660,12 @@ def werecat(col, build="average", material=None):
             em.limb(p, [q, q + V((x * 0.09, 0.02, -0.01 + k * 0.012))], [0.003, 0.0], ["fang"], sides=3)
 
     # The ranger's scarf round the slim neck, knotted at the side, its tail streaming back.
-    em.loft(p, [em.section(q, 0.11, 0.095, along=V((0, -0.5, 1)), sides=8) for q in (at(0, -0.22, 0.85), at(0, -0.245, 0.9))],
-            lambda c, n: zone("cloth"))
-    p.blob(at(0.08, -0.3, 0.86), 0.032, zone("cloth", 0.9))
-    em.limb(p, [at(-0.07, -0.2, 0.92), at(-0.1, -0.08, 0.94), at(-0.12, 0.04, 0.9), at(-0.12, 0.14, 0.82)], [0.032, 0.03, 0.025, 0.0],
-            [zone("cloth"), zone("cloth", 0.88)], sides=4)
+    if material not in VINE_SASH:  # a golem material with the vine sash has no scarf
+        em.loft(p, [em.section(q, 0.11, 0.095, along=V((0, -0.5, 1)), sides=8) for q in (at(0, -0.22, 0.85), at(0, -0.245, 0.9))],
+                lambda c, n: zone("cloth"))
+        p.blob(at(0.08, -0.3, 0.86), 0.032, zone("cloth", 0.9))
+        em.limb(p, [at(-0.07, -0.2, 0.92), at(-0.1, -0.08, 0.94), at(-0.12, 0.04, 0.9), at(-0.12, 0.14, 0.82)], [0.032, 0.03, 0.025, 0.0],
+                [zone("cloth"), zone("cloth", 0.88)], sides=4)
 
     # Arms (v2-v4, Ethan, Nov 26, 2026): an A pose, both upper arms out and angled 40 degrees down, the elbows bent so
     # the forearms reach forward and angle 30 degrees up, the palms facing in toward each other and turned about 7 degrees up,
