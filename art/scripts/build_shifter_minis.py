@@ -148,25 +148,29 @@ def werewolf(col, build="average"):
         for k in range(3):  # long fur hanging from the forearm
             q = e.lerp(w_, 0.2 + k * 0.28) + V((x * 0.03, 0.03, 0))
             tuft(q, V((x * 0.04, 0.06, -0.08)), 0.04, (back, fur)[k % 2])
-        # The hand hangs on from the forearm: a broad, deep palm, four long fingers in two joints curling forward at
-        # the ends, a hooked claw on each, and a thumb on the inside.
+        # The hand hangs on from the forearm, turned as a real hand rests (v6, Ethan, Nov 26, 2026: v5's were inverted,
+        # palm out with the thumb inside): the palm toward the body, angled a little down, the thumb in front. A broad,
+        # deep palm, four long fingers in two joints curling in toward the palm, a hooked claw on each.
         down = ((w_ - e).normalized() + V((0, 0, -1))).normalized()
-        side = V((1, 0, 0))
+        n0 = V((-x, 0, -0.18))
+        inward = (n0 - down * n0.dot(down)).normalized()   # the palm's side
+        across = down.cross(inward).normalized()
+        front = across if across.y < 0 else -across          # the thumb's side
         palm = w_ + down * 0.09
-        em.loft(p, [em.section(w_, 0.052, 0.04, along=down, up=V((0, -1, 0)), sides=6),
-                    em.section(w_.lerp(palm, 0.5), 0.07, 0.042, along=down, up=V((0, -1, 0)), sides=6),
-                    em.section(palm, 0.068, 0.034, along=down, up=V((0, -1, 0)), sides=6)], lambda c, n: fur)
-        for k in range(4):
-            spread = (k - 1.5) * 0.034
-            root = palm + side * spread + down * -0.01
-            mid = root + down * 0.055 + side * spread * 0.35 + V((0, -0.012, 0))
-            tip = mid + down * 0.035 + V((0, -0.03, 0))
+        em.loft(p, [em.section(w_, 0.052, 0.04, along=down, up=inward, sides=6),
+                    em.section(w_.lerp(palm, 0.5), 0.07, 0.042, along=down, up=inward, sides=6),
+                    em.section(palm, 0.068, 0.034, along=down, up=inward, sides=6)], lambda c, n: fur)
+        for k in range(4):  # index finger nearest the thumb
+            spread = (1.5 - k) * 0.034
+            root = palm + front * spread - down * 0.01
+            mid = root + down * 0.055 + front * spread * 0.35 + inward * 0.012
+            tip = mid + down * 0.035 + inward * 0.03
             em.limb(p, [root, mid, tip], [0.019, 0.016, 0.013], [fur, dark], sides=4)
-            vr.spike(p, tip, tip + V((spread * 0.2, -0.045, -0.035)), 0.012, "claw", segments=3)
-        t0 = w_.lerp(palm, 0.55) + side * (-x * 0.065) + V((0, -0.02, 0))
-        t1 = t0 + V((-x * 0.02, -0.045, -0.03))
+            vr.spike(p, tip, tip + inward * 0.045 + down * 0.035 + front * spread * 0.2, 0.012, "claw", segments=3)
+        t0 = w_.lerp(palm, 0.55) + front * 0.065 + inward * 0.015
+        t1 = t0 + front * 0.02 + inward * 0.04 + down * 0.03
         em.limb(p, [t0, t1], [0.02, 0.015], [fur], sides=4)
-        vr.spike(p, t1, t1 + V((0, -0.035, -0.03)), 0.012, "claw", segments=3)
+        vr.spike(p, t1, t1 + inward * 0.035 + down * 0.03, 0.012, "claw", segments=3)
 
     # Torn trousers in the ranger's cloth and a belt (07: torn remnants of gear).
     em.loft(p, [em.section(at(0, y, z), w, d, along=lean, up=V((0, 1, 0)), sides=8) for y, z, w, d in
