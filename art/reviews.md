@@ -229,3 +229,5 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-25 | `art/preview/shifter_werewolf_v4.png` | note | Torso and head much better; tweak the legs and the hands |
 | 2026-11-26 | `art/preview/shifter_werewolf_solo_v5.png` | note | Hands inverted (palm out, thumb inside): turn them so the palm faces the body, angled slightly down |
 | 2026-11-26 | `art/preview/shifter_werewolf_v6.png`, `shifter_werewolf_solo_v6.png` | approved | Werewolf form (average build), hands turned as real hands rest. Next: the werebear |
+| 2026-11-26 | `art/preview/shifter_werebear_solo_v1.png` | note | Werebear: keep iterating; the head doesn't connect to the body |
+| 2026-11-26 | `art/preview/shifter_werebear_v2.png`, `shifter_werebear_solo_v2.png` | approved | Werebear form (average build), a thick neck joining the head to the chest. Next: the werecat |
