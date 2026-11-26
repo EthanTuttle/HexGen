@@ -318,12 +318,8 @@ class _RestCard extends Control:
 		# The combat hotbar card's look (Combat v14), with no AP hex: the map has no AP.
 		var r := Rect2(Vector2(0, 8), Vector2(74, 84))
 		draw_style_box(UI.box(UI.HEX_SHADOW, 10), Rect2(r.position + Vector2(0, 4), r.size))
-		var face := UI.box(UI.CREAM_LIGHT, 10)
-		face.border_color = band
-		face.set_border_width_all(2)
-		draw_style_box(face, r)
-		draw_rect(Rect2(r.position + Vector2(2.5, 2.5), Vector2(69, 6)), band)
-		draw_texture_rect(UI.icon(icon_name, Color("#5E4C30"), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
+		UI.card_face(self, r, band, 2, band)
+		draw_texture_rect(UI.sharp_icon(icon_name, Color("#5E4C30"), 26, 2), Rect2(r.position + Vector2(24, 20), Vector2(26, 26)), false)
 		var f := UI.font("n900")
 		draw_string(f, r.position + Vector2(37 - f.get_string_size(word, 0, -1, 11).x * 0.5, 60), word,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.INK)
@@ -672,7 +668,7 @@ class _Pin extends Control:
 		draw_circle(c + Vector2(0, 2), 11, Color("#6B4C35"))
 		draw_circle(c, 11, Color("#8A6446"))
 		draw_circle(c, 9, UI.CREAM_LIGHT)
-		draw_texture_rect(UI.icon("landmark", Color("#5E4C30"), 12, 2.6), Rect2(c - Vector2(6, 6), Vector2(12, 12)), false)
+		draw_texture_rect(UI.sharp_icon("landmark", Color("#5E4C30"), 12, 2.6), Rect2(c - Vector2(6, 6), Vector2(12, 12)), false)
 
 	func _gui_input(e: InputEvent) -> void:
 		if UI.is_tap(self, e):

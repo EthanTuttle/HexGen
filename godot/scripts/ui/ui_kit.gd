@@ -240,3 +240,55 @@ const MENU_CAP := 1.25
 static func menu_frame(area: Vector2) -> Rect2:
 	var s := area.min(Vector2(844.0, 390.0) * MENU_CAP)
 	return Rect2(((area - s) * 0.5).floor(), s)
+
+
+## Window pixels per layout unit: 2 on the phone, about 3.6 full screen on the Mac.
+static func screen_scale() -> float:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return 1.0
+	return maxf(tree.root.get_final_transform().get_scale().x, 1.0)
+
+
+## An icon drawn into a fixed rect (draw_texture_rect), made at the screen's own density so it stays sharp on a
+## bigger screen. Not for a Button's icon, which shows at the texture's own size.
+static func sharp_icon(name: String, col: Color, size: float, stroke := 2.2, fill := false) -> Texture2D:
+	return icon(name, col, size * screen_scale() * 0.5, stroke, fill)
+
+
+## The action card's face (Combat v14 hotbar card; also the action cards screen, the map's Rest and Enter cards and
+## level-up's card tiles): a cream card with a rim and its source's colour band across the top. The band follows the
+## card's rounded top corners, so it sits right at any screen size (a plain rectangle shows its square corners
+## inside the curve once the UI is drawn bigger than 2x, as on the Mac). band_bottom: where the band ends, from the
+## card's top edge; a clear band draws none.
+static func card_face(ci: CanvasItem, r: Rect2, rim: Color, rim_w: int, band: Color, band_bottom := 8.5, radius := 10, bg := CREAM_LIGHT) -> void:
+	ci.draw_style_box(box(bg, radius), r)
+	if band.a > 0.0:
+		ci.draw_colored_polygon(_top_band(r.grow(-1.0), radius - 1.0, band_bottom - 1.0), band)
+	var edge := box(bg, radius)
+	edge.draw_center = false
+	edge.set_border_width_all(rim_w)
+	edge.border_color = rim
+	ci.draw_style_box(edge, r)
+
+
+## The top strip of a rounded rect, h tall, with its two top corners rounded by rad (drawn under the rim, which
+## covers its outer edge).
+static func _top_band(r: Rect2, rad: float, h: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var rr := minf(rad, r.size.x * 0.5)
+	var steps := 8
+	for i in steps + 1:   # top left corner, from the left side round to the top
+		var a := PI + PI * 0.5 * i / steps
+		pts.append(r.position + Vector2(rr, rr) + Vector2(cos(a), sin(a)) * rr)
+	for i in steps + 1:   # top right corner
+		var a := PI * 1.5 + PI * 0.5 * i / steps
+		pts.append(Vector2(r.end.x - rr, r.position.y + rr) + Vector2(cos(a), sin(a)) * rr)
+	var bottom := r.position.y + h
+	if bottom < r.position.y + rr:   # a band shallower than the corner: cut the arcs at its bottom
+		pts = Geometry2D.intersect_polygons(pts + PackedVector2Array([r.end, Vector2(r.position.x, r.end.y)]),
+			PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), Vector2(r.end.x, bottom), Vector2(r.position.x, bottom)]))[0]
+		return pts
+	pts.append(Vector2(r.end.x, bottom))
+	pts.append(Vector2(r.position.x, bottom))
+	return pts

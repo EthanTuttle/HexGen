@@ -732,8 +732,7 @@ func _card_tile(id: String, _m: Dictionary, new: bool, name := "") -> Control:
 	t.draw.connect(func():
 		if new:
 			t.draw_style_box(CUI.tile_box(Color("#E9C46A"), 4, 11, Vector4.ZERO), Rect2(Vector2(-3, -3), t.size + Vector2(6, 6)))
-		t.draw_style_box(CUI.tile_box(CUI.SEL_RIM, 2, 9, Vector4.ZERO), Rect2(Vector2.ZERO, t.size))
-		t.draw_rect(Rect2(2, 2, 58, 5), band))
+		UI.card_face(t, Rect2(Vector2.ZERO, t.size), CUI.SEL_RIM, 2, band, 7.0, 9))
 	var hx := HexShape.make(18, 21, UI.DARK, UI.DARK, 0).with_text(str(k.ap), 11, UI.CREAM, "n900")
 	UI.at(hx, 3, 8)
 	t.add_child(hx)

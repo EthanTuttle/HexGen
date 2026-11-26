@@ -605,7 +605,7 @@ class _Tile extends Control:
 		var f := UI.font("n900")
 		var ap := Cards.ap_text(k)
 		draw_string(f, Vector2(18 - f.get_string_size(ap, 0, -1, 11).x * 0.5, 26), ap, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
-		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 18, 2), Rect2(Vector2(34, 13), Vector2(18, 18)), false)
+		draw_texture_rect(UI.sharp_icon(k.icon, Color(src.icon_ink), 18, 2), Rect2(Vector2(34, 13), Vector2(18, 18)), false)
 		var room := size.x - 64.0
 		var lines := [String(k.n)]
 		if f.get_string_size(k.n, 0, -1, 12).x > room and String(k.n).contains(" "):   # a long name takes two lines, not a cut
@@ -695,23 +695,19 @@ class _Card extends Control:
 		var src: Dictionary = Cards.SRC[k.src]
 		var r := Rect2(Vector2.ZERO, ActionCards.SLOT)
 		draw_style_box(UI.box(UI.HEX_SHADOW, 10), Rect2(r.position + Vector2(0, 6 if ghost else 4), r.size))
-		var face := UI.box(UI.CREAM_LIGHT, 10)
-		face.border_color = UI.ORANGE if on or ghost else UI.CREAM_LIGHT
-		face.set_border_width_all(3 if on or ghost else 2)
-		draw_style_box(face, r)
-		draw_rect(Rect2(Vector2(2.5, 2.5), Vector2(r.size.x - 5, 6)), Color(src.band))
+		UI.card_face(self, r, UI.ORANGE if on or ghost else UI.CREAM_LIGHT, 3 if on or ghost else 2, Color(src.band))
 		var f := UI.font("n900")
 		if not ghost:
 			draw_colored_polygon(UI.hex_points(Rect2(Vector2(4, 9), Vector2(18, 21))), UI.DARK)
 			var ap := Cards.ap_text(k)
 			draw_string(f, Vector2(13 - f.get_string_size(ap, 0, -1, 10).x * 0.5, 24), ap, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UI.CREAM)
 			if k.limit == "":
-				draw_texture_rect(UI.icon("repeat", ON_BAR_INK, 14, 2.6), Rect2(Vector2(r.size.x - 18, 10), Vector2(14, 14)), false)
+				draw_texture_rect(UI.sharp_icon("repeat", ON_BAR_INK, 14, 2.6), Rect2(Vector2(r.size.x - 18, 10), Vector2(14, 14)), false)
 			elif k.limit == "fight":
 				draw_style_box(UI.box(Color("#843E0E"), 7), Rect2(Vector2(r.size.x - 27, 9), Vector2(24, 15)))
 				draw_string(f, Vector2(r.size.x - 24, 20), "1", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UI.WHITE_WARM)
-				draw_texture_rect(UI.icon("fight_once", UI.WHITE_WARM, 9, 2.6), Rect2(Vector2(r.size.x - 15, 12), Vector2(9, 9)), false)
-		draw_texture_rect(UI.icon(k.icon, Color(src.icon_ink), 22, 2), Rect2(Vector2((r.size.x - 22) * 0.5, 22 if not ghost else 20), Vector2(22, 22)), false)
+				draw_texture_rect(UI.sharp_icon("fight_once", UI.WHITE_WARM, 9, 2.6), Rect2(Vector2(r.size.x - 15, 12), Vector2(9, 9)), false)
+		draw_texture_rect(UI.sharp_icon(k.icon, Color(src.icon_ink), 22, 2), Rect2(Vector2((r.size.x - 22) * 0.5, 22 if not ghost else 20), Vector2(22, 22)), false)
 		# The name, on up to two lines (11 pt: the smallest text size in the docs).
 		var words := String(k.n).split(" ")
 		var lines: Array[String] = [k.n]

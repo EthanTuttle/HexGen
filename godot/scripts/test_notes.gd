@@ -236,4 +236,4 @@ class Flag extends Control:
 	func _draw() -> void:
 		var m := size * 0.5
 		draw_circle(m, 13, Color(0.141, 0.188, 0.172, 0.45))
-		draw_texture_rect(UI.icon(TestNotes.FLAG_ICON, UI.CREAM_LIGHT, 16, 2.6), Rect2(m - Vector2(8, 8), Vector2(16, 16)), false)
+		draw_texture_rect(UI.sharp_icon(TestNotes.FLAG_ICON, UI.CREAM_LIGHT, 16, 2.6), Rect2(m - Vector2(8, 8), Vector2(16, 16)), false)
