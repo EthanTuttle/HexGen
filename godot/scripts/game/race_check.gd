@@ -96,6 +96,35 @@ func _turn(u: Dictionary) -> void:
 	f.select(u)
 
 
+## `--wshots`: card id picked (aimed at `at`, a cell, if given), the camera on u, then the screen to screens/weapons/<name>.png.
+func _wshot(u: Dictionary, id: String, at, name: String) -> void:
+	if not "--wshots" in OS.get_cmdline_user_args():
+		return
+	_turn(u)
+	f.pick_card(id)
+	if at != null:
+		await f.click_cell(at)
+	game.rig.player_moved = true
+	game.rig.ease_to(f.global_position + u.mini.position, 11.0, game.rig.yaw_deg)
+	await _wait(0.9)
+	for _f in 3:
+		await get_tree().process_frame
+	await StallWatch.drawn(get_tree())
+	var dir := ProjectSettings.globalize_path("res://screens/weapons")
+	DirAccess.make_dir_recursive_absolute(dir)
+	game.get_viewport().get_texture().get_image().save_png(dir.path_join("%s.png" % name))
+
+
+## Whether card id's hotbar card is drawn dim for u.
+func _hot_dim(u: Dictionary, id: String) -> bool:
+	f.select(u)
+	f.hud.refresh()
+	for c in f.hud._hotbar.get_children():
+		if c.get("k") != null and c.k.id == id:
+			return c.dim
+	return false
+
+
 ## `--shots`: the screen to screens/race/<name>.png.
 func _shot(name: String) -> void:
 	if not "--shots" in OS.get_cmdline_user_args():
@@ -972,6 +1001,19 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			await f.click_cell(spots[0])
 			await f.press_button()
 			_check(hero.cell == spots[0] and hero.ap == 1, "Dancing Step moves for 0 AP")
+			# As a player does it: the hotbar card is dim until a scimitar attack, then a tap on a lit hex moves at once, like Move.
+			_place(hero, s)
+			_turn(hero)
+			var dim_before := _hot_dim(hero, "dancing_step")
+			await _play(hero, "attack", foe.cell, [false, false, false, false, false])
+			_check(dim_before and not _hot_dim(hero, "dancing_step"), "Dancing Step's hotbar card is dim until a scimitar attack")
+			f.pick_card("dancing_step")
+			var sp := f.cell_options(hero, f.card())
+			var p: Vector2 = game.rig.camera.unproject_position(f.global_position + f.cell_point(sp[0]) + Vector3(0, Rules.CELL_TOP, 0))
+			game.rig.gestures.tap.emit(p)
+			while f.busy:
+				await get_tree().process_frame
+			_check(hero.cell == sp[0], "Dancing Step: a tap on a lit hex moves there, no Use needed")
 		"glaive":
 			var foes: Array = f.units.filter(func(u): return not u.ally)
 			for cell: Vector2i in f.grid:   # a hex with open ground all round, away from the board's edge
@@ -1036,6 +1078,72 @@ func _weapon_card_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, 
 			_check(f.dist(hero, foe) == 1 and hp - foe.hp == plain + _offhand_damage(hero), "it steps next to it and hits (and the pair's free hit)")
 		"dagger":
 			_check(f.card("throw").range == Weapons.THROW_RANGE, "a thrown dagger reaches 4")
+		"greatsword":
+			var foe2: Dictionary = f.units.filter(func(u): return not u.ally and u != foe)[0]
+			_turn(hero)
+			_check(f.cant_use(hero, f.card("cleave")) == "", "Cleave: usable with a foe next to you")
+			var spot: Vector2i = s + Hex.NEIGHBOURS[(d + 1) % 6]
+			_fresh(foe2)
+			_place(foe2, spot)
+			var hp2: int = foe2.hp
+			await _wshot(hero, "cleave", null, "cleave_1_pick")
+			await _play(hero, "cleave", null, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain and hp2 - foe2.hp == mini(hp2, plain), "Cleave: one flip at each foe next to you, %d each (%d, %d)" % [plain, hp - foe.hp, hp2 - foe2.hp])
+			_place(foe2, s + dv * 4)
+			_place(foe, s + dv * 2)
+			_turn(hero)
+			_check(f.cant_use(hero, f.card("cleave")) == "_no_foe", "Cleave dims with no foe next to you")
+		"battleaxe":
+			await _play(hero, "hack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain and foe.hacked, "Hack: a hit of %d, and the foe is hacked" % plain)
+			await _wshot(hero, "attack", foe.cell, "hack_2_hacked_foe")
+			hp = foe.hp
+			await _play(hero, "attack", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain + Rules.HACK_MORE and not foe.hacked, "the next hit on it deals %d more, then it's spent (%d)" % [Rules.HACK_MORE, hp - foe.hp])
+		"greataxe":
+			var before := f.attack_coins(foe, hero, Cards.get_card("attack", "spear"))
+			await _play(hero, "reckless_swing", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain * Rules.RECKLESS_TIMES, "Reckless Swing: %dx damage (%d)" % [Rules.RECKLESS_TIMES, hp - foe.hp])
+			await _wshot(hero, "reckless_swing", foe.cell, "reckless_1_after")
+			f.phase = "enemies"
+			_check(f.attack_coins(foe, hero, Cards.get_card("attack", "spear")) == before + Rules.RECKLESS_COINS, "and foes flip %d more coin on you until your next turn" % Rules.RECKLESS_COINS)
+			f.phase = "allies"
+		"warhammer":
+			var before := f.attack_coins(hero, foe, f.card("attack"))
+			await _play(hero, "shatter", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain and f.attack_coins(hero, foe, f.card("attack")) == before + Rules.SHATTER_COINS, "Shatter: a hit, then attacks on it flip %d more coin this round" % Rules.SHATTER_COINS)
+			await _wshot(hero, "attack", foe.cell, "shatter_2_next_attack")
+			f.phase_no += 2
+			_check(f.attack_coins(hero, foe, f.card("attack")) == before, "the extra coin ends with the round")
+			# On cover: a hex of partial cover next to a free one.
+			var spot = null
+			for c: Vector2i in f.cover:
+				if f.cover[c] == "partial" and f.unit_at(c).is_empty():
+					for n in Hex.NEIGHBOURS:
+						if spot == null and f.grid.has(c + n) and f.grid[c + n].kind == "open" and f.unit_at(c + n).is_empty():
+							spot = [c, c + n]
+			if spot == null:
+				_check(true, "Shatter on cover: no partial cover on this map to try (skipped)")
+			else:
+				_place(foe, s + dv * 4)
+				_place(hero, spot[1])
+				_turn(hero)
+				f.pick_card("shatter")
+				_check(spot[0] in f.shatter_cells(hero), "Shatter can aim at cover within reach")
+				await _wshot(hero, "shatter", spot[0], "shatter_3_cover_aimed")
+				_turn(hero)
+				f.pick_card("shatter")
+				await f.click_cell(spot[0])
+				Coins.forced.assign([true, true, true, true, true, true, true, true, true, true, true, true])
+				await f.press_button()
+				Coins.forced.clear()
+				_check(not f.cover.has(spot[0]) and hero.used.has("shatter"), "Shatter on cover: a hit breaks it for the fight")
+		"halberd":
+			_place(foe, s + dv * 2)
+			await _wshot(hero, "hook", foe.cell, "hook_1_aimed")
+			await _play(hero, "hook", foe.cell, [true, true, true, true, true, true, true, true, true, true, true, true])
+			_check(hp - foe.hp == plain and f.dist(hero, foe) == 1, "Hook: a hit at reach 2 pulls the foe next to you")
+			await _wshot(hero, "attack", foe.cell, "hook_2_pulled")
 	foe.max_hp = tough
 	_fresh(foe)
 

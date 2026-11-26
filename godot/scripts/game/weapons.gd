@@ -9,18 +9,18 @@ extends RefCounted
 ## PLACEHOLDER (04 doesn't sort them): longswords, spears, glaives and staves count as heavy (STR) or casting (INT) as listed.
 
 const CAT := {
-	"greatsword": {"ab": "STR", "hands": "2", "range": 1, "cards": []},
+	"greatsword": {"ab": "STR", "hands": "2", "range": 1, "cards": ["cleave"]},
 	"longsword": {"ab": "STR", "hands": "v", "range": 1, "cards": ["parry"]},
 	"shortsword": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["quick_slash"]},
 	"rapier": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["disarm"]},
 	"scimitar": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["dancing_step"]},
 	"dagger": {"ab": "DEX", "hands": "1", "range": 1, "cards": ["throw"]},
-	"battleaxe": {"ab": "STR", "hands": "v", "range": 1, "cards": ["throw"]},
-	"greataxe": {"ab": "STR", "hands": "2", "range": 1, "cards": []},
+	"battleaxe": {"ab": "STR", "hands": "v", "range": 1, "cards": ["hack", "throw"]},
+	"greataxe": {"ab": "STR", "hands": "2", "range": 1, "cards": ["reckless_swing"]},
 	"mace": {"ab": "STR", "hands": "1", "range": 1, "cards": ["bonebreaker"]},
-	"warhammer": {"ab": "STR", "hands": "2", "range": 1, "cards": []},
+	"warhammer": {"ab": "STR", "hands": "2", "range": 1, "cards": ["shatter"]},
 	"spear": {"ab": "STR", "hands": "v", "range": 2, "cards": ["throw"]},
-	"halberd": {"ab": "STR", "hands": "2", "range": 2, "cards": []},
+	"halberd": {"ab": "STR", "hands": "2", "range": 2, "cards": ["hook"]},
 	"glaive": {"ab": "STR", "hands": "2", "range": 2, "cards": ["sweeping_arc"]},
 	"staff": {"ab": "INT", "hands": "v", "range": 1, "cards": ["trip", "ward"]},
 	"wand": {"ab": "INT", "hands": "1", "range": 5, "ranged": true, "cards": []},   # Magic Bolt, the basic attack (04; range PLACEHOLDER)
