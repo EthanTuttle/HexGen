@@ -1,7 +1,7 @@
 """Renders a Shifter form for review: the hero beside their form (in the hero's own colours) and the matching ally beast, from three
 sides; the form in three heroes' colours; the form alone, large; and the line-up at the combat camera.
 
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf | builds | races | golems]
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/scripts/render_shifter_minis.py [-- werewolf | builds | races | golems[:stone|wood|metal]]
 Uses the latest shifter_minis, hero_kit and beast_minis. Writes art/preview/shifter_<form>_*_vN.png and the sheets
 shifter_<form>_vN.png (line-ups and colours) and shifter_<form>_solo_vN.png.
 """
@@ -218,4 +218,7 @@ def golems(material="stone"):
 
 if __name__ == "__main__":
     for name in (sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["werewolf"]):
-        {"builds": builds, "races": races, "golems": golems}.get(name, lambda: render(name))()
+        if name.startswith("golems"):  # golems or golems:<material>
+            golems(*name.split(":")[1:])
+        else:
+            {"builds": builds, "races": races}.get(name, lambda: render(name))()
