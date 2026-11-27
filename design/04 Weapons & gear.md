@@ -198,7 +198,7 @@ The Volley branch (raining arrows on areas) moved to the shortbow.
 
 | Node | Striker (many quick hits, building on Quick Slash) | Gutter Fighter (dirty close-quarters tricks) |
 | --- | --- | --- |
-| 1 | **Quick Slash+**: Quick Slash deals more damage | New card: Throw Dirt (1 AP): blind a foe; CON save |
+| 1 | **Quick Slash+**: Quick Slash deals more damage | New card: Throw Dirt (1 AP): blind a foe; CON save (Ethan, Nov 26, 2026: blinded means it can't target anything more than 1 hex away, until the end of its next turn) |
 | 2 | New card: Rapid Jabs (1 AP): three small hits on one foe | **Cheap Shot** (passive): attacks on blinded or prone foes deal more damage |
 | 3 (capstone) | New card: Thousand Cuts (2 AP): many rapid strikes on one foe | New card: Pocket Sand (2 AP): blind every adjacent foe; CON save |
 
@@ -244,7 +244,7 @@ Identity: the dedicated armor and shield breaker.
 
 | Node | Harrier (pulling, tripping and dragging foes) | Warden (controlling space and zoning) |
 | --- | --- | --- |
-| 1 | **Gaffing Hook**: a hooked foe is easier to hit this turn (Ethan, Nov 26, 2026: every attack on it, by anyone, flips 1 extra coin until your turn ends) | **Sentinel** (passive): foes that enter your reach provoke a free attack |
+| 1 | **Gaffing Hook**: a hooked foe is easier to hit this turn (Ethan, Nov 26, 2026: every attack on it, by anyone, flips 1 extra coin until your turn ends) | **Sentinel** (passive): foes that enter your reach provoke a free attack (Ethan, Nov 26, 2026: once per round, the first foe to step into your reach takes a free basic attack) |
 | 2 | New card: Trip (1 AP): hook a foe's legs so it falls prone; DEX save | **Thicket of Steel** (passive): foes in your reach are slowed |
 | 3 (capstone) | New card: Into the Fray (2 AP): hook a foe into your allies; each adjacent ally gets a free attack | New card: Iron Perimeter (2 AP): every foe entering your reach this round is struck and stopped |
 
@@ -260,7 +260,7 @@ Identity: the dedicated armor and shield breaker.
 
 | Node | Wrestler (grabs, holds and throws) | Boxer (punish attackers with return blows) |
 | --- | --- | --- |
-| 1 | **Grappling Guard**: Guard Up's counter also grabs the attacker, so it can't move away (STR save to break free) | **Guard Up+**: Guard Up also counters when an attack misses you, not just when it hits |
+| 1 | **Grappling Guard**: Guard Up's counter also grabs the attacker, so it can't move away (STR save to break free; Ethan, Nov 26, 2026: it saves at the start of each of its turns and is free on a pass; the grab also ends if you move away or go down) | **Guard Up+**: Guard Up also counters when an attack misses you, not just when it hits |
 | 2 | New card: Suplex (2 AP): slam a grabbed foe down; it takes damage and is knocked prone | New card: Bait (1 AP): taunt a foe so it must attack you on its turn, triggering your counter |
 | 3 (capstone) | New card: Hurl (2 AP): throw a grabbed foe into another foe; both take heavy damage and are knocked prone | New card: Retaliate (1 AP): strike back at the last foe that hit you, with bonus damage equal to what it dealt you |
 

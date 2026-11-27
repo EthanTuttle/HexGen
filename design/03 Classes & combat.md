@@ -707,7 +707,7 @@ Ideas not yet assigned; to draw from for later unlocks (level 15 and on) and for
 - [ ] Big spell pass: define the spells, then assign them to tiefling bloodlines, high elf choices and casters
 - [ ] Spell balance pass: Retell, Requiem, Charge!, Holy Defender god spells, and caster vs martial scaling
 - [ ] Playtest: caster vs martial card count gap (accepted for now)
-- [ ] Status effect rules (bleed, poison, root, slow, blind, stun, prone, etc.): duration, stacking, saves to end them; and what counts as a "strong hit" in the coin system
+- [ ] Status effect rules (bleed, poison, root, slow, blind (settled Nov 26, 2026 for Throw Dirt: can't target beyond 1 hex until the end of its next turn; 04 → Shortsword), stun, prone, etc.): duration, stacking, saves to end them; and what counts as a "strong hit" in the coin system
 - [x] ~~Skill list: proficiencies~~ (settled Oct 22, 2026: see Skills). Still open: the caster locations' skill lists (Library, Meditation Rock, College)
 - [ ] **New:** item identification rules (the Library offers identifying, and Lore's hints idea came up, but how unidentified items work isn't defined)
 - [ ] **New:** proficiencies: how the +1 coin grows (by level, by rank, or both), the rank cap, how many each background grants, and the in-game checks each one covers

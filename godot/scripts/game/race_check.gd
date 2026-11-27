@@ -254,6 +254,10 @@ func _run() -> void:
 		await _shot("popup_level4_fluffy")
 		get_tree().quit()
 		return
+	if "--highground" in OS.get_cmdline_user_args():   # High Ground needs raised ground, which the plains map hasn't got
+		await _high_ground_check()
+		_done()
+		return
 	if "--wizardshots" in OS.get_cmdline_user_args():   # test aid: a Wizard's fight with a summon, both decoys and the circle
 		await _wizard_shots()
 		get_tree().quit()
@@ -340,6 +344,10 @@ func _run() -> void:
 		return
 	var s: Vector2i = line[0]
 	var dv: Vector2i = Hex.NEIGHBOURS[line[1]]
+	if "--mastery" in OS.get_cmdline_user_args():   # the tier-1 mastery nodes (04, Nov 26, 2026), each played once
+		await _mastery_checks(hero, fluffy, foe, s, line[1])
+		_done()
+		return
 	_clear_round(s, [])
 	_place(fluffy, s)
 	_place(foe, s + dv)
@@ -2307,3 +2315,251 @@ func _bard_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vect
 	_fresh(hero)
 	_fresh(foe)
 	_place(fluffy, s - dv * 3)
+
+
+# --- Tier-1 mastery nodes (04, Ethan, Nov 26, 2026) -------------------------------------
+
+## Gives the hero this weapon (and off hand) with one mastery node trained, for a case.
+func _arm(hero: Dictionary, weapon: String, node: String, off := "") -> void:
+	hero.weapon = weapon
+	hero.member.weapon = weapon
+	hero.off = off
+	hero.member.off = off
+	hero.member.mastery = ["%s.%s" % [off if off == "shield" else weapon, node]] if node != "" else []
+
+
+## A normal hit with card id: the score (plus the versatile two-handed bonus).
+func _plain(hero: Dictionary, id: String) -> int:
+	var k := f.card(id)
+	var w: Dictionary = Weapons.of(hero.weapon)
+	return f.attack_score(hero, k) + k.get("bonus", 0) + (Weapons.VERSATILE_TWO_HANDED if w.hands == "v" and hero.off in ["", "none"] else 0)
+
+
+## Puts a unit back to full and clean, at a cell.
+func _reset_at(u: Dictionary, c: Vector2i) -> void:
+	_fresh(u)
+	u.max_hp = 60
+	u.hp = 60
+	u.hacked = false
+	u.hack_stack = 0
+	u.sundered = false
+	u.gaffed = -1
+	u.blind = -1
+	u.grabbed = {}
+	u.shattered = -1
+	u.defending = false
+	u.guard = false
+	u.guard_counter = false
+	_place(u, c)
+
+
+func _mastery_checks(hero: Dictionary, fluffy: Dictionary, foe: Dictionary, s: Vector2i, d: int) -> void:
+	var dv: Vector2i = Hex.NEIGHBOURS[d]
+	var foe2: Dictionary = f.units.filter(func(u): return not u.ally and u != foe)[0]
+	var heads: Array = []
+	heads.resize(16)
+	heads.fill(true)
+	var tough: int = foe.max_hp
+	var tough2: int = foe2.max_hp
+	hero.mark = {}
+	_clear_round(s, [])
+
+	# Cleave+: each hit +1 for every other foe hit.
+	_arm(hero, "greatsword", "cleave_plus")
+	_reset_at(hero, s); _reset_at(foe, s + dv); _reset_at(foe2, s + Hex.NEIGHBOURS[(d + 1) % 6])
+	var plain := _plain(hero, "cleave")
+	await _play(hero, "cleave", null, heads)
+	_check(60 - foe.hp == plain + Rules.CLEAVE_PLUS and 60 - foe2.hp == plain + Rules.CLEAVE_PLUS, "Cleave+: two foes hit, each takes %d + %d (%d, %d)" % [plain, Rules.CLEAVE_PLUS, 60 - foe.hp, 60 - foe2.hp])
+	_place(foe2, s + dv * 5)
+
+	# Relentless Hack: the bonus isn't spent, and each Hack adds 2.
+	_arm(hero, "battleaxe", "relentless_hack")
+	_reset_at(foe, s + dv)
+	plain = _plain(hero, "hack")
+	await _play(hero, "hack", foe.cell, heads)
+	_check(60 - foe.hp == plain and foe.hack_stack == Rules.HACK_MORE and not foe.hacked, "Relentless Hack: a hit of %d leaves +%d on the foe" % [plain, foe.hack_stack])
+	var hp: int = foe.hp
+	await _play(hero, "attack", foe.cell, heads)
+	_check(hp - foe.hp == _plain(hero, "attack") + Rules.HACK_MORE and foe.hack_stack == Rules.HACK_MORE, "the next hit deals %d more and the bonus stays (%d)" % [Rules.HACK_MORE, hp - foe.hp])
+	hp = foe.hp
+	await _play(hero, "hack", foe.cell, heads)
+	_check(hp - foe.hp == plain + Rules.HACK_MORE and foe.hack_stack == 2 * Rules.HACK_MORE, "a second Hack hits with the bonus and raises it to +%d" % foe.hack_stack)
+	f.select(hero)
+	_check(f.status_icons(foe).any(func(x): return x[1] == "Hacked" and String(x[2]).contains("every hit")), "the foe's status reads Hacked, every hit")
+
+	# Sunder: Shatter's hit leaves +1 coin for the fight, stacking with Shatter's own this round.
+	_arm(hero, "warhammer", "sunder")
+	_reset_at(foe, s + dv)
+	var before := f.attack_coins(hero, foe, f.card("attack"))
+	await _play(hero, "shatter", foe.cell, heads)
+	_check(f.attack_coins(hero, foe, f.card("attack")) == before + Rules.SHATTER_COINS + Rules.SUNDER_COINS, "Sunder: right after Shatter, attacks on it flip +%d" % (Rules.SHATTER_COINS + Rules.SUNDER_COINS))
+	f.phase_no += 2
+	_check(f.attack_coins(hero, foe, f.card("attack")) == before + Rules.SUNDER_COINS, "and +%d for the rest of the fight" % Rules.SUNDER_COINS)
+	await _play(hero, "shatter", foe.cell, heads)
+	f.phase_no += 2
+	_check(f.attack_coins(hero, foe, f.card("attack")) == before + Rules.SUNDER_COINS, "a second Shatter doesn't add another Sunder coin")
+
+	# Gaffing Hook: the hooked foe flips +1 until the turn ends.
+	_arm(hero, "halberd", "gaffing_hook")
+	_reset_at(foe, s + dv * 2)
+	await _play(hero, "hook", foe.cell, heads)
+	before = f.attack_coins(hero, foe, f.card("attack"))
+	foe.gaffed = -1
+	var bare := f.attack_coins(hero, foe, f.card("attack"))
+	foe.gaffed = f.phase_no
+	_check(f.dist(hero, foe) == 1 and before == bare + Rules.GAFF_COINS, "Gaffing Hook: pulled in, and attacks on it flip +%d" % Rules.GAFF_COINS)
+	f.phase_no += 1
+	_check(f.attack_coins(hero, foe, f.card("attack")) == bare, "until the turn ends")
+
+	# Sentinel: the first foe to step into the halberd's reach each round takes a free attack.
+	_arm(hero, "halberd", "sentinel")
+	_reset_at(foe, s + dv * 4)
+	hero.sentinel_round = -1
+	Coins.forced.assign(heads)
+	f.phase = "enemies"
+	await f._walk(foe, [s + dv * 3, s + dv * 2, s + dv])
+	Coins.forced.clear()
+	_check(60 - foe.hp == _plain(hero, "attack") and foe.cell == s + dv, "Sentinel: a foe stepping into reach 2 takes a free hit (%d) and walks on" % (60 - foe.hp))
+	hp = foe.hp
+	_place(foe, s + dv * 4)
+	await f._walk(foe, [s + dv * 3, s + dv * 2])
+	_check(foe.hp == hp, "only once a round")
+	f.phase = "allies"
+	f.busy = false
+
+	# Brace: the spear strikes the first foe that steps into its reach this round.
+	_arm(hero, "spear", "brace")
+	_reset_at(foe, s + dv * 4)
+	await _play(hero, "brace", null, [])
+	_check(f.on(hero, "braced") and hero.used.has("brace"), "Brace: used, the hero is braced")
+	f.phase_no += 1
+	f.phase = "enemies"
+	Coins.forced.assign(heads)
+	await f._walk(foe, [s + dv * 3, s + dv * 2, s + dv])
+	Coins.forced.clear()
+	_check(60 - foe.hp == _plain(hero, "attack") and not f.on(hero, "braced"), "a foe stepping into reach takes the hit (%d), and Brace is spent" % (60 - foe.hp))
+	f.phase = "allies"
+	f.busy = false
+	f.phase_no += 1
+
+	# Phantom Step: Dancing Step passes through the foe's hex.
+	_arm(hero, "scimitar", "")
+	_reset_at(foe, s + dv)
+	await _play(hero, "attack", foe.cell, [false, false, false, false, false, false])
+	_check(not (s + dv * 2) in f.cell_options(hero, f.card("dancing_step")), "without Phantom Step the hex behind the foe is out of the step's reach")
+	_arm(hero, "scimitar", "phantom_step")
+	_check((s + dv * 2) in f.cell_options(hero, f.card("dancing_step")) and not foe.cell in f.cell_options(hero, f.card("dancing_step")), "Phantom Step: the step goes through the foe to the hex behind it, never onto it")
+	hero.ap = 1
+	f.pick_card("dancing_step")
+	await f.click_cell(s + dv * 2)
+	while f.busy:
+		await get_tree().process_frame
+	_check(hero.cell == s + dv * 2, "and the hero lands behind the foe")
+	_place(hero, s)
+
+	# Throw Dirt: a failed CON save blinds the foe until its next turn ends.
+	_arm(hero, "shortsword", "throw_dirt")
+	_reset_at(foe, s + dv)
+	await _play(hero, "throw_dirt", foe.cell, [false, false, false, false])
+	f.select(hero)
+	_check(f.on(foe, "blind") and f.status_icons(foe).any(func(x): return x[1] == "Blinded") and foe.hp == 60, "Throw Dirt: no damage, a failed save blinds it")
+	_reset_at(fluffy, s + dv * 3)
+	fluffy.blind = f.phase_no
+	_check(not f.in_reach(fluffy, foe, Cards.get_card("attack", fluffy.weapon)) or f.dist(fluffy, foe) <= 1, "a blinded attacker can't aim beyond 1 hex")
+	fluffy.blind = -1
+	_place(fluffy, s + dv * 6)
+
+	# Vault: a leap over the foe in the way, to a free hex next to the target.
+	_arm(hero, "glaive", "")
+	_reset_at(foe2, s + dv)
+	_reset_at(foe, s + dv * 3)
+	_check(f._step_to(hero, foe, f.card("vault")) == [s + dv * 2], "Vault: lands next to the foe in one leap, over the foe in the way")
+	await _play(hero, "vault", foe.cell, heads)
+	_check(hero.cell == s + dv * 2 and foe.hp < 60, "and attacks it")
+	_place(foe2, s + dv * 6)
+	_place(hero, s)
+
+	# Piercing Shot: Aimed Shot goes through its target, 4x to every foe in the line.
+	_arm(hero, "longbow", "piercing_shot")
+	_reset_at(foe, s + dv * 2)
+	_reset_at(foe2, s + dv * 4)
+	plain = _plain(hero, "aimed_shot") * Rules.AIMED_TIMES
+	_turn(hero)
+	f.pick_card("aimed_shot")
+	await f.click_cell(foe.cell)
+	_check(f.pierce_line(hero, foe, f.card()) == [foe2], "Piercing Shot: the foe behind the target is in the line")
+	await _wshot(hero, "aimed_shot", foe.cell, "piercing_shot_aimed")
+	await _play(hero, "aimed_shot", foe.cell, heads)
+	_check(60 - foe.hp == plain and 60 - foe2.hp == plain, "both take the full %dx (%d, %d)" % [Rules.AIMED_TIMES, 60 - foe.hp, 60 - foe2.hp])
+
+	# Volley: the aimed hex and the 6 round it; foes take a normal hit, allies are safe.
+	_arm(hero, "shortbow", "volley")
+	_reset_at(foe, s + dv * 3)
+	_reset_at(foe2, s + dv * 4)
+	_reset_at(fluffy, s + dv * 2)
+	plain = _plain(hero, "volley")
+	await _wshot(hero, "volley", foe.cell, "volley_aimed")
+	await _play(hero, "volley", foe.cell, heads)
+	_check(60 - foe.hp == plain and 60 - foe2.hp == plain and fluffy.hp == 60, "Volley: both foes in the area take %d, the ally in it none" % plain)
+	_place(fluffy, s + dv * 6)
+
+	# Grappling Guard: Guard Up's counter grabs the attacker, who can't move while the hero stands next to it.
+	_arm(hero, "gauntlets", "grappling_guard")
+	_reset_at(hero, s)
+	_reset_at(foe, s + dv)
+	await _play(hero, "guard_up", null, [])
+	Coins.forced.assign(heads)
+	f.phase = "enemies"
+	await f._attack(foe, hero, Cards.get_card("attack", "spear"))
+	Coins.forced.clear()
+	_check(f.grabbed(foe) and f.move_hexes(foe) == 0, "Grappling Guard: the counter grabs the foe; it can't move")
+	_place(hero, s - dv)
+	_check(not f.grabbed(foe) and f.move_hexes(foe) > 0, "the grab ends when the hero steps away")
+	f.phase = "allies"
+	f.busy = false
+	hero.hp = hero.max_hp
+
+	# Steady Block: Blocking with a shield, the hero can't be pushed.
+	_arm(hero, "longsword", "steady_block", "shield")
+	_reset_at(hero, s + dv)
+	_reset_at(foe, s)
+	await _play(hero, "block", null, [])
+	await f._push(foe, hero)
+	_check(hero.cell == s + dv and f.steady(hero), "Steady Block: Blocking, a push doesn't move the hero")
+	hero.defending = false
+	await f._push(foe, hero)
+	_check(hero.cell == s + dv * 2, "without Block, the push moves them")
+
+	foe.max_hp = tough
+	foe2.max_hp = tough2
+
+
+## `--highground`: High Ground on a hills map, which has raised ground (04, Ethan, Nov 26, 2026).
+func _high_ground_check() -> void:
+	# High Ground: from a full raised level above the target, longbow shots flip +1 and reach 2 farther.
+	await _fight("hills_crags")   # a hills map: raised ground to shoot down from
+	var hero: Dictionary = f.units[0]
+	var foe: Dictionary = f.units.filter(func(u): return not u.ally)[0]
+	_arm(hero, "longbow", "high_ground")
+	var pair := []
+	for a: Vector2i in f.grid:
+		if not pair.is_empty():
+			break
+		if f.grid[a].kind != "open" or not f.unit_at(a).is_empty():
+			continue
+		for b: Vector2i in f.grid:
+			if f.grid[b].kind == "open" and f.unit_at(b).is_empty() and Rules.hex_distance(a, b) in range(2, 7) and f.grid[a].z - f.grid[b].z >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
+				pair = [a, b]
+				break
+	if pair.is_empty():
+		_check(true, "High Ground: no raised cell on this map to try (skipped)")
+	else:
+		_reset_at(hero, pair[0])
+		_reset_at(foe, pair[1])
+		var k := f.card("attack")
+		_check(f.attack_mods(hero, foe, k).any(func(m): return m.why == "high"), "High Ground: +%d coin shooting down from a raised level" % Rules.HIGH_GROUND_COINS)
+		k.range = f.dist(hero, foe) - Rules.HIGH_GROUND_RANGE
+		var reach_high: bool = f.cover_between(hero, foe) == "full" or f.in_reach(hero, foe, k)
+		_arm(hero, "longbow", "")
+		_check(reach_high and not f.in_reach(hero, foe, k) and not f.attack_mods(hero, foe, k).any(func(m): return m.why == "high"), "and %d more range; neither without the node" % Rules.HIGH_GROUND_RANGE)
+

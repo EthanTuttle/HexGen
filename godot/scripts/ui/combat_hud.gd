@@ -326,7 +326,7 @@ func _refresh_details() -> void:
 			_details.add_child(_check_line(save_line(k.save)))
 	elif k.kind == "breath" and (aimed or fight.result.has("rows")):
 		_breath_rows(u, k)
-	elif k.kind == "cell" and aimed:
+	elif k.kind == "cell" and aimed and k.get("effect", "") != "volley":
 		_details.add_child(_wrap(UI.label("No roll", "n800", 13)))
 	elif k.kind in ["self", "cell", "arc"] and fight.self_done == k.id:
 		_details.add_child(UI.label("Used", "lilita", 18, Color("#2E7A3E")))   # no message: HP bars and effects show it
@@ -340,7 +340,7 @@ func _refresh_details() -> void:
 		if k.kind == "ally":
 			label = "Cast again" if not fight.result.is_empty() else "Cast"
 		elif k.kind == "save":
-			label = "Use" if k.has("step") else "Cast"   # Hunt Down is a dash, not a spell (03)
+			label = "Use" if k.has("step") or k.src == "weapon" else "Cast"   # Hunt Down is a dash and Throw Dirt a weapon card, not spells (03, 04)
 		elif k.kind == "mark":
 			label = "Use"
 		elif not fight.target.is_empty():   # the coin count on the button, before and after a flip (07)
@@ -350,7 +350,7 @@ func _refresh_details() -> void:
 	elif k.kind == "self":
 		label = "Flip coins" if k.get("effect", "") == "cleave" else "Use"   # Cleave flips at each foe next to you (04)
 	elif aimed:   # spells cast; Sweeping Arc flips (its foes' counts differ, so no count: 07); the Snare and Dancing Step are used
-		label = "Flip coins" if k.kind == "arc" else ("Cast" if k.src in ["elven", "bloodline", "race"] else "Use")
+		label = "Flip coins" if k.kind == "arc" or k.get("effect", "") == "volley" else ("Cast" if k.src in ["elven", "bloodline", "race"] else "Use")   # Volley flips at each foe in its hexes (04)
 	if label != "":
 		var note := fight.cant_use(u, k)
 		if (k.kind in ["attack", "save", "mark"] and fight.target.is_empty() and not at_cover) or (k.kind == "ally" and fight.ally_target.is_empty()):
@@ -402,7 +402,7 @@ const MOD_WORDS := {"bless": "Bless", "forge": "Forge dwarf", "glow": "Faerie Fi
 	"night": "night", "close": "foe next to you", "opening": "Opening Strike", "frail": "Curse of Frailty",
 	"exposed": "Exposing Disarm", "drowsy": "drowsy", "fear": "Dread", "dazzled": "Dazzle", "bane": "Bane",
 	"tune": "Rousing Tune", "faith": "Shield of Faith", "veil": "Moonveil", "sun": "Sunspot", "saga": "Epic Saga",
-	"reckless": "Reckless Swing", "shatter": "Shatter"}
+	"reckless": "Reckless Swing", "shatter": "Shatter", "sundered": "Sunder", "gaffed": "Gaffing Hook", "high": "High Ground"}
 
 
 ## One modifier under the check line: its chip, then "+1 Bless" or "−1 cover".
