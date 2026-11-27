@@ -433,7 +433,10 @@ func _add_unit(m: Dictionary, c: Vector2i, ally: bool, label: String, look_at_pl
 			# the Shifter (03 -> Shifter forms): in form; Thick Hide; Shred's heavy bleed
 			shifted = false, thick_hide = false, bleed_heavy = false,
 			# the Fighter weapons' cards (04): Hack's mark on a foe, Reckless Swing's opening, Shatter's broken guard
-			hacked = false, reckless = -1, shattered = -1}
+			hacked = false, reckless = -1, shattered = -1,
+			# tier-1 mastery (04, Nov 26, 2026): Relentless Hack's lasting bonus, Sunder, Gaffing Hook, Throw Dirt's blind on
+			# foes; Brace and Sentinel's round, and who has a foe grabbed (Grappling Guard)
+			hack_stack = 0, sundered = false, gaffed = -1, blind = -1, braced = -1, sentinel_round = -1, grabbed = {}}
 	units.append(u)
 	if u.down:
 		mini.get_node("body").quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-80))
@@ -551,6 +554,8 @@ func cant_use(u: Dictionary, c: Dictionary) -> String:
 func in_reach(u: Dictionary, foe: Dictionary, c: Dictionary) -> bool:
 	if foe.down or foe.ally:
 		return false
+	if on(u, "blind") and dist(u, foe) > 1:
+		return false   # Throw Dirt: a blinded attacker can't aim beyond 1 hex (04, Ethan, Nov 26, 2026)
 	if c.get("effect", "") == "dive":   # Command Beast, hawk: the hawk's reach, from where the hawk is (03)
 		u = beast_for(u)
 		if u.is_empty() or u.down:
@@ -561,9 +566,37 @@ func in_reach(u: Dictionary, foe: Dictionary, c: Dictionary) -> bool:
 		return false
 	if c.get("effect", "") == "killing" and (u.get("mark", {}) != foe or foe.hp * 2 >= foe.max_hp):
 		return false   # Killing Shot: a marked foe below half HP (03)
-	if c.has("step") and dist(u, foe) > 1:   # Step and Strike: a free hex next to it within its move
-		return not _step_path(u, foe, c.step).is_empty()
-	return dist(u, foe) <= c.get("range", 1) and (c.get("pierce", false) or cover_between(u, foe) != "full")
+	if c.has("step") and dist(u, foe) > 1:   # Step and Strike: a free hex next to it within its move; Vault's leap
+		return not _step_to(u, foe, c).is_empty()
+	return dist(u, foe) <= c.get("range", 1) + (Rules.HIGH_GROUND_RANGE if high_ground(u, foe, c) else 0) and (c.get("pierce", false) or cover_between(u, foe) != "full")
+
+
+## The way a step-then-strike card gets next to foe: Step and Strike walks; Vault leaps straight to a free hex next to the
+## foe up to VAULT_HEXES away, over obstacles and foes (04), never onto lava or up or down a sheer rise. [] if none.
+func _step_to(u: Dictionary, foe: Dictionary, k: Dictionary) -> Array:
+	if k.get("effect", "") != "vault":
+		return _step_path(u, foe, k.step)
+	var spots := []
+	for c in cells_of(foe):
+		for n in Hex.NEIGHBOURS:
+			var s: Vector2i = c + n
+			if grid.has(s) and grid[s].kind in ["open", "brush"] and unit_at(s).is_empty() and not s in spots \
+					and Rules.hex_distance(u.cell, s) <= k.step and absf(grid[s].z - grid[u.cell].z) < Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
+				spots.append(s)
+	if spots.is_empty():
+		return []
+	spots.sort_custom(func(a, b): return Rules.hex_distance(a, u.cell) < Rules.hex_distance(b, u.cell))
+	return [spots[0]]
+
+
+## High Ground (04, Ethan, Nov 26, 2026): a longbow shot from at least one full raised level above the target flips 1 more
+## coin and reaches 2 hexes farther.
+func high_ground(a: Dictionary, t: Dictionary, k: Dictionary) -> bool:
+	if a.is_empty() or t.is_empty() or not a.get("ally", false) or a.weapon != "longbow" or not k.get("ranged", false):
+		return false
+	if not (k.id == "attack" or k.src == "weapon") or not Progression.trained(a.member, "high_ground"):
+		return false
+	return grid.has(a.cell) and grid.has(t.cell) and grid[a.cell].z - grid[t.cell].z >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK
 
 
 ## The way to a free hex next to foe within `budget` of movement, or [].
@@ -675,7 +708,8 @@ func step_cost(u: Dictionary, a: Vector2i, b: Vector2i) -> int:
 		return 1
 	if u.get("member", {}).get("flies", false):   # the Wisp flies (03): over lava and rises alike, never through rock or anyone
 		return 1 if _open(b) else -1
-	if not _open(b) or absf(rise) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
+	var through: bool = is_same(_phase_through, u) and grid[b].kind != "blocked" and not unit_at(b).is_empty() and unit_at(b).ally != u.ally
+	if (not _open(b) and not through) or absf(rise) >= Rules.SHEER_RISE - Rules.HEIGHT_SLACK:
 		return -1
 	var thorns: int = Rules.THORN_COST if not u.get("ally", true) and circles.values().any(func(z): return z.zone == "thorns" and b in z.cells) else 0
 	return 1 + thorns + (Rules.UPHILL_COST if rise >= Rules.UPHILL_RISE - Rules.HEIGHT_SLACK else 0)
@@ -696,6 +730,7 @@ func reachable(u: Dictionary) -> Dictionary:
 ## The cheapest ways out from u's cell, up to `budget` of movement or until `stop` says a cell will do (`_stop_at` then holds it). Cell -> where from.
 ## Of ways that cost the same, the one through the least lava (a hundredth of a move a cell, which never changes what a budget reaches).
 var _stop_at = null
+var _phase_through = null   # Phantom Step: who may pass through foes' hexes while a path is worked out (04)
 
 
 func _spread(u: Dictionary, budget: int, stop: Callable) -> Dictionary:
@@ -744,7 +779,7 @@ func path_next_to(u: Dictionary, goal: Dictionary) -> Array:
 ## Hexes one Move goes: 2, +1 for every DEX point above 1 (allies; foes have no DEX yet), a wood elf one more, less while
 ## slowed (Frost Ray, Bonebreaker, white breath), never below 0 (design/03 -> Combat, Races; 04; 06 -> First playable -> Races).
 func move_hexes(u: Dictionary) -> int:
-	if u.lockdown:
+	if u.lockdown or grabbed(u):
 		return 0
 	var dex: int = Races.score(u.member, "DEX") - 1 if u.ally and not Rules.old("move") else 0
 	if on(u, "snared"):
@@ -786,7 +821,7 @@ func _slow(t: Dictionary, hexes: int) -> void:
 ## Shield Bash: the foe goes 1 hex straight away from the attacker. PLACEHOLDER (told to the planner): if that hex is off the
 ## board, blocked, taken, a sheer rise away, or the foe is a giant, it stays put; the hit still lands. Lava burns as walking in does.
 func _push(a: Dictionary, t: Dictionary, hexes := 1) -> void:
-	if t.foot.size() > 1 or t.down or Rules.hex_distance(a.cell, t.cell) != 1:
+	if t.foot.size() > 1 or t.down or Rules.hex_distance(a.cell, t.cell) != 1 or steady(t):
 		return
 	var way: Vector2i = t.cell - a.cell
 	for _i in hexes:
@@ -802,7 +837,29 @@ func _push(a: Dictionary, t: Dictionary, hexes := 1) -> void:
 
 ## Whether a rider that lasts until the end of a phase is on now.
 func on(u: Dictionary, key: String) -> bool:
-	return u[key] >= phase_no
+	return u.get(key, -1) >= phase_no
+
+
+## Steady Block (04): while Blocking with a shield, u can't be pushed, pulled or knocked prone.
+func steady(u: Dictionary) -> bool:
+	return u.get("ally", false) and u.defending and u.get("off", "") == "shield" and Progression.trained(u.member, "steady_block")
+
+
+## Knocked prone: it loses AP on its next turn, unless Steady Block holds it up.
+func _knock_down(t: Dictionary) -> void:
+	if not steady(t):
+		t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
+
+
+## Grappling Guard (04): u is held by whoever grabbed it while they stand next to it; it can't move away.
+func grabbed(u: Dictionary) -> bool:
+	var g: Dictionary = u.get("grabbed", {})
+	if g.is_empty():
+		return false
+	if g.down or not g in units or dist(g, u) > 1:
+		u.grabbed = {}   # it ends when the grabber moves away or goes down
+		return false
+	return true
 
 
 ## As much of a path as one Move pays for.
@@ -948,11 +1005,14 @@ func _show_overlays() -> void:
 		for e in foes_of(current):
 			if dist(e, current) == 1:
 				_overlay(e.cell, "target")
+	if c.id == "aimed_shot" and not busy and not target.is_empty() and Progression.trained(current.member, "piercing_shot"):
+		for e in pierce_line(current, target, c):   # Piercing Shot: every foe in the line behind the target (04)
+			_overlay(e.cell, "target")
 	if c.get("effect", "") == "shatter" and not busy:
 		for cell in shatter_cells(current):
 			_overlay(cell, "target" if cell == cell_target else "reach")
 	if c.kind == "cell" and not busy:
-		var ring: Array = circle_cells(cell_target) if c.get("effect", "") in ["circle", "zone"] and cell_target != null else []
+		var ring: Array = circle_cells(cell_target) if c.get("effect", "") in ["circle", "zone", "volley"] and cell_target != null else []
 		for cell in cell_options(current, c):
 			_overlay(cell, "target" if cell == cell_target or cell in ring else "move")
 	_overlay(current.cell, "active")
@@ -1138,7 +1198,10 @@ func press_button() -> void:
 					refresh()
 				return
 			_pay(current, k)
-			await _attack(beast_for(current) if k.get("effect", "") == "dive" else current, target, k)   # Dive: the hawk strikes (03)
+			if k.id == "aimed_shot" and current.ally and Progression.trained(current.member, "piercing_shot"):
+				await _pierce(current, target, k)
+			else:
+				await _attack(beast_for(current) if k.get("effect", "") == "dive" else current, target, k)   # Dive: the hawk strikes (03)
 		"save":
 			if target.is_empty():
 				return
@@ -1180,6 +1243,8 @@ func press_button() -> void:
 					_set_snare(current, cell_target, element)
 				"dance":
 					await _dance(current, cell_target)
+				"volley":
+					await _volley(current, cell_target, k)
 				"summon":
 					_summon(current, cell_target, k)
 				"circle":
@@ -1268,6 +1333,12 @@ func attack_mods(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
 		out.append({n = Rules.RECKLESS_COINS, icon = "reckless", why = "reckless"})   # Reckless Swing (04)
 	if on(t, "shattered"):
 		out.append({n = Rules.SHATTER_COINS, icon = "shatter", why = "shatter"})   # Shatter (04)
+	if t.sundered:
+		out.append({n = Rules.SUNDER_COINS, icon = "sundered", why = "sundered"})   # Sunder (04): stacks with Shatter's own
+	if on(t, "gaffed"):
+		out.append({n = Rules.GAFF_COINS, icon = "gaffed", why = "gaffed"})   # Gaffing Hook (04)
+	if high_ground(a, t, k):
+		out.append({n = Rules.HIGH_GROUND_COINS, icon = "high", why = "high"})   # High Ground (04)
 	if t.disarmed and t.exposed:
 		out.append({n = Rules.EXPOSED_COINS, icon = "exposed", why = "exposed"})   # Exposing Disarm (04)
 	if not k.get("pierce", false) and cover_between(a, t) == "partial":   # Aimed Shot ignores cover (04)
@@ -1338,8 +1409,8 @@ func lucky(who: Dictionary, flipper: Dictionary, coins: Array[bool], need: int) 
 func _attack(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 	busy = true
 	refresh()
-	if k.has("step") and dist(a, t) > 1:   # Step and Strike: move first, then strike
-		await _walk(a, _step_path(a, t, k.step))
+	if k.has("step") and dist(a, t) > 1:   # Step and Strike: move first, then strike; Vault leaps (PLACEHOLDER motion: a slide)
+		await _walk(a, _step_to(a, t, k))
 	var hit := false
 	for shot in k.get("shots", 1):   # Double Shot: two flips at normal damage
 		if t.down or a.down:
@@ -1410,6 +1481,7 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		if t.hacked and k.id != "hack":
 			dmg += Rules.HACK_MORE   # Hack: anyone's next hit on it hits harder, then it's spent (04, Ethan, Nov 26, 2026)
 			t.hacked = false
+		dmg += t.get("hack_stack", 0)   # Relentless Hack: never spent, +2 more with each Hack (04)
 		dmg *= k.get("times", 1)   # Aimed Shot 4x, Haymaker 2x (04)
 		if a.stakes:
 			dmg *= Rules.STAKES_TIMES   # Raise the Stakes (03)
@@ -1454,13 +1526,16 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 				if not Rules.old("slows"):
 					_slow(t, k.slow)
 				elif k.id == "frost_ray":
-					t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)   # test aid: Frost Ray's old prone
+					_knock_down(t)   # test aid: Frost Ray's old prone
 			"prone":
-				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
+				_knock_down(t)
 			"bleed":
 				t.bleed_turns = Rules.DOT_TURNS
 			"hack":
-				t.hacked = true
+				if a.ally and Progression.trained(a.member, "relentless_hack"):
+					t.hack_stack += Rules.HACK_MORE
+				else:
+					t.hacked = true
 			"shred":
 				t.bleed_turns = Rules.DOT_TURNS
 				t.bleed_heavy = true
@@ -1472,7 +1547,7 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 					t.disarmed = true
 					t.exposed = a.ally and Progression.trained(a.member, "exposing_disarm")
 		if a.get("beast", "") == "Wolf" and k.id == "attack":
-			t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)   # the wolf knocks foes down (03)
+			_knock_down(t)   # the wolf knocks foes down (03)
 		if a.get("infuse", "") == "ice" and k.kind == "attack":
 			_slow(t, Rules.FROST_SLOW)   # Infuse: ice slows (03)
 		if a.poison_blade and not Rules.old("poison"):   # Poison Blade: each hit poisons, and the poisons stack (03, Ethan, Nov 5, 2026)
@@ -1493,6 +1568,8 @@ func _attack_flip(a: Dictionary, t: Dictionary, k: Dictionary) -> Dictionary:
 		a.reckless = _until_next_turn_of(a)   # Reckless Swing: foes flip 1 more coin on you until your next turn, hit or miss (04)
 	if hit and k.get("effect", "") == "shatter" and not t.down:
 		t.shattered = phase_no   # Shatter: every attack on it this round flips 1 more coin (04, Ethan, Nov 26, 2026)
+		if a.ally and Progression.trained(a.member, "sunder"):
+			t.sundered = true   # Sunder: and for the rest of the fight (04)
 	if a.ally and a.weapon == "scimitar" and weapon_attack(k):
 		a.dance_ready = true   # Dancing Step, after any scimitar attack (04)
 	if hit and a.ally and weapon_attack(k) and a.weapon == "shortsword" and k.id != "quick_slash":
@@ -1526,6 +1603,8 @@ func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: i
 				t.snared = _until_next_turn_of(t)
 		if k.get("rider", "") == "hook":
 			await _pull(a, t)   # Hook: pulled next to you after the hit (04)
+			if a.ally and Progression.trained(a.member, "gaffing_hook") and not t.down:
+				t.gaffed = phase_no   # Gaffing Hook: easier to hit until your turn ends (04)
 		if k.get("rider", "") == "rend" and not t.down:   # Rend: a failed CON save and it bleeds (04)
 			var rend := flip_check(save_coins(t, "CON"), Rules.SAVE_HEADS)
 			await hud.flip_coins(t, rend.coins, rend.need, Rules.COIN_STEP_FOE)
@@ -1541,6 +1620,8 @@ func _attack_land(a: Dictionary, t: Dictionary, k: Dictionary, hit: bool, dmg: i
 	if (counter or t.get("riposte", false)) and not a.down and not t.down:   # Guard Up: the first foe to hit you takes a normal hit back; Riposte
 		if counter:
 			t.guard_counter = false
+			if t.ally and Progression.trained(t.member, "grappling_guard") and a.foot.size() == 1:
+				a.grabbed = t   # Grappling Guard: the counter grabs it (04)
 		t.riposte = false
 		var back: int = attack_score(t, Cards.get_card("attack", t.weapon))
 		hud.float_text(a, "-%d" % back, true)
@@ -1745,7 +1826,7 @@ func _save_spell(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 				t.glow = phase_no + 1   # until the caster's next turn
 			elif not saved:
 				t.lull = true
-		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str", "fear", "dazzle", "bane", "hex", "heat", "cliffhanger", "the_end", "prone":
+		"bleed", "brand", "frailty", "ruin", "surrender", "mage_hand", "siphon_str", "fear", "dazzle", "bane", "hex", "heat", "cliffhanger", "the_end", "prone", "blind":
 			result = {coins = coins, title = "Saved" if saved else "Failed save!", good = not saved, sub = ""}
 			hud.refresh()
 			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look: the save curses and riders have no motion of their own yet
@@ -1811,13 +1892,15 @@ func _save_rider(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
 		"cliffhanger":
 			t.lost_ap = maxi(t.lost_ap, Rules.CLIFFHANGER_AP)
 		"prone":   # Hunt Down knocks it down (03)
-			t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
+			_knock_down(t)
 		"the_end":   # PLACEHOLDER: "badly hurt" is below half HP; a foe at half or more is untouched
 			if t.hp * 2 < t.max_hp:
 				hud.float_text(t, "-%d" % t.hp, true)
 				await _hurt(t, t.hp)
 		"fear":
 			t.fear = _until_next_turn_of(t)
+		"blind":   # Throw Dirt: it can't aim beyond 1 hex until its next turn ends (04, Ethan, Nov 26, 2026)
+			t.blind = _until_next_turn_of(t)
 		"dazzle":
 			t.dazzled = _until_next_turn_of(t)
 		"bane":
@@ -1861,7 +1944,7 @@ func _save_area(a: Dictionary, targets: Array, k: Dictionary) -> void:
 		if k.get("effect", "") == "pound":
 			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look
 			if not saved:
-				t.lost_ap = maxi(t.lost_ap, Rules.PRONE_AP)
+				_knock_down(t)
 			continue
 		if k.get("effect", "") in ["macabre", "captivate"]:
 			await board.bloom(a.mini, t.mini, "flame", saved)   # PLACEHOLDER look
@@ -2020,6 +2103,8 @@ func _use_self(a: Dictionary, k: Dictionary) -> void:
 			await _cleave(a, k)
 		"thick_hide":
 			a.thick_hide = true
+		"brace":
+			a.braced = phase_no + 1   # Brace: through the foes' phase that follows (04)
 		"stakes":
 			a.stakes = true
 		"bring_it":   # adjacent foes must attack you until their next turn ends (03)
@@ -2160,8 +2245,14 @@ func cell_options(u: Dictionary, k: Dictionary) -> Array[Vector2i]:
 			return out
 		"dance":
 			var out: Array[Vector2i] = []
-			for c in _spread(u, Rules.DANCE_HEXES, Callable()):
-				if c != u.cell:
+			for c in _dance_spread(u):
+				if c != u.cell and unit_at(c).is_empty():
+					out.append(c)
+			return out
+		"volley":   # any hex within the shortbow's range (04)
+			var out: Array[Vector2i] = []
+			for c: Vector2i in grid:
+				if Rules.hex_distance(c, u.cell) in range(1, k.range + 1) and grid[c].kind != "blocked":
 					out.append(c)
 			return out
 		"summon", "phantom":   # a summon on an empty hex beside you; Phantom Ally on one within 5 (03)
@@ -2223,6 +2314,11 @@ func _cleave(a: Dictionary, k: Dictionary) -> void:
 	var flips := []   # [foe, {hit, dmg}]
 	for t in foes_of(a).filter(func(e): return dist(e, a) == 1):
 		flips.append([t, await _attack_flip(a, t, k)])
+	if a.ally and Progression.trained(a.member, "cleave_plus"):   # Cleave+: each hit +1 for every other foe hit (04, Ethan, Nov 26, 2026)
+		var hits := flips.filter(func(f): return f[1].hit).size()
+		for f: Array in flips:
+			if f[1].hit:
+				f[1].dmg += (hits - 1) * Rules.CLEAVE_PLUS
 	if not flips.is_empty():
 		a.facing = _dir_toward(a.cell, flips[0][0].cell)
 		await board.sweep(a.mini, flips.map(func(f): return f[0].mini), flips.map(func(f): return f[1].hit))
@@ -2237,7 +2333,7 @@ func _cleave(a: Dictionary, k: Dictionary) -> void:
 ## Hook (04): a hit pulls the foe to the free hex next to the attacker nearest it (Ethan, Nov 26, 2026). Not a giant, and
 ## not if no hex next to the attacker is free.
 func _pull(a: Dictionary, t: Dictionary) -> void:
-	if t.foot.size() > 1 or t.down or dist(a, t) <= 1:
+	if t.foot.size() > 1 or t.down or dist(a, t) <= 1 or steady(t):
 		return
 	var spots: Array = Hex.NEIGHBOURS.map(func(d): return a.cell + d).filter(func(c): return grid.has(c) and grid[c].kind in ["open", "brush"] and unit_at(c).is_empty())
 	if spots.is_empty():
@@ -2334,9 +2430,74 @@ func _dance(u: Dictionary, c: Vector2i) -> void:
 	busy = true
 	self_done = "dancing_step"
 	cell_target = null
-	await _walk(u, _path_to(u, _spread(u, Rules.DANCE_HEXES, Callable()), c))
+	await _walk(u, _path_to(u, _dance_spread(u), c))
 	busy = false
 	refresh()
+
+
+## Dancing Step's reach: DANCE_HEXES of movement; with Phantom Step through foes' hexes, never stopping in one (04).
+func _dance_spread(u: Dictionary) -> Dictionary:
+	if u.ally and Progression.trained(u.member, "phantom_step"):
+		_phase_through = u
+	var came := _spread(u, Rules.DANCE_HEXES, Callable())
+	_phase_through = null
+	return came
+
+
+## Piercing Shot's line (04, Ethan, Nov 26, 2026): the foes behind t on the straight line from a through t, within the
+## card's range, nearest first.
+func pierce_line(a: Dictionary, t: Dictionary, k: Dictionary) -> Array:
+	var from := Hex.cell_position(a.cell.x, a.cell.y)
+	var to := Hex.cell_position(t.cell.x, t.cell.y)
+	var dir := (to - from).normalized()
+	var out := []
+	var d := from.distance_to(to)
+	while true:
+		d += Hex.CELL_FLATS * 0.25
+		var c := cell_at(from + dir * d)
+		if Rules.hex_distance(a.cell, c) > k.get("range", 1) or not grid.has(c):
+			break
+		var e := unit_at(c)
+		if not e.is_empty() and e != t and not e.ally and not e.down and e.decoy == "" and not e in out:
+			out.append(e)
+	return out
+
+
+## Piercing Shot: one flip at the target and at each foe behind it, every hit the full 4x; one shot, then the damage lands.
+func _pierce(a: Dictionary, t: Dictionary, k: Dictionary) -> void:
+	busy = true
+	refresh()
+	var flips := []   # [foe, {hit, dmg}]
+	for e in [t] + pierce_line(a, t, k):
+		flips.append([e, await _attack_flip(a, e, k)])
+	await board.attack(a.mini, t.mini, flips[0][1].hit, motion_kind(a, t, k))
+	for f: Array in flips:
+		if not f[0].down:
+			await _attack_land(a, f[0], k, f[1].hit, f[1].dmg)
+	busy = false
+	refresh()
+	_check_end()
+
+
+## Volley (04, Ethan, Nov 26, 2026): the aimed hex and the 6 around it, one flip at each foe inside, normal damage; allies
+## inside are safe. PLACEHOLDER motion: one shot toward the first foe.
+func _volley(a: Dictionary, c: Vector2i, k: Dictionary) -> void:
+	busy = true
+	self_done = k.id
+	cell_target = null
+	var flips := []
+	for cell in circle_cells(c):
+		var t := unit_at(cell)
+		if not t.is_empty() and not t.ally and not t.down and t.decoy == "" and not flips.any(func(f): return f[0] == t):
+			flips.append([t, await _attack_flip(a, t, k)])
+	if not flips.is_empty():
+		await board.attack(a.mini, flips[0][0].mini, flips[0][1].hit, motion_kind(a, flips[0][0], k))
+	for f: Array in flips:
+		if not f[0].down:
+			await _attack_land(a, f[0], k, f[1].hit, f[1].dmg)
+	busy = false
+	refresh()
+	_check_end()
 
 
 ## Sweeping Arc's hexes: the aimed one (1 or 2 away) and the two beside it at the same distance (04).
@@ -2499,6 +2660,44 @@ func _cover_of_map(id: String) -> void:
 
 ## u walks a path, burning on each lava cell it enters (design/03 -> Lava) and stopping there if that downs it.
 func _walk(u: Dictionary, path: Array) -> void:
+	if not u.ally and u.decoy == "":   # Brace and Sentinel: the first step into an ally's reach is met by a free attack (04)
+		for i in path.size():
+			var guard := _guard_for(path[i - 1] if i > 0 else u.cell, path[i])
+			if guard.is_empty():
+				continue
+			await _walk_plain(u, path.slice(0, i + 1))
+			if u.down or u.cell != path[i] or not active:
+				return
+			if on(guard, "braced"):
+				guard.braced = -1   # Brace: the first foe only
+			else:
+				guard.sentinel_round = phase_no   # Sentinel: once a round (Ethan, Nov 26, 2026)
+			await _attack(guard, u, Progression.card_for(guard.member, Cards.get_card("attack", guard.weapon)))
+			busy = true
+			if u.down or on(u, "snared") or i + 1 >= path.size() or not active:
+				return
+			await _walk(u, path.slice(i + 1))
+			return
+	await _walk_plain(u, path)
+
+
+## An ally whose reach a foe steps into, moving from cell a to b, and who strikes it for free: Braced with a spear, or a
+## halberd with Sentinel that hasn't struck this round. {} if none.
+func _guard_for(a: Vector2i, b: Vector2i) -> Dictionary:
+	for o: Dictionary in units:
+		if not o.ally or o.down or o.decoy != "" or o.foot.size() > 1:
+			continue
+		var braced: bool = on(o, "braced") and o.weapon == "spear"
+		var sentinel: bool = o.weapon == "halberd" and o.sentinel_round != phase_no and Progression.trained(o.member, "sentinel")
+		if not braced and not sentinel:
+			continue
+		var reach: int = Progression.card_for(o.member, Cards.get_card("attack", o.weapon)).get("range", 1)
+		if Rules.hex_distance(o.cell, b) <= reach and Rules.hex_distance(o.cell, a) > reach:
+			return o
+	return {}
+
+
+func _walk_plain(u: Dictionary, path: Array) -> void:
 	var sprung := ""
 	if not u.ally:   # a foe walks into a hidden Snare as if it weren't there, and its move ends there (03)
 		var stop := -1
@@ -2676,6 +2875,11 @@ func _enemy_phase() -> void:
 		if e.down:
 			_check_end()
 			continue
+		if grabbed(e):   # Grappling Guard: a STR save at the start of its turn breaks free (04, Ethan, Nov 26, 2026)
+			var save := flip_check(save_coins(e, "STR"), Rules.SAVE_HEADS)
+			await hud.flip_coins(e, save.coins, save.need, Rules.COIN_STEP_FOE)
+			if Coins.heads(save.coins) >= save.need:
+				e.grabbed = {}
 		var attacks := 0
 		var lure := await _fooled_by_phantom(e)
 		while e.ap > 0 and not e.down and active and phase == "enemies":
@@ -3030,6 +3234,18 @@ func status_icons(u: Dictionary) -> Array:
 		out.append(["ward", "Arcane Shield", "Takes %d less damage" % Rules.ARCANE_SHIELD_LESS])
 	if u.hacked:
 		out.append([CreatorData.IC.w_battleaxe, "Hacked", "Takes %d more from the next hit" % Rules.HACK_MORE])   # PLACEHOLDER icon and line (Screen text check)
+	if u.get("hack_stack", 0) > 0:
+		out.append([CreatorData.IC.w_battleaxe, "Hacked", "Takes %d more from every hit" % u.hack_stack])   # Relentless Hack; PLACEHOLDER icon (Screen text check)
+	if u.get("sundered", false):
+		out.append([CreatorData.IC.w_warhammer, "Sundered", "Attacks on it flip %d extra coin" % Rules.SUNDER_COINS])
+	if on(u, "gaffed"):
+		out.append([CreatorData.IC.w_halberd, "Hooked", "Attacks on it flip %d extra coin this turn" % Rules.GAFF_COINS])
+	if on(u, "blind"):
+		out.append(["eye", "Blinded", "Can't attack beyond 1 hex"])
+	if on(u, "braced"):
+		out.append([CreatorData.IC.w_spear, "Braced", "Strikes the first foe to step into reach"])
+	if grabbed(u):
+		out.append([CreatorData.IC.w_gauntlets, "Grabbed", "Can't move away from %s" % u.grabbed.name])
 	if on(u, "reckless"):
 		out.append([CreatorData.IC.w_greataxe, "Reckless", "Attacks on them flip %d extra coin" % Rules.RECKLESS_COINS])
 	if on(u, "shattered"):

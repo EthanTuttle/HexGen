@@ -29,7 +29,7 @@ const LEVEL3_GRANT := {"Chelmsford": "healing_word"}
 const MASTERY := {
 	"greatsword": [
 		{"id": "heavy_blade", "branch": "Executioner", "n": "Heavy Blade", "kind": "passive", "text": "Greatsword basic attacks deal more damage.", "built": true},
-		{"id": "cleave_plus", "branch": "Sweeper", "n": "Cleave+", "kind": "upgrade", "of": "cleave", "text": "Cleave deals more damage for each extra foe it hits.", "built": false}],
+		{"id": "cleave_plus", "branch": "Sweeper", "n": "Cleave+", "kind": "upgrade", "of": "cleave", "text": "Cleave deals more damage for each extra foe it hits.", "built": true}],
 	"longsword": [
 		{"id": "riposte", "branch": "Duelist", "n": "Riposte", "kind": "upgrade", "of": "parry", "text": "A successful Parry triggers a free counterattack.", "built": true},
 		{"id": "sweep", "branch": "Warlord", "n": "Sweep", "kind": "card", "card": "sweep", "built": true},
@@ -38,26 +38,26 @@ const MASTERY := {
 		{"id": "backstab_plus", "branch": "Shadow", "n": "Backstab+", "kind": "upgrade", "of": "backstab", "text": "Backstab deals more damage.", "built": true},
 		{"id": "throw_plus", "branch": "Thrower", "n": "Throw+", "kind": "upgrade", "of": "throw", "text": "Throw has longer range.", "built": true}],
 	"spear": [
-		{"id": "brace", "branch": "Legionary", "n": "Brace", "kind": "card", "card": "brace", "built": false},
+		{"id": "brace", "branch": "Legionary", "n": "Brace", "kind": "card", "card": "brace", "built": true},
 		{"id": "throw_plus", "branch": "Javelineer", "n": "Throw+", "kind": "upgrade", "of": "throw", "text": "Thrown spears deal more damage.", "built": true},
 		{"id": "reach_plus", "branch": "Lancer", "n": "Reach+", "kind": "upgrade", "of": "reach", "text": "Two-handed Reach extends to 3 hexes.", "built": true}],
 	"longbow": [
-		{"id": "high_ground", "branch": "Sniper", "n": "High Ground", "kind": "passive", "text": "Shooting from high ground flips an extra coin.", "built": false},
-		{"id": "piercing_shot", "branch": "Deadeye", "n": "Piercing Shot", "kind": "upgrade", "of": "aimed_shot", "text": "Aimed Shot pierces armour.", "built": false}],
+		{"id": "high_ground", "branch": "Sniper", "n": "High Ground", "kind": "passive", "text": "Shooting down from high ground flips an extra coin and reaches 2 hexes farther.", "built": true},
+		{"id": "piercing_shot", "branch": "Deadeye", "n": "Piercing Shot", "kind": "upgrade", "of": "aimed_shot", "text": "Aimed Shot goes through its target and hits every foe in the line behind it.", "built": true}],
 	"shortbow": [
-		{"id": "volley", "branch": "Volley", "n": "Volley", "kind": "card", "card": "volley", "built": false},
+		{"id": "volley", "branch": "Volley", "n": "Volley", "kind": "card", "card": "volley", "built": true},
 		{"id": "triple_shot", "branch": "Rapid Shot", "n": "Triple Shot", "kind": "upgrade", "of": "double_shot", "text": "Double Shot becomes Triple Shot.", "built": true}],
 	"rapier": [
 		{"id": "exposing_disarm", "branch": "Fencer", "n": "Exposing Disarm", "kind": "upgrade", "of": "disarm", "text": "Disarm also leaves the foe easier to hit.", "built": true},
 		{"id": "sidestep", "branch": "Bladedancer", "n": "Sidestep", "kind": "card", "card": "sidestep", "built": true}],
 	"scimitar": [
-		{"id": "phantom_step", "branch": "Dervish", "n": "Phantom Step", "kind": "upgrade", "of": "dancing_step", "text": "Dancing Step's move can pass through foes' hexes.", "built": false},
+		{"id": "phantom_step", "branch": "Dervish", "n": "Phantom Step", "kind": "upgrade", "of": "dancing_step", "text": "Dancing Step's move can pass through foes' hexes.", "built": true},
 		{"id": "rend", "branch": "Reaver", "n": "Rend", "kind": "card", "card": "rend", "built": true}],
 	"shortsword": [
 		{"id": "quick_slash_plus", "branch": "Striker", "n": "Quick Slash+", "kind": "upgrade", "of": "quick_slash", "text": "Quick Slash deals more damage.", "built": true},
-		{"id": "throw_dirt", "branch": "Gutter Fighter", "n": "Throw Dirt", "kind": "card", "card": "throw_dirt", "built": false}],
+		{"id": "throw_dirt", "branch": "Gutter Fighter", "n": "Throw Dirt", "kind": "card", "card": "throw_dirt", "built": true}],
 	"battleaxe": [
-		{"id": "relentless_hack", "branch": "Raider", "n": "Relentless Hack", "kind": "upgrade", "of": "hack", "text": "Hack's bonus stacks with each hit on the same foe.", "built": false},
+		{"id": "relentless_hack", "branch": "Raider", "n": "Relentless Hack", "kind": "upgrade", "of": "hack", "text": "Hack's bonus lasts the fight, and each Hack on the same foe adds to it.", "built": true},
 		{"id": "throw_plus", "branch": "Thrower", "n": "Throw+", "kind": "upgrade", "of": "throw", "text": "Thrown axes deal more damage.", "built": true},
 		{"id": "headhunter", "branch": "Headsman", "n": "Headhunter", "kind": "passive", "text": "Two-handed attacks deal bonus damage to wounded foes.", "built": true}],
 	"greataxe": [
@@ -67,16 +67,16 @@ const MASTERY := {
 		{"id": "marrowbreaker", "branch": "Bonecrusher", "n": "Marrowbreaker", "kind": "upgrade", "of": "bonebreaker", "text": "Bonebreaker also lowers the foe's STR for the fight.", "built": true},
 		{"id": "smite", "branch": "Templar", "n": "Smite", "kind": "card", "card": "smite", "built": true}],
 	"warhammer": [
-		{"id": "sunder", "branch": "Siegebreaker", "n": "Sunder", "kind": "upgrade", "of": "shatter", "text": "Shatter also lowers the foe's armour for the fight.", "built": false},
+		{"id": "sunder", "branch": "Siegebreaker", "n": "Sunder", "kind": "upgrade", "of": "shatter", "text": "Shatter also leaves the foe easier to hit for the rest of the fight.", "built": true},
 		{"id": "ground_pound", "branch": "Earthshaker", "n": "Ground Pound", "kind": "card", "card": "ground_pound", "built": true}],
 	"halberd": [
-		{"id": "gaffing_hook", "branch": "Harrier", "n": "Gaffing Hook", "kind": "upgrade", "of": "hook", "text": "A hooked foe is easier to hit this turn.", "built": false},
-		{"id": "sentinel", "branch": "Warden", "n": "Sentinel", "kind": "passive", "text": "Foes that enter your reach provoke a free attack.", "built": false}],
+		{"id": "gaffing_hook", "branch": "Harrier", "n": "Gaffing Hook", "kind": "upgrade", "of": "hook", "text": "A hooked foe is easier to hit this turn.", "built": true},
+		{"id": "sentinel", "branch": "Warden", "n": "Sentinel", "kind": "passive", "text": "Foes that enter your reach provoke a free attack.", "built": true}],
 	"glaive": [
 		{"id": "sweeping_circle", "branch": "Polearm Dancer", "n": "Sweeping Circle", "kind": "upgrade", "of": "sweeping_arc", "text": "Sweeping Arc becomes a full circle around you.", "built": true},
 		{"id": "vault", "branch": "Vaulter", "n": "Vault", "kind": "card", "card": "vault", "built": true}],
 	"gauntlets": [
-		{"id": "grappling_guard", "branch": "Wrestler", "n": "Grappling Guard", "kind": "upgrade", "of": "guard_up", "text": "Guard Up's counter also grabs the attacker, so it can't move away (STR save to break free).", "built": false},
+		{"id": "grappling_guard", "branch": "Wrestler", "n": "Grappling Guard", "kind": "upgrade", "of": "guard_up", "text": "Guard Up's counter also grabs the attacker, so it can't move away (STR save to break free).", "built": true},
 		{"id": "guard_up_plus", "branch": "Boxer", "n": "Guard Up+", "kind": "upgrade", "of": "guard_up", "text": "Guard Up also counters when an attack misses you, not just when it hits.", "built": true}],
 	"knuckles": [
 		{"id": "haymaker_stun", "branch": "Bruiser", "n": "Haymaker+", "kind": "upgrade", "of": "haymaker", "text": "Haymaker's stun save is harder.", "built": true},
@@ -88,7 +88,7 @@ const MASTERY := {
 		{"id": "heavy_bolt", "branch": "Arbalist", "n": "Heavy Bolt", "kind": "card", "card": "heavy_bolt", "built": true},
 		{"id": "bolas_bolt", "branch": "Trapper", "n": "Bolas Bolt", "kind": "card", "card": "bolas_bolt", "built": true}],
 	"shield": [
-		{"id": "steady_block", "branch": "Guardian", "n": "Steady Block", "kind": "upgrade", "of": "block", "text": "While Blocking you can't be pushed, pulled or knocked prone.", "built": false},
+		{"id": "steady_block", "branch": "Guardian", "n": "Steady Block", "kind": "upgrade", "of": "block", "text": "While Blocking you can't be pushed, pulled or knocked prone.", "built": true},
 		{"id": "shield_charge", "branch": "Basher", "n": "Shield Charge", "kind": "card", "card": "shield_charge", "built": true}],
 }
 ## Versatile weapons' third branch works only two-handed (04 -> Mastery tree framework).
