@@ -93,8 +93,8 @@ def warp_build(p, build, head_at, head_r=0.2):
 # own material, as the golem kit's golems are (golem_kit.py, kit v14). The shape is the approved form's; golem_dress swaps its
 # paints for the material's and adds the material's own pieces.
 # Golem materials whose sash is a vine growing on the golem rather than the scarf with leaves on it (Ethan, Nov 26, 2026:
-# wood v1 still read as a scarf). Stone keeps its v2 sash until his verdict on it.
-VINE_SASH = {"wood"}
+# wood v1 still read as a scarf; metal starts with it). Stone keeps its v2 sash until his verdict on it.
+VINE_SASH = {"wood", "metal"}
 
 
 def vine_sash(p, joints, leaves, size):
@@ -124,6 +124,42 @@ def vine_sash(p, joints, leaves, size):
             gk.pebble(p, pts[k], 0.05 * size, 0.045 * size, 0.03, paint=lambda c, n: zone("cloth", 0.85), sides=5, rings=3)
 
 
+def metal_shell(p, joints, size, lean):
+    """The shell-back's own pieces (golem kit v14) on a form: a domed shell plate on the back between the shoulders, a dark
+    rim, moss on its crown with a sapling and a flower; a rounded plate on each shoulder (and knee, but not a lean form's)."""
+    from mathutils.bvhtree import BVHTree
+    tree = BVHTree.FromBMesh(p.bm)
+    ls, rs = joints[0], joints[2]
+    mid = (ls + rs) / 2
+    out = V((0, 1, 0.45)).normalized()
+    hit = tree.ray_cast(mid + V((0, 0.02, -0.05 * size)), out, 0.6)
+    base = hit[0] if hit[0] is not None else mid + out * 0.12
+    up = (V((0, 0, 1)) - out * out.z).normalized()
+    w = abs(ls.x - rs.x) * 0.5 * (0.95 if lean else 1.05)
+
+    def ring(o, sw, st):
+        return em.section(base + out * o, sw * w, st * w, along=out, up=up, sides=10)
+    sk = lambda t: zone("skin", t)
+    shell = lambda c, n: "gl_moss" if n.dot(out) > 0.8 else "gl_verdigris" if n.z < -0.75 else sk(1.1) if n.z > 0.3 else sk(0.86)
+    em.loft(p, [ring(-0.07, 0.2, 0.16), ring(-0.04, 0.98, 0.78), ring(0.03, 1.05, 0.85), ring(0.09 * size, 0.85, 0.68), ring(0.14 * size, 0.35, 0.28)], shell)
+    em.loft(p, [ring(-0.05, 1.04, 0.84), ring(0.0, 1.09, 0.88)], lambda c, n: sk(0.62))  # the rim
+    crown = base + out * 0.14 * size
+    p.blob(crown, 0.06 * size, "gl_moss", squash=0.4)
+    root = crown + up * 0.02 + V((0.03, 0, 0))
+    tip = root + V((0.01, 0.02, 0.15 * size))
+    em.limb(p, [root, root.lerp(tip, 0.5) + V((0.01, 0, 0)), tip], [0.008, 0.006, 0.003], ["gl_twine"] * 2, sides=4)  # the sapling
+    for d, u in ((V((0.05, -0.02, 0.035)), 0.5), (V((-0.045, 0.02, 0.035)), 0.75), (V((0.02, 0.03, 0.045)), 1.0)):
+        b = root.lerp(tip, u)
+        vr.spike(p, b, b + d * size, 0.02 * size, "gl_leaf", segments=3)
+    p.box(crown - up * 0.03 + V((-0.04, 0, 0.01)), (0.018, 0.018, 0.018), "gl_flower")
+    plate = lambda c, n: "gl_verdigris" if n.z < -0.75 else sk(1.1) if n.z > 0.35 or n.y < -0.5 else sk(0.86)
+    for k, q in enumerate(joints):
+        if k % 2 == 1 and k < 4 or k % 2 == 0 and k >= 4 or (lean and k >= 4):
+            continue  # elbows and hips go without (and a lean form's knees)
+        r = 0.09 * size
+        gk.pebble(p, q - V((0, 0, r * 0.6)), r * 1.3, r * 1.25, r * 1.4, paint=plate, sides=6, rings=3, top=0.8, bottom=0.6)
+
+
 def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
     """The golem kit's materials on a form's shape (kit v14). Every material: the fur's shades become the material swatch
     (skin zone), the eyes glow in the eyes swatch, the torn trousers become a band of the material with no hems, and the
@@ -133,9 +169,12 @@ def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
         rounded stone at each shoulder and knee, flat clumps of moss; shards only on the back and shoulders (v2).
       wood (the folk carving, still alive, no paint): smooth carved wood lit from above, the mouth a carved line, claws and
         fangs in pale wood, moss over the shoulders and down the back, ivy leaves on the shins and forearms, leafy shoots
-        from a shoulder and the back, a bracket fungus on the hip; the back's tufts grow as leaves."""
+        from a shoulder and the back, a bracket fungus on the hip; the back's tufts grow as leaves.
+      metal (the shell-back, v1): old rounded plates of uneven tone lit from above, verdigris only underneath, the mouth a dark
+        line, the vine sash, no shards; a domed shell on the back with a mossed crown, a sapling and a flower, rounded plates
+        on the shoulders and knees (metal_shell)."""
     leaves = 8 if lean else 14
-    if material not in ("stone", "wood"):
+    if material not in ("stone", "wood", "metal"):
         raise ValueError(material)
     for i, m in enumerate(p.mats):
         if m.startswith("hz_"):
@@ -147,7 +186,7 @@ def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
         elif m == "hero_pupil":
             p.mats[i] = zone("skin", 0.45)
         elif m == "hero_mouth":
-            p.mats[i] = zone("eyes", 1.15) if material == "stone" else zone("skin", 0.5)
+            p.mats[i] = zone("eyes", 1.15) if material == "stone" else zone("skin", 0.5)  # metal and wood: a dark line
         elif m in ("claw", "fang"):
             p.mats[i] = zone("skin", 1.2)
     skin_slots = {i for i, m in enumerate(p.mats) if m.startswith("hz_") and int(m[3:5], 16) // 20 == hb.ZONES["skin"]}
@@ -168,6 +207,13 @@ def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
             cell = (round(c.x / 0.085), round(c.y / 0.085), round(c.z / 0.075))
             tone = rnd.Random(hash(cell)).choice((0.8, 0.88, 0.94, 1.0, 1.06))
             face.material_index = p._slot(zone("skin", round(tone * lit, 2)))
+        elif material == "metal":  # old rounded plates: each plate its own tone, lit on top and in front, verdigris underneath
+            cell = (round(c.x / 0.13), round(c.y / 0.13), round(c.z / 0.11))
+            tone = rnd.Random(hash(cell)).choice((0.94, 1.0, 1.05))
+            if n.z < -0.75 or (n.z < -0.2 and rnd.Random(hash(cell) + 7).random() < 0.12):  # only where it gathers, under the plates
+                face.material_index = p._slot("gl_verdigris")
+            else:
+                face.material_index = p._slot(zone("skin", round(tone * (1.1 if n.z > 0.35 or n.y < -0.5 else 0.86), 2)))
         else:  # carved wood: moss on the shoulders and back; ivy leaves winding up the shins and forearms
             on_forearm = any((c - e).length < 0.22 and c.z < e.z - 0.02 for e in elbows)
             if n.y > 0.5 and c.z > shoulder_z - 0.14:
@@ -196,6 +242,9 @@ def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
         moss = [(head_at + V((0.02, 0.04, 0.09)), 0.05), (joints[0] + V((0, 0.02, 0.07)), 0.045), (joints[2] + V((0, 0.02, 0.07)), 0.045)]
         for q, r in moss[:1] if lean else moss:
             gk.pebble(p, q, r * 1.2, r * 1.1, r * 0.5, paint=lambda c, n: "gl_moss", sides=5, rings=3)
+        return
+    if material == "metal":
+        metal_shell(p, joints, size, lean)
         return
     # Wood: the ivy, a dark leaf on every few faces of the shins and forearms, winding round them.
     ivy.sort(key=lambda cn: ((math.atan2(cn[1].y, cn[1].x) / (2 * math.pi) + cn[0].z * 3.0) % 1.0))
@@ -239,7 +288,7 @@ def werewolf(col, build="average", material=None):
         return fur
 
     def tuft(q, d, r=0.05, paint=None):
-        if material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.85):  # a golem keeps shards on its back and shoulders only
+        if material == "metal" or material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.85):  # a golem keeps shards on its back and shoulders only
             return
         vr.spike(p, q, q + d, r, ("gl_leaf", "gl_leaf_dark")[int(q.z * 50) % 2] if material == "wood" else paint or back, segments=3)
 
@@ -422,7 +471,7 @@ def werebear(col, build="average", material=None):
         return fur
 
     def tuft(q, d, r=0.05, paint=None):
-        if material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.9):  # a golem keeps shards on its back and shoulders only
+        if material == "metal" or material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.9):  # a golem keeps shards on its back and shoulders only
             return
         vr.spike(p, q, q + d, r, ("gl_leaf", "gl_leaf_dark")[int(q.z * 50) % 2] if material == "wood" else paint or back, segments=3)
 
@@ -578,7 +627,7 @@ def werecat(col, build="average", material=None):
         return fur
 
     def tuft(q, d, r=0.035, paint=None):
-        if material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.7):  # a golem keeps shards on its back and shoulders only
+        if material == "metal" or material and not (d.y > 0.0 and q.y > -0.18 and q.z > Z0 + 0.7):  # a golem keeps shards on its back and shoulders only
             return
         vr.spike(p, q, q + d, r, ("gl_leaf", "gl_leaf_dark")[int(q.z * 50) % 2] if material == "wood" else paint or back, segments=3)
 
@@ -726,7 +775,7 @@ def build():
     hk.empty_scene()
     col = hk.new_collection("shifter_minis")
     for make in (werewolf, werebear, werecat):
-        for build, material in [(b, m) for m in (None, "stone", "wood") for b in hb.BUILDS]:
+        for build, material in [(b, m) for m in (None, "stone", "wood", "metal") for b in hb.BUILDS]:
             ob = make(col, build, material)
             ob.data.calc_loop_triangles()
             print("TRIS", ob.name, len(ob.data.loop_triangles))
