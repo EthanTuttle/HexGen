@@ -242,3 +242,4 @@ Ethan's verdicts on renders, newest last. The planner session adds a line whenev
 | 2026-11-26 | `art/preview/shifter_golem_wood_v1.png`, `shifter_golem_wood_close_v1.png` | note | Wood golem forms: still scarf remnants. The sash should read as moss and vine growing on the golem: lose the scarf's band shape and hanging tails, leaving a vine-and-moss sash in the cloth colour |
 | 2026-11-26 | `art/preview/shifter_golem_wood_v2.png`, `shifter_golem_wood_close_v2.png` | approved | Wood golem forms with the vine sash; the werecat's ~200 extra triangles are fine as they are |
 | 2026-11-26 | `art/preview/shifter_golem_stone_v2.png`, `shifter_golem_stone_close_v2.png` | note | Stone golem forms: give them wood v2's vine sash; everything else stays as v2 |
+| 2026-11-26 | `art/preview/shifter_golem_stone_v3.png`, `shifter_golem_stone_close_v3.png` | approved | Stone golem forms with the vine sash |
