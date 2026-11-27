@@ -93,8 +93,8 @@ def warp_build(p, build, head_at, head_r=0.2):
 # own material, as the golem kit's golems are (golem_kit.py, kit v14). The shape is the approved form's; golem_dress swaps its
 # paints for the material's and adds the material's own pieces.
 # Golem materials whose sash is a vine growing on the golem rather than the scarf with leaves on it (Ethan, Nov 26, 2026:
-# wood v1 still read as a scarf; metal starts with it). Stone keeps its v2 sash until his verdict on it.
-VINE_SASH = {"wood", "metal"}
+# wood v1 still read as a scarf; metal starts with it; stone takes it in v3).
+VINE_SASH = {"stone", "wood", "metal"}
 
 
 def vine_sash(p, joints, leaves, size):
