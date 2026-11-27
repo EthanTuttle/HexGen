@@ -236,7 +236,7 @@ Identity: the dedicated armor and shield breaker.
 
 | Node | Siegebreaker (smashing armor, shields and cover) | Earthshaker (ground slams and knockdowns) |
 | --- | --- | --- |
-| 1 | **Sunder**: Shatter also leaves the foe Sundered for the fight: every attack on it flips 1 extra coin (Ethan, Nov 26, 2026, replacing "lowers armour one tier, stacking", since foes have no armour; more Shatters don't add more) | New card: Ground Pound (1 AP): slam the ground; adjacent foes are knocked prone; DEX save |
+| 1 | **Sunder**: Shatter also leaves the foe Sundered for the fight: every attack on it flips 1 extra coin (Ethan, Nov 26, 2026, replacing "lowers armour one tier, stacking", since foes have no armour; more Shatters don't add more, but Sundered and Shatter's own +1 that round are different effects and stack, so attacks that round flip +2: Ethan, Nov 26, 2026) | New card: Ground Pound (1 AP): slam the ground; adjacent foes are knocked prone; DEX save |
 | 2 | New card: Breach (1 AP): smash through a wall or obstacle to open a path | **Downfall** (passive): prone foes take more damage from your hits |
 | 3 (capstone) | New card: Ram (2 AP): charge through cover and foes in a line, breaking both | New card: Cataclysm (2 AP): a huge slam; all foes nearby are knocked prone and stunned; DEX save |
 
