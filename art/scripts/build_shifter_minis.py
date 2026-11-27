@@ -124,40 +124,57 @@ def vine_sash(p, joints, leaves, size):
             gk.pebble(p, pts[k], 0.05 * size, 0.045 * size, 0.03, paint=lambda c, n: zone("cloth", 0.85), sides=5, rings=3)
 
 
+METAL_DARK = 0.74  # the swatch taken down to the kit's darker steel (golem_metal #9AA3AB x 0.74 ~ its #6F7A82), apart from stone
+
+
 def metal_shell(p, joints, size, lean):
-    """The shell-back's own pieces (golem kit v14) on a form: a domed shell plate on the back between the shoulders, a dark
-    rim, moss on its crown with a sapling and a flower; a rounded plate on each shoulder (and knee, but not a lean form's)."""
+    """The shell-back's own pieces (golem kit v14) on a form, v2 (Ethan, Nov 26, 2026: metal v1 read as stone and its dome hid
+    behind the shoulders): a big dark domed shell rising above the shoulder line, a rim of rivets, a mossed crown with a tall
+    sapling and a flower; a rounded plate on each shoulder and knee (not a lean form's knees) with rivets, and verdigris only as
+    a thin line along the knee plates' lower edges, away from the vine."""
     from mathutils.bvhtree import BVHTree
     tree = BVHTree.FromBMesh(p.bm)
     ls, rs = joints[0], joints[2]
     mid = (ls + rs) / 2
-    out = V((0, 1, 0.45)).normalized()
+    out = V((0, 0.75, 0.66)).normalized()  # up and back: the dome stands over the shoulders
     hit = tree.ray_cast(mid + V((0, 0.02, -0.05 * size)), out, 0.6)
-    base = hit[0] if hit[0] is not None else mid + out * 0.12
-    up = (V((0, 0, 1)) - out * out.z).normalized()
-    w = abs(ls.x - rs.x) * 0.5 * (0.95 if lean else 1.05)
+    base = (hit[0] if hit[0] is not None else mid + out * 0.12) - out * 0.03
+    up = (V((0, -1, 0.4)) - out * out.dot(V((0, -1, 0.4)))).normalized()  # the dome's height axis leans toward the head
+    w = abs(ls.x - rs.x) * 0.5 * (1.1 if lean else 1.25)
+    sk = lambda t: zone("skin", round(t * METAL_DARK, 2))
 
     def ring(o, sw, st):
         return em.section(base + out * o, sw * w, st * w, along=out, up=up, sides=10)
-    sk = lambda t: zone("skin", t)
-    shell = lambda c, n: "gl_moss" if n.dot(out) > 0.8 else "gl_verdigris" if n.z < -0.75 else sk(1.1) if n.z > 0.3 else sk(0.86)
-    em.loft(p, [ring(-0.07, 0.2, 0.16), ring(-0.04, 0.98, 0.78), ring(0.03, 1.05, 0.85), ring(0.09 * size, 0.85, 0.68), ring(0.14 * size, 0.35, 0.28)], shell)
-    em.loft(p, [ring(-0.05, 1.04, 0.84), ring(0.0, 1.09, 0.88)], lambda c, n: sk(0.62))  # the rim
-    crown = base + out * 0.14 * size
-    p.blob(crown, 0.06 * size, "gl_moss", squash=0.4)
-    root = crown + up * 0.02 + V((0.03, 0, 0))
-    tip = root + V((0.01, 0.02, 0.15 * size))
-    em.limb(p, [root, root.lerp(tip, 0.5) + V((0.01, 0, 0)), tip], [0.008, 0.006, 0.003], ["gl_twine"] * 2, sides=4)  # the sapling
-    for d, u in ((V((0.05, -0.02, 0.035)), 0.5), (V((-0.045, 0.02, 0.035)), 0.75), (V((0.02, 0.03, 0.045)), 1.0)):
+    shell = lambda c, n: "gl_moss" if n.dot(out) > 0.8 else sk(1.0) if n.z > 0.3 else sk(0.8)
+    h = 0.24 * size
+    em.loft(p, [ring(-0.02, 0.2, 0.16), ring(0.0, 0.98, 0.8), ring(h * 0.35, 1.04, 0.86), ring(h * 0.72, 0.84, 0.7), ring(h, 0.32, 0.26)], shell)
+    em.loft(p, [ring(-0.012, 1.03, 0.84), ring(0.02, 1.08, 0.89)], lambda c, n: sk(0.6))  # the rim
+    side = out.cross(up).normalized()
+    for k in range(9):  # rivets round the rim's upper half
+        a = -1.3 + 2.6 * k / 8
+        p.box(base + out * 0.03 + (side * math.sin(a) * 1.08 + up * math.cos(a) * 0.89) * w, (0.011, 0.011, 0.011), sk(1.5))
+    crown = base + out * h
+    p.blob(crown, 0.09 * size, "gl_moss", squash=0.4)
+    p.blob(crown - up * 0.05 + V((0.05, 0, 0)), 0.055 * size, "gl_moss_dark", squash=0.4)
+    root = crown + V((0.03, 0, 0.02))
+    tip = root + V((0.01, 0.02, 0.26 * size))
+    em.limb(p, [root, root.lerp(tip, 0.5) + V((0.015, 0, 0)), tip], [0.012, 0.009, 0.004], ["gl_twine"] * 2, sides=4)  # the sapling
+    for d, u in ((V((0.07, -0.02, 0.045)), 0.45), (V((-0.065, 0.02, 0.045)), 0.7), (V((0.03, 0.03, 0.065)), 1.0)):
         b = root.lerp(tip, u)
-        vr.spike(p, b, b + d * size, 0.02 * size, "gl_leaf", segments=3)
-    p.box(crown - up * 0.03 + V((-0.04, 0, 0.01)), (0.018, 0.018, 0.018), "gl_flower")
-    plate = lambda c, n: "gl_verdigris" if n.z < -0.75 else sk(1.1) if n.z > 0.35 or n.y < -0.5 else sk(0.86)
+        vr.spike(p, b, b + d * size, 0.03 * size, "gl_leaf", segments=3)
+    p.box(crown + V((-0.06, -0.02, 0.02)), (0.024, 0.024, 0.024), "gl_flower")
     for k, q in enumerate(joints):
         if k % 2 == 1 and k < 4 or k % 2 == 0 and k >= 4 or (lean and k >= 4):
             continue  # elbows and hips go without (and a lean form's knees)
         r = 0.09 * size
-        gk.pebble(p, q - V((0, 0, r * 0.6)), r * 1.3, r * 1.25, r * 1.4, paint=plate, sides=6, rings=3, top=0.8, bottom=0.6)
+        knee = k >= 4
+        c0 = q - V((0, 0, r * 0.6))
+        plate = lambda c, n: sk(1.1) if n.z > 0.35 or n.y < -0.5 else sk(0.82)
+        gk.pebble(p, c0, r * 1.3, r * 1.25, r * 1.4, paint=plate, sides=6, rings=4, top=0.8, bottom=0.62)
+        if knee:  # a thin line of verdigris along the plate's lower edge
+            em.loft(p, [gk.sec(c0 + V((0, 0, -r * 0.5)), r * 1.0, r * 0.97, 6), gk.sec(c0 + V((0, 0, -r * 0.4)), r * 1.12, r * 1.08, 6)], lambda c, n: "gl_verdigris")
+        for dx in (-0.6, 0.0, 0.6):  # a row of rivets across the plate's front
+            p.box(c0 + V((dx * r, -r * 1.2, r * 0.25)), (0.01, 0.01, 0.01), sk(1.5))
 
 
 def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
@@ -207,13 +224,10 @@ def golem_dress(p, material, head_at, joints, size=1.0, lean=False):
             cell = (round(c.x / 0.085), round(c.y / 0.085), round(c.z / 0.075))
             tone = rnd.Random(hash(cell)).choice((0.8, 0.88, 0.94, 1.0, 1.06))
             face.material_index = p._slot(zone("skin", round(tone * lit, 2)))
-        elif material == "metal":  # old rounded plates: each plate its own tone, lit on top and in front, verdigris underneath
+        elif material == "metal":  # old rounded plates in dark steel: each plate its own tone, lit on top and in front
             cell = (round(c.x / 0.13), round(c.y / 0.13), round(c.z / 0.11))
-            tone = rnd.Random(hash(cell)).choice((0.94, 1.0, 1.05))
-            if n.z < -0.75 or (n.z < -0.2 and rnd.Random(hash(cell) + 7).random() < 0.12):  # only where it gathers, under the plates
-                face.material_index = p._slot("gl_verdigris")
-            else:
-                face.material_index = p._slot(zone("skin", round(tone * (1.1 if n.z > 0.35 or n.y < -0.5 else 0.86), 2)))
+            tone = rnd.Random(hash(cell)).choice((0.86, 1.0, 1.1))  # v2: darker steel, the plates' tones further apart, no verdigris
+            face.material_index = p._slot(zone("skin", round(tone * METAL_DARK * (1.12 if n.z > 0.35 or n.y < -0.5 else 0.84), 2)))
         else:  # carved wood: moss on the shoulders and back; ivy leaves winding up the shins and forearms
             on_forearm = any((c - e).length < 0.22 and c.z < e.z - 0.02 for e in elbows)
             if n.y > 0.5 and c.z > shoulder_z - 0.14:
